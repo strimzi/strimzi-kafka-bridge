@@ -15,7 +15,9 @@ import io.vertx.proton.ProtonServerOptions;
 import io.vertx.proton.ProtonSession;
 
 /**
- * AMQP to Kafka bridge class
+ * Main bridge class listening for connections
+ * and handling AMQP senders and receivers
+ * 
  * @author ppatierno
  */
 public class AmqpKafkaBridge {
@@ -168,6 +170,9 @@ public class AmqpKafkaBridge {
 	 */
 	private void processOpenReceiver(ProtonReceiver receiver) {
 		LOG.info("Remote sender attached");
+		
+		// TODO : one/pool consumers per receiver ?
+		(new AmqpKafkaConsumer()).handle(receiver);
 	}
 	
 	/**
@@ -177,5 +182,8 @@ public class AmqpKafkaBridge {
 	 */
 	private void processOpenSender(ProtonSender sender) {
 		LOG.info("Remote receiver attached");
+		
+		// TODO : one/pool producers per sender ?
+		(new AmqpKafkaProducer()).handle(sender);
 	}
 }
