@@ -2,6 +2,7 @@ package io.ppatierno.kafka.bridge;
 
 import java.io.IOException;
 
+import org.apache.log4j.BasicConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,9 +33,16 @@ public class AmqpKafkaBridge {
 	private int port;
 	private String host;
 	
+	private AmqpKafkaEndpoint producer;
+	private AmqpKafkaEndpoint consumer;
+	
 	
 	// TODO : just for testing, another class for launching bridge ?
 	public static void main(String[] args) {
+		
+		// TODO : remove and replace with a log4j.properties configuration file
+		BasicConfigurator.configure();
+		
 		
 		Vertx vertx = Vertx.vertx();
 		
@@ -62,6 +70,9 @@ public class AmqpKafkaBridge {
 		
 		this.host = DEFAULT_HOST;
 		this.port = DEFAULT_PORT;
+		
+		this.producer = new AmqpKafkaProducer();
+		this.consumer = new AmqpKafkaConsumer();
 	}
 	
 	/**
@@ -77,6 +88,10 @@ public class AmqpKafkaBridge {
 					
 					if (ar.succeeded()) {
 						LOG.info("AmqpKafkaBridge is listening on port {}", ar.result().actualPort());
+						
+						this.producer.open();
+						this.consumer.open();
+						
 					} else {
 						LOG.error("Error starting AmqpKafkaBridge", ar.cause());
 					}
@@ -90,7 +105,10 @@ public class AmqpKafkaBridge {
 	public void stop() {
 		
 		if (this.server != null) {
-			this.server.actualPort();
+			this.server.close();
+			
+			this.producer.close();
+			this.consumer.close();
 		}
 	}
 	
@@ -171,8 +189,9 @@ public class AmqpKafkaBridge {
 	private void processOpenReceiver(ProtonReceiver receiver) {
 		LOG.info("Remote sender attached");
 		
-		// TODO : one/pool consumers per receiver ?
-		(new AmqpKafkaConsumer()).handle(receiver);
+		receiver.setAutoAccept(false);
+		// TODO : one or producers pool ?
+		this.producer.handle(receiver);
 	}
 	
 	/**
@@ -183,7 +202,7 @@ public class AmqpKafkaBridge {
 	private void processOpenSender(ProtonSender sender) {
 		LOG.info("Remote receiver attached");
 		
-		// TODO : one/pool producers per sender ?
-		(new AmqpKafkaProducer()).handle(sender);
+		// TODO : one or consumers pool ?
+		this.consumer.handle(sender);
 	}
 }
