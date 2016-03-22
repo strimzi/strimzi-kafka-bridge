@@ -1,13 +1,17 @@
 package io.ppatierno.kafka.bridge;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
+import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Released;
 import org.apache.qpid.proton.amqp.messaging.Section;
@@ -29,7 +33,7 @@ public class AmqpKafkaProducer implements AmqpKafkaEndpoint {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(AmqpKafkaBridge.class);
 	
-	private Producer<String, String> producer;
+	private Producer<String, byte[]> producer;
 	
 	public AmqpKafkaProducer() {
 	
@@ -37,7 +41,7 @@ public class AmqpKafkaProducer implements AmqpKafkaEndpoint {
 		Properties props = new Properties();
 		props.put("bootstrap.servers", "localhost:9092");
 		props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-		props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+		props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
 		
 		this.producer = new KafkaProducer<>(props);
 	}
@@ -75,14 +79,35 @@ public class AmqpKafkaProducer implements AmqpKafkaEndpoint {
 	private void processMessage(ProtonDelivery delivery, Message message) {
 		
 		Object partition = null, key = null;
-		String value = null;
+		byte[] value = null;
 		
 		// get topic and body from AMQP message
 		String topic = message.getAddress();
 		Section body = message.getBody();
 		
-		if (body instanceof AmqpValue) {	
-			value = (String)((AmqpValue) body).getValue();
+		// check body null
+		if (body != null) {
+			
+			// section is AMQP value
+			if (body instanceof AmqpValue) {	
+				
+				Object amqpValue = ((AmqpValue) body).getValue();
+				
+				// encoded as String
+				if (amqpValue instanceof String) {
+					String content = (String)((AmqpValue) body).getValue();
+					value = content.getBytes();
+				// encoded as a List
+				} else if (amqpValue instanceof List) {
+					List<?> list = (List<?>)((AmqpValue) body).getValue();
+					value = list.toString().getBytes();
+				}
+			
+			// section is Data (binary)
+			} else if (body instanceof Data) {
+				Binary binary = (Binary)((Data)body).getValue();
+				value = binary.getArray();
+			}
 		}
 		
 		// get partition and key from AMQP message annotations
@@ -102,7 +127,7 @@ public class AmqpKafkaProducer implements AmqpKafkaEndpoint {
 		}
 		
 		// build the record for the KafkaProducer and then send it
-		ProducerRecord<String, String> record = new ProducerRecord<>(topic, (Integer)partition, (String)key, value);
+		ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, (Integer)partition, (String)key, value);
 		
 		LOG.info("Sending to Kafka on topic {} at partition {} and key {}", topic, partition, key);
 		
