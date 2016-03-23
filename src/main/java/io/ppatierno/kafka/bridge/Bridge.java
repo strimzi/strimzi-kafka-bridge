@@ -96,7 +96,7 @@ public class Bridge {
 				.listen(ar -> {
 					
 					if (ar.succeeded()) {
-						LOG.info("AMQP-Kafka Bridge is listening on port {}", ar.result().actualPort());
+						LOG.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
 						
 						this.producer.open();
 						this.consumer.open();
@@ -118,6 +118,8 @@ public class Bridge {
 			
 			this.producer.close();
 			this.consumer.close();
+			
+			LOG.info("AMQP-Kafka Bridge stopped");
 		}
 	}
 	

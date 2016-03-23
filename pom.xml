@@ -12,6 +12,8 @@
   	<slf4j-log4j12.version>1.7.18</slf4j-log4j12.version>
   	<log4j.version>1.2.17</log4j.version>
   	<vertx-proton.version>1.0-SNAPSHOT</vertx-proton.version>
+  	<junit.version>4.12</junit.version>
+  	<vertx-unit.version>3.2.1</vertx-unit.version>
   </properties>
   
   <dependencies>
@@ -35,6 +37,20 @@
   		<artifactId>log4j</artifactId>
   		<version>${log4j.version}</version>
  	</dependency>
+ 	
+ 	<!-- Testing -->
+ 	<dependency>
+ 		<groupId>junit</groupId>
+ 		<artifactId>junit</artifactId>
+ 		<version>${junit.version}</version>
+ 		<scope>test</scope>
+	</dependency>
+	<dependency>
+		<groupId>io.vertx</groupId>
+		<artifactId>vertx-unit</artifactId>
+		<version>${vertx-unit.version}</version>
+	</dependency>
+	
   </dependencies>
   
 </project>
