@@ -111,14 +111,22 @@ public class AmqpSender {
 		
 		Message message = Proton.message();
 		message.setAddress(topic);
-		message.setBody(new Data(new Binary(value.getBytes())));
+		//message.setBody(new Data(new Binary(value.getBytes())));
 		
 		/*
-		List<String> list = new ArrayList<>();
+		List<Object> list = new ArrayList<>();
 		list.add("item1");
-		list.add("item2");
+		list.add(2);
 		message.setBody(new AmqpValue(list));
 		*/
+		
+		//Object[] items = { new Integer(1), new Integer(2) };
+		//message.setBody(new AmqpValue(items));
+		
+		Map<Object, Object> map = new HashMap<>();
+		map.put("1", 10);
+		map.put(2, "Hello");
+		message.setBody(new AmqpValue(map));
 		
 		sender.send(ProtonHelper.tag("m1"), message, delivery -> {
 			LOG.info("The message was received by the server");
