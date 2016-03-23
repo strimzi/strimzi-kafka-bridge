@@ -28,9 +28,6 @@ public class AmqpSender {
 	
 	public static void main(String[] args) {
 		
-		// TODO : remove and replace with a log4j.properties configuration file
-		BasicConfigurator.configure();
-		
 		Vertx vertx = Vertx.vertx();
 		
 		ProtonClient client = ProtonClient.create(vertx);

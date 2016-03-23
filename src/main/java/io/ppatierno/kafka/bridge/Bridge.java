@@ -42,9 +42,6 @@ public class Bridge {
 		
 		String config = (args.length > 0 && !args[0].isEmpty()) ? args[0] : null;
 		
-		// TODO : remove and replace with a log4j.properties configuration file
-		BasicConfigurator.configure();
-		
 		Vertx vertx = Vertx.vertx();
 		
 		Bridge bridge = new Bridge(vertx, config);
