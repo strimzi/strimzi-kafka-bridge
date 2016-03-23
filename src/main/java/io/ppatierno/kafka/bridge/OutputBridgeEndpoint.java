@@ -9,7 +9,7 @@ import io.vertx.proton.ProtonSender;
  * 
  * @author ppatierno
  */
-public class AmqpKafkaConsumer implements AmqpKafkaEndpoint {
+public class OutputBridgeEndpoint implements BridgeEndpoint {
 
 	@Override
 	public void open() {

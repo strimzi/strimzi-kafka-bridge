@@ -9,7 +9,7 @@ import java.util.Properties;
  * 
  * @author ppatierno
  */
-public class AmqpKafkaConfig {
+public class BridgeConfig {
 	
 	// Keys for accessing fields in the configuration properties file
 	
@@ -71,10 +71,10 @@ public class AmqpKafkaConfig {
 		else
 			props.clear();
 		
-		props.put(AmqpKafkaConfig.BOOTSTRAP_SERVERS, AmqpKafkaConfig.DEFAULT_BOOTSTRAP_SERVERS);
-		props.put(AmqpKafkaConfig.KEY_SERIALIZER, AmqpKafkaConfig.DEFAULT_KEY_SERIALIZER);
-		props.put(AmqpKafkaConfig.VALUE_SERIALIZER, AmqpKafkaConfig.DEFAULT_VALUE_SERIALIZER);
-		props.put(AmqpKafkaConfig.FLOW_CREDIT, String.valueOf(AmqpKafkaConfig.DEFAULT_FLOW_CREDIT));
+		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.DEFAULT_BOOTSTRAP_SERVERS);
+		props.put(BridgeConfig.KEY_SERIALIZER, BridgeConfig.DEFAULT_KEY_SERIALIZER);
+		props.put(BridgeConfig.VALUE_SERIALIZER, BridgeConfig.DEFAULT_VALUE_SERIALIZER);
+		props.put(BridgeConfig.FLOW_CREDIT, String.valueOf(BridgeConfig.DEFAULT_FLOW_CREDIT));
 		
 		return true;
 	}
@@ -84,7 +84,7 @@ public class AmqpKafkaConfig {
 	 * @return
 	 */
 	public static String getBootstrapServers() {
-		return props.getProperty(AmqpKafkaConfig.BOOTSTRAP_SERVERS);
+		return props.getProperty(BridgeConfig.BOOTSTRAP_SERVERS);
 	}
 	
 	/**
@@ -92,7 +92,7 @@ public class AmqpKafkaConfig {
 	 * @return
 	 */
 	public static String getKeySerializer() {
-		return props.getProperty(AmqpKafkaConfig.KEY_SERIALIZER);
+		return props.getProperty(BridgeConfig.KEY_SERIALIZER);
 	}
 	
 	/**
@@ -100,7 +100,7 @@ public class AmqpKafkaConfig {
 	 * @return
 	 */
 	public static String getValueSerializer() {
-		return props.getProperty(AmqpKafkaConfig.VALUE_SERIALIZER);
+		return props.getProperty(BridgeConfig.VALUE_SERIALIZER);
 	}
 	
 	/**
@@ -108,6 +108,6 @@ public class AmqpKafkaConfig {
 	 * @return
 	 */
 	public static int getFlowCredit() {
-		return Integer.parseInt(props.getProperty(AmqpKafkaConfig.FLOW_CREDIT));
+		return Integer.parseInt(props.getProperty(BridgeConfig.FLOW_CREDIT));
 	}
 }

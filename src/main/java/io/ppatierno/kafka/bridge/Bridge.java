@@ -21,20 +21,20 @@ import io.vertx.proton.ProtonSession;
  * 
  * @author ppatierno
  */
-public class AmqpKafkaBridge {
+public class Bridge {
 
 	private static final int DEFAULT_PORT = 5672;
 	private static final String DEFAULT_HOST = "localhost";
 	
-	private static final Logger LOG = LoggerFactory.getLogger(AmqpKafkaBridge.class);
+	private static final Logger LOG = LoggerFactory.getLogger(Bridge.class);
 	
 	private Vertx vertx;
 	private ProtonServer server;
 	private int port;
 	private String host;
 	
-	private AmqpKafkaEndpoint producer;
-	private AmqpKafkaEndpoint consumer;
+	private BridgeEndpoint producer;
+	private BridgeEndpoint consumer;
 	
 	
 	// TODO : just for testing, another class for launching bridge ?
@@ -47,7 +47,7 @@ public class AmqpKafkaBridge {
 		
 		Vertx vertx = Vertx.vertx();
 		
-		AmqpKafkaBridge bridge = new AmqpKafkaBridge(vertx, config);
+		Bridge bridge = new Bridge(vertx, config);
 		bridge.start();
 		
 		try {
@@ -64,7 +64,7 @@ public class AmqpKafkaBridge {
 	 * @param config	configuration file path
 	 * @throws Exception 
 	 */
-	public AmqpKafkaBridge(Vertx vertx, String config) {
+	public Bridge(Vertx vertx, String config) {
 		
 		if (vertx == null) {
 			throw new NullPointerException("Vertx instance cannot be null");
@@ -72,10 +72,10 @@ public class AmqpKafkaBridge {
 		
 		// if provided as parameter, load configuration from file otherwise the default one
 		if (config != null && !config.isEmpty()) {
-			if (!AmqpKafkaConfig.load(config))
+			if (!BridgeConfig.load(config))
 				throw new IllegalArgumentException("Configuration file path is not valid");
 		} else {
-			AmqpKafkaConfig.loadDefault();
+			BridgeConfig.loadDefault();
 		}
 		
 		this.vertx = vertx;
@@ -83,8 +83,8 @@ public class AmqpKafkaBridge {
 		this.host = DEFAULT_HOST;
 		this.port = DEFAULT_PORT;
 		
-		this.producer = new AmqpKafkaProducer();
-		this.consumer = new AmqpKafkaConsumer();
+		this.producer = new InputBridgeEndpoint();
+		this.consumer = new OutputBridgeEndpoint();
 	}
 	
 	/**
@@ -99,13 +99,13 @@ public class AmqpKafkaBridge {
 				.listen(ar -> {
 					
 					if (ar.succeeded()) {
-						LOG.info("AmqpKafkaBridge is listening on port {}", ar.result().actualPort());
+						LOG.info("AMQP-Kafka Bridge is listening on port {}", ar.result().actualPort());
 						
 						this.producer.open();
 						this.consumer.open();
 						
 					} else {
-						LOG.error("Error starting AmqpKafkaBridge", ar.cause());
+						LOG.error("Error starting AMQP-Kafka Bridge", ar.cause());
 					}
 				});
 		

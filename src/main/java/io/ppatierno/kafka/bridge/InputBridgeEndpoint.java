@@ -28,18 +28,18 @@ import io.vertx.proton.ProtonReceiver;
  * 
  * @author ppatierno
  */
-public class AmqpKafkaProducer implements AmqpKafkaEndpoint {
+public class InputBridgeEndpoint implements BridgeEndpoint {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(AmqpKafkaBridge.class);
+	private static final Logger LOG = LoggerFactory.getLogger(Bridge.class);
 	
 	private Producer<String, byte[]> producer;
 	
-	public AmqpKafkaProducer() {
+	public InputBridgeEndpoint() {
 	
 		Properties props = new Properties();
-		props.put(AmqpKafkaConfig.BOOTSTRAP_SERVERS, AmqpKafkaConfig.getBootstrapServers());
-		props.put(AmqpKafkaConfig.KEY_SERIALIZER, AmqpKafkaConfig.getKeySerializer());
-		props.put(AmqpKafkaConfig.VALUE_SERIALIZER, AmqpKafkaConfig.getValueSerializer());
+		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
+		props.put(BridgeConfig.KEY_SERIALIZER, BridgeConfig.getKeySerializer());
+		props.put(BridgeConfig.VALUE_SERIALIZER, BridgeConfig.getValueSerializer());
 		
 		this.producer = new KafkaProducer<>(props);
 	}
@@ -64,7 +64,7 @@ public class AmqpKafkaProducer implements AmqpKafkaEndpoint {
 		ProtonReceiver receiver = (ProtonReceiver)link;
 		
 		receiver.handler(this::processMessage)
-		.flow(AmqpKafkaConfig.getFlowCredit())
+		.flow(BridgeConfig.getFlowCredit())
 		.open();
 	}
 

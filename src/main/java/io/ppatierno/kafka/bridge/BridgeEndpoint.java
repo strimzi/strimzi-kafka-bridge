@@ -8,7 +8,7 @@ import io.vertx.proton.ProtonLink;
  * 
  * @author ppatierno
  */
-public interface AmqpKafkaEndpoint {
+public interface BridgeEndpoint {
 
 	/**
 	 * Open the bridge link
