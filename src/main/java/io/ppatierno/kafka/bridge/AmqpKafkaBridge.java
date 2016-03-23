@@ -40,6 +40,10 @@ public class AmqpKafkaBridge {
 	// TODO : just for testing, another class for launching bridge ?
 	public static void main(String[] args) {
 		
+		// load default configuration
+		// TODO : check main argument for a properties file path
+		AmqpKafkaConfig.loadDefault();
+		
 		// TODO : remove and replace with a log4j.properties configuration file
 		BasicConfigurator.configure();
 		

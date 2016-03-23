@@ -1,6 +1,5 @@
 package io.ppatierno.kafka.bridge;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -37,11 +36,10 @@ public class AmqpKafkaProducer implements AmqpKafkaEndpoint {
 	
 	public AmqpKafkaProducer() {
 	
-		// TODO : all following properties should be configurable
 		Properties props = new Properties();
-		props.put("bootstrap.servers", "localhost:9092");
-		props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-		props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+		props.put(AmqpKafkaConfig.BOOTSTRAP_SERVERS, AmqpKafkaConfig.getBootstrapServers());
+		props.put(AmqpKafkaConfig.KEY_SERIALIZER, AmqpKafkaConfig.getKeySerializer());
+		props.put(AmqpKafkaConfig.VALUE_SERIALIZER, AmqpKafkaConfig.getValueSerializer());
 		
 		this.producer = new KafkaProducer<>(props);
 	}
@@ -66,7 +64,7 @@ public class AmqpKafkaProducer implements AmqpKafkaEndpoint {
 		ProtonReceiver receiver = (ProtonReceiver)link;
 		
 		receiver.handler(this::processMessage)
-		.flow(10)	// TODO : make it configurable --> consider buffering and batching of KafkaProducer accordingly
+		.flow(AmqpKafkaConfig.getFlowCredit())
 		.open();
 	}
 
