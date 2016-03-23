@@ -1,9 +1,7 @@
 package io.ppatierno.kafka.bridge;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.Properties;
 
 /**
@@ -35,12 +33,29 @@ public class AmqpKafkaConfig {
 	/**
 	 * Load bridge configuration from properties file
 	 * 
+	 * @param path	configuration file path
 	 * @return		load result
 	 */
-	public static boolean load() {
+	public static boolean load(String path) {
 		
-		// TODO : load configuration from a properties file
-		return true;
+		File configFile = new File(path);
+		try {
+			FileReader reader = new FileReader(configFile);
+			
+			// check properties collection and clear it if already filled
+			if (props == null)
+				props = new Properties();
+			else
+				props.clear();
+			
+			props.load(reader);
+			return true;
+			
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+			return false;
+		}
 	}
 	
 	/**

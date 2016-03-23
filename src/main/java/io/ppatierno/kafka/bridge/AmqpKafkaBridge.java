@@ -40,17 +40,14 @@ public class AmqpKafkaBridge {
 	// TODO : just for testing, another class for launching bridge ?
 	public static void main(String[] args) {
 		
-		// load default configuration
-		// TODO : check main argument for a properties file path
-		AmqpKafkaConfig.loadDefault();
+		String config = (args.length > 0 && !args[0].isEmpty()) ? args[0] : null;
 		
 		// TODO : remove and replace with a log4j.properties configuration file
 		BasicConfigurator.configure();
 		
-		
 		Vertx vertx = Vertx.vertx();
 		
-		AmqpKafkaBridge bridge = new AmqpKafkaBridge(vertx);
+		AmqpKafkaBridge bridge = new AmqpKafkaBridge(vertx, config);
 		bridge.start();
 		
 		try {
@@ -64,12 +61,23 @@ public class AmqpKafkaBridge {
 	/**
 	 * Constructor
 	 * @param vertx		Vertx instance used to run the Proton server
+	 * @param config	configuration file path
+	 * @throws Exception 
 	 */
-	public AmqpKafkaBridge(Vertx vertx) {
+	public AmqpKafkaBridge(Vertx vertx, String config) {
 		
 		if (vertx == null) {
 			throw new NullPointerException("Vertx instance cannot be null");
 		}
+		
+		// if provided as parameter, load configuration from file otherwise the default one
+		if (config != null && !config.isEmpty()) {
+			if (!AmqpKafkaConfig.load(config))
+				throw new IllegalArgumentException("Configuration file path is not valid");
+		} else {
+			AmqpKafkaConfig.loadDefault();
+		}
+		
 		this.vertx = vertx;
 		
 		this.host = DEFAULT_HOST;
