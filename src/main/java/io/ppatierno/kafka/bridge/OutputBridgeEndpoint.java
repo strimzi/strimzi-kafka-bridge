@@ -63,7 +63,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 											OutputBridgeEndpoint.GROUP_ID_MATCH.length());
 		String topic = address.substring(0, address.indexOf(OutputBridgeEndpoint.GROUP_ID_MATCH));
 		
-		LOG.info("topic " + topic + " group.id " + groupId);
+		LOG.info("topic {} group.id {}", topic, groupId);
 		
 		// creating configuration for Kafka consumer
 		Properties props = new Properties();
@@ -110,7 +110,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 				public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
 					LOG.info("Partitions revoked ");
 					for (TopicPartition partition : partitions) {
-						LOG.info("topic " + partition.topic() +  " partition " + partition.partition());
+						LOG.info("topic {} partition {}", partition.topic(), partition.partition());
 					}
 				}
 				
@@ -118,7 +118,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 				public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
 					LOG.info("Partitions assigned ");
 					for (TopicPartition partition : partitions) {
-						LOG.info("topic " + partition.topic() +  "partition " + partition.partition());
+						LOG.info("topic {} partition {}", partition.topic(), partition.partition());
 					}
 				}
 			});
@@ -129,12 +129,12 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 					ConsumerRecords<String, byte[]> records = this.consumer.poll(1000);
 				    for (ConsumerRecord<String, byte[]> record : records)  {
 				        
-				    	LOG.info("partition = {}, offset = {}, key = {}, value = {}", record.partition(), record.offset(), record.key(), new String(record.value()));
+				    	LOG.info("Received from Kafka partition = {}, offset = {}, key = {}, value = {}", record.partition(), record.offset(), record.key(), new String(record.value()));
 				        
 				        Message message = ProtonHelper.message(this.topic, new String(record.value()));
 				        
 				        sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-							LOG.info("Message delivered");
+							LOG.info("Message delivered to " + sender.getSource().getAddress());
 						});
 				    }
 				}
