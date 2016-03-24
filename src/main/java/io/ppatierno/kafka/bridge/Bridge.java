@@ -2,7 +2,6 @@ package io.ppatierno.kafka.bridge;
 
 import java.io.IOException;
 
-import org.apache.log4j.BasicConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
