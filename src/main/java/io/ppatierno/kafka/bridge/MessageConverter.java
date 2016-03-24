@@ -1,5 +1,6 @@
 package io.ppatierno.kafka.bridge;
 
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.qpid.proton.message.Message;
 
@@ -24,5 +25,5 @@ public interface MessageConverter<K, V> {
 	 * @param record	Kafka record to convert
 	 * @return			AMQP message
 	 */
-	Message toAmqpMessage(ProducerRecord<K, V> record);
+	Message toAmqpMessage(ConsumerRecord<K, V> record);
 }

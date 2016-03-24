@@ -88,6 +88,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 
 		private AtomicBoolean closed;
 		private Consumer<String, byte[]> consumer;
+		private MessageConverter<String, byte[]> converter;
 		private String topic;
 		private ProtonSender sender;
 		
@@ -95,6 +96,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 			
 			this.closed = new AtomicBoolean(false);
 			this.consumer = new KafkaConsumer<>(props);
+			this.converter = new DefaultMessageConverter();
 			this.topic = topic;
 			this.sender = sender;
 		}
@@ -131,7 +133,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 				        
 				    	LOG.info("Received from Kafka partition = {}, offset = {}, key = {}, value = {}", record.partition(), record.offset(), record.key(), new String(record.value()));
 				        
-				        Message message = ProtonHelper.message(this.topic, new String(record.value()));
+				        Message message = this.converter.toAmqpMessage(record);
 				        
 				        sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
 							LOG.info("Message delivered to " + sender.getSource().getAddress());

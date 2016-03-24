@@ -4,7 +4,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
@@ -85,10 +87,13 @@ public class DefaultMessageConverter implements MessageConverter<String, byte[]>
 	}
 
 	@Override
-	public Message toAmqpMessage(ProducerRecord<String, byte[]> record) {
+	public Message toAmqpMessage(ConsumerRecord<String, byte[]> record) {
 		
-		// TODO : to develop for the OutputBridgeEndpoint
-		return null;
+		// TODO : how to set the "To" property ?
+		Message message = Proton.message();
+		message.setBody(new Data(new Binary(record.value())));
+		
+		return message;
 	}
 
 }
