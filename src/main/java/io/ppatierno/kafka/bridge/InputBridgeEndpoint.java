@@ -23,7 +23,7 @@ import io.vertx.proton.ProtonReceiver;
  */
 public class InputBridgeEndpoint implements BridgeEndpoint {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(Bridge.class);
+	private static final Logger LOG = LoggerFactory.getLogger(InputBridgeEndpoint.class);
 	
 	private MessageConverter<String, byte[]> converter;
 	private Producer<String, byte[]> producer;

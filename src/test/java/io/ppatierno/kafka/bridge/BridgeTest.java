@@ -39,7 +39,7 @@ public class BridgeTest {
 	
 	// for periodic test
 	private static final int PERIODIC_MAX_MESSAGE = 10;
-	private static final int PERIODIC_DELAY = 50;
+	private static final int PERIODIC_DELAY = 200;
 	private int count;
 	
 	private Vertx vertx;
