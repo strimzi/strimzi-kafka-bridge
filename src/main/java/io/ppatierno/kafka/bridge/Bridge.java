@@ -24,6 +24,7 @@ public class Bridge {
 
 	public static final String AMQP_PARTITION_ANNOTATION = "x-opt-bridge.partition";
 	public static final String AMQP_KEY_ANNOTATION = "x-opt-bridge.key";
+	public static final String AMQP_OFFSET_ANNOTATION = "x-opt-bridge.offset";
 	
 	private static final int DEFAULT_PORT = 5672;
 	private static final String DEFAULT_HOST = "localhost";

@@ -1,6 +1,7 @@
 package io.ppatierno.kafka.bridge;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -91,6 +92,17 @@ public class DefaultMessageConverter implements MessageConverter<String, byte[]>
 		
 		// TODO : how to set the "To" property ?
 		Message message = Proton.message();
+		
+		// put message annotations about partition, offset and key (if not null)
+		Map<Symbol, Object> map = new HashMap<>();
+		map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION), record.partition());
+		map.put(Symbol.valueOf(Bridge.AMQP_OFFSET_ANNOTATION), record.offset());
+		if (record.key() != null)
+			map.put(Symbol.valueOf(Bridge.AMQP_KEY_ANNOTATION), record.key());
+		
+		MessageAnnotations messageAnnotations = new MessageAnnotations(map);
+		message.setMessageAnnotations(messageAnnotations);
+		
 		message.setBody(new Data(new Binary(record.value())));
 		
 		return message;
