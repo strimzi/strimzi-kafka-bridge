@@ -7,9 +7,11 @@ import java.util.Map;
 
 import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.Binary;
+import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Data;
+import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.message.Message;
 import org.junit.After;
 import org.junit.Before;
@@ -69,6 +71,72 @@ public class BridgeTest {
 				
 				String topic = "my_topic";
 				Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
+				
+				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
+					LOG.info("Message delivered");
+					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+					async.complete();
+				});
+			}
+		});
+	}
+	
+	@Test
+	public void sendSimpleMessageToPartition(TestContext context) {
+		
+		ProtonClient client = ProtonClient.create(this.vertx);
+		
+		Async async = context.async();
+		client.connect(BRIDGE_HOST, BRIDGE_PORT, ar -> {
+			if (ar.succeeded()) {
+				
+				ProtonConnection connection = ar.result();
+				connection.open();
+				
+				ProtonSender sender = connection.createSender(null);
+				sender.open();
+				
+				String topic = "my_topic";
+				Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
+				
+				// sending on specified partition
+				Map<Symbol, Object> map = new HashMap<>();
+				map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION), 0);
+				MessageAnnotations messageAnnotations = new MessageAnnotations(map);
+				message.setMessageAnnotations(messageAnnotations);
+				
+				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
+					LOG.info("Message delivered");
+					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+					async.complete();
+				});
+			}
+		});
+	}
+	
+	@Test
+	public void sendSimpleMessageWithKey(TestContext context) {
+		
+		ProtonClient client = ProtonClient.create(this.vertx);
+		
+		Async async = context.async();
+		client.connect(BRIDGE_HOST, BRIDGE_PORT, ar -> {
+			if (ar.succeeded()) {
+				
+				ProtonConnection connection = ar.result();
+				connection.open();
+				
+				ProtonSender sender = connection.createSender(null);
+				sender.open();
+				
+				String topic = "my_topic";
+				Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
+				
+				// sending with a key
+				Map<Symbol, Object> map = new HashMap<>();
+				map.put(Symbol.valueOf(Bridge.AMQP_KEY_ANNOTATION), "my_key");
+				MessageAnnotations messageAnnotations = new MessageAnnotations(map);
+				message.setMessageAnnotations(messageAnnotations);
 				
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
 					LOG.info("Message delivered");

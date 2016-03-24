@@ -70,14 +70,14 @@ public class DefaultMessageConverter implements MessageConverter<String, byte[]>
 		
 		if (messageAnnotations != null) {
 			
-			partition = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.partition"));
-			key = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.key"));
+			partition = messageAnnotations.getValue().get(Symbol.getSymbol(Bridge.AMQP_PARTITION_ANNOTATION));
+			key = messageAnnotations.getValue().get(Symbol.getSymbol(Bridge.AMQP_KEY_ANNOTATION));
 			
 			if (partition != null && !(partition instanceof Integer))
-				throw new IllegalArgumentException("The x-opt-bridge.partition annotation must be an Integer");
+				throw new IllegalArgumentException("The partition annotation must be an Integer");
 			
 			if (key != null && !(key instanceof String))
-				throw new IllegalArgumentException("The x-opt-bridge.key annotation must be a String");
+				throw new IllegalArgumentException("The key annotation must be a String");
 		}
 		
 		// build the record for the KafkaProducer and then send it
