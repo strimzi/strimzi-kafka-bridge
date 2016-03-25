@@ -1,7 +1,5 @@
 package io.ppatierno.kafka.bridge;
 
-import java.io.IOException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,25 +36,6 @@ public class Bridge {
 	
 	private BridgeEndpoint producer;
 	private BridgeEndpoint consumer;
-	
-	
-	// TODO : just for testing, another class for launching bridge ?
-	public static void main(String[] args) {
-		
-		String config = (args.length > 0 && !args[0].isEmpty()) ? args[0] : null;
-		
-		Vertx vertx = Vertx.vertx();
-		
-		Bridge bridge = new Bridge(vertx, config);
-		bridge.start();
-		
-		try {
-			System.in.read();
-			bridge.stop();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
 	
 	/**
 	 * Constructor

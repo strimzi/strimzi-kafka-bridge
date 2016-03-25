@@ -12,6 +12,7 @@ import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
+import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.message.Message;
 import org.junit.After;
 import org.junit.Before;
@@ -27,6 +28,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.proton.ProtonClient;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonHelper;
+import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
 
 @RunWith(VertxUnitRunner.class)
@@ -321,6 +323,35 @@ public class BridgeTest {
 						}
 					}
 				});
+			}
+		});
+	}
+	
+	@Test
+	public void receiveSimpleMessate(TestContext context) {
+	
+		ProtonClient client = ProtonClient.create(this.vertx);
+		
+		Async async = context.async();
+		client.connect(BRIDGE_HOST, BRIDGE_PORT, ar -> {
+			if (ar.succeeded()) {
+				
+				ProtonConnection connection = ar.result();
+				connection.open();
+				
+				ProtonReceiver receiver = connection.createReceiver("my_topic/group.id/1");
+				receiver.handler((delive, message) -> {
+					
+					Section body = message.getBody();
+					if (body instanceof Data) {
+						byte[] value = ((Data)body).getValue().getArray();
+						LOG.info("Message received {}", new String(value));
+						context.assertTrue(true);
+						async.complete();
+					}
+				})
+				.flow(BridgeConfig.getFlowCredit())
+				.open();
 			}
 		});
 	}
