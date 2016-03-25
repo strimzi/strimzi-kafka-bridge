@@ -2,7 +2,9 @@ package io.ppatierno.kafka.bridge.example;
 
 import java.io.IOException;
 
+import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Data;
+import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Section;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,9 +37,11 @@ public class BridgeReceiver {
 	public class ExampleOne {
 		
 		private ProtonConnection connection;
-		private ProtonReceiver receiver1, receiver2;
+		private ProtonReceiver[] receivers;
 		
 		public void run(Vertx vertx) {
+			
+			this.receivers = new ProtonReceiver[4];
 			
 			ProtonClient client = ProtonClient.create(vertx);
 			
@@ -45,32 +49,34 @@ public class BridgeReceiver {
 				
 				if (ar.succeeded()) {
 					
-					connection = ar.result();
-					connection.open();
+					this.connection = ar.result();
+					this.connection.open();
 					
-					receiver1 = connection.createReceiver("my_topic/group.id/1");
-					receiver1.handler((delive, message) -> {
+					for (int i = 0; i < this.receivers.length; i++) {
+						this.receivers[i] = this.connection.createReceiver("my_topic/group.id/1");
 						
-						Section body = message.getBody();
-						if (body instanceof Data) {
-							byte[] value = ((Data)body).getValue().getArray();
-							LOG.info("receiver1 Message received {}", new String(value));
-						}
-					})
-					.flow(10)
-					.open();
-					
-					receiver2 = connection.createReceiver("my_topic/group.id/1");
-					receiver2.handler((delive, message) -> {
+						int index = i;
 						
-						Section body = message.getBody();
-						if (body instanceof Data) {
-							byte[] value = ((Data)body).getValue().getArray();
-							LOG.info("receiver2 Message received {}", new String(value));
-						}
-					})
-					.flow(10)
-					.open();
+						this.receivers[i].handler((delivery, message) -> {
+						
+							Section body = message.getBody();
+							if (body instanceof Data) {
+								byte[] value = ((Data)body).getValue().getArray();
+								LOG.info("Message received {} by receiver {} ...", new String(value), index);
+								
+								MessageAnnotations messageAnnotations = message.getMessageAnnotations();
+								if (messageAnnotations != null) {
+									Object partition = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.partition"));
+									Object offset = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.offset"));
+									Object key = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.key"));
+									LOG.info("... on partition {} [{}], key = {}", partition, offset, key);
+								}
+							}
+							
+						})
+						.flow(10)
+						.open();
+					}
 				}
 				
 			});
@@ -78,9 +84,10 @@ public class BridgeReceiver {
 			try {
 				System.in.read();
 				
-				receiver1.close();
-				receiver2.close();
-				connection.close();
+				for (int i = 0; i < this.receivers.length; i++) {
+					this.receivers[i].close();
+				}
+				this.connection.close();
 				
 			} catch (IOException e) {
 				e.printStackTrace();

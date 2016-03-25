@@ -146,12 +146,12 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 					ConsumerRecords<String, byte[]> records = this.consumer.poll(1000);
 				    for (ConsumerRecord<String, byte[]> record : records)  {
 				        
-				    	LOG.info("Received from Kafka partition = {}, offset = {}, key = {}, value = {}", record.partition(), record.offset(), record.key(), new String(record.value()));
+				    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), new String(record.value()));
 				        
 				        Message message = this.converter.toAmqpMessage(record);
 				        
 				        sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-							LOG.info("Message delivered to " + sender.getSource().getAddress());
+							LOG.info("Message delivered to  {}", sender.getSource().getAddress());
 						});
 				    }
 				}
