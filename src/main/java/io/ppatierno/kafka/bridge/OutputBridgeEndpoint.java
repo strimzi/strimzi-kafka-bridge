@@ -12,6 +12,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
+import org.apache.qpid.proton.amqp.Symbol;
+import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,17 +127,30 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 				
 				@Override
 				public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-					LOG.info("Partitions revoked ");
-					for (TopicPartition partition : partitions) {
-						LOG.info("topic {} partition {}", partition.topic(), partition.partition());
+					LOG.info("Partitions revoked {}", partitions.size());
+					
+					if (!partitions.isEmpty()) {
+						for (TopicPartition partition : partitions) {
+							LOG.info("topic {} partition {}", partition.topic(), partition.partition());
+						}
 					}
 				}
 				
 				@Override
 				public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-					LOG.info("Partitions assigned ");
-					for (TopicPartition partition : partitions) {
-						LOG.info("topic {} partition {}", partition.topic(), partition.partition());
+					LOG.info("Partitions assigned {}", partitions.size());
+					if (!partitions.isEmpty()) {
+						
+						for (TopicPartition partition : partitions) {
+							LOG.info("topic {} partition {}", partition.topic(), partition.partition());
+						}
+					} else {
+						
+						// no partitions assigned, the AMQP link and Kafka consumer will be closed
+						sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS), "All partitions already have a receiver"));
+						sender.close();
+						
+						shutdown();
 					}
 				}
 			});

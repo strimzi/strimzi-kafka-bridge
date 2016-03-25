@@ -52,6 +52,8 @@ public class BridgeReceiver {
 					this.connection = ar.result();
 					this.connection.open();
 					
+					LOG.info("Connected as {}", this.connection.getContainer());
+					
 					for (int i = 0; i < this.receivers.length; i++) {
 						this.receivers[i] = this.connection.createReceiver("my_topic/group.id/1");
 						
@@ -85,7 +87,8 @@ public class BridgeReceiver {
 				System.in.read();
 				
 				for (int i = 0; i < this.receivers.length; i++) {
-					this.receivers[i].close();
+					if (this.receivers[i].isOpen())
+						this.receivers[i].close();
 				}
 				this.connection.close();
 				
