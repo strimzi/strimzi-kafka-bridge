@@ -15,63 +15,76 @@ import io.vertx.proton.ProtonReceiver;
 public class BridgeReceiver {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(BridgeReceiver.class);
-
+	
 	public static void main(String[] args) {
 		
 		Vertx vertx = Vertx.vertx();
 		
-		// multiple receivers on same connection, same session but different links
-		exampleOne(vertx);
+		BridgeReceiver receiver = new BridgeReceiver();
 		
-		try {
-			System.in.read();
-			vertx.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		// multiple receivers on same connection, same session but different links
+		BridgeReceiver.ExampleOne ex1 = receiver.new ExampleOne();
+		ex1.run(vertx);
+		
+		vertx.close();
 	}
 	
 	/**
 	 * This example shows multiple receivers on same connection, same session but different links
-	 * 
-	 * @param vertx		Vertx instance
 	 */
-	private static void exampleOne(Vertx vertx) {
+	public class ExampleOne {
 		
-		ProtonClient client = ProtonClient.create(vertx);
+		private ProtonConnection connection;
+		private ProtonReceiver receiver1, receiver2;
 		
-		client.connect("localhost", 5672, ar -> {
+		public void run(Vertx vertx) {
 			
-			if (ar.succeeded()) {
+			ProtonClient client = ProtonClient.create(vertx);
+			
+			client.connect("localhost", 5672, ar -> {
 				
-				ProtonConnection connection = ar.result();
-				connection.open();
-				
-				ProtonReceiver receiver1 = connection.createReceiver("my_topic/group.id/1");
-				receiver1.handler((delive, message) -> {
+				if (ar.succeeded()) {
 					
-					Section body = message.getBody();
-					if (body instanceof Data) {
-						byte[] value = ((Data)body).getValue().getArray();
-						LOG.info("receiver1 Message received {}", new String(value));
-					}
-				})
-				.flow(10)
-				.open();
-				
-				ProtonReceiver receiver2 = connection.createReceiver("my_topic/group.id/1");
-				receiver2.handler((delive, message) -> {
+					connection = ar.result();
+					connection.open();
 					
-					Section body = message.getBody();
-					if (body instanceof Data) {
-						byte[] value = ((Data)body).getValue().getArray();
-						LOG.info("receiver2 Message received {}", new String(value));
-					}
-				})
-				.flow(10)
-				.open();
+					receiver1 = connection.createReceiver("my_topic/group.id/1");
+					receiver1.handler((delive, message) -> {
+						
+						Section body = message.getBody();
+						if (body instanceof Data) {
+							byte[] value = ((Data)body).getValue().getArray();
+							LOG.info("receiver1 Message received {}", new String(value));
+						}
+					})
+					.flow(10)
+					.open();
+					
+					receiver2 = connection.createReceiver("my_topic/group.id/1");
+					receiver2.handler((delive, message) -> {
+						
+						Section body = message.getBody();
+						if (body instanceof Data) {
+							byte[] value = ((Data)body).getValue().getArray();
+							LOG.info("receiver2 Message received {}", new String(value));
+						}
+					})
+					.flow(10)
+					.open();
+				}
+				
+			});
+			
+			try {
+				System.in.read();
+				
+				receiver1.close();
+				receiver2.close();
+				connection.close();
+				
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			
-		});
+		}
 	}
 }

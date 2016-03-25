@@ -197,6 +197,7 @@ public class Bridge {
 		LOG.info("Remote receiver attached");
 		
 		// TODO : one or consumers pool ?
-		this.consumer.handle(sender);
+		//this.consumer.handle(sender);
+(		new OutputBridgeEndpoint()).handle(sender);
 	}
 }

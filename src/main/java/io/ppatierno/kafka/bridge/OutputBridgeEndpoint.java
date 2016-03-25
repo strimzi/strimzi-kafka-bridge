@@ -16,6 +16,7 @@ import org.apache.qpid.proton.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonSender;
@@ -32,6 +33,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 	
 	private static final String GROUP_ID_MATCH = "/group.id/";
 	
+	private KafkaConsumerRunner kafkaConsumerRunner;
 	private Thread kafkaConsumerThread;
 	
 	@Override
@@ -54,7 +56,9 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		}
 		
 		ProtonSender sender = (ProtonSender)link;
-		sender.setSource(sender.getRemoteSource()).open();
+		sender.setSource(sender.getRemoteSource())
+		.closeHandler(this::processCloseSender)
+		.open();
 		
 		// address is like this : [topic]/group.id/[group.id]
 		String address = sender.getRemoteSource().getAddress();
@@ -74,9 +78,20 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		props.put(BridgeConfig.AUTO_OFFSET_RESET, "earliest"); // TODO : it depends on x-opt-bridge.offset inside the AMQP message
 		
 		// create and start new thread for reading from Kafka
-		KafkaConsumerRunner kafkaConsumerRunner = new KafkaConsumerRunner(props, topic, sender);
+		this.kafkaConsumerRunner = new KafkaConsumerRunner(props, topic, sender);
 		this.kafkaConsumerThread = new Thread(kafkaConsumerRunner);
 		this.kafkaConsumerThread.start();
+	}
+	
+	private void processCloseSender(AsyncResult<ProtonSender> ar) {
+		
+		if (ar.succeeded()) {
+			
+			LOG.info("Remote detached");
+			
+			this.kafkaConsumerRunner.shutdown();
+			ar.result().close();
+		}
 	}
 	
 	/**
