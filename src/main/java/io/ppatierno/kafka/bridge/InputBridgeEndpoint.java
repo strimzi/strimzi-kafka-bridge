@@ -28,6 +28,9 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 	private MessageConverter<String, byte[]> converter;
 	private Producer<String, byte[]> producer;
 	
+	/**
+	 * Constructor
+	 */
 	public InputBridgeEndpoint() {
 	
 		Properties props = new Properties();

@@ -50,10 +50,15 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 	private Queue<ConsumerRecord<String, byte[]>> queue;
 	private String uuid;
 	
+	/**
+	 * Constructor
+	 * @param vertx		Vert.x instance
+	 */
 	public OutputBridgeEndpoint(Vertx vertx) {
 		this.vertx = vertx;
 		this.queue = new ConcurrentLinkedQueue<ConsumerRecord<String, byte[]>>();
 		this.converter = new DefaultMessageConverter();
+		// generate an UUID as name for the Vert.x EventBus internal queue
 		this.uuid = UUID.randomUUID().toString();
 	}
 	
@@ -103,6 +108,9 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		this.kafkaConsumerThread = new Thread(kafkaConsumerRunner);
 		this.kafkaConsumerThread.start();
 		
+		// message sending on AMQP link MUST happen on Vert.x event loop due to
+		// the access to the sender object provided by Vert.x handler
+		// (we MUST avoid to access it from other threads; i.e. Kafka consumer thread)
 		this.vertx.eventBus().consumer(this.uuid, ebMessage -> {
 			
 			switch ((String)ebMessage.body()) {
@@ -158,6 +166,14 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		private Vertx vertx;
 		private String uuid;
 		
+		/**
+		 * Constructor
+		 * @param props		Properties for KafkaConsumer instance
+		 * @param topic		Topic to publish messages
+		 * @param queue		Internal queue for sharing Kafka records with Vert.x EventBus consumer 
+		 * @param vertx		Vert.x instance
+		 * @param uuid		UUID as unique name of Vert.x EventBus queue for sharing Kafka records
+		 */
 		public KafkaConsumerRunner(Properties props, String topic, Queue<ConsumerRecord<String, byte[]>> queue, Vertx vertx, String uuid) {
 			
 			this.closed = new AtomicBoolean(false);
@@ -205,7 +221,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 			try {
 				while (!this.closed.get()) {
 					
-					ConsumerRecords<String, byte[]> records = this.consumer.poll(1000);
+					ConsumerRecords<String, byte[]> records = this.consumer.poll(100);
 				    for (ConsumerRecord<String, byte[]> record : records)  {
 				        
 				    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), new String(record.value()));
