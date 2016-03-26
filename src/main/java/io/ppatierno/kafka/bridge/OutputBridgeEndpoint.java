@@ -3,6 +3,9 @@ package io.ppatierno.kafka.bridge;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
+import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.kafka.clients.consumer.Consumer;
@@ -19,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Vertx;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonSender;
@@ -35,8 +39,23 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 	
 	private static final String GROUP_ID_MATCH = "/group.id/";
 	
+	private static final String EVENT_BUS_SEND_COMMAND = "send";
+	private static final String EVENT_BUS_SHUTDOWN_COMMAND = "shutdown";
+	
 	private KafkaConsumerRunner kafkaConsumerRunner;
 	private Thread kafkaConsumerThread;
+	private MessageConverter<String, byte[]> converter;
+	
+	private Vertx vertx;
+	private Queue<ConsumerRecord<String, byte[]>> queue;
+	private String uuid;
+	
+	public OutputBridgeEndpoint(Vertx vertx) {
+		this.vertx = vertx;
+		this.queue = new ConcurrentLinkedQueue<ConsumerRecord<String, byte[]>>();
+		this.converter = new DefaultMessageConverter();
+		this.uuid = UUID.randomUUID().toString();
+	}
 	
 	@Override
 	public void open() {
@@ -80,9 +99,38 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		props.put(BridgeConfig.AUTO_OFFSET_RESET, "earliest"); // TODO : it depends on x-opt-bridge.offset inside the AMQP message
 		
 		// create and start new thread for reading from Kafka
-		this.kafkaConsumerRunner = new KafkaConsumerRunner(props, topic, sender);
+		this.kafkaConsumerRunner = new KafkaConsumerRunner(props, topic, this.queue, this.vertx, this.uuid);
 		this.kafkaConsumerThread = new Thread(kafkaConsumerRunner);
 		this.kafkaConsumerThread.start();
+		
+		this.vertx.eventBus().consumer(this.uuid, ebMessage -> {
+			
+			switch ((String)ebMessage.body()) {
+				
+				case EVENT_BUS_SEND_COMMAND:
+					
+					ConsumerRecord<String, byte[]> record = null;
+					while ((record = queue.poll()) != null) {
+						
+						Message message = converter.toAmqpMessage(record);
+				        
+				        sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
+							LOG.info("Message delivered to  {}", sender.getSource().getAddress());
+						});
+					}
+					break;
+				
+				case EVENT_BUS_SHUTDOWN_COMMAND:
+					
+					// no partitions assigned, the AMQP link and Kafka consumer will be closed
+					sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS), "All partitions already have a receiver"));
+					sender.close();
+					
+					this.kafkaConsumerRunner.shutdown();
+					break;
+			}
+			
+		});
 	}
 	
 	private void processCloseSender(AsyncResult<ProtonSender> ar) {
@@ -105,17 +153,19 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 
 		private AtomicBoolean closed;
 		private Consumer<String, byte[]> consumer;
-		private MessageConverter<String, byte[]> converter;
 		private String topic;
-		private ProtonSender sender;
+		Queue<ConsumerRecord<String, byte[]>> queue;
+		private Vertx vertx;
+		private String uuid;
 		
-		public KafkaConsumerRunner(Properties props, String topic, ProtonSender sender) {
+		public KafkaConsumerRunner(Properties props, String topic, Queue<ConsumerRecord<String, byte[]>> queue, Vertx vertx, String uuid) {
 			
 			this.closed = new AtomicBoolean(false);
 			this.consumer = new KafkaConsumer<>(props);
-			this.converter = new DefaultMessageConverter();
 			this.topic = topic;
-			this.sender = sender;
+			this.queue = queue;
+			this.vertx = vertx;
+			this.uuid = uuid;
 		}
 		
 		@Override
@@ -147,10 +197,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 					} else {
 						
 						// no partitions assigned, the AMQP link and Kafka consumer will be closed
-						sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS), "All partitions already have a receiver"));
-						sender.close();
-						
-						shutdown();
+						vertx.eventBus().send(uuid, OutputBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND);
 					}
 				}
 			});
@@ -162,13 +209,11 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 				    for (ConsumerRecord<String, byte[]> record : records)  {
 				        
 				    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), new String(record.value()));
-				        
-				        Message message = this.converter.toAmqpMessage(record);
-				        
-				        sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-							LOG.info("Message delivered to  {}", sender.getSource().getAddress());
-						});
+				    	this.queue.add(record);				    	
 				    }
+				    
+				    if (!records.isEmpty())
+				    	this.vertx.eventBus().send(this.uuid, OutputBridgeEndpoint.EVENT_BUS_SEND_COMMAND);
 				}
 			} catch (WakeupException e) {
 				if (!closed.get()) throw e;

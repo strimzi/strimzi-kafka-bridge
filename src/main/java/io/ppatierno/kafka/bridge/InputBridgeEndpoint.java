@@ -82,13 +82,18 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 				
 				// record not delivered, send RELEASED disposition to the AMQP sender
 				LOG.error("Error on delivery to Kafka {}", exception);
-				delivery.disposition(Released.getInstance(), true);
+				synchronized (delivery) {
+					delivery.disposition(Released.getInstance(), true);
+				}
+				
 				
 			} else {
 			
 				// record delivered, send ACCEPTED disposition to the AMQP sender
 				LOG.info("Delivered to Kafka on topic {} at partition {} [{}]", metadata.topic(), metadata.partition(), metadata.offset());
-				delivery.disposition(Accepted.getInstance(), true);
+				synchronized (delivery) {
+					delivery.disposition(Accepted.getInstance(), true);
+				}
 			}
 			
 		});

@@ -1,5 +1,8 @@
 package io.ppatierno.kafka.bridge;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +40,7 @@ public class Bridge {
 	private String host;
 	
 	private BridgeEndpoint producer;
-	private BridgeEndpoint consumer;
+	private List<BridgeEndpoint> consumers;
 	
 	/**
 	 * Constructor
@@ -65,7 +68,7 @@ public class Bridge {
 		this.port = DEFAULT_PORT;
 		
 		this.producer = new InputBridgeEndpoint();
-		this.consumer = new OutputBridgeEndpoint();
+		this.consumers = new ArrayList<>();
 	}
 	
 	/**
@@ -83,7 +86,6 @@ public class Bridge {
 						LOG.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
 						
 						this.producer.open();
-						this.consumer.open();
 						
 					} else {
 						LOG.error("Error starting AMQP-Kafka Bridge", ar.cause());
@@ -101,7 +103,10 @@ public class Bridge {
 			this.server.close();
 			
 			this.producer.close();
-			this.consumer.close();
+			
+			for (BridgeEndpoint consumer : this.consumers) {
+				consumer.close();
+			}
 			
 			LOG.info("AMQP-Kafka Bridge stopped");
 		}
@@ -198,8 +203,10 @@ public class Bridge {
 	private void processOpenSender(ProtonSender sender) {
 		LOG.info("Remote receiver attached");
 		
-		// TODO : one or consumers pool ?
-		//this.consumer.handle(sender);
-(		new OutputBridgeEndpoint()).handle(sender);
+		// add a new consumer to the pool
+		OutputBridgeEndpoint consumer = new OutputBridgeEndpoint(this.vertx);
+		this.consumers.add(consumer);
+		consumer.open();
+		consumer.handle(sender);
 	}
 }
