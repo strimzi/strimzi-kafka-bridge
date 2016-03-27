@@ -30,6 +30,7 @@ public class DefaultMessageConverter implements MessageConverter<String, byte[]>
 		Object partition = null, key = null;
 		byte[] value = null;
 		
+		// TODO : check if address isn't inside the "To" message property
 		// get topic and body from AMQP message
 		String topic = message.getAddress();
 		Section body = message.getBody();

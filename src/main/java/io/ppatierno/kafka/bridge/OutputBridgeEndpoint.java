@@ -42,13 +42,17 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 	private static final String EVENT_BUS_SEND_COMMAND = "send";
 	private static final String EVENT_BUS_SHUTDOWN_COMMAND = "shutdown";
 	
+	// Kafka consumer related stuff
 	private KafkaConsumerRunner kafkaConsumerRunner;
 	private Thread kafkaConsumerThread;
-	private MessageConverter<String, byte[]> converter;
 	
+	// Event Bus communication stuff between Kafka consumer thread
+	// an main Vert.x event loop
 	private Vertx vertx;
 	private Queue<ConsumerRecord<String, byte[]>> queue;
 	private String uuid;
+	
+	private MessageConverter<String, byte[]> converter;
 	
 	/**
 	 * Constructor
@@ -122,6 +126,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 						
 						Message message = converter.toAmqpMessage(record);
 				        
+						// TODO : define a logic for the delivery tag ?
 				        sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
 							LOG.info("Message delivered to  {}", sender.getSource().getAddress());
 						});
@@ -141,6 +146,10 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		});
 	}
 	
+	/**
+	 * Handle for detached link by the remote receiver
+	 * @param ar		async result with info on related Proton sender
+	 */
 	private void processCloseSender(AsyncResult<ProtonSender> ar) {
 		
 		if (ar.succeeded()) {
@@ -187,7 +196,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		@Override
 		public void run() {
 			
-			LOG.info("Started ...");
+			LOG.info("Apache Kafka consumer runner started ...");
 			
 			this.consumer.subscribe(Arrays.asList(this.topic), new ConsumerRebalanceListener() {
 				
@@ -237,7 +246,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 				this.consumer.close();
 			}
 			
-			LOG.info("Stopped ...");
+			LOG.info("Apache Kafka consumer runner stopped ...");
 		}
 		
 		/**

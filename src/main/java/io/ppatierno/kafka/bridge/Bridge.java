@@ -22,23 +22,27 @@ import io.vertx.proton.ProtonSession;
  * @author ppatierno
  */
 public class Bridge {
+	
+	private static final Logger LOG = LoggerFactory.getLogger(Bridge.class);
 
+	// AMQP message annotations
 	public static final String AMQP_PARTITION_ANNOTATION = "x-opt-bridge.partition";
 	public static final String AMQP_KEY_ANNOTATION = "x-opt-bridge.key";
 	public static final String AMQP_OFFSET_ANNOTATION = "x-opt-bridge.offset";
 	
+	// AMQP errors
 	public static final String AMQP_ERROR_NO_PARTITIONS = "bridge:no-free-partitions";
 	
 	private static final int DEFAULT_PORT = 5672;
 	private static final String DEFAULT_HOST = "localhost";
 	
-	private static final Logger LOG = LoggerFactory.getLogger(Bridge.class);
-	
+	// AMQP server related stuff
 	private Vertx vertx;
 	private ProtonServer server;
 	private int port;
 	private String host;
 	
+	// endpoints for handling incoming and outcoming messages
 	private BridgeEndpoint producer;
 	private List<BridgeEndpoint> consumers;
 	
