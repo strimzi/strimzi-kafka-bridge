@@ -193,8 +193,6 @@ public class Bridge {
 	private void processOpenReceiver(ProtonReceiver receiver) {
 		LOG.info("Remote sender attached");
 		
-		// the delivery state is related to the acknowledgement from Apache Kafka
-		receiver.setAutoAccept(false);
 		// TODO : one or producers pool ?
 		this.producer.handle(receiver);
 	}

@@ -62,7 +62,10 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 		
 		ProtonReceiver receiver = (ProtonReceiver)link;
 		
-		receiver.handler(this::processMessage)
+		// the delivery state is related to the acknowledgement from Apache Kafka
+		receiver.setTarget(receiver.getRemoteTarget())
+		.setAutoAccept(false)
+		.handler(this::processMessage)
 		.flow(BridgeConfig.getFlowCredit())
 		.open();
 	}
