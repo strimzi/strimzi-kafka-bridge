@@ -54,6 +54,8 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 	
 	private MessageConverter<String, byte[]> converter;
 	
+	private int deliveryTag;
+	
 	/**
 	 * Constructor
 	 * @param vertx		Vert.x instance
@@ -64,6 +66,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		this.converter = new DefaultMessageConverter();
 		// generate an UUID as name for the Vert.x EventBus internal queue
 		this.uuid = UUID.randomUUID().toString();
+		this.deliveryTag = 0;
 	}
 	
 	@Override
@@ -126,8 +129,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 						
 						Message message = converter.toAmqpMessage(record);
 				        
-						// TODO : define a logic for the delivery tag ?
-				        sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
+						sender.send(ProtonHelper.tag(String.valueOf(++this.deliveryTag)), message, delivery -> {
 							LOG.info("Message delivered to  {}", sender.getSource().getAddress());
 						});
 					}

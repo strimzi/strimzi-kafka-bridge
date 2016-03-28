@@ -39,6 +39,9 @@ public class BridgeSender {
 	 */
 	public class ExampleOne {
 		
+		private static final int PERIODIC_MAX_MESSAGE = 50;
+		private static final int PERIODIC_DELAY = 100;
+		
 		private ProtonConnection connection;
 		private ProtonSender sender;
 		private int count;
@@ -61,17 +64,17 @@ public class BridgeSender {
 					String topic = "my_topic";
 					this.count = 0;
 					
-					vertx.setPeriodic(100, timerId -> {
+					vertx.setPeriodic(ExampleOne.PERIODIC_DELAY, timerId -> {
 						
 						if (connection.isDisconnected()) {
 							vertx.cancelTimer(timerId);
 						} else {
 							
-							if (++this.count <= 50) {
+							if (++this.count <= ExampleOne.PERIODIC_MAX_MESSAGE) {
 							
 								Message message = ProtonHelper.message(topic, "Periodic message [" + this.count + "] from " + connection.getContainer());
 								
-								sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
+								sender.send(ProtonHelper.tag("my_tag" + String.valueOf(this.count)), message, delivery -> {
 									LOG.info("Message delivered");
 								});
 								

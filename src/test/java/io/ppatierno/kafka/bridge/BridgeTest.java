@@ -62,7 +62,7 @@ public class BridgeTest {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BRIDGE_HOST, BRIDGE_PORT, ar -> {
+		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -89,7 +89,7 @@ public class BridgeTest {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BRIDGE_HOST, BRIDGE_PORT, ar -> {
+		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -122,7 +122,7 @@ public class BridgeTest {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BRIDGE_HOST, BRIDGE_PORT, ar -> {
+		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -155,7 +155,7 @@ public class BridgeTest {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BRIDGE_HOST, BRIDGE_PORT, ar -> {
+		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -186,7 +186,7 @@ public class BridgeTest {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BRIDGE_HOST, BRIDGE_PORT, ar -> {
+		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -218,7 +218,7 @@ public class BridgeTest {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BRIDGE_HOST, BRIDGE_PORT, ar -> {
+		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -252,7 +252,7 @@ public class BridgeTest {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BRIDGE_HOST, BRIDGE_PORT, ar -> {
+		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -286,7 +286,7 @@ public class BridgeTest {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BRIDGE_HOST, BRIDGE_PORT, ar -> {
+		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -298,7 +298,7 @@ public class BridgeTest {
 				String topic = "my_topic";
 				this.count = 0;
 				
-				this.vertx.setPeriodic(PERIODIC_DELAY, timerId -> {
+				this.vertx.setPeriodic(BridgeTest.PERIODIC_DELAY, timerId -> {
 					
 					if (connection.isDisconnected()) {
 						this.vertx.cancelTimer(timerId);
@@ -306,11 +306,11 @@ public class BridgeTest {
 						context.assertTrue(false);
 					} else {
 						
-						if (++this.count <= PERIODIC_MAX_MESSAGE) {
+						if (++this.count <= BridgeTest.PERIODIC_MAX_MESSAGE) {
 						
 							Message message = ProtonHelper.message(topic, "Periodic message [" + this.count + "] from " + connection.getContainer());
 							
-							sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
+							sender.send(ProtonHelper.tag("my_tag_" + String.valueOf(this.count)), message, delivery -> {
 								LOG.info("Message delivered");
 								context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 							});
@@ -333,7 +333,7 @@ public class BridgeTest {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BRIDGE_HOST, BRIDGE_PORT, ar -> {
+		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
