@@ -32,6 +32,7 @@ public class Bridge {
 	
 	// AMQP errors
 	public static final String AMQP_ERROR_NO_PARTITIONS = "bridge:no-free-partitions";
+	public static final String AMQP_ERROR_SEND_TO_KAFKA = "bridge:error-to-kafka";
 	
 	private static final int DEFAULT_PORT = 5672;
 	private static final String DEFAULT_HOST = "localhost";

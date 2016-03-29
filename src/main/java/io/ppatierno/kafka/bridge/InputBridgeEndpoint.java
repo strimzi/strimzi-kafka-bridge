@@ -5,8 +5,10 @@ import java.util.Properties;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
-import org.apache.qpid.proton.amqp.messaging.Released;
+import org.apache.qpid.proton.amqp.messaging.Rejected;
+import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,10 +88,12 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 			
 			if (exception != null) {
 				
-				// record not delivered, send RELEASED disposition to the AMQP sender
-				LOG.error("Error on delivery to Kafka {}", exception);
+				// record not delivered, send REJECTED disposition to the AMQP sender
+				LOG.error("Error on delivery to Kafka {}", exception.getMessage());
 				synchronized (delivery) {
-					delivery.disposition(Released.getInstance(), true);
+					Rejected rejected = new Rejected();
+					rejected.setError(new ErrorCondition(Symbol.valueOf(Bridge.AMQP_ERROR_SEND_TO_KAFKA), exception.getMessage()));
+					delivery.disposition(rejected, true);
 				}
 				
 				

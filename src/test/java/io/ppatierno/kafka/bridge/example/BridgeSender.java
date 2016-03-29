@@ -2,6 +2,7 @@ package io.ppatierno.kafka.bridge.example;
 
 import java.io.IOException;
 
+import org.apache.qpid.proton.amqp.messaging.Rejected;
 import org.apache.qpid.proton.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +65,10 @@ public class BridgeSender {
 					
 					this.sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
 						LOG.info("Message delivered {}", delivery.getRemoteState());
+						if (delivery.getRemoteState() instanceof Rejected) {
+							Rejected rejected = (Rejected)delivery.getRemoteState();
+							LOG.info("... but rejected {} {}", rejected.getError().getCondition(), rejected.getError().getDescription());
+						}
 					});
 				}
 			});
@@ -122,6 +127,10 @@ public class BridgeSender {
 								
 								sender.send(ProtonHelper.tag("my_tag" + String.valueOf(this.count)), message, delivery -> {
 									LOG.info("Message delivered {}", delivery.getRemoteState());
+									if (delivery.getRemoteState() instanceof Rejected) {
+										Rejected rejected = (Rejected)delivery.getRemoteState();
+										LOG.info("... but rejected {} {}", rejected.getError().getCondition(), rejected.getError().getDescription());
+									}
 								});
 								
 							} else {
