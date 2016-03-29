@@ -63,7 +63,7 @@ public class BridgeSender {
 					Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
 					
 					this.sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-						LOG.info("Message delivered");
+						LOG.info("Message delivered {}", delivery.getRemoteState());
 					});
 				}
 			});
@@ -121,7 +121,7 @@ public class BridgeSender {
 								Message message = ProtonHelper.message(topic, "Periodic message [" + this.count + "] from " + connection.getContainer());
 								
 								sender.send(ProtonHelper.tag("my_tag" + String.valueOf(this.count)), message, delivery -> {
-									LOG.info("Message delivered");
+									LOG.info("Message delivered {}", delivery.getRemoteState());
 								});
 								
 							} else {
