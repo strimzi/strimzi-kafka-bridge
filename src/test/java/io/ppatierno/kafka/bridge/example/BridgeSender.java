@@ -94,10 +94,14 @@ public class BridgeSender {
 		private static final int PERIODIC_DELAY = 100;
 		
 		private ProtonConnection connection;
-		private ProtonSender sender;
-		private int count;
+		private ProtonSender senders[];
+		private int count[];
+		private int delivered;
 		
 		public void run(Vertx vertx) {
+			
+			this.senders = new ProtonSender[1];
+			this.count = new int[senders.length];
 			
 			ProtonClient client = ProtonClient.create(vertx);
 			
@@ -109,43 +113,57 @@ public class BridgeSender {
 					
 					LOG.info("Connected as {}", this.connection.getContainer());
 					
-					this.sender = connection.createSender(null);
-					this.sender.open();
-					
 					String topic = "my_topic";
-					this.count = 0;
+					this.delivered = 0;
 					
-					vertx.setPeriodic(ExampleTwo.PERIODIC_DELAY, timerId -> {
+					for (int i = 0; i < this.senders.length; i++) {
 						
-						if (connection.isDisconnected()) {
-							vertx.cancelTimer(timerId);
-						} else {
+						this.senders[i] = connection.createSender(null);
+						this.senders[i].open();
+						
+						this.count[i] = 0;
+						
+						int index = i;
+						
+						vertx.setPeriodic(ExampleTwo.PERIODIC_DELAY, timerId -> {
 							
-							if (++this.count <= ExampleTwo.PERIODIC_MAX_MESSAGE) {
-							
-								Message message = ProtonHelper.message(topic, "Periodic message [" + this.count + "] from " + connection.getContainer());
-								
-								sender.send(ProtonHelper.tag("my_tag" + String.valueOf(this.count)), message, delivery -> {
-									LOG.info("Message delivered {}", delivery.getRemoteState());
-									if (delivery.getRemoteState() instanceof Rejected) {
-										Rejected rejected = (Rejected)delivery.getRemoteState();
-										LOG.info("... but rejected {} {}", rejected.getError().getCondition(), rejected.getError().getDescription());
-									}
-								});
-								
-							} else {
+							if (connection.isDisconnected()) {
 								vertx.cancelTimer(timerId);
+							} else {
+								
+								if (++this.count[index] <= ExampleTwo.PERIODIC_MAX_MESSAGE) {
+								
+									Message message = ProtonHelper.message(topic, "Periodic message [" + this.count[index] + "] from " + connection.getContainer());
+									
+									this.senders[index].send(ProtonHelper.tag("my_tag" + String.valueOf(this.count[index])), message, delivery -> {
+										this.delivered++;
+										LOG.info("Message delivered {} for sender {}", delivery.getRemoteState(), index);
+										if (delivery.getRemoteState() instanceof Rejected) {
+											Rejected rejected = (Rejected)delivery.getRemoteState();
+											LOG.info("... but rejected {} {}", rejected.getError().getCondition(), rejected.getError().getDescription());
+										}
+									});
+									
+								} else {
+									vertx.cancelTimer(timerId);
+								}
 							}
-						}
-					});
+						});
+					}
+					
 				}
 			});
 			
 			try {
 				System.in.read();
 				
-				this.sender.close();
+				for (int i = 0; i < this.senders.length; i++) {
+					if (this.senders[i].isOpen())
+						this.senders[i].close();
+				}
 				this.connection.close();
+				
+				LOG.info("Total delivered {}", delivered);
 				
 			} catch (IOException e) {
 				e.printStackTrace();
