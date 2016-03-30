@@ -47,7 +47,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 	private Thread kafkaConsumerThread;
 	
 	// Event Bus communication stuff between Kafka consumer thread
-	// an main Vert.x event loop
+	// and main Vert.x event loop
 	private Vertx vertx;
 	private Queue<ConsumerRecord<String, byte[]>> queue;
 	private String uuid;
@@ -122,10 +122,10 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 			
 			switch ((String)ebMessage.body()) {
 				
-				case EVENT_BUS_SEND_COMMAND:
+				case OutputBridgeEndpoint.EVENT_BUS_SEND_COMMAND:
 					
 					ConsumerRecord<String, byte[]> record = null;
-					while ((record = queue.poll()) != null) {
+					while ((record = this.queue.poll()) != null) {
 						
 						Message message = converter.toAmqpMessage(record);
 				        
@@ -135,7 +135,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 					}
 					break;
 				
-				case EVENT_BUS_SHUTDOWN_COMMAND:
+				case OutputBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND:
 					
 					// no partitions assigned, the AMQP link and Kafka consumer will be closed
 					sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS), "All partitions already have a receiver"));

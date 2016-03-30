@@ -44,6 +44,8 @@ public class BridgeReceiver {
 		private ProtonConnection connection;
 		private ProtonReceiver[] receivers;
 		
+		private int received;
+		
 		public void run(Vertx vertx) {
 			
 			this.receivers = new ProtonReceiver[20];
@@ -53,6 +55,8 @@ public class BridgeReceiver {
 			client.connect("localhost", 5672, ar -> {
 				
 				if (ar.succeeded()) {
+					
+					this.received = 0;
 					
 					this.connection = ar.result();
 					this.connection.open();
@@ -67,6 +71,8 @@ public class BridgeReceiver {
 						
 						this.receivers[i].handler((delivery, message) -> {
 						
+							this.received++;
+							
 							Section body = message.getBody();
 							if (body instanceof Data) {
 								byte[] value = ((Data)body).getValue().getArray();
@@ -96,6 +102,8 @@ public class BridgeReceiver {
 						this.receivers[i].close();
 				}
 				this.connection.close();
+				
+				LOG.info("Total received {}", this.received);
 				
 			} catch (IOException e) {
 				e.printStackTrace();
