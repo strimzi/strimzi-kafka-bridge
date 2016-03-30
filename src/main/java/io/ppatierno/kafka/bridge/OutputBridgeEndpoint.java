@@ -50,7 +50,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 	// and main Vert.x event loop
 	private Vertx vertx;
 	private Queue<ConsumerRecord<String, byte[]>> queue;
-	private String uuid;
+	private String ebQueue;
 	
 	private MessageConverter<String, byte[]> converter;
 	
@@ -65,7 +65,12 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		this.queue = new ConcurrentLinkedQueue<ConsumerRecord<String, byte[]>>();
 		this.converter = new DefaultMessageConverter();
 		// generate an UUID as name for the Vert.x EventBus internal queue
-		this.uuid = UUID.randomUUID().toString();
+		this.ebQueue = String.format("%s.%s.%s", 
+				Bridge.class.getSimpleName().toLowerCase(), 
+				OutputBridgeEndpoint.class.getSimpleName().toLowerCase(), 
+				UUID.randomUUID().toString());
+		LOG.info("Event Bus queue : {}", this.ebQueue);
+		
 		this.deliveryTag = 0;
 	}
 	
@@ -111,14 +116,14 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		props.put(BridgeConfig.AUTO_OFFSET_RESET, "earliest"); // TODO : it depends on x-opt-bridge.offset inside the AMQP message
 		
 		// create and start new thread for reading from Kafka
-		this.kafkaConsumerRunner = new KafkaConsumerRunner(props, topic, this.queue, this.vertx, this.uuid);
+		this.kafkaConsumerRunner = new KafkaConsumerRunner(props, topic, this.queue, this.vertx, this.ebQueue);
 		this.kafkaConsumerThread = new Thread(kafkaConsumerRunner);
 		this.kafkaConsumerThread.start();
 		
 		// message sending on AMQP link MUST happen on Vert.x event loop due to
 		// the access to the sender object provided by Vert.x handler
 		// (we MUST avoid to access it from other threads; i.e. Kafka consumer thread)
-		this.vertx.eventBus().consumer(this.uuid, ebMessage -> {
+		this.vertx.eventBus().consumer(this.ebQueue, ebMessage -> {
 			
 			switch ((String)ebMessage.body()) {
 				
@@ -175,7 +180,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		private String topic;
 		Queue<ConsumerRecord<String, byte[]>> queue;
 		private Vertx vertx;
-		private String uuid;
+		private String ebQueue;
 		
 		/**
 		 * Constructor
@@ -183,16 +188,16 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		 * @param topic		Topic to publish messages
 		 * @param queue		Internal queue for sharing Kafka records with Vert.x EventBus consumer 
 		 * @param vertx		Vert.x instance
-		 * @param uuid		UUID as unique name of Vert.x EventBus queue for sharing Kafka records
+		 * @param ebQueue	Vert.x EventBus unique name queue for sharing Kafka records
 		 */
-		public KafkaConsumerRunner(Properties props, String topic, Queue<ConsumerRecord<String, byte[]>> queue, Vertx vertx, String uuid) {
+		public KafkaConsumerRunner(Properties props, String topic, Queue<ConsumerRecord<String, byte[]>> queue, Vertx vertx, String ebQueue) {
 			
 			this.closed = new AtomicBoolean(false);
 			this.consumer = new KafkaConsumer<>(props);
 			this.topic = topic;
 			this.queue = queue;
 			this.vertx = vertx;
-			this.uuid = uuid;
+			this.ebQueue = ebQueue;
 		}
 		
 		@Override
@@ -224,7 +229,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 					} else {
 						
 						// no partitions assigned, the AMQP link and Kafka consumer will be closed
-						vertx.eventBus().send(uuid, OutputBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND);
+						vertx.eventBus().send(ebQueue, OutputBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND);
 					}
 				}
 			});
@@ -240,7 +245,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 				    }
 				    
 				    if (!records.isEmpty())
-				    	this.vertx.eventBus().send(this.uuid, OutputBridgeEndpoint.EVENT_BUS_SEND_COMMAND);
+				    	this.vertx.eventBus().send(this.ebQueue, OutputBridgeEndpoint.EVENT_BUS_SEND_COMMAND);
 				}
 			} catch (WakeupException e) {
 				if (!closed.get()) throw e;

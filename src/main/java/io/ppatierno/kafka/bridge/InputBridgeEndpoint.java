@@ -33,8 +33,6 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 	private static final String EVENT_BUS_ACCEPTED_DELIVERY = "accepted";
 	private static final String EVENT_BUS_REJECTED_DELIVERY = "rejected";
 	
-	private static final String EVENT_BUS_DELIVERY_QUEUE = "delivery_queue";
-	
 	private MessageConverter<String, byte[]> converter;
 	private Producer<String, byte[]> producer;
 	
@@ -42,6 +40,7 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 	// callback thread and main Vert.x event loop
 	private Vertx vertx;
 	private Queue<ProtonDelivery> queue;
+	private String ebQueue;
 	
 	/**
 	 * Constructor
@@ -52,6 +51,10 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 		
 		this.vertx = vertx;
 		this.queue = new ConcurrentLinkedQueue<ProtonDelivery>();
+		this.ebQueue = String.format("%s.%s", 
+				Bridge.class.getSimpleName().toLowerCase(), 
+				InputBridgeEndpoint.class.getSimpleName().toLowerCase());
+		LOG.info("Event Bus queue : {}", this.ebQueue);
 	
 		Properties props = new Properties();
 		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
@@ -92,7 +95,7 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 		// message sending on AMQP link MUST happen on Vert.x event loop due to
 		// the access to the delivery object provided by Vert.x handler
 		// (we MUST avoid to access it from other threads; i.e. Kafka producer callback thread)
-		this.vertx.eventBus().consumer(InputBridgeEndpoint.EVENT_BUS_DELIVERY_QUEUE, ebMessage -> {
+		this.vertx.eventBus().consumer(this.ebQueue, ebMessage -> {
 			
 			ProtonDelivery delivery = null;
 			while ((delivery = queue.poll()) != null) {
@@ -144,7 +147,7 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 			}
 			
 			this.queue.add(delivery);
-			vertx.eventBus().send(InputBridgeEndpoint.EVENT_BUS_DELIVERY_QUEUE, ebMessage);
+			vertx.eventBus().send(this.ebQueue, ebMessage);
 		});
 	}
 }
