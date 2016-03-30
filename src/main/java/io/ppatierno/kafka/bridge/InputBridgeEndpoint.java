@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonReceiver;
@@ -41,6 +42,7 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 	private Vertx vertx;
 	private Queue<ProtonDelivery> queue;
 	private String ebQueue;
+	private MessageConsumer<String> ebConsumer;
 	
 	/**
 	 * Constructor
@@ -74,6 +76,8 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 	@Override
 	public void close() {
 		this.producer.close();
+		if (this.ebConsumer != null)
+			this.ebConsumer.unregister();
 	}
 
 	@Override
@@ -95,7 +99,7 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 		// message sending on AMQP link MUST happen on Vert.x event loop due to
 		// the access to the delivery object provided by Vert.x handler
 		// (we MUST avoid to access it from other threads; i.e. Kafka producer callback thread)
-		this.vertx.eventBus().consumer(this.ebQueue, ebMessage -> {
+		this.ebConsumer = this.vertx.eventBus().consumer(this.ebQueue, ebMessage -> {
 			
 			ProtonDelivery delivery = null;
 			while ((delivery = queue.poll()) != null) {

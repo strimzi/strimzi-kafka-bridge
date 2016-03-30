@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonSender;
@@ -51,6 +52,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 	private Vertx vertx;
 	private Queue<ConsumerRecord<String, byte[]>> queue;
 	private String ebQueue;
+	private MessageConsumer<String> ebConsumer;
 	
 	private MessageConverter<String, byte[]> converter;
 	
@@ -82,8 +84,9 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 
 	@Override
 	public void close() {
-		// TODO Auto-generated method stub
-		
+		this.kafkaConsumerRunner.shutdown();
+		if (this.ebConsumer != null)
+			this.ebConsumer.unregister();
 	}
 	
 	@Override
@@ -123,7 +126,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		// message sending on AMQP link MUST happen on Vert.x event loop due to
 		// the access to the sender object provided by Vert.x handler
 		// (we MUST avoid to access it from other threads; i.e. Kafka consumer thread)
-		this.vertx.eventBus().consumer(this.ebQueue, ebMessage -> {
+		this.ebConsumer = this.vertx.eventBus().consumer(this.ebQueue, ebMessage -> {
 			
 			switch ((String)ebMessage.body()) {
 				
