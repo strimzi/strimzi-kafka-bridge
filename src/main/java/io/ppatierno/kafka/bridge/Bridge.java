@@ -72,7 +72,7 @@ public class Bridge {
 		this.host = DEFAULT_HOST;
 		this.port = DEFAULT_PORT;
 		
-		this.producer = new InputBridgeEndpoint();
+		this.producer = new InputBridgeEndpoint(this.vertx);
 		this.consumers = new ArrayList<>();
 	}
 	
