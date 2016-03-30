@@ -163,7 +163,7 @@ public class BridgeSender {
 				}
 				this.connection.close();
 				
-				LOG.info("Total delivered {}", delivered);
+				LOG.info("Total delivered {}", this.delivered);
 				
 			} catch (IOException e) {
 				e.printStackTrace();
