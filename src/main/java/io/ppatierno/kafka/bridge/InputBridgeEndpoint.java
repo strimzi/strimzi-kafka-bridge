@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonLink;
@@ -33,6 +34,8 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 	
 	private static final String EVENT_BUS_ACCEPTED_DELIVERY = "accepted";
 	private static final String EVENT_BUS_REJECTED_DELIVERY = "rejected";
+	private static final String EVENT_BUS_HEADER_DELIVERY_STATE = "delivery-state";
+	private static final String EVENT_BUS_HEADER_DELIVERY_ERROR = "delivery-error";
 	
 	private MessageConverter<String, byte[]> converter;
 	private Producer<String, byte[]> producer;
@@ -104,7 +107,7 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 			ProtonDelivery delivery = null;
 			while ((delivery = queue.poll()) != null) {
 				
-				switch ((String)ebMessage.body()) {
+				switch (ebMessage.headers().get(InputBridgeEndpoint.EVENT_BUS_HEADER_DELIVERY_STATE)) {
 				
 					case InputBridgeEndpoint.EVENT_BUS_ACCEPTED_DELIVERY:
 						delivery.disposition(Accepted.getInstance(), true);
@@ -112,7 +115,8 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 						
 					case InputBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY:
 						Rejected rejected = new Rejected();
-						rejected.setError(new ErrorCondition(Symbol.valueOf(Bridge.AMQP_ERROR_SEND_TO_KAFKA), ""));
+						rejected.setError(new ErrorCondition(Symbol.valueOf(Bridge.AMQP_ERROR_SEND_TO_KAFKA), 
+								ebMessage.headers().get(InputBridgeEndpoint.EVENT_BUS_HEADER_DELIVERY_ERROR)));
 						delivery.disposition(rejected, true);
 						break;
 				}
@@ -135,23 +139,28 @@ public class InputBridgeEndpoint implements BridgeEndpoint {
 		
 		this.producer.send(record, (metadata, exception) -> {
 			
-			String ebMessage = null;
+			DeliveryOptions options = new DeliveryOptions();
+			String deliveryState = null;
+			
 			if (exception != null) {
 				
 				// record not delivered, send REJECTED disposition to the AMQP sender
 				LOG.error("Error on delivery to Kafka {}", exception.getMessage());
-				ebMessage = InputBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY;
+				deliveryState = InputBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY;
+				options.addHeader(InputBridgeEndpoint.EVENT_BUS_HEADER_DELIVERY_ERROR, exception.getMessage());
 				
 			} else {
 			
 				// record delivered, send ACCEPTED disposition to the AMQP sender
 				LOG.info("Delivered to Kafka on topic {} at partition {} [{}]", metadata.topic(), metadata.partition(), metadata.offset());
-				ebMessage = InputBridgeEndpoint.EVENT_BUS_ACCEPTED_DELIVERY;
+				deliveryState = InputBridgeEndpoint.EVENT_BUS_ACCEPTED_DELIVERY;
 				
 			}
 			
+			options.addHeader(InputBridgeEndpoint.EVENT_BUS_HEADER_DELIVERY_STATE, deliveryState);
+			
 			this.queue.add(delivery);
-			vertx.eventBus().send(this.ebQueue, ebMessage);
+			vertx.eventBus().send(this.ebQueue, "", options);
 		});
 	}
 }

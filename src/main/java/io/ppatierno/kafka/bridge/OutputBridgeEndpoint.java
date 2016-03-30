@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonLink;
@@ -42,6 +43,8 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 	
 	private static final String EVENT_BUS_SEND_COMMAND = "send";
 	private static final String EVENT_BUS_SHUTDOWN_COMMAND = "shutdown";
+	private static final String EVENT_BUS_HEADER_COMMAND = "command";
+	private static final String EVENT_BUS_HEADER_COMMAND_ERROR = "command-error";
 	
 	// Kafka consumer related stuff
 	private KafkaConsumerRunner kafkaConsumerRunner;
@@ -128,7 +131,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		// (we MUST avoid to access it from other threads; i.e. Kafka consumer thread)
 		this.ebConsumer = this.vertx.eventBus().consumer(this.ebQueue, ebMessage -> {
 			
-			switch ((String)ebMessage.body()) {
+			switch (ebMessage.headers().get(OutputBridgeEndpoint.EVENT_BUS_HEADER_COMMAND)) {
 				
 				case OutputBridgeEndpoint.EVENT_BUS_SEND_COMMAND:
 					
@@ -146,7 +149,8 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 				case OutputBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND:
 					
 					// no partitions assigned, the AMQP link and Kafka consumer will be closed
-					sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS), "All partitions already have a receiver"));
+					sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS), 
+							ebMessage.headers().get(OutputBridgeEndpoint.EVENT_BUS_HEADER_COMMAND_ERROR)));
 					sender.close();
 					
 					this.kafkaConsumerRunner.shutdown();
@@ -231,8 +235,12 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 						}
 					} else {
 						
+						DeliveryOptions options = new DeliveryOptions();
+						options.addHeader(OutputBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, OutputBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND);
+						options.addHeader(OutputBridgeEndpoint.EVENT_BUS_HEADER_COMMAND_ERROR, "All partitions already have a receiver");
+						
 						// no partitions assigned, the AMQP link and Kafka consumer will be closed
-						vertx.eventBus().send(ebQueue, OutputBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND);
+						vertx.eventBus().send(ebQueue, "", options);
 					}
 				}
 			});
@@ -247,8 +255,13 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 				    	this.queue.add(record);				    	
 				    }
 				    
-				    if (!records.isEmpty())
-				    	this.vertx.eventBus().send(this.ebQueue, OutputBridgeEndpoint.EVENT_BUS_SEND_COMMAND);
+				    if (!records.isEmpty()) {
+				    	
+				    	DeliveryOptions options = new DeliveryOptions();
+						options.addHeader(OutputBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, OutputBridgeEndpoint.EVENT_BUS_SEND_COMMAND);
+						
+				    	this.vertx.eventBus().send(this.ebQueue, "", options);
+				    }
 				}
 			} catch (WakeupException e) {
 				if (!closed.get()) throw e;
