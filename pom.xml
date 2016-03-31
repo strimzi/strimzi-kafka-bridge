@@ -49,6 +49,7 @@
 		<groupId>io.vertx</groupId>
 		<artifactId>vertx-unit</artifactId>
 		<version>${vertx-unit.version}</version>
+		<scope>test</scope>
 	</dependency>
 	
   </dependencies>
