@@ -4,7 +4,7 @@ This project provides a software component which acts as a bridge between [AMQP 
 
 It provides a different way to interact with Apache Kafka because the latter supports natively only custom (proprietary) protocol. Thanks to the bridge, all clients which can speak AMQP (which is a standard OASIS and ISO-IEC) protocol can connect to Apache Kafka cluser in order to send and receive messages to/from topics.
 
-## Bridge library stuff
+## Bridge library
 
 The project leverages on [Vert.x](http://vertx.io/) framework and uses the [Vert.x Proton](https://github.com/vert-x3/vertx-proton) library in order to provide the AMQP server for accepting and handling connections, sessions and links.
 
@@ -16,6 +16,13 @@ Other than core classes, the following stuff is provided :
 * BridgeServer : a sample application which instantiates and starts the bridge;
 * BridgeReceiver : a sample applcation with a bunch of examples using AMQP receivers;
 * BridgeSender : a sample application with a bunch of examples using AMQP senders;
+
+## Server application
+
+This is a simple application which implements a server running the bridge. It can starts in the two following ways :
+
+* no parameter : a default bridge configuration will be used;
+* configuration file path : the bridge will load configuration from that (i.e. bridge.properties);
 
 ## AMQP Senders
 
