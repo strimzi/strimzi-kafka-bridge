@@ -35,7 +35,7 @@ public class Bridge {
 	public static final String AMQP_ERROR_SEND_TO_KAFKA = "bridge:error-to-kafka";
 	
 	private static final int DEFAULT_PORT = 5672;
-	private static final String DEFAULT_HOST = "localhost";
+	private static final String DEFAULT_HOST = "0.0.0.0";
 	
 	// AMQP server related stuff
 	private Vertx vertx;
