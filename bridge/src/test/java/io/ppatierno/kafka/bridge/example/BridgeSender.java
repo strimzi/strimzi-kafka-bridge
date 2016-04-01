@@ -26,14 +26,14 @@ public class BridgeSender {
 		
 		Vertx vertx = Vertx.vertx();
 		
-		BridgeSender receiver = new BridgeSender();
+		BridgeSender sender = new BridgeSender();
 		
 		// simple message sending
-		BridgeSender.ExampleOne ex1 = receiver.new ExampleOne();
+		BridgeSender.ExampleOne ex1 = sender.new ExampleOne();
 		ex1.run(vertx);
 		
 		// periodic message sending
-		BridgeSender.ExampleTwo ex2 = receiver.new ExampleTwo();
+		BridgeSender.ExampleTwo ex2 = sender.new ExampleTwo();
 		ex2.run(vertx);
 		
 		vertx.close();
