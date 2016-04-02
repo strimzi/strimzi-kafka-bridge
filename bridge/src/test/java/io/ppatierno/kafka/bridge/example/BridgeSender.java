@@ -60,6 +60,8 @@ public class BridgeSender {
 					this.connection = ar.result();
 					this.connection.open();
 					
+					LOG.info("Connected as {}", this.connection.getContainer());
+					
 					this.sender = connection.createSender(null);
 					this.sender.open();
 					
@@ -73,6 +75,8 @@ public class BridgeSender {
 							LOG.info("... but rejected {} {}", rejected.getError().getCondition(), rejected.getError().getDescription());
 						}
 					});
+				} else {
+					LOG.info("Error on connection ... {}", ar.cause());
 				}
 			});
 			
@@ -155,6 +159,8 @@ public class BridgeSender {
 						});
 					}
 					
+				} else {
+					LOG.info("Error on connection ... {}", ar.cause());
 				}
 			});
 			
