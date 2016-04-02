@@ -22,6 +22,9 @@ public class BridgeSender {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(BridgeSender.class);
 	
+	private static final String BRIDGE_HOST = "localhost";
+	private static final int BRIDGE_PORT = 5672;
+	
 	public static void main(String[] args) {
 		
 		Vertx vertx = Vertx.vertx();
@@ -51,7 +54,7 @@ public class BridgeSender {
 			
 			ProtonClient client = ProtonClient.create(vertx);
 			
-			client.connect("localhost", 5672, ar -> {
+			client.connect(BridgeSender.BRIDGE_HOST, BridgeSender.BRIDGE_PORT, ar -> {
 				if (ar.succeeded()) {
 					
 					this.connection = ar.result();
@@ -92,6 +95,7 @@ public class BridgeSender {
 		
 		private static final int PERIODIC_MAX_MESSAGE = 50;
 		private static final int PERIODIC_DELAY = 100;
+		private static final int SENDERS_COUNT = 1;
 		
 		private ProtonConnection connection;
 		private ProtonSender senders[];
@@ -100,12 +104,12 @@ public class BridgeSender {
 		
 		public void run(Vertx vertx) {
 			
-			this.senders = new ProtonSender[1];
+			this.senders = new ProtonSender[ExampleTwo.SENDERS_COUNT];
 			this.count = new int[senders.length];
 			
 			ProtonClient client = ProtonClient.create(vertx);
 			
-			client.connect("localhost", 5672, ar -> {
+			client.connect(BridgeSender.BRIDGE_HOST, BridgeSender.BRIDGE_PORT, ar -> {
 				if (ar.succeeded()) {
 					
 					this.connection = ar.result();

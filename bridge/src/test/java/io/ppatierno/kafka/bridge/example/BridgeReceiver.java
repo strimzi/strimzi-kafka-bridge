@@ -23,6 +23,9 @@ public class BridgeReceiver {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(BridgeReceiver.class);
 	
+	private static final String BRIDGE_HOST = "localhost";
+	private static final int BRIDGE_PORT = 5672;
+	
 	public static void main(String[] args) {
 		
 		Vertx vertx = Vertx.vertx();
@@ -41,6 +44,12 @@ public class BridgeReceiver {
 	 */
 	public class ExampleOne {
 		
+		private static final int RECEIVERS_COUNT = 20;
+		private static final String GROUP_ID_PREFIX = "my_group";
+		
+		// all receivers in the same consumer group
+		private static final boolean IS_SAME_GROUP_ID = true; 
+		
 		private ProtonConnection connection;
 		private ProtonReceiver[] receivers;
 		
@@ -48,11 +57,11 @@ public class BridgeReceiver {
 		
 		public void run(Vertx vertx) {
 			
-			this.receivers = new ProtonReceiver[20];
+			this.receivers = new ProtonReceiver[ExampleOne.RECEIVERS_COUNT];
 			
 			ProtonClient client = ProtonClient.create(vertx);
 			
-			client.connect("localhost", 5672, ar -> {
+			client.connect(BridgeReceiver.BRIDGE_HOST, BridgeReceiver.BRIDGE_PORT, ar -> {
 				
 				if (ar.succeeded()) {
 					
@@ -64,8 +73,12 @@ public class BridgeReceiver {
 					LOG.info("Connected as {}", this.connection.getContainer());
 					
 					for (int i = 0; i < this.receivers.length; i++) {
-						this.receivers[i] = this.connection.createReceiver("my_topic/group.id/" + i);
-						//this.receivers[i] = this.connection.createReceiver("my_topic/group.id/1");
+						
+						if (ExampleOne.IS_SAME_GROUP_ID) {
+							this.receivers[i] = this.connection.createReceiver(String.format("my_topic/group.id/%s", ExampleOne.GROUP_ID_PREFIX));
+						} else {
+							this.receivers[i] = this.connection.createReceiver(String.format("my_topic/group.id/%s%d", ExampleOne.GROUP_ID_PREFIX, i));
+						}
 						
 						int index = i;
 						
