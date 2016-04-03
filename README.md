@@ -24,6 +24,10 @@ This is a simple application which implements a server running the bridge. It ca
 * no parameter : a default bridge configuration will be used;
 * configuration file path : the bridge will load configuration from that (i.e. bridge.properties);
 
+## Docker image
+
+This is a simple Docker image which containes the server application as a fat JAR with all dependencies related to Vert.x Proton and the AMQP - Kafka Bridge.
+
 ## AMQP Senders
 
 In order to send a message to a topic named _[topic]_, an AMQP client should attach a link on the following simple address :
