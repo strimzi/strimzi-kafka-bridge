@@ -1,0 +1,31 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>io.ppatierno</groupId>
+  <artifactId>rh-amqp-kafka-bridge</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>rh-amqp-kafka-bridge</name>
+  <packaging>pom</packaging>
+
+  <modules>
+     <module>bridge</module>
+     <module>server</module>
+  </modules>
+
+  <description>AMQP - Apache Kafka bridge</description>
+
+  <licenses>
+     <license>
+        <name>The Apache License, Version 2.0</name>
+        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+     </license>
+  </licenses>
+
+  <developers>
+     <developer>
+        <name>Paolo Patierno</name>
+        <email>ppatierno@live.com</email>
+        <organization>Red Hat</organization>
+        <organizationUrl>http://www.redhat.com</organizationUrl>
+     </developer>
+  </developers>
+</project>
