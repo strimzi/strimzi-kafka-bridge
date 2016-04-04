@@ -6,26 +6,38 @@
   <name>rh-amqp-kafka-bridge</name>
   <packaging>pom</packaging>
 
+  <properties>
+  	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  	<maven.compiler.source>1.8</maven.compiler.source>
+  	<maven.compiler.target>1.8</maven.compiler.target>
+  	<kafka.version>0.9.0.1</kafka.version>
+  	<slf4j-log4j12.version>1.7.18</slf4j-log4j12.version>
+  	<log4j.version>1.2.17</log4j.version>
+  	<vertx-proton.version>1.0-SNAPSHOT</vertx-proton.version>
+  	<junit.version>4.12</junit.version>
+  	<vertx-unit.version>3.2.1</vertx-unit.version>
+  </properties>
+
   <modules>
-     <module>bridge</module>
-     <module>server</module>
+  	<module>bridge</module>
+  	<module>server</module>
   </modules>
 
   <description>AMQP - Apache Kafka bridge</description>
 
   <licenses>
-     <license>
-        <name>The Apache License, Version 2.0</name>
-        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-     </license>
+  	<license>
+  		<name>The Apache License, Version 2.0</name>
+  		<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+  	</license>
   </licenses>
 
   <developers>
-     <developer>
-        <name>Paolo Patierno</name>
-        <email>ppatierno@live.com</email>
-        <organization>Red Hat</organization>
-        <organizationUrl>http://www.redhat.com</organizationUrl>
-     </developer>
+  	<developer>
+  		<name>Paolo Patierno</name>
+  		<email>ppatierno@live.com</email>
+  		<organization>Red Hat</organization>
+  		<organizationUrl>http://www.redhat.com</organizationUrl>
+  	</developer>
   </developers>
 </project>
