@@ -75,7 +75,7 @@ public class BridgeTest {
 				Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
 				
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered");
+					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 					async.complete();
 				});
@@ -108,7 +108,7 @@ public class BridgeTest {
 				message.setMessageAnnotations(messageAnnotations);
 				
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered");
+					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 					async.complete();
 				});
@@ -141,7 +141,7 @@ public class BridgeTest {
 				message.setMessageAnnotations(messageAnnotations);
 				
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered");
+					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 					async.complete();
 				});
@@ -172,7 +172,7 @@ public class BridgeTest {
 				message.setBody(new Data(new Binary(value.getBytes())));
 				
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered");
+					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 					async.complete();
 				});
@@ -204,7 +204,7 @@ public class BridgeTest {
 				message.setBody(new AmqpValue(array));
 				
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered");
+					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 					async.complete();
 				});
@@ -238,7 +238,7 @@ public class BridgeTest {
 				message.setBody(new AmqpValue(list));
 				
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered");
+					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 					async.complete();
 				});
@@ -272,7 +272,7 @@ public class BridgeTest {
 				message.setBody(new AmqpValue(map));
 				
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered");
+					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 					async.complete();
 				});
@@ -311,7 +311,7 @@ public class BridgeTest {
 							Message message = ProtonHelper.message(topic, "Periodic message [" + this.count + "] from " + connection.getContainer());
 							
 							sender.send(ProtonHelper.tag("my_tag_" + String.valueOf(this.count)), message, delivery -> {
-								LOG.info("Message delivered");
+								LOG.info("Message delivered {}", delivery.getRemoteState());
 								context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 							});
 							
