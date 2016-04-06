@@ -44,8 +44,8 @@ public class Bridge {
 	private String host;
 	
 	// endpoints for handling incoming and outcoming messages
-	private BridgeEndpoint producer;
-	private List<BridgeEndpoint> consumers;
+	private BridgeEndpoint source;
+	private List<BridgeEndpoint> sinks;
 	
 	/**
 	 * Constructor
@@ -72,8 +72,8 @@ public class Bridge {
 		this.host = DEFAULT_HOST;
 		this.port = DEFAULT_PORT;
 		
-		this.producer = new InputBridgeEndpoint(this.vertx);
-		this.consumers = new ArrayList<>();
+		this.source = new SourceBridgeEndpoint(this.vertx);
+		this.sinks = new ArrayList<>();
 	}
 	
 	/**
@@ -90,7 +90,7 @@ public class Bridge {
 					if (ar.succeeded()) {
 						LOG.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
 						
-						this.producer.open();
+						this.source.open();
 						
 					} else {
 						LOG.error("Error starting AMQP-Kafka Bridge", ar.cause());
@@ -107,9 +107,9 @@ public class Bridge {
 		if (this.server != null) {
 			this.server.close();
 			
-			this.producer.close();
+			this.source.close();
 			
-			for (BridgeEndpoint consumer : this.consumers) {
+			for (BridgeEndpoint consumer : this.sinks) {
 				consumer.close();
 			}
 			
@@ -194,8 +194,8 @@ public class Bridge {
 	private void processOpenReceiver(ProtonReceiver receiver) {
 		LOG.info("Remote sender attached");
 		
-		// TODO : one or producers pool ?
-		this.producer.handle(receiver);
+		// TODO : one or sources pool ?
+		this.source.handle(receiver);
 	}
 	
 	/**
@@ -206,10 +206,10 @@ public class Bridge {
 	private void processOpenSender(ProtonSender sender) {
 		LOG.info("Remote receiver attached");
 		
-		// add a new consumer to the pool
-		OutputBridgeEndpoint consumer = new OutputBridgeEndpoint(this.vertx);
-		this.consumers.add(consumer);
-		consumer.open();
-		consumer.handle(sender);
+		// add a new sink to the pool
+		SinkBridgeEndpoint sink = new SinkBridgeEndpoint(this.vertx);
+		this.sinks.add(sink);
+		sink.open();
+		sink.handle(sender);
 	}
 }

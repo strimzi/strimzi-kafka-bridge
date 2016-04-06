@@ -35,9 +35,9 @@ import io.vertx.proton.ProtonSender;
  * 
  * @author ppatierno
  */
-public class OutputBridgeEndpoint implements BridgeEndpoint {
+public class SinkBridgeEndpoint implements BridgeEndpoint {
 
-	private static final Logger LOG = LoggerFactory.getLogger(OutputBridgeEndpoint.class);
+	private static final Logger LOG = LoggerFactory.getLogger(SinkBridgeEndpoint.class);
 	
 	private static final String GROUP_ID_MATCH = "/group.id/";
 	
@@ -65,14 +65,14 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 	 * Constructor
 	 * @param vertx		Vert.x instance
 	 */
-	public OutputBridgeEndpoint(Vertx vertx) {
+	public SinkBridgeEndpoint(Vertx vertx) {
 		this.vertx = vertx;
 		this.queue = new ConcurrentLinkedQueue<ConsumerRecord<String, byte[]>>();
 		this.converter = new DefaultMessageConverter();
 		// generate an UUID as name for the Vert.x EventBus internal queue
 		this.ebQueue = String.format("%s.%s.%s", 
 				Bridge.class.getSimpleName().toLowerCase(), 
-				OutputBridgeEndpoint.class.getSimpleName().toLowerCase(), 
+				SinkBridgeEndpoint.class.getSimpleName().toLowerCase(), 
 				UUID.randomUUID().toString());
 		LOG.info("Event Bus queue : {}", this.ebQueue);
 		
@@ -107,9 +107,9 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		// address is like this : [topic]/group.id/[group.id]
 		String address = sender.getRemoteSource().getAddress();
 		
-		String groupId = address.substring(address.indexOf(OutputBridgeEndpoint.GROUP_ID_MATCH) + 
-											OutputBridgeEndpoint.GROUP_ID_MATCH.length());
-		String topic = address.substring(0, address.indexOf(OutputBridgeEndpoint.GROUP_ID_MATCH));
+		String groupId = address.substring(address.indexOf(SinkBridgeEndpoint.GROUP_ID_MATCH) + 
+											SinkBridgeEndpoint.GROUP_ID_MATCH.length());
+		String topic = address.substring(0, address.indexOf(SinkBridgeEndpoint.GROUP_ID_MATCH));
 		
 		LOG.info("topic {} group.id {}", topic, groupId);
 		
@@ -131,9 +131,9 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 		// (we MUST avoid to access it from other threads; i.e. Kafka consumer thread)
 		this.ebConsumer = this.vertx.eventBus().consumer(this.ebQueue, ebMessage -> {
 			
-			switch (ebMessage.headers().get(OutputBridgeEndpoint.EVENT_BUS_HEADER_COMMAND)) {
+			switch (ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND)) {
 				
-				case OutputBridgeEndpoint.EVENT_BUS_SEND_COMMAND:
+				case SinkBridgeEndpoint.EVENT_BUS_SEND_COMMAND:
 					
 					ConsumerRecord<String, byte[]> record = null;
 					while ((record = this.queue.poll()) != null) {
@@ -146,11 +146,11 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 					}
 					break;
 				
-				case OutputBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND:
+				case SinkBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND:
 					
 					// no partitions assigned, the AMQP link and Kafka consumer will be closed
 					sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS), 
-							ebMessage.headers().get(OutputBridgeEndpoint.EVENT_BUS_HEADER_COMMAND_ERROR)));
+							ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND_ERROR)));
 					sender.close();
 					
 					this.kafkaConsumerRunner.shutdown();
@@ -236,8 +236,8 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 					} else {
 						
 						DeliveryOptions options = new DeliveryOptions();
-						options.addHeader(OutputBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, OutputBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND);
-						options.addHeader(OutputBridgeEndpoint.EVENT_BUS_HEADER_COMMAND_ERROR, "All partitions already have a receiver");
+						options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, SinkBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND);
+						options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND_ERROR, "All partitions already have a receiver");
 						
 						// no partitions assigned, the AMQP link and Kafka consumer will be closed
 						vertx.eventBus().send(ebQueue, "", options);
@@ -258,7 +258,7 @@ public class OutputBridgeEndpoint implements BridgeEndpoint {
 				    if (!records.isEmpty()) {
 				    	
 				    	DeliveryOptions options = new DeliveryOptions();
-						options.addHeader(OutputBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, OutputBridgeEndpoint.EVENT_BUS_SEND_COMMAND);
+						options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, SinkBridgeEndpoint.EVENT_BUS_SEND_COMMAND);
 						
 				    	this.vertx.eventBus().send(this.ebQueue, "", options);
 				    }
