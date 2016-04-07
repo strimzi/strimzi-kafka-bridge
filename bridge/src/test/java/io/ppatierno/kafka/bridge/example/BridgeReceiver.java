@@ -100,6 +100,7 @@ public class BridgeReceiver {
 								}
 							}							
 						})
+						.setPrefetch(0)
 						.flow(10)
 						.open();
 					}

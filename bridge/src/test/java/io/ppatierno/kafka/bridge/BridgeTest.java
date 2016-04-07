@@ -328,7 +328,7 @@ public class BridgeTest {
 	}
 	
 	@Test
-	public void receiveSimpleMessate(TestContext context) {
+	public void receiveSimpleMessage(TestContext context) {
 	
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
@@ -350,6 +350,7 @@ public class BridgeTest {
 						async.complete();
 					}
 				})
+				.setPrefetch(0)
 				.flow(BridgeConfig.getFlowCredit())
 				.open();
 			}

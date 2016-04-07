@@ -96,6 +96,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		receiver.setTarget(receiver.getRemoteTarget())
 		.setAutoAccept(false)
 		.handler(this::processMessage)
+		.setPrefetch(0)
 		.flow(BridgeConfig.getFlowCredit())
 		.open();
 		
