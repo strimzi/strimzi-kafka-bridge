@@ -38,7 +38,8 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	private static final String EVENT_BUS_HEADER_DELIVERY_ERROR = "delivery-error";
 	
 	private MessageConverter<String, byte[]> converter;
-	private Producer<String, byte[]> producer;
+	private Producer<String, byte[]> producerUnsettledMode;
+	private Producer<String, byte[]> producerSettledMode;
 	
 	// Event Bus communication stuff between Kafka producer
 	// callback thread and main Vert.x event loop
@@ -65,8 +66,17 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
 		props.put(BridgeConfig.KEY_SERIALIZER, BridgeConfig.getKeySerializer());
 		props.put(BridgeConfig.VALUE_SERIALIZER, BridgeConfig.getValueSerializer());
+		props.put(BridgeConfig.ACKS, BridgeConfig.getAcks());
 		
-		this.producer = new KafkaProducer<>(props);
+		this.producerUnsettledMode = new KafkaProducer<>(props);
+		
+		props.clear();
+		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
+		props.put(BridgeConfig.KEY_SERIALIZER, BridgeConfig.getKeySerializer());
+		props.put(BridgeConfig.VALUE_SERIALIZER, BridgeConfig.getValueSerializer());
+		props.put(BridgeConfig.ACKS, "0");
+		
+		this.producerSettledMode = new KafkaProducer<>(props);
 		
 		this.converter = new DefaultMessageConverter();
 	}
@@ -78,7 +88,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 
 	@Override
 	public void close() {
-		this.producer.close();
+		this.producerUnsettledMode.close();
 		if (this.ebConsumer != null)
 			this.ebConsumer.unregister();
 	}
@@ -112,6 +122,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 				
 					case SourceBridgeEndpoint.EVENT_BUS_ACCEPTED_DELIVERY:
 						delivery.disposition(Accepted.getInstance(), true);
+						LOG.info("Delivery sent [{}]", SourceBridgeEndpoint.EVENT_BUS_ACCEPTED_DELIVERY);
 						break;
 						
 					case SourceBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY:
@@ -119,6 +130,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 						rejected.setError(new ErrorCondition(Symbol.valueOf(Bridge.AMQP_ERROR_SEND_TO_KAFKA), 
 								ebMessage.headers().get(SourceBridgeEndpoint.EVENT_BUS_HEADER_DELIVERY_ERROR)));
 						delivery.disposition(rejected, true);
+						LOG.info("Delivery sent [{}]", SourceBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY);
 						break;
 				}
 			}
@@ -142,11 +154,12 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		if (delivery.remotelySettled()) {
 			
 			// message settled (by sender), no feedback need by Apache Kafka, no disposition to be sent
-			this.producer.send(record, null);
+			this.producerSettledMode.send(record);
+			
 		} else {
 		
 			// message unsettled (by sender), feedback needed by Apache Kafka, disposition to be sent accordingly
-			this.producer.send(record, (metadata, exception) -> {
+			this.producerUnsettledMode.send(record, (metadata, exception) -> {
 				
 				DeliveryOptions options = new DeliveryOptions();
 				String deliveryState = null;

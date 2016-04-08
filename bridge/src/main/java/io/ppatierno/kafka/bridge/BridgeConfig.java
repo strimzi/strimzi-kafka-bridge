@@ -19,6 +19,7 @@ public class BridgeConfig {
 	// Apache Kafka producer
 	public static final String KEY_SERIALIZER = "key.serializer";
 	public static final String VALUE_SERIALIZER = "value.serializer";
+	public static final String ACKS = "acks";
 	
 	// Apache Kafka consumer
 	public static final String KEY_DESERIALIZER = "key.deserializer";
@@ -36,8 +37,9 @@ public class BridgeConfig {
 	private static final String DEFAULT_VALUE_SERIALIZER = "org.apache.kafka.common.serialization.ByteArraySerializer";
 	private static final String DEFAULT_KEY_DESERIALIZER = "org.apache.kafka.common.serialization.StringDeserializer";
 	private static final String DEFAULT_VALUE_DESERIALIZER = "org.apache.kafka.common.serialization.ByteArrayDeserializer";
+	private static final String DEFAULT_ACKS = "1";
 	
-	private static final int DEFAULT_FLOW_CREDIT = 10;
+	private static final int DEFAULT_FLOW_CREDIT = 1024;
 	
 	private static Properties props;
 
@@ -88,6 +90,7 @@ public class BridgeConfig {
 		props.put(BridgeConfig.KEY_DESERIALIZER, BridgeConfig.DEFAULT_KEY_DESERIALIZER);
 		props.put(BridgeConfig.VALUE_DESERIALIZER, BridgeConfig.DEFAULT_VALUE_DESERIALIZER);
 		props.put(BridgeConfig.FLOW_CREDIT, String.valueOf(BridgeConfig.DEFAULT_FLOW_CREDIT));
+		props.put(BridgeConfig.ACKS, BridgeConfig.DEFAULT_ACKS);
 		
 		return true;
 	}
@@ -114,6 +117,14 @@ public class BridgeConfig {
 	 */
 	public static String getValueSerializer() {
 		return props.getProperty(BridgeConfig.VALUE_SERIALIZER);
+	}
+	
+	/**
+	 * Acknowledgment used for the Kafka Producer
+	 * @return
+	 */
+	public static String getAcks() {
+		return props.getProperty(BridgeConfig.ACKS);
 	}
 	
 	/**
