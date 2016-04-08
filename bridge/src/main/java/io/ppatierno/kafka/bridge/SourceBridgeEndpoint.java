@@ -138,30 +138,39 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		
 		LOG.info("Sending to Kafka on topic {} at partition {} and key {}", record.topic(), record.partition(), record.key());
 		
-		this.producer.send(record, (metadata, exception) -> {
+		
+		if (delivery.remotelySettled()) {
 			
-			DeliveryOptions options = new DeliveryOptions();
-			String deliveryState = null;
-			
-			if (exception != null) {
+			// message settled (by sender), no feedback need by Apache Kafka, no disposition to be sent
+			this.producer.send(record, null);
+		} else {
+		
+			// message unsettled (by sender), feedback needed by Apache Kafka, disposition to be sent accordingly
+			this.producer.send(record, (metadata, exception) -> {
 				
-				// record not delivered, send REJECTED disposition to the AMQP sender
-				LOG.error("Error on delivery to Kafka {}", exception.getMessage());
-				deliveryState = SourceBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY;
-				options.addHeader(SourceBridgeEndpoint.EVENT_BUS_HEADER_DELIVERY_ERROR, exception.getMessage());
+				DeliveryOptions options = new DeliveryOptions();
+				String deliveryState = null;
 				
-			} else {
-			
-				// record delivered, send ACCEPTED disposition to the AMQP sender
-				LOG.info("Delivered to Kafka on topic {} at partition {} [{}]", metadata.topic(), metadata.partition(), metadata.offset());
-				deliveryState = SourceBridgeEndpoint.EVENT_BUS_ACCEPTED_DELIVERY;
+				if (exception != null) {
+					
+					// record not delivered, send REJECTED disposition to the AMQP sender
+					LOG.error("Error on delivery to Kafka {}", exception.getMessage());
+					deliveryState = SourceBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY;
+					options.addHeader(SourceBridgeEndpoint.EVENT_BUS_HEADER_DELIVERY_ERROR, exception.getMessage());
+					
+				} else {
 				
-			}
-			
-			options.addHeader(SourceBridgeEndpoint.EVENT_BUS_HEADER_DELIVERY_STATE, deliveryState);
-			
-			this.queue.add(delivery);
-			vertx.eventBus().send(this.ebQueue, "", options);
-		});
+					// record delivered, send ACCEPTED disposition to the AMQP sender
+					LOG.info("Delivered to Kafka on topic {} at partition {} [{}]", metadata.topic(), metadata.partition(), metadata.offset());
+					deliveryState = SourceBridgeEndpoint.EVENT_BUS_ACCEPTED_DELIVERY;
+					
+				}
+				
+				options.addHeader(SourceBridgeEndpoint.EVENT_BUS_HEADER_DELIVERY_STATE, deliveryState);
+				
+				this.queue.add(delivery);
+				this.vertx.eventBus().send(this.ebQueue, "", options);
+			});
+		}
 	}
 }
