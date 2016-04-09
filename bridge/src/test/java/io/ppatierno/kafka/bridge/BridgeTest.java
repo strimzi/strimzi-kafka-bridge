@@ -350,8 +350,7 @@ public class BridgeTest {
 						async.complete();
 					}
 				})
-				.setPrefetch(0)
-				.flow(BridgeConfig.getFlowCredit())
+				.setPrefetch(BridgeConfig.getFlowCredit())
 				.open();
 			}
 		});

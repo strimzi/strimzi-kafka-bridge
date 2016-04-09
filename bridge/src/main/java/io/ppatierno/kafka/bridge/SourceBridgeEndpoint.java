@@ -106,8 +106,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		receiver.setTarget(receiver.getRemoteTarget())
 		.setAutoAccept(false)
 		.handler(this::processMessage)
-		.setPrefetch(0)
-		.flow(BridgeConfig.getFlowCredit())
+		.setPrefetch(BridgeConfig.getFlowCredit())
 		.open();
 		
 		// message sending on AMQP link MUST happen on Vert.x event loop due to
