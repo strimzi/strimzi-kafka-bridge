@@ -20,6 +20,7 @@ import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonLink;
+import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonReceiver;
 
 /**
@@ -105,9 +106,20 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		// the delivery state is related to the acknowledgement from Apache Kafka
 		receiver.setTarget(receiver.getRemoteTarget())
 		.setAutoAccept(false)
-		.handler(this::processMessage)
-		.setPrefetch(BridgeConfig.getFlowCredit())
-		.open();
+		.handler(this::processMessage);
+				
+		if (receiver.getRemoteQoS() == ProtonQoS.AT_MOST_ONCE) {
+			// sender settle mode is SETTLED (so AT_MOST_ONCE QoS), we assume Apache Kafka
+			// no problem in throughput terms so use prefetch due to no ack from Kafka server
+			receiver.setPrefetch(BridgeConfig.getFlowCredit());
+		} else {
+			// sender settle mode is UNSETTLED (or MIXED) (so AT_LEAST_ONCE QoS).
+			// Thanks to the ack from Kafka server we can modulate flow control
+			receiver.setPrefetch(0)
+			.flow(BridgeConfig.getFlowCredit());
+		}
+		
+		receiver.open();
 		
 		// message sending on AMQP link MUST happen on Vert.x event loop due to
 		// the access to the delivery object provided by Vert.x handler
@@ -132,6 +144,9 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 						LOG.info("Delivery sent [{}]", SourceBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY);
 						break;
 				}
+				
+				// ack received from Kafka server, delivery sent to AMQP client, updating link credits
+				receiver.flow(1);
 			}
 			
 		});
