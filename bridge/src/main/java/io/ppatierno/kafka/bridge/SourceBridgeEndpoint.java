@@ -38,7 +38,9 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	private static final String EVENT_BUS_HEADER_DELIVERY_STATE = "delivery-state";
 	private static final String EVENT_BUS_HEADER_DELIVERY_ERROR = "delivery-error";
 	
+	// converter from AMQP message to ConsumerRecord
 	private MessageConverter<String, byte[]> converter;
+	
 	private Producer<String, byte[]> producerUnsettledMode;
 	private Producer<String, byte[]> producerSettledMode;
 	
@@ -92,6 +94,8 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		this.producerUnsettledMode.close();
 		if (this.ebConsumer != null)
 			this.ebConsumer.unregister();
+		
+		this.queue.clear();
 	}
 
 	@Override

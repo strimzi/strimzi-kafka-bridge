@@ -2,6 +2,8 @@ package io.ppatierno.kafka.bridge;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.UUID;
@@ -13,6 +15,7 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.qpid.proton.amqp.Symbol;
@@ -48,7 +51,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	private static final String EVENT_BUS_HEADER_COMMAND_ERROR = "command-error";
 	
 	// Kafka consumer related stuff
-	private KafkaConsumerRunner kafkaConsumerRunner;
+	private KafkaConsumerRunner<String, byte[]> kafkaConsumerRunner;
 	private Thread kafkaConsumerThread;
 	
 	// Event Bus communication stuff between Kafka consumer thread
@@ -58,7 +61,11 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	private String ebQueue;
 	private MessageConsumer<String> ebConsumer;
 	
+	// converter from ConsumerRecord to AMQP message
 	private MessageConverter<String, byte[]> converter;
+	
+	// used for tracking partitions and related offset for AT_LEAST_ONCE QoS delivery 
+	private OffsetTracker<String, byte[]> offsetTracker;
 	
 	private int deliveryTag;
 	
@@ -77,6 +84,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				UUID.randomUUID().toString());
 		LOG.info("Event Bus queue : {}", this.ebQueue);
 		
+		this.offsetTracker = new SimpleOffsetTracker<>();
 		this.deliveryTag = 0;
 	}
 	
@@ -91,6 +99,9 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		this.kafkaConsumerRunner.shutdown();
 		if (this.ebConsumer != null)
 			this.ebConsumer.unregister();
+		
+		this.queue.clear();
+		this.offsetTracker.clear();
 	}
 	
 	@Override
@@ -123,7 +134,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		props.put(BridgeConfig.AUTO_OFFSET_RESET, "earliest"); // TODO : it depends on x-opt-bridge.offset inside the AMQP message
 		
 		// create and start new thread for reading from Kafka
-		this.kafkaConsumerRunner = new KafkaConsumerRunner(props, topic, this.queue, this.vertx, this.ebQueue, sender.getQoS());
+		this.kafkaConsumerRunner = new KafkaConsumerRunner<>(props, topic, this.queue, this.vertx, this.ebQueue, sender.getQoS(), this.offsetTracker);
 		this.kafkaConsumerThread = new Thread(kafkaConsumerRunner);
 		this.kafkaConsumerThread.start();
 		
@@ -157,16 +168,13 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 							
 							Message message = converter.toAmqpMessage(record);
 					        
+							ConsumerRecord<String, byte[]> recordSent = record;
+							
 							sender.send(ProtonHelper.tag(String.valueOf(++this.deliveryTag)), message, delivery -> {
 								LOG.info("Message delivered {} to {}", delivery.getRemoteState(), sender.getSource().getAddress());
-								try {
-									
-									// TODO
-									
-								} catch (Exception e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
+								
+								this.offsetTracker.track(recordSent, delivery);
+								LOG.info("Tracked {} - {} [{}]", recordSent.topic(), recordSent.partition(), recordSent.offset());
 							});
 						}
 												
@@ -207,26 +215,28 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	 * 
 	 * @author ppatierno
 	 */
-	public class KafkaConsumerRunner implements Runnable {
+	public class KafkaConsumerRunner<K, V> implements Runnable {
 
 		private AtomicBoolean closed;
-		private Consumer<String, byte[]> consumer;
+		private Consumer<K, V> consumer;
 		private String topic;
-		Queue<ConsumerRecord<String, byte[]>> queue;
+		Queue<ConsumerRecord<K, V>> queue;
 		private Vertx vertx;
 		private String ebQueue;
 		private ProtonQoS qos;
+		private OffsetTracker<K, V> offsetTracker;
 		
 		/**
 		 * Constructor
-		 * @param props		Properties for KafkaConsumer instance
-		 * @param topic		Topic to publish messages
-		 * @param queue		Internal queue for sharing Kafka records with Vert.x EventBus consumer 
-		 * @param vertx		Vert.x instance
-		 * @param ebQueue	Vert.x EventBus unique name queue for sharing Kafka records
-		 * @param qos		Sender QoS (settled : AT_MOST_ONE, unsettled : AT_LEAST_ONCE)
+		 * @param props			Properties for KafkaConsumer instance
+		 * @param topic			Topic to publish messages
+		 * @param queue			Internal queue for sharing Kafka records with Vert.x EventBus consumer 
+		 * @param vertx			Vert.x instance
+		 * @param ebQueue		Vert.x EventBus unique name queue for sharing Kafka records
+		 * @param qos			Sender QoS (settled : AT_MOST_ONE, unsettled : AT_LEAST_ONCE)
+		 * @param offsetTracker	Tracker for offsets to commit for each assigned partition
 		 */
-		public KafkaConsumerRunner(Properties props, String topic, Queue<ConsumerRecord<String, byte[]>> queue, Vertx vertx, String ebQueue, ProtonQoS qos) {
+		public KafkaConsumerRunner(Properties props, String topic, Queue<ConsumerRecord<K, V>> queue, Vertx vertx, String ebQueue, ProtonQoS qos, OffsetTracker<K, V> offsetTracker) {
 			
 			this.closed = new AtomicBoolean(false);
 			this.consumer = new KafkaConsumer<>(props);
@@ -235,6 +245,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			this.vertx = vertx;
 			this.ebQueue = ebQueue;
 			this.qos = qos;
+			this.offsetTracker = offsetTracker;
 		}
 		
 		@Override
@@ -246,23 +257,45 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				
 				@Override
 				public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+					
 					LOG.info("Partitions revoked {}", partitions.size());
 					
 					if (!partitions.isEmpty()) {
+						
 						for (TopicPartition partition : partitions) {
 							LOG.info("topic {} partition {}", partition.topic(), partition.partition());
+						}
+					
+						// Sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
+						
+						if (qos == ProtonQoS.AT_LEAST_ONCE) {
+							
+							// commit all tracked offsets for partitions
+							Map<TopicPartition, OffsetAndMetadata> offsets = offsetTracker.getOffsets();
+							
+							if (offsets != null && !offsets.isEmpty()) {
+								consumer.commitSync(offsets);
+								
+								for (Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
+									LOG.info("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
+								}
+								
+								offsetTracker.clear();
+							}
 						}
 					}
 				}
 				
 				@Override
 				public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+					
 					LOG.info("Partitions assigned {}", partitions.size());
 					if (!partitions.isEmpty()) {
 						
 						for (TopicPartition partition : partitions) {
 							LOG.info("topic {} partition {}", partition.topic(), partition.partition());
 						}
+						
 					} else {
 						
 						DeliveryOptions options = new DeliveryOptions();
@@ -276,17 +309,18 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			});
 			
 			try {
+				
 				while (!this.closed.get()) {
 					
-					ConsumerRecords<String, byte[]> records = this.consumer.poll(100);
-				    				    
-				    if (!records.isEmpty()) {
-				    	
-				    	DeliveryOptions options = new DeliveryOptions();
-						options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, SinkBridgeEndpoint.EVENT_BUS_SEND_COMMAND);
+					ConsumerRecords<K, V> records = this.consumer.poll(100);
+					
+					DeliveryOptions options = new DeliveryOptions();
+					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, SinkBridgeEndpoint.EVENT_BUS_SEND_COMMAND);
+					
+					if (this.qos == ProtonQoS.AT_MOST_ONCE) {
 						
-						if (this.qos == ProtonQoS.AT_MOST_ONCE) {
-							
+						if (!records.isEmpty()) {
+						
 							// Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
 							try {
 								
@@ -294,9 +328,9 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 								this.consumer.commitSync();
 								
 								// 2. commit ok, so we can enqueue record for sending
-								for (ConsumerRecord<String, byte[]> record : records)  {
+								for (ConsumerRecord<K, V> record : records)  {
 							        
-							    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), new String(record.value()));
+							    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
 							    	this.queue.add(record);				    	
 							    }
 								
@@ -304,29 +338,45 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 								this.vertx.eventBus().send(this.ebQueue, "", options);
 								
 							} catch (Exception e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
+								
+								LOG.error("Error committing ... {}", e.getMessage());
 							}
-							
-							
-						} else {
-							
-							// Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit
+						}
+						
+					} else {
+						
+						// Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit
+						
+						if (!records.isEmpty()) {
 							
 							// 1. enqueue record for sending
-							for (ConsumerRecord<String, byte[]> record : records)  {
+							for (ConsumerRecord<K, V> record : records)  {
 						        
-						    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), new String(record.value()));
+						    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
 						    	this.queue.add(record);				    	
 						    }
 							
 							// 2. start message sending
 							this.vertx.eventBus().send(this.ebQueue, "", options);
-							
-							// 3. check offset to commit
-							this.consumer.commitSync();							
 						}
-				    }
+						
+						try {
+							// 3. commit all tracked offsets for partitions
+							Map<TopicPartition, OffsetAndMetadata> offsets = this.offsetTracker.getOffsets();
+							
+							if (offsets != null && !offsets.isEmpty()) {
+								this.consumer.commitSync(offsets);
+								
+								for (Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
+									LOG.info("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
+								}
+							}
+						} catch (Exception e) {
+							
+							LOG.error("Error committing ... {}", e.getMessage());
+						}
+					}
+				    
 				}
 			} catch (WakeupException e) {
 				if (!closed.get()) throw e;
