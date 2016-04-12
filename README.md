@@ -43,6 +43,8 @@ The AMQP message body contains the Apache Kafka message the client wants to send
 
 The above message annotations aren't mandatory. If they aren't provided by the clients, the messages are sent across all topic partitions in a round robin fashion.
 
+More information about sender flow are available in the wiki [here](https://github.com/ppatierno/amqp-kafka-bridge/wiki/Sender)
+
 ## AMQP Receivers
 
 In order to consume messages from a topic named _[topic]_, an AMQP client should attach a link on the address with following format :
