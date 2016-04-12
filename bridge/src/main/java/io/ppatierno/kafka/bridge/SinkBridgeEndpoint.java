@@ -6,6 +6,7 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.kafka.clients.consumer.Consumer;
@@ -27,6 +28,7 @@ import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonLink;
+import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonSender;
 
 /**
@@ -61,6 +63,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	
 	private int deliveryTag;
 	
+	private CyclicBarrier barrier;
+	
 	/**
 	 * Constructor
 	 * @param vertx		Vert.x instance
@@ -77,6 +81,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		LOG.info("Event Bus queue : {}", this.ebQueue);
 		
 		this.deliveryTag = 0;
+		this.barrier = new CyclicBarrier(2);
 	}
 	
 	@Override
@@ -122,7 +127,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		props.put(BridgeConfig.AUTO_OFFSET_RESET, "earliest"); // TODO : it depends on x-opt-bridge.offset inside the AMQP message
 		
 		// create and start new thread for reading from Kafka
-		this.kafkaConsumerRunner = new KafkaConsumerRunner(props, topic, this.queue, this.vertx, this.ebQueue);
+		this.kafkaConsumerRunner = new KafkaConsumerRunner(props, topic, this.queue, this.vertx, this.ebQueue, sender.getQoS(), this.barrier);
 		this.kafkaConsumerThread = new Thread(kafkaConsumerRunner);
 		this.kafkaConsumerThread.start();
 		
@@ -136,14 +141,59 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				case SinkBridgeEndpoint.EVENT_BUS_SEND_COMMAND:
 					
 					ConsumerRecord<String, byte[]> record = null;
-					while ((record = this.queue.poll()) != null) {
+					
+					if (sender.getQoS() == ProtonQoS.AT_MOST_ONCE) {
 						
-						Message message = converter.toAmqpMessage(record);
-				        
-						sender.send(ProtonHelper.tag(String.valueOf(++this.deliveryTag)), message, delivery -> {
-							LOG.info("Message delivered to  {}", sender.getSource().getAddress());
-						});
+						// Sender QoS settled (AT_MOST_ONCE)
+						
+						while ((record = this.queue.poll()) != null) {
+							
+							Message message = converter.toAmqpMessage(record);
+					        
+							sender.send(ProtonHelper.tag(String.valueOf(++this.deliveryTag)), message);
+						}
+						
+					} else {
+						
+						// Sender QoS unsettled (AT_LEAST_ONCE)
+						
+						//CyclicBarrier sendBarrier = new CyclicBarrier(2);
+						// message only peeked (not removed)
+						while ((record = this.queue.poll()) != null) {
+							
+							Message message = converter.toAmqpMessage(record);
+					        
+							sender.send(ProtonHelper.tag(String.valueOf(++this.deliveryTag)), message, delivery -> {
+								LOG.info("Message delivered {} to {}", delivery.getRemoteState(), sender.getSource().getAddress());
+								try {
+									// message delivered, removed from queue
+									//this.queue.poll();
+									//sendBarrier.await();
+								} catch (Exception e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							});
+							
+							try {
+								//sendBarrier.await();
+							} catch (Exception e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+						
+						try {
+							this.barrier.await();
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						
 					}
+					
+					
+					
 					break;
 				
 				case SinkBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND:
@@ -188,6 +238,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		Queue<ConsumerRecord<String, byte[]>> queue;
 		private Vertx vertx;
 		private String ebQueue;
+		private ProtonQoS qos;
+		private CyclicBarrier barrier;
 		
 		/**
 		 * Constructor
@@ -196,8 +248,10 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		 * @param queue		Internal queue for sharing Kafka records with Vert.x EventBus consumer 
 		 * @param vertx		Vert.x instance
 		 * @param ebQueue	Vert.x EventBus unique name queue for sharing Kafka records
+		 * @param qos		Sender QoS (settled : AT_MOST_ONE, unsettled : AT_LEAST_ONCE)
+		 * @param barrier	Barrier for synchronization with sender with QoS unsettled AT_LEAST_ONCE
 		 */
-		public KafkaConsumerRunner(Properties props, String topic, Queue<ConsumerRecord<String, byte[]>> queue, Vertx vertx, String ebQueue) {
+		public KafkaConsumerRunner(Properties props, String topic, Queue<ConsumerRecord<String, byte[]>> queue, Vertx vertx, String ebQueue, ProtonQoS qos, CyclicBarrier barrier) {
 			
 			this.closed = new AtomicBoolean(false);
 			this.consumer = new KafkaConsumer<>(props);
@@ -205,6 +259,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			this.queue = queue;
 			this.vertx = vertx;
 			this.ebQueue = ebQueue;
+			this.qos = qos;
+			this.barrier = barrier;
 		}
 		
 		@Override
@@ -249,18 +305,66 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				while (!this.closed.get()) {
 					
 					ConsumerRecords<String, byte[]> records = this.consumer.poll(100);
-				    for (ConsumerRecord<String, byte[]> record : records)  {
-				        
-				    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), new String(record.value()));
-				    	this.queue.add(record);				    	
-				    }
-				    
+				    				    
 				    if (!records.isEmpty()) {
 				    	
 				    	DeliveryOptions options = new DeliveryOptions();
 						options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, SinkBridgeEndpoint.EVENT_BUS_SEND_COMMAND);
 						
-				    	this.vertx.eventBus().send(this.ebQueue, "", options);
+						if (this.qos == ProtonQoS.AT_MOST_ONCE) {
+							
+							// Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
+							try {
+								
+								// 1. immediate commit 
+								this.consumer.commitSync();
+								
+								// 2. commit ok, so we can enqueue record for sending
+								for (ConsumerRecord<String, byte[]> record : records)  {
+							        
+							    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), new String(record.value()));
+							    	this.queue.add(record);				    	
+							    }
+								
+								// 3. start message sending
+								this.vertx.eventBus().send(this.ebQueue, "", options);
+								
+							} catch (Exception e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							
+							
+						} else {
+							
+							// Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit
+							
+							// 1. enqueue record for sending
+							for (ConsumerRecord<String, byte[]> record : records)  {
+						        
+						    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), new String(record.value()));
+						    	this.queue.add(record);				    	
+						    }
+							
+							// 2. start message sending
+							this.vertx.eventBus().send(this.ebQueue, "", options, ar -> {
+								
+								// 4. commit
+								this.consumer.commitSync();
+							});
+							
+							// TODO : consider timeout ??
+							try {
+								
+								// 3. wait message sending end
+								this.barrier.await();
+								
+							} catch (Exception e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							
+						}
 				    }
 				}
 			} catch (WakeupException e) {
