@@ -6,7 +6,6 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.kafka.clients.consumer.Consumer;
@@ -63,8 +62,6 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	
 	private int deliveryTag;
 	
-	private CyclicBarrier barrier;
-	
 	/**
 	 * Constructor
 	 * @param vertx		Vert.x instance
@@ -81,7 +78,6 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		LOG.info("Event Bus queue : {}", this.ebQueue);
 		
 		this.deliveryTag = 0;
-		this.barrier = new CyclicBarrier(2);
 	}
 	
 	@Override
@@ -127,7 +123,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		props.put(BridgeConfig.AUTO_OFFSET_RESET, "earliest"); // TODO : it depends on x-opt-bridge.offset inside the AMQP message
 		
 		// create and start new thread for reading from Kafka
-		this.kafkaConsumerRunner = new KafkaConsumerRunner(props, topic, this.queue, this.vertx, this.ebQueue, sender.getQoS(), this.barrier);
+		this.kafkaConsumerRunner = new KafkaConsumerRunner(props, topic, this.queue, this.vertx, this.ebQueue, sender.getQoS());
 		this.kafkaConsumerThread = new Thread(kafkaConsumerRunner);
 		this.kafkaConsumerThread.start();
 		
@@ -157,8 +153,6 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 						
 						// Sender QoS unsettled (AT_LEAST_ONCE)
 						
-						//CyclicBarrier sendBarrier = new CyclicBarrier(2);
-						// message only peeked (not removed)
 						while ((record = this.queue.poll()) != null) {
 							
 							Message message = converter.toAmqpMessage(record);
@@ -166,34 +160,17 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 							sender.send(ProtonHelper.tag(String.valueOf(++this.deliveryTag)), message, delivery -> {
 								LOG.info("Message delivered {} to {}", delivery.getRemoteState(), sender.getSource().getAddress());
 								try {
-									// message delivered, removed from queue
-									//this.queue.poll();
-									//sendBarrier.await();
+									
+									// TODO
+									
 								} catch (Exception e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
 								}
 							});
-							
-							try {
-								//sendBarrier.await();
-							} catch (Exception e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
 						}
-						
-						try {
-							this.barrier.await();
-						} catch (Exception e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						
-					}
-					
-					
-					
+												
+					}					
 					break;
 				
 				case SinkBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND:
@@ -239,7 +216,6 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		private Vertx vertx;
 		private String ebQueue;
 		private ProtonQoS qos;
-		private CyclicBarrier barrier;
 		
 		/**
 		 * Constructor
@@ -249,9 +225,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		 * @param vertx		Vert.x instance
 		 * @param ebQueue	Vert.x EventBus unique name queue for sharing Kafka records
 		 * @param qos		Sender QoS (settled : AT_MOST_ONE, unsettled : AT_LEAST_ONCE)
-		 * @param barrier	Barrier for synchronization with sender with QoS unsettled AT_LEAST_ONCE
 		 */
-		public KafkaConsumerRunner(Properties props, String topic, Queue<ConsumerRecord<String, byte[]>> queue, Vertx vertx, String ebQueue, ProtonQoS qos, CyclicBarrier barrier) {
+		public KafkaConsumerRunner(Properties props, String topic, Queue<ConsumerRecord<String, byte[]>> queue, Vertx vertx, String ebQueue, ProtonQoS qos) {
 			
 			this.closed = new AtomicBoolean(false);
 			this.consumer = new KafkaConsumer<>(props);
@@ -260,7 +235,6 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			this.vertx = vertx;
 			this.ebQueue = ebQueue;
 			this.qos = qos;
-			this.barrier = barrier;
 		}
 		
 		@Override
@@ -347,23 +321,10 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 						    }
 							
 							// 2. start message sending
-							this.vertx.eventBus().send(this.ebQueue, "", options, ar -> {
-								
-								// 4. commit
-								this.consumer.commitSync();
-							});
+							this.vertx.eventBus().send(this.ebQueue, "", options);
 							
-							// TODO : consider timeout ??
-							try {
-								
-								// 3. wait message sending end
-								this.barrier.await();
-								
-							} catch (Exception e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-							
+							// 3. check offset to commit
+							this.consumer.commitSync();							
 						}
 				    }
 				}
