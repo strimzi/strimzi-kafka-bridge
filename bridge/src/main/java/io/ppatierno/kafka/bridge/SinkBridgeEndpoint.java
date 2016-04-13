@@ -67,8 +67,6 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	// used for tracking partitions and related offset for AT_LEAST_ONCE QoS delivery 
 	private OffsetTracker<String, byte[]> offsetTracker;
 	
-	private int deliveryTag;
-	
 	/**
 	 * Constructor
 	 * @param vertx		Vert.x instance
@@ -83,9 +81,6 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				SinkBridgeEndpoint.class.getSimpleName().toLowerCase(), 
 				UUID.randomUUID().toString());
 		LOG.info("Event Bus queue : {}", this.ebQueue);
-		
-		this.offsetTracker = new SimpleOffsetTracker<>();
-		this.deliveryTag = 0;
 	}
 	
 	@Override
@@ -125,6 +120,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		
 		LOG.info("topic {} group.id {}", topic, groupId);
 		
+		this.offsetTracker = new SimpleOffsetTracker<>(topic);
+				
 		// creating configuration for Kafka consumer
 		Properties props = new Properties();
 		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
@@ -132,7 +129,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		props.put(BridgeConfig.VALUE_DESERIALIZER, BridgeConfig.getValueDeserializer());
 		props.put(BridgeConfig.GROUP_ID, groupId);
 		props.put(BridgeConfig.ENABLE_AUTO_COMMIT, BridgeConfig.isEnableAutoCommit());
-		props.put(BridgeConfig.AUTO_OFFSET_RESET, "earliest"); // TODO : it depends on x-opt-bridge.offset inside the AMQP message
+		props.put(BridgeConfig.AUTO_OFFSET_RESET, "latest"); // TODO : it depends on x-opt-bridge.offset inside the AMQP message
 		
 		// create and start new thread for reading from Kafka
 		this.kafkaConsumerRunner = new KafkaConsumerRunner<>(props, topic, this.queue, this.vertx, this.ebQueue, sender.getQoS(), this.offsetTracker);
@@ -158,7 +155,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 							
 							Message message = converter.toAmqpMessage(record);
 					        
-							sender.send(ProtonHelper.tag(String.valueOf(++this.deliveryTag)), message);
+							String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
+							sender.send(ProtonHelper.tag(String.valueOf(deliveryTag)), message);
 						}
 						
 					} else {
@@ -169,13 +167,19 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 							
 							Message message = converter.toAmqpMessage(record);
 					        
-							ConsumerRecord<String, byte[]> recordSent = record;
+							// record (converted in AMQP message) is on the way ... ask to tracker to track its delivery
+							String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
+							this.offsetTracker.track(deliveryTag, record);
 							
-							sender.send(ProtonHelper.tag(String.valueOf(++this.deliveryTag)), message, delivery -> {
-								LOG.info("Message delivered {} to {}", delivery.getRemoteState(), sender.getSource().getAddress());
+							LOG.info("Tracked {} - {} [{}]", record.topic(), record.partition(), record.offset());
+							
+							sender.send(ProtonHelper.tag(deliveryTag), message, delivery -> {
 								
-								this.offsetTracker.track(recordSent, delivery);
-								LOG.info("Tracked {} - {} [{}]", recordSent.topic(), recordSent.partition(), recordSent.offset());
+								// a record (converted in AMQP message) is delivered ... communicate it to the tracker
+								String tag = new String(delivery.getTag());
+								this.offsetTracker.delivered(tag);
+								
+								LOG.info("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), sender.getSource().getAddress());
 							});
 						}
 												
@@ -373,6 +377,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 								}
 							}
 						} catch (Exception e) {
+							
+							// TODO : if commit fails ??
 							
 							LOG.error("Error committing ... {}", e.getMessage());
 						}

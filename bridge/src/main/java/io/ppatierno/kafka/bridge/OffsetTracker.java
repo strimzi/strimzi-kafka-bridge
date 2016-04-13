@@ -6,8 +6,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
-import io.vertx.proton.ProtonDelivery;
-
 /**
  * 
  * Interface for tracking offset for all partitions read by Kafka consumer
@@ -18,11 +16,18 @@ public interface OffsetTracker<K, V> {
 
 	/**
 	 * Track information about Kafka consumer record and AMQP delivery
-	 * 
-	 * @param record		Kafka consumer record to track
-	 * @param delivery		AMQP delivery related to above consumer record sent
+	 *
+	 * @param tag		AMQP delivery tag
+	 * @param record	Kafka consumer record to track
 	 */
-	void track(ConsumerRecord<K, V> record, ProtonDelivery delivery);
+	void track(String tag, ConsumerRecord<K, V> record);
+	
+	/**
+	 * Confirm delivery of AMQP message
+	 * 
+	 * @param tag	AMQP delivery tag
+	 */
+	void delivered(String tag);
 	
 	/**
 	 * Get a map with changed offsets for all partitions

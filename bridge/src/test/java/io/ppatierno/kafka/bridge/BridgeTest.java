@@ -339,7 +339,7 @@ public class BridgeTest {
 				ProtonConnection connection = ar.result();
 				connection.open();
 				
-				ProtonReceiver receiver = connection.createReceiver("my_topic/group.id/1");
+				ProtonReceiver receiver = connection.createReceiver("my_topic/group.id/my_group");
 				receiver.handler((delivery, message) -> {
 					
 					Section body = message.getBody();
