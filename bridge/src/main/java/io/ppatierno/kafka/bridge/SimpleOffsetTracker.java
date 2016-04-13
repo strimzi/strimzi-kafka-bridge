@@ -11,7 +11,7 @@ import org.apache.kafka.common.TopicPartition;
 /**
  * Simple implementation of offset tracker.
  * It tracks only the offset for the last settled message. If receiver
- * settles "out of order", previous unsettled message won't be redeliverd
+ * settles "out of order", previous unsettled message won't be re-delivered
  * and MAY be lost so AT_LEAST_ONCE QoS is NOT guaranteed
  * 
  * @author ppatiern
@@ -42,7 +42,7 @@ public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	}
 	
 	@Override
-	public void delivered(String tag) {
+	public synchronized void delivered(String tag) {
 		
 		// get partition and offset from delivery tag : <partition>_<offset>
 		int partition = Integer.valueOf(tag.substring(0, tag.indexOf("_")));
