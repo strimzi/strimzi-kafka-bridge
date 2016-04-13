@@ -131,6 +131,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		props.put(BridgeConfig.KEY_DESERIALIZER, BridgeConfig.getKeyDeserializer());
 		props.put(BridgeConfig.VALUE_DESERIALIZER, BridgeConfig.getValueDeserializer());
 		props.put(BridgeConfig.GROUP_ID, groupId);
+		props.put(BridgeConfig.ENABLE_AUTO_COMMIT, BridgeConfig.isEnableAutoCommit());
 		props.put(BridgeConfig.AUTO_OFFSET_RESET, "earliest"); // TODO : it depends on x-opt-bridge.offset inside the AMQP message
 		
 		// create and start new thread for reading from Kafka
