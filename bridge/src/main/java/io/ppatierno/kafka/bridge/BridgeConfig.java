@@ -40,6 +40,7 @@ public class BridgeConfig {
 	private static final String DEFAULT_VALUE_DESERIALIZER = "org.apache.kafka.common.serialization.ByteArrayDeserializer";
 	private static final String DEFAULT_ACKS = "1";
 	private static final String DEFAULT_ENABLE_AUTO_COMMIT = "false";
+	private static final String DEFAULT_AUTO_OFFSET_RESET = "latest";
 	
 	private static final int DEFAULT_FLOW_CREDIT = 1024;
 	
@@ -93,6 +94,7 @@ public class BridgeConfig {
 		props.put(BridgeConfig.VALUE_DESERIALIZER, BridgeConfig.DEFAULT_VALUE_DESERIALIZER);
 		props.put(BridgeConfig.FLOW_CREDIT, String.valueOf(BridgeConfig.DEFAULT_FLOW_CREDIT));
 		props.put(BridgeConfig.ACKS, BridgeConfig.DEFAULT_ACKS);
+		props.put(BridgeConfig.AUTO_OFFSET_RESET, BridgeConfig.DEFAULT_AUTO_OFFSET_RESET);
 		
 		return true;
 	}
@@ -160,5 +162,13 @@ public class BridgeConfig {
 	public static boolean isEnableAutoCommit() {
 		// enable.auto.commit isn't configurable
 		return Boolean.valueOf(BridgeConfig.DEFAULT_ENABLE_AUTO_COMMIT);
+	}
+	
+	/**
+	 * Policy for initial offset on reset on Kafka Consumer
+	 * @return
+	 */
+	public static String getAutoOffsetReset() {
+		return props.getProperty(BridgeConfig.AUTO_OFFSET_RESET);
 	}
 }
