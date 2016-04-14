@@ -79,11 +79,29 @@ public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
 				changedOffsets.put(new TopicPartition(this.topic, entry.getKey()), 
 						new OffsetAndMetadata(entry.getValue()));
 				
-				this.offsetsFlag.put(entry.getKey(), false);
+				//this.offsetsFlag.put(entry.getKey(), false);
 			}
 		}
 		
 		return changedOffsets;
+	}
+	
+	@Override
+	public synchronized void commit(Map<TopicPartition, OffsetAndMetadata> offsets) {
+		
+		for (Entry<TopicPartition, OffsetAndMetadata> offset : offsets.entrySet()) {
+			
+			// be sure we are tracking the current partition and related offset
+			if (this.offsets.containsKey(offset.getKey().partition())) {
+			
+				// if offset tracked isn't changed during Kafka committing operation 
+				// (it means no other messages were acknowledged)
+				if (this.offsets.get(offset.getKey().partition()) == offset.getValue().offset()) {
+					// we can mark this offset as committed (not changed)
+					this.offsetsFlag.put(offset.getKey().partition(), false);
+				}
+			}
+		}
 	}
 
 	@Override

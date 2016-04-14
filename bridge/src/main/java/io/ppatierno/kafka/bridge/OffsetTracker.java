@@ -37,6 +37,13 @@ public interface OffsetTracker<K, V> {
 	Map<TopicPartition, OffsetAndMetadata> getOffsets();
 	
 	/**
+	 * Mark all tracked offsets as committed
+	 * 
+	 * @param offsets	Map with offsets to mark as committed
+	 */
+	void commit(Map<TopicPartition, OffsetAndMetadata> offsets);
+	
+	/**
 	 * Clear all tracked offsets
 	 */
 	void clear();

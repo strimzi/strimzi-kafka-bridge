@@ -85,7 +85,6 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	
 	@Override
 	public void open() {
-		// TODO Auto-generated method stub
 		
 	}
 
@@ -280,12 +279,12 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 							
 							if (offsets != null && !offsets.isEmpty()) {
 								consumer.commitSync(offsets);
+								offsetTracker.commit(offsets);
+								offsetTracker.clear();
 								
 								for (Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
 									LOG.info("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
 								}
-								
-								offsetTracker.clear();
 							}
 						}
 					}
@@ -371,14 +370,13 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 							
 							if (offsets != null && !offsets.isEmpty()) {
 								this.consumer.commitSync(offsets);
+								this.offsetTracker.commit(offsets);
 								
 								for (Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
 									LOG.info("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
 								}
 							}
 						} catch (Exception e) {
-							
-							// TODO : if commit fails ??
 							
 							LOG.error("Error committing ... {}", e.getMessage());
 						}

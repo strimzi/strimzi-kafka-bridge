@@ -86,7 +86,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	
 	@Override
 	public void open() {
-		// TODO Auto-generated method stub
+		
 	}
 
 	@Override
