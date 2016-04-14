@@ -3,8 +3,11 @@ package io.ppatierno.kafka.bridge;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.Set;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -18,7 +21,7 @@ import org.apache.kafka.common.TopicPartition;
  * unsettled offset in the middle. It means that already settled messages MAY be
  * re-delivered so AT_LEAST_ONCE QoS is guaranteed
  * 
- * @author ppatiern
+ * @author ppatierno
  *
  */
 public class FullOffsetTracker<K, V> implements OffsetTracker<K, V>{
@@ -67,9 +70,6 @@ public class FullOffsetTracker<K, V> implements OffsetTracker<K, V>{
 			// this is the first UNSETTLED offset for the partition (just created)
 			this.firstUnsettledOffsets.put(partition, offset);
 			
-			//this.offsets.put(partition, (long)0);
-			//this.offsetsFlag.put(partition, false);
-			
 		} else {
 			
 			// partition already tracked, new offset is UNSETTLED
@@ -89,7 +89,9 @@ public class FullOffsetTracker<K, V> implements OffsetTracker<K, V>{
 		
 		// the first UNSETTLED offset is delivered
 		if (offset == this.firstUnsettledOffsets.get(partition)) {
-		
+			
+			/*
+			// SOLUTION 1 : full collections iterations
 			Set<Long> offsetToRemove = new HashSet<>();
 			
 			// searching for the new first UNSETTLED offset ...
@@ -115,6 +117,43 @@ public class FullOffsetTracker<K, V> implements OffsetTracker<K, V>{
 			
 			// removing all SETTLED offset before the first UNSETTLED we found
 			this.offsetSettlements.get(partition).keySet().removeAll(offsetToRemove);
+			*/
+			
+			// SOLUTION 2 : using Java 8 streams
+			
+			Optional<Long> firstUnsettledOffset = this.offsetSettlements.get(partition).entrySet().stream().filter(e -> e.getValue() == false).map(Map.Entry::getKey).findFirst();
+			
+			if (firstUnsettledOffset.isPresent()) {
+				
+				// first UNSETTLED offset found
+				this.firstUnsettledOffsets.put(partition, firstUnsettledOffset.get());
+				
+				// we need to remove from map all SETTLED offset there are before the first UNSETTLED offset
+				Set<Long> offsetToRemove = this.offsetSettlements.get(partition).keySet().stream().filter(k -> k < firstUnsettledOffset.get()).collect(Collectors.toSet());
+				
+				// offset to commit
+				Optional<Long> offsetToCommit = offsetToRemove.stream().reduce((a, b) -> b);
+				
+				if (offsetToCommit.isPresent()) {
+					this.offsets.put(partition, offsetToCommit.get());
+					this.offsetsFlag.put(partition, true);
+				}
+				
+				// removing all SETTLED offset before the first UNSETTLED we found
+				this.offsetSettlements.get(partition).keySet().removeAll(offsetToRemove);
+				
+			} else {
+				
+				// no other UNSETTLED offset, so the one just arrived is for commit
+				
+				long offsetToCommit = offset;
+				
+				this.offsets.put(partition, offsetToCommit);
+				this.offsetsFlag.put(partition, true);
+				
+				// all offset SETTLED, clear list
+				this.offsetSettlements.get(partition).clear();
+			}
 			
 		} else if (offset > this.firstUnsettledOffsets.get(partition)) {
 			

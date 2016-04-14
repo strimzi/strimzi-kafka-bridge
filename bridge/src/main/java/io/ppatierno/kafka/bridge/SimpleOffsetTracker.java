@@ -14,7 +14,7 @@ import org.apache.kafka.common.TopicPartition;
  * settles "out of order", previous unsettled message won't be re-delivered
  * and MAY be lost so AT_LEAST_ONCE QoS is NOT guaranteed
  * 
- * @author ppatiern
+ * @author ppatierno
  *
  */
 public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
