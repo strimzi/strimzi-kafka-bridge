@@ -3,6 +3,7 @@ package io.ppatierno.kafka.bridge.example;
 import java.io.IOException;
 
 import org.apache.qpid.proton.amqp.Symbol;
+import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Section;
@@ -98,6 +99,9 @@ public class BridgeReceiver {
 									Object key = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.key"));
 									LOG.info("... on partition {} [{}], key = {}", partition, offset, key);
 								}
+								
+								// default is AT_LEAST_ONCE QoS (unsettled) so we need to send disposition (settle) to sender
+								delivery.disposition(Accepted.getInstance(), true);
 							}							
 						})
 						.open();

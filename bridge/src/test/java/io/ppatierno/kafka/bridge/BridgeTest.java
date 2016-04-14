@@ -339,13 +339,15 @@ public class BridgeTest {
 				ProtonConnection connection = ar.result();
 				connection.open();
 				
-				ProtonReceiver receiver = connection.createReceiver("my_topic/group.id/1");
-				receiver.handler((delive, message) -> {
+				ProtonReceiver receiver = connection.createReceiver("my_topic/group.id/my_group");
+				receiver.handler((delivery, message) -> {
 					
 					Section body = message.getBody();
 					if (body instanceof Data) {
 						byte[] value = ((Data)body).getValue().getArray();
 						LOG.info("Message received {}", new String(value));
+						// default is AT_LEAST_ONCE QoS (unsettled) so we need to send disposition (settle) to sender
+						delivery.disposition(Accepted.getInstance(), true);
 						context.assertTrue(true);
 						async.complete();
 					}
