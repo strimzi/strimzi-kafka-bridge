@@ -58,6 +58,8 @@ The returned AMQP message contains the Apache Kafka provided message inside its 
 * _x-opt-bridge.offset_ : the message offset inside the partition;
 * _x-opt-bridge.key_ : the message key (used to determine the partition at sending time);
 
+More information about receiver flow are available in the wiki [here](https://github.com/ppatierno/amqp-kafka-bridge/wiki/Receiver)
+
 ## Supported AMQP clients
 
 All AMQP based clients are supported and can be used in order to connect to the bridge for sending/receiving messages to/from Apache Kafka topics.
