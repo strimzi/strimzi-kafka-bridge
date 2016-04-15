@@ -1,9 +1,7 @@
 package io.ppatierno.kafka.bridge;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -90,36 +88,7 @@ public class FullOffsetTracker<K, V> implements OffsetTracker<K, V>{
 		// the first UNSETTLED offset is delivered
 		if (offset == this.firstUnsettledOffsets.get(partition)) {
 			
-			/*
-			// SOLUTION 1 : full collections iterations
-			Set<Long> offsetToRemove = new HashSet<>();
-			
-			// searching for the new first UNSETTLED offset ...
-			for (Entry<Long, Boolean> entry : this.offsetSettlements.get(partition).entrySet()) {
-				
-				if (entry.getValue()) {
-					
-					// current offset is SETTLED so it could be the potential offset to commit
-					// (the last before exit will be the offset to commit)
-					this.offsets.put(partition, entry.getKey());
-					this.offsetsFlag.put(partition, true);
-					// ... and we need to remove from map all SETTLED offset there are before the first UNSETTLED offset
-					offsetToRemove.add(entry.getKey());
-					
-				} else {
-					
-					// first UNSETTLED offset found, save it and break
-					this.firstUnsettledOffsets.put(partition, entry.getKey());
-					break;
-				}
-				
-			}
-			
-			// removing all SETTLED offset before the first UNSETTLED we found
-			this.offsetSettlements.get(partition).keySet().removeAll(offsetToRemove);
-			*/
-			
-			// SOLUTION 2 : using Java 8 streams
+			// using Java 8 streams
 			
 			Optional<Long> firstUnsettledOffset = this.offsetSettlements.get(partition).entrySet().stream().filter(e -> e.getValue() == false).map(Map.Entry::getKey).findFirst();
 			
@@ -177,8 +146,6 @@ public class FullOffsetTracker<K, V> implements OffsetTracker<K, V>{
 						
 				changedOffsets.put(new TopicPartition(this.topic, entry.getKey()), 
 						new OffsetAndMetadata(entry.getValue()));
-				
-				//this.offsetsFlag.put(entry.getKey(), false);
 			}
 		}
 		

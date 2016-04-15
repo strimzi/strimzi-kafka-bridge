@@ -78,8 +78,6 @@ public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
 						
 				changedOffsets.put(new TopicPartition(this.topic, entry.getKey()), 
 						new OffsetAndMetadata(entry.getValue()));
-				
-				//this.offsetsFlag.put(entry.getKey(), false);
 			}
 		}
 		
