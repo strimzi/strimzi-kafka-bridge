@@ -31,6 +31,7 @@ import org.apache.qpid.proton.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.MessageConsumer;
@@ -66,6 +67,8 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	private Queue<ProtonDelivery> queue;
 	private String ebQueue;
 	private MessageConsumer<String> ebConsumer;
+	
+	private Handler<BridgeEndpoint> closeHandler;
 	
 	/**
 	 * Constructor
@@ -107,6 +110,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 
 	@Override
 	public void close() {
+		this.producerSettledMode.close();
 		this.producerUnsettledMode.close();
 		if (this.ebConsumer != null)
 			this.ebConsumer.unregister();
@@ -183,8 +187,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		ProducerRecord<String, byte[]> record = this.converter.toKafkaRecord(message);
 		
 		LOG.info("Sending to Kafka on topic {} at partition {} and key {}", record.topic(), record.partition(), record.key());
-		
-		
+				
 		if (delivery.remotelySettled()) {
 			
 			// message settled (by sender), no feedback need by Apache Kafka, no disposition to be sent
@@ -218,6 +221,21 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 				this.queue.add(delivery);
 				this.vertx.eventBus().send(this.ebQueue, "", options);
 			});
+		}
+	}
+
+	@Override
+	public BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler) {
+		this.closeHandler = endpointCloseHandler;
+		return this;
+	}
+	
+	/**
+	 * Raise close event
+	 */
+	private void fireClose() {
+		if (this.closeHandler != null) {
+			this.closeHandler.handle(this);
 		}
 	}
 }

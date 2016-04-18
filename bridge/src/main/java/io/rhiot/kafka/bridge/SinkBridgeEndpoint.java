@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.MessageConsumer;
@@ -83,6 +84,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	// used for tracking partitions and related offset for AT_LEAST_ONCE QoS delivery 
 	private OffsetTracker<String, byte[]> offsetTracker;
 	
+	private Handler<BridgeEndpoint> closeHandler;
+	
 	/**
 	 * Constructor
 	 * @param vertx		Vert.x instance
@@ -122,97 +125,117 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		}
 		
 		ProtonSender sender = (ProtonSender)link;
-		sender.setSource(sender.getRemoteSource())
-		.closeHandler(this::processCloseSender)
-		.open();
+		sender.setSource(sender.getRemoteSource());
 		
 		// address is like this : [topic]/group.id/[group.id]
 		String address = sender.getRemoteSource().getAddress();
 		
-		String groupId = address.substring(address.indexOf(SinkBridgeEndpoint.GROUP_ID_MATCH) + 
-											SinkBridgeEndpoint.GROUP_ID_MATCH.length());
-		String topic = address.substring(0, address.indexOf(SinkBridgeEndpoint.GROUP_ID_MATCH));
+		int groupIdIndex = address.indexOf(SinkBridgeEndpoint.GROUP_ID_MATCH);
 		
-		LOG.info("topic {} group.id {}", topic, groupId);
+		if (groupIdIndex == -1) {
 		
-		this.offsetTracker = new SimpleOffsetTracker<>(topic);
-				
-		// creating configuration for Kafka consumer
-		Properties props = new Properties();
-		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
-		props.put(BridgeConfig.KEY_DESERIALIZER, BridgeConfig.getKeyDeserializer());
-		props.put(BridgeConfig.VALUE_DESERIALIZER, BridgeConfig.getValueDeserializer());
-		props.put(BridgeConfig.GROUP_ID, groupId);
-		props.put(BridgeConfig.ENABLE_AUTO_COMMIT, BridgeConfig.isEnableAutoCommit());
-		props.put(BridgeConfig.AUTO_OFFSET_RESET, BridgeConfig.getAutoOffsetReset()); // TODO : it depends on x-opt-bridge.offset inside the AMQP message
-		
-		// create and start new thread for reading from Kafka
-		this.kafkaConsumerRunner = new KafkaConsumerRunner<>(props, topic, this.queue, this.vertx, this.ebQueue, sender.getQoS(), this.offsetTracker);
-		this.kafkaConsumerThread = new Thread(kafkaConsumerRunner);
-		this.kafkaConsumerThread.start();
-		
-		// message sending on AMQP link MUST happen on Vert.x event loop due to
-		// the access to the sender object provided by Vert.x handler
-		// (we MUST avoid to access it from other threads; i.e. Kafka consumer thread)
-		this.ebConsumer = this.vertx.eventBus().consumer(this.ebQueue, ebMessage -> {
+			// group.id don't specified in the address, link will be closed
+			LOG.info("Local detached");
 			
-			switch (ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND)) {
-				
-				case SinkBridgeEndpoint.EVENT_BUS_SEND_COMMAND:
-					
-					ConsumerRecord<String, byte[]> record = null;
-					
-					if (sender.getQoS() == ProtonQoS.AT_MOST_ONCE) {
-						
-						// Sender QoS settled (AT_MOST_ONCE)
-						
-						while ((record = this.queue.poll()) != null) {
-							
-							Message message = converter.toAmqpMessage(record);
-					        
-							String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
-							sender.send(ProtonHelper.tag(String.valueOf(deliveryTag)), message);
-						}
-						
-					} else {
-						
-						// Sender QoS unsettled (AT_LEAST_ONCE)
-						
-						while ((record = this.queue.poll()) != null) {
-							
-							Message message = converter.toAmqpMessage(record);
-					        
-							// record (converted in AMQP message) is on the way ... ask to tracker to track its delivery
-							String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
-							this.offsetTracker.track(deliveryTag, record);
-							
-							LOG.info("Tracked {} - {} [{}]", record.topic(), record.partition(), record.offset());
-							
-							sender.send(ProtonHelper.tag(deliveryTag), message, delivery -> {
-								
-								// a record (converted in AMQP message) is delivered ... communicate it to the tracker
-								String tag = new String(delivery.getTag());
-								this.offsetTracker.delivered(tag);
-								
-								LOG.info("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), sender.getSource().getAddress());
-							});
-						}
-												
-					}					
-					break;
-				
-				case SinkBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND:
-					
-					// no partitions assigned, the AMQP link and Kafka consumer will be closed
-					sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS), 
-							ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND_ERROR)));
-					sender.close();
-					
-					this.kafkaConsumerRunner.shutdown();
-					break;
-			}
+			sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_GROUPID), "Mandatory group.id not specified in the address"));
+			sender.close();
 			
-		});
+			this.fireClose();
+			
+		} else {
+		
+			// group.id specified in the address, open sender and setup Kafka consumer
+			sender
+			.closeHandler(this::processCloseSender)
+			.open();
+			
+			String groupId = address.substring(groupIdIndex + SinkBridgeEndpoint.GROUP_ID_MATCH.length());
+			String topic = address.substring(0, groupIdIndex);
+			
+			LOG.info("topic {} group.id {}", topic, groupId);
+			
+			this.offsetTracker = new SimpleOffsetTracker<>(topic);
+					
+			// creating configuration for Kafka consumer
+			Properties props = new Properties();
+			props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
+			props.put(BridgeConfig.KEY_DESERIALIZER, BridgeConfig.getKeyDeserializer());
+			props.put(BridgeConfig.VALUE_DESERIALIZER, BridgeConfig.getValueDeserializer());
+			props.put(BridgeConfig.GROUP_ID, groupId);
+			props.put(BridgeConfig.ENABLE_AUTO_COMMIT, BridgeConfig.isEnableAutoCommit());
+			props.put(BridgeConfig.AUTO_OFFSET_RESET, BridgeConfig.getAutoOffsetReset()); // TODO : it depends on x-opt-bridge.offset inside the AMQP message
+			
+			// create and start new thread for reading from Kafka
+			this.kafkaConsumerRunner = new KafkaConsumerRunner<>(props, topic, this.queue, this.vertx, this.ebQueue, sender.getQoS(), this.offsetTracker);
+			this.kafkaConsumerThread = new Thread(kafkaConsumerRunner);
+			this.kafkaConsumerThread.start();
+			
+			// message sending on AMQP link MUST happen on Vert.x event loop due to
+			// the access to the sender object provided by Vert.x handler
+			// (we MUST avoid to access it from other threads; i.e. Kafka consumer thread)
+			this.ebConsumer = this.vertx.eventBus().consumer(this.ebQueue, ebMessage -> {
+				
+				switch (ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND)) {
+					
+					case SinkBridgeEndpoint.EVENT_BUS_SEND_COMMAND:
+						
+						ConsumerRecord<String, byte[]> record = null;
+						
+						if (sender.getQoS() == ProtonQoS.AT_MOST_ONCE) {
+							
+							// Sender QoS settled (AT_MOST_ONCE)
+							
+							while ((record = this.queue.poll()) != null) {
+								
+								Message message = converter.toAmqpMessage(record);
+						        
+								String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
+								sender.send(ProtonHelper.tag(String.valueOf(deliveryTag)), message);
+							}
+							
+						} else {
+							
+							// Sender QoS unsettled (AT_LEAST_ONCE)
+							
+							while ((record = this.queue.poll()) != null) {
+								
+								Message message = converter.toAmqpMessage(record);
+						        
+								// record (converted in AMQP message) is on the way ... ask to tracker to track its delivery
+								String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
+								this.offsetTracker.track(deliveryTag, record);
+								
+								LOG.info("Tracked {} - {} [{}]", record.topic(), record.partition(), record.offset());
+								
+								sender.send(ProtonHelper.tag(deliveryTag), message, delivery -> {
+									
+									// a record (converted in AMQP message) is delivered ... communicate it to the tracker
+									String tag = new String(delivery.getTag());
+									this.offsetTracker.delivered(tag);
+									
+									LOG.info("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), sender.getSource().getAddress());
+								});
+							}
+													
+						}					
+						break;
+					
+					case SinkBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND:
+						
+						LOG.info("Local detached");
+						
+						// no partitions assigned, the AMQP link and Kafka consumer will be closed
+						sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS), 
+								ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND_ERROR)));
+						sender.close();
+						
+						this.close();
+						this.fireClose();
+						break;
+				}
+				
+			});
+		}
 	}
 	
 	/**
@@ -225,8 +248,25 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			
 			LOG.info("Remote detached");
 			
-			this.kafkaConsumerRunner.shutdown();
 			ar.result().close();
+			
+			this.close();
+			this.fireClose();
+		}
+	}
+	
+	@Override
+	public BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler) {
+		this.closeHandler = endpointCloseHandler;
+		return this;
+	}
+	
+	/**
+	 * Raise close event
+	 */
+	private void fireClose() {
+		if (this.closeHandler != null) {
+			this.closeHandler.handle(this);
 		}
 	}
 	

@@ -48,6 +48,7 @@ public class Bridge {
 	
 	// AMQP errors
 	public static final String AMQP_ERROR_NO_PARTITIONS = "bridge:no-free-partitions";
+	public static final String AMQP_ERROR_NO_GROUPID = "bridge:no-group-id";
 	public static final String AMQP_ERROR_SEND_TO_KAFKA = "bridge:error-to-kafka";
 	
 	private static final int DEFAULT_PORT = 5672;
@@ -121,13 +122,14 @@ public class Bridge {
 	public void stop() {
 		
 		if (this.server != null) {
-			this.server.close();
 			
 			this.source.close();
 			
-			for (BridgeEndpoint consumer : this.sinks) {
-				consumer.close();
+			for (BridgeEndpoint sink : this.sinks) {
+				sink.close();
 			}
+			
+			this.server.close();
 			
 			LOG.info("AMQP-Kafka Bridge stopped");
 		}
@@ -222,9 +224,13 @@ public class Bridge {
 	private void processOpenSender(ProtonSender sender) {
 		LOG.info("Remote receiver attached");
 		
-		// add a new sink to the pool
+		// create and add a new sink to the collection
 		SinkBridgeEndpoint sink = new SinkBridgeEndpoint(this.vertx);
 		this.sinks.add(sink);
+		
+		sink.closeHandler(endpoint -> {
+			this.sinks.remove(endpoint);
+		});
 		sink.open();
 		sink.handle(sender);
 	}

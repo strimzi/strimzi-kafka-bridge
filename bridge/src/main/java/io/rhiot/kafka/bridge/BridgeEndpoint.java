@@ -16,6 +16,7 @@
  */
 package io.rhiot.kafka.bridge;
 
+import io.vertx.core.Handler;
 import io.vertx.proton.ProtonLink;
 
 /**
@@ -41,4 +42,12 @@ public interface BridgeEndpoint {
 	 * @param link		Proton link to handle
 	 */
 	void handle(ProtonLink<?> link);
+	
+	/**
+	 * Sets an handler for when an endpoint is closed due to internal processing
+	 * 
+	 * @param endpoint		The handler
+	 * @return				The endpoint
+	 */
+	BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler);
 }
