@@ -58,6 +58,13 @@ The returned AMQP message contains the Apache Kafka provided message inside its 
 * _x-opt-bridge.offset_ : the message offset inside the partition;
 * _x-opt-bridge.key_ : the message key (used to determine the partition at sending time);
 
+The AMQP client can also specifies filters for reading from a specific partition starting at specific offset. The symbol for filters are :
+
+* rhiot.io:partition-filter:uint : the topic partition from which reading messages;
+* rhiot.io:partition-offset:ulong : the starting offset for reading inside the specified partition;
+
+If the client specifies partition but not the offset, then the bridge will consume messages starting from the last committed offset on the specified partition.
+
 More information about receiver flow are available in the wiki [here](https://github.com/ppatierno/amqp-kafka-bridge/wiki/Receiver)
 
 ## Supported AMQP clients
