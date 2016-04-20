@@ -16,8 +16,10 @@
  */
 package io.rhiot.kafka.bridge;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -35,6 +37,7 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.qpid.proton.amqp.Symbol;
+import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
 import org.slf4j.Logger;
@@ -155,6 +158,47 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			LOG.info("topic {} group.id {}", topic, groupId);
 			
 			this.offsetTracker = new SimpleOffsetTracker<>(topic);
+			
+			// get filters on partition and offset
+			Source source = (Source) sender.getRemoteSource();
+			Map<Symbol, Object> filters = source.getFilter();
+			
+			Object partition = null, offset = null;
+			
+			if (filters != null) {
+				ErrorCondition condition = null;
+				
+				partition = filters.get(Symbol.getSymbol(Bridge.AMQP_PARTITION_FILTER));
+				offset = filters.get(Symbol.getSymbol(Bridge.AMQP_OFFSET_FILTER));
+				
+				if (partition != null && !(partition instanceof Integer)) {
+					// wrong type for partition value
+					condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_WRONG_PARTITION_FILTER), "Wrong partition filter");
+				}
+				
+				if (offset != null && !(offset instanceof Long)) {
+					// wrong type for offset value
+					condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_WRONG_OFFSET_FILTER), "Wrong offset filter");
+				}
+				
+				if (partition == null && offset != null) {
+					// no meaning only offset without partition
+					condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITION_FILTER), "No partition filter specied");
+				}
+				
+				if (((Integer)partition < 0) || ((Long)offset < 0)) {
+					// no negative partition and offset values allowed
+					condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_WRONG_FILTER), "Wrong filter");
+				}
+				
+				if (condition != null) {
+					sender.setCondition(condition);
+					sender.close();
+					
+					this.fireClose();
+					return;
+				}
+			}
 					
 			// creating configuration for Kafka consumer
 			Properties props = new Properties();
@@ -166,7 +210,11 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			props.put(BridgeConfig.AUTO_OFFSET_RESET, BridgeConfig.getAutoOffsetReset()); // TODO : it depends on x-opt-bridge.offset inside the AMQP message
 			
 			// create and start new thread for reading from Kafka
-			this.kafkaConsumerRunner = new KafkaConsumerRunner<>(props, topic, this.queue, this.vertx, this.ebQueue, sender.getQoS(), this.offsetTracker);
+			this.kafkaConsumerRunner = new KafkaConsumerRunner<>(props, 
+					topic, (Integer)partition, (Long)offset, 
+					this.queue, this.vertx, this.ebQueue, 
+					sender.getQoS(), this.offsetTracker);
+			
 			this.kafkaConsumerThread = new Thread(kafkaConsumerRunner);
 			this.kafkaConsumerThread.start();
 			
@@ -280,6 +328,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		private AtomicBoolean closed;
 		private Consumer<K, V> consumer;
 		private String topic;
+		private Integer partition;
+		private Long offset;
 		Queue<ConsumerRecord<K, V>> queue;
 		private Vertx vertx;
 		private String ebQueue;
@@ -290,17 +340,21 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		 * Constructor
 		 * @param props			Properties for KafkaConsumer instance
 		 * @param topic			Topic to publish messages
+		 * @param partition		Partition from which read
+		 * @parma offset		Offset from which start to read (if partition is specified)
 		 * @param queue			Internal queue for sharing Kafka records with Vert.x EventBus consumer 
 		 * @param vertx			Vert.x instance
 		 * @param ebQueue		Vert.x EventBus unique name queue for sharing Kafka records
 		 * @param qos			Sender QoS (settled : AT_MOST_ONE, unsettled : AT_LEAST_ONCE)
 		 * @param offsetTracker	Tracker for offsets to commit for each assigned partition
 		 */
-		public KafkaConsumerRunner(Properties props, String topic, Queue<ConsumerRecord<K, V>> queue, Vertx vertx, String ebQueue, ProtonQoS qos, OffsetTracker<K, V> offsetTracker) {
+		public KafkaConsumerRunner(Properties props, String topic, Integer partition, Long offset, Queue<ConsumerRecord<K, V>> queue, Vertx vertx, String ebQueue, ProtonQoS qos, OffsetTracker<K, V> offsetTracker) {
 			
 			this.closed = new AtomicBoolean(false);
 			this.consumer = new KafkaConsumer<>(props);
 			this.topic = topic;
+			this.partition = partition;
+			this.offset = offset;
 			this.queue = queue;
 			this.vertx = vertx;
 			this.ebQueue = ebQueue;
@@ -312,6 +366,22 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		public void run() {
 			
 			LOG.info("Apache Kafka consumer runner started ...");
+			
+			// read from a specified partition
+			if (this.partition != null) {
+				
+				// TODO : check if partition exists, otherwise error condition and detach link
+				
+				List<TopicPartition> partitions = new ArrayList<>();
+				partitions.add(new TopicPartition(this.topic, this.partition));
+				this.consumer.assign(partitions);
+			}
+			
+			// start reading from specified offset inside partition
+			if (this.offset != null) {
+				
+				this.consumer.seek(new TopicPartition(this.topic, this.partition), this.offset);
+			}
 			
 			this.consumer.subscribe(Arrays.asList(this.topic), new ConsumerRebalanceListener() {
 				

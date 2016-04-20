@@ -47,9 +47,17 @@ public class Bridge {
 	public static final String AMQP_OFFSET_ANNOTATION = "x-opt-bridge.offset";
 	
 	// AMQP errors
-	public static final String AMQP_ERROR_NO_PARTITIONS = "bridge:no-free-partitions";
-	public static final String AMQP_ERROR_NO_GROUPID = "bridge:no-group-id";
-	public static final String AMQP_ERROR_SEND_TO_KAFKA = "bridge:error-to-kafka";
+	public static final String AMQP_ERROR_NO_PARTITIONS = "rhiot.io:no-free-partitions";
+	public static final String AMQP_ERROR_NO_GROUPID = "rhiot.io:no-group-id";
+	public static final String AMQP_ERROR_SEND_TO_KAFKA = "rhiot.io:error-to-kafka";
+	public static final String AMQP_ERROR_WRONG_PARTITION_FILTER = "rhiot.io:wrong-partition-filter";
+	public static final String AMQP_ERROR_WRONG_OFFSET_FILTER = "rhiot.io:wrong-partition-filter";
+	public static final String AMQP_ERROR_NO_PARTITION_FILTER = "rhiot.io:no-partition-filter";
+	public static final String AMQP_ERROR_WRONG_FILTER = "rhiot.io:wrong-filter";
+	
+	// AMQP filters
+	public static final String AMQP_PARTITION_FILTER = "rhiot.io:partition-filter:uint";
+	public static final String AMQP_OFFSET_FILTER = "rhiot.io:partition-offset:ulong";
 	
 	private static final int DEFAULT_PORT = 5672;
 	private static final String DEFAULT_HOST = "0.0.0.0";
