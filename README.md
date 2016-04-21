@@ -60,10 +60,16 @@ The returned AMQP message contains the Apache Kafka provided message inside its 
 
 The AMQP client can also specifies filters for reading from a specific partition starting at specific offset. The symbol for filters are :
 
-* rhiot.io:partition-filter:uint : the topic partition from which reading messages;
-* rhiot.io:offset-filter:ulong : the starting offset for reading inside the specified partition;
+* _rhiot.io:partition-filter:uint_ : the topic partition from which reading messages;
+* _rhiot.io:offset-filter:ulong_ : the starting offset for reading inside the specified partition;
 
 If the client specifies partition but not the offset, then the bridge will consume messages starting from the last committed offset on the specified partition.
+
+The link is automatically detached by the bridge in the following cases :
+
+* the client specifies the offset but not the partition;
+* the client specifies a negative value for partition or offset;
+* the client specifies a not existing partition;
 
 More information about receiver flow are available in the wiki [here](https://github.com/ppatierno/amqp-kafka-bridge/wiki/Receiver)
 
