@@ -29,6 +29,7 @@ import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Section;
+import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.message.Message;
 import org.junit.After;
 import org.junit.Before;
@@ -358,6 +359,85 @@ public class BridgeTest {
 				connection.open();
 				
 				ProtonReceiver receiver = connection.createReceiver("my_topic/group.id/my_group");
+				receiver.handler((delivery, message) -> {
+					
+					Section body = message.getBody();
+					if (body instanceof Data) {
+						byte[] value = ((Data)body).getValue().getArray();
+						LOG.info("Message received {}", new String(value));
+						// default is AT_LEAST_ONCE QoS (unsettled) so we need to send disposition (settle) to sender
+						delivery.disposition(Accepted.getInstance(), true);
+						context.assertTrue(true);
+						async.complete();
+					}
+				})
+				.setPrefetch(BridgeConfig.getFlowCredit())
+				.open();
+			}
+		});
+	}
+	
+	@Test	
+	public void receiveSimpleMessageFromPartition(TestContext context) {
+		
+		ProtonClient client = ProtonClient.create(this.vertx);
+		
+		Async async = context.async();
+		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+			if (ar.succeeded()) {
+				
+				ProtonConnection connection = ar.result();
+				connection.open();
+				
+				ProtonReceiver receiver = connection.createReceiver("my_topic/group.id/my_group");
+				
+				Source source = (Source)receiver.getSource();
+				
+				// filter on specific partition
+				Map<Symbol, Object> map = new HashMap<>();
+				map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_FILTER), 0);
+				source.setFilter(map);
+				
+				receiver.handler((delivery, message) -> {
+					
+					Section body = message.getBody();
+					if (body instanceof Data) {
+						byte[] value = ((Data)body).getValue().getArray();
+						LOG.info("Message received {}", new String(value));
+						// default is AT_LEAST_ONCE QoS (unsettled) so we need to send disposition (settle) to sender
+						delivery.disposition(Accepted.getInstance(), true);
+						context.assertTrue(true);
+						async.complete();
+					}
+				})
+				.setPrefetch(BridgeConfig.getFlowCredit())
+				.open();
+			}
+		});
+	}
+	
+	@Test	
+	public void receiveSimpleMessageFromPartitionAndOffset(TestContext context) {
+		
+		ProtonClient client = ProtonClient.create(this.vertx);
+		
+		Async async = context.async();
+		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+			if (ar.succeeded()) {
+				
+				ProtonConnection connection = ar.result();
+				connection.open();
+				
+				ProtonReceiver receiver = connection.createReceiver("my_topic/group.id/my_group");
+				
+				Source source = (Source)receiver.getSource();
+				
+				// filter on specific partition
+				Map<Symbol, Object> map = new HashMap<>();
+				map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_FILTER), (int)0);
+				map.put(Symbol.valueOf(Bridge.AMQP_OFFSET_FILTER), (long)50);
+				source.setFilter(map);
+				
 				receiver.handler((delivery, message) -> {
 					
 					Section body = message.getBody();

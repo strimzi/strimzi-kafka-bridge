@@ -56,8 +56,8 @@ public class Bridge {
 	public static final String AMQP_ERROR_WRONG_FILTER = "rhiot.io:wrong-filter";
 	
 	// AMQP filters
-	public static final String AMQP_PARTITION_FILTER = "rhiot.io:partition-filter:uint";
-	public static final String AMQP_OFFSET_FILTER = "rhiot.io:offset-filter:ulong";
+	public static final String AMQP_PARTITION_FILTER = "rhiot.io:partition-filter:int";
+	public static final String AMQP_OFFSET_FILTER = "rhiot.io:offset-filter:long";
 	
 	private static final int DEFAULT_PORT = 5672;
 	private static final String DEFAULT_HOST = "0.0.0.0";

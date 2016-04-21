@@ -171,25 +171,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				partition = filters.get(Symbol.getSymbol(Bridge.AMQP_PARTITION_FILTER));
 				offset = filters.get(Symbol.getSymbol(Bridge.AMQP_OFFSET_FILTER));
 				
-				if (partition != null && !(partition instanceof Integer)) {
-					// wrong type for partition value
-					condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_WRONG_PARTITION_FILTER), "Wrong partition filter");
-				}
-				
-				if (offset != null && !(offset instanceof Long)) {
-					// wrong type for offset value
-					condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_WRONG_OFFSET_FILTER), "Wrong offset filter");
-				}
-				
-				if (partition == null && offset != null) {
-					// no meaning only offset without partition
-					condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITION_FILTER), "No partition filter specied");
-				}
-				
-				if (((Integer)partition < 0) || ((Long)offset < 0)) {
-					// no negative partition and offset values allowed
-					condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_WRONG_FILTER), "Wrong filter");
-				}
+				condition = this.checkFilters(partition, offset);
 				
 				if (condition != null) {
 					sender.setCondition(condition);
@@ -319,6 +301,50 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	}
 	
 	/**
+	 * Check filters validity on partition and offset
+	 * 
+	 * @param partition		Partition
+	 * @param offset		Offset
+	 * @return				ErrorCondition related to a wrong filter
+	 */
+	private ErrorCondition checkFilters(Object partition, Object offset) {
+		
+		ErrorCondition condition = null;
+		
+		if (partition != null && !(partition instanceof Integer)) {
+			// wrong type for partition value
+			condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_WRONG_PARTITION_FILTER), "Wrong partition filter");
+			return condition;
+		}
+		
+		if (offset != null && !(offset instanceof Long)) {
+			// wrong type for offset value
+			condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_WRONG_OFFSET_FILTER), "Wrong offset filter");
+			return condition;
+		}
+		
+		if (partition == null && offset != null) {
+			// no meaning only offset without partition
+			condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITION_FILTER), "No partition filter specied");
+			return condition;
+		}
+		
+		if (partition != null && (Integer)partition < 0) {
+			// no negative partition value allowed
+			condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_WRONG_FILTER), "Wrong filter");
+			return condition;
+		}
+		
+		if (offset != null && (Long)offset < 0) {
+			// no negative offset value allowed
+			condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_WRONG_FILTER), "Wrong filter");
+			return condition;
+		}
+		
+		return condition;
+	}
+	
+	/**
 	 * Class for reading from Kafka in a multi-threading way
 	 * 
 	 * @author ppatierno
@@ -372,6 +398,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				
 				// TODO : check if partition exists, otherwise error condition and detach link
 				
+				LOG.info("Request to get from partition {}", this.partition);
+				
 				List<TopicPartition> partitions = new ArrayList<>();
 				partitions.add(new TopicPartition(this.topic, this.partition));
 				this.consumer.assign(partitions);
@@ -380,63 +408,69 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			// start reading from specified offset inside partition
 			if (this.offset != null) {
 				
+				LOG.info("Request to start from offset {}", this.offset);
+				
 				this.consumer.seek(new TopicPartition(this.topic, this.partition), this.offset);
 			}
 			
-			this.consumer.subscribe(Arrays.asList(this.topic), new ConsumerRebalanceListener() {
+			// neither partition nor offset specified, subscribe to entire topic
+			if (this.partition == null && this.offset == null) {
 				
-				@Override
-				public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+				this.consumer.subscribe(Arrays.asList(this.topic), new ConsumerRebalanceListener() {
 					
-					LOG.info("Partitions revoked {}", partitions.size());
-					
-					if (!partitions.isEmpty()) {
+					@Override
+					public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
 						
-						for (TopicPartition partition : partitions) {
-							LOG.info("topic {} partition {}", partition.topic(), partition.partition());
-						}
-					
-						// Sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
+						LOG.info("Partitions revoked {}", partitions.size());
 						
-						if (qos == ProtonQoS.AT_LEAST_ONCE) {
+						if (!partitions.isEmpty()) {
 							
-							// commit all tracked offsets for partitions
-							Map<TopicPartition, OffsetAndMetadata> offsets = offsetTracker.getOffsets();
+							for (TopicPartition partition : partitions) {
+								LOG.info("topic {} partition {}", partition.topic(), partition.partition());
+							}
+						
+							// Sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
 							
-							if (offsets != null && !offsets.isEmpty()) {
-								consumer.commitSync(offsets);
-								offsetTracker.commit(offsets);
-								offsetTracker.clear();
+							if (qos == ProtonQoS.AT_LEAST_ONCE) {
 								
-								for (Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
-									LOG.info("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
+								// commit all tracked offsets for partitions
+								Map<TopicPartition, OffsetAndMetadata> offsets = offsetTracker.getOffsets();
+								
+								if (offsets != null && !offsets.isEmpty()) {
+									consumer.commitSync(offsets);
+									offsetTracker.commit(offsets);
+									offsetTracker.clear();
+									
+									for (Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
+										LOG.info("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
+									}
 								}
 							}
 						}
 					}
-				}
-				
-				@Override
-				public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
 					
-					LOG.info("Partitions assigned {}", partitions.size());
-					if (!partitions.isEmpty()) {
+					@Override
+					public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
 						
-						for (TopicPartition partition : partitions) {
-							LOG.info("topic {} partition {}", partition.topic(), partition.partition());
+						LOG.info("Partitions assigned {}", partitions.size());
+						if (!partitions.isEmpty()) {
+							
+							for (TopicPartition partition : partitions) {
+								LOG.info("topic {} partition {}", partition.topic(), partition.partition());
+							}
+							
+						} else {
+							
+							DeliveryOptions options = new DeliveryOptions();
+							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, SinkBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND);
+							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND_ERROR, "All partitions already have a receiver");
+							
+							// no partitions assigned, the AMQP link and Kafka consumer will be closed
+							vertx.eventBus().send(ebQueue, "", options);
 						}
-						
-					} else {
-						
-						DeliveryOptions options = new DeliveryOptions();
-						options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, SinkBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND);
-						options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND_ERROR, "All partitions already have a receiver");
-						
-						// no partitions assigned, the AMQP link and Kafka consumer will be closed
-						vertx.eventBus().send(ebQueue, "", options);
 					}
-				}
-			});
+				});
+			}
 			
 			try {
 				
