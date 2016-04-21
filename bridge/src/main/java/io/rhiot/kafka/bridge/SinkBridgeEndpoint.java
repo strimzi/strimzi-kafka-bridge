@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.UUID;
@@ -34,6 +35,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.qpid.proton.amqp.Symbol;
@@ -68,7 +70,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	private static final String EVENT_BUS_SEND_COMMAND = "send";
 	private static final String EVENT_BUS_SHUTDOWN_COMMAND = "shutdown";
 	private static final String EVENT_BUS_HEADER_COMMAND = "command";
-	private static final String EVENT_BUS_HEADER_COMMAND_ERROR = "command-error";
+	private static final String EVENT_BUS_HEADER_DESC_ERROR = "command-error";
+	private static final String EVENT_BUS_HEADER_AMQP_ERROR = "amqp-error";
 	
 	// Kafka consumer related stuff
 	private KafkaConsumerRunner<String, byte[]> kafkaConsumerRunner;
@@ -255,8 +258,9 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 						LOG.info("Local detached");
 						
 						// no partitions assigned, the AMQP link and Kafka consumer will be closed
-						sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS), 
-								ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND_ERROR)));
+						sender.setCondition(
+								new ErrorCondition(Symbol.getSymbol(ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_HEADER_AMQP_ERROR)), 
+								ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_HEADER_DESC_ERROR)));
 						sender.close();
 						
 						this.close();
@@ -396,25 +400,39 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			// read from a specified partition
 			if (this.partition != null) {
 				
-				// TODO : check if partition exists, otherwise error condition and detach link
-				
 				LOG.info("Request to get from partition {}", this.partition);
 				
-				List<TopicPartition> partitions = new ArrayList<>();
-				partitions.add(new TopicPartition(this.topic, this.partition));
-				this.consumer.assign(partitions);
-			}
-			
-			// start reading from specified offset inside partition
-			if (this.offset != null) {
+				// check if partition exists, otherwise error condition and detach link
+				List<PartitionInfo> availablePartitions = this.consumer.partitionsFor(this.topic);
+				Optional<PartitionInfo> requestedPartitionInfo = availablePartitions.stream().filter(p -> p.partition() == this.partition).findFirst();
 				
-				LOG.info("Request to start from offset {}", this.offset);
+				if (requestedPartitionInfo.isPresent()) {
+					
+					List<TopicPartition> partitions = new ArrayList<>();
+					partitions.add(new TopicPartition(this.topic, this.partition));
+					this.consumer.assign(partitions);
+					
+					// start reading from specified offset inside partition
+					if (this.offset != null) {
+						
+						LOG.info("Request to start from offset {}", this.offset);
+						
+						this.consumer.seek(new TopicPartition(this.topic, this.partition), this.offset);
+					}
+				} else {
+					
+					LOG.info("Requested partition {} doesn't exist", this.partition);
+					
+					DeliveryOptions options = new DeliveryOptions();
+					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, SinkBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND);
+					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_AMQP_ERROR, Bridge.AMQP_ERROR_PARTITION_NOT_EXISTS);
+					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_DESC_ERROR, "Specified partition doesn't exist");
+					
+					// requested partition doesn't exist, the AMQP link and Kafka consumer will be closed
+					vertx.eventBus().send(ebQueue, "", options);
+				}
 				
-				this.consumer.seek(new TopicPartition(this.topic, this.partition), this.offset);
-			}
-			
-			// neither partition nor offset specified, subscribe to entire topic
-			if (this.partition == null && this.offset == null) {
+			} else {
 				
 				this.consumer.subscribe(Arrays.asList(this.topic), new ConsumerRebalanceListener() {
 					
@@ -463,7 +481,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 							
 							DeliveryOptions options = new DeliveryOptions();
 							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, SinkBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND);
-							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND_ERROR, "All partitions already have a receiver");
+							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_AMQP_ERROR, Bridge.AMQP_ERROR_NO_PARTITIONS);
+							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_DESC_ERROR, "All partitions already have a receiver");
 							
 							// no partitions assigned, the AMQP link and Kafka consumer will be closed
 							vertx.eventBus().send(ebQueue, "", options);
@@ -476,7 +495,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				
 				while (!this.closed.get()) {
 					
-					ConsumerRecords<K, V> records = this.consumer.poll(100);
+					ConsumerRecords<K, V> records = this.consumer.poll(1000);
 					
 					DeliveryOptions options = new DeliveryOptions();
 					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, SinkBridgeEndpoint.EVENT_BUS_SEND_COMMAND);

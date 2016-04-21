@@ -49,6 +49,7 @@ public class Bridge {
 	// AMQP errors
 	public static final String AMQP_ERROR_NO_PARTITIONS = "rhiot.io:no-free-partitions";
 	public static final String AMQP_ERROR_NO_GROUPID = "rhiot.io:no-group-id";
+	public static final String AMQP_ERROR_PARTITION_NOT_EXISTS = "rhiot.io:partition-not-exists";
 	public static final String AMQP_ERROR_SEND_TO_KAFKA = "rhiot.io:error-to-kafka";
 	public static final String AMQP_ERROR_WRONG_PARTITION_FILTER = "rhiot.io:wrong-partition-filter";
 	public static final String AMQP_ERROR_WRONG_OFFSET_FILTER = "rhiot.io:wrong-partition-filter";
