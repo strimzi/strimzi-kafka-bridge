@@ -24,9 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.kafka.clients.consumer.Consumer;
@@ -67,11 +65,11 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	
 	private static final String GROUP_ID_MATCH = "/group.id/";
 	
-	private static final String EVENT_BUS_SEND_COMMAND = "send";
-	private static final String EVENT_BUS_SHUTDOWN_COMMAND = "shutdown";
-	private static final String EVENT_BUS_HEADER_COMMAND = "command";
-	private static final String EVENT_BUS_HEADER_DESC_ERROR = "command-error";
-	private static final String EVENT_BUS_HEADER_AMQP_ERROR = "amqp-error";
+	private static final String EVENT_BUS_SEND = "send";
+	private static final String EVENT_BUS_ERROR = "error";
+	private static final String EVENT_BUS_REQUEST_HEADER = "request";
+	private static final String EVENT_BUS_ERROR_DESC_HEADER = "error-desc";
+	private static final String EVENT_BUS_ERROR_AMQP_HEADER = "error-amqp";
 	
 	// Kafka consumer related stuff
 	private KafkaConsumerRunner<String, byte[]> kafkaConsumerRunner;
@@ -80,8 +78,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	// Event Bus communication stuff between Kafka consumer thread
 	// and main Vert.x event loop
 	private Vertx vertx;
-	private Queue<ConsumerRecord<String, byte[]>> queue;
-	private String ebQueue;
+	private String ebName;
 	private MessageConsumer<String> ebConsumer;
 	
 	// converter from ConsumerRecord to AMQP message
@@ -98,14 +95,13 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	 */
 	public SinkBridgeEndpoint(Vertx vertx) {
 		this.vertx = vertx;
-		this.queue = new ConcurrentLinkedQueue<ConsumerRecord<String, byte[]>>();
 		this.converter = new DefaultMessageConverter();
-		// generate an UUID as name for the Vert.x EventBus internal queue
-		this.ebQueue = String.format("%s.%s.%s", 
+		// generate an UUID as name for the Vert.x EventBus internal queue and shared local map
+		this.ebName = String.format("%s.%s.%s", 
 				Bridge.class.getSimpleName().toLowerCase(), 
 				SinkBridgeEndpoint.class.getSimpleName().toLowerCase(), 
 				UUID.randomUUID().toString());
-		LOG.info("Event Bus queue : {}", this.ebQueue);
+		LOG.info("Event Bus queue and shared local map : {}", this.ebName);
 	}
 	
 	@Override
@@ -119,7 +115,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		if (this.ebConsumer != null)
 			this.ebConsumer.unregister();
 		
-		this.queue.clear();
+		this.vertx.sharedData().getLocalMap(this.ebName).clear();
 		this.offsetTracker.clear();
 	}
 	
@@ -192,12 +188,13 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			props.put(BridgeConfig.VALUE_DESERIALIZER, BridgeConfig.getValueDeserializer());
 			props.put(BridgeConfig.GROUP_ID, groupId);
 			props.put(BridgeConfig.ENABLE_AUTO_COMMIT, BridgeConfig.isEnableAutoCommit());
-			props.put(BridgeConfig.AUTO_OFFSET_RESET, BridgeConfig.getAutoOffsetReset());
+			//props.put(BridgeConfig.AUTO_OFFSET_RESET, BridgeConfig.getAutoOffsetReset());
+			props.put(BridgeConfig.AUTO_OFFSET_RESET, "earliest");
 			
 			// create and start new thread for reading from Kafka
 			this.kafkaConsumerRunner = new KafkaConsumerRunner<>(props, 
 					topic, (Integer)partition, (Long)offset, 
-					this.queue, this.vertx, this.ebQueue, 
+					this.vertx, this.ebName, 
 					sender.getQoS(), this.offsetTracker);
 			
 			this.kafkaConsumerThread = new Thread(kafkaConsumerRunner);
@@ -206,11 +203,11 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			// message sending on AMQP link MUST happen on Vert.x event loop due to
 			// the access to the sender object provided by Vert.x handler
 			// (we MUST avoid to access it from other threads; i.e. Kafka consumer thread)
-			this.ebConsumer = this.vertx.eventBus().consumer(this.ebQueue, ebMessage -> {
+			this.ebConsumer = this.vertx.eventBus().consumer(this.ebName, ebMessage -> {
 				
-				switch (ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND)) {
+				switch (ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER)) {
 					
-					case SinkBridgeEndpoint.EVENT_BUS_SEND_COMMAND:
+					case SinkBridgeEndpoint.EVENT_BUS_SEND:
 						
 						ConsumerRecord<String, byte[]> record = null;
 						
@@ -218,24 +215,35 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 							
 							// Sender QoS settled (AT_MOST_ONCE)
 							
-							while ((record = this.queue.poll()) != null) {
+							String deliveryTag = ebMessage.body();
+							
+							Object obj = this.vertx.sharedData().getLocalMap(this.ebName).remove(deliveryTag);
+							
+							if (obj instanceof KafkaMessage<?, ?>) {
+								
+								KafkaMessage<String, byte[]> kafkaMessage = (KafkaMessage<String, byte[]>) obj;
+								record = kafkaMessage.getRecord();
 								
 								Message message = converter.toAmqpMessage(record);
-						        
-								String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
 								sender.send(ProtonHelper.tag(String.valueOf(deliveryTag)), message);
 							}
 							
 						} else {
 							
 							// Sender QoS unsettled (AT_LEAST_ONCE)
+								
+							String deliveryTag = ebMessage.body();
 							
-							while ((record = this.queue.poll()) != null) {
+							Object obj = this.vertx.sharedData().getLocalMap(this.ebName).remove(deliveryTag);
+							
+							if (obj instanceof KafkaMessage<?, ?>) {
+
+								KafkaMessage<String, byte[]> kafkaMessage = (KafkaMessage<String, byte[]>) obj;
+								record = kafkaMessage.getRecord();
 								
 								Message message = converter.toAmqpMessage(record);
-						        
+								
 								// record (converted in AMQP message) is on the way ... ask to tracker to track its delivery
-								String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
 								this.offsetTracker.track(deliveryTag, record);
 								
 								LOG.info("Tracked {} - {} [{}]", record.topic(), record.partition(), record.offset());
@@ -249,18 +257,18 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 									LOG.info("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), sender.getSource().getAddress());
 								});
 							}
-													
+							
 						}					
 						break;
 					
-					case SinkBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND:
+					case SinkBridgeEndpoint.EVENT_BUS_ERROR:
 						
 						LOG.info("Local detached");
 						
 						// no partitions assigned, the AMQP link and Kafka consumer will be closed
 						sender.setCondition(
-								new ErrorCondition(Symbol.getSymbol(ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_HEADER_AMQP_ERROR)), 
-								ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_HEADER_DESC_ERROR)));
+								new ErrorCondition(Symbol.getSymbol(ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_ERROR_AMQP_HEADER)), 
+								ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_ERROR_DESC_HEADER)));
 						sender.close();
 						
 						this.close();
@@ -352,6 +360,9 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	 * Class for reading from Kafka in a multi-threading way
 	 * 
 	 * @author ppatierno
+	 *
+	 * @param <K>		Key type for Kafka consumer and record
+	 * @param <V>		Value type for Kafka consumer and record
 	 */
 	public class KafkaConsumerRunner<K, V> implements Runnable {
 
@@ -360,7 +371,6 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		private String topic;
 		private Integer partition;
 		private Long offset;
-		Queue<ConsumerRecord<K, V>> queue;
 		private Vertx vertx;
 		private String ebQueue;
 		private ProtonQoS qos;
@@ -372,20 +382,18 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		 * @param topic			Topic to publish messages
 		 * @param partition		Partition from which read
 		 * @parma offset		Offset from which start to read (if partition is specified)
-		 * @param queue			Internal queue for sharing Kafka records with Vert.x EventBus consumer 
 		 * @param vertx			Vert.x instance
 		 * @param ebQueue		Vert.x EventBus unique name queue for sharing Kafka records
 		 * @param qos			Sender QoS (settled : AT_MOST_ONE, unsettled : AT_LEAST_ONCE)
 		 * @param offsetTracker	Tracker for offsets to commit for each assigned partition
 		 */
-		public KafkaConsumerRunner(Properties props, String topic, Integer partition, Long offset, Queue<ConsumerRecord<K, V>> queue, Vertx vertx, String ebQueue, ProtonQoS qos, OffsetTracker<K, V> offsetTracker) {
+		public KafkaConsumerRunner(Properties props, String topic, Integer partition, Long offset, Vertx vertx, String ebQueue, ProtonQoS qos, OffsetTracker<K, V> offsetTracker) {
 			
 			this.closed = new AtomicBoolean(false);
 			this.consumer = new KafkaConsumer<>(props);
 			this.topic = topic;
 			this.partition = partition;
 			this.offset = offset;
-			this.queue = queue;
 			this.vertx = vertx;
 			this.ebQueue = ebQueue;
 			this.qos = qos;
@@ -424,9 +432,9 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 					LOG.info("Requested partition {} doesn't exist", this.partition);
 					
 					DeliveryOptions options = new DeliveryOptions();
-					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, SinkBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND);
-					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_AMQP_ERROR, Bridge.AMQP_ERROR_PARTITION_NOT_EXISTS);
-					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_DESC_ERROR, "Specified partition doesn't exist");
+					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_ERROR);
+					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_ERROR_AMQP_HEADER, Bridge.AMQP_ERROR_PARTITION_NOT_EXISTS);
+					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_ERROR_DESC_HEADER, "Specified partition doesn't exist");
 					
 					// requested partition doesn't exist, the AMQP link and Kafka consumer will be closed
 					vertx.eventBus().send(ebQueue, "", options);
@@ -480,9 +488,9 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 						} else {
 							
 							DeliveryOptions options = new DeliveryOptions();
-							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, SinkBridgeEndpoint.EVENT_BUS_SHUTDOWN_COMMAND);
-							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_AMQP_ERROR, Bridge.AMQP_ERROR_NO_PARTITIONS);
-							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_DESC_ERROR, "All partitions already have a receiver");
+							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_ERROR);
+							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_ERROR_AMQP_HEADER, Bridge.AMQP_ERROR_NO_PARTITIONS);
+							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_ERROR_DESC_HEADER, "All partitions already have a receiver");
 							
 							// no partitions assigned, the AMQP link and Kafka consumer will be closed
 							vertx.eventBus().send(ebQueue, "", options);
@@ -498,7 +506,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 					ConsumerRecords<K, V> records = this.consumer.poll(1000);
 					
 					DeliveryOptions options = new DeliveryOptions();
-					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_HEADER_COMMAND, SinkBridgeEndpoint.EVENT_BUS_SEND_COMMAND);
+					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_SEND);
 					
 					if (this.qos == ProtonQoS.AT_MOST_ONCE) {
 						
@@ -514,11 +522,16 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 								for (ConsumerRecord<K, V> record : records)  {
 							        
 							    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
-							    	this.queue.add(record);				    	
+							    	//this.queue.add(record);
+							    	
+							    	String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
+							    	this.vertx.sharedData().getLocalMap(this.ebQueue).put(deliveryTag, new KafkaMessage<K,V>(deliveryTag, record));
+							    	
+							    	this.vertx.eventBus().send(this.ebQueue, deliveryTag, options);
 							    }
 								
 								// 3. start message sending
-								this.vertx.eventBus().send(this.ebQueue, "", options);
+								//this.vertx.eventBus().send(this.ebQueue, "", options);
 								
 							} catch (Exception e) {
 								
@@ -536,11 +549,16 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 							for (ConsumerRecord<K, V> record : records)  {
 						        
 						    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
-						    	this.queue.add(record);				    	
+						    	//this.queue.add(record);
+						    	
+						    	String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
+						    	this.vertx.sharedData().getLocalMap(this.ebQueue).put(deliveryTag, new KafkaMessage<K,V>(deliveryTag, record));
+						    	
+						    	this.vertx.eventBus().send(this.ebQueue, deliveryTag, options);
 						    }
 							
 							// 2. start message sending
-							this.vertx.eventBus().send(this.ebQueue, "", options);
+							//this.vertx.eventBus().send(this.ebQueue, "", options);
 						}
 						
 						try {
