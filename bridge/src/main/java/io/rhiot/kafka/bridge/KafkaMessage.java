@@ -5,7 +5,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import io.vertx.core.shareddata.Shareable;
 
 /**
- * Wrapper class aroung Kafka record with related AMQP delivery tag
+ * Wrapper class around Kafka record with related AMQP delivery tag
  * 
  * @author ppatierno
  *
