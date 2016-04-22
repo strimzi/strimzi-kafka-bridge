@@ -16,26 +16,10 @@
  */
 package io.rhiot.kafka.bridge;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.PartitionInfo;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.errors.WakeupException;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
@@ -44,10 +28,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.core.json.JsonObject;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonQoS;
@@ -65,15 +50,11 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	
 	private static final String GROUP_ID_MATCH = "/group.id/";
 	
-	private static final String EVENT_BUS_SEND = "send";
-	private static final String EVENT_BUS_ERROR = "error";
-	private static final String EVENT_BUS_REQUEST_HEADER = "request";
-	private static final String EVENT_BUS_ERROR_DESC_HEADER = "error-desc";
-	private static final String EVENT_BUS_ERROR_AMQP_HEADER = "error-amqp";
-	
-	// Kafka consumer related stuff
-	private KafkaConsumerRunner<String, byte[]> kafkaConsumerRunner;
-	private Thread kafkaConsumerThread;
+	public static final String EVENT_BUS_SEND = "send";
+	public static final String EVENT_BUS_ERROR = "error";
+	public static final String EVENT_BUS_REQUEST_HEADER = "request";
+	public static final String EVENT_BUS_ERROR_DESC_HEADER = "error-desc";
+	public static final String EVENT_BUS_ERROR_AMQP_HEADER = "error-amqp";
 	
 	// Event Bus communication stuff between Kafka consumer thread
 	// and main Vert.x event loop
@@ -88,6 +69,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	private OffsetTracker<String, byte[]> offsetTracker;
 	
 	private Handler<BridgeEndpoint> closeHandler;
+	
+	private KafkaConsumerWorker<String, byte[]> kafkaConsumerWorker;
 	
 	/**
 	 * Constructor
@@ -111,7 +94,14 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 
 	@Override
 	public void close() {
-		this.kafkaConsumerRunner.shutdown();
+		
+		try {
+			this.kafkaConsumerWorker.stop();
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		if (this.ebConsumer != null)
 			this.ebConsumer.unregister();
 		
@@ -181,24 +171,25 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				}
 			}
 					
-			// creating configuration for Kafka consumer
-			Properties props = new Properties();
-			props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
-			props.put(BridgeConfig.KEY_DESERIALIZER, BridgeConfig.getKeyDeserializer());
-			props.put(BridgeConfig.VALUE_DESERIALIZER, BridgeConfig.getValueDeserializer());
-			props.put(BridgeConfig.GROUP_ID, groupId);
-			props.put(BridgeConfig.ENABLE_AUTO_COMMIT, BridgeConfig.isEnableAutoCommit());
-			//props.put(BridgeConfig.AUTO_OFFSET_RESET, BridgeConfig.getAutoOffsetReset());
-			props.put(BridgeConfig.AUTO_OFFSET_RESET, "earliest");
+			JsonObject config = new JsonObject();
+			config.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
+			config.put(BridgeConfig.KEY_DESERIALIZER, BridgeConfig.getKeyDeserializer());
+			config.put(BridgeConfig.VALUE_DESERIALIZER, BridgeConfig.getValueDeserializer());
+			config.put(BridgeConfig.GROUP_ID, groupId);
+			config.put(BridgeConfig.ENABLE_AUTO_COMMIT, BridgeConfig.isEnableAutoCommit());
+			//config.put(BridgeConfig.AUTO_OFFSET_RESET, BridgeConfig.getAutoOffsetReset());
+			config.put(BridgeConfig.AUTO_OFFSET_RESET, "earliest");
 			
-			// create and start new thread for reading from Kafka
-			this.kafkaConsumerRunner = new KafkaConsumerRunner<>(props, 
-					topic, (Integer)partition, (Long)offset, 
-					this.vertx, this.ebName, 
-					sender.getQoS(), this.offsetTracker);
-			
-			this.kafkaConsumerThread = new Thread(kafkaConsumerRunner);
-			this.kafkaConsumerThread.start();
+			config.put(KafkaConsumerWorker.KAFKA_CONSUMER_TOPIC, topic);
+			config.put(KafkaConsumerWorker.KAFKA_CONSUMER_PARTITION, (Integer)partition);
+			config.put(KafkaConsumerWorker.KAFKA_CONSUMER_OFFSET, (Long)offset);
+			config.put(KafkaConsumerWorker.KAFKA_CONSUMER_EBQUEUE, this.ebName);
+			config.put(KafkaConsumerWorker.KAFKA_CONSUMER_QOS, sender.getQoS());
+						
+			this.kafkaConsumerWorker = new KafkaConsumerWorker<>();
+			this.kafkaConsumerWorker.setOffsetTracker(this.offsetTracker);
+			DeploymentOptions options = new DeploymentOptions().setConfig(config);
+			this.vertx.deployVerticle(this.kafkaConsumerWorker, options);
 			
 			// message sending on AMQP link MUST happen on Vert.x event loop due to
 			// the access to the sender object provided by Vert.x handler
@@ -354,246 +345,5 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		}
 		
 		return condition;
-	}
-	
-	/**
-	 * Class for reading from Kafka in a multi-threading way
-	 * 
-	 * @author ppatierno
-	 *
-	 * @param <K>		Key type for Kafka consumer and record
-	 * @param <V>		Value type for Kafka consumer and record
-	 */
-	public class KafkaConsumerRunner<K, V> implements Runnable {
-
-		private AtomicBoolean closed;
-		private Consumer<K, V> consumer;
-		private String topic;
-		private Integer partition;
-		private Long offset;
-		private Vertx vertx;
-		private String ebQueue;
-		private ProtonQoS qos;
-		private OffsetTracker<K, V> offsetTracker;
-		
-		/**
-		 * Constructor
-		 * @param props			Properties for KafkaConsumer instance
-		 * @param topic			Topic to publish messages
-		 * @param partition		Partition from which read
-		 * @parma offset		Offset from which start to read (if partition is specified)
-		 * @param vertx			Vert.x instance
-		 * @param ebQueue		Vert.x EventBus unique name queue for sharing Kafka records
-		 * @param qos			Sender QoS (settled : AT_MOST_ONE, unsettled : AT_LEAST_ONCE)
-		 * @param offsetTracker	Tracker for offsets to commit for each assigned partition
-		 */
-		public KafkaConsumerRunner(Properties props, String topic, Integer partition, Long offset, Vertx vertx, String ebQueue, ProtonQoS qos, OffsetTracker<K, V> offsetTracker) {
-			
-			this.closed = new AtomicBoolean(false);
-			this.consumer = new KafkaConsumer<>(props);
-			this.topic = topic;
-			this.partition = partition;
-			this.offset = offset;
-			this.vertx = vertx;
-			this.ebQueue = ebQueue;
-			this.qos = qos;
-			this.offsetTracker = offsetTracker;
-		}
-		
-		@Override
-		public void run() {
-			
-			LOG.info("Apache Kafka consumer runner started ...");
-			
-			// read from a specified partition
-			if (this.partition != null) {
-				
-				LOG.info("Request to get from partition {}", this.partition);
-				
-				// check if partition exists, otherwise error condition and detach link
-				List<PartitionInfo> availablePartitions = this.consumer.partitionsFor(this.topic);
-				Optional<PartitionInfo> requestedPartitionInfo = availablePartitions.stream().filter(p -> p.partition() == this.partition).findFirst();
-				
-				if (requestedPartitionInfo.isPresent()) {
-					
-					List<TopicPartition> partitions = new ArrayList<>();
-					partitions.add(new TopicPartition(this.topic, this.partition));
-					this.consumer.assign(partitions);
-					
-					// start reading from specified offset inside partition
-					if (this.offset != null) {
-						
-						LOG.info("Request to start from offset {}", this.offset);
-						
-						this.consumer.seek(new TopicPartition(this.topic, this.partition), this.offset);
-					}
-				} else {
-					
-					LOG.info("Requested partition {} doesn't exist", this.partition);
-					
-					DeliveryOptions options = new DeliveryOptions();
-					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_ERROR);
-					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_ERROR_AMQP_HEADER, Bridge.AMQP_ERROR_PARTITION_NOT_EXISTS);
-					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_ERROR_DESC_HEADER, "Specified partition doesn't exist");
-					
-					// requested partition doesn't exist, the AMQP link and Kafka consumer will be closed
-					vertx.eventBus().send(ebQueue, "", options);
-				}
-				
-			} else {
-				
-				this.consumer.subscribe(Arrays.asList(this.topic), new ConsumerRebalanceListener() {
-					
-					@Override
-					public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-						
-						LOG.info("Partitions revoked {}", partitions.size());
-						
-						if (!partitions.isEmpty()) {
-							
-							for (TopicPartition partition : partitions) {
-								LOG.info("topic {} partition {}", partition.topic(), partition.partition());
-							}
-						
-							// Sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
-							
-							if (qos == ProtonQoS.AT_LEAST_ONCE) {
-								
-								// commit all tracked offsets for partitions
-								Map<TopicPartition, OffsetAndMetadata> offsets = offsetTracker.getOffsets();
-								
-								if (offsets != null && !offsets.isEmpty()) {
-									consumer.commitSync(offsets);
-									offsetTracker.commit(offsets);
-									offsetTracker.clear();
-									
-									for (Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
-										LOG.info("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
-									}
-								}
-							}
-						}
-					}
-					
-					@Override
-					public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-						
-						LOG.info("Partitions assigned {}", partitions.size());
-						if (!partitions.isEmpty()) {
-							
-							for (TopicPartition partition : partitions) {
-								LOG.info("topic {} partition {}", partition.topic(), partition.partition());
-							}
-							
-						} else {
-							
-							DeliveryOptions options = new DeliveryOptions();
-							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_ERROR);
-							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_ERROR_AMQP_HEADER, Bridge.AMQP_ERROR_NO_PARTITIONS);
-							options.addHeader(SinkBridgeEndpoint.EVENT_BUS_ERROR_DESC_HEADER, "All partitions already have a receiver");
-							
-							// no partitions assigned, the AMQP link and Kafka consumer will be closed
-							vertx.eventBus().send(ebQueue, "", options);
-						}
-					}
-				});
-			}
-			
-			try {
-				
-				while (!this.closed.get()) {
-					
-					ConsumerRecords<K, V> records = this.consumer.poll(1000);
-					
-					DeliveryOptions options = new DeliveryOptions();
-					options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_SEND);
-					
-					if (this.qos == ProtonQoS.AT_MOST_ONCE) {
-						
-						if (!records.isEmpty()) {
-						
-							// Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
-							try {
-								
-								// 1. immediate commit 
-								this.consumer.commitSync();
-								
-								// 2. commit ok, so we can enqueue record for sending
-								for (ConsumerRecord<K, V> record : records)  {
-							        
-							    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
-							    	//this.queue.add(record);
-							    	
-							    	String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
-							    	this.vertx.sharedData().getLocalMap(this.ebQueue).put(deliveryTag, new KafkaMessage<K,V>(deliveryTag, record));
-							    
-							    	// 3. start message sending
-							    	this.vertx.eventBus().send(this.ebQueue, deliveryTag, options);
-							    }
-								
-								
-							} catch (Exception e) {
-								
-								LOG.error("Error committing ... {}", e.getMessage());
-							}
-						}
-						
-					} else {
-						
-						// Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit
-						
-						if (!records.isEmpty()) {
-							
-							// 1. enqueue record for sending
-							for (ConsumerRecord<K, V> record : records)  {
-						        
-						    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
-						    	//this.queue.add(record);
-						    	
-						    	String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
-						    	this.vertx.sharedData().getLocalMap(this.ebQueue).put(deliveryTag, new KafkaMessage<K,V>(deliveryTag, record));
-						    
-						    	// 2. start message sending
-						    	this.vertx.eventBus().send(this.ebQueue, deliveryTag, options);
-						    }
-							
-						}
-						
-						try {
-							// 3. commit all tracked offsets for partitions
-							Map<TopicPartition, OffsetAndMetadata> offsets = this.offsetTracker.getOffsets();
-							
-							if (offsets != null && !offsets.isEmpty()) {
-								this.consumer.commitSync(offsets);
-								this.offsetTracker.commit(offsets);
-								
-								for (Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
-									LOG.info("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
-								}
-							}
-						} catch (Exception e) {
-							
-							LOG.error("Error committing ... {}", e.getMessage());
-						}
-					}
-				    
-				}
-			} catch (WakeupException e) {
-				if (!closed.get()) throw e;
-			} finally {
-				this.consumer.close();
-			}
-			
-			LOG.info("Apache Kafka consumer runner stopped ...");
-		}
-		
-		/**
-		 * Shutdown the consumer runner
-		 */
-		public void shutdown() {
-			this.closed.set(true);
-			this.consumer.wakeup();
-		}
-		
 	}
 }
