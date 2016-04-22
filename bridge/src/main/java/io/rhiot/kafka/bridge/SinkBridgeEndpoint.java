@@ -526,12 +526,11 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 							    	
 							    	String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
 							    	this.vertx.sharedData().getLocalMap(this.ebQueue).put(deliveryTag, new KafkaMessage<K,V>(deliveryTag, record));
-							    	
+							    
+							    	// 3. start message sending
 							    	this.vertx.eventBus().send(this.ebQueue, deliveryTag, options);
 							    }
 								
-								// 3. start message sending
-								//this.vertx.eventBus().send(this.ebQueue, "", options);
 								
 							} catch (Exception e) {
 								
@@ -553,12 +552,11 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 						    	
 						    	String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
 						    	this.vertx.sharedData().getLocalMap(this.ebQueue).put(deliveryTag, new KafkaMessage<K,V>(deliveryTag, record));
-						    	
+						    
+						    	// 2. start message sending
 						    	this.vertx.eventBus().send(this.ebQueue, deliveryTag, options);
 						    }
 							
-							// 2. start message sending
-							//this.vertx.eventBus().send(this.ebQueue, "", options);
 						}
 						
 						try {
