@@ -17,8 +17,7 @@
 package io.rhiot.kafka.bridge;
 
 import java.util.Properties;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.UUID;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -52,8 +51,8 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	
 	private static final String EVENT_BUS_ACCEPTED_DELIVERY = "accepted";
 	private static final String EVENT_BUS_REJECTED_DELIVERY = "rejected";
-	private static final String EVENT_BUS_HEADER_DELIVERY_STATE = "delivery-state";
-	private static final String EVENT_BUS_HEADER_DELIVERY_ERROR = "delivery-error";
+	private static final String EVENT_BUS_DELIVERY_STATE_HEADER = "delivery-state";
+	private static final String EVENT_BUS_DELIVERY_ERROR_HEADER = "delivery-error";
 	
 	// converter from AMQP message to ConsumerRecord
 	private MessageConverter<String, byte[]> converter;
@@ -64,8 +63,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	// Event Bus communication stuff between Kafka producer
 	// callback thread and main Vert.x event loop
 	private Vertx vertx;
-	private Queue<ProtonDelivery> queue;
-	private String ebQueue;
+	private String ebName;
 	private MessageConsumer<String> ebConsumer;
 	
 	private Handler<BridgeEndpoint> closeHandler;
@@ -78,11 +76,10 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	public SourceBridgeEndpoint(Vertx vertx) {
 		
 		this.vertx = vertx;
-		this.queue = new ConcurrentLinkedQueue<ProtonDelivery>();
-		this.ebQueue = String.format("%s.%s", 
+		this.ebName = String.format("%s.%s", 
 				Bridge.class.getSimpleName().toLowerCase(), 
 				SourceBridgeEndpoint.class.getSimpleName().toLowerCase());
-		LOG.info("Event Bus queue : {}", this.ebQueue);
+		LOG.info("Event Bus queue and shared local map : {}", this.ebName);
 	
 		Properties props = new Properties();
 		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
@@ -115,7 +112,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		if (this.ebConsumer != null)
 			this.ebConsumer.unregister();
 		
-		this.queue.clear();
+		this.vertx.sharedData().getLocalMap(this.ebName).clear();
 	}
 
 	@Override
@@ -148,12 +145,20 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		// message sending on AMQP link MUST happen on Vert.x event loop due to
 		// the access to the delivery object provided by Vert.x handler
 		// (we MUST avoid to access it from other threads; i.e. Kafka producer callback thread)
-		this.ebConsumer = this.vertx.eventBus().consumer(this.ebQueue, ebMessage -> {
+		this.ebConsumer = this.vertx.eventBus().consumer(this.ebName, ebMessage -> {
 			
 			ProtonDelivery delivery = null;
-			while ((delivery = queue.poll()) != null) {
+			
+			String deliveryId = ebMessage.body();
+			
+			Object obj = this.vertx.sharedData().getLocalMap(this.ebName).remove(deliveryId);
+			
+			if (obj instanceof AmqpDelivery) {
 				
-				switch (ebMessage.headers().get(SourceBridgeEndpoint.EVENT_BUS_HEADER_DELIVERY_STATE)) {
+				AmqpDelivery amqpDelivery = (AmqpDelivery) obj;
+				delivery = amqpDelivery.getDelivery();
+				
+				switch (ebMessage.headers().get(SourceBridgeEndpoint.EVENT_BUS_DELIVERY_STATE_HEADER)) {
 				
 					case SourceBridgeEndpoint.EVENT_BUS_ACCEPTED_DELIVERY:
 						delivery.disposition(Accepted.getInstance(), true);
@@ -163,7 +168,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 					case SourceBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY:
 						Rejected rejected = new Rejected();
 						rejected.setError(new ErrorCondition(Symbol.valueOf(Bridge.AMQP_ERROR_SEND_TO_KAFKA), 
-								ebMessage.headers().get(SourceBridgeEndpoint.EVENT_BUS_HEADER_DELIVERY_ERROR)));
+								ebMessage.headers().get(SourceBridgeEndpoint.EVENT_BUS_DELIVERY_ERROR_HEADER)));
 						delivery.disposition(rejected, true);
 						LOG.info("Delivery sent [{}]", SourceBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY);
 						break;
@@ -206,7 +211,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 					// record not delivered, send REJECTED disposition to the AMQP sender
 					LOG.error("Error on delivery to Kafka {}", exception.getMessage());
 					deliveryState = SourceBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY;
-					options.addHeader(SourceBridgeEndpoint.EVENT_BUS_HEADER_DELIVERY_ERROR, exception.getMessage());
+					options.addHeader(SourceBridgeEndpoint.EVENT_BUS_DELIVERY_ERROR_HEADER, exception.getMessage());
 					
 				} else {
 				
@@ -216,10 +221,12 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 					
 				}
 				
-				options.addHeader(SourceBridgeEndpoint.EVENT_BUS_HEADER_DELIVERY_STATE, deliveryState);
+				options.addHeader(SourceBridgeEndpoint.EVENT_BUS_DELIVERY_STATE_HEADER, deliveryState);
 				
-				this.queue.add(delivery);
-				this.vertx.eventBus().send(this.ebQueue, "", options);
+				String deliveryId = UUID.randomUUID().toString();
+				this.vertx.sharedData().getLocalMap(this.ebName).put(deliveryId, new AmqpDelivery(deliveryId, delivery));
+				
+				this.vertx.eventBus().send(this.ebName, deliveryId, options);
 			});
 		}
 	}
