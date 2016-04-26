@@ -201,33 +201,13 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 				// NOTE : resume and pause MUST be called from same KafkaConsumer thread (see KafkaConsumer source code)
 				//		  so external call can only ask for pause/resume but not execute them in its own thread
 				
-				if (this.paused.get()) {
-					
-					if (this.resume.get()) {
-						Set<TopicPartition> assigned = this.consumer.assignment();
-						if (assigned != null && !assigned.isEmpty())
-							this.consumer.resume(assigned.stream().toArray(TopicPartition[]::new));
-						this.resume.set(false);
-						this.paused.set(false);
-						
-						LOG.info("Apache Kafka consumer resumed ...");
-					}
-					
-				} else {
-				
-					if (this.pause.get()) {
-						
-						Set<TopicPartition> assigned = this.consumer.assignment();
-						if (assigned != null && !assigned.isEmpty())
-							this.consumer.pause(assigned.stream().toArray(TopicPartition[]::new));
-						this.pause.set(false);
-						this.paused.set(true);
-						
-						LOG.info("Apache Kafka consumer paused ...");
-					}
-				}
+				// check external requeste for pausing/resuming Kafka consumer
+				this.checkPauseResume();
 				
 				ConsumerRecords<K, V> records = this.consumer.poll(1000);
+				
+				// check needs for pausing/resuming Kafka consumer against queue threshold
+				this.checkQueueThreshold(records.count());
 				
 				DeliveryOptions options = new DeliveryOptions();
 				options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_SEND);
@@ -331,5 +311,53 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 	public void resume() {
 		if (this.paused.get())
 			this.resume.set(true);
+	}
+	
+	/**
+	 * Check queue threshold and if it's needed to pause/resume Kafka consumer
+	 * 
+	 * @param recordsCount		Number of records to enqueue
+	 */
+	private void checkQueueThreshold(int recordsCount) {
+		
+		// if the records we are going to send will increase the queue size over the threshold, we have to pause the Kafka consumer
+		// and giving more time to sender to send messages to AMQP client
+		if (this.vertx.sharedData().getLocalMap(this.ebQueue).size() + recordsCount > SinkBridgeEndpoint.QUEUE_THRESHOLD) {
+			this.pause();
+		} else if (this.paused.get()) {
+			this.resume();
+		}
+	}
+	
+	/**
+	 * Check external requests to pause/resume Kafka consumer
+	 */
+	private void checkPauseResume() {
+		
+		if (this.paused.get()) {
+			
+			if (this.resume.get()) {
+				Set<TopicPartition> assigned = this.consumer.assignment();
+				if (assigned != null && !assigned.isEmpty())
+					this.consumer.resume(assigned.stream().toArray(TopicPartition[]::new));
+				this.resume.set(false);
+				this.paused.set(false);
+				
+				LOG.info("Apache Kafka consumer resumed ...");
+			}
+			
+		} else {
+		
+			if (this.pause.get()) {
+				
+				Set<TopicPartition> assigned = this.consumer.assignment();
+				if (assigned != null && !assigned.isEmpty())
+					this.consumer.pause(assigned.stream().toArray(TopicPartition[]::new));
+				this.pause.set(false);
+				this.paused.set(true);
+				
+				LOG.info("Apache Kafka consumer paused ...");
+			}
+		}
 	}
 }

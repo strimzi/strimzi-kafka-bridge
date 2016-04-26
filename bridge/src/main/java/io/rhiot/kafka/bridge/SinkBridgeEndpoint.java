@@ -58,6 +58,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	public static final String EVENT_BUS_ERROR_DESC_HEADER = "error-desc";
 	public static final String EVENT_BUS_ERROR_AMQP_HEADER = "error-amqp";
 	
+	public static final int QUEUE_THRESHOLD = 1024;
+	
 	// Kafka consumer related stuff
 	private KafkaConsumerWorker<String, byte[]> kafkaConsumerWorker;
 	private Thread kafkaConsumerThread;
