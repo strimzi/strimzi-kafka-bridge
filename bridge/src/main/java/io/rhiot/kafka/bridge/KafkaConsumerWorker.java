@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -55,6 +56,9 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 	private static final Logger LOG = LoggerFactory.getLogger(KafkaConsumerWorker.class);
 
 	private AtomicBoolean closed;
+	private AtomicBoolean paused;
+	private AtomicBoolean pause;
+	private AtomicBoolean resume;
 	private Consumer<K, V> consumer;
 	private String topic;
 	private Integer partition;
@@ -78,6 +82,9 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 	public KafkaConsumerWorker(Properties props, String topic, Integer partition, Long offset, Vertx vertx, String ebQueue, ProtonQoS qos, OffsetTracker<K, V> offsetTracker) {
 		
 		this.closed = new AtomicBoolean(false);
+		this.paused = new AtomicBoolean(false);
+		this.pause = new AtomicBoolean(false);
+		this.resume = new AtomicBoolean(false);
 		this.consumer = new KafkaConsumer<>(props);
 		this.topic = topic;
 		this.partition = partition;
@@ -191,6 +198,35 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 			
 			while (!this.closed.get()) {
 				
+				// NOTE : resume and pause MUST be called from same KafkaConsumer thread (see KafkaConsumer source code)
+				//		  so external call can only ask for pause/resume but not execute them in its own thread
+				
+				if (this.paused.get()) {
+					
+					if (this.resume.get()) {
+						Set<TopicPartition> assigned = this.consumer.assignment();
+						if (assigned != null && !assigned.isEmpty())
+							this.consumer.resume(assigned.stream().toArray(TopicPartition[]::new));
+						this.resume.set(false);
+						this.paused.set(false);
+						
+						LOG.info("Apache Kafka consumer resumed ...");
+					}
+					
+				} else {
+				
+					if (this.pause.get()) {
+						
+						Set<TopicPartition> assigned = this.consumer.assignment();
+						if (assigned != null && !assigned.isEmpty())
+							this.consumer.pause(assigned.stream().toArray(TopicPartition[]::new));
+						this.pause.set(false);
+						this.paused.set(true);
+						
+						LOG.info("Apache Kafka consumer paused ...");
+					}
+				}
+				
 				ConsumerRecords<K, V> records = this.consumer.poll(1000);
 				
 				DeliveryOptions options = new DeliveryOptions();
@@ -283,4 +319,19 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 		this.consumer.wakeup();
 	}
 	
+	/**
+	 * Pause the consumer on reading from the topic
+	 */
+	public void pause() {
+		if (!this.paused.get())
+			this.pause.set(true);
+	}
+	
+	/**
+	 * Resume the consumer on reading from the topic
+	 */
+	public void resume() {
+		if (this.paused.get())
+			this.resume.set(true);
+	}
 }

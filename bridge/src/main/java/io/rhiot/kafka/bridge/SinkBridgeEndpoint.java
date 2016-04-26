@@ -16,8 +16,10 @@
  */
 package io.rhiot.kafka.bridge;
 
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.UUID;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -31,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonLink;
@@ -73,6 +76,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	
 	private Handler<BridgeEndpoint> closeHandler;
 	
+	private Queue<String> deliveryNotSent;
+	
 	/**
 	 * Constructor
 	 * @param vertx		Vert.x instance
@@ -85,6 +90,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				Bridge.class.getSimpleName().toLowerCase(), 
 				SinkBridgeEndpoint.class.getSimpleName().toLowerCase(), 
 				UUID.randomUUID().toString());
+		this.deliveryNotSent = new LinkedList<>();
 		LOG.info("Event Bus queue and shared local map : {}", this.ebName);
 	}
 	
@@ -99,6 +105,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		if (this.ebConsumer != null)
 			this.ebConsumer.unregister();
 		
+		this.deliveryNotSent.clear();
 		this.vertx.sharedData().getLocalMap(this.ebName).clear();
 		this.offsetTracker.clear();
 	}
@@ -133,6 +140,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			// group.id specified in the address, open sender and setup Kafka consumer
 			sender
 			.closeHandler(this::processCloseSender)
+			.sendQueueDrainHandler(this::processSendQueueDrain)
 			.open();
 			
 			String groupId = address.substring(groupIdIndex + SinkBridgeEndpoint.GROUP_ID_MATCH.length());
@@ -192,56 +200,66 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 					
 					case SinkBridgeEndpoint.EVENT_BUS_SEND:
 						
-						ConsumerRecord<String, byte[]> record = null;
+						if (!sender.sendQueueFull()) {
+							
+							// the remote receiver has credits, we can send the message
 						
-						if (sender.getQoS() == ProtonQoS.AT_MOST_ONCE) {
+							ConsumerRecord<String, byte[]> record = null;
 							
-							// Sender QoS settled (AT_MOST_ONCE)
-							
-							String deliveryTag = ebMessage.body();
-							
-							Object obj = this.vertx.sharedData().getLocalMap(this.ebName).remove(deliveryTag);
-							
-							if (obj instanceof KafkaMessage<?, ?>) {
+							if (sender.getQoS() == ProtonQoS.AT_MOST_ONCE) {
 								
-								KafkaMessage<String, byte[]> kafkaMessage = (KafkaMessage<String, byte[]>) obj;
-								record = kafkaMessage.getRecord();
+								// Sender QoS settled (AT_MOST_ONCE)
 								
-								Message message = converter.toAmqpMessage(record);
-								sender.send(ProtonHelper.tag(String.valueOf(deliveryTag)), message);
-							}
-							
+								String deliveryTag = ebMessage.body();
+								
+								Object obj = this.vertx.sharedData().getLocalMap(this.ebName).remove(deliveryTag);
+								
+								if (obj instanceof KafkaMessage<?, ?>) {
+									
+									KafkaMessage<String, byte[]> kafkaMessage = (KafkaMessage<String, byte[]>) obj;
+									record = kafkaMessage.getRecord();
+									
+									Message message = converter.toAmqpMessage(record);
+									sender.send(ProtonHelper.tag(String.valueOf(deliveryTag)), message);
+								}
+								
+							} else {
+								
+								// Sender QoS unsettled (AT_LEAST_ONCE)
+									
+								String deliveryTag = ebMessage.body();
+								
+								Object obj = this.vertx.sharedData().getLocalMap(this.ebName).remove(deliveryTag);
+								
+								if (obj instanceof KafkaMessage<?, ?>) {
+	
+									KafkaMessage<String, byte[]> kafkaMessage = (KafkaMessage<String, byte[]>) obj;
+									record = kafkaMessage.getRecord();
+									
+									Message message = converter.toAmqpMessage(record);
+									
+									// record (converted in AMQP message) is on the way ... ask to tracker to track its delivery
+									this.offsetTracker.track(deliveryTag, record);
+									
+									LOG.info("Tracked {} - {} [{}]", record.topic(), record.partition(), record.offset());
+									
+									sender.send(ProtonHelper.tag(deliveryTag), message, delivery -> {
+										
+										// a record (converted in AMQP message) is delivered ... communicate it to the tracker
+										String tag = new String(delivery.getTag());
+										this.offsetTracker.delivered(tag);
+										
+										LOG.info("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), sender.getSource().getAddress());
+									});
+								}
+								
+							}			
 						} else {
 							
-							// Sender QoS unsettled (AT_LEAST_ONCE)
-								
-							String deliveryTag = ebMessage.body();
-							
-							Object obj = this.vertx.sharedData().getLocalMap(this.ebName).remove(deliveryTag);
-							
-							if (obj instanceof KafkaMessage<?, ?>) {
-
-								KafkaMessage<String, byte[]> kafkaMessage = (KafkaMessage<String, byte[]>) obj;
-								record = kafkaMessage.getRecord();
-								
-								Message message = converter.toAmqpMessage(record);
-								
-								// record (converted in AMQP message) is on the way ... ask to tracker to track its delivery
-								this.offsetTracker.track(deliveryTag, record);
-								
-								LOG.info("Tracked {} - {} [{}]", record.topic(), record.partition(), record.offset());
-								
-								sender.send(ProtonHelper.tag(deliveryTag), message, delivery -> {
-									
-									// a record (converted in AMQP message) is delivered ... communicate it to the tracker
-									String tag = new String(delivery.getTag());
-									this.offsetTracker.delivered(tag);
-									
-									LOG.info("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), sender.getSource().getAddress());
-								});
-							}
-							
-						}					
+							// no credits available on receiver side, save the current deliveryTag and pause the Kafka consumer
+							this.deliveryNotSent.add(ebMessage.body());
+							this.kafkaConsumerWorker.pause();
+						}
 						break;
 					
 					case SinkBridgeEndpoint.EVENT_BUS_ERROR:
@@ -278,6 +296,38 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			this.close();
 			this.fireClose();
 		}
+	}
+	
+	/**
+	 * Handle for flow control on the link when sender receives credits to send
+	 * @param sender
+	 */
+	private void processSendQueueDrain(ProtonSender sender) {
+		
+		LOG.info("Remote receiver link credits available");
+		
+		String deliveryTag;
+		
+		DeliveryOptions options = new DeliveryOptions();
+		options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_SEND);
+		
+		// before resuming Kafka consumer, we need to send cached delivery
+		while ((deliveryTag = this.deliveryNotSent.peek()) != null) {
+			
+			if (!sender.sendQueueFull()) {
+				
+				LOG.info("Recovering not sent delivery ... {}", deliveryTag);
+				this.deliveryNotSent.remove();
+				this.vertx.eventBus().send(this.ebName, deliveryTag, options);
+				
+			} else {
+				
+				return;
+			}
+		}
+		
+		if (this.kafkaConsumerWorker != null)
+			this.kafkaConsumerWorker.resume();
 	}
 	
 	@Override

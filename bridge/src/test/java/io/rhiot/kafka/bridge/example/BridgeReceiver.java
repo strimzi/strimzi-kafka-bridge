@@ -61,7 +61,7 @@ public class BridgeReceiver {
 	 */
 	public class ExampleOne {
 		
-		private static final int RECEIVERS_COUNT = 20;
+		private static final int RECEIVERS_COUNT = 1;
 		private static final String GROUP_ID_PREFIX = "my_group";
 		
 		// all receivers in the same consumer group
