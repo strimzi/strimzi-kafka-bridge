@@ -114,7 +114,7 @@ public class BridgeSender {
 	public class ExampleTwo {
 		
 		private static final int PERIODIC_MAX_MESSAGE = 50;
-		private static final int PERIODIC_DELAY = 100;
+		private static final int PERIODIC_DELAY = 10;
 		private static final int SENDERS_COUNT = 1;
 		
 		private ProtonConnection connection;
