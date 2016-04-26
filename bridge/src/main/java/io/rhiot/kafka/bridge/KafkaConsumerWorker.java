@@ -246,7 +246,6 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 							for (ConsumerRecord<K, V> record : records)  {
 						        
 						    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
-						    	//this.queue.add(record);
 						    	
 						    	String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
 						    	this.vertx.sharedData().getLocalMap(this.ebQueue).put(deliveryTag, new KafkaMessage<K,V>(deliveryTag, record));
@@ -272,7 +271,6 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 						for (ConsumerRecord<K, V> record : records)  {
 					        
 					    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
-					    	//this.queue.add(record);
 					    	
 					    	String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
 					    	this.vertx.sharedData().getLocalMap(this.ebQueue).put(deliveryTag, new KafkaMessage<K,V>(deliveryTag, record));
