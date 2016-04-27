@@ -93,7 +93,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				SinkBridgeEndpoint.class.getSimpleName().toLowerCase(), 
 				UUID.randomUUID().toString());
 		this.deliveryNotSent = new LinkedList<>();
-		LOG.info("Event Bus queue and shared local map : {}", this.ebName);
+		LOG.debug("Event Bus queue and shared local map : {}", this.ebName);
 	}
 	
 	@Override
@@ -130,7 +130,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		if (groupIdIndex == -1) {
 		
 			// group.id don't specified in the address, link will be closed
-			LOG.info("Local detached");
+			LOG.warn("Local detached");
 			
 			sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_GROUPID), "Mandatory group.id not specified in the address"));
 			sender.close();
@@ -148,7 +148,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			String groupId = address.substring(groupIdIndex + SinkBridgeEndpoint.GROUP_ID_MATCH.length());
 			String topic = address.substring(0, groupIdIndex);
 			
-			LOG.info("topic {} group.id {}", topic, groupId);
+			LOG.debug("topic {} group.id {}", topic, groupId);
 			
 			this.offsetTracker = new SimpleOffsetTracker<>(topic);
 			
@@ -243,7 +243,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 									// record (converted in AMQP message) is on the way ... ask to tracker to track its delivery
 									this.offsetTracker.track(deliveryTag, record);
 									
-									LOG.info("Tracked {} - {} [{}]", record.topic(), record.partition(), record.offset());
+									LOG.debug("Tracked {} - {} [{}]", record.topic(), record.partition(), record.offset());
 									
 									sender.send(ProtonHelper.tag(deliveryTag), message, delivery -> {
 										
@@ -251,7 +251,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 										String tag = new String(delivery.getTag());
 										this.offsetTracker.delivered(tag);
 										
-										LOG.info("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), sender.getSource().getAddress());
+										LOG.debug("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), sender.getSource().getAddress());
 									});
 								}
 								
@@ -266,7 +266,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 					
 					case SinkBridgeEndpoint.EVENT_BUS_ERROR:
 						
-						LOG.info("Local detached");
+						LOG.warn("Local detached");
 						
 						// no partitions assigned, the AMQP link and Kafka consumer will be closed
 						sender.setCondition(
@@ -306,7 +306,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	 */
 	private void processSendQueueDrain(ProtonSender sender) {
 		
-		LOG.info("Remote receiver link credits available");
+		LOG.debug("Remote receiver link credits available");
 		
 		String deliveryTag;
 		
@@ -318,7 +318,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			
 			if (!sender.sendQueueFull()) {
 				
-				LOG.info("Recovering not sent delivery ... {}", deliveryTag);
+				LOG.debug("Recovering not sent delivery ... {}", deliveryTag);
 				this.deliveryNotSent.remove();
 				this.vertx.eventBus().send(this.ebName, deliveryTag, options);
 				

@@ -79,7 +79,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		this.ebName = String.format("%s.%s", 
 				Bridge.class.getSimpleName().toLowerCase(), 
 				SourceBridgeEndpoint.class.getSimpleName().toLowerCase());
-		LOG.info("Event Bus queue and shared local map : {}", this.ebName);
+		LOG.debug("Event Bus queue and shared local map : {}", this.ebName);
 	
 		Properties props = new Properties();
 		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
@@ -162,7 +162,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 				
 					case SourceBridgeEndpoint.EVENT_BUS_ACCEPTED_DELIVERY:
 						delivery.disposition(Accepted.getInstance(), true);
-						LOG.info("Delivery sent [{}]", SourceBridgeEndpoint.EVENT_BUS_ACCEPTED_DELIVERY);
+						LOG.debug("Delivery sent [{}]", SourceBridgeEndpoint.EVENT_BUS_ACCEPTED_DELIVERY);
 						break;
 						
 					case SourceBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY:
@@ -170,7 +170,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 						rejected.setError(new ErrorCondition(Symbol.valueOf(Bridge.AMQP_ERROR_SEND_TO_KAFKA), 
 								ebMessage.headers().get(SourceBridgeEndpoint.EVENT_BUS_DELIVERY_ERROR_HEADER)));
 						delivery.disposition(rejected, true);
-						LOG.info("Delivery sent [{}]", SourceBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY);
+						LOG.debug("Delivery sent [{}]", SourceBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY);
 						break;
 				}
 				
@@ -191,7 +191,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		
 		ProducerRecord<String, byte[]> record = this.converter.toKafkaRecord(message);
 		
-		LOG.info("Sending to Kafka on topic {} at partition {} and key {}", record.topic(), record.partition(), record.key());
+		LOG.debug("Sending to Kafka on topic {} at partition {} and key {}", record.topic(), record.partition(), record.key());
 				
 		if (delivery.remotelySettled()) {
 			
@@ -216,7 +216,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 				} else {
 				
 					// record delivered, send ACCEPTED disposition to the AMQP sender
-					LOG.info("Delivered to Kafka on topic {} at partition {} [{}]", metadata.topic(), metadata.partition(), metadata.offset());
+					LOG.debug("Delivered to Kafka on topic {} at partition {} [{}]", metadata.topic(), metadata.partition(), metadata.offset());
 					deliveryState = SourceBridgeEndpoint.EVENT_BUS_ACCEPTED_DELIVERY;
 					
 				}

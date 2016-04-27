@@ -98,12 +98,12 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 	@Override
 	public void run() {
 		
-		LOG.info("Apache Kafka consumer runner started ...");
+		LOG.info("Apache Kafka consumer worker started ...");
 		
 		// read from a specified partition
 		if (this.partition != null) {
 			
-			LOG.info("Request to get from partition {}", this.partition);
+			LOG.debug("Request to get from partition {}", this.partition);
 			
 			// check if partition exists, otherwise error condition and detach link
 			List<PartitionInfo> availablePartitions = this.consumer.partitionsFor(this.topic);
@@ -118,13 +118,13 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 				// start reading from specified offset inside partition
 				if (this.offset != null) {
 					
-					LOG.info("Request to start from offset {}", this.offset);
+					LOG.debug("Request to start from offset {}", this.offset);
 					
 					this.consumer.seek(new TopicPartition(this.topic, this.partition), this.offset);
 				}
 			} else {
 				
-				LOG.info("Requested partition {} doesn't exist", this.partition);
+				LOG.warn("Requested partition {} doesn't exist", this.partition);
 				
 				DeliveryOptions options = new DeliveryOptions();
 				options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_ERROR);
@@ -142,12 +142,12 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 				@Override
 				public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
 					
-					LOG.info("Partitions revoked {}", partitions.size());
+					LOG.debug("Partitions revoked {}", partitions.size());
 					
 					if (!partitions.isEmpty()) {
 						
 						for (TopicPartition partition : partitions) {
-							LOG.info("topic {} partition {}", partition.topic(), partition.partition());
+							LOG.debug("topic {} partition {}", partition.topic(), partition.partition());
 						}
 					
 						// Sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
@@ -173,11 +173,11 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 				@Override
 				public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
 					
-					LOG.info("Partitions assigned {}", partitions.size());
+					LOG.debug("Partitions assigned {}", partitions.size());
 					if (!partitions.isEmpty()) {
 						
 						for (TopicPartition partition : partitions) {
-							LOG.info("topic {} partition {}", partition.topic(), partition.partition());
+							LOG.debug("topic {} partition {}", partition.topic(), partition.partition());
 						}
 						
 					} else {
@@ -225,7 +225,7 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 							// 2. commit ok, so we can enqueue record for sending
 							for (ConsumerRecord<K, V> record : records)  {
 						        
-						    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
+						    	LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
 						    	
 						    	String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
 						    	this.vertx.sharedData().getLocalMap(this.ebQueue).put(deliveryTag, new KafkaMessage<K,V>(deliveryTag, record));
@@ -250,7 +250,7 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 						// 1. enqueue record for sending
 						for (ConsumerRecord<K, V> record : records)  {
 					        
-					    	LOG.info("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
+					    	LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
 					    	
 					    	String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
 					    	this.vertx.sharedData().getLocalMap(this.ebQueue).put(deliveryTag, new KafkaMessage<K,V>(deliveryTag, record));
@@ -270,7 +270,7 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 							this.offsetTracker.commit(offsets);
 							
 							for (Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
-								LOG.info("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
+								LOG.debug("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
 							}
 						}
 					} catch (Exception e) {
@@ -286,7 +286,7 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 			this.consumer.close();
 		}
 		
-		LOG.info("Apache Kafka consumer runner stopped ...");
+		LOG.info("Apache Kafka consumer worker stopped ...");
 	}
 	
 	/**
@@ -343,7 +343,7 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 				this.resume.set(false);
 				this.paused.set(false);
 				
-				LOG.info("Apache Kafka consumer resumed ...");
+				LOG.info("Apache Kafka consumer worker resumed ...");
 			}
 			
 		} else {
@@ -356,7 +356,7 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 				this.pause.set(false);
 				this.paused.set(true);
 				
-				LOG.info("Apache Kafka consumer paused ...");
+				LOG.info("Apache Kafka consumer worker paused ...");
 			}
 		}
 	}
