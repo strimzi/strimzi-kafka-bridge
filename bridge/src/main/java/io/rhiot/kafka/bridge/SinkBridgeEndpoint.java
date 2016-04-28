@@ -89,6 +89,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		this.vertx = vertx;
 		this.converter = new DefaultMessageConverter();
 		this.deliveryNotSent = new LinkedList<>();
+		this.context = new SinkBridgeContext<>();
 	}
 	
 	@Override
@@ -187,7 +188,12 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			LOG.debug("Event Bus queue and shared local map : {}", ebName);
 			
 			// create context shared between sink endpoint and Kafka worker
-			this.context = new SinkBridgeContext<>(topic, sender.getQoS(), ebName, this.offsetTracker);
+			this.context
+			.setTopic(topic)
+			.setQos(sender.getQoS())
+			.setEbName(ebName)
+			.setOffsetTracker(this.offsetTracker);
+			
 			if (partition != null)
 				this.context.setPartition((Integer)partition);
 			if (offset != null)
@@ -321,6 +327,9 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		
 		DeliveryOptions options = new DeliveryOptions();
 		options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_SEND);
+		
+		if (this.deliveryNotSent.isEmpty())
+			this.context.setSendQueueFull(sender.sendQueueFull());
 		
 		// before resuming Kafka consumer, we need to send cached delivery
 		while ((deliveryTag = this.deliveryNotSent.peek()) != null) {

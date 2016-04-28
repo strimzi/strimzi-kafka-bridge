@@ -41,20 +41,9 @@ public class SinkBridgeContext<K, V> {
 	
 	/**
 	 * Constructor
-	 * 
-	 * @param topic				Topic to publish messages
-	 * @param qos				Sender QoS (settled : AT_MOST_ONE, unsettled : AT_LEAST_ONCE)
-	 * @param ebName			Vert.x EventBus unique name queue for sharing Kafka records
-	 * @param offsetTracker		Tracker for offsets to commit for each assigned partition
 	 */
-	public SinkBridgeContext(String topic, ProtonQoS qos, String ebName, OffsetTracker<K, V> offsetTracker) {
+	public SinkBridgeContext() {
 		
-		this.topic = topic;
-		this.partition = null;
-		this.offset = null;
-		this.qos = qos;
-		this.ebName = ebName;
-		this.offsetTracker = offsetTracker;
 		this.sendQueueFull = new AtomicBoolean(false);
 	}
 
@@ -70,8 +59,9 @@ public class SinkBridgeContext<K, V> {
 	 * Set topic to publish messages
 	 * @param topic
 	 */
-	public void setTopic(String topic) {
+	public SinkBridgeContext<K, V> setTopic(String topic) {
 		this.topic = topic;
+		return this;
 	}
 
 	/**
@@ -86,8 +76,9 @@ public class SinkBridgeContext<K, V> {
 	 * Set partition from which read
 	 * @param partition
 	 */
-	public void setPartition(Integer partition) {
+	public SinkBridgeContext<K, V> setPartition(Integer partition) {
 		this.partition = partition;
+		return this;
 	}
 
 	/**
@@ -102,8 +93,9 @@ public class SinkBridgeContext<K, V> {
 	 * Set offset from which start to read (if partition is specified)
 	 * @param offset
 	 */
-	public void setOffset(Long offset) {
+	public SinkBridgeContext<K, V> setOffset(Long offset) {
 		this.offset = offset;
+		return this;
 	}
 
 	/**
@@ -118,8 +110,9 @@ public class SinkBridgeContext<K, V> {
 	 * Set Vert.x EventBus unique name queue for sharing Kafka records
 	 * @param ebName
 	 */
-	public void setEbName(String ebName) {
+	public SinkBridgeContext<K, V> setEbName(String ebName) {
 		this.ebName = ebName;
+		return this;
 	}
 
 	/**
@@ -134,8 +127,9 @@ public class SinkBridgeContext<K, V> {
 	 * Set sender QoS (settled : AT_MOST_ONE, unsettled : AT_LEAST_ONCE)
 	 * @param qos
 	 */
-	public void setQos(ProtonQoS qos) {
+	public SinkBridgeContext<K, V> setQos(ProtonQoS qos) {
 		this.qos = qos;
+		return this;
 	}
 
 	/**
@@ -150,8 +144,9 @@ public class SinkBridgeContext<K, V> {
 	 * Set tracker for offsets to commit for each assigned partition
 	 * @param offsetTracker
 	 */
-	public void setOffsetTracker(OffsetTracker<K, V> offsetTracker) {
+	public SinkBridgeContext<K, V> setOffsetTracker(OffsetTracker<K, V> offsetTracker) {
 		this.offsetTracker = offsetTracker;
+		return this;
 	}
 
 	/**
@@ -166,7 +161,8 @@ public class SinkBridgeContext<K, V> {
 	 * Set state of the sender queue
 	 * @param sendQueueFull
 	 */
-	public void setSendQueueFull(boolean sendQueueFull) {
+	public SinkBridgeContext<K, V> setSendQueueFull(boolean sendQueueFull) {
 		this.sendQueueFull.set(sendQueueFull);
+		return this;
 	}
 }
