@@ -31,9 +31,10 @@ public class SinkBridgeContext<K, V> {
 	private Integer partition;
 	private Long offset;
 	
+	private ProtonQoS qos;
+	
 	private String ebName;
 	
-	private ProtonQoS qos;
 	private OffsetTracker<K, V> offsetTracker;
 	
 	private AtomicBoolean sendQueueFull;
@@ -49,9 +50,12 @@ public class SinkBridgeContext<K, V> {
 	public SinkBridgeContext(String topic, ProtonQoS qos, String ebName, OffsetTracker<K, V> offsetTracker) {
 		
 		this.topic = topic;
+		this.partition = null;
+		this.offset = null;
 		this.qos = qos;
 		this.ebName = ebName;
 		this.offsetTracker = offsetTracker;
+		this.sendQueueFull = new AtomicBoolean(false);
 	}
 
 	/**

@@ -57,8 +57,6 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 
 	private AtomicBoolean closed;
 	private AtomicBoolean paused;
-	private AtomicBoolean pause;
-	private AtomicBoolean resume;
 	private Consumer<K, V> consumer;
 	
 	private Vertx vertx;
@@ -75,8 +73,6 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 		
 		this.closed = new AtomicBoolean(false);
 		this.paused = new AtomicBoolean(false);
-		this.pause = new AtomicBoolean(false);
-		this.resume = new AtomicBoolean(false);
 		
 		this.consumer = new KafkaConsumer<>(props);
 		
@@ -187,16 +183,7 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 			
 			while (!this.closed.get()) {
 				
-				// NOTE : resume and pause MUST be called from same KafkaConsumer thread (see KafkaConsumer source code)
-				//		  so external call can only ask for pause/resume but not execute them in its own thread
-				
-				// check external requeste for pausing/resuming Kafka consumer
-				this.checkPauseResume();
-				
 				ConsumerRecords<K, V> records = this.consumer.poll(1000);
-				
-				// check needs for pausing/resuming Kafka consumer against queue threshold
-				//this.checkQueueThreshold(records.count());
 				
 				DeliveryOptions options = new DeliveryOptions();
 				options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_SEND);
@@ -271,6 +258,9 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 						LOG.error("Error committing ... {}", e.getMessage());
 					}
 				}
+				
+				// check needs for pause/resume Kafka consumer
+				this.checkPauseResume(records.count());
 			    
 			}
 		} catch (WakeupException e) {
@@ -291,65 +281,49 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 	}
 	
 	/**
-	 * Pause the consumer on reading from the topic
-	 */
-	public void pause() {
-		if (!this.paused.get())
-			this.pause.set(true);
-	}
-	
-	/**
-	 * Resume the consumer on reading from the topic
-	 */
-	public void resume() {
-		if (this.paused.get())
-			this.resume.set(true);
-	}
-	
-	/**
-	 * Check queue threshold and if it's needed to pause/resume Kafka consumer
+	 * Check external requests to pause/resume Kafka consumer
 	 * 
-	 * @param recordsCount		Number of records to enqueue
+	 * @param recordsCount		Number of fetched records
 	 */
-	private void checkQueueThreshold(int recordsCount) {
+	private void checkPauseResume(int recordsCount) {
 		
+		// check queue threshold and if it's needed to pause/resume Kafka consumer : 
 		// if the records we are going to send will increase the queue size over the threshold, we have to pause the Kafka consumer
 		// and giving more time to sender to send messages to AMQP client
-		if (this.vertx.sharedData().getLocalMap(this.context.getEbName()).size() + recordsCount > SinkBridgeEndpoint.QUEUE_THRESHOLD) {
-			this.pause();
-		} else if (this.paused.get()) {
-			this.resume();
-		}
-	}
-	
-	/**
-	 * Check external requests to pause/resume Kafka consumer
-	 */
-	private void checkPauseResume() {
+		boolean overThreshold = this.vertx.sharedData().getLocalMap(this.context.getEbName()).size() + recordsCount > SinkBridgeEndpoint.QUEUE_THRESHOLD;
 		
 		if (this.paused.get()) {
 			
-			if (this.resume.get()) {
+			// Kafka consumer paused, can be resumed if :
+			// sink endpoint has sent all previous cached messages and AMQP sender queue isn't full and not above queue threshold
+			if (this.vertx.sharedData().getLocalMap(this.context.getEbName()).isEmpty() &&
+				!this.context.isSendQueueFull() &&
+				!overThreshold) {
+				
 				Set<TopicPartition> assigned = this.consumer.assignment();
 				if (assigned != null && !assigned.isEmpty())
 					this.consumer.resume(assigned.stream().toArray(TopicPartition[]::new));
-				this.resume.set(false);
 				this.paused.set(false);
 				
-				LOG.info("Apache Kafka consumer worker resumed ...");
+				LOG.debug("Apache Kafka consumer worker resumed ... {} {} {}", 
+						this.vertx.sharedData().getLocalMap(this.context.getEbName()).isEmpty(),
+						this.context.isSendQueueFull(),
+						overThreshold);
 			}
 			
 		} else {
 		
-			if (this.pause.get()) {
+			// Kafka consumer running, ca be paused if :
+			// AMQP sender queue is full OR above queue threshold
+			if (this.context.isSendQueueFull() || overThreshold) {
 				
 				Set<TopicPartition> assigned = this.consumer.assignment();
 				if (assigned != null && !assigned.isEmpty())
 					this.consumer.pause(assigned.stream().toArray(TopicPartition[]::new));
-				this.pause.set(false);
 				this.paused.set(true);
 				
-				LOG.info("Apache Kafka consumer worker paused ...");
+				LOG.debug("Apache Kafka consumer worker paused ... {} {}", 
+						this.context.isSendQueueFull(), overThreshold);
 			}
 		}
 	}
