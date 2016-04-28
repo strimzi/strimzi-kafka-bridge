@@ -255,7 +255,12 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 									});
 								}
 								
-							}			
+							}
+							
+							// can resume Kafka consumer (if paused) whene all messages sent
+							if (this.vertx.sharedData().getLocalMap(this.ebName).isEmpty())
+									this.kafkaConsumerWorker.resume();
+							
 						} else {
 							
 							// no credits available on receiver side, save the current deliveryTag and pause the Kafka consumer
@@ -327,9 +332,6 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				return;
 			}
 		}
-		
-		if (this.kafkaConsumerWorker != null)
-			this.kafkaConsumerWorker.resume();
 	}
 	
 	@Override

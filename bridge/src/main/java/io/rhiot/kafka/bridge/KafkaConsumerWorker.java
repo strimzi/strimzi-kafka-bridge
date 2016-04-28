@@ -215,6 +215,8 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 				if (this.qos == ProtonQoS.AT_MOST_ONCE) {
 					
 					if (!records.isEmpty()) {
+						
+						LOG.debug("Fetched {} records [AT_MOST_ONCE]", records.count());
 					
 						// Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
 						try {
@@ -246,6 +248,8 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 					// Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit
 					
 					if (!records.isEmpty()) {
+						
+						LOG.debug("Fetched {} records [AT_LEAST_ONCE]", records.count());
 						
 						// 1. enqueue record for sending
 						for (ConsumerRecord<K, V> record : records)  {
