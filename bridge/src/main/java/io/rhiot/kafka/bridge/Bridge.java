@@ -221,7 +221,6 @@ public class Bridge {
 	private void processOpenReceiver(ProtonReceiver receiver) {
 		LOG.info("Remote sender attached");
 		
-		// TODO : one or sources pool ?
 		this.source.handle(receiver);
 	}
 	

@@ -82,25 +82,6 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	@Override
 	public void open() {
 		
-	}
-
-	@Override
-	public void close() {
-		this.producerSettledMode.close();
-		this.producerUnsettledMode.close();
-		if (this.ebConsumer != null)
-			this.ebConsumer.unregister();
-		
-		this.vertx.sharedData().getLocalMap(this.ebName).clear();
-	}
-
-	@Override
-	public void handle(ProtonLink<?> link) {
-		
-		if (!(link instanceof ProtonReceiver)) {
-			throw new IllegalArgumentException("This Proton link must be a receiver");
-		}
-		
 		this.ebName = String.format("%s.%s", 
 				Bridge.class.getSimpleName().toLowerCase(), 
 				SourceBridgeEndpoint.class.getSimpleName().toLowerCase());
@@ -121,6 +102,29 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		props.put(BridgeConfig.ACKS, "0");
 		
 		this.producerSettledMode = new KafkaProducer<>(props);
+	}
+
+	@Override
+	public void close() {
+		if (this.producerSettledMode != null)
+			this.producerSettledMode.close();
+		
+		if (this.producerUnsettledMode != null)
+			this.producerUnsettledMode.close();
+		
+		if (this.ebConsumer != null)
+			this.ebConsumer.unregister();
+		
+		if (this.ebName != null)
+			this.vertx.sharedData().getLocalMap(this.ebName).clear();
+	}
+
+	@Override
+	public void handle(ProtonLink<?> link) {
+		
+		if (!(link instanceof ProtonReceiver)) {
+			throw new IllegalArgumentException("This Proton link must be a receiver");
+		}
 		
 		ProtonReceiver receiver = (ProtonReceiver)link;
 		

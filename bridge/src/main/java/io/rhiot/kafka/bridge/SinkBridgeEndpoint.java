@@ -99,13 +99,19 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 
 	@Override
 	public void close() {
-		this.kafkaConsumerWorker.shutdown();
+		if (this.kafkaConsumerWorker != null)
+			this.kafkaConsumerWorker.shutdown();
+		
 		if (this.ebConsumer != null)
 			this.ebConsumer.unregister();
 		
+		if (this.context.getEbName() != null)
+			this.vertx.sharedData().getLocalMap(this.context.getEbName()).clear();
+		
+		if (this.offsetTracker != null)
+			this.offsetTracker.clear();
+		
 		this.deliveryNotSent.clear();
-		this.vertx.sharedData().getLocalMap(this.context.getEbName()).clear();
-		this.offsetTracker.clear();
 	}
 	
 	@Override
@@ -146,8 +152,6 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			
 			LOG.debug("topic {} group.id {}", topic, groupId);
 			
-			this.offsetTracker = new SimpleOffsetTracker<>(topic);
-			
 			// get filters on partition and offset
 			Source source = (Source) sender.getRemoteSource();
 			Map<Symbol, Object> filters = source.getFilter();
@@ -169,6 +173,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 					this.fireClose();
 					return;
 				}
+				
+				LOG.debug("partition {} offset {}", partition, offset);
 			}
 					
 			// creating configuration for Kafka consumer
@@ -186,6 +192,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 					SinkBridgeEndpoint.class.getSimpleName().toLowerCase(), 
 					UUID.randomUUID().toString());
 			LOG.debug("Event Bus queue and shared local map : {}", ebName);
+			
+			this.offsetTracker = new SimpleOffsetTracker<>(topic);
 			
 			// create context shared between sink endpoint and Kafka worker
 			this.context
