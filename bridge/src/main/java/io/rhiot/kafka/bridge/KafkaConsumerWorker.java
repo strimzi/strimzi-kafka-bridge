@@ -60,39 +60,28 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 	private AtomicBoolean pause;
 	private AtomicBoolean resume;
 	private Consumer<K, V> consumer;
-	private String topic;
-	private Integer partition;
-	private Long offset;
+	
 	private Vertx vertx;
-	private String ebQueue;
-	private ProtonQoS qos;
-	private OffsetTracker<K, V> offsetTracker;
+	
+	private SinkBridgeContext<K, V> context;
 	
 	/**
 	 * Constructor
 	 * @param props			Properties for KafkaConsumer instance
-	 * @param topic			Topic to publish messages
-	 * @param partition		Partition from which read
-	 * @parma offset		Offset from which start to read (if partition is specified)
 	 * @param vertx			Vert.x instance
-	 * @param ebQueue		Vert.x EventBus unique name queue for sharing Kafka records
-	 * @param qos			Sender QoS (settled : AT_MOST_ONE, unsettled : AT_LEAST_ONCE)
-	 * @param offsetTracker	Tracker for offsets to commit for each assigned partition
+	 * @param context		Context shared with sink endpoint
 	 */
-	public KafkaConsumerWorker(Properties props, String topic, Integer partition, Long offset, Vertx vertx, String ebQueue, ProtonQoS qos, OffsetTracker<K, V> offsetTracker) {
+	public KafkaConsumerWorker(Properties props, Vertx vertx, SinkBridgeContext<K, V> context) {
 		
 		this.closed = new AtomicBoolean(false);
 		this.paused = new AtomicBoolean(false);
 		this.pause = new AtomicBoolean(false);
 		this.resume = new AtomicBoolean(false);
+		
 		this.consumer = new KafkaConsumer<>(props);
-		this.topic = topic;
-		this.partition = partition;
-		this.offset = offset;
+		
 		this.vertx = vertx;
-		this.ebQueue = ebQueue;
-		this.qos = qos;
-		this.offsetTracker = offsetTracker;
+		this.context = context;
 	}
 	
 	@Override
@@ -101,30 +90,30 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 		LOG.info("Apache Kafka consumer worker started ...");
 		
 		// read from a specified partition
-		if (this.partition != null) {
+		if (this.context.getPartition() != null) {
 			
-			LOG.debug("Request to get from partition {}", this.partition);
+			LOG.debug("Request to get from partition {}", this.context.getPartition());
 			
 			// check if partition exists, otherwise error condition and detach link
-			List<PartitionInfo> availablePartitions = this.consumer.partitionsFor(this.topic);
-			Optional<PartitionInfo> requestedPartitionInfo = availablePartitions.stream().filter(p -> p.partition() == this.partition).findFirst();
+			List<PartitionInfo> availablePartitions = this.consumer.partitionsFor(this.context.getTopic());
+			Optional<PartitionInfo> requestedPartitionInfo = availablePartitions.stream().filter(p -> p.partition() == this.context.getPartition()).findFirst();
 			
 			if (requestedPartitionInfo.isPresent()) {
 				
 				List<TopicPartition> partitions = new ArrayList<>();
-				partitions.add(new TopicPartition(this.topic, this.partition));
+				partitions.add(new TopicPartition(this.context.getTopic(), this.context.getPartition()));
 				this.consumer.assign(partitions);
 				
 				// start reading from specified offset inside partition
-				if (this.offset != null) {
+				if (this.context.getOffset() != null) {
 					
-					LOG.debug("Request to start from offset {}", this.offset);
+					LOG.debug("Request to start from offset {}", this.context.getOffset());
 					
-					this.consumer.seek(new TopicPartition(this.topic, this.partition), this.offset);
+					this.consumer.seek(new TopicPartition(this.context.getTopic(), this.context.getPartition()), this.context.getOffset());
 				}
 			} else {
 				
-				LOG.warn("Requested partition {} doesn't exist", this.partition);
+				LOG.warn("Requested partition {} doesn't exist", this.context.getPartition());
 				
 				DeliveryOptions options = new DeliveryOptions();
 				options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_ERROR);
@@ -132,12 +121,12 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 				options.addHeader(SinkBridgeEndpoint.EVENT_BUS_ERROR_DESC_HEADER, "Specified partition doesn't exist");
 				
 				// requested partition doesn't exist, the AMQP link and Kafka consumer will be closed
-				vertx.eventBus().send(ebQueue, "", options);
+				vertx.eventBus().send(this.context.getEbName(), "", options);
 			}
 			
 		} else {
 			
-			this.consumer.subscribe(Arrays.asList(this.topic), new ConsumerRebalanceListener() {
+			this.consumer.subscribe(Arrays.asList(this.context.getTopic()), new ConsumerRebalanceListener() {
 				
 				@Override
 				public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
@@ -152,15 +141,15 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 					
 						// Sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
 						
-						if (qos == ProtonQoS.AT_LEAST_ONCE) {
+						if (context.getQos() == ProtonQoS.AT_LEAST_ONCE) {
 							
 							// commit all tracked offsets for partitions
-							Map<TopicPartition, OffsetAndMetadata> offsets = offsetTracker.getOffsets();
+							Map<TopicPartition, OffsetAndMetadata> offsets = context.getOffsetTracker().getOffsets();
 							
 							if (offsets != null && !offsets.isEmpty()) {
 								consumer.commitSync(offsets);
-								offsetTracker.commit(offsets);
-								offsetTracker.clear();
+								context.getOffsetTracker().commit(offsets);
+								context.getOffsetTracker().clear();
 								
 								for (Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
 									LOG.info("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
@@ -188,7 +177,7 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 						options.addHeader(SinkBridgeEndpoint.EVENT_BUS_ERROR_DESC_HEADER, "All partitions already have a receiver");
 						
 						// no partitions assigned, the AMQP link and Kafka consumer will be closed
-						vertx.eventBus().send(ebQueue, "", options);
+						vertx.eventBus().send(context.getEbName(), "", options);
 					}
 				}
 			});
@@ -207,12 +196,12 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 				ConsumerRecords<K, V> records = this.consumer.poll(1000);
 				
 				// check needs for pausing/resuming Kafka consumer against queue threshold
-				this.checkQueueThreshold(records.count());
+				//this.checkQueueThreshold(records.count());
 				
 				DeliveryOptions options = new DeliveryOptions();
 				options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_SEND);
 				
-				if (this.qos == ProtonQoS.AT_MOST_ONCE) {
+				if (this.context.getQos() == ProtonQoS.AT_MOST_ONCE) {
 					
 					if (!records.isEmpty()) {
 						
@@ -230,10 +219,10 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 						    	LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
 						    	
 						    	String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
-						    	this.vertx.sharedData().getLocalMap(this.ebQueue).put(deliveryTag, new KafkaMessage<K,V>(deliveryTag, record));
+						    	this.vertx.sharedData().getLocalMap(this.context.getEbName()).put(deliveryTag, new KafkaMessage<K,V>(deliveryTag, record));
 						    
 						    	// 3. start message sending
-						    	this.vertx.eventBus().send(this.ebQueue, deliveryTag, options);
+						    	this.vertx.eventBus().send(this.context.getEbName(), deliveryTag, options);
 						    }
 							
 							
@@ -257,21 +246,21 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 					    	LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
 					    	
 					    	String deliveryTag = String.format("%s_%s", record.partition(), record.offset());
-					    	this.vertx.sharedData().getLocalMap(this.ebQueue).put(deliveryTag, new KafkaMessage<K,V>(deliveryTag, record));
+					    	this.vertx.sharedData().getLocalMap(this.context.getEbName()).put(deliveryTag, new KafkaMessage<K,V>(deliveryTag, record));
 					    
 					    	// 2. start message sending
-					    	this.vertx.eventBus().send(this.ebQueue, deliveryTag, options);
+					    	this.vertx.eventBus().send(this.context.getEbName(), deliveryTag, options);
 					    }
 						
 					}
 					
 					try {
 						// 3. commit all tracked offsets for partitions
-						Map<TopicPartition, OffsetAndMetadata> offsets = this.offsetTracker.getOffsets();
+						Map<TopicPartition, OffsetAndMetadata> offsets = this.context.getOffsetTracker().getOffsets();
 						
 						if (offsets != null && !offsets.isEmpty()) {
 							this.consumer.commitSync(offsets);
-							this.offsetTracker.commit(offsets);
+							this.context.getOffsetTracker().commit(offsets);
 							
 							for (Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
 								LOG.debug("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
@@ -326,7 +315,7 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 		
 		// if the records we are going to send will increase the queue size over the threshold, we have to pause the Kafka consumer
 		// and giving more time to sender to send messages to AMQP client
-		if (this.vertx.sharedData().getLocalMap(this.ebQueue).size() + recordsCount > SinkBridgeEndpoint.QUEUE_THRESHOLD) {
+		if (this.vertx.sharedData().getLocalMap(this.context.getEbName()).size() + recordsCount > SinkBridgeEndpoint.QUEUE_THRESHOLD) {
 			this.pause();
 		} else if (this.paused.get()) {
 			this.resume();

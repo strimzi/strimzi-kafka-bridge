@@ -76,27 +76,6 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	public SourceBridgeEndpoint(Vertx vertx) {
 		
 		this.vertx = vertx;
-		this.ebName = String.format("%s.%s", 
-				Bridge.class.getSimpleName().toLowerCase(), 
-				SourceBridgeEndpoint.class.getSimpleName().toLowerCase());
-		LOG.debug("Event Bus queue and shared local map : {}", this.ebName);
-	
-		Properties props = new Properties();
-		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
-		props.put(BridgeConfig.KEY_SERIALIZER, BridgeConfig.getKeySerializer());
-		props.put(BridgeConfig.VALUE_SERIALIZER, BridgeConfig.getValueSerializer());
-		props.put(BridgeConfig.ACKS, BridgeConfig.getAcks());
-		
-		this.producerUnsettledMode = new KafkaProducer<>(props);
-		
-		props.clear();
-		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
-		props.put(BridgeConfig.KEY_SERIALIZER, BridgeConfig.getKeySerializer());
-		props.put(BridgeConfig.VALUE_SERIALIZER, BridgeConfig.getValueSerializer());
-		props.put(BridgeConfig.ACKS, "0");
-		
-		this.producerSettledMode = new KafkaProducer<>(props);
-		
 		this.converter = new DefaultMessageConverter();
 	}
 	
@@ -121,6 +100,27 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		if (!(link instanceof ProtonReceiver)) {
 			throw new IllegalArgumentException("This Proton link must be a receiver");
 		}
+		
+		this.ebName = String.format("%s.%s", 
+				Bridge.class.getSimpleName().toLowerCase(), 
+				SourceBridgeEndpoint.class.getSimpleName().toLowerCase());
+		LOG.debug("Event Bus queue and shared local map : {}", this.ebName);
+	
+		Properties props = new Properties();
+		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
+		props.put(BridgeConfig.KEY_SERIALIZER, BridgeConfig.getKeySerializer());
+		props.put(BridgeConfig.VALUE_SERIALIZER, BridgeConfig.getValueSerializer());
+		props.put(BridgeConfig.ACKS, BridgeConfig.getAcks());
+		
+		this.producerUnsettledMode = new KafkaProducer<>(props);
+		
+		props.clear();
+		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
+		props.put(BridgeConfig.KEY_SERIALIZER, BridgeConfig.getKeySerializer());
+		props.put(BridgeConfig.VALUE_SERIALIZER, BridgeConfig.getValueSerializer());
+		props.put(BridgeConfig.ACKS, "0");
+		
+		this.producerSettledMode = new KafkaProducer<>(props);
 		
 		ProtonReceiver receiver = (ProtonReceiver)link;
 		

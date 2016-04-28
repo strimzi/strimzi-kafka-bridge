@@ -67,7 +67,6 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	// Event Bus communication stuff between Kafka consumer thread
 	// and main Vert.x event loop
 	private Vertx vertx;
-	private String ebName;
 	private MessageConsumer<String> ebConsumer;
 	
 	// converter from ConsumerRecord to AMQP message
@@ -80,6 +79,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	
 	private Queue<String> deliveryNotSent;
 	
+	private SinkBridgeContext<String, byte[]> context;
+	
 	/**
 	 * Constructor
 	 * @param vertx		Vert.x instance
@@ -87,13 +88,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	public SinkBridgeEndpoint(Vertx vertx) {
 		this.vertx = vertx;
 		this.converter = new DefaultMessageConverter();
-		// generate an UUID as name for the Vert.x EventBus internal queue and shared local map
-		this.ebName = String.format("%s.%s.%s", 
-				Bridge.class.getSimpleName().toLowerCase(), 
-				SinkBridgeEndpoint.class.getSimpleName().toLowerCase(), 
-				UUID.randomUUID().toString());
 		this.deliveryNotSent = new LinkedList<>();
-		LOG.debug("Event Bus queue and shared local map : {}", this.ebName);
 	}
 	
 	@Override
@@ -108,7 +103,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			this.ebConsumer.unregister();
 		
 		this.deliveryNotSent.clear();
-		this.vertx.sharedData().getLocalMap(this.ebName).clear();
+		this.vertx.sharedData().getLocalMap(this.context.getEbName()).clear();
 		this.offsetTracker.clear();
 	}
 	
@@ -184,11 +179,22 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			props.put(BridgeConfig.ENABLE_AUTO_COMMIT, BridgeConfig.isEnableAutoCommit());
 			props.put(BridgeConfig.AUTO_OFFSET_RESET, BridgeConfig.getAutoOffsetReset());
 			
+			// generate an UUID as name for the Vert.x EventBus internal queue and shared local map
+			String ebName = String.format("%s.%s.%s", 
+					Bridge.class.getSimpleName().toLowerCase(), 
+					SinkBridgeEndpoint.class.getSimpleName().toLowerCase(), 
+					UUID.randomUUID().toString());
+			LOG.debug("Event Bus queue and shared local map : {}", ebName);
+			
+			// create context shared between sink endpoint and Kafka worker
+			this.context = new SinkBridgeContext<>(topic, sender.getQoS(), ebName, this.offsetTracker);
+			if (partition != null)
+				this.context.setPartition((Integer)partition);
+			if (offset != null)
+				this.context.setOffset((Long)offset);
+			
 			// create and start new thread for reading from Kafka
-			this.kafkaConsumerWorker = new KafkaConsumerWorker<>(props, 
-					topic, (Integer)partition, (Long)offset, 
-					this.vertx, this.ebName, 
-					sender.getQoS(), this.offsetTracker);
+			this.kafkaConsumerWorker = new KafkaConsumerWorker<>(props, this.vertx, this.context);
 			
 			this.kafkaConsumerThread = new Thread(kafkaConsumerWorker);
 			this.kafkaConsumerThread.start();
@@ -196,7 +202,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			// message sending on AMQP link MUST happen on Vert.x event loop due to
 			// the access to the sender object provided by Vert.x handler
 			// (we MUST avoid to access it from other threads; i.e. Kafka consumer thread)
-			this.ebConsumer = this.vertx.eventBus().consumer(this.ebName, ebMessage -> {
+			this.ebConsumer = this.vertx.eventBus().consumer(this.context.getEbName(), ebMessage -> {
 				
 				switch (ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER)) {
 					
@@ -214,7 +220,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 								
 								String deliveryTag = ebMessage.body();
 								
-								Object obj = this.vertx.sharedData().getLocalMap(this.ebName).remove(deliveryTag);
+								Object obj = this.vertx.sharedData().getLocalMap(this.context.getEbName()).remove(deliveryTag);
 								
 								if (obj instanceof KafkaMessage<?, ?>) {
 									
@@ -231,7 +237,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 									
 								String deliveryTag = ebMessage.body();
 								
-								Object obj = this.vertx.sharedData().getLocalMap(this.ebName).remove(deliveryTag);
+								Object obj = this.vertx.sharedData().getLocalMap(this.context.getEbName()).remove(deliveryTag);
 								
 								if (obj instanceof KafkaMessage<?, ?>) {
 	
@@ -258,7 +264,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 							}
 							
 							// can resume Kafka consumer (if paused) whene all messages sent
-							if (this.vertx.sharedData().getLocalMap(this.ebName).isEmpty())
+							if (this.vertx.sharedData().getLocalMap(this.context.getEbName()).isEmpty())
 									this.kafkaConsumerWorker.resume();
 							
 						} else {
@@ -325,7 +331,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				
 				LOG.debug("Recovering not sent delivery ... {}", deliveryTag);
 				this.deliveryNotSent.remove();
-				this.vertx.eventBus().send(this.ebName, deliveryTag, options);
+				this.vertx.eventBus().send(this.context.getEbName(), deliveryTag, options);
 				
 			} else {
 				
