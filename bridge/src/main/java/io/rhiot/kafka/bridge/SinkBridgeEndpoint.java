@@ -336,21 +336,23 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		DeliveryOptions options = new DeliveryOptions();
 		options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_SEND);
 		
-		if (this.deliveryNotSent.isEmpty())
+		if (this.deliveryNotSent.isEmpty()) {
+			// nothing to recovering, just update context sender queue status
 			this.context.setSendQueueFull(sender.sendQueueFull());
-		
-		// before resuming Kafka consumer, we need to send cached delivery
-		while ((deliveryTag = this.deliveryNotSent.peek()) != null) {
-			
-			if (!sender.sendQueueFull()) {
+		} else {
+			// before resuming Kafka consumer, we need to send cached delivery
+			while ((deliveryTag = this.deliveryNotSent.peek()) != null) {
 				
-				LOG.debug("Recovering not sent delivery ... {}", deliveryTag);
-				this.deliveryNotSent.remove();
-				this.vertx.eventBus().send(this.context.getEbName(), deliveryTag, options);
-				
-			} else {
-				
-				return;
+				if (!sender.sendQueueFull()) {
+					
+					LOG.debug("Recovering not sent delivery ... {}", deliveryTag);
+					this.deliveryNotSent.remove();
+					this.vertx.eventBus().send(this.context.getEbName(), deliveryTag, options);
+					
+				} else {
+					
+					return;
+				}
 			}
 		}
 	}
