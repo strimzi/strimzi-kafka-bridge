@@ -35,6 +35,7 @@ import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.message.Message;
 
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -45,11 +46,18 @@ import io.vertx.core.json.JsonObject;
  */
 public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 
+	// AMQP message section to encode in JSON
 	public static final String APPLICATION_PROPERTIES = "applicationProperties";
 	public static final String PROPERTIES = "properties";
 	public static final String MESSAGE_ANNOTATIONS = "messageAnnotations";
 	public static final String BODY = "body";
 	
+	public static final String SECTION_TYPE = "type";
+	public static final String SECTION = "section";
+	public static final String SECTION_AMQP_VALUE_TYPE = "amqpValue";
+	public static final String SECTION_DATA_TYPE = "data";
+	
+	// main AMQP properties
 	public static final String MESSAGE_ID = "messageId";
 	public static final String TO = "to";
 	public static final String SUBJECT = "subject";
@@ -127,38 +135,49 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 		// check body null
 		if (body != null) {
 			
+			JsonObject jsonBody = new JsonObject();
+			
 			// section is AMQP value
 			if (body instanceof AmqpValue) {	
+				
+				jsonBody.put(JsonMessageConverter.SECTION_TYPE, JsonMessageConverter.SECTION_AMQP_VALUE_TYPE);
 				
 				Object amqpValue = ((AmqpValue) body).getValue();
 				
 				// encoded as String
 				if (amqpValue instanceof String) {
 					String content = (String)((AmqpValue) body).getValue();
-					value = content.getBytes();
+					jsonBody.put(JsonMessageConverter.SECTION, content);
 				// encoded as a List
 				} else if (amqpValue instanceof List) {
 					List<?> list = (List<?>)((AmqpValue) body).getValue();
-					value = list.toString().getBytes();
+					JsonArray jsonArray = new JsonArray(list);
+					jsonBody.put(JsonMessageConverter.SECTION, jsonArray);
 				// encoded as an array
 				} else if (amqpValue instanceof Object[]) {
 					Object[] array = (Object[])((AmqpValue)body).getValue();
-					value = Arrays.toString(array).getBytes();
+					JsonArray jsonArray = new JsonArray(Arrays.asList(array));
+					jsonBody.put(JsonMessageConverter.SECTION, jsonArray);
 				// encoded as a Map
 				} else if (amqpValue instanceof Map) {
 					Map<?,?> map = (Map<?,?>)((AmqpValue)body).getValue();
 					value = map.toString().getBytes();
+					// TODO : how to put map ??
 				}
 			
 			// section is Data (binary)
 			} else if (body instanceof Data) {
 				Binary binary = (Binary)((Data)body).getValue();
 				value = binary.getArray();
+				
+				jsonBody.put(JsonMessageConverter.SECTION_TYPE, JsonMessageConverter.SECTION_DATA_TYPE);
+				// put the section bytes as Base64 encoded string
+				jsonBody.put(JsonMessageConverter.SECTION, Base64.getEncoder().encode(value));
 			}
+			
+			// put the body into the JSON root
+			json.put(JsonMessageConverter.BODY, jsonBody);
 		}
-		
-		// put the body bytes as Base64 encoded string
-		json.put(JsonMessageConverter.BODY, Base64.getEncoder().encode(value));
 		
 		// build the record for the KafkaProducer and then send it
 		return new ProducerRecord<>(topic, (Integer)partition, (String)key, json.toString().getBytes());
@@ -224,10 +243,31 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 			message.setMessageAnnotations(messageAnnotations);
 		}
 		
-		// get the body from the JSON (it's base64 encoded)
-		byte[] value = json.getBinary(JsonMessageConverter.BODY);
+		JsonObject jsonBody = json.getJsonObject(JsonMessageConverter.BODY);
 		
-		message.setBody(new Data(new Binary(Base64.getDecoder().decode(value))));
+		if (jsonBody != null) {
+			
+			String type = jsonBody.getString(JsonMessageConverter.SECTION_TYPE);
+			 
+			if (type.equals(JsonMessageConverter.SECTION_AMQP_VALUE_TYPE)) {
+				
+				// section is an AMQP value
+				Object jsonSection = json.getValue(JsonMessageConverter.SECTION);
+				
+				if (jsonSection instanceof String) {
+					message.setBody(new AmqpValue(jsonSection));
+				}
+				
+			} else if (type.equals(JsonMessageConverter.SECTION_DATA_TYPE)) {
+				
+				// section is a raw binary data
+				
+				// get the section from the JSON (it's base64 encoded)
+				byte[] value = json.getBinary(JsonMessageConverter.SECTION);
+				
+				message.setBody(new Data(new Binary(Base64.getDecoder().decode(value))));
+			}
+		}
 		
 		return message;
 	}
