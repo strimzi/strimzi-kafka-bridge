@@ -47,6 +47,9 @@ public class BridgeConfig {
 	// AMQP receiver
 	public static final String FLOW_CREDIT = "flow.credit";
 	
+	// Bridge specific
+	public static final String MESSAGE_CONVERTER = "message.converter";
+	
 	// default configuration values
 	
 	private static final String DEFAULT_BOOTSTRAP_SERVERS = "localhost:9092";
@@ -57,6 +60,7 @@ public class BridgeConfig {
 	private static final String DEFAULT_ACKS = "1";
 	private static final String DEFAULT_ENABLE_AUTO_COMMIT = "false";
 	private static final String DEFAULT_AUTO_OFFSET_RESET = "latest";
+	private static final String DEFAULT_MESSAGE_CONVERTER = "io.rhiot.kafka.bridge.DefaultMessageConverter";
 	
 	private static final int DEFAULT_FLOW_CREDIT = 1024;
 	
@@ -111,6 +115,7 @@ public class BridgeConfig {
 		props.put(BridgeConfig.FLOW_CREDIT, String.valueOf(BridgeConfig.DEFAULT_FLOW_CREDIT));
 		props.put(BridgeConfig.ACKS, BridgeConfig.DEFAULT_ACKS);
 		props.put(BridgeConfig.AUTO_OFFSET_RESET, BridgeConfig.DEFAULT_AUTO_OFFSET_RESET);
+		props.put(BridgeConfig.MESSAGE_CONVERTER, BridgeConfig.DEFAULT_MESSAGE_CONVERTER);
 		
 		return true;
 	}
@@ -186,5 +191,13 @@ public class BridgeConfig {
 	 */
 	public static String getAutoOffsetReset() {
 		return props.getProperty(BridgeConfig.AUTO_OFFSET_RESET);
+	}
+	
+	/**
+	 * Message converter used for transforming between Kafka and AMQP message
+	 * @return
+	 */
+	public static String getMessageConverter() {
+		return props.getProperty(BridgeConfig.MESSAGE_CONVERTER);
 	}
 }

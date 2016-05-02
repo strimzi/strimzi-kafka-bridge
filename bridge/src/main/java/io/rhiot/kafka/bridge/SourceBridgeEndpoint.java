@@ -76,7 +76,14 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	public SourceBridgeEndpoint(Vertx vertx) {
 		
 		this.vertx = vertx;
-		this.converter = new DefaultMessageConverter();
+		try {
+			this.converter = (MessageConverter<String, byte[]>)Class.forName(BridgeConfig.getMessageConverter()).newInstance();
+		} catch (Exception e) {
+			this.converter = null;
+		}
+		
+		if (this.converter == null)
+			this.converter = new DefaultMessageConverter();
 	}
 	
 	@Override
