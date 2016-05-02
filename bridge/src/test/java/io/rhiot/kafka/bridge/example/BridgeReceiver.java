@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
+import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Section;
@@ -108,17 +109,24 @@ public class BridgeReceiver {
 								byte[] value = ((Data)body).getValue().getArray();
 								LOG.info("Message received {} by receiver {} ...", new String(value), index);
 								
-								MessageAnnotations messageAnnotations = message.getMessageAnnotations();
-								if (messageAnnotations != null) {
-									Object partition = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.partition"));
-									Object offset = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.offset"));
-									Object key = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.key"));
-									LOG.info("... on partition {} [{}], key = {}", partition, offset, key);
+							} else if (body instanceof AmqpValue) {
+								Object amqpValue = ((AmqpValue) body).getValue();
+								if (amqpValue instanceof String) {
+									String content = (String)((AmqpValue) body).getValue();
+									LOG.info("Message received {} by receiver {} ...", content, index);
 								}
-								
-								// default is AT_LEAST_ONCE QoS (unsettled) so we need to send disposition (settle) to sender
-								delivery.disposition(Accepted.getInstance(), true);
-							}							
+							}
+							
+							// default is AT_LEAST_ONCE QoS (unsettled) so we need to send disposition (settle) to sender
+							delivery.disposition(Accepted.getInstance(), true);
+							
+							MessageAnnotations messageAnnotations = message.getMessageAnnotations();
+							if (messageAnnotations != null) {
+								Object partition = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.partition"));
+								Object offset = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.offset"));
+								Object key = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.key"));
+								LOG.info("... on partition {} [{}], key = {}", partition, offset, key);
+							}
 						})
 						.open();
 					}

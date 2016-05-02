@@ -252,7 +252,7 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 			if (type.equals(JsonMessageConverter.SECTION_AMQP_VALUE_TYPE)) {
 				
 				// section is an AMQP value
-				Object jsonSection = json.getValue(JsonMessageConverter.SECTION);
+				Object jsonSection = jsonBody.getValue(JsonMessageConverter.SECTION);
 				
 				if (jsonSection instanceof String) {
 					message.setBody(new AmqpValue(jsonSection));
@@ -263,7 +263,7 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 				// section is a raw binary data
 				
 				// get the section from the JSON (it's base64 encoded)
-				byte[] value = json.getBinary(JsonMessageConverter.SECTION);
+				byte[] value = jsonBody.getBinary(JsonMessageConverter.SECTION);
 				
 				message.setBody(new Data(new Binary(Base64.getDecoder().decode(value))));
 			}
