@@ -162,7 +162,8 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 				} else if (amqpValue instanceof Map) {
 					Map<?,?> map = (Map<?,?>)((AmqpValue)body).getValue();
 					value = map.toString().getBytes();
-					// TODO : how to put map ??
+					JsonObject jsonMap = new JsonObject((Map<String,Object>)map);
+					jsonBody.put(JsonMessageConverter.SECTION, jsonMap);
 				}
 			
 			// section is Data (binary)
@@ -256,6 +257,12 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 				
 				if (jsonSection instanceof String) {
 					message.setBody(new AmqpValue(jsonSection));
+				} else if (jsonSection instanceof JsonArray) {
+					JsonArray jsonArray = (JsonArray)jsonSection;
+					message.setBody(new AmqpValue(jsonArray.getList()));
+				} else if (jsonSection instanceof JsonObject) {
+					JsonObject jsonObject = (JsonObject)jsonSection;
+					message.setBody(new AmqpValue(jsonObject.getMap()));
 				}
 				
 			} else if (type.equals(JsonMessageConverter.SECTION_DATA_TYPE)) {
