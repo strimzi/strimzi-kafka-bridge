@@ -17,6 +17,8 @@
 package io.rhiot.kafka.bridge.example;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
@@ -105,15 +107,29 @@ public class BridgeReceiver {
 							this.received++;
 							
 							Section body = message.getBody();
+							
 							if (body instanceof Data) {
 								byte[] value = ((Data)body).getValue().getArray();
 								LOG.info("Message received {} by receiver {} ...", new String(value), index);
 								
 							} else if (body instanceof AmqpValue) {
 								Object amqpValue = ((AmqpValue) body).getValue();
+								// encoded as String
 								if (amqpValue instanceof String) {
 									String content = (String)((AmqpValue) body).getValue();
 									LOG.info("Message received {} by receiver {} ...", content, index);
+								// encoded as a List
+								} else if (amqpValue instanceof List) {
+									List<?> list = (List<?>)((AmqpValue) body).getValue();
+									LOG.info("Message received {} by receiver {} ...", list, index);
+								// encoded as an array
+								} else if (amqpValue instanceof Object[]) {
+									Object[] array = (Object[])((AmqpValue)body).getValue();
+									LOG.info("Message received {} by receiver {} ...", array, index);
+								// encoded as a Map
+								} else if (amqpValue instanceof Map) {
+									Map<?,?> map = (Map<?,?>)((AmqpValue)body).getValue();
+									LOG.info("Message received {} by receiver {} ...", map, index);
 								}
 							}
 							
