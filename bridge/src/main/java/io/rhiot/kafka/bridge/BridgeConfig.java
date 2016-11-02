@@ -49,6 +49,8 @@ public class BridgeConfig {
 	
 	// Bridge specific
 	public static final String MESSAGE_CONVERTER = "message.converter";
+	public static final String BIND_HOST = "bind.host";
+	public static final String BIND_PORT = "bind.port";
 	
 	// default configuration values
 	
@@ -61,8 +63,10 @@ public class BridgeConfig {
 	private static final String DEFAULT_ENABLE_AUTO_COMMIT = "false";
 	private static final String DEFAULT_AUTO_OFFSET_RESET = "latest";
 	private static final String DEFAULT_MESSAGE_CONVERTER = "io.rhiot.kafka.bridge.DefaultMessageConverter";
+	private static final String DEFAULT_BIND_HOST = "0.0.0.0";
 	
 	private static final int DEFAULT_FLOW_CREDIT = 1024;
+	private static final int DEFAULT_BIND_PORT = 5672;
 	
 	private static Properties props;
 
@@ -116,6 +120,8 @@ public class BridgeConfig {
 		props.put(BridgeConfig.ACKS, BridgeConfig.DEFAULT_ACKS);
 		props.put(BridgeConfig.AUTO_OFFSET_RESET, BridgeConfig.DEFAULT_AUTO_OFFSET_RESET);
 		props.put(BridgeConfig.MESSAGE_CONVERTER, BridgeConfig.DEFAULT_MESSAGE_CONVERTER);
+		props.put(BridgeConfig.BIND_HOST, BridgeConfig.DEFAULT_BIND_HOST);
+		props.put(BridgeConfig.BIND_PORT, String.valueOf(BridgeConfig.DEFAULT_BIND_PORT));
 		
 		return true;
 	}
@@ -200,4 +206,16 @@ public class BridgeConfig {
 	public static String getMessageConverter() {
 		return props.getProperty(BridgeConfig.MESSAGE_CONVERTER);
 	}
+
+	/**
+	 * Binding host for the listening AMQP server
+	 * @return
+     */
+	public static String getBindHost() { return props.getProperty(BridgeConfig.BIND_HOST); }
+
+	/**
+	 * Binding port for the listening AMQP server
+	 * @return
+     */
+	public static int getBindPort() { return Integer.parseInt(props.getProperty(BridgeConfig.BIND_PORT)); }
 }

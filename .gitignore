@@ -20,3 +20,7 @@ hs_err_pid*
 **/.prefs
 **/.classpath
 /target/
+
+# IntelliJ IDEA specific
+.idea/
+*.iml

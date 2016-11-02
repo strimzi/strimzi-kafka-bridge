@@ -60,9 +60,6 @@ public class Bridge {
 	public static final String AMQP_PARTITION_FILTER = "rhiot.io:partition-filter:int";
 	public static final String AMQP_OFFSET_FILTER = "rhiot.io:offset-filter:long";
 	
-	private static final int DEFAULT_PORT = 5672;
-	private static final String DEFAULT_HOST = "0.0.0.0";
-	
 	// AMQP server related stuff
 	private Vertx vertx;
 	private ProtonServer server;
@@ -95,8 +92,8 @@ public class Bridge {
 		
 		this.vertx = vertx;
 		
-		this.host = DEFAULT_HOST;
-		this.port = DEFAULT_PORT;
+		this.host = BridgeConfig.getBindHost();
+		this.port = BridgeConfig.getBindPort();
 		
 		this.source = new SourceBridgeEndpoint(this.vertx);
 		this.sinks = new ArrayList<>();
