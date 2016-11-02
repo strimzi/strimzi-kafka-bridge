@@ -62,6 +62,8 @@ public class BridgeSender {
 	 * This example shows a simple message sending
 	 */
 	public class ExampleOne {
+
+		private static final String TOPIC = "my_topic";
 		
 		private ProtonConnection connection;
 		private ProtonSender sender;
@@ -78,10 +80,10 @@ public class BridgeSender {
 					
 					LOG.info("Connected as {}", this.connection.getContainer());
 					
-					this.sender = connection.createSender(null);
+					this.sender = connection.createSender(ExampleOne.TOPIC);
 					this.sender.open();
 					
-					String topic = "my_topic";
+					String topic = ExampleOne.TOPIC;
 					Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
 					
 					this.sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
@@ -116,6 +118,7 @@ public class BridgeSender {
 		private static final int PERIODIC_MAX_MESSAGE = 50;
 		private static final int PERIODIC_DELAY = 10;
 		private static final int SENDERS_COUNT = 1;
+		private static final String TOPIC = "my_topic";
 		
 		private ProtonConnection connection;
 		private ProtonSender senders[];
@@ -137,7 +140,7 @@ public class BridgeSender {
 					
 					LOG.info("Connected as {}", this.connection.getContainer());
 					
-					String topic = "my_topic";
+					String topic = ExampleTwo.TOPIC;
 					this.delivered = 0;
 					
 					for (int i = 0; i < this.senders.length; i++) {

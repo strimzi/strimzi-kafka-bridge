@@ -66,6 +66,7 @@ public class BridgeReceiver {
 		
 		private static final int RECEIVERS_COUNT = 1;
 		private static final String GROUP_ID_PREFIX = "my_group";
+		private static final String TOPIC = "my_topic";
 		
 		// all receivers in the same consumer group
 		private static final boolean IS_SAME_GROUP_ID = true; 
@@ -95,9 +96,9 @@ public class BridgeReceiver {
 					for (int i = 0; i < this.receivers.length; i++) {
 						
 						if (ExampleOne.IS_SAME_GROUP_ID) {
-							this.receivers[i] = this.connection.createReceiver(String.format("my_topic/group.id/%s", ExampleOne.GROUP_ID_PREFIX));
+							this.receivers[i] = this.connection.createReceiver(String.format("%s/group.id/%s", ExampleOne.TOPIC, ExampleOne.GROUP_ID_PREFIX));
 						} else {
-							this.receivers[i] = this.connection.createReceiver(String.format("my_topic/group.id/%s%d", ExampleOne.GROUP_ID_PREFIX, i));
+							this.receivers[i] = this.connection.createReceiver(String.format("%s/group.id/%s%d", ExampleOne.TOPIC, ExampleOne.GROUP_ID_PREFIX, i));
 						}
 						
 						int index = i;
