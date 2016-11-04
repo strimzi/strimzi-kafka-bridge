@@ -29,17 +29,19 @@ public interface MessageConverter<K, V> {
 
 	/**
 	 * Converts an AMQP message to a Kafka record
-	 * 
-	 * @param message	AMQP message to convert
-	 * @return			Kafka record
+	 *
+	 * @param kafkaTopic	Kafka topic for sending message
+	 * @param message		AMQP message to convert
+	 * @return				Kafka record
 	 */
-	ProducerRecord<K, V> toKafkaRecord(Message message);
+	ProducerRecord<K, V> toKafkaRecord(String kafkaTopic, Message message);
 	
 	/**
 	 * Converts a Kafka record to an AMQP message
-	 * 
-	 * @param record	Kafka record to convert
-	 * @return			AMQP message
+	 *
+	 * @param amqpAddress	AMQP address for sending message
+	 * @param record		Kafka record to convert
+	 * @return				AMQP message
 	 */
-	Message toAmqpMessage(ConsumerRecord<K, V> record);
+	Message toAmqpMessage(String amqpAddress, ConsumerRecord<K, V> record);
 }

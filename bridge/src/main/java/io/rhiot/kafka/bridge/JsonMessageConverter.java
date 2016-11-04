@@ -65,7 +65,7 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 	public static final String CORRELATION_ID = "correlationId";
 	
 	@Override
-	public ProducerRecord<String, byte[]> toKafkaRecord(Message message) {
+	public ProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Message message) {
 		
 		Object partition = null, key = null;
 		byte[] value = null;
@@ -127,9 +127,11 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 			json.put(JsonMessageConverter.MESSAGE_ANNOTATIONS, jsonMessageAnnotations);
 		}
 		
-		// TODO : check if address isn't inside the "To" message property
 		// get topic and body from AMQP message
 		String topic = message.getAddress();
+		if (topic == null) {
+			topic = kafkaTopic;
+		}
 		Section body = message.getBody();
 		
 		// check body null
@@ -186,10 +188,10 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 	}
 
 	@Override
-	public Message toAmqpMessage(ConsumerRecord<String, byte[]> record) {
+	public Message toAmqpMessage(String amqpAddress, ConsumerRecord<String, byte[]> record) {
 		
-		// TODO : how to set the "To" property ?
 		Message message = Proton.message();
+		message.setAddress(amqpAddress);
 		
 		// get the root JSON
 		JsonObject json = new JsonObject(new String(record.value()));

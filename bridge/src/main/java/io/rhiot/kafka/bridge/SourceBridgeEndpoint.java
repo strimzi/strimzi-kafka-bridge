@@ -67,6 +67,9 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	private MessageConsumer<String> ebConsumer;
 	
 	private Handler<BridgeEndpoint> closeHandler;
+
+	// receiver link for handling incoming message
+	private ProtonReceiver receiver;
 	
 	/**
 	 * Constructor
@@ -133,25 +136,25 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 			throw new IllegalArgumentException("This Proton link must be a receiver");
 		}
 		
-		ProtonReceiver receiver = (ProtonReceiver)link;
+		this.receiver = (ProtonReceiver)link;
 		
 		// the delivery state is related to the acknowledgement from Apache Kafka
-		receiver.setTarget(receiver.getRemoteTarget())
-		.setAutoAccept(false)
-		.handler(this::processMessage);
+		this.receiver.setTarget(receiver.getRemoteTarget())
+				.setAutoAccept(false)
+				.handler(this::processMessage);
 				
-		if (receiver.getRemoteQoS() == ProtonQoS.AT_MOST_ONCE) {
+		if (this.receiver.getRemoteQoS() == ProtonQoS.AT_MOST_ONCE) {
 			// sender settle mode is SETTLED (so AT_MOST_ONCE QoS), we assume Apache Kafka
 			// no problem in throughput terms so use prefetch due to no ack from Kafka server
-			receiver.setPrefetch(BridgeConfig.getFlowCredit());
+			this.receiver.setPrefetch(BridgeConfig.getFlowCredit());
 		} else {
 			// sender settle mode is UNSETTLED (or MIXED) (so AT_LEAST_ONCE QoS).
 			// Thanks to the ack from Kafka server we can modulate flow control
-			receiver.setPrefetch(0)
-			.flow(BridgeConfig.getFlowCredit());
+			this.receiver.setPrefetch(0)
+					.flow(BridgeConfig.getFlowCredit());
 		}
-		
-		receiver.open();
+
+		this.receiver.open();
 		
 		// message sending on AMQP link MUST happen on Vert.x event loop due to
 		// the access to the delivery object provided by Vert.x handler
@@ -186,7 +189,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 				}
 				
 				// ack received from Kafka server, delivery sent to AMQP client, updating link credits
-				receiver.flow(1);
+				this.receiver.flow(1);
 			}
 			
 		});
@@ -200,7 +203,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	 */
 	private void processMessage(ProtonDelivery delivery, Message message) {
 		
-		ProducerRecord<String, byte[]> record = this.converter.toKafkaRecord(message);
+		ProducerRecord<String, byte[]> record = this.converter.toKafkaRecord(this.receiver.getTarget().getAddress(), message);
 		
 		LOG.debug("Sending to Kafka on topic {} at partition {} and key {}", record.topic(), record.partition(), record.key());
 				

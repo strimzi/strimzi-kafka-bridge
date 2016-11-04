@@ -41,14 +41,16 @@ import org.apache.qpid.proton.message.Message;
 public class DefaultMessageConverter implements MessageConverter<String, byte[]> {
 
 	@Override
-	public ProducerRecord<String, byte[]> toKafkaRecord(Message message) {
+	public ProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Message message) {
 		
 		Object partition = null, key = null;
 		byte[] value = null;
 		
-		// TODO : check if address isn't inside the "To" message property
 		// get topic and body from AMQP message
 		String topic = message.getAddress();
+		if (topic == null) {
+			topic = kafkaTopic;
+		}
 		Section body = message.getBody();
 		
 		// check body null
@@ -105,10 +107,10 @@ public class DefaultMessageConverter implements MessageConverter<String, byte[]>
 	}
 
 	@Override
-	public Message toAmqpMessage(ConsumerRecord<String, byte[]> record) {
+	public Message toAmqpMessage(String amqpAddress, ConsumerRecord<String, byte[]> record) {
 		
-		// TODO : how to set the "To" property ?
 		Message message = Proton.message();
+		message.setAddress(amqpAddress);
 		
 		// put message annotations about partition, offset and key (if not null)
 		Map<Symbol, Object> map = new HashMap<>();

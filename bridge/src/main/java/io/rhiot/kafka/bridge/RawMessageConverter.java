@@ -40,15 +40,17 @@ public class RawMessageConverter implements MessageConverter<String, byte[]>{
 	private static final int BUFFER_SIZE = 32768;
 	
 	@Override
-	public ProducerRecord<String, byte[]> toKafkaRecord(Message message) {
+	public ProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Message message) {
 		
 		Object partition = null, key = null;
 		byte[] value;
 		byte[] buffer = new byte[RawMessageConverter.BUFFER_SIZE];
 		
-		// TODO : check if address isn't inside the "To" message property
 		// get topic and body from AMQP message
 		String topic = message.getAddress();
+		if (topic == null) {
+			topic = kafkaTopic;
+		}
 		
 		int encoded = message.encode(buffer, 0, RawMessageConverter.BUFFER_SIZE);
 		value = Arrays.copyOfRange(buffer, 0, encoded);
@@ -74,10 +76,10 @@ public class RawMessageConverter implements MessageConverter<String, byte[]>{
 	}
 
 	@Override
-	public Message toAmqpMessage(ConsumerRecord<String, byte[]> record) {
+	public Message toAmqpMessage(String amqpAddress, ConsumerRecord<String, byte[]> record) {
 		
-		// TODO : how to set the "To" property ?
 		Message message = Proton.message();
+		message.setAddress(amqpAddress);
 		
 		message.decode(record.value(), 0, record.value().length);
 		

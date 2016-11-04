@@ -80,6 +80,9 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	private Queue<String> deliveryNotSent;
 	
 	private SinkBridgeContext<String, byte[]> context;
+
+	// sender link for handling outgoing message
+	private ProtonSender sender;
 	
 	/**
 	 * Constructor
@@ -129,11 +132,11 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			throw new IllegalArgumentException("This Proton link must be a sender");
 		}
 		
-		ProtonSender sender = (ProtonSender)link;
-		sender.setSource(sender.getRemoteSource());
+		this.sender = (ProtonSender)link;
+		this.sender.setSource(sender.getRemoteSource());
 		
 		// address is like this : [topic]/group.id/[group.id]
-		String address = sender.getRemoteSource().getAddress();
+		String address = this.sender.getRemoteSource().getAddress();
 		
 		int groupIdIndex = address.indexOf(SinkBridgeEndpoint.GROUP_ID_MATCH);
 		
@@ -141,19 +144,19 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		
 			// group.id don't specified in the address, link will be closed
 			LOG.warn("Local detached");
-			
-			sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_GROUPID), "Mandatory group.id not specified in the address"));
-			sender.close();
+
+			this.sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_GROUPID), "Mandatory group.id not specified in the address"));
+			this.sender.close();
 			
 			this.fireClose();
 			
 		} else {
 		
 			// group.id specified in the address, open sender and setup Kafka consumer
-			sender
-			.closeHandler(this::processCloseSender)
-			.sendQueueDrainHandler(this::processSendQueueDrain)
-			.open();
+			this.sender
+					.closeHandler(this::processCloseSender)
+					.sendQueueDrainHandler(this::processSendQueueDrain)
+					.open();
 			
 			String groupId = address.substring(groupIdIndex + SinkBridgeEndpoint.GROUP_ID_MATCH.length());
 			String topic = address.substring(0, groupIdIndex);
@@ -161,7 +164,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			LOG.debug("topic {} group.id {}", topic, groupId);
 			
 			// get filters on partition and offset
-			Source source = (Source) sender.getRemoteSource();
+			Source source = (Source) this.sender.getRemoteSource();
 			Map<Symbol, Object> filters = source.getFilter();
 			
 			Object partition = null, offset = null;
@@ -175,8 +178,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				condition = this.checkFilters(partition, offset);
 				
 				if (condition != null) {
-					sender.setCondition(condition);
-					sender.close();
+					this.sender.setCondition(condition);
+					this.sender.close();
 					
 					this.fireClose();
 					return;
@@ -206,7 +209,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			// create context shared between sink endpoint and Kafka worker
 			this.context
 			.setTopic(topic)
-			.setQos(sender.getQoS())
+			.setQos(this.sender.getQoS())
 			.setEbName(ebName)
 			.setOffsetTracker(this.offsetTracker);
 			
@@ -230,13 +233,13 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 					
 					case SinkBridgeEndpoint.EVENT_BUS_SEND:
 						
-						if (!sender.sendQueueFull()) {
+						if (!this.sender.sendQueueFull()) {
 							
 							// the remote receiver has credits, we can send the message
 						
 							ConsumerRecord<String, byte[]> record = null;
 							
-							if (sender.getQoS() == ProtonQoS.AT_MOST_ONCE) {
+							if (this.sender.getQoS() == ProtonQoS.AT_MOST_ONCE) {
 								
 								// Sender QoS settled (AT_MOST_ONCE)
 								
@@ -249,8 +252,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 									KafkaMessage<String, byte[]> kafkaMessage = (KafkaMessage<String, byte[]>) obj;
 									record = kafkaMessage.getRecord();
 									
-									Message message = converter.toAmqpMessage(record);
-									sender.send(ProtonHelper.tag(String.valueOf(deliveryTag)), message);
+									Message message = converter.toAmqpMessage(this.sender.getSource().getAddress(), record);
+									this.sender.send(ProtonHelper.tag(String.valueOf(deliveryTag)), message);
 								}
 								
 							} else {
@@ -266,20 +269,20 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 									KafkaMessage<String, byte[]> kafkaMessage = (KafkaMessage<String, byte[]>) obj;
 									record = kafkaMessage.getRecord();
 									
-									Message message = converter.toAmqpMessage(record);
+									Message message = converter.toAmqpMessage(this.sender.getSource().getAddress(), record);
 									
 									// record (converted in AMQP message) is on the way ... ask to tracker to track its delivery
 									this.offsetTracker.track(deliveryTag, record);
 									
 									LOG.debug("Tracked {} - {} [{}]", record.topic(), record.partition(), record.offset());
-									
-									sender.send(ProtonHelper.tag(deliveryTag), message, delivery -> {
+
+									this.sender.send(ProtonHelper.tag(deliveryTag), message, delivery -> {
 										
 										// a record (converted in AMQP message) is delivered ... communicate it to the tracker
 										String tag = new String(delivery.getTag());
 										this.offsetTracker.delivered(tag);
 										
-										LOG.debug("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), sender.getSource().getAddress());
+										LOG.debug("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), this.sender.getSource().getAddress());
 									});
 								}
 								
@@ -300,10 +303,10 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 						LOG.warn("Local detached");
 						
 						// no partitions assigned, the AMQP link and Kafka consumer will be closed
-						sender.setCondition(
+						this.sender.setCondition(
 								new ErrorCondition(Symbol.getSymbol(ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_ERROR_AMQP_HEADER)), 
 								ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_ERROR_DESC_HEADER)));
-						sender.close();
+						this.sender.close();
 						
 						this.close();
 						this.fireClose();
