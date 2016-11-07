@@ -47,10 +47,9 @@ public class RawMessageConverter implements MessageConverter<String, byte[]>{
 		byte[] buffer = new byte[RawMessageConverter.BUFFER_SIZE];
 		
 		// get topic and body from AMQP message
-		String topic = message.getAddress();
-		if (topic == null) {
-			topic = kafkaTopic;
-		}
+		String topic = (message.getAddress() == null) ?
+				kafkaTopic :
+				message.getAddress().replace('/', '.');
 		
 		int encoded = message.encode(buffer, 0, RawMessageConverter.BUFFER_SIZE);
 		value = Arrays.copyOfRange(buffer, 0, encoded);

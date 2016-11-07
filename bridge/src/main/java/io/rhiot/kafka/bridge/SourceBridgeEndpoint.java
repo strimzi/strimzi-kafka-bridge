@@ -202,8 +202,13 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	 * @param message		AMQP message received
 	 */
 	private void processMessage(ProtonDelivery delivery, Message message) {
-		
-		ProducerRecord<String, byte[]> record = this.converter.toKafkaRecord(this.receiver.getTarget().getAddress(), message);
+
+		// replace unsopported "/" (in a topic name in Kafka) with "."
+		String kafkaTopic = (this.receiver.getTarget().getAddress() != null) ?
+				this.receiver.getTarget().getAddress().replace('/', '.') :
+				null;
+
+		ProducerRecord<String, byte[]> record = this.converter.toKafkaRecord(kafkaTopic, message);
 		
 		LOG.debug("Sending to Kafka on topic {} at partition {} and key {}", record.topic(), record.partition(), record.key());
 				

@@ -203,12 +203,15 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 					SinkBridgeEndpoint.class.getSimpleName().toLowerCase(), 
 					UUID.randomUUID().toString());
 			LOG.debug("Event Bus queue and shared local map : {}", ebName);
-			
-			this.offsetTracker = new SimpleOffsetTracker<>(topic);
+
+			// replace unsopported "/" (in a topic name in Kafka) with "."
+			String kafkaTopic = topic.replace('/', '.');
+
+			this.offsetTracker = new SimpleOffsetTracker<>(kafkaTopic);
 			
 			// create context shared between sink endpoint and Kafka worker
 			this.context
-			.setTopic(topic)
+			.setTopic(kafkaTopic)
 			.setQos(this.sender.getQoS())
 			.setEbName(ebName)
 			.setOffsetTracker(this.offsetTracker);

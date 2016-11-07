@@ -47,10 +47,10 @@ public class DefaultMessageConverter implements MessageConverter<String, byte[]>
 		byte[] value = null;
 		
 		// get topic and body from AMQP message
-		String topic = message.getAddress();
-		if (topic == null) {
-			topic = kafkaTopic;
-		}
+		String topic = (message.getAddress() == null) ?
+				kafkaTopic :
+				message.getAddress().replace('/', '.');
+
 		Section body = message.getBody();
 		
 		// check body null
