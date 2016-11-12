@@ -32,7 +32,7 @@ This is a simple Docker image which containes the server application as a fat JA
 
 In order to send a message to a topic named _[topic]_, an AMQP client should attach a link on the following simple address :
 
-_[topic]_ 
+_[topic]_
 
 or specifying it inside the _"To"_ system properties of the AMQP message itself.
 
@@ -82,3 +82,7 @@ The main well known AMQP projects are :
 
 * [Apache Qpid](https://qpid.apache.org/) : provides an AMQP stack implementation in C, Java, C++ and other languages. Other than clients, a [Dispatch Router](https://qpid.apache.org/components/dispatch-router/index.html) is available as well;
 * [AMQP .Net Lite](https://github.com/Azure/amqpnetlite) : .Net and C# based implementation of the AMQP stack;
+
+## Internals
+
+You can find more documentation on "internals" and how the bridge works at following [doc](doc/README.md) folder.
