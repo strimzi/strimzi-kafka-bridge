@@ -26,6 +26,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
@@ -302,7 +303,7 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 				
 				Set<TopicPartition> assigned = this.consumer.assignment();
 				if (assigned != null && !assigned.isEmpty())
-					this.consumer.resume(assigned.stream().toArray(TopicPartition[]::new));
+					this.consumer.resume(assigned.stream().collect(Collectors.toList()));
 				this.paused.set(false);
 				
 				LOG.debug("Apache Kafka consumer worker resumed ... {} {} {}", 
@@ -319,7 +320,7 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 				
 				Set<TopicPartition> assigned = this.consumer.assignment();
 				if (assigned != null && !assigned.isEmpty())
-					this.consumer.pause(assigned.stream().toArray(TopicPartition[]::new));
+					this.consumer.pause(assigned.stream().collect(Collectors.toList()));
 				this.paused.set(true);
 				
 				LOG.debug("Apache Kafka consumer worker paused ... {} {}", 
