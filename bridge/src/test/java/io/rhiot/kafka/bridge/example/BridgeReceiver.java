@@ -16,10 +16,10 @@
  */
 package io.rhiot.kafka.bridge.example;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
+import io.vertx.core.Vertx;
+import io.vertx.proton.ProtonClient;
+import io.vertx.proton.ProtonConnection;
+import io.vertx.proton.ProtonReceiver;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
@@ -29,10 +29,9 @@ import org.apache.qpid.proton.amqp.messaging.Section;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.vertx.core.Vertx;
-import io.vertx.proton.ProtonClient;
-import io.vertx.proton.ProtonConnection;
-import io.vertx.proton.ProtonReceiver;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Examples on receiving messages from Apache Kafka via AMQP bridge

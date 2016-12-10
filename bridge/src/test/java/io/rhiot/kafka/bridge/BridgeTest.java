@@ -16,11 +16,16 @@
  */
 package io.rhiot.kafka.bridge;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import io.rhiot.kafka.bridge.config.BridgeConfigProperties;
+import io.vertx.core.Vertx;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.proton.ProtonClient;
+import io.vertx.proton.ProtonConnection;
+import io.vertx.proton.ProtonHelper;
+import io.vertx.proton.ProtonReceiver;
+import io.vertx.proton.ProtonSender;
 import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.Symbol;
@@ -38,17 +43,10 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.rhiot.kafka.bridge.Bridge;
-import io.rhiot.kafka.bridge.BridgeConfig;
-import io.vertx.core.Vertx;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.proton.ProtonClient;
-import io.vertx.proton.ProtonConnection;
-import io.vertx.proton.ProtonHelper;
-import io.vertx.proton.ProtonReceiver;
-import io.vertx.proton.ProtonSender;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RunWith(VertxUnitRunner.class)
 public class BridgeTest {
@@ -65,13 +63,15 @@ public class BridgeTest {
 	
 	private Vertx vertx;
 	private Bridge bridge;
+
+	private BridgeConfigProperties bridgeConfigProperties = new BridgeConfigProperties();
 	
 	@Before
 	public void before(TestContext context) {
 		
 		this.vertx = Vertx.vertx();
 		
-		this.bridge = new Bridge(this.vertx, null);
+		this.bridge = new Bridge(this.vertx, this.bridgeConfigProperties);
 		this.bridge.start();
 	}
 	
@@ -371,7 +371,7 @@ public class BridgeTest {
 						async.complete();
 					}
 				})
-				.setPrefetch(BridgeConfig.getFlowCredit())
+				.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit())
 				.open();
 			}
 		});
@@ -410,7 +410,7 @@ public class BridgeTest {
 						async.complete();
 					}
 				})
-				.setPrefetch(BridgeConfig.getFlowCredit())
+				.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit())
 				.open();
 			}
 		});
@@ -450,7 +450,7 @@ public class BridgeTest {
 						async.complete();
 					}
 				})
-				.setPrefetch(BridgeConfig.getFlowCredit())
+				.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit())
 				.open();
 			}
 		});

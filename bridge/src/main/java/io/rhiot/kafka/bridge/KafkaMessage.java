@@ -16,9 +16,8 @@
  */
 package io.rhiot.kafka.bridge;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-
 import io.vertx.core.shareddata.Shareable;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 /**
  * Wrapper class around Kafka record with related AMQP delivery tag

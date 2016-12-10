@@ -14,19 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.rhiot.kafka.bridge;
+package io.rhiot.kafka.bridge.tracker;
+
+import io.rhiot.kafka.bridge.tracker.OffsetTracker;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.Set;
-
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.TopicPartition;
+import java.util.stream.Collectors;
 
 /**
  * Full implementation of offset tracker.
@@ -38,7 +39,7 @@ import org.apache.kafka.common.TopicPartition;
  * @author ppatierno
  *
  */
-public class FullOffsetTracker<K, V> implements OffsetTracker<K, V>{
+public class FullOffsetTracker<K, V> implements OffsetTracker<K, V> {
 
 	// Apache Kafka topic to track
 	private String topic;

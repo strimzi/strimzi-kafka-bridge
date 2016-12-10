@@ -14,45 +14,78 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.rhiot.kafka.bridge;
+package io.rhiot.kafka.bridge.converter;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
+import io.rhiot.kafka.bridge.Bridge;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.qpid.proton.Proton;
+import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.Symbol;
+import org.apache.qpid.proton.amqp.messaging.AmqpValue;
+import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
+import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.message.Message;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
- * Raw implementation class for the message conversion
- * between Kafka record and AMQP message.
- * It passes the AMQP message as is (raw bytes) as Kafka record value and vice versa.
+ * Default implementation class for the message conversion
+ * between Kafka record and AMQP message
  * 
  * @author ppatierno
  */
-public class RawMessageConverter implements MessageConverter<String, byte[]>{
+public class DefaultMessageConverter implements MessageConverter<String, byte[]> {
 
-	// TODO : should be it configurable or based on max frame size ?
-	private static final int BUFFER_SIZE = 32768;
-	
 	@Override
 	public ProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Message message) {
 		
 		Object partition = null, key = null;
-		byte[] value;
-		byte[] buffer = new byte[RawMessageConverter.BUFFER_SIZE];
+		byte[] value = null;
 		
 		// get topic and body from AMQP message
 		String topic = (message.getAddress() == null) ?
 				kafkaTopic :
 				message.getAddress().replace('/', '.');
+
+		Section body = message.getBody();
 		
-		int encoded = message.encode(buffer, 0, RawMessageConverter.BUFFER_SIZE);
-		value = Arrays.copyOfRange(buffer, 0, encoded);
+		// check body null
+		if (body != null) {
+			
+			// section is AMQP value
+			if (body instanceof AmqpValue) {	
+				
+				Object amqpValue = ((AmqpValue) body).getValue();
+				
+				// encoded as String
+				if (amqpValue instanceof String) {
+					String content = (String)((AmqpValue) body).getValue();
+					value = content.getBytes();
+				// encoded as a List
+				} else if (amqpValue instanceof List) {
+					List<?> list = (List<?>)((AmqpValue) body).getValue();
+					value = list.toString().getBytes();
+				// encoded as an array
+				} else if (amqpValue instanceof Object[]) {
+					Object[] array = (Object[])((AmqpValue)body).getValue();
+					value = Arrays.toString(array).getBytes();
+				// encoded as a Map
+				} else if (amqpValue instanceof Map) {
+					Map<?,?> map = (Map<?,?>)((AmqpValue)body).getValue();
+					value = map.toString().getBytes();
+				}
+			
+			// section is Data (binary)
+			} else if (body instanceof Data) {
+				Binary binary = (Binary)((Data)body).getValue();
+				value = binary.getArray();
+			}
+		}
 		
 		// get partition and key from AMQP message annotations
 		// NOTE : they are not mandatory
@@ -80,8 +113,6 @@ public class RawMessageConverter implements MessageConverter<String, byte[]>{
 		Message message = Proton.message();
 		message.setAddress(amqpAddress);
 		
-		message.decode(record.value(), 0, record.value().length);
-		
 		// put message annotations about partition, offset and key (if not null)
 		Map<Symbol, Object> map = new HashMap<>();
 		map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION), record.partition());
@@ -91,6 +122,8 @@ public class RawMessageConverter implements MessageConverter<String, byte[]>{
 		
 		MessageAnnotations messageAnnotations = new MessageAnnotations(map);
 		message.setMessageAnnotations(messageAnnotations);
+		
+		message.setBody(new Data(new Binary(record.value())));
 		
 		return message;
 	}

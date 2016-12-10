@@ -16,11 +16,20 @@
  */
 package io.rhiot.kafka.bridge;
 
-import java.util.Properties;
-import java.util.UUID;
-
+import io.rhiot.kafka.bridge.config.BridgeConfigProperties;
+import io.rhiot.kafka.bridge.converter.DefaultMessageConverter;
+import io.rhiot.kafka.bridge.converter.MessageConverter;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.DeliveryOptions;
+import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.proton.ProtonDelivery;
+import io.vertx.proton.ProtonLink;
+import io.vertx.proton.ProtonQoS;
+import io.vertx.proton.ProtonReceiver;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
@@ -30,14 +39,8 @@ import org.apache.qpid.proton.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.core.eventbus.DeliveryOptions;
-import io.vertx.core.eventbus.MessageConsumer;
-import io.vertx.proton.ProtonDelivery;
-import io.vertx.proton.ProtonLink;
-import io.vertx.proton.ProtonQoS;
-import io.vertx.proton.ProtonReceiver;
+import java.util.Properties;
+import java.util.UUID;
 
 /**
  * Class in charge for handling incoming AMQP traffic
@@ -70,17 +73,22 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 
 	// receiver link for handling incoming message
 	private ProtonReceiver receiver;
+
+	private BridgeConfigProperties bridgeConfigProperties;
 	
 	/**
 	 * Constructor
 	 * 
 	 * @param vertx		Vert.x instance
+	 * @param bridgeConfigProperties	Bridge configuration
 	 */
-	public SourceBridgeEndpoint(Vertx vertx) {
+	public SourceBridgeEndpoint(Vertx vertx, BridgeConfigProperties bridgeConfigProperties) {
 		
 		this.vertx = vertx;
+		this.bridgeConfigProperties = bridgeConfigProperties;
+
 		try {
-			this.converter = (MessageConverter<String, byte[]>)Class.forName(BridgeConfig.getMessageConverter()).newInstance();
+			this.converter = (MessageConverter<String, byte[]>)Class.forName(this.bridgeConfigProperties.getAmqpConfigProperties().getMessageConverter()).newInstance();
 		} catch (Exception e) {
 			this.converter = null;
 		}
@@ -98,18 +106,18 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		LOG.debug("Event Bus queue and shared local map : {}", this.ebName);
 	
 		Properties props = new Properties();
-		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
-		props.put(BridgeConfig.KEY_SERIALIZER, BridgeConfig.getKeySerializer());
-		props.put(BridgeConfig.VALUE_SERIALIZER, BridgeConfig.getValueSerializer());
-		props.put(BridgeConfig.ACKS, BridgeConfig.getAcks());
+		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
+		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getKeySerializer());
+		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getValueSerializer());
+		props.put(ProducerConfig.ACKS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getAcks());
 		
 		this.producerUnsettledMode = new KafkaProducer<>(props);
 		
 		props.clear();
-		props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
-		props.put(BridgeConfig.KEY_SERIALIZER, BridgeConfig.getKeySerializer());
-		props.put(BridgeConfig.VALUE_SERIALIZER, BridgeConfig.getValueSerializer());
-		props.put(BridgeConfig.ACKS, "0");
+		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
+		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getKeySerializer());
+		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getValueSerializer());
+		props.put(ProducerConfig.ACKS_CONFIG, "0");
 		
 		this.producerSettledMode = new KafkaProducer<>(props);
 	}
@@ -146,12 +154,12 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		if (this.receiver.getRemoteQoS() == ProtonQoS.AT_MOST_ONCE) {
 			// sender settle mode is SETTLED (so AT_MOST_ONCE QoS), we assume Apache Kafka
 			// no problem in throughput terms so use prefetch due to no ack from Kafka server
-			this.receiver.setPrefetch(BridgeConfig.getFlowCredit());
+			this.receiver.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit());
 		} else {
 			// sender settle mode is UNSETTLED (or MIXED) (so AT_LEAST_ONCE QoS).
 			// Thanks to the ack from Kafka server we can modulate flow control
 			this.receiver.setPrefetch(0)
-					.flow(BridgeConfig.getFlowCredit());
+					.flow(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit());
 		}
 
 		this.receiver.open();
