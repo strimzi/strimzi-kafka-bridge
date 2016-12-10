@@ -34,17 +34,11 @@ public class Application {
     private final Vertx vertx = Vertx.vertx();
     private Bridge bridge;
 
-    private KafkaConfigProperties kafkaConfigProperties;
-    private AmqpConfigProperties amqpConfigProperties;
+    private BridgeConfigProperties bridgeConfigProperties;
 
     @Autowired
-    public void setKafkaConfigProperties(KafkaConfigProperties kafkaConfigProperties) {
-        this.kafkaConfigProperties = kafkaConfigProperties;
-    }
-
-    @Autowired
-    public void setAmqpConfigProperties(AmqpConfigProperties amqpConfigProperties) {
-        this.amqpConfigProperties = amqpConfigProperties;
+    public void setBridgeConfigProperties(BridgeConfigProperties bridgeConfigProperties) {
+        this.bridgeConfigProperties = bridgeConfigProperties;
     }
 
     @PostConstruct
