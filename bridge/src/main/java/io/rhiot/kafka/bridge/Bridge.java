@@ -16,12 +16,6 @@
  */
 package io.rhiot.kafka.bridge;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Vertx;
 import io.vertx.proton.ProtonConnection;
@@ -30,6 +24,11 @@ import io.vertx.proton.ProtonSender;
 import io.vertx.proton.ProtonServer;
 import io.vertx.proton.ProtonServerOptions;
 import io.vertx.proton.ProtonSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Main bridge class listening for connections
@@ -69,33 +68,28 @@ public class Bridge {
 	// endpoints for handling incoming and outcoming messages
 	private BridgeEndpoint source;
 	private List<BridgeEndpoint> sinks;
+
+	private BridgeConfigProperties bridgeConfigProperties;
 	
 	/**
 	 * Constructor
 	 * @param vertx		Vertx instance used to run the Proton server
-	 * @param config	configuration file path
+	 * @param bridgeConfigProperties	bridge configuration
 	 * @throws Exception 
 	 */
-	public Bridge(Vertx vertx, String config) {
+	public Bridge(Vertx vertx, BridgeConfigProperties bridgeConfigProperties) {
 		
 		if (vertx == null) {
 			throw new NullPointerException("Vertx instance cannot be null");
 		}
 		
-		// if provided as parameter, load configuration from file otherwise the default one
-		if (config != null && !config.isEmpty()) {
-			if (!BridgeConfig.load(config))
-				throw new IllegalArgumentException("Configuration file path is not valid");
-		} else {
-			BridgeConfig.loadDefault();
-		}
-		
 		this.vertx = vertx;
+		this.bridgeConfigProperties = bridgeConfigProperties;
 		
-		this.host = BridgeConfig.getBindHost();
-		this.port = BridgeConfig.getBindPort();
+		this.host = this.bridgeConfigProperties.getAmqpConfigProperties().getBindHost();
+		this.port = this.bridgeConfigProperties.getAmqpConfigProperties().getBindPort();
 		
-		this.source = new SourceBridgeEndpoint(this.vertx);
+		this.source = new SourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
 		this.sinks = new ArrayList<>();
 	}
 	
@@ -230,7 +224,7 @@ public class Bridge {
 		LOG.info("Remote receiver attached");
 		
 		// create and add a new sink to the collection
-		SinkBridgeEndpoint sink = new SinkBridgeEndpoint(this.vertx);
+		SinkBridgeEndpoint sink = new SinkBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
 		this.sinks.add(sink);
 		
 		sink.closeHandler(endpoint -> {

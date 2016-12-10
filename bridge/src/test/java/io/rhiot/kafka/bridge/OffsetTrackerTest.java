@@ -16,11 +16,6 @@
  */
 package io.rhiot.kafka.bridge;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -30,9 +25,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.rhiot.kafka.bridge.FullOffsetTracker;
-import io.rhiot.kafka.bridge.OffsetTracker;
-import io.rhiot.kafka.bridge.SimpleOffsetTracker;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class OffsetTrackerTest {
 	

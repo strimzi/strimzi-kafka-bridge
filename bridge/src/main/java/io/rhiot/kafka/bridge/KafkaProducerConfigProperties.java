@@ -27,9 +27,13 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "kafka.producer")
 public class KafkaProducerConfigProperties {
 
-    private String keySerializer;
-    private String valueSerializer;
-    private String acks;
+    private static final String DEFAULT_KEY_SERIALIZER = "org.apache.kafka.common.serialization.StringSerializer";
+    private static final String DEFAULT_VALUE_SERIALIZER = "org.apache.kafka.common.serialization.ByteArraySerializer";
+    private static final String DEFAULT_ACKS = "1";
+
+    private String keySerializer = DEFAULT_KEY_SERIALIZER;
+    private String valueSerializer = DEFAULT_VALUE_SERIALIZER;
+    private String acks = DEFAULT_ACKS;
 
     /**
      * Get the Key Serializer class

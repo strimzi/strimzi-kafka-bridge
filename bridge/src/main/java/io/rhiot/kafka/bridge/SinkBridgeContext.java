@@ -16,9 +16,9 @@
  */
 package io.rhiot.kafka.bridge;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import io.vertx.proton.ProtonQoS;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Context class shared between sink endpoint and Kafka consumer worker

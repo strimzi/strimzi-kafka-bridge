@@ -27,10 +27,15 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "amqp")
 public class AmqpConfigProperties {
 
-    private int flowCredit;
-    private String bindHost;
-    private int bindPort;
-    private String messageConverter;
+    private static final String DEFAULT_BIND_HOST = "0.0.0.0";
+    private static final int DEFAULT_BIND_PORT = 5672;
+    private static final int DEFAULT_FLOW_CREDIT = 1024;
+    private static final String DEFAULT_MESSAGE_CONVERTER = "io.rhiot.kafka.bridge.DefaultMessageConverter";
+
+    private int flowCredit = DEFAULT_FLOW_CREDIT;
+    private String bindHost = DEFAULT_BIND_HOST;
+    private int bindPort = DEFAULT_BIND_PORT;
+    private String messageConverter = DEFAULT_MESSAGE_CONVERTER;
 
     /**
      * Get the AMQP receiver flow credit

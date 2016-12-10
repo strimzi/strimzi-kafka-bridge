@@ -28,10 +28,12 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "kafka")
 public class KafkaConfigProperties {
 
-    private String bootstrapServers;
+    private static final String DEFAULT_BOOTSTRAP_SERVERS = "localhost:9092";
 
-    private KafkaProducerConfigProperties producerConfig;
-    private KafkaConsumerConfigProperties consumerConfig;
+    private String bootstrapServers = DEFAULT_BOOTSTRAP_SERVERS;
+
+    private KafkaProducerConfigProperties producerConfig = new KafkaProducerConfigProperties();
+    private KafkaConsumerConfigProperties consumerConfig = new KafkaConsumerConfigProperties();
 
     /**
      * Get the bootstrap servers

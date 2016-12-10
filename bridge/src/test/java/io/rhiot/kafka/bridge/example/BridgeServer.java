@@ -19,6 +19,7 @@ package io.rhiot.kafka.bridge.example;
 import java.io.IOException;
 
 import io.rhiot.kafka.bridge.Bridge;
+import io.rhiot.kafka.bridge.BridgeConfigProperties;
 import io.vertx.core.Vertx;
 
 /**
@@ -33,8 +34,10 @@ public class BridgeServer {
 		String config = (args.length > 0 && !args[0].isEmpty()) ? args[0] : null;
 		
 		Vertx vertx = Vertx.vertx();
+
+		BridgeConfigProperties bridgeConfigProperties = new BridgeConfigProperties();
 		
-		Bridge bridge = new Bridge(vertx, config);
+		Bridge bridge = new Bridge(vertx, bridgeConfigProperties);
 		bridge.start();
 		
 		try {

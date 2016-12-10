@@ -16,18 +16,17 @@
  */
 package io.rhiot.kafka.bridge.example;
 
-import java.io.IOException;
-
-import org.apache.qpid.proton.amqp.messaging.Rejected;
-import org.apache.qpid.proton.message.Message;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.vertx.core.Vertx;
 import io.vertx.proton.ProtonClient;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonSender;
+import org.apache.qpid.proton.amqp.messaging.Rejected;
+import org.apache.qpid.proton.message.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 /**
  * Examples on sending messages from Apache Kafka via AMQP bridge

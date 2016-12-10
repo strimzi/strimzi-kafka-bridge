@@ -16,20 +16,6 @@
  */
 package io.rhiot.kafka.bridge;
 
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Queue;
-import java.util.UUID;
-
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.qpid.proton.amqp.Symbol;
-import org.apache.qpid.proton.amqp.messaging.Source;
-import org.apache.qpid.proton.amqp.transport.ErrorCondition;
-import org.apache.qpid.proton.message.Message;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -39,6 +25,20 @@ import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonSender;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.qpid.proton.amqp.Symbol;
+import org.apache.qpid.proton.amqp.messaging.Source;
+import org.apache.qpid.proton.amqp.transport.ErrorCondition;
+import org.apache.qpid.proton.message.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Queue;
+import java.util.UUID;
 
 /**
  * Class in charge for reading from Apache Kafka
@@ -83,15 +83,21 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 
 	// sender link for handling outgoing message
 	private ProtonSender sender;
+
+	private BridgeConfigProperties bridgeConfigProperties;
 	
 	/**
 	 * Constructor
 	 * @param vertx		Vert.x instance
+	 * @param bridgeConfigProperties	Bridge configuration
 	 */
-	public SinkBridgeEndpoint(Vertx vertx) {
+	public SinkBridgeEndpoint(Vertx vertx, BridgeConfigProperties bridgeConfigProperties) {
+
 		this.vertx = vertx;
+		this.bridgeConfigProperties = bridgeConfigProperties;
+
 		try {
-			this.converter = (MessageConverter<String, byte[]>)Class.forName(BridgeConfig.getMessageConverter()).newInstance();
+			this.converter = (MessageConverter<String, byte[]>)Class.forName(this.bridgeConfigProperties.getAmqpConfigProperties().getMessageConverter()).newInstance();
 		} catch (Exception e) {
 			this.converter = null;
 		}
@@ -190,12 +196,12 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 					
 			// creating configuration for Kafka consumer
 			Properties props = new Properties();
-			props.put(BridgeConfig.BOOTSTRAP_SERVERS, BridgeConfig.getBootstrapServers());
-			props.put(BridgeConfig.KEY_DESERIALIZER, BridgeConfig.getKeyDeserializer());
-			props.put(BridgeConfig.VALUE_DESERIALIZER, BridgeConfig.getValueDeserializer());
-			props.put(BridgeConfig.GROUP_ID, groupId);
-			props.put(BridgeConfig.ENABLE_AUTO_COMMIT, BridgeConfig.isEnableAutoCommit());
-			props.put(BridgeConfig.AUTO_OFFSET_RESET, BridgeConfig.getAutoOffsetReset());
+			props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
+			props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getConsumerConfig().getKeyDeserializer());
+			props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getConsumerConfig().getValueDeserializer());
+			props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+			props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getConsumerConfig().isEnableAutoCommit());
+			props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getConsumerConfig().getAutoOffsetReset());
 			
 			// generate an UUID as name for the Vert.x EventBus internal queue and shared local map
 			String ebName = String.format("%s.%s.%s", 

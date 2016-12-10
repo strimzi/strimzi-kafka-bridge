@@ -26,8 +26,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class BridgeConfigProperties {
 
-    private KafkaConfigProperties kafkaConfigProperties;
-    private AmqpConfigProperties amqpConfigProperties;
+    private KafkaConfigProperties kafkaConfigProperties = new KafkaConfigProperties();
+    private AmqpConfigProperties amqpConfigProperties = new AmqpConfigProperties();
 
     /**
      * Get the Kafka configuration

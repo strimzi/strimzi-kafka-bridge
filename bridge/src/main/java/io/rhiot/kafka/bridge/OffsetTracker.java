@@ -16,11 +16,11 @@
  */
 package io.rhiot.kafka.bridge;
 
-import java.util.Map;
-
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+
+import java.util.Map;
 
 /**
  * 

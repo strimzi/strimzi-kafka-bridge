@@ -27,9 +27,15 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "kafka.consumer")
 public class KafkaConsumerConfigProperties {
 
-    private String keyDeserializer;
-    private String valueDeserializer;
-    private String autoOffsetReset;
+    private static final String DEFAULT_KEY_DESERIALIZER = "org.apache.kafka.common.serialization.StringDeserializer";
+    private static final String DEFAULT_VALUE_DESERIALIZER = "org.apache.kafka.common.serialization.ByteArrayDeserializer";
+    private static final String DEFAULT_AUTO_OFFSET_RESET = "latest";
+    private static final boolean DEFAULT_ENABLE_AUTO_COMMIT = false;
+
+    private String keyDeserializer = DEFAULT_KEY_DESERIALIZER;
+    private String valueDeserializer = DEFAULT_VALUE_DESERIALIZER;
+    private String autoOffsetReset = DEFAULT_AUTO_OFFSET_RESET;
+    private boolean isEnableAutoCommit = DEFAULT_ENABLE_AUTO_COMMIT;
 
     /**
      * Get the Key Serializer class
@@ -89,5 +95,15 @@ public class KafkaConsumerConfigProperties {
     public KafkaConsumerConfigProperties setAutoOffsetReset(String autoOffsetReset) {
         this.autoOffsetReset = autoOffsetReset;
         return this;
+    }
+
+    /**
+     * Enable auto commit on Kafka Consumer
+     *
+     * @return
+     */
+    public boolean isEnableAutoCommit() {
+        // enable.auto.commit isn't configurable
+        return this.isEnableAutoCommit;
     }
 }

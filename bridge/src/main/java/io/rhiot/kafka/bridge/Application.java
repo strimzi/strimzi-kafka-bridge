@@ -44,7 +44,7 @@ public class Application {
     @PostConstruct
     public void start() {
 
-        this.bridge = new Bridge(this.vertx, null);
+        this.bridge = new Bridge(this.vertx, this.bridgeConfigProperties);
         this.bridge.start();
     }
 
