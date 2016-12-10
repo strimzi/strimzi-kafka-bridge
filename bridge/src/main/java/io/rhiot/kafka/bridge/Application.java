@@ -17,6 +17,7 @@
 
 package io.rhiot.kafka.bridge;
 
+import io.rhiot.kafka.bridge.config.BridgeConfigProperties;
 import io.vertx.core.Vertx;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;

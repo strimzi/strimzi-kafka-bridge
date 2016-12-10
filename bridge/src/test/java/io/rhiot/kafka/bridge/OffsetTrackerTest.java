@@ -16,6 +16,9 @@
  */
 package io.rhiot.kafka.bridge;
 
+import io.rhiot.kafka.bridge.tracker.FullOffsetTracker;
+import io.rhiot.kafka.bridge.tracker.OffsetTracker;
+import io.rhiot.kafka.bridge.tracker.SimpleOffsetTracker;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;

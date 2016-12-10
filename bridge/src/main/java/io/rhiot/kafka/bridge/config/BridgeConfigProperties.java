@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.rhiot.kafka.bridge;
+package io.rhiot.kafka.bridge.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

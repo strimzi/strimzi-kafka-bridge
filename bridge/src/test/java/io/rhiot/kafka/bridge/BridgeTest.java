@@ -16,6 +16,7 @@
  */
 package io.rhiot.kafka.bridge;
 
+import io.rhiot.kafka.bridge.config.BridgeConfigProperties;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;

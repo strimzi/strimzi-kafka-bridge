@@ -16,6 +16,7 @@
  */
 package io.rhiot.kafka.bridge;
 
+import io.rhiot.kafka.bridge.tracker.OffsetTracker;
 import io.vertx.proton.ProtonQoS;
 
 import java.util.concurrent.atomic.AtomicBoolean;

@@ -19,7 +19,7 @@ package io.rhiot.kafka.bridge.example;
 import java.io.IOException;
 
 import io.rhiot.kafka.bridge.Bridge;
-import io.rhiot.kafka.bridge.BridgeConfigProperties;
+import io.rhiot.kafka.bridge.config.BridgeConfigProperties;
 import io.vertx.core.Vertx;
 
 /**

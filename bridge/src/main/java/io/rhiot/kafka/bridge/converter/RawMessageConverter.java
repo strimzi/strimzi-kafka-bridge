@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.rhiot.kafka.bridge;
+package io.rhiot.kafka.bridge.converter;
 
+import io.rhiot.kafka.bridge.Bridge;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.qpid.proton.Proton;
@@ -34,7 +35,7 @@ import java.util.Map;
  * 
  * @author ppatierno
  */
-public class RawMessageConverter implements MessageConverter<String, byte[]>{
+public class RawMessageConverter implements MessageConverter<String, byte[]> {
 
 	// TODO : should be it configurable or based on max frame size ?
 	private static final int BUFFER_SIZE = 32768;

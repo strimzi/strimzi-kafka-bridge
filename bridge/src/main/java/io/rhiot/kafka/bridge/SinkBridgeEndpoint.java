@@ -16,6 +16,11 @@
  */
 package io.rhiot.kafka.bridge;
 
+import io.rhiot.kafka.bridge.config.BridgeConfigProperties;
+import io.rhiot.kafka.bridge.converter.DefaultMessageConverter;
+import io.rhiot.kafka.bridge.converter.MessageConverter;
+import io.rhiot.kafka.bridge.tracker.OffsetTracker;
+import io.rhiot.kafka.bridge.tracker.SimpleOffsetTracker;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
