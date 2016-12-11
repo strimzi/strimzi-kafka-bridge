@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge;
 
 import io.vertx.core.Vertx;
@@ -45,8 +46,6 @@ import java.util.stream.Collectors;
 
 /**
  * Class for reading from Kafka in a multi-threading way
- * 
- * @author ppatierno
  *
  * @param <K>		Key type for Kafka consumer and record
  * @param <V>		Value type for Kafka consumer and record

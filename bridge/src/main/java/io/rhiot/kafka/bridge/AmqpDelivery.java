@@ -14,16 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge;
 
 import io.vertx.core.shareddata.Shareable;
 import io.vertx.proton.ProtonDelivery;
 
 /**
- * Wrapper class around AMQP delivery withe a internal generated delivery ID (not tag) 
- * 
- * @author ppatierno
- *
+ * Wrapper class around AMQP delivery withe a internal generated delivery ID (not tag)
  */
 public class AmqpDelivery implements Shareable {
 

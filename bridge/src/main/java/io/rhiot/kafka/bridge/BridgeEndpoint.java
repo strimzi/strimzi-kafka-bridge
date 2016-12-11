@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge;
 
 import io.vertx.core.Handler;
@@ -22,8 +23,6 @@ import io.vertx.proton.ProtonLink;
 /**
  * Interface for classes which acts as endpoints
  * bridging traffic between AMQP and Apache Kafka
- * 
- * @author ppatierno
  */
 public interface BridgeEndpoint {
 

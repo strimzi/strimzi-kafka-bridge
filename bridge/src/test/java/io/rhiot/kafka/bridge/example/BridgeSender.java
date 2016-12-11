@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge.example;
 
 import io.vertx.core.Vertx;
@@ -30,8 +31,6 @@ import java.io.IOException;
 
 /**
  * Examples on sending messages from Apache Kafka via AMQP bridge
- * 
- * @author ppatierno
  */
 public class BridgeSender {
 	

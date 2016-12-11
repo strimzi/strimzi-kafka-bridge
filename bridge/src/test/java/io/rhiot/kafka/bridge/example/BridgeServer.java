@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge.example;
 
 import io.rhiot.kafka.bridge.Bridge;
@@ -24,8 +25,6 @@ import java.io.IOException;
 
 /**
  * Class example on running the bridge server
- * 
- * @author ppatierno
  */
 public class BridgeServer {
 	

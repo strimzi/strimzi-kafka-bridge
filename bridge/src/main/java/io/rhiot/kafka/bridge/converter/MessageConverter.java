@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge.converter;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -22,8 +23,6 @@ import org.apache.qpid.proton.message.Message;
 
 /**
  * Interface for a message converter between Kafka record and AMQP message
- * 
- * @author ppatierno
  */
 public interface MessageConverter<K, V> {
 

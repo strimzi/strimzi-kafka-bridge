@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge;
 
 import io.rhiot.kafka.bridge.config.BridgeConfigProperties;
@@ -48,8 +49,6 @@ import java.util.UUID;
 /**
  * Class in charge for reading from Apache Kafka
  * and bridging into AMQP traffic to receivers
- * 
- * @author ppatierno
  */
 public class SinkBridgeEndpoint implements BridgeEndpoint {
 
@@ -93,6 +92,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	
 	/**
 	 * Constructor
+	 *
 	 * @param vertx		Vert.x instance
 	 * @param bridgeConfigProperties	Bridge configuration
 	 */

@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge;
 
 import io.rhiot.kafka.bridge.config.BridgeConfigProperties;
@@ -37,8 +38,6 @@ import java.util.List;
 /**
  * Main bridge class listening for connections
  * and handling AMQP senders and receivers
- * 
- * @author ppatierno
  */
 @Component
 public class Bridge extends AbstractVerticle {

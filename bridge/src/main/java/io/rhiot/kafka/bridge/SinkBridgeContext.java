@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge;
 
 import io.rhiot.kafka.bridge.tracker.OffsetTracker;
@@ -23,8 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Context class shared between sink endpoint and Kafka consumer worker
- * 
- * @author ppatierno
  */
 public class SinkBridgeContext<K, V> {
 
