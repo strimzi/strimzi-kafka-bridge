@@ -14,11 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge;
 
 import io.rhiot.kafka.bridge.config.BridgeConfigProperties;
+import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Vertx;
+import io.vertx.core.Future;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
@@ -27,6 +29,8 @@ import io.vertx.proton.ProtonServerOptions;
 import io.vertx.proton.ProtonSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,10 +38,9 @@ import java.util.List;
 /**
  * Main bridge class listening for connections
  * and handling AMQP senders and receivers
- * 
- * @author ppatierno
  */
-public class Bridge {
+@Component
+public class Bridge extends AbstractVerticle {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(Bridge.class);
 
@@ -61,43 +64,25 @@ public class Bridge {
 	public static final String AMQP_OFFSET_FILTER = "rhiot.io:offset-filter:long";
 	
 	// AMQP server related stuff
-	private Vertx vertx;
 	private ProtonServer server;
-	private int port;
-	private String host;
-	
+
 	// endpoints for handling incoming and outcoming messages
 	private BridgeEndpoint source;
 	private List<BridgeEndpoint> sinks;
 
 	private BridgeConfigProperties bridgeConfigProperties;
-	
-	/**
-	 * Constructor
-	 * @param vertx		Vertx instance used to run the Proton server
-	 * @param bridgeConfigProperties	bridge configuration
-	 * @throws Exception 
-	 */
-	public Bridge(Vertx vertx, BridgeConfigProperties bridgeConfigProperties) {
-		
-		if (vertx == null) {
-			throw new NullPointerException("Vertx instance cannot be null");
-		}
-		
-		this.vertx = vertx;
+
+	@Autowired
+	public void setBridgeConfigProperties(BridgeConfigProperties bridgeConfigProperties) {
 		this.bridgeConfigProperties = bridgeConfigProperties;
-		
-		this.host = this.bridgeConfigProperties.getAmqpConfigProperties().getBindHost();
-		this.port = this.bridgeConfigProperties.getAmqpConfigProperties().getBindPort();
-		
-		this.source = new SourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
-		this.sinks = new ArrayList<>();
 	}
-	
+
 	/**
-	 * Start the bridge
+	 * Start the AMQP server
+	 *
+	 * @param startFuture
 	 */
-	public void start() {
+	private void bindAmqpServer(Future<Void> startFuture) {
 		
 		ProtonServerOptions options = this.createServerOptions();
 		
@@ -106,33 +91,52 @@ public class Bridge {
 				.listen(ar -> {
 					
 					if (ar.succeeded()) {
-						LOG.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
-						
+
 						this.source.open();
-						
+
+						LOG.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
+						startFuture.complete();
 					} else {
 						LOG.error("Error starting AMQP-Kafka Bridge", ar.cause());
+						startFuture.fail(ar.cause());
 					}
 				});
-		
 	}
 	
-	/**
-	 * Stop the bridge
-	 */
-	public void stop() {
-		
+	@Override
+	public void start(Future<Void> startFuture) throws Exception {
+
+		LOG.info("Starting AMQP-Kafka bridge verticle...");
+
+		this.source = new SourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
+		this.sinks = new ArrayList<>();
+
+		this.bindAmqpServer(startFuture);
+	}
+
+	@Override
+	public void stop(Future<Void> stopFuture) throws Exception {
+
+		LOG.info("Stopping AMQP-Kafka bridge verticle ...");
+
 		if (this.server != null) {
-			
+
 			this.source.close();
-			
+
 			for (BridgeEndpoint sink : this.sinks) {
 				sink.close();
 			}
-			
-			this.server.close();
-			
-			LOG.info("AMQP-Kafka Bridge stopped");
+
+			this.server.close(done -> {
+
+				if (done.succeeded()) {
+					LOG.info("AMQP-Kafka bridge has been shut down successfully");
+					stopFuture.complete();
+				} else {
+					LOG.info("Error while shutting down AMQP-Kafka bridge", done.cause());
+					stopFuture.fail(done.cause());
+				}
+			});
 		}
 	}
 	
@@ -143,10 +147,10 @@ public class Bridge {
 	 * @return		ProtonServer options instance
 	 */
 	private ProtonServerOptions createServerOptions(){
-		
+
 		ProtonServerOptions options = new ProtonServerOptions();
-		options.setHost(this.host);
-		options.setPort(this.port);
+		options.setHost(this.bridgeConfigProperties.getAmqpConfigProperties().getBindHost());
+		options.setPort(this.bridgeConfigProperties.getAmqpConfigProperties().getBindPort());
 		return options;
 	}
 	
@@ -172,6 +176,7 @@ public class Bridge {
 	 * @param ar		async result with info on related Proton connection
 	 */
 	private void processOpenConnection(AsyncResult<ProtonConnection> ar) {
+
 		if (ar.succeeded()) {
 			LOG.info("Connection opened by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
 		}
@@ -182,6 +187,7 @@ public class Bridge {
 	 * @param ar		async result with info on related Proton connection
 	 */
 	private void processCloseConnection(AsyncResult<ProtonConnection> ar) {
+
 		if (ar.succeeded()) {
 			LOG.info("Connection closed by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
 			ar.result().close();
@@ -193,6 +199,7 @@ public class Bridge {
 	 * @param connection	related Proton connection closed
 	 */
 	private void processDisconnection(ProtonConnection connection) {
+
 		LOG.info("Disconnection from {} {}", connection.getRemoteHostname(), connection.getRemoteContainer());
 	}
 	
@@ -201,6 +208,7 @@ public class Bridge {
 	 * @param session		related Proton session object
 	 */
 	private void processOpenSession(ProtonSession session) {
+
 		LOG.info("Session opened");
 		session.open();
 	}
@@ -211,8 +219,8 @@ public class Bridge {
 	 * 						by which handling communication with remote sender
 	 */
 	private void processOpenReceiver(ProtonReceiver receiver) {
+
 		LOG.info("Remote sender attached");
-		
 		this.source.handle(receiver);
 	}
 	
@@ -222,6 +230,7 @@ public class Bridge {
 	 * 						by which handling communication with remote receiver
 	 */
 	private void processOpenSender(ProtonSender sender) {
+
 		LOG.info("Remote receiver attached");
 		
 		// create and add a new sink to the collection

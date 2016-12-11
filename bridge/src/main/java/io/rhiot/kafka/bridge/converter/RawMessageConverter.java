@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge.converter;
 
 import io.rhiot.kafka.bridge.Bridge;
@@ -32,8 +33,6 @@ import java.util.Map;
  * Raw implementation class for the message conversion
  * between Kafka record and AMQP message.
  * It passes the AMQP message as is (raw bytes) as Kafka record value and vice versa.
- * 
- * @author ppatierno
  */
 public class RawMessageConverter implements MessageConverter<String, byte[]> {
 

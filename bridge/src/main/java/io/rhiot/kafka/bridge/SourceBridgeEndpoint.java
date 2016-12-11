@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge;
 
 import io.rhiot.kafka.bridge.config.BridgeConfigProperties;
@@ -45,8 +46,6 @@ import java.util.UUID;
 /**
  * Class in charge for handling incoming AMQP traffic
  * from senders and bridging into Apache Kafka
- * 
- * @author ppatierno
  */
 public class SourceBridgeEndpoint implements BridgeEndpoint {
 	
@@ -124,6 +123,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 
 	@Override
 	public void close() {
+
 		if (this.producerSettledMode != null)
 			this.producerSettledMode.close();
 		
@@ -260,6 +260,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 
 	@Override
 	public BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler) {
+
 		this.closeHandler = endpointCloseHandler;
 		return this;
 	}
@@ -267,7 +268,8 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	/**
 	 * Raise close event
 	 */
-	private void fireClose() {
+	private void handleClose() {
+
 		if (this.closeHandler != null) {
 			this.closeHandler.handle(this);
 		}

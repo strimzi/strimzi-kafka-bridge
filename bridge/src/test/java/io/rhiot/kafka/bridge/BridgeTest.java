@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge;
 
 import io.rhiot.kafka.bridge.config.BridgeConfigProperties;
@@ -70,9 +71,11 @@ public class BridgeTest {
 	public void before(TestContext context) {
 		
 		this.vertx = Vertx.vertx();
-		
-		this.bridge = new Bridge(this.vertx, this.bridgeConfigProperties);
-		this.bridge.start();
+
+		this.bridge = new Bridge();
+		this.bridge.setBridgeConfigProperties(this.bridgeConfigProperties);
+
+		this.vertx.deployVerticle(this.bridge, context.asyncAssertSuccess());
 	}
 	
 	@Test
@@ -459,7 +462,6 @@ public class BridgeTest {
 	@After
 	public void after(TestContext context) {
 		
-		this.bridge.stop();
 		this.vertx.close(context.asyncAssertSuccess());
 	}
 }

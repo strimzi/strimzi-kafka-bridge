@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge.converter;
 
 import io.rhiot.kafka.bridge.Bridge;
@@ -36,8 +37,6 @@ import java.util.Map;
 /**
  * Default implementation class for the message conversion
  * between Kafka record and AMQP message
- * 
- * @author ppatierno
  */
 public class DefaultMessageConverter implements MessageConverter<String, byte[]> {
 

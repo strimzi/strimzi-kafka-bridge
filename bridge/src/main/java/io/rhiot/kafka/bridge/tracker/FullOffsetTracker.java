@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge.tracker;
 
-import io.rhiot.kafka.bridge.tracker.OffsetTracker;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -35,9 +35,6 @@ import java.util.stream.Collectors;
  * If receiver settles "out of order" the offset goes forward only if there aren't
  * unsettled offset in the middle. It means that already settled messages MAY be
  * re-delivered so AT_LEAST_ONCE QoS is guaranteed
- * 
- * @author ppatierno
- *
  */
 public class FullOffsetTracker<K, V> implements OffsetTracker<K, V> {
 
@@ -56,6 +53,8 @@ public class FullOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	
 	/**
 	 * Contructor
+	 *
+	 * @param topic	topic to track offset
 	 */
 	public FullOffsetTracker(String topic) {
 		

@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge;
 
 import io.rhiot.kafka.bridge.config.BridgeConfigProperties;
@@ -48,8 +49,6 @@ import java.util.UUID;
 /**
  * Class in charge for reading from Apache Kafka
  * and bridging into AMQP traffic to receivers
- * 
- * @author ppatierno
  */
 public class SinkBridgeEndpoint implements BridgeEndpoint {
 
@@ -93,6 +92,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	
 	/**
 	 * Constructor
+	 *
 	 * @param vertx		Vert.x instance
 	 * @param bridgeConfigProperties	Bridge configuration
 	 */
@@ -121,6 +121,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 
 	@Override
 	public void close() {
+
 		if (this.kafkaConsumerWorker != null)
 			this.kafkaConsumerWorker.shutdown();
 		
@@ -159,7 +160,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			this.sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_GROUPID), "Mandatory group.id not specified in the address"));
 			this.sender.close();
 			
-			this.fireClose();
+			this.handleClose();
 			
 		} else {
 		
@@ -192,7 +193,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 					this.sender.setCondition(condition);
 					this.sender.close();
 					
-					this.fireClose();
+					this.handleClose();
 					return;
 				}
 				
@@ -323,7 +324,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 						this.sender.close();
 						
 						this.close();
-						this.fireClose();
+						this.handleClose();
 						break;
 				}
 				
@@ -344,7 +345,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			ar.result().close();
 			
 			this.close();
-			this.fireClose();
+			this.handleClose();
 		}
 	}
 	
@@ -384,6 +385,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	
 	@Override
 	public BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler) {
+
 		this.closeHandler = endpointCloseHandler;
 		return this;
 	}
@@ -391,7 +393,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	/**
 	 * Raise close event
 	 */
-	private void fireClose() {
+	private void handleClose() {
+
 		if (this.closeHandler != null) {
 			this.closeHandler.handle(this);
 		}

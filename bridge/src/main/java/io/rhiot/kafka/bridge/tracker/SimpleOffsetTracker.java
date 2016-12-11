@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.rhiot.kafka.bridge.tracker;
 
-import io.rhiot.kafka.bridge.tracker.OffsetTracker;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -30,9 +30,6 @@ import java.util.Map.Entry;
  * It tracks only the offset for the last settled message. If receiver
  * settles "out of order", previous unsettled message won't be re-delivered
  * and MAY be lost so AT_LEAST_ONCE QoS is NOT guaranteed
- * 
- * @author ppatierno
- *
  */
 public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
 
@@ -45,6 +42,8 @@ public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	
 	/**
 	 * Contructor
+	 *
+	 * @param topic	topic to track offset
 	 */
 	public SimpleOffsetTracker(String topic) {
 		
