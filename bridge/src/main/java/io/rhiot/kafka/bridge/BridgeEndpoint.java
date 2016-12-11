@@ -46,7 +46,7 @@ public interface BridgeEndpoint {
 	/**
 	 * Sets an handler for when an endpoint is closed due to internal processing
 	 * 
-	 * @param endpoint		The handler
+	 * @param endpointCloseHandler		The handler
 	 * @return				The endpoint
 	 */
 	BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler);

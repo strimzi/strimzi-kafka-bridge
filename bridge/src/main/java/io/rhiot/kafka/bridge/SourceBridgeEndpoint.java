@@ -124,6 +124,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 
 	@Override
 	public void close() {
+
 		if (this.producerSettledMode != null)
 			this.producerSettledMode.close();
 		
@@ -260,6 +261,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 
 	@Override
 	public BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler) {
+
 		this.closeHandler = endpointCloseHandler;
 		return this;
 	}
@@ -267,7 +269,8 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	/**
 	 * Raise close event
 	 */
-	private void fireClose() {
+	private void handleClose() {
+
 		if (this.closeHandler != null) {
 			this.closeHandler.handle(this);
 		}

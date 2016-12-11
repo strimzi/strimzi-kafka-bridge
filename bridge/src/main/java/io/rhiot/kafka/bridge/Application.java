@@ -17,8 +17,9 @@
 
 package io.rhiot.kafka.bridge;
 
-import io.rhiot.kafka.bridge.config.BridgeConfigProperties;
 import io.vertx.core.Vertx;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -32,28 +33,34 @@ import javax.annotation.PreDestroy;
 @SpringBootApplication
 public class Application {
 
-    private final Vertx vertx = Vertx.vertx();
-    private Bridge bridge;
+    private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
-    private BridgeConfigProperties bridgeConfigProperties;
+    private final Vertx vertx = Vertx.vertx();
 
     @Autowired
-    public void setBridgeConfigProperties(BridgeConfigProperties bridgeConfigProperties) {
-        this.bridgeConfigProperties = bridgeConfigProperties;
-    }
+    private Bridge bridge;
 
     @PostConstruct
     public void start() {
 
-        this.bridge = new Bridge(this.vertx, this.bridgeConfigProperties);
-        this.bridge.start();
+        this.vertx.deployVerticle(this.bridge, done -> {
+
+            if (done.succeeded()) {
+                LOG.debug("Verticle instance deployed [{}]", done.result());
+            } else {
+                LOG.debug("Failed to deploy verticle instance", done.cause());
+            }
+        });
     }
 
     @PreDestroy
     public void stop() {
 
-        this.bridge.stop();
-        this.vertx.close();
+        this.vertx.close(done -> {
+            if (done.failed()) {
+                LOG.error("Could not shut down AMQP-Kafka bridge cleanly", done.cause());
+            }
+        });
     }
 
     public static void main(String[] args) {
