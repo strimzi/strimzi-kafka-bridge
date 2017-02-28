@@ -18,7 +18,7 @@
 		<vertx-proton.version>3.2.0</vertx-proton.version>
 		<junit.version>4.12</junit.version>
 		<vertx-unit.version>3.2.1</vertx-unit.version>
-		<spring-boot.version>1.4.1.RELEASE</spring-boot.version>
+		<spring-boot.version>1.4.2.RELEASE</spring-boot.version>
 	</properties>
 
 	<dependencies>
@@ -73,7 +73,7 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<version>1.4.2.RELEASE</version>
+				<version>${spring-boot.version}</version>
 				<executions>
 					<execution>
 						<goals>
@@ -84,6 +84,71 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>build-docker-image</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>io.fabric8</groupId>
+						<artifactId>fabric8-maven-plugin</artifactId>
+						<version>3.2.14</version>
+						<configuration>
+							<verbose>true</verbose>
+							<images>
+								<image>
+									<name>ppatierno/amqp-kafka-bridge:${project.version}</name>
+									<build>
+										<from>java:8u72</from>
+										<ports>
+											<port>5672</port>
+										</ports>
+										<cmd>
+											<exec>
+												<arg>java</arg>
+												<arg>-Dvertx.cacheDirBase=/tmp</arg>
+												<arg>-Dvertx.disableDnsResolver=true</arg>
+												<arg>-Dnetworkaddress.cache.ttl=0</arg>
+												<arg>-Dnetworkaddress.cache.negative.ttl=0</arg>
+												<arg>-jar</arg>
+												<arg>
+													/amqp-kafka-bridge/${project.artifactId}-${project.version}.jar
+												</arg>
+											</exec>
+										</cmd>
+										<assembly>
+											<mode>dir</mode>
+											<targetDir>/</targetDir>
+											<inline>
+												<fileSets>
+													<fileSet>
+														<directory>${project.basedir}/target</directory>
+														<outputDirectory>amqp-kafka-bridge</outputDirectory>
+														<includes>
+															<include>${project.artifactId}-${project.version}.jar</include>
+														</includes>
+													</fileSet>
+												</fileSets>
+											</inline>
+										</assembly>
+									</build>
+								</image>
+							</images>
+						</configuration>
+						<executions>
+							<execution>
+								<phase>package</phase>
+								<goals>
+									<goal>build</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 	<licenses>
 		<license>
