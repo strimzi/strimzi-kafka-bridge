@@ -8,7 +8,7 @@ It provides a different way to interact with Apache Kafka because the latter sup
 
 The project leverages on [Vert.x](http://vertx.io/) framework and uses the [Vert.x Proton](https://github.com/vert-x3/vertx-proton) library in order to provide the AMQP server for accepting and handling connections, sessions and links.
 
-All the bridge related classes are defined inside the _io.rhiot.kafka.bridge_ package and the only class needed to instantiate the bridge is the _Bridge_ class which needs a _Vertx_ instance too.
+All the bridge related classes are defined inside the _enmasse.kafka.bridge_ package and the only class needed to instantiate the bridge is the _Bridge_ class which needs a _Vertx_ instance too.
 
 Other than core classes, the following stuff is provided :
 
@@ -45,7 +45,7 @@ The AMQP message body contains the Apache Kafka message the client wants to send
 
 The above message annotations aren't mandatory. If they aren't provided by the clients, the messages are sent across all topic partitions in a round robin fashion.
 
-More information about sender flow are available in the wiki [here](https://github.com/rhiot/amqp-kafka-bridge/wiki/Sender)
+More information about sender flow are available in the wiki [here](https://github.com/EnMasseProject/amqp-kafka-bridge/wiki/Sender)
 
 ## AMQP Receivers
 
@@ -62,8 +62,8 @@ The returned AMQP message contains the Apache Kafka provided message inside its 
 
 The AMQP client can also specifies filters for reading from a specific partition starting at specific offset. The symbol for filters are :
 
-* _rhiot.io:partition-filter:uint_ : the topic partition from which reading messages;
-* _rhiot.io:offset-filter:ulong_ : the starting offset for reading inside the specified partition;
+* _enmasse:partition-filter:uint_ : the topic partition from which reading messages;
+* _enmasse:offset-filter:ulong_ : the starting offset for reading inside the specified partition;
 
 If the client specifies partition but not the offset, then the bridge will consume messages starting from the last committed offset on the specified partition.
 
@@ -73,7 +73,7 @@ The link is automatically detached by the bridge in the following cases :
 * the client specifies a negative value for partition or offset;
 * the client specifies a not existing partition;
 
-More information about receiver flow are available in the wiki [here](https://github.com/rhiot/amqp-kafka-bridge/wiki/Receiver)
+More information about receiver flow are available in the wiki [here](https://github.com/EnMasseProject/amqp-kafka-bridge/wiki/Receiver)
 
 ## Supported AMQP clients
 
