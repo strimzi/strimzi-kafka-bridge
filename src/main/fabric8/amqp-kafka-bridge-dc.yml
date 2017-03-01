@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: enmasse
+    name: ${project.artifactId}
+  name: ${project.artifactId}
+spec:
+  replicas: 1
+  selector:
+    name: ${project.artifactId}
+  template:
+    metadata:
+      labels:
+        app: enmasse
+        capability: bridge
+        name: ${project.artifactId}
+    spec:
+      containers:
+      - image: enmasseproject/${project.artifactId}:${project.version}
+        name: ${project.artifactId}
+        ports:
+        - containerPort: 5672
+          protocol: TCP
+          name: amqp
+        livenessProbe:
+          tcpSocket:
+            port: amqp

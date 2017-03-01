@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: enmasse
+  name: ${project.artifactId}
+spec:
+  ports:
+  - name: amqp
+    port: 5672
+    protocol: TCP
+    targetPort: 5672
+  selector:
+    capability: bridge

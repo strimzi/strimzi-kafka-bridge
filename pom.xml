@@ -141,6 +141,7 @@
 								<phase>package</phase>
 								<goals>
 									<goal>build</goal>
+									<goal>resource</goal>
 								</goals>
 							</execution>
 						</executions>
