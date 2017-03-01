@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/EnMasseProject/amqp-kafka-bridge.svg?branch=master)](https://travis-ci.org/EnMasseProject/amqp-kafka-bridge)
+
 # AMQP - Apache Kafka bridge
 
 This project provides a software component which acts as a bridge between [AMQP (Advanced Message Queuing Protocol)](https://www.amqp.org/) based clients and [Apache Kafka](http://kafka.apache.org/) cluster.
