@@ -3,7 +3,7 @@
   
 	<groupId>enmasse</groupId>
 	<artifactId>amqp-kafka-bridge</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0-SNAPSHOT</version>
 
 	<name>amqp-kafka-bridge</name>
 	<description>AMQP - Apache Kafka bridge</description>
@@ -100,7 +100,7 @@
 								<image>
 									<name>enmasseproject/amqp-kafka-bridge:${project.version}</name>
 									<build>
-										<from>java:8u72</from>
+										<from>openjdk:8-jre-alpine</from>
 										<ports>
 											<port>5672</port>
 										</ports>
@@ -113,7 +113,7 @@
 												<arg>-Dnetworkaddress.cache.negative.ttl=0</arg>
 												<arg>-jar</arg>
 												<arg>
-													/amqp-kafka-bridge/${project.artifactId}-${project.version}.jar
+													/${project.artifactId}-${project.version}.jar
 												</arg>
 											</exec>
 										</cmd>
@@ -124,7 +124,7 @@
 												<fileSets>
 													<fileSet>
 														<directory>${project.basedir}/target</directory>
-														<outputDirectory>amqp-kafka-bridge</outputDirectory>
+														<outputDirectory>/</outputDirectory>
 														<includes>
 															<include>${project.artifactId}-${project.version}.jar</include>
 														</includes>
