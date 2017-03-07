@@ -94,6 +94,8 @@ public class Bridge extends AbstractVerticle {
 						this.source.open();
 
 						LOG.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
+						LOG.info("Kafka bootstrap servers {}",
+								this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
 						startFuture.complete();
 					} else {
 						LOG.error("Error starting AMQP-Kafka Bridge", ar.cause());
