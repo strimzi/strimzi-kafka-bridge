@@ -26,11 +26,13 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "amqp")
 public class AmqpConfigProperties {
 
+    private static final BridgeMode DEFAULT_BRIDGE_MODE = BridgeMode.SERVER;
     private static final String DEFAULT_BIND_HOST = "0.0.0.0";
     private static final int DEFAULT_BIND_PORT = 5672;
     private static final int DEFAULT_FLOW_CREDIT = 1024;
     private static final String DEFAULT_MESSAGE_CONVERTER = "enmasse.kafka.bridge.DefaultMessageConverter";
 
+    private BridgeMode mode = DEFAULT_BRIDGE_MODE;
     private int flowCredit = DEFAULT_FLOW_CREDIT;
     private String bindHost = DEFAULT_BIND_HOST;
     private int bindPort = DEFAULT_BIND_PORT;
@@ -53,6 +55,26 @@ public class AmqpConfigProperties {
      */
     public AmqpConfigProperties setFlowCredit(int flowCredit) {
         this.flowCredit = flowCredit;
+        return this;
+    }
+
+    /**
+     * Get the bridge working mode (client or server)
+     *
+     * @return
+     */
+    public BridgeMode getMode() {
+        return this.mode;
+    }
+
+    /**
+     * Set the bridge working mode
+     *
+     * @param mode  bridge working mode
+     * @return  this instance for setter chaining
+     */
+    public AmqpConfigProperties setMode(BridgeMode mode) {
+        this.mode = mode;
         return this;
     }
 

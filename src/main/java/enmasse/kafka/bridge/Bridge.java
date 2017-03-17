@@ -17,9 +17,12 @@
 package enmasse.kafka.bridge;
 
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
+import enmasse.kafka.bridge.config.BridgeMode;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.proton.ProtonClient;
+import io.vertx.proton.ProtonClientOptions;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
@@ -62,8 +65,9 @@ public class Bridge extends AbstractVerticle {
 	public static final String AMQP_PARTITION_FILTER = "enmasse:partition-filter:int";
 	public static final String AMQP_OFFSET_FILTER = "enmasse:offset-filter:long";
 	
-	// AMQP server related stuff
+	// AMQP client/server related stuff
 	private ProtonServer server;
+	private ProtonClient client;
 
 	// endpoints for handling incoming and outcoming messages
 	private BridgeEndpoint source;
@@ -103,6 +107,38 @@ public class Bridge extends AbstractVerticle {
 					}
 				});
 	}
+
+	/**
+	 * Connect to an AMQP server/router
+	 *
+	 * @param startFuture
+	 */
+	private void connect(Future<Void> startFuture) {
+
+		this.client = ProtonClient.create(this.vertx);
+
+		String host = this.bridgeConfigProperties.getAmqpConfigProperties().getBindHost();
+		int port = this.bridgeConfigProperties.getAmqpConfigProperties().getBindPort();
+
+		this.client.connect(host, port, ar -> {
+
+			if (ar.succeeded()) {
+
+				this.source.open();
+
+				this.processConnection(ar.result());
+
+				LOG.info("AMQP-Kafka Bridge started and connected in client mode to {}:{}", host, port);
+				LOG.info("Kafka bootstrap servers {}",
+						this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
+				startFuture.complete();
+
+			} else {
+				LOG.error("Error connecting AMQP-Kafka Bridge as client", ar.cause());
+				startFuture.fail(ar.cause());
+			}
+		});
+	}
 	
 	@Override
 	public void start(Future<Void> startFuture) throws Exception {
@@ -112,7 +148,11 @@ public class Bridge extends AbstractVerticle {
 		this.source = new SourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
 		this.sinks = new ArrayList<>();
 
-		this.bindAmqpServer(startFuture);
+		if (this.bridgeConfigProperties.getAmqpConfigProperties().getMode() == BridgeMode.SERVER) {
+			this.bindAmqpServer(startFuture);
+		} else {
+			this.connect(startFuture);
+		}
 	}
 
 	@Override
