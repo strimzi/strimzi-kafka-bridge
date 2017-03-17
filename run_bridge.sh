@@ -8,4 +8,9 @@ if [ -z "$KAFKA_BOOTSTRAP_SERVERS" ]; then
     fi
 fi
 
+# configuring the bridge to work in "client" mode connecting to the messaging (router) layer
+export AMQP_MODE="CLIENT"
+export AMQP_HOST=$MESSAGING_SERVICE_HOST
+export AMQP_PORT=$MESSAGING_SERVICE_PORT_INTERNAL
+
 exec java -Dvertx.disableFileCaching=true -Dvertx.disableFileCPResolving=true -jar /amqp-kafka-bridge-1.0-SNAPSHOT.jar
