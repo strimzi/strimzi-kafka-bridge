@@ -26,14 +26,16 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "amqp")
 public class AmqpConfigProperties {
 
-    private static final String DEFAULT_BIND_HOST = "0.0.0.0";
-    private static final int DEFAULT_BIND_PORT = 5672;
+    private static final AmqpMode DEFAULT_AMQP_MODE = AmqpMode.SERVER;
+    private static final String DEFAULT_HOST = "0.0.0.0";
+    private static final int DEFAULT_PORT = 5672;
     private static final int DEFAULT_FLOW_CREDIT = 1024;
     private static final String DEFAULT_MESSAGE_CONVERTER = "enmasse.kafka.bridge.DefaultMessageConverter";
 
+    private AmqpMode mode = DEFAULT_AMQP_MODE;
     private int flowCredit = DEFAULT_FLOW_CREDIT;
-    private String bindHost = DEFAULT_BIND_HOST;
-    private int bindPort = DEFAULT_BIND_PORT;
+    private String host = DEFAULT_HOST;
+    private int port = DEFAULT_PORT;
     private String messageConverter = DEFAULT_MESSAGE_CONVERTER;
 
     /**
@@ -57,42 +59,62 @@ public class AmqpConfigProperties {
     }
 
     /**
-     * Get the binding host for AMQP server
+     * Get the bridge working mode (client or server)
      *
      * @return
      */
-    public String getBindHost() {
-        return this.bindHost;
+    public AmqpMode getMode() {
+        return this.mode;
     }
 
     /**
-     * Set the binding host for AMQP server
+     * Set the bridge working mode
      *
-     * @param bindHost  binding host
+     * @param mode  bridge working mode
      * @return  this instance for setter chaining
      */
-    public AmqpConfigProperties setBindHost(String bindHost) {
-        this.bindHost = bindHost;
+    public AmqpConfigProperties setMode(AmqpMode mode) {
+        this.mode = mode;
         return this;
     }
 
     /**
-     * Get the binding port for AMQP server
+     * Get the host for AMQP client (to connect) or server (to bind)
      *
      * @return
      */
-    public int getBindPort() {
-        return this.bindPort;
+    public String getHost() {
+        return this.host;
     }
 
     /**
-     * Set the binding port for AMQP server
+     * Set the host for AMQP client (to connect) or server (to bind)
      *
-     * @param bindPort  binding port
+     * @param host  AMQP host
      * @return  this instance for setter chaining
      */
-    public void setBindPort(int bindPort) {
-        this.bindPort = bindPort;
+    public AmqpConfigProperties setHost(String host) {
+        this.host = host;
+        return this;
+    }
+
+    /**
+     * Get the port for AMQP client (to connect) or server (to bind)
+     *
+     * @return
+     */
+    public int getPort() {
+        return this.port;
+    }
+
+    /**
+     * Set the port for AMQP client (to connect) or server (to bind)
+     *
+     * @param port  AMQP port
+     * @return  this instance for setter chaining
+     */
+    public void setPort(int port) {
+        this.port = port;
     }
 
     /**

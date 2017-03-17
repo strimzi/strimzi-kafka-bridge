@@ -16,10 +16,12 @@
 
 package enmasse.kafka.bridge;
 
+import enmasse.kafka.bridge.config.AmqpMode;
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.proton.ProtonClient;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
@@ -61,9 +63,13 @@ public class Bridge extends AbstractVerticle {
 	// AMQP filters
 	public static final String AMQP_PARTITION_FILTER = "enmasse:partition-filter:int";
 	public static final String AMQP_OFFSET_FILTER = "enmasse:offset-filter:long";
+
+	// container-id needed for working in "client" mode
+	private static final String CONTAINER_ID = "amqp-kafka-bridge-service";
 	
-	// AMQP server related stuff
+	// AMQP client/server related stuff
 	private ProtonServer server;
+	private ProtonClient client;
 
 	// endpoints for handling incoming and outcoming messages
 	private BridgeEndpoint source;
@@ -103,6 +109,41 @@ public class Bridge extends AbstractVerticle {
 					}
 				});
 	}
+
+	/**
+	 * Connect to an AMQP server/router
+	 *
+	 * @param startFuture
+	 */
+	private void connectAmqpClient(Future<Void> startFuture) {
+
+		this.client = ProtonClient.create(this.vertx);
+
+		String host = this.bridgeConfigProperties.getAmqpConfigProperties().getHost();
+		int port = this.bridgeConfigProperties.getAmqpConfigProperties().getPort();
+
+		this.client.connect(host, port, ar -> {
+
+			if (ar.succeeded()) {
+
+				this.source.open();
+
+				ProtonConnection connection = ar.result();
+				connection.setContainer(CONTAINER_ID);
+
+				this.processConnection(connection);
+
+				LOG.info("AMQP-Kafka Bridge started and connected in client mode to {}:{}", host, port);
+				LOG.info("Kafka bootstrap servers {}",
+						this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
+				startFuture.complete();
+
+			} else {
+				LOG.error("Error connecting AMQP-Kafka Bridge as client", ar.cause());
+				startFuture.fail(ar.cause());
+			}
+		});
+	}
 	
 	@Override
 	public void start(Future<Void> startFuture) throws Exception {
@@ -112,7 +153,11 @@ public class Bridge extends AbstractVerticle {
 		this.source = new SourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
 		this.sinks = new ArrayList<>();
 
-		this.bindAmqpServer(startFuture);
+		if (this.bridgeConfigProperties.getAmqpConfigProperties().getMode() == AmqpMode.SERVER) {
+			this.bindAmqpServer(startFuture);
+		} else {
+			this.connectAmqpClient(startFuture);
+		}
 	}
 
 	@Override
@@ -150,8 +195,8 @@ public class Bridge extends AbstractVerticle {
 	private ProtonServerOptions createServerOptions(){
 
 		ProtonServerOptions options = new ProtonServerOptions();
-		options.setHost(this.bridgeConfigProperties.getAmqpConfigProperties().getBindHost());
-		options.setPort(this.bridgeConfigProperties.getAmqpConfigProperties().getBindPort());
+		options.setHost(this.bridgeConfigProperties.getAmqpConfigProperties().getHost());
+		options.setPort(this.bridgeConfigProperties.getAmqpConfigProperties().getPort());
 		return options;
 	}
 	
