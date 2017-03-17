@@ -16,13 +16,12 @@
 
 package enmasse.kafka.bridge;
 
+import enmasse.kafka.bridge.config.AmqpMode;
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
-import enmasse.kafka.bridge.config.BridgeMode;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.proton.ProtonClient;
-import io.vertx.proton.ProtonClientOptions;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
@@ -116,12 +115,12 @@ public class Bridge extends AbstractVerticle {
 	 *
 	 * @param startFuture
 	 */
-	private void connect(Future<Void> startFuture) {
+	private void connectAmqpClient(Future<Void> startFuture) {
 
 		this.client = ProtonClient.create(this.vertx);
 
-		String host = this.bridgeConfigProperties.getAmqpConfigProperties().getBindHost();
-		int port = this.bridgeConfigProperties.getAmqpConfigProperties().getBindPort();
+		String host = this.bridgeConfigProperties.getAmqpConfigProperties().getHost();
+		int port = this.bridgeConfigProperties.getAmqpConfigProperties().getPort();
 
 		this.client.connect(host, port, ar -> {
 
@@ -154,10 +153,10 @@ public class Bridge extends AbstractVerticle {
 		this.source = new SourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
 		this.sinks = new ArrayList<>();
 
-		if (this.bridgeConfigProperties.getAmqpConfigProperties().getMode() == BridgeMode.SERVER) {
+		if (this.bridgeConfigProperties.getAmqpConfigProperties().getMode() == AmqpMode.SERVER) {
 			this.bindAmqpServer(startFuture);
 		} else {
-			this.connect(startFuture);
+			this.connectAmqpClient(startFuture);
 		}
 	}
 
@@ -196,8 +195,8 @@ public class Bridge extends AbstractVerticle {
 	private ProtonServerOptions createServerOptions(){
 
 		ProtonServerOptions options = new ProtonServerOptions();
-		options.setHost(this.bridgeConfigProperties.getAmqpConfigProperties().getBindHost());
-		options.setPort(this.bridgeConfigProperties.getAmqpConfigProperties().getBindPort());
+		options.setHost(this.bridgeConfigProperties.getAmqpConfigProperties().getHost());
+		options.setPort(this.bridgeConfigProperties.getAmqpConfigProperties().getPort());
 		return options;
 	}
 	

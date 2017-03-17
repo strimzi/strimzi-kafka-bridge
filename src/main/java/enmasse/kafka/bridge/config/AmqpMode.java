@@ -17,16 +17,16 @@
 package enmasse.kafka.bridge.config;
 
 /**
- * The bridge working mode (client or server)
+ * The AMQP side working mode (client or server)
  */
-public enum BridgeMode {
+public enum AmqpMode {
 
     CLIENT("client"),
     SERVER("server");
 
     private final String mode;
 
-    private BridgeMode(String mode) {
+    private AmqpMode(String mode) {
         this.mode = mode;
     }
 
@@ -36,7 +36,7 @@ public enum BridgeMode {
      * @param mode  mode as a string
      * @return  mode as enum value
      */
-    public static BridgeMode from(String mode) {
+    public static AmqpMode from(String mode) {
         if (mode.equals(CLIENT.mode)) {
             return CLIENT;
         } else if (mode.equals(SERVER.mode)) {
