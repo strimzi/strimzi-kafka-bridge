@@ -64,6 +64,9 @@ public class Bridge extends AbstractVerticle {
 	// AMQP filters
 	public static final String AMQP_PARTITION_FILTER = "enmasse:partition-filter:int";
 	public static final String AMQP_OFFSET_FILTER = "enmasse:offset-filter:long";
+
+	// container-id needed for working in "client" mode
+	private static final String CONTAINER_ID = "amqp-kafka-bridge-service";
 	
 	// AMQP client/server related stuff
 	private ProtonServer server;
@@ -126,7 +129,10 @@ public class Bridge extends AbstractVerticle {
 
 				this.source.open();
 
-				this.processConnection(ar.result());
+				ProtonConnection connection = ar.result();
+				connection.setContainer(CONTAINER_ID);
+
+				this.processConnection(connection);
 
 				LOG.info("AMQP-Kafka Bridge started and connected in client mode to {}:{}", host, port);
 				LOG.info("Kafka bootstrap servers {}",
