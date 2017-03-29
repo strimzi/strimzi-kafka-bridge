@@ -266,7 +266,7 @@ public class Bridge extends AbstractVerticle {
 	 */
 	private void processOpenReceiver(ProtonReceiver receiver) {
 
-		LOG.info("Remote sender attached");
+		LOG.info("Remote sender attached {}", receiver.getName());
 		this.source.handle(receiver);
 	}
 	
@@ -277,7 +277,7 @@ public class Bridge extends AbstractVerticle {
 	 */
 	private void processOpenSender(ProtonSender sender) {
 
-		LOG.info("Remote receiver attached");
+		LOG.info("Remote receiver attached {}", sender.getName());
 		
 		// create and add a new sink to the collection
 		SinkBridgeEndpoint sink = new SinkBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
