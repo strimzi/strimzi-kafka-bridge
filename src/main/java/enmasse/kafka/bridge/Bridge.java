@@ -27,14 +27,15 @@ import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
 import io.vertx.proton.ProtonServer;
 import io.vertx.proton.ProtonServerOptions;
-import io.vertx.proton.ProtonSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Main bridge class listening for connections
@@ -73,7 +74,7 @@ public class Bridge extends AbstractVerticle {
 
 	// endpoints for handling incoming and outcoming messages
 	private BridgeEndpoint source;
-	private List<BridgeEndpoint> sinks;
+	private Map<ProtonConnection, List<BridgeEndpoint>> sinks;
 
 	private BridgeConfigProperties bridgeConfigProperties;
 
@@ -151,7 +152,7 @@ public class Bridge extends AbstractVerticle {
 		LOG.info("Starting AMQP-Kafka bridge verticle...");
 
 		this.source = new SourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
-		this.sinks = new ArrayList<>();
+		this.sinks = new HashMap<>();
 
 		if (this.bridgeConfigProperties.getAmqpConfigProperties().getMode() == AmqpMode.SERVER) {
 			this.bindAmqpServer(startFuture);
@@ -165,13 +166,18 @@ public class Bridge extends AbstractVerticle {
 
 		LOG.info("Stopping AMQP-Kafka bridge verticle ...");
 
+		this.source.close();
+
+		// for each connection, we have to close the connection itself but before that
+		// all the sink endpoints (so the related sender link inside each of them)
+		this.sinks.forEach((connection, endpoints) -> {
+
+			endpoints.stream().forEach(endpoint -> endpoint.close());
+			connection.close();
+		});
+		this.sinks.clear();
+
 		if (this.server != null) {
-
-			this.source.close();
-
-			for (BridgeEndpoint sink : this.sinks) {
-				sink.close();
-			}
 
 			this.server.close(done -> {
 
@@ -206,61 +212,81 @@ public class Bridge extends AbstractVerticle {
 	 * @param connection		Proton connection accepted instance
 	 */
 	private void processConnection(ProtonConnection connection) {
-		
+
 		connection
 		.openHandler(this::processOpenConnection)
 		.closeHandler(this::processCloseConnection)
 		.disconnectHandler(this::processDisconnection)
-		.sessionOpenHandler(this::processOpenSession)
+		.sessionOpenHandler(session -> session.open())
 		.receiverOpenHandler(this::processOpenReceiver)
-		.senderOpenHandler(this::processOpenSender)
+		.senderOpenHandler(sender -> {
+			this.processOpenSender(connection, sender);
+		})
 		.open();
 	}
 	
 	/**
 	 * Handler for connection opened by remote
+	 *
 	 * @param ar		async result with info on related Proton connection
 	 */
 	private void processOpenConnection(AsyncResult<ProtonConnection> ar) {
 
 		if (ar.succeeded()) {
 			LOG.info("Connection opened by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
+
+			ProtonConnection connection = ar.result();
+			// new connection, preparing for hosting related sink endpoints
+			if (!this.sinks.containsKey(connection)) {
+				this.sinks.put(connection, new ArrayList<>());
+			}
 		}
 	}
 	
 	/**
 	 * Handler for connection closed by remote
+	 *
 	 * @param ar		async result with info on related Proton connection
 	 */
 	private void processCloseConnection(AsyncResult<ProtonConnection> ar) {
 
 		if (ar.succeeded()) {
 			LOG.info("Connection closed by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
-			ar.result().close();
+
+			ProtonConnection connection = ar.result();
+			// closing connection, but before closing all the sink endpoints (and related sender links)
+			if (this.sinks.containsKey(connection)) {
+				this.sinks.get(connection).forEach(endpoint -> {
+					endpoint.close();
+				});
+				connection.close();
+				this.sinks.remove(connection);
+			}
 		}
 	}
 	
 	/**
 	 * Handler for disconnection from the remote
+	 *
 	 * @param connection	related Proton connection closed
 	 */
 	private void processDisconnection(ProtonConnection connection) {
 
 		LOG.info("Disconnection from {} {}", connection.getRemoteHostname(), connection.getRemoteContainer());
-	}
-	
-	/**
-	 * Handler for session opened by remote
-	 * @param session		related Proton session object
-	 */
-	private void processOpenSession(ProtonSession session) {
 
-		LOG.info("Session opened");
-		session.open();
+		// closing connection, but before closing all the sink endpoints (and related sender links)
+		if (this.sinks.containsKey(connection)) {
+			this.sinks.get(connection).forEach(endpoint -> {
+				endpoint.close();
+			});
+			connection.close();
+			this.sinks.remove(connection);
+		}
 	}
 	
 	/**
 	 * Handler for attached link by a remote sender
+	 *
 	 * @param receiver		receiver link created by the underlying Proton library
 	 * 						by which handling communication with remote sender
 	 */
@@ -272,19 +298,26 @@ public class Bridge extends AbstractVerticle {
 	
 	/**
 	 * Handler for attached link by a remote receiver
-	 * @param sender		sende link created by the underlying Proton library
+	 *
+	 * @param connection	connection which the sender link belong to
+	 * @param sender		sender link created by the underlying Proton library
 	 * 						by which handling communication with remote receiver
 	 */
-	private void processOpenSender(ProtonSender sender) {
+	private void processOpenSender(ProtonConnection connection, ProtonSender sender) {
 
 		LOG.info("Remote receiver attached {}", sender.getName());
 		
-		// create and add a new sink to the collection
+		// create and add a new sink to the map
 		SinkBridgeEndpoint sink = new SinkBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
-		this.sinks.add(sink);
-		
+
+		// just "defensive" check, but connection should be added before on opening it
+		if (!this.sinks.containsKey(connection)) {
+			this.sinks.put(connection, new ArrayList<>());
+		}
+		this.sinks.get(connection).add(sink);
+
 		sink.closeHandler(endpoint -> {
-			this.sinks.remove(endpoint);
+			this.sinks.get(connection).remove(endpoint);
 		});
 		sink.open();
 		sink.handle(sender);
