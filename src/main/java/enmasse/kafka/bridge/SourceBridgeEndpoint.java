@@ -19,6 +19,7 @@ package enmasse.kafka.bridge;
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
 import enmasse.kafka.bridge.converter.DefaultMessageConverter;
 import enmasse.kafka.bridge.converter.MessageConverter;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
@@ -39,6 +40,8 @@ import org.apache.qpid.proton.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -70,7 +73,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	private Handler<BridgeEndpoint> closeHandler;
 
 	// receiver link for handling incoming message
-	private ProtonReceiver receiver;
+	private Map<String, ProtonReceiver> receivers;
 
 	private BridgeConfigProperties bridgeConfigProperties;
 	
@@ -84,6 +87,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		
 		this.vertx = vertx;
 		this.bridgeConfigProperties = bridgeConfigProperties;
+		this.receivers = new HashMap<>();
 
 		try {
 			this.converter = (MessageConverter<String, byte[]>)Class.forName(this.bridgeConfigProperties.getAmqpConfigProperties().getMessageConverter()).newInstance();
@@ -134,6 +138,11 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		
 		if (this.ebName != null)
 			this.vertx.sharedData().getLocalMap(this.ebName).clear();
+
+		this.receivers.forEach((name, receiver) -> {
+			receiver.close();
+		});
+		this.receivers.clear();
 	}
 
 	@Override
@@ -143,41 +152,44 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 			throw new IllegalArgumentException("This Proton link must be a receiver");
 		}
 		
-		this.receiver = (ProtonReceiver)link;
+		ProtonReceiver receiver = (ProtonReceiver)link;
 		
 		// the delivery state is related to the acknowledgement from Apache Kafka
-		this.receiver.setTarget(receiver.getRemoteTarget())
+		receiver.setTarget(receiver.getRemoteTarget())
 				.setAutoAccept(false)
-				.handler(this::processMessage);
+				.closeHandler(this::processCloseReceiver)
+				.handler((delivery, message) -> {
+					this.processMessage(receiver, delivery, message);
+				});
 				
-		if (this.receiver.getRemoteQoS() == ProtonQoS.AT_MOST_ONCE) {
+		if (receiver.getRemoteQoS() == ProtonQoS.AT_MOST_ONCE) {
 			// sender settle mode is SETTLED (so AT_MOST_ONCE QoS), we assume Apache Kafka
 			// no problem in throughput terms so use prefetch due to no ack from Kafka server
-			this.receiver.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit());
+			receiver.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit());
 		} else {
 			// sender settle mode is UNSETTLED (or MIXED) (so AT_LEAST_ONCE QoS).
 			// Thanks to the ack from Kafka server we can modulate flow control
-			this.receiver.setPrefetch(0)
+			receiver.setPrefetch(0)
 					.flow(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit());
 		}
 
-		this.receiver.open();
+		receiver.open();
+
+		this.receivers.put(receiver.getName(), receiver);
 		
 		// message sending on AMQP link MUST happen on Vert.x event loop due to
 		// the access to the delivery object provided by Vert.x handler
 		// (we MUST avoid to access it from other threads; i.e. Kafka producer callback thread)
 		this.ebConsumer = this.vertx.eventBus().consumer(this.ebName, ebMessage -> {
 			
-			ProtonDelivery delivery = null;
-			
 			String deliveryId = ebMessage.body();
 			
 			Object obj = this.vertx.sharedData().getLocalMap(this.ebName).remove(deliveryId);
 			
-			if (obj instanceof AmqpDelivery) {
+			if (obj instanceof AmqpDeliveryData) {
 				
-				AmqpDelivery amqpDelivery = (AmqpDelivery) obj;
-				delivery = amqpDelivery.getDelivery();
+				AmqpDeliveryData amqpDeliveryData = (AmqpDeliveryData) obj;
+				ProtonDelivery delivery = amqpDeliveryData.getDelivery();
 				
 				switch (ebMessage.headers().get(SourceBridgeEndpoint.EVENT_BUS_DELIVERY_STATE_HEADER)) {
 				
@@ -196,7 +208,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 				}
 				
 				// ack received from Kafka server, delivery sent to AMQP client, updating link credits
-				this.receiver.flow(1);
+				this.receivers.get(amqpDeliveryData.getLinkName()).flow(1);
 			}
 			
 		});
@@ -204,15 +216,16 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 
 	/**
 	 * Process the message received on the related receiver link 
-	 * 
+	 *
+	 * @param receiver		Proton receiver instance
 	 * @param delivery		Proton delivery instance
 	 * @param message		AMQP message received
 	 */
-	private void processMessage(ProtonDelivery delivery, Message message) {
+	private void processMessage(ProtonReceiver receiver, ProtonDelivery delivery, Message message) {
 
-		// replace unsopported "/" (in a topic name in Kafka) with "."
-		String kafkaTopic = (this.receiver.getTarget().getAddress() != null) ?
-				this.receiver.getTarget().getAddress().replace('/', '.') :
+		// replace unsupported "/" (in a topic name in Kafka) with "."
+		String kafkaTopic = (receiver.getTarget().getAddress() != null) ?
+				receiver.getTarget().getAddress().replace('/', '.') :
 				null;
 
 		ProducerRecord<String, byte[]> record = this.converter.toKafkaRecord(kafkaTopic, message);
@@ -225,6 +238,11 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 			this.producerSettledMode.send(record);
 			
 		} else {
+
+			// put delivery data in the shared map, will be read from the event bus consumer when the Kafka producer
+			// will receive ack and send the related deliveryId on the event bus address
+			String deliveryId = UUID.randomUUID().toString();
+			this.vertx.sharedData().getLocalMap(this.ebName).put(deliveryId, new AmqpDeliveryData(receiver.getName(), deliveryId, delivery));
 		
 			// message unsettled (by sender), feedback needed by Apache Kafka, disposition to be sent accordingly
 			this.producerUnsettledMode.send(record, (metadata, exception) -> {
@@ -249,9 +267,6 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 				
 				options.addHeader(SourceBridgeEndpoint.EVENT_BUS_DELIVERY_STATE_HEADER, deliveryState);
 				
-				String deliveryId = UUID.randomUUID().toString();
-				this.vertx.sharedData().getLocalMap(this.ebName).put(deliveryId, new AmqpDelivery(deliveryId, delivery));
-				
 				this.vertx.eventBus().send(this.ebName, deliveryId, options);
 			});
 		}
@@ -262,6 +277,29 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 
 		this.closeHandler = endpointCloseHandler;
 		return this;
+	}
+
+	/**
+	 * Handle for detached link by the remote sender
+	 * @param ar		async result with info on related Proton receiver
+	 */
+	private void processCloseReceiver(AsyncResult<ProtonReceiver> ar) {
+
+		if (ar.succeeded()) {
+
+			LOG.info("Remote AMQP sender detached");
+
+			// close and remove the receiver link
+			ProtonReceiver receiver = ar.result();
+			receiver.close();
+			this.receivers.remove(receiver.getName());
+
+			// if the source endpoint has no receiver links, it can be closed
+			if (this.receivers.isEmpty()) {
+				this.close();
+				this.handleClose();
+			}
+		}
 	}
 	
 	/**

@@ -18,9 +18,9 @@ package enmasse.kafka.bridge;
 
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
 import enmasse.kafka.bridge.converter.DefaultMessageConverter;
+import enmasse.kafka.bridge.converter.MessageConverter;
 import enmasse.kafka.bridge.tracker.OffsetTracker;
 import enmasse.kafka.bridge.tracker.SimpleOffsetTracker;
-import enmasse.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -134,6 +134,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			this.offsetTracker.clear();
 		
 		this.deliveryNotSent.clear();
+
+		this.sender.close();
 	}
 	
 	@Override
@@ -339,7 +341,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		
 		if (ar.succeeded()) {
 			
-			LOG.info("Remote detached");
+			LOG.info("Remote AMQP receiver detached");
 			
 			ar.result().close();
 			

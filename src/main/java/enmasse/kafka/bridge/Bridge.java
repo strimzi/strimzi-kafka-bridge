@@ -27,14 +27,13 @@ import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
 import io.vertx.proton.ProtonServer;
 import io.vertx.proton.ProtonServerOptions;
-import io.vertx.proton.ProtonSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Main bridge class listening for connections
@@ -72,8 +71,7 @@ public class Bridge extends AbstractVerticle {
 	private ProtonClient client;
 
 	// endpoints for handling incoming and outcoming messages
-	private BridgeEndpoint source;
-	private List<BridgeEndpoint> sinks;
+	private Map<ProtonConnection, ConnectionEndpoint> endpoints;
 
 	private BridgeConfigProperties bridgeConfigProperties;
 
@@ -96,8 +94,6 @@ public class Bridge extends AbstractVerticle {
 				.listen(ar -> {
 					
 					if (ar.succeeded()) {
-
-						this.source.open();
 
 						LOG.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
 						LOG.info("Kafka bootstrap servers {}",
@@ -126,8 +122,6 @@ public class Bridge extends AbstractVerticle {
 
 			if (ar.succeeded()) {
 
-				this.source.open();
-
 				ProtonConnection connection = ar.result();
 				connection.setContainer(CONTAINER_ID);
 
@@ -150,8 +144,7 @@ public class Bridge extends AbstractVerticle {
 
 		LOG.info("Starting AMQP-Kafka bridge verticle...");
 
-		this.source = new SourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
-		this.sinks = new ArrayList<>();
+		this.endpoints = new HashMap<>();
 
 		if (this.bridgeConfigProperties.getAmqpConfigProperties().getMode() == AmqpMode.SERVER) {
 			this.bindAmqpServer(startFuture);
@@ -165,13 +158,21 @@ public class Bridge extends AbstractVerticle {
 
 		LOG.info("Stopping AMQP-Kafka bridge verticle ...");
 
-		if (this.server != null) {
+		// for each connection, we have to close the connection itself but before that
+		// all the sink/source endpoints (so the related links inside each of them)
+		this.endpoints.forEach((connection, endpoint) -> {
 
-			this.source.close();
-
-			for (BridgeEndpoint sink : this.sinks) {
-				sink.close();
+			if (endpoint.getSource() != null) {
+				endpoint.getSource().close();
 			}
+			if (!endpoint.getSinks().isEmpty()) {
+				endpoint.getSinks().stream().forEach(sink -> sink.close());
+			}
+			connection.close();
+		});
+		this.endpoints.clear();
+
+		if (this.server != null) {
 
 			this.server.close(done -> {
 
@@ -206,87 +207,130 @@ public class Bridge extends AbstractVerticle {
 	 * @param connection		Proton connection accepted instance
 	 */
 	private void processConnection(ProtonConnection connection) {
-		
+
 		connection
 		.openHandler(this::processOpenConnection)
 		.closeHandler(this::processCloseConnection)
 		.disconnectHandler(this::processDisconnection)
-		.sessionOpenHandler(this::processOpenSession)
-		.receiverOpenHandler(this::processOpenReceiver)
-		.senderOpenHandler(this::processOpenSender)
+		.sessionOpenHandler(session -> session.open())
+		.receiverOpenHandler(receiver -> {
+			this.processOpenReceiver(connection, receiver);
+		})
+		.senderOpenHandler(sender -> {
+			this.processOpenSender(connection, sender);
+		})
 		.open();
 	}
 	
 	/**
 	 * Handler for connection opened by remote
+	 *
 	 * @param ar		async result with info on related Proton connection
 	 */
 	private void processOpenConnection(AsyncResult<ProtonConnection> ar) {
 
 		if (ar.succeeded()) {
 			LOG.info("Connection opened by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
+
+			ProtonConnection connection = ar.result();
+			// new connection, preparing for hosting related sink/source endpoints
+			if (!this.endpoints.containsKey(connection)) {
+				this.endpoints.put(connection, new ConnectionEndpoint());
+			}
 		}
 	}
 	
 	/**
 	 * Handler for connection closed by remote
+	 *
 	 * @param ar		async result with info on related Proton connection
 	 */
 	private void processCloseConnection(AsyncResult<ProtonConnection> ar) {
 
 		if (ar.succeeded()) {
 			LOG.info("Connection closed by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
-			ar.result().close();
+			this.closeConnectionEndpoint(ar.result());
 		}
 	}
 	
 	/**
 	 * Handler for disconnection from the remote
+	 *
 	 * @param connection	related Proton connection closed
 	 */
 	private void processDisconnection(ProtonConnection connection) {
 
 		LOG.info("Disconnection from {} {}", connection.getRemoteHostname(), connection.getRemoteContainer());
+		this.closeConnectionEndpoint(connection);
 	}
-	
-	/**
-	 * Handler for session opened by remote
-	 * @param session		related Proton session object
-	 */
-	private void processOpenSession(ProtonSession session) {
 
-		LOG.info("Session opened");
-		session.open();
+	/**
+	 * Close a connection endpoint and before that all the related sink/source endpoints
+	 *
+	 * @param connection	connection for which closing related endpoint
+	 */
+	private void closeConnectionEndpoint(ProtonConnection connection) {
+
+		// closing connection, but before closing all sink/source endpoints
+		if (this.endpoints.containsKey(connection)) {
+			ConnectionEndpoint endpoint = this.endpoints.get(connection);
+			if (endpoint.getSource() != null) {
+				endpoint.getSource().close();
+			}
+			if (!endpoint.getSinks().isEmpty()) {
+				endpoint.getSinks().stream().forEach(sink -> sink.close());
+			}
+			connection.close();
+			this.endpoints.remove(connection);
+		}
 	}
 	
 	/**
 	 * Handler for attached link by a remote sender
+	 *
+	 * @param connection	connection which the receiver link belong to
 	 * @param receiver		receiver link created by the underlying Proton library
 	 * 						by which handling communication with remote sender
 	 */
-	private void processOpenReceiver(ProtonReceiver receiver) {
+	private void processOpenReceiver(ProtonConnection connection, ProtonReceiver receiver) {
 
-		LOG.info("Remote sender attached");
-		this.source.handle(receiver);
+		LOG.info("Remote sender attached {}", receiver.getName());
+
+		ConnectionEndpoint endpoint = this.endpoints.get(connection);
+		SourceBridgeEndpoint source = endpoint.getSource();
+		// the source endpoint is only one, handling more AMQP receiver links internally
+		if (source == null) {
+			source = new SourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
+
+			source.closeHandler(s -> {
+				endpoint.setSource(null);
+			});
+			source.open();
+			endpoint.setSource(source);
+		}
+		source.handle(receiver);
 	}
 	
 	/**
 	 * Handler for attached link by a remote receiver
-	 * @param sender		sende link created by the underlying Proton library
+	 *
+	 * @param connection	connection which the sender link belong to
+	 * @param sender		sender link created by the underlying Proton library
 	 * 						by which handling communication with remote receiver
 	 */
-	private void processOpenSender(ProtonSender sender) {
+	private void processOpenSender(ProtonConnection connection, ProtonSender sender) {
 
-		LOG.info("Remote receiver attached");
+		LOG.info("Remote receiver attached {}", sender.getName());
 		
-		// create and add a new sink to the collection
+		// create and add a new sink to the map
 		SinkBridgeEndpoint sink = new SinkBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
-		this.sinks.add(sink);
-		
-		sink.closeHandler(endpoint -> {
-			this.sinks.remove(endpoint);
+
+		sink.closeHandler(s -> {
+			this.endpoints.get(connection).getSinks().remove(s);
 		});
 		sink.open();
+		this.endpoints.get(connection).getSinks().add(sink);
+
 		sink.handle(sender);
 	}
 }

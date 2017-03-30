@@ -22,22 +22,31 @@ import io.vertx.proton.ProtonDelivery;
 /**
  * Wrapper class around AMQP delivery withe a internal generated delivery ID (not tag)
  */
-public class AmqpDelivery implements Shareable {
+public class AmqpDeliveryData implements Shareable {
 
+	private String linkName;
 	private String deliveryId;
 	private ProtonDelivery delivery;
 	
 	/**
 	 * Constructor
-	 * 
+	 *
+	 * @param linkName				AMQP link name related to the delivery
 	 * @param deliveryId		Internal generated delivery ID
 	 * @param delivery			AMQP delivery
 	 */
-	public AmqpDelivery(String deliveryId, ProtonDelivery delivery) {
+	public AmqpDeliveryData(String linkName, String deliveryId, ProtonDelivery delivery) {
+		this.linkName = linkName;
 		this.deliveryId = deliveryId;
 		this.delivery = delivery;
 	}
-	
+
+	/**
+	 * AMQP link name related to the delivery
+	 * @return
+	 */
+	public String getLinkName() { return this.linkName; }
+
 	/**
 	 * Internal generated delivery ID
 	 * @return
