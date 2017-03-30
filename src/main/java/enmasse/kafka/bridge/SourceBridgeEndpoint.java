@@ -236,6 +236,11 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 			this.producerSettledMode.send(record);
 			
 		} else {
+
+			// put delivery data in the shared map, will be read from the event bus consumer when the Kafka producer
+			// will receive ack and send the related deliveryId on the event bus address
+			String deliveryId = UUID.randomUUID().toString();
+			this.vertx.sharedData().getLocalMap(this.ebName).put(deliveryId, new AmqpDeliveryData(receiver.getName(), deliveryId, delivery));
 		
 			// message unsettled (by sender), feedback needed by Apache Kafka, disposition to be sent accordingly
 			this.producerUnsettledMode.send(record, (metadata, exception) -> {
@@ -259,9 +264,6 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 				}
 				
 				options.addHeader(SourceBridgeEndpoint.EVENT_BUS_DELIVERY_STATE_HEADER, deliveryState);
-				
-				String deliveryId = UUID.randomUUID().toString();
-				this.vertx.sharedData().getLocalMap(this.ebName).put(deliveryId, new AmqpDeliveryData(receiver.getName(), deliveryId, delivery));
 				
 				this.vertx.eventBus().send(this.ebName, deliveryId, options);
 			});
