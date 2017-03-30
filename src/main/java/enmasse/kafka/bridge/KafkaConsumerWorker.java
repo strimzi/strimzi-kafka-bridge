@@ -139,6 +139,13 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 							
 							// commit all tracked offsets for partitions
 							Map<TopicPartition, OffsetAndMetadata> offsets = context.getOffsetTracker().getOffsets();
+
+							// as Kafka documentation says, the committed offset should always be the offset of the next message
+							// that your application will read. Thus, when calling commitSync(offsets) you should
+							// add one to the offset of the last message processed.
+							offsets.forEach((topicPartition, offsetAndMetadata) -> {
+								offsets.put(topicPartition, new OffsetAndMetadata(offsetAndMetadata.offset() + 1, offsetAndMetadata.metadata()));
+							});
 							
 							if (offsets != null && !offsets.isEmpty()) {
 								consumer.commitSync(offsets);
@@ -242,6 +249,13 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 					try {
 						// 3. commit all tracked offsets for partitions
 						Map<TopicPartition, OffsetAndMetadata> offsets = this.context.getOffsetTracker().getOffsets();
+
+						// as Kafka documentation says, the committed offset should always be the offset of the next message
+						// that your application will read. Thus, when calling commitSync(offsets) you should
+						// add one to the offset of the last message processed.
+						offsets.forEach((topicPartition, offsetAndMetadata) -> {
+							offsets.put(topicPartition, new OffsetAndMetadata(offsetAndMetadata.offset() + 1, offsetAndMetadata.metadata()));
+						});
 						
 						if (offsets != null && !offsets.isEmpty()) {
 							this.consumer.commitSync(offsets);

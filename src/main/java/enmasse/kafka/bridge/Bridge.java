@@ -32,9 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -73,8 +71,7 @@ public class Bridge extends AbstractVerticle {
 	private ProtonClient client;
 
 	// endpoints for handling incoming and outcoming messages
-	private BridgeEndpoint source;
-	private Map<ProtonConnection, List<BridgeEndpoint>> sinks;
+	private Map<ProtonConnection, ConnectionEndpoint> endpoints;
 
 	private BridgeConfigProperties bridgeConfigProperties;
 
@@ -97,8 +94,6 @@ public class Bridge extends AbstractVerticle {
 				.listen(ar -> {
 					
 					if (ar.succeeded()) {
-
-						this.source.open();
 
 						LOG.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
 						LOG.info("Kafka bootstrap servers {}",
@@ -127,8 +122,6 @@ public class Bridge extends AbstractVerticle {
 
 			if (ar.succeeded()) {
 
-				this.source.open();
-
 				ProtonConnection connection = ar.result();
 				connection.setContainer(CONTAINER_ID);
 
@@ -151,8 +144,7 @@ public class Bridge extends AbstractVerticle {
 
 		LOG.info("Starting AMQP-Kafka bridge verticle...");
 
-		this.source = new SourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
-		this.sinks = new HashMap<>();
+		this.endpoints = new HashMap<>();
 
 		if (this.bridgeConfigProperties.getAmqpConfigProperties().getMode() == AmqpMode.SERVER) {
 			this.bindAmqpServer(startFuture);
@@ -166,16 +158,19 @@ public class Bridge extends AbstractVerticle {
 
 		LOG.info("Stopping AMQP-Kafka bridge verticle ...");
 
-		this.source.close();
-
 		// for each connection, we have to close the connection itself but before that
-		// all the sink endpoints (so the related sender link inside each of them)
-		this.sinks.forEach((connection, endpoints) -> {
+		// all the sink/source endpoints (so the related links inside each of them)
+		this.endpoints.forEach((connection, endpoint) -> {
 
-			endpoints.stream().forEach(endpoint -> endpoint.close());
+			if (endpoint.getSource() != null) {
+				endpoint.getSource().close();
+			}
+			if (!endpoint.getSinks().isEmpty()) {
+				endpoint.getSinks().stream().forEach(sink -> sink.close());
+			}
 			connection.close();
 		});
-		this.sinks.clear();
+		this.endpoints.clear();
 
 		if (this.server != null) {
 
@@ -218,7 +213,9 @@ public class Bridge extends AbstractVerticle {
 		.closeHandler(this::processCloseConnection)
 		.disconnectHandler(this::processDisconnection)
 		.sessionOpenHandler(session -> session.open())
-		.receiverOpenHandler(this::processOpenReceiver)
+		.receiverOpenHandler(receiver -> {
+			this.processOpenReceiver(connection, receiver);
+		})
 		.senderOpenHandler(sender -> {
 			this.processOpenSender(connection, sender);
 		})
@@ -236,9 +233,9 @@ public class Bridge extends AbstractVerticle {
 			LOG.info("Connection opened by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
 
 			ProtonConnection connection = ar.result();
-			// new connection, preparing for hosting related sink endpoints
-			if (!this.sinks.containsKey(connection)) {
-				this.sinks.put(connection, new ArrayList<>());
+			// new connection, preparing for hosting related sink/source endpoints
+			if (!this.endpoints.containsKey(connection)) {
+				this.endpoints.put(connection, new ConnectionEndpoint());
 			}
 		}
 	}
@@ -252,16 +249,7 @@ public class Bridge extends AbstractVerticle {
 
 		if (ar.succeeded()) {
 			LOG.info("Connection closed by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
-
-			ProtonConnection connection = ar.result();
-			// closing connection, but before closing all the sink endpoints (and related sender links)
-			if (this.sinks.containsKey(connection)) {
-				this.sinks.get(connection).forEach(endpoint -> {
-					endpoint.close();
-				});
-				connection.close();
-				this.sinks.remove(connection);
-			}
+			this.closeConnectionEndpoint(ar.result());
 		}
 	}
 	
@@ -273,27 +261,54 @@ public class Bridge extends AbstractVerticle {
 	private void processDisconnection(ProtonConnection connection) {
 
 		LOG.info("Disconnection from {} {}", connection.getRemoteHostname(), connection.getRemoteContainer());
+		this.closeConnectionEndpoint(connection);
+	}
 
-		// closing connection, but before closing all the sink endpoints (and related sender links)
-		if (this.sinks.containsKey(connection)) {
-			this.sinks.get(connection).forEach(endpoint -> {
-				endpoint.close();
-			});
+	/**
+	 * Close a connection endpoint and before that all the related sink/source endpoints
+	 *
+	 * @param connection	connection for which closing related endpoint
+	 */
+	private void closeConnectionEndpoint(ProtonConnection connection) {
+
+		// closing connection, but before closing all sink/source endpoints
+		if (this.endpoints.containsKey(connection)) {
+			ConnectionEndpoint endpoint = this.endpoints.get(connection);
+			if (endpoint.getSource() != null) {
+				endpoint.getSource().close();
+			}
+			if (!endpoint.getSinks().isEmpty()) {
+				endpoint.getSinks().stream().forEach(sink -> sink.close());
+			}
 			connection.close();
-			this.sinks.remove(connection);
+			this.endpoints.remove(connection);
 		}
 	}
 	
 	/**
 	 * Handler for attached link by a remote sender
 	 *
+	 * @param connection	connection which the receiver link belong to
 	 * @param receiver		receiver link created by the underlying Proton library
 	 * 						by which handling communication with remote sender
 	 */
-	private void processOpenReceiver(ProtonReceiver receiver) {
+	private void processOpenReceiver(ProtonConnection connection, ProtonReceiver receiver) {
 
 		LOG.info("Remote sender attached {}", receiver.getName());
-		this.source.handle(receiver);
+
+		ConnectionEndpoint endpoint = this.endpoints.get(connection);
+		SourceBridgeEndpoint source = endpoint.getSource();
+		// the source endpoint is only one, handling more AMQP receiver links internally
+		if (source == null) {
+			source = new SourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
+
+			source.closeHandler(s -> {
+				endpoint.setSource(null);
+			});
+			source.open();
+			endpoint.setSource(source);
+		}
+		source.handle(receiver);
 	}
 	
 	/**
@@ -310,16 +325,12 @@ public class Bridge extends AbstractVerticle {
 		// create and add a new sink to the map
 		SinkBridgeEndpoint sink = new SinkBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
 
-		// just "defensive" check, but connection should be added before on opening it
-		if (!this.sinks.containsKey(connection)) {
-			this.sinks.put(connection, new ArrayList<>());
-		}
-		this.sinks.get(connection).add(sink);
-
-		sink.closeHandler(endpoint -> {
-			this.sinks.get(connection).remove(endpoint);
+		sink.closeHandler(s -> {
+			this.endpoints.get(connection).getSinks().remove(s);
 		});
 		sink.open();
+		this.endpoints.get(connection).getSinks().add(sink);
+
 		sink.handle(sender);
 	}
 }

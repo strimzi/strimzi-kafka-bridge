@@ -19,6 +19,7 @@ package enmasse.kafka.bridge;
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
 import enmasse.kafka.bridge.converter.DefaultMessageConverter;
 import enmasse.kafka.bridge.converter.MessageConverter;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
@@ -156,6 +157,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		// the delivery state is related to the acknowledgement from Apache Kafka
 		receiver.setTarget(receiver.getRemoteTarget())
 				.setAutoAccept(false)
+				.closeHandler(this::processCloseReceiver)
 				.handler((delivery, message) -> {
 					this.processMessage(receiver, delivery, message);
 				});
@@ -275,6 +277,29 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 
 		this.closeHandler = endpointCloseHandler;
 		return this;
+	}
+
+	/**
+	 * Handle for detached link by the remote sender
+	 * @param ar		async result with info on related Proton receiver
+	 */
+	private void processCloseReceiver(AsyncResult<ProtonReceiver> ar) {
+
+		if (ar.succeeded()) {
+
+			LOG.info("Remote AMQP sender detached");
+
+			// close and remove the receiver link
+			ProtonReceiver receiver = ar.result();
+			receiver.close();
+			this.receivers.remove(receiver.getName());
+
+			// if the source endpoint has no receiver links, it can be closed
+			if (this.receivers.isEmpty()) {
+				this.close();
+				this.handleClose();
+			}
+		}
 	}
 	
 	/**

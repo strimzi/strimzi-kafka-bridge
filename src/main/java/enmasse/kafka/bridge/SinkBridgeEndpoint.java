@@ -341,7 +341,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		
 		if (ar.succeeded()) {
 			
-			LOG.info("Remote detached");
+			LOG.info("Remote AMQP receiver detached");
 			
 			ar.result().close();
 			

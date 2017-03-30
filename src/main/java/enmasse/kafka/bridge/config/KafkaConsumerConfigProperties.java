@@ -28,7 +28,7 @@ public class KafkaConsumerConfigProperties {
 
     private static final String DEFAULT_KEY_DESERIALIZER = "org.apache.kafka.common.serialization.StringDeserializer";
     private static final String DEFAULT_VALUE_DESERIALIZER = "org.apache.kafka.common.serialization.ByteArrayDeserializer";
-    private static final String DEFAULT_AUTO_OFFSET_RESET = "latest";
+    private static final String DEFAULT_AUTO_OFFSET_RESET = "earliest";
     private static final boolean DEFAULT_ENABLE_AUTO_COMMIT = false;
 
     private String keyDeserializer = DEFAULT_KEY_DESERIALIZER;

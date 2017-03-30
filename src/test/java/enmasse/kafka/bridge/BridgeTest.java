@@ -347,6 +347,50 @@ public class BridgeTest {
 			}
 		});
 	}
+
+	@Test
+	public void sendReceiveInMultiplexing(TestContext context) {
+
+		ProtonClient client = ProtonClient.create(this.vertx);
+
+		Async async = context.async();
+		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+
+			if (ar.succeeded()) {
+
+				ProtonConnection connection = ar.result();
+				connection.open();
+
+				ProtonReceiver receiver = connection.createReceiver("my_topic/group.id/my_group");
+				receiver.handler((delivery, message) -> {
+
+					Section body = message.getBody();
+					if (body instanceof Data) {
+						byte[] value = ((Data)body).getValue().getArray();
+						LOG.info("Message received {}", new String(value));
+						// default is AT_LEAST_ONCE QoS (unsettled) so we need to send disposition (settle) to sender
+						delivery.disposition(Accepted.getInstance(), true);
+						context.assertTrue(true);
+						async.complete();
+					}
+				})
+				.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit())
+				.open();
+
+				ProtonSender sender = connection.createSender(null);
+				sender.open();
+
+				String topic = "my_topic";
+				Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
+
+				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
+					LOG.info("Message delivered {}", delivery.getRemoteState());
+					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+				});
+
+			}
+		});
+	}
 	
 	@Test
 	public void receiveSimpleMessage(TestContext context) {
@@ -436,8 +480,8 @@ public class BridgeTest {
 				
 				// filter on specific partition
 				Map<Symbol, Object> map = new HashMap<>();
-				map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_FILTER), (int)0);
-				map.put(Symbol.valueOf(Bridge.AMQP_OFFSET_FILTER), (long)50);
+				map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_FILTER), 0);
+				map.put(Symbol.valueOf(Bridge.AMQP_OFFSET_FILTER), (long)10);
 				source.setFilter(map);
 				
 				receiver.handler((delivery, message) -> {
