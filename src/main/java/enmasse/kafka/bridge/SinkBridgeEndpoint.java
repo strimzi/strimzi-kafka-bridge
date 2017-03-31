@@ -57,6 +57,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	
 	public static final String EVENT_BUS_SEND = "send";
 	public static final String EVENT_BUS_ERROR = "error";
+	public static final String EVENT_BUS_ASSIGNED = "assigned";
 	public static final String EVENT_BUS_REQUEST_HEADER = "request";
 	public static final String EVENT_BUS_ERROR_DESC_HEADER = "error-desc";
 	public static final String EVENT_BUS_ERROR_AMQP_HEADER = "error-amqp";
@@ -146,7 +147,6 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		}
 		
 		this.sender = (ProtonSender)link;
-		this.sender.setSource(sender.getRemoteSource());
 		
 		// address is like this : [topic]/group.id/[group.id]
 		String address = this.sender.getRemoteSource().getAddress();
@@ -158,8 +158,11 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			// group.id don't specified in the address, link will be closed
 			LOG.warn("Local detached");
 
-			this.sender.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_GROUPID), "Mandatory group.id not specified in the address"));
-			this.sender.close();
+			this.sender
+					.setSource(null)
+					.open()
+					.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_GROUPID), "Mandatory group.id not specified in the address"))
+					.close();
 			
 			this.handleClose();
 			
@@ -168,8 +171,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			// group.id specified in the address, open sender and setup Kafka consumer
 			this.sender
 					.closeHandler(this::processCloseSender)
-					.sendQueueDrainHandler(this::processSendQueueDrain)
-					.open();
+					.sendQueueDrainHandler(this::processSendQueueDrain);
 			
 			String groupId = address.substring(groupIdIndex + SinkBridgeEndpoint.GROUP_ID_MATCH.length());
 			String topic = address.substring(0, groupIdIndex);
@@ -191,8 +193,11 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				condition = this.checkFilters(partition, offset);
 				
 				if (condition != null) {
-					this.sender.setCondition(condition);
-					this.sender.close();
+					this.sender
+							.setSource(null)
+							.open()
+							.setCondition(condition)
+							.close();
 					
 					this.handleClose();
 					return;
@@ -217,7 +222,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 					UUID.randomUUID().toString());
 			LOG.debug("Event Bus queue and shared local map : {}", ebName);
 
-			// replace unsopported "/" (in a topic name in Kafka) with "."
+			// replace unsupported "/" (in a topic name in Kafka) with "."
 			String kafkaTopic = topic.replace('/', '.');
 
 			this.offsetTracker = new SimpleOffsetTracker<>(kafkaTopic);
@@ -313,16 +318,32 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 						this.context.setSendQueueFull(sender.sendQueueFull());
 						
 						break;
+
+					case SinkBridgeEndpoint.EVENT_BUS_ASSIGNED:
+
+						LOG.info("Partitions assigned");
+
+						if (!this.sender.isOpen()) {
+							this.sender
+									.setSource(sender.getRemoteSource())
+									.open();
+						}
+						break;
 					
 					case SinkBridgeEndpoint.EVENT_BUS_ERROR:
 						
 						LOG.warn("Local detached");
-						
+
+						ErrorCondition condition =
+								new ErrorCondition(Symbol.getSymbol(ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_ERROR_AMQP_HEADER)),
+								ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_ERROR_DESC_HEADER));
+
 						// no partitions assigned, the AMQP link and Kafka consumer will be closed
-						this.sender.setCondition(
-								new ErrorCondition(Symbol.getSymbol(ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_ERROR_AMQP_HEADER)), 
-								ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_ERROR_DESC_HEADER)));
-						this.sender.close();
+						this.sender
+								.setSource(null)
+								.open()
+								.setCondition(condition)
+								.close();
 						
 						this.close();
 						this.handleClose();

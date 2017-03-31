@@ -27,6 +27,7 @@ import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
 import io.vertx.proton.ProtonServer;
 import io.vertx.proton.ProtonServerOptions;
+import io.vertx.proton.ProtonSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -212,14 +213,17 @@ public class Bridge extends AbstractVerticle {
 		.openHandler(this::processOpenConnection)
 		.closeHandler(this::processCloseConnection)
 		.disconnectHandler(this::processDisconnection)
-		.sessionOpenHandler(session -> session.open())
+		.sessionOpenHandler(this::processOpenSession)
 		.receiverOpenHandler(receiver -> {
 			this.processOpenReceiver(connection, receiver);
 		})
 		.senderOpenHandler(sender -> {
 			this.processOpenSender(connection, sender);
-		})
-		.open();
+		});
+
+		if (this.bridgeConfigProperties.getAmqpConfigProperties().getMode() == AmqpMode.CLIENT) {
+			connection.open();
+		}
 	}
 	
 	/**
@@ -230,9 +234,12 @@ public class Bridge extends AbstractVerticle {
 	private void processOpenConnection(AsyncResult<ProtonConnection> ar) {
 
 		if (ar.succeeded()) {
+
 			LOG.info("Connection opened by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
 
 			ProtonConnection connection = ar.result();
+			connection.open();
+
 			// new connection, preparing for hosting related sink/source endpoints
 			if (!this.endpoints.containsKey(connection)) {
 				this.endpoints.put(connection, new ConnectionEndpoint());
@@ -283,6 +290,22 @@ public class Bridge extends AbstractVerticle {
 			connection.close();
 			this.endpoints.remove(connection);
 		}
+	}
+
+	/**
+	 * Handler for session closing from the remote
+	 *
+	 * @param session	related Proton session closed
+	 */
+	private void processOpenSession(ProtonSession session) {
+
+		session.closeHandler(ar -> {
+
+			if (ar.succeeded()) {
+				ar.result().close();
+			}
+
+		}).open();
 	}
 	
 	/**

@@ -105,6 +105,11 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 					
 					this.consumer.seek(new TopicPartition(this.context.getTopic(), this.context.getPartition()), this.context.getOffset());
 				}
+
+				DeliveryOptions options = new DeliveryOptions();
+				options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_ASSIGNED);
+				vertx.eventBus().send(context.getEbName(), "", options);
+
 			} else {
 				
 				LOG.warn("Requested partition {} doesn't exist", this.context.getPartition());
@@ -169,6 +174,10 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 						for (TopicPartition partition : partitions) {
 							LOG.debug("topic {} partition {}", partition.topic(), partition.partition());
 						}
+
+						DeliveryOptions options = new DeliveryOptions();
+						options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_ASSIGNED);
+						vertx.eventBus().send(context.getEbName(), "", options);
 						
 					} else {
 						
