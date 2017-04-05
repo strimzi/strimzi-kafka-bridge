@@ -22,6 +22,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.proton.ProtonClient;
+import io.vertx.proton.ProtonClientOptions;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
@@ -119,7 +120,9 @@ public class Bridge extends AbstractVerticle {
 		String host = this.bridgeConfigProperties.getAmqpConfigProperties().getHost();
 		int port = this.bridgeConfigProperties.getAmqpConfigProperties().getPort();
 
-		this.client.connect(host, port, ar -> {
+		ProtonClientOptions options = this.createClientOptions();
+
+		this.client.connect(options, host, port, ar -> {
 
 			if (ar.succeeded()) {
 
@@ -199,6 +202,19 @@ public class Bridge extends AbstractVerticle {
 		ProtonServerOptions options = new ProtonServerOptions();
 		options.setHost(this.bridgeConfigProperties.getAmqpConfigProperties().getHost());
 		options.setPort(this.bridgeConfigProperties.getAmqpConfigProperties().getPort());
+		return options;
+	}
+
+	/**
+	 * Create an options instance for the ProtonClient
+	 *
+	 * @return		ProtonClient options instance
+	 */
+	private ProtonClientOptions createClientOptions() {
+
+		ProtonClientOptions options = new ProtonClientOptions();
+		options.setConnectTimeout(1000);
+		options.setReconnectAttempts(-1).setReconnectInterval(1000); // reconnect forever, every 200 millisecs
 		return options;
 	}
 	
