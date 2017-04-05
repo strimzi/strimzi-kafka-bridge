@@ -150,7 +150,9 @@ public class Bridge extends AbstractVerticle {
 
 		this.endpoints = new HashMap<>();
 
-		if (this.bridgeConfigProperties.getAmqpConfigProperties().getMode() == AmqpMode.SERVER) {
+		AmqpMode mode = this.bridgeConfigProperties.getAmqpConfigProperties().getMode();
+		LOG.info("AMQP-Kafka Bridge configured in {} mode", mode);
+		if (mode == AmqpMode.SERVER) {
 			this.bindAmqpServer(startFuture);
 		} else {
 			this.connectAmqpClient(startFuture);

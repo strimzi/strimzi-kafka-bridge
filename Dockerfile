@@ -1,6 +1,10 @@
-FROM openjdk:8-jre-alpine
+FROM centos:7
 
-ADD target/amqp-kafka-bridge-1.0-SNAPSHOT.jar /
+RUN yum -y install java-1.8.0-openjdk-devel && yum clean all
+ENV JAVA_HOME /usr/lib/jvm/java
+
+ARG version=1.0-SNAPSHOT
+ADD target/amqp-kafka-bridge-${version}.jar /
 COPY ./run_bridge.sh /etc/amqp-kafka-bridge/
 
 EXPOSE 5672 5672
