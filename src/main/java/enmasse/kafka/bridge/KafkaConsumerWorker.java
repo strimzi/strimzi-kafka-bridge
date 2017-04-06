@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -148,12 +149,13 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 							// as Kafka documentation says, the committed offset should always be the offset of the next message
 							// that your application will read. Thus, when calling commitSync(offsets) you should
 							// add one to the offset of the last message processed.
+							Map<TopicPartition, OffsetAndMetadata> kafkaOffsets = new HashMap<>();
 							offsets.forEach((topicPartition, offsetAndMetadata) -> {
-								offsets.put(topicPartition, new OffsetAndMetadata(offsetAndMetadata.offset() + 1, offsetAndMetadata.metadata()));
+								kafkaOffsets.put(topicPartition, new OffsetAndMetadata(offsetAndMetadata.offset() + 1, offsetAndMetadata.metadata()));
 							});
 							
 							if (offsets != null && !offsets.isEmpty()) {
-								consumer.commitSync(offsets);
+								consumer.commitSync(kafkaOffsets);
 								context.getOffsetTracker().commit(offsets);
 								context.getOffsetTracker().clear();
 								
@@ -262,12 +264,13 @@ public class KafkaConsumerWorker<K, V> implements Runnable {
 						// as Kafka documentation says, the committed offset should always be the offset of the next message
 						// that your application will read. Thus, when calling commitSync(offsets) you should
 						// add one to the offset of the last message processed.
+						Map<TopicPartition, OffsetAndMetadata> kafkaOffsets = new HashMap<>();
 						offsets.forEach((topicPartition, offsetAndMetadata) -> {
-							offsets.put(topicPartition, new OffsetAndMetadata(offsetAndMetadata.offset() + 1, offsetAndMetadata.metadata()));
+							kafkaOffsets.put(topicPartition, new OffsetAndMetadata(offsetAndMetadata.offset() + 1, offsetAndMetadata.metadata()));
 						});
 						
 						if (offsets != null && !offsets.isEmpty()) {
-							this.consumer.commitSync(offsets);
+							this.consumer.commitSync(kafkaOffsets);
 							this.context.getOffsetTracker().commit(offsets);
 							
 							for (Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
