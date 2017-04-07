@@ -18,6 +18,7 @@ package enmasse.kafka.bridge;
 
 import enmasse.kafka.bridge.config.AmqpMode;
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -67,6 +68,8 @@ public class Bridge extends AbstractVerticle {
 
 	// container-id needed for working in "client" mode
 	private static final String CONTAINER_ID = "amqp-kafka-bridge-service";
+
+	private static final int HEALTH_SERVER_PORT = 8080;
 	
 	// AMQP client/server related stuff
 	private ProtonServer server;
@@ -100,6 +103,9 @@ public class Bridge extends AbstractVerticle {
 						LOG.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
 						LOG.info("Kafka bootstrap servers {}",
 								this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
+
+						this.startHealthServer();
+
 						startFuture.complete();
 					} else {
 						LOG.error("Error starting AMQP-Kafka Bridge", ar.cause());
@@ -134,6 +140,9 @@ public class Bridge extends AbstractVerticle {
 				LOG.info("AMQP-Kafka Bridge started and connected in client mode to {}:{}", host, port);
 				LOG.info("Kafka bootstrap servers {}",
 						this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
+
+				this.startHealthServer();
+
 				startFuture.complete();
 
 			} else {
@@ -191,6 +200,16 @@ public class Bridge extends AbstractVerticle {
 				}
 			});
 		}
+	}
+
+	/**
+	 * Start an HTTP health server
+	 */
+	private void startHealthServer() {
+
+		vertx.createHttpServer()
+				.requestHandler(request -> request.response().setStatusCode(HttpResponseStatus.OK.code()).end())
+				.listen(HEALTH_SERVER_PORT);
 	}
 	
 	/**

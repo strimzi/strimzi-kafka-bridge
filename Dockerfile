@@ -7,6 +7,7 @@ ARG version=1.0-SNAPSHOT
 ADD target/amqp-kafka-bridge-${version}.jar /
 COPY ./run_bridge.sh /etc/amqp-kafka-bridge/
 
-EXPOSE 5672 5672
+EXPOSE 5672
+EXPOSE 8080
 
 CMD ["/etc/amqp-kafka-bridge/run_bridge.sh"]
