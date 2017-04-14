@@ -157,7 +157,14 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		// the delivery state is related to the acknowledgement from Apache Kafka
 		receiver.setTarget(receiver.getRemoteTarget())
 				.setAutoAccept(false)
-				.closeHandler(this::processCloseReceiver)
+				.closeHandler(ar -> {
+					if (ar.succeeded()) {
+						this.processCloseReceiver(ar.result());
+					}
+				})
+				.detachHandler(ar -> {
+					this.processCloseReceiver(receiver);
+				})
 				.handler((delivery, message) -> {
 					this.processMessage(receiver, delivery, message);
 				});
@@ -281,24 +288,20 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 
 	/**
 	 * Handle for detached link by the remote sender
-	 * @param ar		async result with info on related Proton receiver
+	 * @param receiver		Proton receiver instance
 	 */
-	private void processCloseReceiver(AsyncResult<ProtonReceiver> ar) {
+	private void processCloseReceiver(ProtonReceiver receiver) {
 
-		if (ar.succeeded()) {
+		LOG.info("Remote AMQP sender detached");
 
-			LOG.info("Remote AMQP sender detached");
+		// close and remove the receiver link
+		receiver.close();
+		this.receivers.remove(receiver.getName());
 
-			// close and remove the receiver link
-			ProtonReceiver receiver = ar.result();
-			receiver.close();
-			this.receivers.remove(receiver.getName());
-
-			// if the source endpoint has no receiver links, it can be closed
-			if (this.receivers.isEmpty()) {
-				this.close();
-				this.handleClose();
-			}
+		// if the source endpoint has no receiver links, it can be closed
+		if (this.receivers.isEmpty()) {
+			this.close();
+			this.handleClose();
 		}
 	}
 	

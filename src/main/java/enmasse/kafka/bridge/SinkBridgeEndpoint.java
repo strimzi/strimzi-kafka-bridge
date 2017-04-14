@@ -170,7 +170,14 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		
 			// group.id specified in the address, open sender and setup Kafka consumer
 			this.sender
-					.closeHandler(this::processCloseSender)
+					.closeHandler(ar -> {
+						if (ar.succeeded()) {
+							this.processCloseSender(ar.result());
+						}
+					})
+					.detachHandler(ar -> {
+						this.processCloseSender(this.sender);
+					})
 					.sendQueueDrainHandler(this::processSendQueueDrain);
 			
 			String groupId = address.substring(groupIdIndex + SinkBridgeEndpoint.GROUP_ID_MATCH.length());
@@ -356,19 +363,16 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	
 	/**
 	 * Handle for detached link by the remote receiver
-	 * @param ar		async result with info on related Proton sender
+	 * @param sender		Proton sender instance
 	 */
-	private void processCloseSender(AsyncResult<ProtonSender> ar) {
-		
-		if (ar.succeeded()) {
-			
-			LOG.info("Remote AMQP receiver detached");
-			
-			ar.result().close();
-			
-			this.close();
-			this.handleClose();
-		}
+	private void processCloseSender(ProtonSender sender) {
+
+		LOG.info("Remote AMQP receiver detached");
+
+		sender.close();
+
+		this.close();
+		this.handleClose();
 	}
 	
 	/**
