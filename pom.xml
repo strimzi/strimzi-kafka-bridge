@@ -15,7 +15,7 @@
 		<kafka.version>0.10.1.0</kafka.version>
 		<slf4j-log4j12.version>1.7.18</slf4j-log4j12.version>
 		<log4j.version>1.2.17</log4j.version>
-		<vertx-proton.version>3.4.0</vertx-proton.version>
+		<vertx-proton.version>3.4.2-SNAPSHOT</vertx-proton.version>
 		<junit.version>4.12</junit.version>
 		<vertx-unit.version>3.2.1</vertx-unit.version>
 		<spring-boot.version>1.4.2.RELEASE</spring-boot.version>
@@ -67,6 +67,13 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
+	<repositories>
+		<repository>
+			<id>oss.sonatype.org-snapshot</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</repository>
+	</repositories>
 
 	<build>
 		<plugins>
