@@ -16,10 +16,6 @@
 
 package enmasse.kafka.bridge.tracker;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.TopicPartition;
-
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -27,6 +23,10 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 
 /**
  * Full implementation of offset tracker.
@@ -180,6 +180,10 @@ public class FullOffsetTracker<K, V> implements OffsetTracker<K, V> {
 				if (this.offsets.get(offset.getKey().partition()) == offset.getValue().offset()) {
 					// we can mark this offset as committed (not changed)
 					this.offsetsFlag.put(offset.getKey().partition(), false);
+					
+					if (this.offsets.get(offset.getKey().partition()) == this.firstUnsettledOffsets.get(offset.getKey().partition())) {
+						this.firstUnsettledOffsets.put(offset.getKey().partition(), offset.getValue().offset() + 1);
+					}
 				}
 			}
 		}

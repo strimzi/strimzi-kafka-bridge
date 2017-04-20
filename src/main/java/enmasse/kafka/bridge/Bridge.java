@@ -51,6 +51,7 @@ public class Bridge extends AbstractVerticle {
 	public static final String AMQP_PARTITION_ANNOTATION = "x-opt-bridge.partition";
 	public static final String AMQP_KEY_ANNOTATION = "x-opt-bridge.key";
 	public static final String AMQP_OFFSET_ANNOTATION = "x-opt-bridge.offset";
+	public static final String AMQP_TOPIC_ANNOTATION = "x-opt-bridge.topic";
 	
 	// AMQP errors
 	public static final String AMQP_ERROR_NO_PARTITIONS = "enmasse:no-free-partitions";
