@@ -1,0 +1,24 @@
+<assembly>
+  <id>bin</id>
+  <formats>
+    <format>tar.gz</format>
+    <format>zip</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <fileSets>
+    <fileSet>
+      <directory>target</directory>
+      <outputDirectory>/</outputDirectory>
+      <includes>
+        <include>amqp-kafka-bridge.jar</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>src/main/sh</directory>
+      <outputDirectory>/</outputDirectory>
+      <includes>
+        <include>run_bridge.sh</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>
