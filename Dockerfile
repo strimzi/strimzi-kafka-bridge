@@ -4,10 +4,8 @@ RUN yum -y install java-1.8.0-openjdk-devel && yum clean all
 ENV JAVA_HOME /usr/lib/jvm/java
 
 ARG version=1.0-SNAPSHOT
-ADD target/amqp-kafka-bridge-${version}.jar /
-COPY ./run_bridge.sh /etc/amqp-kafka-bridge/
+ADD target/amqp-kafka-bridge-${version}-bin.tar.gz /
 
-EXPOSE 5672
-EXPOSE 8080
+EXPOSE 5672 8080
 
-CMD ["/etc/amqp-kafka-bridge/run_bridge.sh"]
+CMD ["/run_bridge.sh"]
