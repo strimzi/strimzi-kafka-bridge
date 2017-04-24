@@ -139,8 +139,8 @@ public class BridgeReceiver {
 								Object partition = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.partition"));
 								Object offset = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.offset"));
 								Object key = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.key"));
-								Object topicName = messageAnnotations.getValue().get(Symbol.valueOf("x-opt-bridge.topic"));
-								LOG.info("... on topic {} partition {} [{}], key = {}", topicName, partition, offset, key);
+								Object topic = messageAnnotations.getValue().get(Symbol.valueOf("x-opt-bridge.topic"));
+								LOG.info("... on topic {} partition {} [{}], key = {}", topic, partition, offset, key);
 							}
 						})
 						.open();
