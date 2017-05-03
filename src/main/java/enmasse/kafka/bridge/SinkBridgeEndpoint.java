@@ -451,7 +451,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		
 		if (partition == null && offset != null) {
 			// no meaning only offset without partition
-			condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITION_FILTER), "No partition filter specied");
+			condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITION_FILTER), "No partition filter specified");
 			return condition;
 		}
 		
