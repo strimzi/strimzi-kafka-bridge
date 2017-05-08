@@ -18,13 +18,11 @@ package enmasse.kafka.bridge;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -415,9 +413,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			
 			if (requestedPartitionInfo.isPresent()) {
 				LOG.debug("Requested partition {} present", partition);
-				Set<TopicPartition> partitions = new HashSet<>();
-				partitions.add(new TopicPartition(kafkaTopic, partition));
-				this.consumer.assign(partitions);
+				this.consumer.assign(Collections.singleton(new TopicPartition(kafkaTopic, partition)));
 				
 				// start reading from specified offset inside partition
 				if (this.offset != null) {
@@ -496,18 +492,23 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		case AT_MOST_ONCE:
 			// Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
 			
-			// 1. immediate commit
-			this.consumer.commit(ar -> {
-				if (ar.succeeded()) {
-					// 2. commit succeeded, so we can enqueue record for sending
-					LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
-					
-					// 3. start message sending
-					protonSend(new KafkaMessage<String,byte[]>(record.partition(), record.offset(), record.record()));
-				} else {
-					LOG.error("Error committing ... {}", ar.cause().getMessage());
-				}
-			});
+			// 1. when start of batch: immediate commit
+			if (record.firstOfBatch()) {
+				this.consumer.commit(ar -> {
+					if (ar.failed()) {
+						{
+							LOG.error("Error committing ... {}", ar.cause().getMessage());
+							//sendProtonError(newError(Bridge.AMQP_ERROR_KAFKA_SYNC, "Error in commit", ar.cause()));
+						}
+					}
+				});
+			}
+			// 2. commit succeeded, so we can enqueue record for sending
+			LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
+			
+			// 3. start message sending
+			protonSend(new KafkaMessage<String,byte[]>(record.partition(), record.offset(), record.record()));
+
 			
 		case AT_LEAST_ONCE:
 			// Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit
@@ -521,11 +522,13 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				protonSend(new KafkaMessage<String,byte[]>(record.partition(), record.offset(), record.record()));
 			}
 			
-			try {
-				// 3. commit all tracked offsets for partitions
-				commitOffsets(false);
-			} catch (Exception e) {
-				LOG.error("Error committing ... {}", e.getMessage());
+			if (record.lastOfBatch()) {
+				try {
+					// 3. commit all tracked offsets for partitions
+					commitOffsets(false);
+				} catch (Exception e) {
+					LOG.error("Error committing ... {}", e.getMessage());
+				}
 			}
 		}
 		
