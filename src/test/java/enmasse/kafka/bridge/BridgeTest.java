@@ -79,7 +79,12 @@ public class BridgeTest extends KafkaClusterTestBase {
 	
 	@Test
 	public void sendSimpleMessage(TestContext context) {
-		
+		String topic = "sendSimpleMessage";
+		kafkaCluster.createTopic(topic, 1, 1);
+		sendSimpleMessage(context, topic);
+	}
+
+	protected void sendSimpleMessage(TestContext context, String topic) {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
@@ -92,7 +97,6 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
 				
-				String topic = "my_topic";
 				Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
 				
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
@@ -106,6 +110,9 @@ public class BridgeTest extends KafkaClusterTestBase {
 	
 	@Test
 	public void sendSimpleMessageToPartition(TestContext context) {
+		String topic = "sendSimpleMessageToPartition";
+		kafkaCluster.createTopic(topic, 1, 1);
+		//String topic = "my_topic";
 		
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
@@ -119,7 +126,6 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
 				
-				String topic = "my_topic";
 				Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
 				
 				// sending on specified partition
@@ -139,6 +145,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 	
 	@Test
 	public void sendSimpleMessageWithKey(TestContext context) {
+		String topic = "sendSimpleMessageWithKey";
+		kafkaCluster.createTopic(topic, 1, 1);
 		
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
@@ -152,7 +160,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
 				
-				String topic = "my_topic";
+				
 				Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
 				
 				// sending with a key
@@ -172,6 +180,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 	
 	@Test
 	public void sendBinaryMessage(TestContext context) {
+		String topic = "sendBinaryMessage";
+		kafkaCluster.createTopic(topic, 1, 1);
 		
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
@@ -185,7 +195,6 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
 				
-				String topic = "my_topic";
 				String value = "Binary message from " + connection.getContainer();
 				
 				Message message = Proton.message();
@@ -203,6 +212,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 	
 	@Test
 	public void sendArrayMessage(TestContext context) {
+		String topic = "sendArrayMessage";
+		kafkaCluster.createTopic(topic, 1, 1);
 		
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
@@ -215,8 +226,6 @@ public class BridgeTest extends KafkaClusterTestBase {
 				
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
-				
-				String topic = "my_topic";
 				
 				// send an array (i.e. integer values)
 				Object[] array = { 1, 2 };
@@ -235,6 +244,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 	
 	@Test
 	public void sendListMessage(TestContext context) {
+		String topic = "sendListMessage";
+		kafkaCluster.createTopic(topic, 1, 1);
 		
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
@@ -247,8 +258,6 @@ public class BridgeTest extends KafkaClusterTestBase {
 				
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
-				
-				String topic = "my_topic";
 				
 				// send a list with mixed values (i.e. string, integer)
 				List<Object> list = new ArrayList<>();
@@ -269,6 +278,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 	
 	@Test
 	public void sendMapMessage(TestContext context) {
+		String topic = "sendMapMessage";
+		kafkaCluster.createTopic(topic, 1, 1);
 		
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
@@ -281,8 +292,6 @@ public class BridgeTest extends KafkaClusterTestBase {
 				
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
-				
-				String topic = "my_topic";
 				
 				// send a map with mixed keys and values (i.e. string, integer)
 				Map<Object, Object> map = new HashMap<>();
@@ -303,6 +312,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 	
 	@Test
 	public void sendPeriodicMessage(TestContext context) {
+		String topic = "sendPeriodicMessage";
+		kafkaCluster.createTopic(topic, 1, 1);
 		
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
@@ -316,7 +327,6 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
 				
-				String topic = "my_topic";
 				this.count = 0;
 				
 				this.vertx.setPeriodic(BridgeTest.PERIODIC_DELAY, timerId -> {
@@ -350,7 +360,9 @@ public class BridgeTest extends KafkaClusterTestBase {
 
 	@Test
 	public void sendReceiveInMultiplexing(TestContext context) {
-
+		String topic = "sendReceiveInMultiplexing";
+		kafkaCluster.createTopic(topic, 1, 1);
+		sendSimpleMessage(context, topic);
 		ProtonClient client = ProtonClient.create(this.vertx);
 
 		Async async = context.async();
@@ -361,7 +373,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonConnection connection = ar.result();
 				connection.open();
 
-				ProtonReceiver receiver = connection.createReceiver("my_topic/group.id/my_group");
+				ProtonReceiver receiver = connection.createReceiver(topic+"/group.id/my_group");
 				receiver.handler((delivery, message) -> {
 
 					Section body = message.getBody();
@@ -380,7 +392,6 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
 
-				String topic = "my_topic";
 				Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
 
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
@@ -394,9 +405,11 @@ public class BridgeTest extends KafkaClusterTestBase {
 	
 	@Test
 	public void receiveSimpleMessage(TestContext context) {
-	
-		ProtonClient client = ProtonClient.create(this.vertx);
+		String topic = "receiveSimpleMessage";
+		kafkaCluster.createTopic(topic, 1, 1);
+		sendSimpleMessage(context, topic);
 		
+		ProtonClient client = ProtonClient.create(this.vertx);
 		Async async = context.async();
 		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
@@ -404,7 +417,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonConnection connection = ar.result();
 				connection.open();
 				
-				ProtonReceiver receiver = connection.createReceiver("my_topic/group.id/my_group");
+				ProtonReceiver receiver = connection.createReceiver(topic+"/group.id/my_group");
 				receiver.handler((delivery, message) -> {
 					
 					Section body = message.getBody();
@@ -425,7 +438,9 @@ public class BridgeTest extends KafkaClusterTestBase {
 	
 	@Test	
 	public void receiveSimpleMessageFromPartition(TestContext context) {
-		
+		String topic = "receiveSimpleMessageFromPartition";
+		kafkaCluster.createTopic(topic, 1, 1);
+		sendSimpleMessage(context, topic);
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
@@ -435,7 +450,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonConnection connection = ar.result();
 				connection.open();
 				
-				ProtonReceiver receiver = connection.createReceiver("my_topic/group.id/my_group");
+				ProtonReceiver receiver = connection.createReceiver(topic+"/group.id/my_group");
 				
 				Source source = (Source)receiver.getSource();
 				
@@ -464,7 +479,9 @@ public class BridgeTest extends KafkaClusterTestBase {
 	
 	@Test	
 	public void receiveSimpleMessageFromPartitionAndOffset(TestContext context) {
-		
+		String topic = "receiveSimpleMessageFromPartitionAndOffset";
+		kafkaCluster.createTopic(topic, 1, 1);
+		sendSimpleMessage(context, topic);
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
@@ -474,7 +491,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonConnection connection = ar.result();
 				connection.open();
 				
-				ProtonReceiver receiver = connection.createReceiver("my_topic/group.id/my_group");
+				ProtonReceiver receiver = connection.createReceiver(topic + "/group.id/my_group");
 				
 				Source source = (Source)receiver.getSource();
 				
