@@ -65,11 +65,7 @@ public class FullOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	}
 	
 	@Override
-	public synchronized void track(String tag, ConsumerRecord<K, V> record) {
-	
-		// get partition and offset from delivery tag : <partition>_<offset>
-		int partition = Integer.valueOf(tag.substring(0, tag.indexOf("_")));
-		long offset = Long.valueOf(tag.substring(tag.indexOf("_") + 1));
+	public synchronized void track(int partition, long offset, ConsumerRecord<K, V> record) {
 		
 		if (!this.offsetSettlements.containsKey(partition)) {
 			
@@ -91,11 +87,7 @@ public class FullOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	}
 
 	@Override
-	public synchronized void delivered(String tag) {
-		
-		// get partition and offset from delivery tag : <partition>_<offset>
-		int partition = Integer.valueOf(tag.substring(0, tag.indexOf("_")));
-		long offset = Long.valueOf(tag.substring(tag.indexOf("_") + 1));
+	public synchronized void delivered(int partition, long offset) {
 		
 		// offset SETTLED, updating map partition
 		this.offsetSettlements.get(partition).put(offset, true);

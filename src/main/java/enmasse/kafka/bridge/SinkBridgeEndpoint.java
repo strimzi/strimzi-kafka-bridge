@@ -293,14 +293,18 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 								Object obj = this.vertx.sharedData().getLocalMap(this.context.getEbName()).remove(deliveryTag);
 								
 								if (obj instanceof KafkaMessage<?, ?>) {
-	
+									// get partition and offset from delivery tag : <partition>_<offset>
+									int underscore = deliveryTag.indexOf("_");
+									int messagePartition = Integer.valueOf(deliveryTag.substring(0, underscore));
+									long messageOffset = Long.valueOf(deliveryTag.substring(underscore + 1));
+									
 									KafkaMessage<String, byte[]> kafkaMessage = (KafkaMessage<String, byte[]>) obj;
 									record = kafkaMessage.getRecord();
 									
 									Message message = converter.toAmqpMessage(this.sender.getSource().getAddress(), record);
 									
 									// record (converted in AMQP message) is on the way ... ask to tracker to track its delivery
-									this.offsetTracker.track(deliveryTag, record);
+									this.offsetTracker.track(messagePartition, messageOffset, record);
 									
 									LOG.debug("Tracked {} - {} [{}]", record.topic(), record.partition(), record.offset());
 
@@ -308,7 +312,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 										
 										// a record (converted in AMQP message) is delivered ... communicate it to the tracker
 										String tag = new String(delivery.getTag());
-										this.offsetTracker.delivered(tag);
+										this.offsetTracker.delivered(messagePartition, messageOffset);
 										
 										LOG.debug("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), this.sender.getSource().getAddress());
 									});
