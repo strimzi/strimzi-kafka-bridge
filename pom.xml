@@ -147,20 +147,22 @@
 								<image>
 									<name>enmasseproject/amqp-kafka-bridge:${project.version}</name>
 									<build>
-										<from>openjdk:8-jre-alpine</from>
+										<from>centos:7</from>
 										<ports>
 											<port>5672</port>
+											<port>8080</port>
 										</ports>
+										<runCmds>
+											<run>yum -y install java-1.8.0-openjdk-devel</run>
+											<run>yum clean all</run>
+										</runCmds>
 										<cmd>
 											<exec>
 												<arg>java</arg>
 												<arg>-Dvertx.cacheDirBase=/tmp</arg>
-												<arg>-Dvertx.disableDnsResolver=true</arg>
-												<arg>-Dnetworkaddress.cache.ttl=0</arg>
-												<arg>-Dnetworkaddress.cache.negative.ttl=0</arg>
 												<arg>-jar</arg>
 												<arg>
-													/${project.artifactId}-${project.version}.jar
+													/${project.artifactId}.jar
 												</arg>
 											</exec>
 										</cmd>
@@ -173,7 +175,7 @@
 														<directory>${project.basedir}/target</directory>
 														<outputDirectory>/</outputDirectory>
 														<includes>
-															<include>${project.artifactId}-${project.version}.jar</include>
+															<include>${project.artifactId}.jar</include>
 														</includes>
 													</fileSet>
 												</fileSets>
