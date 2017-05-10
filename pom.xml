@@ -19,6 +19,8 @@
 		<junit.version>4.12</junit.version>
 		<vertx-unit.version>3.2.1</vertx-unit.version>
 		<spring-boot.version>1.4.2.RELEASE</spring-boot.version>
+		<debezium.version>0.4.0</debezium.version>
+
 	</properties>
 
 	<dependencies>
@@ -64,6 +66,25 @@
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-unit</artifactId>
 			<version>${vertx-unit.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.debezium</groupId>
+			<artifactId>debezium-core</artifactId>
+			<version>${debezium.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.debezium</groupId>
+			<artifactId>debezium-core</artifactId>
+			<version>${debezium.version}</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.kafka</groupId>
+			<artifactId>kafka_2.11</artifactId>
+			<version>${kafka.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
