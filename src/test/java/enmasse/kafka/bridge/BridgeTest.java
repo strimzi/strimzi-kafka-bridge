@@ -49,7 +49,7 @@ import java.util.List;
 import java.util.Map;
 
 @RunWith(VertxUnitRunner.class)
-public class BridgeTest {
+public class BridgeTest extends KafkaClusterTestBase {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(BridgeTest.class);
 
