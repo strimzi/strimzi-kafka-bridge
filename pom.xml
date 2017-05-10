@@ -212,6 +212,12 @@
 			<organization>Red Hat</organization>
 			<organizationUrl>http://www.redhat.com</organizationUrl>
 		</developer>
+		<developer>
+			<name>Tom Bentley</name>
+			<email>tbentley@redhat.com</email>
+			<organization>Red Hat</organization>
+			<organizationUrl>http://www.redhat.com</organizationUrl>
+		</developer>
 	</developers>
   
 </project>

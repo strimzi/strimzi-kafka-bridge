@@ -10,8 +10,7 @@ script:
 - TAG=${TRAVIS_TAG:-"1.0-SNAPSHOT"}
 - if [ -n "${TRAVIS_TAG}" ]; then mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${TRAVIS_TAG};
   fi
-# for now avoiding tests because they are based on a real Apache Kafka instance
-- mvn package -DskipTests
+- mvn package
 - curl -s https://raw.githubusercontent.com/EnMasseProject/travis-scripts/master/generate-bintray-descriptor.sh
   | bash /dev/stdin amqp-kafka-bridge target/amqp-kafka-bridge-${TAG}-bin.tar.gz > .bintray.json
 - curl -s https://raw.githubusercontent.com/EnMasseProject/travis-scripts/master/docker-build.sh
