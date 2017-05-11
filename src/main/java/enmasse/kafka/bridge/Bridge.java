@@ -384,7 +384,7 @@ public class Bridge extends AbstractVerticle {
 		LOG.info("Remote receiver attached {}", sender.getName());
 		
 		// create and add a new sink to the map
-		SinkBridgeEndpoint sink = new SinkBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
+		SinkBridgeEndpoint<?,?> sink = new SinkBridgeEndpoint<>(this.vertx, this.bridgeConfigProperties);
 
 		sink.closeHandler(s -> {
 			this.endpoints.get(connection).getSinks().remove(s);

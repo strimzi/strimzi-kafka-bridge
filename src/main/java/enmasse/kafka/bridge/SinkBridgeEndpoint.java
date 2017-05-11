@@ -56,7 +56,7 @@ import io.vertx.proton.ProtonSender;
  * Class in charge for reading from Apache Kafka
  * and bridging into AMQP traffic to receivers
  */
-public class SinkBridgeEndpoint implements BridgeEndpoint {
+public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SinkBridgeEndpoint.class);
 	
@@ -65,7 +65,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	private Vertx vertx;
 	
 	// converter from ConsumerRecord to AMQP message
-	private MessageConverter<String, byte[]> converter;
+	private MessageConverter<K, V> converter;
 	
 	// used for tracking partitions and related offset for AT_LEAST_ONCE QoS delivery 
 	private OffsetTracker offsetTracker;
@@ -77,7 +77,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 
 	private BridgeConfigProperties bridgeConfigProperties;
 
-	private KafkaConsumer<String, byte[]> consumer;
+	private KafkaConsumer<K, V> consumer;
 
 	private String groupId;
 
@@ -108,13 +108,13 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		this.bridgeConfigProperties = bridgeConfigProperties;
 
 		try {
-			this.converter = (MessageConverter<String, byte[]>)Class.forName(this.bridgeConfigProperties.getAmqpConfigProperties().getMessageConverter()).newInstance();
+			this.converter = (MessageConverter<K, V>)Class.forName(this.bridgeConfigProperties.getAmqpConfigProperties().getMessageConverter()).newInstance();
 		} catch (Exception e) {
 			this.converter = null;
 		}
 		
 		if (this.converter == null)
-			this.converter = new DefaultMessageConverter();
+			this.converter = (MessageConverter<K, V>)new DefaultMessageConverter();
 	}
 	
 	@Override
@@ -260,28 +260,21 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		}
 	}
 
-	private void protonSend(KafkaMessage<String,byte[]> kafkaMessage) {
+	private void protonSend(KafkaMessage<K, V> kafkaMessage) {
 		int partition = kafkaMessage.getPartition();
 		long offset = kafkaMessage.getOffset();
 		String deliveryTag = partition+"_"+offset;
-		ConsumerRecord<String, byte[]> record = null;
-		
+		ConsumerRecord<K, V> record = kafkaMessage.getRecord();
+		Message message = converter.toAmqpMessage(this.sender.getSource().getAddress(), record);
 		if (this.sender.getQoS() == ProtonQoS.AT_MOST_ONCE) {
 			
 			// Sender QoS settled (AT_MOST_ONCE)
-			record = kafkaMessage.getRecord();
 			
-			Message message = converter.toAmqpMessage(this.sender.getSource().getAddress(), record);
 			this.sender.send(ProtonHelper.tag(deliveryTag), message);
-
 			
 		} else {
 			
 			// Sender QoS unsettled (AT_LEAST_ONCE)
-			
-			record = kafkaMessage.getRecord();
-			
-			Message message = converter.toAmqpMessage(this.sender.getSource().getAddress(), record);
 			
 			// record (converted in AMQP message) is on the way ... ask to tracker to track its delivery
 			this.offsetTracker.track(partition, offset, record);
@@ -485,7 +478,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	 * Callback to process a kafka record
 	 * @param record The record
 	 */
-	private void handleKafkaRecord(KafkaConsumerRecord<String, byte[]> record) {
+	private void handleKafkaRecord(KafkaConsumerRecord<K, V> record) {
 
 		LOG.debug("Processing key {} value {} partition {} offset {}", 
 				record.key(), record.value(), record.partition(), record.offset());
@@ -512,20 +505,16 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
 			
 			// 3. start message sending
-			protonSend(new KafkaMessage<String,byte[]>(record.partition(), record.offset(), record.record()));
+			protonSend(new KafkaMessage<K, V>(record.partition(), record.offset(), record.record()));
 
 			break;
 		case AT_LEAST_ONCE:
 			// Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit
 			
-			// 1. enqueue record for sending
-			for (ConsumerRecord<String, String> r : Collections.singletonList(record.record()))  {
-				
-				LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
-				
-				// 2. start message sending
-				protonSend(new KafkaMessage<String,byte[]>(record.partition(), record.offset(), record.record()));
-			}
+			LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
+			
+			// 1. start message sending
+			protonSend(new KafkaMessage<K, V>(record.partition(), record.offset(), record.record()));
 			
 			if (endOfBatch()) {
 				LOG.debug("End of batch in {} mode => commitOffsets()", this.qos);
@@ -552,9 +541,9 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		return recordIndex == 0;
 	}
 	
-	private void handleKafkaBatch(KafkaConsumerRecords<String, byte[]> records) {
+	private void handleKafkaBatch(KafkaConsumerRecords<K, V> records) {
 		recordIndex = 0;
-		batchSize = records.count();
+		batchSize = records.size();
 	}
 	
 	/**
@@ -593,18 +582,4 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		}
 	}
 	
-	/**
-	 * Pause the consumer: {@link #handleKafkaRecord(KafkaConsumerRecord)} 
-	 * won't be called until {@link #resume()} is called.
-	 */
-	private void pause() {
-		consumer.pause();
-	}
-	
-	/**
-	 * Resume processing after a call to {@link #pause()}.
-	 */
-	private void resume() {
-		consumer.resume();
-	}
 }
