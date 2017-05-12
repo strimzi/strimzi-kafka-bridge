@@ -233,9 +233,7 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 			consumer.batchHandler(this::handleKafkaBatch);
 			// Set up flow control
 			// (*before* subscribe in case we start with no credit!)
-			sender.sendQueueDrainHandler(done -> {
-				consumer.resume();
-			});
+			
 			flowCheck();
 			// Subscribe to the topic
 			subscribe();
@@ -303,6 +301,9 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 	private void flowCheck() {
 		if (sender.sendQueueFull()) {
 			consumer.pause();
+			sender.sendQueueDrainHandler(done -> {
+				consumer.resume();
+			});
 		}
 	}
 	
