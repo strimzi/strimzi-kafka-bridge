@@ -59,9 +59,10 @@ public class Bridge extends AbstractVerticle {
 	public static final String AMQP_ERROR_PARTITION_NOT_EXISTS = "enmasse:partition-not-exists";
 	public static final String AMQP_ERROR_SEND_TO_KAFKA = "enmasse:error-to-kafka";
 	public static final String AMQP_ERROR_WRONG_PARTITION_FILTER = "enmasse:wrong-partition-filter";
-	public static final String AMQP_ERROR_WRONG_OFFSET_FILTER = "enmasse:wrong-partition-filter";
+	public static final String AMQP_ERROR_WRONG_OFFSET_FILTER = "enmasse:wrong-offset-filter";
 	public static final String AMQP_ERROR_NO_PARTITION_FILTER = "enmasse:no-partition-filter";
 	public static final String AMQP_ERROR_WRONG_FILTER = "enmasse:wrong-filter";
+	public static final String AMQP_ERROR_KAFKA_SUBSCRIBE = "enmasse:kafka-subscribe";
 	
 	// AMQP filters
 	public static final String AMQP_PARTITION_FILTER = "enmasse:partition-filter:int";
