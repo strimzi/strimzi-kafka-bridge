@@ -509,7 +509,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			// 3. start message sending
 			protonSend(new KafkaMessage<String,byte[]>(record.partition(), record.offset(), record.record()));
 
-			
+			break;
 		case AT_LEAST_ONCE:
 			// Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit
 			
