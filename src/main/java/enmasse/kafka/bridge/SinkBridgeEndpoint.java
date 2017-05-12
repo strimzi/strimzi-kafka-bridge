@@ -40,6 +40,7 @@ import enmasse.kafka.bridge.converter.DefaultMessageConverter;
 import enmasse.kafka.bridge.converter.MessageConverter;
 import enmasse.kafka.bridge.tracker.OffsetTracker;
 import enmasse.kafka.bridge.tracker.SimpleOffsetTracker;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.common.PartitionInfo;
@@ -380,11 +381,7 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 	/**
 	 * Subscribe to the topic
 	 */
-	void subscribe() {
-		
-		LOG.debug("Subscribing to {} ", kafkaTopic);
-		this.consumer.subscribe(kafkaTopic);
-		
+	private void subscribe() {
 		if (partition != null) {
 			// read from a specified partition
 			LOG.debug("Assigning to partition {}", partition);
@@ -400,80 +397,129 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 	 * Assign the consumer to the topic
 	 */
 	private void assignToPartition() {
-		
-		// check if partition exists, otherwise error condition and detach link
-		this.consumer.partitionsFor(kafkaTopic, result -> {
-			if (result.failed()) {
-				LOG.error("Error subscribing to " + kafkaTopic, result.cause());
-				return;
+		// Assign with the empty set initially, until we know what partitions there are
+		consumer.assign(Collections.emptySet(), ar-> {
+			if (ar.succeeded()) {
+				// check if partition exists, otherwise error condition and detach link
+				this.consumer.partitionsFor(kafkaTopic, this::partitionsForHandler);
+			} else {
+				LOG.error("Error getting partition info {}", kafkaTopic, ar.cause());
+				String message = ar.cause().getMessage();
+				ErrorCondition condition =
+						new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE),
+								"Error getting partition info" + (message != null ? ": " + message : ""));
+				sendProtonError(condition);
 			}
-			LOG.debug("Getting partitions for " + kafkaTopic);
-			List<PartitionInfo> availablePartitions = result.result();
-			Optional<PartitionInfo> requestedPartitionInfo = availablePartitions.stream().filter(p -> p.getPartition() == this.partition).findFirst();
-			
-			if (requestedPartitionInfo.isPresent()) {
-				LOG.debug("Requested partition {} present", partition);
-				this.consumer.assign(Collections.singleton(new TopicPartition(kafkaTopic, partition)));
-				
+		});
+	}
+	
+	void partitionsForHandler(AsyncResult<List<PartitionInfo>> partitionsResult) {
+		if (partitionsResult.failed()) {
+			LOG.error("Error getting partition info {}", kafkaTopic, partitionsResult.cause());
+			String message = partitionsResult.cause().getMessage();
+			ErrorCondition condition =
+					new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE),
+							"Error getting partition info" + (message != null ? ": " + message : ""));
+			sendProtonError(condition);
+			return;
+		}
+		LOG.debug("Getting partitions for " + kafkaTopic);
+		List<PartitionInfo> availablePartitions = partitionsResult.result();
+		Optional<PartitionInfo> requestedPartitionInfo = availablePartitions.stream().filter(p -> p.getPartition() == this.partition).findFirst();
+		
+		if (requestedPartitionInfo.isPresent()) {
+			LOG.debug("Requested partition {} present", partition);
+			this.consumer.assign(Collections.singleton(new TopicPartition(kafkaTopic, partition)), assignResult-> {
+				if (assignResult.failed()) {
+					LOG.error("Error assigning to {}", kafkaTopic, assignResult.cause());
+					String message = assignResult.cause().getMessage();
+					ErrorCondition condition =
+							new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE),
+									"Error getting partition info" + (message != null ? ": " + message : ""));
+					sendProtonError(condition);
+					return;
+				}
+				LOG.debug("Assigned to {} partition {}", kafkaTopic, partition);
 				// start reading from specified offset inside partition
 				if (this.offset != null) {
 					
 					LOG.debug("Request to start from offset {}", this.offset);
 					
-					this.consumer.seek(new TopicPartition(this.kafkaTopic, this.partition), this.offset);
+					this.consumer.seek(new TopicPartition(this.kafkaTopic, this.partition), this.offset, seekResult ->{
+						if (seekResult.failed()) {
+							LOG.error("Error subscribing to " + kafkaTopic, seekResult.cause());
+							String message = seekResult.cause().getMessage();
+							ErrorCondition condition =
+									new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE),
+											"Error getting partition info" + (message != null ? ": " + message : ""));
+							sendProtonError(condition);
+							return;
+						}
+						partitionsAssigned();
+					});
+				} else {
+					partitionsAssigned();
 				}
-
-				partitionsAssigned();
-			} else {
-				
-				LOG.warn("Requested partition {} doesn't exist", this.partition);
-				
-				ErrorCondition condition =
-						new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_PARTITION_NOT_EXISTS),
-								"Specified partition doesn't exist");
-				sendProtonError(condition);
-			}
-		});
+			});
+		} else {
+			
+			LOG.warn("Requested partition {} doesn't exist", this.partition);
+			
+			ErrorCondition condition =
+					new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_PARTITION_NOT_EXISTS),
+							"Specified partition doesn't exist");
+			sendProtonError(condition);
+		}
 	}
 
 	private void automaticPartitionAssignment() {
-		
-		this.consumer.partitionsRevokedHandler(partitions -> {
-			
-			LOG.debug("Partitions revoked {}", partitions.size());
-			
-			if (!partitions.isEmpty()) {
-				
-				if (LOG.isDebugEnabled()) {
-					for (TopicPartition partition : partitions) {
-						LOG.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
-					}
-				}
-			
-				// Sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
-				
-				if (this.qos == ProtonQoS.AT_LEAST_ONCE) {
-					// commit all tracked offsets for partitions
-					SinkBridgeEndpoint.this.commitOffsets(true);
-				}
-			}
-		});
-		
-		this.consumer.partitionsAssignedHandler(partitions -> {
-			LOG.debug("Partitions assigned {}", partitions.size());
-			if (!partitions.isEmpty()) {
-				if (LOG.isDebugEnabled()) {
-					for (TopicPartition partition : partitions) {
-						LOG.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
-					}
-				}
-				partitionsAssigned();
-			} else {
+		this.consumer.subscribe(kafkaTopic, subscribeResult-> {
+			if (subscribeResult.failed()) {
+				LOG.error("Error getting partition info {}", kafkaTopic, subscribeResult.cause());
+				String message = subscribeResult.cause().getMessage();
 				ErrorCondition condition =
-						new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS),
-								"All partitions already have a receiver");
+						new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE),
+								"Error subscribing" + (message != null ? ": " + message : ""));
 				sendProtonError(condition);
+				return;
 			}
+			this.consumer.partitionsRevokedHandler(partitions -> {
+				
+				LOG.debug("Partitions revoked {}", partitions.size());
+				
+				if (!partitions.isEmpty()) {
+					
+					if (LOG.isDebugEnabled()) {
+						for (TopicPartition partition : partitions) {
+							LOG.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
+						}
+					}
+				
+					// Sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
+					
+					if (this.qos == ProtonQoS.AT_LEAST_ONCE) {
+						// commit all tracked offsets for partitions
+						SinkBridgeEndpoint.this.commitOffsets(true);
+					}
+				}
+			});
+			
+			this.consumer.partitionsAssignedHandler(partitions -> {
+				LOG.debug("Partitions assigned {}", partitions.size());
+				if (!partitions.isEmpty()) {
+					if (LOG.isDebugEnabled()) {
+						for (TopicPartition partition : partitions) {
+							LOG.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
+						}
+					}
+					partitionsAssigned();
+				} else {
+					ErrorCondition condition =
+							new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS),
+									"All partitions already have a receiver");
+					sendProtonError(condition);
+				}
+			});
 		});
 	}
 	
