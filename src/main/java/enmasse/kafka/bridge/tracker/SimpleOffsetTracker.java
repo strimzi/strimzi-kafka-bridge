@@ -32,12 +32,19 @@ import java.util.Map.Entry;
  */
 public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
 
+	private static class PartitionState {
+		public long offset;
+		public boolean changed;
+		public PartitionState(long offset, boolean changed) {
+			this.offset = offset;
+			this.changed = changed;
+		}
+	}
+	
 	// Apache Kafka topic to track
 	private String topic;	
 	// map with each partition and related tracked offset
-	private Map<Integer, Long> offsets;
-	// map with changed status of offsets
-	private Map<Integer, Boolean> offsetsFlag;
+	private Map<Integer, PartitionState> offsets;
 	
 	/**
 	 * Contructor
@@ -45,39 +52,33 @@ public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	 * @param topic	topic to track offset
 	 */
 	public SimpleOffsetTracker(String topic) {
-		
 		this.topic = topic;
 		this.offsets = new HashMap<>();
-		this.offsetsFlag = new HashMap<>();
 	}
 	
 	@Override
-	public synchronized void track(String tag, ConsumerRecord<K, V> record) {
+	public synchronized void track(int partition, long offset, ConsumerRecord<K, V> record) {
 		// nothing
 	}
 	
 	@Override
-	public synchronized void delivered(String tag) {
-		
-		// get partition and offset from delivery tag : <partition>_<offset>
-		int partition = Integer.valueOf(tag.substring(0, tag.indexOf("_")));
-		long offset = Long.valueOf(tag.substring(tag.indexOf("_") + 1));
+	public synchronized void delivered(int partition, long offset) {
 		
 		if (this.offsets.containsKey(partition)) {
 			
 			// map already contains partition but to handle "out of order" delivery
 			// we have to check that the current delivered offset is greater than
 			// the last committed offset
-			if (offset > this.offsets.get(partition)) {
-				this.offsets.put(partition, offset);
-				this.offsetsFlag.put(partition, true);
+			PartitionState state = this.offsets.get(partition);
+			if (offset > state.offset) {
+				state.offset = offset;
+				state.changed = true;
 			}
 			
 		} else {
 			
 			// new partition
-			this.offsets.put(partition, offset);
-			this.offsetsFlag.put(partition, true);
+			this.offsets.put(partition, new PartitionState(offset, true));
 		}
 	}
 
@@ -86,13 +87,12 @@ public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
 		
 		Map<TopicPartition, OffsetAndMetadata> changedOffsets = new HashMap<>();
 		
-		for (Entry<Integer, Long> entry : this.offsets.entrySet()) {
+		for (Entry<Integer, PartitionState> entry : this.offsets.entrySet()) {
 			
 			// check if partition offset is changed and it needs to be committed
-			if (this.offsetsFlag.get(entry.getKey())) {
-						
+			if (entry.getValue().changed) {
 				changedOffsets.put(new TopicPartition(this.topic, entry.getKey()), 
-						new OffsetAndMetadata(entry.getValue()));
+						new OffsetAndMetadata(entry.getValue().offset));
 			}
 		}
 		
@@ -109,9 +109,10 @@ public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
 			
 				// if offset tracked isn't changed during Kafka committing operation 
 				// (it means no other messages were acknowledged)
-				if (this.offsets.get(offset.getKey().partition()) == offset.getValue().offset()) {
+				PartitionState state = this.offsets.get(offset.getKey().partition());
+				if (state.offset == offset.getValue().offset()) {
 					// we can mark this offset as committed (not changed)
-					this.offsetsFlag.put(offset.getKey().partition(), false);
+					state.changed = false;
 				}
 			}
 		}
@@ -121,6 +122,5 @@ public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	public synchronized void clear() {
 		
 		this.offsets.clear();
-		this.offsetsFlag.clear();
 	}
 }
