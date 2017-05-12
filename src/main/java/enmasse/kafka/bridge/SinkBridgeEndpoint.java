@@ -130,7 +130,9 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 		if (this.offsetTracker != null)
 			this.offsetTracker.clear();
 		
-		this.sender.close();
+		if (sender.isOpen()) {
+			this.sender.close();
+		}
 	}
 	
 	@Override
