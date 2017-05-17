@@ -24,11 +24,13 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.kafka.client.producer.KafkaProducer;
+import io.vertx.kafka.client.producer.KafkaProducerRecord;
+import io.vertx.kafka.client.producer.RecordMetadata;
 import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonReceiver;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -61,8 +63,8 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 	// converter from AMQP message to ConsumerRecord
 	private MessageConverter<String, byte[]> converter;
 	
-	private Producer<String, byte[]> producerUnsettledMode;
-	private Producer<String, byte[]> producerSettledMode;
+	private KafkaProducer<String, byte[]> producerUnsettledMode;
+	private KafkaProducer<String, byte[]> producerSettledMode;
 	
 	// Event Bus communication stuff between Kafka producer
 	// callback thread and main Vert.x event loop
@@ -113,7 +115,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getValueSerializer());
 		props.put(ProducerConfig.ACKS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getAcks());
 		
-		this.producerUnsettledMode = new KafkaProducer<>(props);
+		this.producerUnsettledMode = KafkaProducer.create(vertx, props);
 		
 		props.clear();
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
@@ -121,7 +123,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getValueSerializer());
 		props.put(ProducerConfig.ACKS_CONFIG, "0");
 		
-		this.producerSettledMode = new KafkaProducer<>(props);
+		this.producerSettledMode = KafkaProducer.create(vertx, props);
 	}
 
 	@Override
@@ -236,13 +238,13 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 				null;
 
 		ProducerRecord<String, byte[]> record = this.converter.toKafkaRecord(kafkaTopic, message);
-		
+		KafkaProducerRecord<String, byte[]> krecord = KafkaProducerRecord.create(record.topic(), record.key(), record.value(), record.timestamp(), record.partition());
 		LOG.debug("Sending to Kafka on topic {} at partition {} and key {}", record.topic(), record.partition(), record.key());
 				
 		if (delivery.remotelySettled()) {
 			
 			// message settled (by sender), no feedback need by Apache Kafka, no disposition to be sent
-			this.producerSettledMode.send(record);
+			this.producerSettledMode.write(krecord);
 			
 		} else {
 
@@ -252,22 +254,21 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 			this.vertx.sharedData().getLocalMap(this.ebName).put(deliveryId, new AmqpDeliveryData(receiver.getName(), deliveryId, delivery));
 		
 			// message unsettled (by sender), feedback needed by Apache Kafka, disposition to be sent accordingly
-			this.producerUnsettledMode.send(record, (metadata, exception) -> {
-				
+			this.producerUnsettledMode.write(krecord, (writeResult) -> {
 				DeliveryOptions options = new DeliveryOptions();
 				String deliveryState = null;
 				
-				if (exception != null) {
-					
+				if (writeResult.failed()) {
+					Throwable exception = writeResult.cause();
 					// record not delivered, send REJECTED disposition to the AMQP sender
 					LOG.error("Error on delivery to Kafka {}", exception.getMessage());
 					deliveryState = SourceBridgeEndpoint.EVENT_BUS_REJECTED_DELIVERY;
 					options.addHeader(SourceBridgeEndpoint.EVENT_BUS_DELIVERY_ERROR_HEADER, exception.getMessage());
 					
 				} else {
-				
+					RecordMetadata metadata = writeResult.result();
 					// record delivered, send ACCEPTED disposition to the AMQP sender
-					LOG.debug("Delivered to Kafka on topic {} at partition {} [{}]", metadata.topic(), metadata.partition(), metadata.offset());
+					LOG.debug("Delivered to Kafka on topic {} at partition {} [{}]", metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
 					deliveryState = SourceBridgeEndpoint.EVENT_BUS_ACCEPTED_DELIVERY;
 					
 				}
