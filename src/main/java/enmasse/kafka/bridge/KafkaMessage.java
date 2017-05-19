@@ -27,7 +27,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
  */
 public class KafkaMessage<K, V> implements Shareable {
 	
-	private String deliveryTag;
+	private int partition;
+	private long offset;
 	private ConsumerRecord<K, V> record;
 	
 	/**
@@ -36,19 +37,12 @@ public class KafkaMessage<K, V> implements Shareable {
 	 * @param deliveryTag		AMQP delivery tag
 	 * @param record			Kafka record
 	 */
-	public KafkaMessage(String deliveryTag, ConsumerRecord<K, V> record) {
-		this.deliveryTag = deliveryTag;
+	public KafkaMessage(int partition, long offset, ConsumerRecord<K, V> record) {
+		this.partition = partition;
+		this.offset = offset;
 		this.record = record;
 	}
 	
-	/**
-	 * AMQP delivery tag
-	 * @return
-	 */
-	public String getDeliveryTag() {
-		return this.deliveryTag;
-	}
-
 	/**
 	 * Kafka record
 	 * @return
@@ -56,4 +50,22 @@ public class KafkaMessage<K, V> implements Shareable {
 	public ConsumerRecord<K, V> getRecord() {
 		return this.record;
 	}
+
+	/**
+	 * Kafka partition
+	 * @return
+	 */
+	public int getPartition() {
+		return partition;
+	}
+
+	/**
+	 * Kafka offset
+	 * @return
+	 */
+	public long getOffset() {
+		return offset;
+	}
+	
+	
 }

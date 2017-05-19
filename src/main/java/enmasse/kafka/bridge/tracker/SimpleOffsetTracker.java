@@ -30,7 +30,7 @@ import java.util.Map.Entry;
  * settles "out of order", previous unsettled message won't be re-delivered
  * and MAY be lost so AT_LEAST_ONCE QoS is NOT guaranteed
  */
-public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
+public class SimpleOffsetTracker implements OffsetTracker {
 
 	private static class PartitionState {
 		public long offset;
@@ -57,7 +57,7 @@ public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	}
 	
 	@Override
-	public synchronized void track(int partition, long offset, ConsumerRecord<K, V> record) {
+	public synchronized void track(int partition, long offset, ConsumerRecord<?, ?> record) {
 		// nothing
 	}
 	
