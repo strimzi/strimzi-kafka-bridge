@@ -161,16 +161,29 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		receiver.open();
 
 		this.receivers.put(receiver.getName(), receiver);
-		
-		
 	}
-	
+
+	/**
+	 * Send an "accepted" delivery to the AMQP remote sender
+	 *
+	 * @param linkName	AMQP link name
+	 * @param delivery	AMQP delivery
+	 */
 	private void acceptedDelivery(String linkName, ProtonDelivery delivery) {
+
 		delivery.disposition(Accepted.getInstance(), true);
 		LOG.debug("Delivery sent [accepted] on link {}", linkName);
 	}
-	
+
+	/**
+	 * Send a "rejected" delivery to the AMQP remote sender
+	 *
+	 * @param linkName	AMQP link name
+	 * @param delivery	AMQP delivery
+	 * @param cause	exception related to the rejection cause
+	 */
 	private void rejectedDelivery(String linkName, ProtonDelivery delivery, Throwable cause) {
+
 		Rejected rejected = new Rejected();
 		rejected.setError(new ErrorCondition(Symbol.valueOf(Bridge.AMQP_ERROR_SEND_TO_KAFKA), 
 				cause.getMessage()));
@@ -204,17 +217,20 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		} else {
 			// message unsettled (by sender), feedback needed by Apache Kafka, disposition to be sent accordingly
 			this.producerUnsettledMode.write(krecord, (writeResult) -> {
+
 				if (writeResult.failed()) {
+
 					Throwable exception = writeResult.cause();
 					// record not delivered, send REJECTED disposition to the AMQP sender
 					LOG.error("Error on delivery to Kafka {}", exception.getMessage());
-					rejectedDelivery(receiver.getName(), delivery, exception);
+					this.rejectedDelivery(receiver.getName(), delivery, exception);
 					
 				} else {
+
 					RecordMetadata metadata = writeResult.result();
 					// record delivered, send ACCEPTED disposition to the AMQP sender
 					LOG.debug("Delivered to Kafka on topic {} at partition {} [{}]", metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
-					acceptedDelivery(receiver.getName(), delivery);
+					this.acceptedDelivery(receiver.getName(), delivery);
 				}
 			});
 		}
