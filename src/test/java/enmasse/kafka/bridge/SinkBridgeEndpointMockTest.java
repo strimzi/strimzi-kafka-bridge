@@ -418,7 +418,15 @@ public class SinkBridgeEndpointMockTest {
 		BridgeConfigProperties config = new BridgeConfigProperties();
 		config.getAmqpConfigProperties().setMessageConverter("foo.bar.Baz");
 		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, config);
-		fail("Just using the default can't be right");
+		
+		endpoint.open();
+		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
+		// Call handle()
+		endpoint.handle(mockSender);
+		
+		assertDetach(mockSender, 
+				Bridge.AMQP_ERROR_CONFIGURATION,
+				"configured message converter class could not be instantiated: foo.bar.Baz");
 	}
 	
 	@Test
@@ -427,7 +435,14 @@ public class SinkBridgeEndpointMockTest {
 		BridgeConfigProperties config = new BridgeConfigProperties();
 		config.getAmqpConfigProperties().setMessageConverter("java.util.HashSet");
 		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, config);
-		fail("Just using the default can't be right");
+		endpoint.open();
+		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
+		// Call handle()
+		endpoint.handle(mockSender);
+		
+		assertDetach(mockSender, 
+				Bridge.AMQP_ERROR_CONFIGURATION,
+				"configured message converter class is not an instanceof enmasse.kafka.bridge.converter.MessageConverter: java.util.HashSet");
 	}
 	
 	static class NoNullaryCtor<K, V> implements MessageConverter<K, V>{
@@ -452,7 +467,14 @@ public class SinkBridgeEndpointMockTest {
 		BridgeConfigProperties config = new BridgeConfigProperties();
 		config.getAmqpConfigProperties().setMessageConverter(NoNullaryCtor.class.getName());
 		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, config);
-		fail("Just using the default can't be right");
+		endpoint.open();
+		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
+		// Call handle()
+		endpoint.handle(mockSender);
+		
+		assertDetach(mockSender, 
+				Bridge.AMQP_ERROR_CONFIGURATION,
+				"configured message converter class could not be instantiated: enmasse.kafka.bridge.SinkBridgeEndpointMockTest$NoNullaryCtor");
 	}
 	
 	static class CtorThrows<K, V> implements MessageConverter<K, V>{
@@ -477,7 +499,14 @@ public class SinkBridgeEndpointMockTest {
 		BridgeConfigProperties config = new BridgeConfigProperties();
 		config.getAmqpConfigProperties().setMessageConverter(CtorThrows.class.getName());
 		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, config);
-		fail("Just using the default can't be right");
+		endpoint.open();
+		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
+		// Call handle()
+		endpoint.handle(mockSender);
+		
+		assertDetach(mockSender, 
+				Bridge.AMQP_ERROR_CONFIGURATION,
+				"configured message converter class could not be instantiated: enmasse.kafka.bridge.SinkBridgeEndpointMockTest$CtorThrows");
 	}
 	/** What happens if the requested kafka topic doesn't exist? */
 	@Test

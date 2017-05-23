@@ -53,6 +53,8 @@ import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonSender;
 
+import static java.lang.String.format;
+
 /**
  * Class in charge for reading from Apache Kafka
  * and bridging into AMQP traffic to receivers
@@ -104,18 +106,8 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 	 * @param bridgeConfigProperties	Bridge configuration
 	 */
 	public SinkBridgeEndpoint(Vertx vertx, BridgeConfigProperties bridgeConfigProperties) {
-
 		this.vertx = vertx;
 		this.bridgeConfigProperties = bridgeConfigProperties;
-
-		try {
-			this.converter = (MessageConverter<K, V>)Class.forName(this.bridgeConfigProperties.getAmqpConfigProperties().getMessageConverter()).newInstance();
-		} catch (Exception e) {
-			this.converter = null;
-		}
-		
-		if (this.converter == null)
-			this.converter = (MessageConverter<K, V>)new DefaultMessageConverter();
 	}
 	
 	@Override
@@ -142,123 +134,108 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 		if (!(link instanceof ProtonSender)) {
 			throw new IllegalArgumentException("This Proton link must be a sender");
 		}
-		
-		this.sender = (ProtonSender)link;
-		
-		// address is like this : [topic]/group.id/[group.id]
-		String address = this.sender.getRemoteSource().getAddress();
-		
-		int groupIdIndex = address.indexOf(SinkBridgeEndpoint.GROUP_ID_MATCH);
-		
-		if (groupIdIndex == -1 
-				|| groupIdIndex == 0
-				|| groupIdIndex == address.length()-SinkBridgeEndpoint.GROUP_ID_MATCH.length()) {
-		
-			// group.id don't specified in the address, link will be closed
-			LOG.warn("Local detached");
-
-			String detail;
-			if (groupIdIndex == -1) {
-				detail = "Mandatory group.id not specified in the address";
-			} else if (groupIdIndex == 0) {
-				detail = "Empty topic in specified address";
-			} else {
-				detail = "Empty consumer group in specified address";
+		try {
+			
+			if (this.converter == null) {
+				this.converter = (MessageConverter<K, V>) Bridge.instantiateConverter(this.bridgeConfigProperties.getAmqpConfigProperties().getMessageConverter());
 			}
 			
-			this.sender
-					.setSource(null)
-					.open()
-					.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_GROUPID), detail))
-					.close();
+			this.sender = (ProtonSender)link;
 			
-			this.handleClose();
+			// address is like this : [topic]/group.id/[group.id]
+			String address = this.sender.getRemoteSource().getAddress();
 			
-		} else {
-		
-			// group.id specified in the address, open sender and setup Kafka consumer
-			this.sender
-					.closeHandler(ar -> {
-						if (ar.succeeded()) {
-							this.processCloseSender(ar.result());
-						}
-					})
-					.detachHandler(ar -> {
-						this.processCloseSender(this.sender);
-					});
+			int groupIdIndex = address.indexOf(SinkBridgeEndpoint.GROUP_ID_MATCH);
 			
-			groupId = address.substring(groupIdIndex + SinkBridgeEndpoint.GROUP_ID_MATCH.length());
-			topic = address.substring(0, groupIdIndex);
+			if (groupIdIndex == -1 
+					|| groupIdIndex == 0
+					|| groupIdIndex == address.length()-SinkBridgeEndpoint.GROUP_ID_MATCH.length()) {
 			
-			LOG.debug("topic {} group.id {}", topic, groupId);
-			
-			// get filters on partition and offset
-			Source source = (Source) this.sender.getRemoteSource();
-			Map<Symbol, Object> filters = source.getFilter();
-			
-			Object partition = null, offset = null;
-			
-			if (filters != null) {
-				ErrorCondition condition = null;
-				
-				partition = filters.get(Symbol.getSymbol(Bridge.AMQP_PARTITION_FILTER));
-				offset = filters.get(Symbol.getSymbol(Bridge.AMQP_OFFSET_FILTER));
-				
-				condition = this.checkFilters(partition, offset);
-				
-				if (condition != null) {
-					this.sender
-							.setSource(null)
-							.open()
-							.setCondition(condition)
-							.close();
-					
-					this.handleClose();
-					return;
+				// group.id don't specified in the address, link will be closed
+				LOG.warn("Local detached");
+	
+				String detail;
+				if (groupIdIndex == -1) {
+					detail = "Mandatory group.id not specified in the address";
+				} else if (groupIdIndex == 0) {
+					detail = "Empty topic in specified address";
+				} else {
+					detail = "Empty consumer group in specified address";
 				}
+				throw new ErrorConditionException(Bridge.AMQP_ERROR_NO_GROUPID, detail);
+			} else {
+			
+				// group.id specified in the address, open sender and setup Kafka consumer
+				this.sender
+						.closeHandler(ar -> {
+							if (ar.succeeded()) {
+								this.processCloseSender(ar.result());
+							}
+						})
+						.detachHandler(ar -> {
+							this.processCloseSender(this.sender);
+						});
 				
-				LOG.debug("partition {} offset {}", partition, offset);
-				this.partition = (Integer)partition;
-				this.offset = (Long)offset;
+				this.groupId = address.substring(groupIdIndex + SinkBridgeEndpoint.GROUP_ID_MATCH.length());
+				this.topic = address.substring(0, groupIdIndex);
+				
+				LOG.debug("topic {} group.id {}", this.topic, this.groupId);
+				
+				// get filters on partition and offset
+				Source source = (Source) this.sender.getRemoteSource();
+				Map<Symbol, Object> filters = source.getFilter();
+				
+				if (filters != null) {
+					Object partition = filters.get(Symbol.getSymbol(Bridge.AMQP_PARTITION_FILTER));
+					Object offset = filters.get(Symbol.getSymbol(Bridge.AMQP_OFFSET_FILTER));
+					this.checkFilters(partition, offset);
+					
+					LOG.debug("partition {} offset {}", partition, offset);
+					this.partition = (Integer)partition;
+					this.offset = (Long)offset;
+				}
+	
+				// creating configuration for Kafka consumer
+				
+				// replace unsupported "/" (in a topic name in Kafka) with "."
+				this.kafkaTopic = this.topic.replace('/', '.');
+				this.offsetTracker = new SimpleOffsetTracker(this.kafkaTopic);
+				this.qos = this.sender.getQoS();
+				
+				// create context shared between sink endpoint and Kafka worker
+				
+				// create a consumer
+				KafkaConfigProperties consumerConfig = this.bridgeConfigProperties.getKafkaConfigProperties();
+				Properties props = new Properties();
+				props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, consumerConfig.getBootstrapServers());
+				props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, consumerConfig.getConsumerConfig().getKeyDeserializer());
+				props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, consumerConfig.getConsumerConfig().getValueDeserializer());
+				props.put(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
+				props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, consumerConfig.getConsumerConfig().isEnableAutoCommit());
+				props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, consumerConfig.getConsumerConfig().getAutoOffsetReset());
+				this.consumer = KafkaConsumer.create(this.vertx, props);
+				this.consumer.batchHandler(this::handleKafkaBatch);
+				// Set up flow control
+				// (*before* subscribe in case we start with no credit!)
+				
+				flowCheck();
+				// Subscribe to the topic
+				subscribe();
 			}
-
-			// creating configuration for Kafka consumer
-			
-			// replace unsupported "/" (in a topic name in Kafka) with "."
-			kafkaTopic = topic.replace('/', '.');
-			this.offsetTracker = new SimpleOffsetTracker(kafkaTopic);
-			this.qos = sender.getQoS();
-			
-			// create context shared between sink endpoint and Kafka worker
-			
-			// create a consumer
-			KafkaConfigProperties consumerConfig = this.bridgeConfigProperties.getKafkaConfigProperties();
-			Properties props = new Properties();
-			props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, consumerConfig.getBootstrapServers());
-			props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, consumerConfig.getConsumerConfig().getKeyDeserializer());
-			props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, consumerConfig.getConsumerConfig().getValueDeserializer());
-			props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-			props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, consumerConfig.getConsumerConfig().isEnableAutoCommit());
-			props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, consumerConfig.getConsumerConfig().getAutoOffsetReset());
-			consumer = KafkaConsumer.create(vertx, props);
-			consumer.batchHandler(this::handleKafkaBatch);
-			// Set up flow control
-			// (*before* subscribe in case we start with no credit!)
-			
-			flowCheck();
-			// Subscribe to the topic
-			subscribe();
+		} catch (ErrorConditionException e) {
+			Bridge.detachWithError(link, e.toCondition());
+			this.handleClose();
+			return;
 		}
 	}
 
+	private void sendProtonError(String error, String description, AsyncResult<?> result) {
+		sendProtonError(Bridge.newError(error,
+				description + (result.cause().getMessage() != null ? ": " + result.cause().getMessage() : "")));
+	}
+	
 	private void sendProtonError(ErrorCondition condition) {
-		// no partitions assigned, the AMQP link and Kafka consumer will be closed
-		this.sender
-				.setSource(null)
-				.open()
-				.setCondition(condition)
-				.close();
-		
+		Bridge.detachWithError(this.sender, condition);
 		this.close();
 		this.handleClose();
 	}
@@ -351,42 +328,34 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 	 * @param partition		Partition
 	 * @param offset		Offset
 	 * @return				ErrorCondition related to a wrong filter
+	 * @throws ErrorConditionException 
 	 */
-	private ErrorCondition checkFilters(Object partition, Object offset) {
-		
-		ErrorCondition condition = null;
+	private void checkFilters(Object partition, Object offset) throws ErrorConditionException {
 		
 		if (partition != null && !(partition instanceof Integer)) {
 			// wrong type for partition value
-			condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_WRONG_PARTITION_FILTER), "Wrong partition filter");
-			return condition;
+			throw new ErrorConditionException(Bridge.AMQP_ERROR_WRONG_PARTITION_FILTER, "Wrong partition filter");
 		}
 		
 		if (offset != null && !(offset instanceof Long)) {
 			// wrong type for offset value
-			condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_WRONG_OFFSET_FILTER), "Wrong offset filter");
-			return condition;
+			throw new ErrorConditionException(Bridge.AMQP_ERROR_WRONG_OFFSET_FILTER, "Wrong offset filter");
 		}
 		
 		if (partition == null && offset != null) {
 			// no meaning only offset without partition
-			condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITION_FILTER), "No partition filter specified");
-			return condition;
+			throw new ErrorConditionException(Bridge.AMQP_ERROR_NO_PARTITION_FILTER, "No partition filter specified");
 		}
 		
 		if (partition != null && (Integer)partition < 0) {
 			// no negative partition value allowed
-			condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_WRONG_FILTER), "Wrong filter");
-			return condition;
+			throw new ErrorConditionException(Bridge.AMQP_ERROR_WRONG_FILTER, "Wrong filter");
 		}
 		
 		if (offset != null && (Long)offset < 0) {
 			// no negative offset value allowed
-			condition = new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_WRONG_FILTER), "Wrong filter");
-			return condition;
+			throw new ErrorConditionException(Bridge.AMQP_ERROR_WRONG_FILTER, "Wrong filter");
 		}
-		
-		return condition;
 	}
 	
 	/**
@@ -406,12 +375,9 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 	
 	void partitionsForHandler(AsyncResult<List<PartitionInfo>> partitionsResult) {
 		if (partitionsResult.failed()) {
-			LOG.error("Error getting partition info {}", kafkaTopic, partitionsResult.cause());
-			String message = partitionsResult.cause().getMessage();
-			ErrorCondition condition =
-					new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE),
-							"Error getting partition info" + (message != null ? ": " + message : ""));
-			sendProtonError(condition);
+			sendProtonError(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE, 
+					"Error getting partition info for topic " + this.kafkaTopic, 
+					partitionsResult);
 			return;
 		}
 		LOG.debug("Getting partitions for " + kafkaTopic);
@@ -422,28 +388,25 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 			LOG.debug("Requested partition {} present", partition);
 			this.consumer.assign(Collections.singleton(new TopicPartition(kafkaTopic, partition)), assignResult-> {
 				if (assignResult.failed()) {
-					LOG.error("Error assigning to {}", kafkaTopic, assignResult.cause());
-					String message = assignResult.cause().getMessage();
-					ErrorCondition condition =
-							new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE),
-									"Error getting partition info" + (message != null ? ": " + message : ""));
-					sendProtonError(condition);
+					sendProtonError(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
+							"Error assigning to topic %s" + this.kafkaTopic, 
+							assignResult);
 					return;
 				}
 				LOG.debug("Assigned to {} partition {}", kafkaTopic, partition);
 				// start reading from specified offset inside partition
 				if (this.offset != null) {
 					
-					LOG.debug("Request to start from offset {}", this.offset);
+					LOG.debug("Seeking to offset {}", this.offset);
 					
 					this.consumer.seek(new TopicPartition(this.kafkaTopic, this.partition), this.offset, seekResult ->{
 						if (seekResult.failed()) {
-							LOG.error("Error subscribing to " + kafkaTopic, seekResult.cause());
-							String message = seekResult.cause().getMessage();
-							ErrorCondition condition =
-									new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE),
-											"Error getting partition info" + (message != null ? ": " + message : ""));
-							sendProtonError(condition);
+							sendProtonError(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
+									format("Error seeking to offset %s for topic %s, partition %s",
+											this.offset, 
+											this.kafkaTopic,
+											this.partition),
+											seekResult);
 							return;
 						}
 						partitionsAssigned();
@@ -453,13 +416,9 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 				}
 			});
 		} else {
-			
 			LOG.warn("Requested partition {} doesn't exist", this.partition);
-			
-			ErrorCondition condition =
-					new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_PARTITION_NOT_EXISTS),
-							"Specified partition doesn't exist");
-			sendProtonError(condition);
+			sendProtonError(Bridge.newError(Bridge.AMQP_ERROR_PARTITION_NOT_EXISTS,
+					"Specified partition doesn't exist"));
 		}
 	}
 
@@ -494,21 +453,16 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 					}
 				}
 			} else {
-				ErrorCondition condition =
-						new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS),
-								"All partitions already have a receiver");
-				sendProtonError(condition);
+				sendProtonError(Bridge.newError(Bridge.AMQP_ERROR_NO_PARTITIONS,
+						"All partitions already have a receiver"));
 			}
 		});
 		
 		this.consumer.subscribe(kafkaTopic, subscribeResult-> {
 			if (subscribeResult.failed()) {
-				LOG.error("Error getting partition info {}", kafkaTopic, subscribeResult.cause());
-				String message = subscribeResult.cause().getMessage();
-				ErrorCondition condition =
-						new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE),
-								"Error subscribing" + (message != null ? ": " + message : ""));
-				sendProtonError(condition);
+				sendProtonError(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
+						"Error subscribing to topic "+this.kafkaTopic, 
+						subscribeResult);
 				return;
 			}
 			partitionsAssigned();
