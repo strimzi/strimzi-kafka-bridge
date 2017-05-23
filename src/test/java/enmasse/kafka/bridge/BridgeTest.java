@@ -83,8 +83,12 @@ public class BridgeTest extends KafkaClusterTestBase {
 		kafkaCluster.createTopic(topic, 1, 1);
 		sendSimpleMessage(context, topic);
 	}
-
+	
 	protected void sendSimpleMessage(TestContext context, String topic) {
+		sendSimpleMessages(context, topic, 1);
+	}
+
+	protected void sendSimpleMessages(TestContext context, String topic, int numMessages) {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
@@ -97,15 +101,22 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
 				
-				Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
-				
-				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered {}", delivery.getRemoteState());
-					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
-					async.complete();
-				});
+				Async async2 = context.async(numMessages);
+				for (int i = 0; i< numMessages; i++) {
+					Message message = ProtonHelper.message(topic, i+"Simple message from " + connection.getContainer());
+    				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
+    					LOG.info("Message delivered {}", delivery.getRemoteState());
+    					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+    					async2.countDown();
+    				});
+				}
+//				async2.await();
+				//connection.close();
+				//connection.disconnect();
+				async.complete();
 			}
 		});
+		async.await();
 	}
 	
 	@Test
@@ -481,7 +492,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 	public void receiveSimpleMessageFromPartitionAndOffset(TestContext context) {
 		String topic = "receiveSimpleMessageFromPartitionAndOffset";
 		kafkaCluster.createTopic(topic, 1, 1);
-		sendSimpleMessage(context, topic);
+		sendSimpleMessages(context, topic, 11);
+
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
