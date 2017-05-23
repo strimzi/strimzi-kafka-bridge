@@ -62,12 +62,7 @@ public class SinkBridgeEndpointMockTest {
 			when(mockVertxRecord.partition()).thenReturn(partition);
 			when(mockVertxRecord.offset()).thenReturn(offset);
 			
-			ConsumerRecord<K, V> mockKafkaRecord = mock(ConsumerRecord.class);
-			when(mockKafkaRecord.topic()).thenReturn(topic);
-			when(mockKafkaRecord.partition()).thenReturn(partition);
-			when(mockKafkaRecord.offset()).thenReturn(offset);
-			when(mockKafkaRecord.key()).thenReturn(key != null ? key.get() : null);
-			when(mockKafkaRecord.value()).thenReturn(value != null ? value.get() : null);
+			ConsumerRecord<K, V> mockKafkaRecord = new ConsumerRecord(topic, partition, offset, key != null ? key.get() : null, value != null ? value.get() : null);
 			
 			when(mockVertxRecord.record()).thenReturn(mockKafkaRecord);
 			
