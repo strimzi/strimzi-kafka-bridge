@@ -429,6 +429,10 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 		
 		if (requestedPartitionInfo.isPresent()) {
 			LOG.debug("Requested partition {} present", partition);
+			if (this.offset != null) {
+				// Don't consume messages until we've called seek()
+				this.consumer.pause();
+			}
 			this.consumer.assign(Collections.singleton(new TopicPartition(kafkaTopic, partition)), assignResult-> {
 				if (assignResult.failed()) {
 					LOG.error("Error assigning to {}", kafkaTopic, assignResult.cause());
@@ -456,6 +460,8 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 							return;
 						}
 						partitionsAssigned();
+						// Now we can consume messages from the offset we've seek()ed to
+						this.consumer.resume();
 					});
 				} else {
 					partitionsAssigned();
