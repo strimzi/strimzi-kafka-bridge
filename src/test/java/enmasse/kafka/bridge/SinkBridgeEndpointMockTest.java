@@ -264,7 +264,7 @@ public class SinkBridgeEndpointMockTest {
 		
 		assertDetach(mockSender, 
 				Bridge.AMQP_ERROR_NO_GROUPID,
-				"empty topic");
+				"Empty topic in specified address");
 	}
 	
 	/** When happens when the consumer group is empty? */
@@ -280,7 +280,7 @@ public class SinkBridgeEndpointMockTest {
 		
 		assertDetach(mockSender, 
 				Bridge.AMQP_ERROR_NO_GROUPID,
-				"empty group");
+				"Empty consumer group in specified address");
 	}
 
 	/** When happens when partition filter is not an Integer? */

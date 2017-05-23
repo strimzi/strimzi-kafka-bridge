@@ -150,15 +150,26 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 		
 		int groupIdIndex = address.indexOf(SinkBridgeEndpoint.GROUP_ID_MATCH);
 		
-		if (groupIdIndex == -1) {
+		if (groupIdIndex == -1 
+				|| groupIdIndex == 0
+				|| groupIdIndex == address.length()-SinkBridgeEndpoint.GROUP_ID_MATCH.length()) {
 		
 			// group.id don't specified in the address, link will be closed
 			LOG.warn("Local detached");
 
+			String detail;
+			if (groupIdIndex == -1) {
+				detail = "Mandatory group.id not specified in the address";
+			} else if (groupIdIndex == 0) {
+				detail = "Empty topic in specified address";
+			} else {
+				detail = "Empty consumer group in specified address";
+			}
+			
 			this.sender
 					.setSource(null)
 					.open()
-					.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_GROUPID), "Mandatory group.id not specified in the address"))
+					.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_GROUPID), detail))
 					.close();
 			
 			this.handleClose();
