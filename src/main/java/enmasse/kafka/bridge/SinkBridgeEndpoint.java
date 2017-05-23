@@ -396,32 +396,12 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 		if (partition != null) {
 			// read from a specified partition
 			LOG.debug("Assigning to partition {}", partition);
-			assignToPartition();
+			this.consumer.partitionsFor(kafkaTopic, this::partitionsForHandler);
 		} else {
 			LOG.info("No explicit partition for consuming from topic {} (will be automatically assigned)", 
 					kafkaTopic);
 			automaticPartitionAssignment();
 		}
-	}
-	
-	/**
-	 * Assign the consumer to the topic
-	 */
-	private void assignToPartition() {
-		// Assign with the empty set initially, until we know what partitions there are
-		consumer.assign(Collections.emptySet(), ar-> {
-			if (ar.succeeded()) {
-				// check if partition exists, otherwise error condition and detach link
-				this.consumer.partitionsFor(kafkaTopic, this::partitionsForHandler);
-			} else {
-				LOG.error("Error getting partition info {}", kafkaTopic, ar.cause());
-				String message = ar.cause().getMessage();
-				ErrorCondition condition =
-						new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE),
-								"Error getting partition info" + (message != null ? ": " + message : ""));
-				sendProtonError(condition);
-			}
-		});
 	}
 	
 	void partitionsForHandler(AsyncResult<List<PartitionInfo>> partitionsResult) {
