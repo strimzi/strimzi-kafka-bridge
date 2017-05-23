@@ -515,6 +515,9 @@ public class BridgeTest extends KafkaClusterTestBase {
 				
 				receiver.handler((delivery, message) -> {
 					
+					Long offset = (Long)message.getMessageAnnotations().getValue().get(Symbol.getSymbol(Bridge.AMQP_OFFSET_ANNOTATION));
+					context.assertEquals(10L, offset);
+					
 					Section body = message.getBody();
 					if (body instanceof Data) {
 						byte[] value = ((Data)body).getValue().getArray();
