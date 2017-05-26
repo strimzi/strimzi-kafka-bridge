@@ -46,6 +46,7 @@ import io.vertx.kafka.client.common.PartitionInfo;
 import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonQoS;
@@ -60,8 +61,6 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	private static final Logger LOG = LoggerFactory.getLogger(SinkBridgeEndpoint.class);
 	
 	private static final String GROUP_ID_MATCH = "/group.id/";
-	
-	public static final int QUEUE_THRESHOLD = 1024;
 	
 	private Vertx vertx;
 	
@@ -91,6 +90,10 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	private Long offset;
 
 	private ProtonQoS qos;
+
+	private int recordIndex;
+
+	private int batchSize;
 	
 	
 	/**
@@ -225,6 +228,7 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, consumerConfig.getConsumerConfig().getAutoOffsetReset());
 			consumer = KafkaConsumer.create(vertx, props);
 			consumer.handler(this::handleKafkaRecord);
+			consumer.batchHandler(this::handleKafkaBatch);
 			// Set up flow control
 			// (*before* subscribe in case we start with no credit!)
 			sender.sendQueueDrainHandler(done -> {
@@ -493,7 +497,8 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 			// Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
 			
 			// 1. when start of batch: immediate commit
-			if (record.firstOfBatch()) {
+			if (startOfBatch()) {
+				LOG.debug("Start of batch in {} mode => commit()", this.qos);
 				this.consumer.commit(ar -> {
 					if (ar.failed()) {
 						{
@@ -522,19 +527,35 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				protonSend(new KafkaMessage<String,byte[]>(record.partition(), record.offset(), record.record()));
 			}
 			
-			if (record.lastOfBatch()) {
+			if (endOfBatch()) {
+				LOG.debug("End of batch in {} mode => commitOffsets()", this.qos);
 				try {
-					// 3. commit all tracked offsets for partitions
+					// 2. commit all tracked offsets for partitions
 					commitOffsets(false);
 				} catch (Exception e) {
 					LOG.error("Error committing ... {}", e.getMessage());
 				}
 			}
+			
+			break;
 		}
+		recordIndex++;
 		
 		
 	}
+
+	private boolean endOfBatch() {
+		return recordIndex == batchSize-1;
+	}
+
+	private boolean startOfBatch() {
+		return recordIndex == 0;
+	}
 	
+	private void handleKafkaBatch(KafkaConsumerRecords<String, byte[]> records) {
+		recordIndex = 0;
+		batchSize = records.count();
+	}
 	
 	/**
 	 * Commit the offsets in the offset tracker to Kafka.
