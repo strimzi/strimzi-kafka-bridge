@@ -15,7 +15,7 @@ script:
 - mvn package
 - curl -s ${SCRIPTS}/generate-bintray-descriptor.sh | bash /dev/stdin amqp-kafka-bridge target/amqp-kafka-bridge-${TAG}-bin.tar.gz > .bintray.json
 - curl -s ${SCRIPTS}/docker-build.sh | bash /dev/stdin enmasseproject/amqp-kafka-bridge . ${TAG}
-- curl -s ${SCRIPTS}/run-tests.sh | bash /dev/stdin enmasseproject/amqp-kafka-bridge ${COMMIT}
+- curl -s ${SCRIPTS}/run-tests.sh | bash /dev/stdin ${COMMIT} enmasseproject/amqp-kafka-bridge
 after_success:
 - curl -s ${SCRIPTS}/docker-push.sh | bash /dev/stdin enmasseproject/amqp-kafka-bridge
 after_failure:
