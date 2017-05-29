@@ -6,20 +6,23 @@ notifications:
   email: false
 services:
 - docker
+before_script:
+- curl -s ${SCRIPTS}/setup-tests.sh | bash /dev/stdin
 script:
 - TAG=${TRAVIS_TAG:-"1.0-SNAPSHOT"}
 - if [ -n "${TRAVIS_TAG}" ]; then mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${TRAVIS_TAG};
   fi
 - mvn package
-- curl -s https://raw.githubusercontent.com/EnMasseProject/travis-scripts/master/generate-bintray-descriptor.sh
-  | bash /dev/stdin amqp-kafka-bridge target/amqp-kafka-bridge-${TAG}-bin.tar.gz > .bintray.json
-- curl -s https://raw.githubusercontent.com/EnMasseProject/travis-scripts/master/docker-build.sh
-  | bash /dev/stdin enmasseproject/amqp-kafka-bridge . $TAG
+- curl -s ${SCRIPTS}/generate-bintray-descriptor.sh | bash /dev/stdin amqp-kafka-bridge target/amqp-kafka-bridge-${TAG}-bin.tar.gz > .bintray.json
+- curl -s ${SCRIPTS}/docker-build.sh | bash /dev/stdin enmasseproject/amqp-kafka-bridge . ${TAG}
+- curl -s ${SCRIPTS}/run-tests.sh | bash /dev/stdin enmasseproject/amqp-kafka-bridge ${COMMIT}
 after_success:
-- curl -s https://raw.githubusercontent.com/EnMasseProject/travis-scripts/master/trigger-travis.sh
-  | bash /dev/stdin
+- curl -s ${SCRIPTS}/docker-push.sh | bash /dev/stdin enmasseproject/amqp-kafka-bridge
+after_failure:
+- curl -s ${SCRIPTS}/teardown-tests.sh | bash /dev/stdin
 env:
   global:
+  - SCRIPTS=https://raw.githubusercontent.com/EnMasseProject/travis-scripts/master
   - COMMIT=${TRAVIS_COMMIT::8}
   - secure: hwWwPg3ifYts5my0XsH//HdXoS4UXPCT5uQPD/LbhY7Pwf05d3/SYIoK51BPZQAKcdt+CtjySZbBVv81RWU5lEsmjKZXTPJt3VagMrCEkED6ZRQlRqqa4JF7HLaxmsi9hkLYmRDhWX2HD0Hr38kmziRqDbeepCIXhh6C319XQKKEq/qN99l3B/crc1tiiVepacT82vTO1bUhyldk0JmnoKhwVf5DxIdXPck/fA8ir1vBqL2nswd0C5s4cpsyJDK/LKBsUVdgg33zHBjLhEajUuyUAuvAEXlv/jzoMbO+GNFdjruCviwJhMH2MJ8MnxOwClFEHPOZrHjTXNwJEpt1G0I07vzwDT9iDiUn1tdcKq2CvwY6joyKmN8uLdUzgL/cY6xsG2qFztzOr6vKAAJo+4VQJL5mziQKGAyIt/HEmre8oDq1UvkSTw9/mBAb66quhDHRbgFN6HVo+LyqUiVOExb202NRw06tYHc78/IFbMla/HTpw2qqIKIhDheVpjiGWPI+hNi9mCeTTThdDA3cHCl5QSULo4z+pEfWed0P005VKlWfQ9wlXBbb2xqtD6ZJfV7bIICBZz8L5442/DgrZpMHu1WV8aFURwjYfyYL6mqWziG0NU/DVAM2yNEydLrZy/WCVrxU+sa9uMwIJyS9onouVXY9SjKprVDImTZIJUc=
   - secure: 25c28hP+PEkx0SlLy28kgQXM7Rs5gyGK6Lnq7i7Bp1Br2KnVs1yS+ZExGXn2VtlHx3gZ5B4a9InxY1URX7ors4xulFY6dGdFF22QJ0sTUNQJV2b0cHd0+SQ3Hkjy69gCOhNOSfGEgNgViuh3Ni5Zcak+GvSrcVyRE8n3Q6eQnywZglDHxWYr8CRqHGpcms7F3rqcCbI0oZ9ukIiNaHYVNtAz2n6Xon3A16w2Y2uarpZTcHtrXagYpPnF/v5l0w4lV+IJsAQXYk7JdkCC6MVYv87sYs7Cw81SGBV8m9OGZELECvAvyRQW+PrtjcwgIoqu2NQHPv+h3Bjq+/+/D/dpyHQRyvkynbd1zCZRVI0/Om6jmjOtX3gzvJm7U4yfh1bXrGjEKiNbqAN+QtdDL7MCBJjfL0T7XIBKiIvsO2vMfzlxJSYoS17sFAr4hBAxrcUr6MjM3eKLRUQ2T/qbJ8rHls8ISEUXcc6It+LXam98wNeYH6RUhMRkQJRSoCfD9aXfniQWbRThd23SMcsznhbdoqvW+JYllUjNf70PH+d9X5wfoWC5gg+F1OIrDxx7Z/hVBe/HJwtc6gV8bXAVDA/9jj4CVDabqW5edlKaeAetsFBcZ9iOwS9MSLhyDmZYNgIBwy0On3irirWjtnxA9G+dHffSi0nHFw8zNQyeZu4jorQ=
