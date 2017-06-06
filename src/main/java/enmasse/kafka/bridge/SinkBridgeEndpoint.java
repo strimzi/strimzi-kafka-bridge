@@ -249,11 +249,10 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 		this.consumer.handler(this::handleKafkaRecord);
 	}
 
-	private void protonSend(KafkaMessage<K, V> kafkaMessage) {
-		int partition = kafkaMessage.getPartition();
-		long offset = kafkaMessage.getOffset();
+	private void protonSend(ConsumerRecord<K, V> record) {
+		int partition = record.partition();
+		long offset = record.offset();
 		String deliveryTag = partition+"_"+offset;
-		ConsumerRecord<K, V> record = kafkaMessage.getRecord();
 		Message message = this.converter.toAmqpMessage(this.sender.getSource().getAddress(), record);
 		if (this.sender.getQoS() == ProtonQoS.AT_MOST_ONCE) {
 			
@@ -497,14 +496,14 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 						sendProtonError(condition);
 					} else {
 						// 3. start message sending
-						protonSend(new KafkaMessage<K, V>(record.partition(), record.offset(), record.record()));
+						protonSend(record.record());
 						// 4 resume processing messages
 						this.consumer.resume();
 					}
 				});
 			} else {
 				// Otherwise: immediate send because the record's already committed
-				protonSend(new KafkaMessage<K, V>(record.partition(), record.offset(), record.record()));
+				protonSend(record.record());
 			}
 			break;
 		case AT_LEAST_ONCE:
@@ -513,7 +512,7 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 			LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
 			
 			// 1. start message sending
-			protonSend(new KafkaMessage<K, V>(record.partition(), record.offset(), record.record()));
+			protonSend(record.record());
 			
 			if (endOfBatch()) {
 				LOG.debug("End of batch in {} mode => commitOffsets()", this.qos);
