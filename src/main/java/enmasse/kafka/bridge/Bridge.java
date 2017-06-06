@@ -63,6 +63,7 @@ public class Bridge extends AbstractVerticle {
 	public static final String AMQP_ERROR_NO_PARTITION_FILTER = "enmasse:no-partition-filter";
 	public static final String AMQP_ERROR_WRONG_FILTER = "enmasse:wrong-filter";
 	public static final String AMQP_ERROR_KAFKA_SUBSCRIBE = "enmasse:kafka-subscribe";
+	public static final String AMQP_ERROR_KAFKA_COMMIT = "enmasse:kafka-commit";
 	
 	// AMQP filters
 	public static final String AMQP_PARTITION_FILTER = "enmasse:partition-filter:int";

@@ -525,34 +525,34 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 	 * @param record The record
 	 */
 	private void handleKafkaRecord(KafkaConsumerRecord<K, V> record) {
-
 		LOG.debug("Processing key {} value {} partition {} offset {}", 
 				record.key(), record.value(), record.partition(), record.offset());
-
 		
-		LOG.debug("Fetched {} records [{}]", 1, this.qos);
 		switch (this.qos){
 		case AT_MOST_ONCE:
 			// Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
-			
-			// 1. when start of batch: immediate commit
 			if (startOfBatch()) {
 				LOG.debug("Start of batch in {} mode => commit()", this.qos);
+				// when start of batch we need to commit, but need to prevent processind any 
+				// more messages while we do, so... 
+				// 1. pause()
+				this.consumer.pause();
+				// 2. do the commit()
 				this.consumer.commit(ar -> {
 					if (ar.failed()) {
-						{
-							LOG.error("Error committing ... {}", ar.cause().getMessage());
-							//sendProtonError(newError(Bridge.AMQP_ERROR_KAFKA_SYNC, "Error in commit", ar.cause()));
-						}
+						LOG.error("Error committing ... {}", ar.cause().getMessage());
+						sendProtonError(Bridge.AMQP_ERROR_KAFKA_COMMIT, "Error in commit", ar);
+					} else {
+						// 3. start message sending
+						protonSend(new KafkaMessage<K, V>(record.partition(), record.offset(), record.record()));
+						// 4 resume processing messages
+						this.consumer.resume();
 					}
 				});
+			} else {
+				// Otherwise: immediate send because the record's already committed
+				protonSend(new KafkaMessage<K, V>(record.partition(), record.offset(), record.record()));
 			}
-			// 2. commit succeeded, so we can enqueue record for sending
-			LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
-			
-			// 3. start message sending
-			protonSend(new KafkaMessage<K, V>(record.partition(), record.offset(), record.record()));
-
 			break;
 		case AT_LEAST_ONCE:
 			// Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit

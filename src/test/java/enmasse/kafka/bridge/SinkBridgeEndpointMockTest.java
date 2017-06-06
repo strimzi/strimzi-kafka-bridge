@@ -153,7 +153,31 @@ public class SinkBridgeEndpointMockTest {
 		handler.setAccessible(true);
 		handler.invoke(endpoint, recordProducer.mockRecord(null, ()->"Hello, world".getBytes()));
 
-		verify(consumerSpy).commit(any(Handler.class));
+		ArgumentCaptor<Handler<AsyncResult<Void>>> handlerCap = ArgumentCaptor.forClass(Handler.class);
+		
+		verify(consumerSpy).commit(handlerCap.capture());
+		handlerCap.getValue().handle(new AsyncResult<Void>() {
+
+			@Override
+			public Void result() {
+				return null;
+			}
+
+			@Override
+			public Throwable cause() {
+				return null;
+			}
+
+			@Override
+			public boolean succeeded() {
+				return true;
+			}
+
+			@Override
+			public boolean failed() {
+				return false;
+			}
+		});
 		
 		// verify sender.send() was called and grab the arguments
 		ArgumentCaptor<byte[]> tagCap = ArgumentCaptor.forClass(byte[].class);
