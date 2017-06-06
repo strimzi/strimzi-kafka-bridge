@@ -241,7 +241,6 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 			props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, consumerConfig.getConsumerConfig().isEnableAutoCommit());
 			props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, consumerConfig.getConsumerConfig().getAutoOffsetReset());
 			consumer = KafkaConsumer.create(vertx, props);
-			consumer.handler(this::handleKafkaRecord);
 			consumer.batchHandler(this::handleKafkaBatch);
 			// Set up flow control
 			// (*before* subscribe in case we start with no credit!)
@@ -270,6 +269,7 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 					.setSource(sender.getRemoteSource())
 					.open();
 		}
+		consumer.handler(this::handleKafkaRecord);
 	}
 
 	private void protonSend(KafkaMessage<K, V> kafkaMessage) {
@@ -420,10 +420,6 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 		
 		if (requestedPartitionInfo.isPresent()) {
 			LOG.debug("Requested partition {} present", partition);
-			if (this.offset != null) {
-				// Don't consume messages until we've called seek()
-				this.consumer.pause();
-			}
 			this.consumer.assign(Collections.singleton(new TopicPartition(kafkaTopic, partition)), assignResult-> {
 				if (assignResult.failed()) {
 					LOG.error("Error assigning to {}", kafkaTopic, assignResult.cause());
@@ -451,8 +447,6 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 							return;
 						}
 						partitionsAssigned();
-						// Now we can consume messages from the offset we've seek()ed to
-						this.consumer.resume();
 					});
 				} else {
 					partitionsAssigned();
@@ -470,6 +464,43 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 	}
 
 	private void automaticPartitionAssignment() {
+		this.consumer.partitionsRevokedHandler(partitions -> {
+			
+			LOG.debug("Partitions revoked {}", partitions.size());
+			
+			if (!partitions.isEmpty()) {
+				
+				if (LOG.isDebugEnabled()) {
+					for (TopicPartition partition : partitions) {
+						LOG.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
+					}
+				}
+			
+				// Sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
+				
+				if (this.qos == ProtonQoS.AT_LEAST_ONCE) {
+					// commit all tracked offsets for partitions
+					SinkBridgeEndpoint.this.commitOffsets(true);
+				}
+			}
+		});
+		
+		this.consumer.partitionsAssignedHandler(partitions -> {
+			LOG.debug("Partitions assigned {}", partitions.size());
+			if (!partitions.isEmpty()) {
+				if (LOG.isDebugEnabled()) {
+					for (TopicPartition partition : partitions) {
+						LOG.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
+					}
+				}
+			} else {
+				ErrorCondition condition =
+						new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS),
+								"All partitions already have a receiver");
+				sendProtonError(condition);
+			}
+		});
+		
 		this.consumer.subscribe(kafkaTopic, subscribeResult-> {
 			if (subscribeResult.failed()) {
 				LOG.error("Error getting partition info {}", kafkaTopic, subscribeResult.cause());
@@ -480,44 +511,9 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 				sendProtonError(condition);
 				return;
 			}
-			this.consumer.partitionsRevokedHandler(partitions -> {
-				
-				LOG.debug("Partitions revoked {}", partitions.size());
-				
-				if (!partitions.isEmpty()) {
-					
-					if (LOG.isDebugEnabled()) {
-						for (TopicPartition partition : partitions) {
-							LOG.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
-						}
-					}
-				
-					// Sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
-					
-					if (this.qos == ProtonQoS.AT_LEAST_ONCE) {
-						// commit all tracked offsets for partitions
-						SinkBridgeEndpoint.this.commitOffsets(true);
-					}
-				}
-			});
-			
-			this.consumer.partitionsAssignedHandler(partitions -> {
-				LOG.debug("Partitions assigned {}", partitions.size());
-				if (!partitions.isEmpty()) {
-					if (LOG.isDebugEnabled()) {
-						for (TopicPartition partition : partitions) {
-							LOG.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
-						}
-					}
-					partitionsAssigned();
-				} else {
-					ErrorCondition condition =
-							new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS),
-									"All partitions already have a receiver");
-					sendProtonError(condition);
-				}
-			});
+			partitionsAssigned();
 		});
+		
 	}
 	
 	/**
@@ -541,7 +537,10 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 				this.consumer.commit(ar -> {
 					if (ar.failed()) {
 						LOG.error("Error committing ... {}", ar.cause().getMessage());
-						sendProtonError(Bridge.AMQP_ERROR_KAFKA_COMMIT, "Error in commit", ar);
+						ErrorCondition condition =
+								new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_COMMIT),
+										"Error in commit");
+						sendProtonError(condition);
 					} else {
 						// 3. start message sending
 						protonSend(new KafkaMessage<K, V>(record.partition(), record.offset(), record.record()));
