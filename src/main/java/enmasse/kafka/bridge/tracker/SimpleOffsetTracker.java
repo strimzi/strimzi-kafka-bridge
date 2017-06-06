@@ -30,7 +30,7 @@ import java.util.Map.Entry;
  * settles "out of order", previous unsettled message won't be re-delivered
  * and MAY be lost so AT_LEAST_ONCE QoS is NOT guaranteed
  */
-public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
+public class SimpleOffsetTracker implements OffsetTracker {
 
 	private static class PartitionState {
 		public long offset;
@@ -57,12 +57,12 @@ public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	}
 	
 	@Override
-	public synchronized void track(int partition, long offset, ConsumerRecord<K, V> record) {
+	public void track(int partition, long offset, ConsumerRecord<?, ?> record) {
 		// nothing
 	}
 	
 	@Override
-	public synchronized void delivered(int partition, long offset) {
+	public void delivered(int partition, long offset) {
 		
 		if (this.offsets.containsKey(partition)) {
 			
@@ -83,7 +83,7 @@ public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	}
 
 	@Override
-	public synchronized Map<TopicPartition, OffsetAndMetadata> getOffsets() {
+	public Map<TopicPartition, OffsetAndMetadata> getOffsets() {
 		
 		Map<TopicPartition, OffsetAndMetadata> changedOffsets = new HashMap<>();
 		
@@ -100,7 +100,7 @@ public class SimpleOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	}
 	
 	@Override
-	public synchronized void commit(Map<TopicPartition, OffsetAndMetadata> offsets) {
+	public void commit(Map<TopicPartition, OffsetAndMetadata> offsets) {
 		
 		for (Entry<TopicPartition, OffsetAndMetadata> offset : offsets.entrySet()) {
 			

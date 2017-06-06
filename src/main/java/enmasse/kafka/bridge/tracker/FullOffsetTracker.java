@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
  * unsettled offset in the middle. It means that already settled messages MAY be
  * re-delivered so AT_LEAST_ONCE QoS is guaranteed
  */
-public class FullOffsetTracker<K, V> implements OffsetTracker<K, V> {
+public class FullOffsetTracker implements OffsetTracker {
 
 	// Apache Kafka topic to track
 	private String topic;
@@ -78,7 +78,7 @@ public class FullOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	}
 	
 	@Override
-	public synchronized void track(int partition, long offset, ConsumerRecord<K, V> record) {
+	public void track(int partition, long offset, ConsumerRecord<?, ?> record) {
 		PartitionState state = this.map.get(partition);
 		if (state == null) {
 			this.map.put(partition, new PartitionState(offset));
@@ -88,7 +88,7 @@ public class FullOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	}
 
 	@Override
-	public synchronized void delivered(int partition, long offset) {
+	public void delivered(int partition, long offset) {
 		
 		// offset SETTLED, updating map partition
 		this.map.get(partition).settlements.put(offset, true);
@@ -140,7 +140,7 @@ public class FullOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	}
 
 	@Override
-	public synchronized Map<TopicPartition, OffsetAndMetadata> getOffsets() {
+	public Map<TopicPartition, OffsetAndMetadata> getOffsets() {
 		
 		Map<TopicPartition, OffsetAndMetadata> changedOffsets = new HashMap<>();
 		
@@ -156,7 +156,7 @@ public class FullOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	}
 	
 	@Override
-	public synchronized void commit(Map<TopicPartition, OffsetAndMetadata> offsets) {
+	public void commit(Map<TopicPartition, OffsetAndMetadata> offsets) {
 		
 		for (Entry<TopicPartition, OffsetAndMetadata> offset : offsets.entrySet()) {
 			
@@ -174,7 +174,7 @@ public class FullOffsetTracker<K, V> implements OffsetTracker<K, V> {
 	}
 
 	@Override
-	public synchronized void clear() {
+	public void clear() {
 		this.map.clear();
 	}
 

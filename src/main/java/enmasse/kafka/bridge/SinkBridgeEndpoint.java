@@ -16,22 +16,17 @@
 
 package enmasse.kafka.bridge;
 
-import enmasse.kafka.bridge.config.BridgeConfigProperties;
-import enmasse.kafka.bridge.converter.DefaultMessageConverter;
-import enmasse.kafka.bridge.converter.MessageConverter;
-import enmasse.kafka.bridge.tracker.OffsetTracker;
-import enmasse.kafka.bridge.tracker.SimpleOffsetTracker;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.core.eventbus.DeliveryOptions;
-import io.vertx.core.eventbus.MessageConsumer;
-import io.vertx.proton.ProtonHelper;
-import io.vertx.proton.ProtonLink;
-import io.vertx.proton.ProtonQoS;
-import io.vertx.proton.ProtonSender;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Properties;
+
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
@@ -39,56 +34,68 @@ import org.apache.qpid.proton.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Queue;
-import java.util.UUID;
+import enmasse.kafka.bridge.config.BridgeConfigProperties;
+import enmasse.kafka.bridge.config.KafkaConfigProperties;
+import enmasse.kafka.bridge.converter.DefaultMessageConverter;
+import enmasse.kafka.bridge.converter.MessageConverter;
+import enmasse.kafka.bridge.tracker.OffsetTracker;
+import enmasse.kafka.bridge.tracker.SimpleOffsetTracker;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.kafka.client.common.PartitionInfo;
+import io.vertx.kafka.client.common.TopicPartition;
+import io.vertx.kafka.client.consumer.KafkaConsumer;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
+import io.vertx.proton.ProtonHelper;
+import io.vertx.proton.ProtonLink;
+import io.vertx.proton.ProtonQoS;
+import io.vertx.proton.ProtonSender;
 
 /**
  * Class in charge for reading from Apache Kafka
  * and bridging into AMQP traffic to receivers
  */
-public class SinkBridgeEndpoint implements BridgeEndpoint {
+public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SinkBridgeEndpoint.class);
 	
 	private static final String GROUP_ID_MATCH = "/group.id/";
 	
-	public static final String EVENT_BUS_SEND = "send";
-	public static final String EVENT_BUS_ERROR = "error";
-	public static final String EVENT_BUS_ASSIGNED = "assigned";
-	public static final String EVENT_BUS_REQUEST_HEADER = "request";
-	public static final String EVENT_BUS_ERROR_DESC_HEADER = "error-desc";
-	public static final String EVENT_BUS_ERROR_AMQP_HEADER = "error-amqp";
-	
-	public static final int QUEUE_THRESHOLD = 1024;
-	
-	// Kafka consumer related stuff
-	private KafkaConsumerWorker<String, byte[]> kafkaConsumerWorker;
-	private Thread kafkaConsumerThread;
-	
-	// Event Bus communication stuff between Kafka consumer thread
-	// and main Vert.x event loop
 	private Vertx vertx;
-	private MessageConsumer<String> ebConsumer;
 	
 	// converter from ConsumerRecord to AMQP message
-	private MessageConverter<String, byte[]> converter;
+	private MessageConverter<K, V> converter;
 	
 	// used for tracking partitions and related offset for AT_LEAST_ONCE QoS delivery 
-	private OffsetTracker<String, byte[]> offsetTracker;
+	private OffsetTracker offsetTracker;
 	
 	private Handler<BridgeEndpoint> closeHandler;
 	
-	private Queue<String> deliveryNotSent;
-	
-	private SinkBridgeContext<String, byte[]> context;
-
 	// sender link for handling outgoing message
 	private ProtonSender sender;
 
 	private BridgeConfigProperties bridgeConfigProperties;
+
+	private KafkaConsumer<K, V> consumer;
+
+	private String groupId;
+
+	private String topic;
+
+	private String kafkaTopic;
+
+	private Integer partition;
+
+	private Long offset;
+
+	private ProtonQoS qos;
+
+	private int recordIndex;
+
+	private int batchSize;
+	
 	
 	/**
 	 * Constructor
@@ -102,16 +109,13 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		this.bridgeConfigProperties = bridgeConfigProperties;
 
 		try {
-			this.converter = (MessageConverter<String, byte[]>)Class.forName(this.bridgeConfigProperties.getAmqpConfigProperties().getMessageConverter()).newInstance();
+			this.converter = (MessageConverter<K, V>)Class.forName(this.bridgeConfigProperties.getAmqpConfigProperties().getMessageConverter()).newInstance();
 		} catch (Exception e) {
 			this.converter = null;
 		}
 		
 		if (this.converter == null)
-			this.converter = new DefaultMessageConverter();
-		
-		this.deliveryNotSent = new LinkedList<>();
-		this.context = new SinkBridgeContext<>();
+			this.converter = (MessageConverter<K, V>)new DefaultMessageConverter();
 	}
 	
 	@Override
@@ -121,27 +125,20 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 
 	@Override
 	public void close() {
-
-		if (this.kafkaConsumerWorker != null)
-			this.kafkaConsumerWorker.shutdown();
-		
-		if (this.ebConsumer != null)
-			this.ebConsumer.unregister();
-		
-		if (this.context.getEbName() != null)
-			this.vertx.sharedData().getLocalMap(this.context.getEbName()).clear();
-		
+		if (consumer != null) {
+			consumer.close();
+		}
 		if (this.offsetTracker != null)
 			this.offsetTracker.clear();
 		
-		this.deliveryNotSent.clear();
-
-		this.sender.close();
+		if (sender.isOpen()) {
+			this.sender.close();
+		}
 	}
 	
 	@Override
 	public void handle(ProtonLink<?> link) {
-		
+		// Note: This is only called once for each instance
 		if (!(link instanceof ProtonSender)) {
 			throw new IllegalArgumentException("This Proton link must be a sender");
 		}
@@ -153,15 +150,26 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		
 		int groupIdIndex = address.indexOf(SinkBridgeEndpoint.GROUP_ID_MATCH);
 		
-		if (groupIdIndex == -1) {
+		if (groupIdIndex == -1 
+				|| groupIdIndex == 0
+				|| groupIdIndex == address.length()-SinkBridgeEndpoint.GROUP_ID_MATCH.length()) {
 		
 			// group.id don't specified in the address, link will be closed
 			LOG.warn("Local detached");
 
+			String detail;
+			if (groupIdIndex == -1) {
+				detail = "Mandatory group.id not specified in the address";
+			} else if (groupIdIndex == 0) {
+				detail = "Empty topic in specified address";
+			} else {
+				detail = "Empty consumer group in specified address";
+			}
+			
 			this.sender
 					.setSource(null)
 					.open()
-					.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_GROUPID), "Mandatory group.id not specified in the address"))
+					.setCondition(new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_GROUPID), detail))
 					.close();
 			
 			this.handleClose();
@@ -177,11 +185,10 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 					})
 					.detachHandler(ar -> {
 						this.processCloseSender(this.sender);
-					})
-					.sendQueueDrainHandler(this::processSendQueueDrain);
+					});
 			
-			String groupId = address.substring(groupIdIndex + SinkBridgeEndpoint.GROUP_ID_MATCH.length());
-			String topic = address.substring(0, groupIdIndex);
+			groupId = address.substring(groupIdIndex + SinkBridgeEndpoint.GROUP_ID_MATCH.length());
+			topic = address.substring(0, groupIdIndex);
 			
 			LOG.debug("topic {} group.id {}", topic, groupId);
 			
@@ -211,156 +218,103 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 				}
 				
 				LOG.debug("partition {} offset {}", partition, offset);
+				this.partition = (Integer)partition;
+				this.offset = (Long)offset;
 			}
-					
+
 			// creating configuration for Kafka consumer
-			Properties props = new Properties();
-			props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
-			props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getConsumerConfig().getKeyDeserializer());
-			props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getConsumerConfig().getValueDeserializer());
-			props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-			props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getConsumerConfig().isEnableAutoCommit());
-			props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getConsumerConfig().getAutoOffsetReset());
 			
-			// generate an UUID as name for the Vert.x EventBus internal queue and shared local map
-			String ebName = String.format("%s.%s.%s", 
-					Bridge.class.getSimpleName().toLowerCase(), 
-					SinkBridgeEndpoint.class.getSimpleName().toLowerCase(), 
-					UUID.randomUUID().toString());
-			LOG.debug("Event Bus queue and shared local map : {}", ebName);
-
 			// replace unsupported "/" (in a topic name in Kafka) with "."
-			String kafkaTopic = topic.replace('/', '.');
-
-			this.offsetTracker = new SimpleOffsetTracker<>(kafkaTopic);
+			kafkaTopic = topic.replace('/', '.');
+			this.offsetTracker = new SimpleOffsetTracker(kafkaTopic);
+			this.qos = sender.getQoS();
 			
 			// create context shared between sink endpoint and Kafka worker
-			this.context
-			.setTopic(kafkaTopic)
-			.setQos(this.sender.getQoS())
-			.setEbName(ebName)
-			.setOffsetTracker(this.offsetTracker);
 			
-			if (partition != null)
-				this.context.setPartition((Integer)partition);
-			if (offset != null)
-				this.context.setOffset((Long)offset);
+			// create a consumer
+			KafkaConfigProperties consumerConfig = this.bridgeConfigProperties.getKafkaConfigProperties();
+			Properties props = new Properties();
+			props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, consumerConfig.getBootstrapServers());
+			props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, consumerConfig.getConsumerConfig().getKeyDeserializer());
+			props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, consumerConfig.getConsumerConfig().getValueDeserializer());
+			props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+			props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, consumerConfig.getConsumerConfig().isEnableAutoCommit());
+			props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, consumerConfig.getConsumerConfig().getAutoOffsetReset());
+			consumer = KafkaConsumer.create(vertx, props);
+			consumer.batchHandler(this::handleKafkaBatch);
+			// Set up flow control
+			// (*before* subscribe in case we start with no credit!)
 			
-			// create and start new thread for reading from Kafka
-			this.kafkaConsumerWorker = new KafkaConsumerWorker<>(props, this.vertx, this.context);
+			flowCheck();
+			// Subscribe to the topic
+			subscribe();
+		}
+	}
+
+	private void sendProtonError(ErrorCondition condition) {
+		// no partitions assigned, the AMQP link and Kafka consumer will be closed
+		this.sender
+				.setSource(null)
+				.open()
+				.setCondition(condition)
+				.close();
+		
+		this.close();
+		this.handleClose();
+	}
+
+	private void partitionsAssigned() {
+		if (!this.sender.isOpen()) {
+			this.sender
+					.setSource(sender.getRemoteSource())
+					.open();
+		}
+		consumer.handler(this::handleKafkaRecord);
+	}
+
+	private void protonSend(KafkaMessage<K, V> kafkaMessage) {
+		int partition = kafkaMessage.getPartition();
+		long offset = kafkaMessage.getOffset();
+		String deliveryTag = partition+"_"+offset;
+		ConsumerRecord<K, V> record = kafkaMessage.getRecord();
+		Message message = converter.toAmqpMessage(this.sender.getSource().getAddress(), record);
+		if (this.sender.getQoS() == ProtonQoS.AT_MOST_ONCE) {
 			
-			this.kafkaConsumerThread = new Thread(kafkaConsumerWorker);
-			this.kafkaConsumerThread.start();
+			// Sender QoS settled (AT_MOST_ONCE)
 			
-			// message sending on AMQP link MUST happen on Vert.x event loop due to
-			// the access to the sender object provided by Vert.x handler
-			// (we MUST avoid to access it from other threads; i.e. Kafka consumer thread)
-			this.ebConsumer = this.vertx.eventBus().consumer(this.context.getEbName(), ebMessage -> {
+			this.sender.send(ProtonHelper.tag(deliveryTag), message);
+			
+		} else {
+			
+			// Sender QoS unsettled (AT_LEAST_ONCE)
+			
+			// record (converted in AMQP message) is on the way ... ask to tracker to track its delivery
+			this.offsetTracker.track(partition, offset, record);
+			
+			LOG.debug("Tracked {} - {} [{}]", record.topic(), record.partition(), record.offset());
+
+			this.sender.send(ProtonHelper.tag(deliveryTag), message, delivery -> {
 				
-				switch (ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER)) {
-					
-					case SinkBridgeEndpoint.EVENT_BUS_SEND:
-						
-						if (!this.sender.sendQueueFull()) {
-							
-							// the remote receiver has credits, we can send the message
-						
-							ConsumerRecord<String, byte[]> record = null;
-							
-							if (this.sender.getQoS() == ProtonQoS.AT_MOST_ONCE) {
-								
-								// Sender QoS settled (AT_MOST_ONCE)
-								
-								String deliveryTag = ebMessage.body();
-								
-								Object obj = this.vertx.sharedData().getLocalMap(this.context.getEbName()).remove(deliveryTag);
-								
-								if (obj instanceof KafkaMessage<?, ?>) {
-									
-									KafkaMessage<String, byte[]> kafkaMessage = (KafkaMessage<String, byte[]>) obj;
-									record = kafkaMessage.getRecord();
-									
-									Message message = converter.toAmqpMessage(this.sender.getSource().getAddress(), record);
-									this.sender.send(ProtonHelper.tag(String.valueOf(deliveryTag)), message);
-								}
-								
-							} else {
-								
-								// Sender QoS unsettled (AT_LEAST_ONCE)
-									
-								String deliveryTag = ebMessage.body();
-								
-								Object obj = this.vertx.sharedData().getLocalMap(this.context.getEbName()).remove(deliveryTag);
-								
-								if (obj instanceof KafkaMessage<?, ?>) {
-									// get partition and offset from delivery tag : <partition>_<offset>
-									int underscore = deliveryTag.indexOf("_");
-									int messagePartition = Integer.valueOf(deliveryTag.substring(0, underscore));
-									long messageOffset = Long.valueOf(deliveryTag.substring(underscore + 1));
-									
-									KafkaMessage<String, byte[]> kafkaMessage = (KafkaMessage<String, byte[]>) obj;
-									record = kafkaMessage.getRecord();
-									
-									Message message = converter.toAmqpMessage(this.sender.getSource().getAddress(), record);
-									
-									// record (converted in AMQP message) is on the way ... ask to tracker to track its delivery
-									this.offsetTracker.track(messagePartition, messageOffset, record);
-									
-									LOG.debug("Tracked {} - {} [{}]", record.topic(), record.partition(), record.offset());
-
-									this.sender.send(ProtonHelper.tag(deliveryTag), message, delivery -> {
-										
-										// a record (converted in AMQP message) is delivered ... communicate it to the tracker
-										String tag = new String(delivery.getTag());
-										this.offsetTracker.delivered(messagePartition, messageOffset);
-										
-										LOG.debug("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), this.sender.getSource().getAddress());
-									});
-								}
-								
-							}
-							
-						} else {
-							
-							// no credits available on receiver side, save the current deliveryTag and pause the Kafka consumer
-							this.deliveryNotSent.add(ebMessage.body());
-						}
-						
-						this.context.setSendQueueFull(sender.sendQueueFull());
-						
-						break;
-
-					case SinkBridgeEndpoint.EVENT_BUS_ASSIGNED:
-
-						LOG.info("Partitions assigned");
-
-						if (!this.sender.isOpen()) {
-							this.sender
-									.setSource(sender.getRemoteSource())
-									.open();
-						}
-						break;
-					
-					case SinkBridgeEndpoint.EVENT_BUS_ERROR:
-						
-						LOG.warn("Local detached");
-
-						ErrorCondition condition =
-								new ErrorCondition(Symbol.getSymbol(ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_ERROR_AMQP_HEADER)),
-								ebMessage.headers().get(SinkBridgeEndpoint.EVENT_BUS_ERROR_DESC_HEADER));
-
-						// no partitions assigned, the AMQP link and Kafka consumer will be closed
-						this.sender
-								.setSource(null)
-								.open()
-								.setCondition(condition)
-								.close();
-						
-						this.close();
-						this.handleClose();
-						break;
-				}
+				// a record (converted in AMQP message) is delivered ... communicate it to the tracker
+				String tag = new String(delivery.getTag());
+				this.offsetTracker.delivered(partition, offset);
 				
+				LOG.debug("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), this.sender.getSource().getAddress());
+			});
+			
+		}
+		
+		flowCheck();
+	}
+
+	/**
+	 * Pause the consumer if there's no send credit on the sender.
+	 */
+	private void flowCheck() {
+		if (sender.sendQueueFull()) {
+			consumer.pause();
+			sender.sendQueueDrainHandler(done -> {
+				consumer.resume();
 			});
 		}
 	}
@@ -370,52 +324,13 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 	 * @param sender		Proton sender instance
 	 */
 	private void processCloseSender(ProtonSender sender) {
-
 		LOG.info("Remote AMQP receiver detached");
-
-		sender.close();
-
 		this.close();
 		this.handleClose();
 	}
 	
-	/**
-	 * Handle for flow control on the link when sender receives credits to send
-	 * @param sender
-	 */
-	private void processSendQueueDrain(ProtonSender sender) {
-		
-		LOG.debug("Remote receiver link credits available");
-		
-		String deliveryTag;
-		
-		DeliveryOptions options = new DeliveryOptions();
-		options.addHeader(SinkBridgeEndpoint.EVENT_BUS_REQUEST_HEADER, SinkBridgeEndpoint.EVENT_BUS_SEND);
-		
-		if (this.deliveryNotSent.isEmpty()) {
-			// nothing to recovering, just update context sender queue status
-			this.context.setSendQueueFull(sender.sendQueueFull());
-		} else {
-			// before resuming Kafka consumer, we need to send cached delivery
-			while ((deliveryTag = this.deliveryNotSent.peek()) != null) {
-				
-				if (!sender.sendQueueFull()) {
-					
-					LOG.debug("Recovering not sent delivery ... {}", deliveryTag);
-					this.deliveryNotSent.remove();
-					this.vertx.eventBus().send(this.context.getEbName(), deliveryTag, options);
-					
-				} else {
-					
-					return;
-				}
-			}
-		}
-	}
-	
 	@Override
 	public BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler) {
-
 		this.closeHandler = endpointCloseHandler;
 		return this;
 	}
@@ -473,4 +388,243 @@ public class SinkBridgeEndpoint implements BridgeEndpoint {
 		
 		return condition;
 	}
+	
+	/**
+	 * Subscribe to the topic
+	 */
+	private void subscribe() {
+		if (partition != null) {
+			// read from a specified partition
+			LOG.debug("Assigning to partition {}", partition);
+			this.consumer.partitionsFor(kafkaTopic, this::partitionsForHandler);
+		} else {
+			LOG.info("No explicit partition for consuming from topic {} (will be automatically assigned)", 
+					kafkaTopic);
+			automaticPartitionAssignment();
+		}
+	}
+	
+	void partitionsForHandler(AsyncResult<List<PartitionInfo>> partitionsResult) {
+		if (partitionsResult.failed()) {
+			LOG.error("Error getting partition info {}", kafkaTopic, partitionsResult.cause());
+			String message = partitionsResult.cause().getMessage();
+			ErrorCondition condition =
+					new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE),
+							"Error getting partition info" + (message != null ? ": " + message : ""));
+			sendProtonError(condition);
+			return;
+		}
+		LOG.debug("Getting partitions for " + kafkaTopic);
+		List<PartitionInfo> availablePartitions = partitionsResult.result();
+		Optional<PartitionInfo> requestedPartitionInfo = availablePartitions.stream().filter(p -> p.getPartition() == this.partition).findFirst();
+		
+		if (requestedPartitionInfo.isPresent()) {
+			LOG.debug("Requested partition {} present", partition);
+			this.consumer.assign(Collections.singleton(new TopicPartition(kafkaTopic, partition)), assignResult-> {
+				if (assignResult.failed()) {
+					LOG.error("Error assigning to {}", kafkaTopic, assignResult.cause());
+					String message = assignResult.cause().getMessage();
+					ErrorCondition condition =
+							new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE),
+									"Error getting partition info" + (message != null ? ": " + message : ""));
+					sendProtonError(condition);
+					return;
+				}
+				LOG.debug("Assigned to {} partition {}", kafkaTopic, partition);
+				// start reading from specified offset inside partition
+				if (this.offset != null) {
+					
+					LOG.debug("Request to start from offset {}", this.offset);
+					
+					this.consumer.seek(new TopicPartition(this.kafkaTopic, this.partition), this.offset, seekResult ->{
+						if (seekResult.failed()) {
+							LOG.error("Error subscribing to " + kafkaTopic, seekResult.cause());
+							String message = seekResult.cause().getMessage();
+							ErrorCondition condition =
+									new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE),
+											"Error getting partition info" + (message != null ? ": " + message : ""));
+							sendProtonError(condition);
+							return;
+						}
+						partitionsAssigned();
+					});
+				} else {
+					partitionsAssigned();
+				}
+			});
+		} else {
+			
+			LOG.warn("Requested partition {} doesn't exist", this.partition);
+			
+			ErrorCondition condition =
+					new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_PARTITION_NOT_EXISTS),
+							"Specified partition doesn't exist");
+			sendProtonError(condition);
+		}
+	}
+
+	private void automaticPartitionAssignment() {
+		this.consumer.partitionsRevokedHandler(partitions -> {
+			
+			LOG.debug("Partitions revoked {}", partitions.size());
+			
+			if (!partitions.isEmpty()) {
+				
+				if (LOG.isDebugEnabled()) {
+					for (TopicPartition partition : partitions) {
+						LOG.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
+					}
+				}
+			
+				// Sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
+				
+				if (this.qos == ProtonQoS.AT_LEAST_ONCE) {
+					// commit all tracked offsets for partitions
+					SinkBridgeEndpoint.this.commitOffsets(true);
+				}
+			}
+		});
+		
+		this.consumer.partitionsAssignedHandler(partitions -> {
+			LOG.debug("Partitions assigned {}", partitions.size());
+			if (!partitions.isEmpty()) {
+				if (LOG.isDebugEnabled()) {
+					for (TopicPartition partition : partitions) {
+						LOG.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
+					}
+				}
+			} else {
+				ErrorCondition condition =
+						new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_NO_PARTITIONS),
+								"All partitions already have a receiver");
+				sendProtonError(condition);
+			}
+		});
+		
+		this.consumer.subscribe(kafkaTopic, subscribeResult-> {
+			if (subscribeResult.failed()) {
+				LOG.error("Error getting partition info {}", kafkaTopic, subscribeResult.cause());
+				String message = subscribeResult.cause().getMessage();
+				ErrorCondition condition =
+						new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE),
+								"Error subscribing" + (message != null ? ": " + message : ""));
+				sendProtonError(condition);
+				return;
+			}
+			partitionsAssigned();
+		});
+		
+	}
+	
+	/**
+	 * Callback to process a kafka record
+	 * @param record The record
+	 */
+	private void handleKafkaRecord(KafkaConsumerRecord<K, V> record) {
+		LOG.debug("Processing key {} value {} partition {} offset {}", 
+				record.key(), record.value(), record.partition(), record.offset());
+		
+		switch (this.qos){
+		case AT_MOST_ONCE:
+			// Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
+			if (startOfBatch()) {
+				LOG.debug("Start of batch in {} mode => commit()", this.qos);
+				// when start of batch we need to commit, but need to prevent processind any 
+				// more messages while we do, so... 
+				// 1. pause()
+				this.consumer.pause();
+				// 2. do the commit()
+				this.consumer.commit(ar -> {
+					if (ar.failed()) {
+						LOG.error("Error committing ... {}", ar.cause().getMessage());
+						ErrorCondition condition =
+								new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_COMMIT),
+										"Error in commit");
+						sendProtonError(condition);
+					} else {
+						// 3. start message sending
+						protonSend(new KafkaMessage<K, V>(record.partition(), record.offset(), record.record()));
+						// 4 resume processing messages
+						this.consumer.resume();
+					}
+				});
+			} else {
+				// Otherwise: immediate send because the record's already committed
+				protonSend(new KafkaMessage<K, V>(record.partition(), record.offset(), record.record()));
+			}
+			break;
+		case AT_LEAST_ONCE:
+			// Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit
+			
+			LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
+			
+			// 1. start message sending
+			protonSend(new KafkaMessage<K, V>(record.partition(), record.offset(), record.record()));
+			
+			if (endOfBatch()) {
+				LOG.debug("End of batch in {} mode => commitOffsets()", this.qos);
+				try {
+					// 2. commit all tracked offsets for partitions
+					commitOffsets(false);
+				} catch (Exception e) {
+					LOG.error("Error committing ... {}", e.getMessage());
+				}
+			}
+			
+			break;
+		}
+		recordIndex++;
+		
+		
+	}
+
+	private boolean endOfBatch() {
+		return recordIndex == batchSize-1;
+	}
+
+	private boolean startOfBatch() {
+		return recordIndex == 0;
+	}
+	
+	private void handleKafkaBatch(KafkaConsumerRecords<K, V> records) {
+		recordIndex = 0;
+		batchSize = records.size();
+	}
+	
+	/**
+	 * Commit the offsets in the offset tracker to Kafka.
+	 * 
+	 * @param clear			Whether to clear the offset tracker after committing.
+	 */
+	private void commitOffsets(boolean clear) {
+		Map<org.apache.kafka.common.TopicPartition, OffsetAndMetadata> offsets = this.offsetTracker.getOffsets();
+
+		// as Kafka documentation says, the committed offset should always be the offset of the next message
+		// that your application will read. Thus, when calling commitSync(offsets) you should
+		// add one to the offset of the last message processed.
+		Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata> kafkaOffsets = new HashMap<>();
+		offsets.forEach((topicPartition, offsetAndMetadata) -> {
+			kafkaOffsets.put(new TopicPartition(topicPartition.topic(), topicPartition.partition()), 
+					new io.vertx.kafka.client.consumer.OffsetAndMetadata(offsetAndMetadata.offset() + 1, offsetAndMetadata.metadata()));
+		});
+		
+		if (offsets != null && !offsets.isEmpty()) {
+			this.consumer.commit(kafkaOffsets, ar -> {
+				if (ar.succeeded()) {
+					this.offsetTracker.commit(offsets);
+					if (clear) {
+						offsetTracker.clear();
+					}
+					if (LOG.isDebugEnabled()) {
+						for (Entry<org.apache.kafka.common.TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
+							LOG.debug("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
+						}
+					}
+				} else {
+					LOG.error("Error committing ... {}", ar.cause().getMessage());
+				}
+			});
+		}
+	}
+	
 }

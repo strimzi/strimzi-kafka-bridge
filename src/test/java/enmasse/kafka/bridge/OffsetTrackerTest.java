@@ -54,7 +54,7 @@ public class OffsetTrackerTest {
 	@Test
 	public void fullOffsetTrackerOutOfOrder() {
 		
-		OffsetTracker<String, byte[]> offsetTracker  = new FullOffsetTracker<>("my_topic");
+		OffsetTracker offsetTracker  = new FullOffsetTracker("my_topic");
 		
 		for (ConsumerRecord<String, byte[]> record : this.records) {
 			offsetTracker.track(record.partition(), record.offset(), record);
@@ -108,7 +108,7 @@ public class OffsetTrackerTest {
 	@Test
 	public void fullOffsetTracker() {
 		
-		OffsetTracker<String, byte[]> offsetTracker  = new FullOffsetTracker<>("my_topic");
+		OffsetTracker offsetTracker  = new FullOffsetTracker("my_topic");
 		
 		for (ConsumerRecord<String, byte[]> record : this.records) {
 			offsetTracker.track(record.partition(), record.offset(), record);
@@ -162,7 +162,7 @@ public class OffsetTrackerTest {
 	@Test
 	public void simpleOffsetTrackerOutOfOrder() {
 		
-		OffsetTracker<String, byte[]> offsetTracker  = new SimpleOffsetTracker<>("my_topic");
+		OffsetTracker offsetTracker  = new SimpleOffsetTracker("my_topic");
 		
 		for (ConsumerRecord<String, byte[]> record : records) {
 			offsetTracker.track(record.partition(), record.offset(), record);
@@ -216,7 +216,7 @@ public class OffsetTrackerTest {
 	@Test
 	public void simpleOffsetTracker() {
 		
-		OffsetTracker<String, byte[]> offsetTracker  = new SimpleOffsetTracker<>("my_topic");
+		OffsetTracker offsetTracker  = new SimpleOffsetTracker("my_topic");
 		
 		for (ConsumerRecord<String, byte[]> record : records) {
 			offsetTracker.track(record.partition(), record.offset(), record);

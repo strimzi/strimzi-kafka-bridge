@@ -25,7 +25,7 @@ import java.util.Map;
 /**
  * Interface for tracking offset for all partitions read by Kafka consumer
  */
-public interface OffsetTracker<K, V> {
+public interface OffsetTracker {
 	
 	/**
 	 * Track information about Kafka consumer record and AMQP delivery
@@ -34,7 +34,7 @@ public interface OffsetTracker<K, V> {
 	 * @param offset The offset within the partition
 	 * @param record	Kafka consumer record to track
 	 */
-	void track(int partition, long offset, ConsumerRecord<K, V> record);
+	void track(int partition, long offset, ConsumerRecord<?, ?> record);
 	
 	/**
 	 * Confirm delivery of AMQP message
