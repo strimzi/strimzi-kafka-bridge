@@ -43,12 +43,12 @@ public class OffsetTrackerTest {
 	@Before
 	public void before() {
 		
-		records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 0, null, null));
-		records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 1, null, null));
-		records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 2, null, null));
-		records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 3, null, null));
-		records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 4, null, null));
-		records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 5, null, null));
+		this.records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 0, null, null));
+		this.records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 1, null, null));
+		this.records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 2, null, null));
+		this.records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 3, null, null));
+		this.records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 4, null, null));
+		this.records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 5, null, null));
 	}
 	
 	@Test
@@ -164,7 +164,7 @@ public class OffsetTrackerTest {
 		
 		OffsetTracker offsetTracker  = new SimpleOffsetTracker("my_topic");
 		
-		for (ConsumerRecord<String, byte[]> record : records) {
+		for (ConsumerRecord<String, byte[]> record : this.records) {
 			offsetTracker.track(record.partition(), record.offset(), record);
 		}
 		
@@ -218,7 +218,7 @@ public class OffsetTrackerTest {
 		
 		OffsetTracker offsetTracker  = new SimpleOffsetTracker("my_topic");
 		
-		for (ConsumerRecord<String, byte[]> record : records) {
+		for (ConsumerRecord<String, byte[]> record : this.records) {
 			offsetTracker.track(record.partition(), record.offset(), record);
 		}
 		

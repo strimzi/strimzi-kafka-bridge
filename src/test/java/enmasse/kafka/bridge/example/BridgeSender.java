@@ -77,11 +77,11 @@ public class BridgeSender {
 					
 					LOG.info("Connected as {}", this.connection.getContainer());
 					
-					this.sender = connection.createSender(ExampleOne.TOPIC);
+					this.sender = this.connection.createSender(ExampleOne.TOPIC);
 					this.sender.open();
 					
 					String topic = ExampleOne.TOPIC;
-					Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
+					Message message = ProtonHelper.message(topic, "Simple message from " + this.connection.getContainer());
 					
 					this.sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
 						LOG.info("Message delivered {}", delivery.getRemoteState());
@@ -125,7 +125,7 @@ public class BridgeSender {
 		public void run(Vertx vertx) {
 			
 			this.senders = new ProtonSender[ExampleTwo.SENDERS_COUNT];
-			this.count = new int[senders.length];
+			this.count = new int[this.senders.length];
 			
 			ProtonClient client = ProtonClient.create(vertx);
 			
@@ -142,7 +142,7 @@ public class BridgeSender {
 					
 					for (int i = 0; i < this.senders.length; i++) {
 						
-						this.senders[i] = connection.createSender(null);
+						this.senders[i] = this.connection.createSender(null);
 						this.senders[i].open();
 						
 						this.count[i] = 0;
@@ -151,13 +151,13 @@ public class BridgeSender {
 						
 						vertx.setPeriodic(ExampleTwo.PERIODIC_DELAY, timerId -> {
 							
-							if (connection.isDisconnected()) {
+							if (this.connection.isDisconnected()) {
 								vertx.cancelTimer(timerId);
 							} else {
 								
 								if (++this.count[index] <= ExampleTwo.PERIODIC_MAX_MESSAGE) {
 								
-									Message message = ProtonHelper.message(topic, "Periodic message [" + this.count[index] + "] from " + connection.getContainer());
+									Message message = ProtonHelper.message(topic, "Periodic message [" + this.count[index] + "] from " + this.connection.getContainer());
 									
 									this.senders[index].send(ProtonHelper.tag("my_tag" + String.valueOf(this.count[index])), message, delivery -> {
 										this.delivered++;

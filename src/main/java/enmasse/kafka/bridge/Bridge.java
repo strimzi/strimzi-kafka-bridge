@@ -16,8 +16,20 @@
 
 package enmasse.kafka.bridge;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.qpid.proton.amqp.Symbol;
+import org.apache.qpid.proton.amqp.transport.ErrorCondition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import enmasse.kafka.bridge.config.AmqpMode;
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
+import enmasse.kafka.bridge.converter.DefaultMessageConverter;
+import enmasse.kafka.bridge.converter.MessageConverter;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
@@ -25,18 +37,12 @@ import io.vertx.core.Future;
 import io.vertx.proton.ProtonClient;
 import io.vertx.proton.ProtonClientOptions;
 import io.vertx.proton.ProtonConnection;
+import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
 import io.vertx.proton.ProtonServer;
 import io.vertx.proton.ProtonServerOptions;
 import io.vertx.proton.ProtonSession;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Main bridge class listening for connections
@@ -64,6 +70,8 @@ public class Bridge extends AbstractVerticle {
 	public static final String AMQP_ERROR_WRONG_FILTER = "enmasse:wrong-filter";
 	public static final String AMQP_ERROR_KAFKA_SUBSCRIBE = "enmasse:kafka-subscribe";
 	public static final String AMQP_ERROR_KAFKA_COMMIT = "enmasse:kafka-commit";
+	public static final String AMQP_ERROR_CONFIGURATION = "enmasse:configuration";
+
 	
 	// AMQP filters
 	public static final String AMQP_PARTITION_FILTER = "enmasse:partition-filter:int";
@@ -210,7 +218,7 @@ public class Bridge extends AbstractVerticle {
 	 */
 	private void startHealthServer() {
 
-		vertx.createHttpServer()
+		this.vertx.createHttpServer()
 				.requestHandler(request -> request.response().setStatusCode(HttpResponseStatus.OK.code()).end())
 				.listen(HEALTH_SERVER_PORT);
 	}
@@ -396,4 +404,43 @@ public class Bridge extends AbstractVerticle {
 
 		sink.handle(sender);
 	}
+	
+	static ErrorCondition newError(String error, String description) {
+		return new ErrorCondition(Symbol.getSymbol(error), description);
+	}
+	
+	static void detachWithError(ProtonLink<?> link, String error, String description) {
+		detachWithError(link, newError(error, description));
+	}
+
+	static void detachWithError(ProtonLink<?> link, ErrorCondition error) {
+		LOG.error("Detaching link {} due to eror {}, description: {}", link, error.getCondition(), error.getDescription());
+		link.setSource(null)
+		.open()
+		.setCondition(error)
+		.close();
+	}
+	
+	static MessageConverter<?, ?> instantiateConverter(String className) throws ErrorConditionException {
+		
+		if (className == null || className.isEmpty()) {
+			return (MessageConverter<?, ?>)new DefaultMessageConverter();
+		} else {
+			Object instance = null;
+			try {
+				instance = Class.forName(className).newInstance();
+			} catch (ClassNotFoundException | InstantiationException | IllegalAccessException 
+					| RuntimeException e) {
+				LOG.debug("Could not instantiate message converter {}", className, e);
+				throw new ErrorConditionException(Bridge.AMQP_ERROR_CONFIGURATION, "configured message converter class could not be instantiated: " + className);
+			} 
+			
+			if (instance instanceof MessageConverter) {
+				return (MessageConverter<?,?>)instance;
+			} else {
+				throw new ErrorConditionException(Bridge.AMQP_ERROR_CONFIGURATION, "configured message converter class is not an instanceof " + MessageConverter.class.getName() + ": " + className);
+			}
+		}
+	}
+
 }

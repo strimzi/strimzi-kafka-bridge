@@ -9,7 +9,6 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.function.Supplier;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -20,11 +19,8 @@ import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
 import enmasse.kafka.bridge.converter.MessageConverter;
@@ -41,7 +37,6 @@ import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonSender;
 
-@Ignore
 public class SinkBridgeEndpointMockTest {
 	
 	class MockRecordProducer {
@@ -58,15 +53,15 @@ public class SinkBridgeEndpointMockTest {
 	
 		protected <K, V> KafkaConsumerRecord<K, V> mockRecord(Supplier<K> key, Supplier<V> value) {
 			KafkaConsumerRecord<K, V> mockVertxRecord = mock(KafkaConsumerRecord.class);
-			when(mockVertxRecord.topic()).thenReturn(topic);
-			when(mockVertxRecord.partition()).thenReturn(partition);
-			when(mockVertxRecord.offset()).thenReturn(offset);
+			when(mockVertxRecord.topic()).thenReturn(this.topic);
+			when(mockVertxRecord.partition()).thenReturn(this.partition);
+			when(mockVertxRecord.offset()).thenReturn(this.offset);
 			
-			ConsumerRecord<K, V> mockKafkaRecord = new ConsumerRecord(topic, partition, offset, key != null ? key.get() : null, value != null ? value.get() : null);
+			ConsumerRecord<K, V> mockKafkaRecord = new ConsumerRecord(this.topic, this.partition, this.offset, key != null ? key.get() : null, value != null ? value.get() : null);
 			
 			when(mockVertxRecord.record()).thenReturn(mockKafkaRecord);
 			
-			offset++;
+			this.offset++;
 			return mockVertxRecord;
 		}
 	}
@@ -413,21 +408,36 @@ public class SinkBridgeEndpointMockTest {
 	}
 	
 	@Test
-	public <K, V> void config_NoSuchConverterClass() {
+	public <K, V> void config_NoSuchConverterClass() throws ErrorConditionException {
 		Vertx vertx = Vertx.vertx();
 		BridgeConfigProperties config = new BridgeConfigProperties();
 		config.getAmqpConfigProperties().setMessageConverter("foo.bar.Baz");
 		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, config);
-		fail("Just using the default can't be right");
+		
+		endpoint.open();
+		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
+		// Call handle()
+		endpoint.handle(mockSender);
+		
+		assertDetach(mockSender, 
+				Bridge.AMQP_ERROR_CONFIGURATION,
+				"configured message converter class could not be instantiated: foo.bar.Baz");
 	}
 	
 	@Test
-	public <K, V> void config_ConverterWrongType() {
+	public <K, V> void config_ConverterWrongType() throws ErrorConditionException {
 		Vertx vertx = Vertx.vertx();
 		BridgeConfigProperties config = new BridgeConfigProperties();
 		config.getAmqpConfigProperties().setMessageConverter("java.util.HashSet");
 		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, config);
-		fail("Just using the default can't be right");
+		endpoint.open();
+		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
+		// Call handle()
+		endpoint.handle(mockSender);
+		
+		assertDetach(mockSender, 
+				Bridge.AMQP_ERROR_CONFIGURATION,
+				"configured message converter class is not an instanceof enmasse.kafka.bridge.converter.MessageConverter: java.util.HashSet");
 	}
 	
 	static class NoNullaryCtor<K, V> implements MessageConverter<K, V>{
@@ -447,12 +457,19 @@ public class SinkBridgeEndpointMockTest {
 	}
 	
 	@Test
-	public <K, V> void config_ConverterNoDefaultConstructor() {
+	public <K, V> void config_ConverterNoDefaultConstructor() throws ErrorConditionException {
 		Vertx vertx = Vertx.vertx();
 		BridgeConfigProperties config = new BridgeConfigProperties();
 		config.getAmqpConfigProperties().setMessageConverter(NoNullaryCtor.class.getName());
 		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, config);
-		fail("Just using the default can't be right");
+		endpoint.open();
+		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
+		// Call handle()
+		endpoint.handle(mockSender);
+		
+		assertDetach(mockSender, 
+				Bridge.AMQP_ERROR_CONFIGURATION,
+				"configured message converter class could not be instantiated: enmasse.kafka.bridge.SinkBridgeEndpointMockTest$NoNullaryCtor");
 	}
 	
 	static class CtorThrows<K, V> implements MessageConverter<K, V>{
@@ -472,21 +489,29 @@ public class SinkBridgeEndpointMockTest {
 	}
 	
 	@Test
-	public <K, V> void config_ConverterDefaultConstructorThrows() {
+	public <K, V> void config_ConverterDefaultConstructorThrows() throws ErrorConditionException {
 		Vertx vertx = Vertx.vertx();
 		BridgeConfigProperties config = new BridgeConfigProperties();
 		config.getAmqpConfigProperties().setMessageConverter(CtorThrows.class.getName());
 		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, config);
-		fail("Just using the default can't be right");
+		endpoint.open();
+		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
+		// Call handle()
+		endpoint.handle(mockSender);
+		
+		assertDetach(mockSender, 
+				Bridge.AMQP_ERROR_CONFIGURATION,
+				"configured message converter class could not be instantiated: enmasse.kafka.bridge.SinkBridgeEndpointMockTest$CtorThrows");
 	}
 	/** What happens if the requested kafka topic doesn't exist? */
 	@Test
 	public <K, V> void noSuchTopic() {
 		
 	}
-	/** What happens if we can't get the partitions for the given topic? */
+	/** What happens if we can't get the partitions for the given topic? 
+	 * @throws ErrorConditionException */
 	@Test
-	public <K, V> void partitionsForFails() {
+	public <K, V> void partitionsForFails() throws ErrorConditionException {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
 		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
@@ -513,7 +538,7 @@ public class SinkBridgeEndpointMockTest {
 
 			@Override
 			public Throwable cause() {
-				return cause;
+				return this.cause;
 			}
 
 			@Override
@@ -529,7 +554,7 @@ public class SinkBridgeEndpointMockTest {
 		
 		assertDetach(mockSender, 
 				Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
-				"Error getting partition info");
+				"Error getting partition info for topic my_topic");
 	}
 	// TODO kafka partition doesn't exist
 	// TODO assign fails

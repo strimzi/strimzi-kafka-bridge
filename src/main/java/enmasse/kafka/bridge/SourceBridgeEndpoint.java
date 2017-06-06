@@ -78,14 +78,6 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		this.bridgeConfigProperties = bridgeConfigProperties;
 		this.receivers = new HashMap<>();
 
-		try {
-			this.converter = (MessageConverter<String, byte[]>)Class.forName(this.bridgeConfigProperties.getAmqpConfigProperties().getMessageConverter()).newInstance();
-		} catch (Exception e) {
-			this.converter = null;
-		}
-		
-		if (this.converter == null)
-			this.converter = new DefaultMessageConverter();
 	}
 	
 	@Override
@@ -97,7 +89,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getValueSerializer());
 		props.put(ProducerConfig.ACKS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getAcks());
 		
-		this.producerUnsettledMode = KafkaProducer.create(vertx, props);
+		this.producerUnsettledMode = KafkaProducer.create(this.vertx, props);
 		
 		props.clear();
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
@@ -105,7 +97,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getValueSerializer());
 		props.put(ProducerConfig.ACKS_CONFIG, "0");
 		
-		this.producerSettledMode = KafkaProducer.create(vertx, props);
+		this.producerSettledMode = KafkaProducer.create(this.vertx, props);
 	}
 
 	@Override
@@ -125,6 +117,15 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 
 	@Override
 	public void handle(ProtonLink<?> link) {
+		
+		if (this.converter == null) {
+			try {
+				this.converter = (MessageConverter<String, byte[]>) Bridge.instantiateConverter(this.bridgeConfigProperties.getAmqpConfigProperties().getMessageConverter());
+			} catch (ErrorConditionException e) {
+				Bridge.detachWithError(link, e.toCondition());
+				return;
+			}
+		}
 		
 		if (!(link instanceof ProtonReceiver)) {
 			throw new IllegalArgumentException("This Proton link must be a receiver");
