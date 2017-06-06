@@ -56,7 +56,7 @@ public class KafkaMessage<K, V> implements Shareable {
 	 * @return
 	 */
 	public int getPartition() {
-		return partition;
+		return this.partition;
 	}
 
 	/**
@@ -64,7 +64,7 @@ public class KafkaMessage<K, V> implements Shareable {
 	 * @return
 	 */
 	public long getOffset() {
-		return offset;
+		return this.offset;
 	}
 	
 	

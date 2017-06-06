@@ -117,13 +117,13 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
 	@Override
 	public void close() {
-		if (consumer != null) {
-			consumer.close();
+		if (this.consumer != null) {
+			this.consumer.close();
 		}
 		if (this.offsetTracker != null)
 			this.offsetTracker.clear();
 		
-		if (sender.isOpen()) {
+		if (this.sender.isOpen()) {
 			this.sender.close();
 		}
 	}
@@ -243,10 +243,10 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 	private void partitionsAssigned() {
 		if (!this.sender.isOpen()) {
 			this.sender
-					.setSource(sender.getRemoteSource())
+					.setSource(this.sender.getRemoteSource())
 					.open();
 		}
-		consumer.handler(this::handleKafkaRecord);
+		this.consumer.handler(this::handleKafkaRecord);
 	}
 
 	private void protonSend(KafkaMessage<K, V> kafkaMessage) {
@@ -254,7 +254,7 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 		long offset = kafkaMessage.getOffset();
 		String deliveryTag = partition+"_"+offset;
 		ConsumerRecord<K, V> record = kafkaMessage.getRecord();
-		Message message = converter.toAmqpMessage(this.sender.getSource().getAddress(), record);
+		Message message = this.converter.toAmqpMessage(this.sender.getSource().getAddress(), record);
 		if (this.sender.getQoS() == ProtonQoS.AT_MOST_ONCE) {
 			
 			// Sender QoS settled (AT_MOST_ONCE)
@@ -288,10 +288,10 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 	 * Pause the consumer if there's no send credit on the sender.
 	 */
 	private void flowCheck() {
-		if (sender.sendQueueFull()) {
-			consumer.pause();
-			sender.sendQueueDrainHandler(done -> {
-				consumer.resume();
+		if (this.sender.sendQueueFull()) {
+			this.consumer.pause();
+			this.sender.sendQueueDrainHandler(done -> {
+				this.consumer.resume();
 			});
 		}
 	}
@@ -362,13 +362,13 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 	 * Subscribe to the topic
 	 */
 	private void subscribe() {
-		if (partition != null) {
+		if (this.partition != null) {
 			// read from a specified partition
-			LOG.debug("Assigning to partition {}", partition);
-			this.consumer.partitionsFor(kafkaTopic, this::partitionsForHandler);
+			LOG.debug("Assigning to partition {}", this.partition);
+			this.consumer.partitionsFor(this.kafkaTopic, this::partitionsForHandler);
 		} else {
 			LOG.info("No explicit partition for consuming from topic {} (will be automatically assigned)", 
-					kafkaTopic);
+					this.kafkaTopic);
 			automaticPartitionAssignment();
 		}
 	}
@@ -380,20 +380,20 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 					partitionsResult);
 			return;
 		}
-		LOG.debug("Getting partitions for " + kafkaTopic);
+		LOG.debug("Getting partitions for " + this.kafkaTopic);
 		List<PartitionInfo> availablePartitions = partitionsResult.result();
 		Optional<PartitionInfo> requestedPartitionInfo = availablePartitions.stream().filter(p -> p.getPartition() == this.partition).findFirst();
 		
 		if (requestedPartitionInfo.isPresent()) {
-			LOG.debug("Requested partition {} present", partition);
-			this.consumer.assign(Collections.singleton(new TopicPartition(kafkaTopic, partition)), assignResult-> {
+			LOG.debug("Requested partition {} present", this.partition);
+			this.consumer.assign(Collections.singleton(new TopicPartition(this.kafkaTopic, this.partition)), assignResult-> {
 				if (assignResult.failed()) {
 					sendProtonError(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
 							"Error assigning to topic %s" + this.kafkaTopic, 
 							assignResult);
 					return;
 				}
-				LOG.debug("Assigned to {} partition {}", kafkaTopic, partition);
+				LOG.debug("Assigned to {} partition {}", this.kafkaTopic, this.partition);
 				// start reading from specified offset inside partition
 				if (this.offset != null) {
 					
@@ -458,7 +458,7 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 			}
 		});
 		
-		this.consumer.subscribe(kafkaTopic, subscribeResult-> {
+		this.consumer.subscribe(this.kafkaTopic, subscribeResult-> {
 			if (subscribeResult.failed()) {
 				sendProtonError(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
 						"Error subscribing to topic "+this.kafkaTopic, 
@@ -527,22 +527,22 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 			
 			break;
 		}
-		recordIndex++;
+		this.recordIndex++;
 		
 		
 	}
 
 	private boolean endOfBatch() {
-		return recordIndex == batchSize-1;
+		return this.recordIndex == this.batchSize-1;
 	}
 
 	private boolean startOfBatch() {
-		return recordIndex == 0;
+		return this.recordIndex == 0;
 	}
 	
 	private void handleKafkaBatch(KafkaConsumerRecords<K, V> records) {
-		recordIndex = 0;
-		batchSize = records.size();
+		this.recordIndex = 0;
+		this.batchSize = records.size();
 	}
 	
 	/**
@@ -567,7 +567,7 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 				if (ar.succeeded()) {
 					this.offsetTracker.commit(offsets);
 					if (clear) {
-						offsetTracker.clear();
+						this.offsetTracker.clear();
 					}
 					if (LOG.isDebugEnabled()) {
 						for (Entry<org.apache.kafka.common.TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {

@@ -89,7 +89,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getValueSerializer());
 		props.put(ProducerConfig.ACKS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getAcks());
 		
-		this.producerUnsettledMode = KafkaProducer.create(vertx, props);
+		this.producerUnsettledMode = KafkaProducer.create(this.vertx, props);
 		
 		props.clear();
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
@@ -97,7 +97,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getValueSerializer());
 		props.put(ProducerConfig.ACKS_CONFIG, "0");
 		
-		this.producerSettledMode = KafkaProducer.create(vertx, props);
+		this.producerSettledMode = KafkaProducer.create(this.vertx, props);
 	}
 
 	@Override

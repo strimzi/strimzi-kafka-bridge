@@ -53,15 +53,15 @@ public class SinkBridgeEndpointMockTest {
 	
 		protected <K, V> KafkaConsumerRecord<K, V> mockRecord(Supplier<K> key, Supplier<V> value) {
 			KafkaConsumerRecord<K, V> mockVertxRecord = mock(KafkaConsumerRecord.class);
-			when(mockVertxRecord.topic()).thenReturn(topic);
-			when(mockVertxRecord.partition()).thenReturn(partition);
-			when(mockVertxRecord.offset()).thenReturn(offset);
+			when(mockVertxRecord.topic()).thenReturn(this.topic);
+			when(mockVertxRecord.partition()).thenReturn(this.partition);
+			when(mockVertxRecord.offset()).thenReturn(this.offset);
 			
-			ConsumerRecord<K, V> mockKafkaRecord = new ConsumerRecord(topic, partition, offset, key != null ? key.get() : null, value != null ? value.get() : null);
+			ConsumerRecord<K, V> mockKafkaRecord = new ConsumerRecord(this.topic, this.partition, this.offset, key != null ? key.get() : null, value != null ? value.get() : null);
 			
 			when(mockVertxRecord.record()).thenReturn(mockKafkaRecord);
 			
-			offset++;
+			this.offset++;
 			return mockVertxRecord;
 		}
 	}
@@ -538,7 +538,7 @@ public class SinkBridgeEndpointMockTest {
 
 			@Override
 			public Throwable cause() {
-				return cause;
+				return this.cause;
 			}
 
 			@Override

@@ -218,7 +218,7 @@ public class Bridge extends AbstractVerticle {
 	 */
 	private void startHealthServer() {
 
-		vertx.createHttpServer()
+		this.vertx.createHttpServer()
 				.requestHandler(request -> request.response().setStatusCode(HttpResponseStatus.OK.code()).end())
 				.listen(HEALTH_SERVER_PORT);
 	}
