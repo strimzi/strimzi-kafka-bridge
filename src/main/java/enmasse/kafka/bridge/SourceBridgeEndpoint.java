@@ -16,22 +16,7 @@
 
 package enmasse.kafka.bridge;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.qpid.proton.amqp.Symbol;
-import org.apache.qpid.proton.amqp.messaging.Accepted;
-import org.apache.qpid.proton.amqp.messaging.Rejected;
-import org.apache.qpid.proton.amqp.transport.ErrorCondition;
-import org.apache.qpid.proton.message.Message;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
-import enmasse.kafka.bridge.converter.DefaultMessageConverter;
 import enmasse.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -42,6 +27,19 @@ import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonReceiver;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.qpid.proton.amqp.Symbol;
+import org.apache.qpid.proton.amqp.messaging.Accepted;
+import org.apache.qpid.proton.amqp.messaging.Rejected;
+import org.apache.qpid.proton.amqp.transport.ErrorCondition;
+import org.apache.qpid.proton.message.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * Class in charge for handling incoming AMQP traffic
@@ -117,7 +115,11 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 
 	@Override
 	public void handle(ProtonLink<?> link) {
-		
+
+		if (!(link instanceof ProtonReceiver)) {
+			throw new IllegalArgumentException("This Proton link must be a receiver");
+		}
+
 		if (this.converter == null) {
 			try {
 				this.converter = (MessageConverter<String, byte[]>) Bridge.instantiateConverter(this.bridgeConfigProperties.getAmqpConfigProperties().getMessageConverter());
@@ -126,11 +128,7 @@ public class SourceBridgeEndpoint implements BridgeEndpoint {
 				return;
 			}
 		}
-		
-		if (!(link instanceof ProtonReceiver)) {
-			throw new IllegalArgumentException("This Proton link must be a receiver");
-		}
-		
+
 		ProtonReceiver receiver = (ProtonReceiver)link;
 		
 		// the delivery state is related to the acknowledgement from Apache Kafka

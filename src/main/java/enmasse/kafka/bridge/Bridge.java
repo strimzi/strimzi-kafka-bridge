@@ -404,23 +404,50 @@ public class Bridge extends AbstractVerticle {
 
 		sink.handle(sender);
 	}
-	
+
+	/**
+	 * Create a new AMQP error condition
+	 *
+	 * @param error			AMQP error
+	 * @param description	description for the AMQP error condition
+	 * @return				AMQP error condition
+	 */
 	static ErrorCondition newError(String error, String description) {
 		return new ErrorCondition(Symbol.getSymbol(error), description);
 	}
-	
+
+	/**
+	 * Detach the provided link with a related error (and description)
+	 *
+	 * @param link			AMQP link to detach
+	 * @param error			AMQP error
+	 * @param description	description for the AMQP error condition
+	 */
 	static void detachWithError(ProtonLink<?> link, String error, String description) {
 		detachWithError(link, newError(error, description));
 	}
 
+	/**
+	 * Detach the provided link with an AMQP error condition
+	 *
+	 * @param link			AMQP link to detach
+	 * @param error			AMQP error condition
+	 */
 	static void detachWithError(ProtonLink<?> link, ErrorCondition error) {
-		LOG.error("Detaching link {} due to eror {}, description: {}", link, error.getCondition(), error.getDescription());
+		LOG.error("Detaching link {} due to error {}, description: {}", link, error.getCondition(), error.getDescription());
 		link.setSource(null)
 		.open()
 		.setCondition(error)
 		.close();
 	}
-	
+
+	/**
+	 * Instantiate and return an AMQP message converter
+	 *
+	 * @param className		message converter class name to instantiate
+	 * @return				an AMQP message converter instance
+	 * @throws ErrorConditionException
+	 */
 	static MessageConverter<?, ?> instantiateConverter(String className) throws ErrorConditionException {
 		
 		if (className == null || className.isEmpty()) {

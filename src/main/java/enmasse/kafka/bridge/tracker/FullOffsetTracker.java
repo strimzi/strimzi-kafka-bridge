@@ -44,9 +44,9 @@ public class FullOffsetTracker implements OffsetTracker {
 	 * The state of a partition
 	 */
 	private static class PartitionState {
-		/** Insertion-ordered map of offset to settlement */
+		// Insertion-ordered map of offset to settlement
 		public Map<Long, Boolean> settlements;
-		/** The current offset of this partition */
+		// The current offset of this partition
 		public long offset;
 		// has this message been received by remote AMQP peer
 		public boolean flag;

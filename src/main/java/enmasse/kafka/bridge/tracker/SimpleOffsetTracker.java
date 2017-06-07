@@ -32,9 +32,14 @@ import java.util.Map.Entry;
  */
 public class SimpleOffsetTracker implements OffsetTracker {
 
+	/**
+	 * The state of a partition
+	 */
 	private static class PartitionState {
+
 		public long offset;
 		public boolean changed;
+
 		public PartitionState(long offset, boolean changed) {
 			this.offset = offset;
 			this.changed = changed;
@@ -47,7 +52,7 @@ public class SimpleOffsetTracker implements OffsetTracker {
 	private Map<Integer, PartitionState> offsets;
 	
 	/**
-	 * Contructor
+	 * Constructor
 	 *
 	 * @param topic	topic to track offset
 	 */

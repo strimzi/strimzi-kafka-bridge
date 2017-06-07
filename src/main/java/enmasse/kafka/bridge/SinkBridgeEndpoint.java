@@ -16,27 +16,8 @@
 
 package enmasse.kafka.bridge;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Properties;
-
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.qpid.proton.amqp.Symbol;
-import org.apache.qpid.proton.amqp.messaging.Source;
-import org.apache.qpid.proton.amqp.transport.ErrorCondition;
-import org.apache.qpid.proton.message.Message;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
 import enmasse.kafka.bridge.config.KafkaConfigProperties;
-import enmasse.kafka.bridge.converter.DefaultMessageConverter;
 import enmasse.kafka.bridge.converter.MessageConverter;
 import enmasse.kafka.bridge.tracker.OffsetTracker;
 import enmasse.kafka.bridge.tracker.SimpleOffsetTracker;
@@ -52,6 +33,23 @@ import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonSender;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.qpid.proton.amqp.Symbol;
+import org.apache.qpid.proton.amqp.messaging.Source;
+import org.apache.qpid.proton.amqp.transport.ErrorCondition;
+import org.apache.qpid.proton.message.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Properties;
 
 import static java.lang.String.format;
 
@@ -229,17 +227,33 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 		}
 	}
 
-	private void sendProtonError(String error, String description, AsyncResult<?> result) {
-		sendProtonError(Bridge.newError(error,
+	/**
+	 * Send an AMQP error to the client
+	 *
+	 * @param error			AMQP error
+	 * @param description	description for the AMQP error
+	 * @param result		result as cause of the error
+	 */
+	private void sendAmqpError(String error, String description, AsyncResult<?> result) {
+		sendAmqpError(Bridge.newError(error,
 				description + (result.cause().getMessage() != null ? ": " + result.cause().getMessage() : "")));
 	}
-	
-	private void sendProtonError(ErrorCondition condition) {
+
+	/**
+	 * Send an AMQP error to the client
+	 *
+	 * @param condition		AMQP error condition
+	 */
+	private void sendAmqpError(ErrorCondition condition) {
 		Bridge.detachWithError(this.sender, condition);
 		this.close();
 		this.handleClose();
 	}
 
+	/**
+	 * When partitions are assigned, open the AMQP sender and start
+	 * handling records from the Kafka consumer
+	 */
 	private void partitionsAssigned() {
 		if (!this.sender.isOpen()) {
 			this.sender
@@ -249,10 +263,15 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 		this.consumer.handler(this::handleKafkaRecord);
 	}
 
-	private void protonSend(ConsumerRecord<K, V> record) {
+	/**
+	 * Send the receiver Kafka consumer record to the AMQP receiver
+	 *
+	 * @param record	Kafka consumer record
+	 */
+	private void sendAmqpMessage(ConsumerRecord<K, V> record) {
 		int partition = record.partition();
 		long offset = record.offset();
-		String deliveryTag = partition+"_"+offset;
+		String deliveryTag = partition + "_" + offset;
 		Message message = this.converter.toAmqpMessage(this.sender.getSource().getAddress(), record);
 		if (this.sender.getQoS() == ProtonQoS.AT_MOST_ONCE) {
 			
@@ -371,15 +390,20 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 			automaticPartitionAssignment();
 		}
 	}
-	
+
+	/**
+	 * Execute a request for assigning a specific partition
+	 *
+	 * @param partitionsResult	list of requested and assigned partitions
+	 */
 	void partitionsForHandler(AsyncResult<List<PartitionInfo>> partitionsResult) {
 		if (partitionsResult.failed()) {
-			sendProtonError(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE, 
+			sendAmqpError(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
 					"Error getting partition info for topic " + this.kafkaTopic, 
 					partitionsResult);
 			return;
 		}
-		LOG.debug("Getting partitions for " + this.kafkaTopic);
+		LOG.debug("Getting partitions for {}", this.kafkaTopic);
 		List<PartitionInfo> availablePartitions = partitionsResult.result();
 		Optional<PartitionInfo> requestedPartitionInfo = availablePartitions.stream().filter(p -> p.getPartition() == this.partition).findFirst();
 		
@@ -387,7 +411,7 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 			LOG.debug("Requested partition {} present", this.partition);
 			this.consumer.assign(Collections.singleton(new TopicPartition(this.kafkaTopic, this.partition)), assignResult-> {
 				if (assignResult.failed()) {
-					sendProtonError(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
+					sendAmqpError(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
 							"Error assigning to topic %s" + this.kafkaTopic, 
 							assignResult);
 					return;
@@ -400,7 +424,7 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 					
 					this.consumer.seek(new TopicPartition(this.kafkaTopic, this.partition), this.offset, seekResult ->{
 						if (seekResult.failed()) {
-							sendProtonError(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
+							sendAmqpError(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
 									format("Error seeking to offset %s for topic %s, partition %s",
 											this.offset, 
 											this.kafkaTopic,
@@ -416,11 +440,15 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 			});
 		} else {
 			LOG.warn("Requested partition {} doesn't exist", this.partition);
-			sendProtonError(Bridge.newError(Bridge.AMQP_ERROR_PARTITION_NOT_EXISTS,
+			sendAmqpError(Bridge.newError(Bridge.AMQP_ERROR_PARTITION_NOT_EXISTS,
 					"Specified partition doesn't exist"));
 		}
 	}
 
+	/**
+	 * Setup the automatic revoke and assign partitions (due to rebalancing)
+	 * and start the subscription request for a topic
+	 */
 	private void automaticPartitionAssignment() {
 		this.consumer.partitionsRevokedHandler(partitions -> {
 			
@@ -452,15 +480,15 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 					}
 				}
 			} else {
-				sendProtonError(Bridge.newError(Bridge.AMQP_ERROR_NO_PARTITIONS,
+				sendAmqpError(Bridge.newError(Bridge.AMQP_ERROR_NO_PARTITIONS,
 						"All partitions already have a receiver"));
 			}
 		});
 		
 		this.consumer.subscribe(this.kafkaTopic, subscribeResult-> {
 			if (subscribeResult.failed()) {
-				sendProtonError(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
-						"Error subscribing to topic "+this.kafkaTopic, 
+				sendAmqpError(Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
+						"Error subscribing to topic " + this.kafkaTopic,
 						subscribeResult);
 				return;
 			}
@@ -471,6 +499,7 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 	
 	/**
 	 * Callback to process a kafka record
+	 *
 	 * @param record The record
 	 */
 	private void handleKafkaRecord(KafkaConsumerRecord<K, V> record) {
@@ -478,57 +507,56 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 				record.key(), record.value(), record.partition(), record.offset());
 		
 		switch (this.qos){
-		case AT_MOST_ONCE:
-			// Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
-			if (startOfBatch()) {
-				LOG.debug("Start of batch in {} mode => commit()", this.qos);
-				// when start of batch we need to commit, but need to prevent processind any 
-				// more messages while we do, so... 
-				// 1. pause()
-				this.consumer.pause();
-				// 2. do the commit()
-				this.consumer.commit(ar -> {
-					if (ar.failed()) {
-						LOG.error("Error committing ... {}", ar.cause().getMessage());
-						ErrorCondition condition =
-								new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_COMMIT),
-										"Error in commit");
-						sendProtonError(condition);
-					} else {
-						// 3. start message sending
-						protonSend(record.record());
-						// 4 resume processing messages
-						this.consumer.resume();
-					}
-				});
-			} else {
-				// Otherwise: immediate send because the record's already committed
-				protonSend(record.record());
-			}
-			break;
-		case AT_LEAST_ONCE:
-			// Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit
-			
-			LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
-			
-			// 1. start message sending
-			protonSend(record.record());
-			
-			if (endOfBatch()) {
-				LOG.debug("End of batch in {} mode => commitOffsets()", this.qos);
-				try {
-					// 2. commit all tracked offsets for partitions
-					commitOffsets(false);
-				} catch (Exception e) {
-					LOG.error("Error committing ... {}", e.getMessage());
+
+			case AT_MOST_ONCE:
+				// Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
+				if (startOfBatch()) {
+					LOG.debug("Start of batch in {} mode => commit()", this.qos);
+					// when start of batch we need to commit, but need to prevent processind any
+					// more messages while we do, so...
+					// 1. pause()
+					this.consumer.pause();
+					// 2. do the commit()
+					this.consumer.commit(ar -> {
+						if (ar.failed()) {
+							LOG.error("Error committing ... {}", ar.cause().getMessage());
+							ErrorCondition condition =
+									new ErrorCondition(Symbol.getSymbol(Bridge.AMQP_ERROR_KAFKA_COMMIT),
+											"Error in commit");
+							sendAmqpError(condition);
+						} else {
+							// 3. start message sending
+							sendAmqpMessage(record.record());
+							// 4 resume processing messages
+							this.consumer.resume();
+						}
+					});
+				} else {
+					// Otherwise: immediate send because the record's already committed
+					sendAmqpMessage(record.record());
 				}
-			}
-			
-			break;
+				break;
+
+			case AT_LEAST_ONCE:
+				// Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit
+
+				LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
+
+				// 1. start message sending
+				sendAmqpMessage(record.record());
+
+				if (endOfBatch()) {
+					LOG.debug("End of batch in {} mode => commitOffsets()", this.qos);
+					try {
+						// 2. commit all tracked offsets for partitions
+						commitOffsets(false);
+					} catch (Exception e) {
+						LOG.error("Error committing ... {}", e.getMessage());
+					}
+				}
+				break;
 		}
 		this.recordIndex++;
-		
-		
 	}
 
 	private boolean endOfBatch() {
@@ -538,7 +566,12 @@ public class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 	private boolean startOfBatch() {
 		return this.recordIndex == 0;
 	}
-	
+
+	/**
+	 * Callback to process a kafka records batch
+	 *
+	 * @param records The records batch
+	 */
 	private void handleKafkaBatch(KafkaConsumerRecords<K, V> records) {
 		this.recordIndex = 0;
 		this.batchSize = records.size();
