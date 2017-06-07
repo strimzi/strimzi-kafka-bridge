@@ -12,7 +12,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
-		<kafka.version>0.10.1.0</kafka.version>
+		<kafka.version>0.10.2.1</kafka.version>
 		<slf4j-log4j12.version>1.7.18</slf4j-log4j12.version>
 		<log4j.version>1.2.17</log4j.version>
 		<vertx-proton.version>3.4.2-SNAPSHOT</vertx-proton.version>
@@ -20,7 +20,7 @@
 		<junit.version>4.12</junit.version>
 		<vertx-unit.version>3.2.1</vertx-unit.version>
 		<spring-boot.version>1.4.2.RELEASE</spring-boot.version>
-		<debezium.version>0.4.0</debezium.version>
+		<debezium.version>0.5.0</debezium.version>
 
 	</properties>
 
@@ -89,7 +89,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
-			<artifactId>kafka_2.11</artifactId>
+			<artifactId>kafka_2.12</artifactId>
 			<version>${kafka.version}</version>
 			<scope>test</scope>
 		</dependency>
