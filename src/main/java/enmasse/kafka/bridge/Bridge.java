@@ -91,6 +91,9 @@ public class Bridge extends AbstractVerticle {
 
 	private BridgeConfigProperties bridgeConfigProperties;
 
+	// if the bridge is ready to handle requests
+	private boolean isReady = false;
+
 	@Autowired
 	public void setBridgeConfigProperties(BridgeConfigProperties bridgeConfigProperties) {
 		this.bridgeConfigProperties = bridgeConfigProperties;
@@ -115,6 +118,7 @@ public class Bridge extends AbstractVerticle {
 						LOG.info("Kafka bootstrap servers {}",
 								this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
 
+						this.isReady = true;
 						this.startHealthServer();
 
 						startFuture.complete();
@@ -131,6 +135,10 @@ public class Bridge extends AbstractVerticle {
 	 * @param startFuture
 	 */
 	private void connectAmqpClient(Future<Void> startFuture) {
+
+		// the health server starts before connection is made to an AMQP server/router
+		// because the bridge is already alive but not ready yet
+		this.startHealthServer();
 
 		this.client = ProtonClient.create(this.vertx);
 
@@ -152,7 +160,7 @@ public class Bridge extends AbstractVerticle {
 				LOG.info("Kafka bootstrap servers {}",
 						this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
 
-				this.startHealthServer();
+				this.isReady = true;
 
 				startFuture.complete();
 
@@ -183,6 +191,8 @@ public class Bridge extends AbstractVerticle {
 	public void stop(Future<Void> stopFuture) throws Exception {
 
 		LOG.info("Stopping AMQP-Kafka bridge verticle ...");
+
+		this.isReady = false;
 
 		// for each connection, we have to close the connection itself but before that
 		// all the sink/source endpoints (so the related links inside each of them)
@@ -219,7 +229,17 @@ public class Bridge extends AbstractVerticle {
 	private void startHealthServer() {
 
 		this.vertx.createHttpServer()
-				.requestHandler(request -> request.response().setStatusCode(HttpResponseStatus.OK.code()).end())
+				.requestHandler(request -> {
+
+					if (request.path().equals("/health")) {
+						request.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+					} else if (request.path().equals("/ready")) {
+						HttpResponseStatus httpResponseStatus = isReady ?
+								HttpResponseStatus.OK :
+								HttpResponseStatus.NOT_FOUND;
+						request.response().setStatusCode(httpResponseStatus.code()).end();
+					}
+				})
 				.listen(HEALTH_SERVER_PORT);
 	}
 	
