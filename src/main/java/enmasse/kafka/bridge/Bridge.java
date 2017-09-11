@@ -16,6 +16,7 @@
 
 package enmasse.kafka.bridge;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,6 +44,8 @@ import io.vertx.proton.ProtonSender;
 import io.vertx.proton.ProtonServer;
 import io.vertx.proton.ProtonServerOptions;
 import io.vertx.proton.ProtonSession;
+import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.PemTrustOptions;
 
 /**
  * Main bridge class listening for connections
@@ -267,6 +270,20 @@ public class Bridge extends AbstractVerticle {
 		ProtonClientOptions options = new ProtonClientOptions();
 		options.setConnectTimeout(1000);
 		options.setReconnectAttempts(-1).setReconnectInterval(1000); // reconnect forever, every 200 millisecs
+
+		if (this.bridgeConfigProperties.getAmqpConfigProperties().getCertDir() != null && this.bridgeConfigProperties.getAmqpConfigProperties().getCertDir().length() > 0) {
+			String certDir = this.bridgeConfigProperties.getAmqpConfigProperties().getCertDir();
+			LOG.info("Enabling SSL configuration for AMQP with TLS certificates from {}", certDir);
+			options.setSsl(true)
+					.addEnabledSaslMechanism("EXTERNAL")
+					.setHostnameVerificationAlgorithm("")
+					.setPemTrustOptions(new PemTrustOptions()
+							.addCertPath(new File(certDir, "ca.crt").getAbsolutePath()))
+					.setPemKeyCertOptions(new PemKeyCertOptions()
+							.addCertPath(new File(certDir, "tls.crt").getAbsolutePath())
+							.addKeyPath(new File(certDir, "tls.key").getAbsolutePath()));
+		}
+
 		return options;
 	}
 	
