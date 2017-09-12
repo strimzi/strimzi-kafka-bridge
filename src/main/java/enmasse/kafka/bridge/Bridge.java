@@ -269,7 +269,7 @@ public class Bridge extends AbstractVerticle {
 
 		ProtonClientOptions options = new ProtonClientOptions();
 		options.setConnectTimeout(1000);
-		options.setReconnectAttempts(-1).setReconnectInterval(1000); // reconnect forever, every 200 millisecs
+		options.setReconnectAttempts(-1).setReconnectInterval(1000); // reconnect forever, every 1000 millisecs
 
 		if (this.bridgeConfigProperties.getAmqpConfigProperties().getCertDir() != null && this.bridgeConfigProperties.getAmqpConfigProperties().getCertDir().length() > 0) {
 			String certDir = this.bridgeConfigProperties.getAmqpConfigProperties().getCertDir();
