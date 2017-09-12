@@ -31,12 +31,14 @@ public class AmqpConfigProperties {
     private static final int DEFAULT_PORT = 5672;
     private static final int DEFAULT_FLOW_CREDIT = 1024;
     private static final String DEFAULT_MESSAGE_CONVERTER = "enmasse.kafka.bridge.converter.DefaultMessageConverter";
+    private static final String DEFAULT_CERT_DIR = null;
 
     private AmqpMode mode = DEFAULT_AMQP_MODE;
     private int flowCredit = DEFAULT_FLOW_CREDIT;
     private String host = DEFAULT_HOST;
     private int port = DEFAULT_PORT;
     private String messageConverter = DEFAULT_MESSAGE_CONVERTER;
+    private String certDir = DEFAULT_CERT_DIR;
 
     /**
      * Get the AMQP receiver flow credit
@@ -134,6 +136,26 @@ public class AmqpConfigProperties {
      */
     public AmqpConfigProperties setMessageConverter(String messageConverter) {
         this.messageConverter = messageConverter;
+        return this;
+    }
+
+    /**
+     * Get the directory with the TLS certificates files
+     *
+     * @return
+     */
+    public String getCertDir() {
+        return this.certDir;
+    }
+
+    /**
+     * Set the directory with the TLS certificates files
+     *
+     * @param certDir  Path to the TLS certificate files
+     * @return  this instance for setter chaining
+     */
+    public AmqpConfigProperties setCertDir(String certDir) {
+        this.certDir = certDir;
         return this;
     }
 }
