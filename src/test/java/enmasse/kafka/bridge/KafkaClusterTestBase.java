@@ -18,7 +18,9 @@ package enmasse.kafka.bridge;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Properties;
 
+import kafka.server.KafkaConfig;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -39,7 +41,10 @@ public class KafkaClusterTestBase {
       throw new IllegalStateException();
     }
     dataDir = Testing.Files.createTestingDirectory("cluster");
-    kafkaCluster = new KafkaCluster().usingDirectory(dataDir).withPorts(2181, 9092);
+    Properties kafkaConfig = new Properties();
+    // TODO : to remove when moving to new Debezium 0.7.0 (https://github.com/debezium/debezium/pull/358)
+    kafkaConfig.setProperty(KafkaConfig.LogFlushIntervalMessagesProp(), String.valueOf(Long.MAX_VALUE));
+    kafkaCluster = new KafkaCluster().usingDirectory(dataDir).withPorts(2181, 9092).withKafkaConfiguration(kafkaConfig);
     return kafkaCluster;
   }
 

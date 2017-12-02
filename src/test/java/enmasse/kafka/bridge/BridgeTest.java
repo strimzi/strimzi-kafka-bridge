@@ -26,6 +26,7 @@ import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.Symbol;
@@ -47,6 +48,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RunWith(VertxUnitRunner.class)
 public class BridgeTest extends KafkaClusterTestBase {
@@ -492,32 +494,37 @@ public class BridgeTest extends KafkaClusterTestBase {
 	public void receiveSimpleMessageFromPartitionAndOffset(TestContext context) {
 		String topic = "receiveSimpleMessageFromPartitionAndOffset";
 		kafkaCluster.createTopic(topic, 1, 1);
-		sendSimpleMessages(context, topic, 11);
+
+		Async batch = context.async();
+		AtomicInteger index = new AtomicInteger();
+		kafkaCluster.useTo().produceStrings(11, batch::complete,  () ->
+				new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
+		batch.awaitSuccess(10000);
 
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
 		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
-				
+
 				ProtonConnection connection = ar.result();
 				connection.open();
-				
+
 				ProtonReceiver receiver = connection.createReceiver(topic + "/group.id/my_group");
-				
+
 				Source source = (Source)receiver.getSource();
-				
+
 				// filter on specific partition
 				Map<Symbol, Object> map = new HashMap<>();
 				map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_FILTER), 0);
 				map.put(Symbol.valueOf(Bridge.AMQP_OFFSET_FILTER), (long)10);
 				source.setFilter(map);
-				
+
 				receiver.handler((delivery, message) -> {
-					
+
 					Long offset = (Long)message.getMessageAnnotations().getValue().get(Symbol.getSymbol(Bridge.AMQP_OFFSET_ANNOTATION));
 					context.assertEquals(10L, offset);
-					
+
 					Section body = message.getBody();
 					if (body instanceof Data) {
 						byte[] value = ((Data)body).getValue().getArray();
