@@ -175,6 +175,9 @@ public class BridgeTest extends KafkaClusterTestBase {
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
 					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+
+					sender.close();
+					connection.close();
 				});
 			} else {
 				context.fail(ar.cause());
@@ -199,7 +202,27 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
 
-				Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
+				String body = "Simple message from " + connection.getContainer();
+				Message message = ProtonHelper.message(topic, body);
+
+				Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+				config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+				config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+
+				KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
+				consumer.handler(record -> {
+					context.assertEquals(record.value(), body);
+					context.assertEquals(record.key(), "my_key");
+					LOG.info("Message consumed topic={} partitio={} offset={}, key={}, value={}",
+							record.topic(), record.partition(), record.offset(), record.key(), record.value());
+					consumer.close();
+					async.complete();
+				});
+				consumer.subscribe(topic, done -> {
+					if (!done.succeeded()) {
+						context.fail(done.cause());
+					}
+				});
 				
 				// sending with a key
 				Map<Symbol, Object> map = new HashMap<>();
@@ -210,8 +233,12 @@ public class BridgeTest extends KafkaClusterTestBase {
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
 					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
-					async.complete();
+
+					sender.close();
+					connection.close();
 				});
+			} else {
+				context.fail(ar.cause());
 			}
 		});
 	}
