@@ -125,8 +125,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 	public void sendSimpleMessageToPartition(TestContext context) {
 		String topic = "sendSimpleMessageToPartition";
 		kafkaCluster.createTopic(topic, 1, 1);
-		//String topic = "my_topic";
-		
+
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
@@ -172,8 +171,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 				
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
-				
-				
+
 				Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
 				
 				// sending with a key
@@ -375,7 +373,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 	public void sendReceiveInMultiplexing(TestContext context) {
 		String topic = "sendReceiveInMultiplexing";
 		kafkaCluster.createTopic(topic, 1, 1);
-		sendSimpleMessage(context, topic);
+
 		ProtonClient client = ProtonClient.create(this.vertx);
 
 		Async async = context.async();
@@ -386,16 +384,19 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonConnection connection = ar.result();
 				connection.open();
 
-				ProtonReceiver receiver = connection.createReceiver(topic+"/group.id/my_group");
-				receiver.handler((delivery, message) -> {
+				String sentBody = "Simple message from " + connection.getContainer();
+				Message sentMessage = ProtonHelper.message(topic, sentBody);
 
-					Section body = message.getBody();
-					if (body instanceof Data) {
-						byte[] value = ((Data)body).getValue().getArray();
+				ProtonReceiver receiver = connection.createReceiver(topic+"/group.id/my_group");
+				receiver.handler((delivery, receivedMessage) -> {
+
+					Section receivedBody = receivedMessage.getBody();
+					if (receivedBody instanceof Data) {
+						byte[] value = ((Data)receivedBody).getValue().getArray();
 						LOG.info("Message received {}", new String(value));
 						// default is AT_LEAST_ONCE QoS (unsettled) so we need to send disposition (settle) to sender
 						delivery.disposition(Accepted.getInstance(), true);
-						context.assertTrue(true);
+						context.assertEquals(sentBody, new String(value));
 						async.complete();
 					}
 				})
@@ -405,9 +406,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
 
-				Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
-
-				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
+				sender.send(ProtonHelper.tag("my_tag"), sentMessage, delivery -> {
 					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 				});
