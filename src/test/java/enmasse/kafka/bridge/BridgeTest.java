@@ -21,12 +21,16 @@ import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.proton.ProtonClient;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.Symbol;
@@ -48,6 +52,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @RunWith(VertxUnitRunner.class)
@@ -124,7 +129,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 	@Test
 	public void sendSimpleMessageToPartition(TestContext context) {
 		String topic = "sendSimpleMessageToPartition";
-		kafkaCluster.createTopic(topic, 1, 1);
+		kafkaCluster.createTopic(topic, 2, 1);
 
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
@@ -137,20 +142,42 @@ public class BridgeTest extends KafkaClusterTestBase {
 				
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
+
+				String body = "Simple message from " + connection.getContainer();
+				Message message = ProtonHelper.message(topic, body);
+
+				Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+				config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+				config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+
+				KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
+				consumer.handler(record -> {
+					context.assertEquals(record.value(), body);
+					// checking the right partition which should not be just the first one (0)
+					context.assertEquals(record.partition(), 1);
+					LOG.info("Message consumed topic={} partitio={} offset={}, key={}, value={}",
+							record.topic(), record.partition(), record.offset(), record.key(), record.value());
+					consumer.close();
+					async.complete();
+				});
+				consumer.subscribe(topic, done -> {
+					if (!done.succeeded()) {
+						context.fail(done.cause());
+					}
+				});
 				
-				Message message = ProtonHelper.message(topic, "Simple message from " + connection.getContainer());
-				
-				// sending on specified partition
+				// sending on specified partition (1)
 				Map<Symbol, Object> map = new HashMap<>();
-				map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION), 0);
+				map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION), 1);
 				MessageAnnotations messageAnnotations = new MessageAnnotations(map);
 				message.setMessageAnnotations(messageAnnotations);
-				
+
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
 					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
-					async.complete();
 				});
+			} else {
+				context.fail(ar.cause());
 			}
 		});
 	}
