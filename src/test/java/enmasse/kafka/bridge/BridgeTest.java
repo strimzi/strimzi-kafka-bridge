@@ -30,6 +30,7 @@ import io.vertx.proton.ProtonSender;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.Binary;
@@ -49,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -261,6 +263,22 @@ public class BridgeTest extends KafkaClusterTestBase {
 				sender.open();
 				
 				String value = "Binary message from " + connection.getContainer();
+
+				Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+				config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+				config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class);
+
+				KafkaConsumer<String, byte[]> consumer = KafkaConsumer.create(this.vertx, config);
+				consumer.handler(record -> {
+					context.assertTrue(Arrays.equals(record.value(), value.getBytes()));
+					consumer.close();
+					async.complete();
+				});
+				consumer.subscribe(topic, done -> {
+					if (!done.succeeded()) {
+						context.fail(done.cause());
+					}
+				});
 				
 				Message message = Proton.message();
 				message.setAddress(topic);
@@ -269,8 +287,12 @@ public class BridgeTest extends KafkaClusterTestBase {
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
 					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
-					async.complete();
+
+					sender.close();
+					connection.close();
 				});
+			} else {
+				context.fail(ar.cause());
 			}
 		});
 	}
