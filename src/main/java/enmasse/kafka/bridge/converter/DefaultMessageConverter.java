@@ -28,7 +28,6 @@ import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.message.Message;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,20 +66,23 @@ public class DefaultMessageConverter implements MessageConverter<String, byte[]>
 				// encoded as a List
 				} else if (amqpValue instanceof List) {
 					List<?> list = (List<?>)((AmqpValue) body).getValue();
-					value = list.toString().getBytes();
+					DefaultSerializer<List<?>> serializer = new DefaultSerializer<>();
+					value = serializer.serialize(kafkaTopic, list);
 				// encoded as an array
 				} else if (amqpValue instanceof Object[]) {
 					Object[] array = (Object[])((AmqpValue)body).getValue();
-					value = Arrays.toString(array).getBytes();
+					DefaultSerializer<Object[]> serializer = new DefaultSerializer<>();
+					value = serializer.serialize(kafkaTopic, array);
 				// encoded as a Map
 				} else if (amqpValue instanceof Map) {
 					Map<?,?> map = (Map<?,?>)((AmqpValue)body).getValue();
-					value = map.toString().getBytes();
+					DefaultSerializer<Map<?,?>> serializer = new DefaultSerializer<>();
+					value = serializer.serialize(kafkaTopic, map);
 				}
 			
 			// section is Data (binary)
 			} else if (body instanceof Data) {
-				Binary binary = (Binary)((Data)body).getValue();
+				Binary binary = ((Data)body).getValue();
 				value = binary.getArray();
 			}
 		}

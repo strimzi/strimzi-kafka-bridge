@@ -17,6 +17,7 @@
 package enmasse.kafka.bridge;
 
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
+import enmasse.kafka.bridge.converter.DefaultDeserializer;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -49,6 +50,9 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -313,9 +317,28 @@ public class BridgeTest extends KafkaClusterTestBase {
 				
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
-				
+
 				// send an array (i.e. integer values)
 				Object[] array = { 1, 2 };
+
+				Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+				config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+				config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
+
+				KafkaConsumer<String, Object[]> consumer = KafkaConsumer.create(this.vertx, config);
+				consumer.handler(record -> {
+					LOG.info("Message consumed topic={} partitio={} offset={}, key={}, value={}",
+							record.topic(), record.partition(), record.offset(), record.key(), record.value());
+					context.assertTrue(Arrays.equals(record.value(), array));
+					consumer.close();
+					async.complete();
+				});
+				consumer.subscribe(topic, done -> {
+					if (!done.succeeded()) {
+						context.fail(done.cause());
+					}
+				});
+
 				Message message = Proton.message();
 				message.setAddress(topic);
 				message.setBody(new AmqpValue(array));
@@ -323,7 +346,6 @@ public class BridgeTest extends KafkaClusterTestBase {
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
 					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
-					async.complete();
 				});
 			}
 		});
@@ -345,11 +367,30 @@ public class BridgeTest extends KafkaClusterTestBase {
 				
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
-				
+
 				// send a list with mixed values (i.e. string, integer)
 				List<Object> list = new ArrayList<>();
 				list.add("item1");
 				list.add(2);
+
+				Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+				config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+				config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
+
+				KafkaConsumer<String, List<Object>> consumer = KafkaConsumer.create(this.vertx, config);
+				consumer.handler(record -> {
+					LOG.info("Message consumed topic={} partitio={} offset={}, key={}, value={}",
+							record.topic(), record.partition(), record.offset(), record.key(), record.value());
+					context.assertTrue(record.value().equals(list));
+					consumer.close();
+					async.complete();
+				});
+				consumer.subscribe(topic, done -> {
+					if (!done.succeeded()) {
+						context.fail(done.cause());
+					}
+				});
+
 				Message message = Proton.message();
 				message.setAddress(topic);
 				message.setBody(new AmqpValue(list));
@@ -357,7 +398,6 @@ public class BridgeTest extends KafkaClusterTestBase {
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
 					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
-					async.complete();
 				});
 			}
 		});
@@ -379,11 +419,30 @@ public class BridgeTest extends KafkaClusterTestBase {
 				
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
-				
+
 				// send a map with mixed keys and values (i.e. string, integer)
 				Map<Object, Object> map = new HashMap<>();
 				map.put("1", 10);
 				map.put(2, "Hello");
+
+				Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+				config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+				config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
+
+				KafkaConsumer<String, Map<Object, Object>> consumer = KafkaConsumer.create(this.vertx, config);
+				consumer.handler(record -> {
+					LOG.info("Message consumed topic={} partitio={} offset={}, key={}, value={}",
+							record.topic(), record.partition(), record.offset(), record.key(), record.value());
+					context.assertTrue(record.value().equals(map));
+					consumer.close();
+					async.complete();
+				});
+				consumer.subscribe(topic, done -> {
+					if (!done.succeeded()) {
+						context.fail(done.cause());
+					}
+				});
+
 				Message message = Proton.message();
 				message.setAddress(topic);
 				message.setBody(new AmqpValue(map));
@@ -391,7 +450,6 @@ public class BridgeTest extends KafkaClusterTestBase {
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
 					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
-					async.complete();
 				});
 			}
 		});
