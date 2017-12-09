@@ -87,6 +87,12 @@ public class BridgeTest extends KafkaClusterTestBase {
 
 		this.vertx.deployVerticle(this.bridge, context.asyncAssertSuccess());
 	}
+
+	@After
+	public void after(TestContext context) {
+
+		this.vertx.close(context.asyncAssertSuccess());
+	}
 	
 	@Test
 	public void sendSimpleMessages(TestContext context) {
@@ -792,11 +798,5 @@ public class BridgeTest extends KafkaClusterTestBase {
 				context.fail(ar.cause());
 			}
 		});
-	}
-	
-	@After
-	public void after(TestContext context) {
-		
-		this.vertx.close(context.asyncAssertSuccess());
 	}
 }

@@ -33,29 +33,40 @@ import io.vertx.ext.unit.TestContext;
  */
 public class KafkaClusterTestBase {
 
+  protected static final int ZOOKEEPER_PORT = 2181;
+  protected static final int KAFKA_PORT = 9092;
+  protected static final String DATA_DIR = "cluster";
+
   private static File dataDir;
   protected static KafkaCluster kafkaCluster;
 
   protected static KafkaCluster kafkaCluster() {
+
     if (kafkaCluster != null) {
       throw new IllegalStateException();
     }
-    dataDir = Testing.Files.createTestingDirectory("cluster");
-    Properties kafkaConfig = new Properties();
+    dataDir = Testing.Files.createTestingDirectory(DATA_DIR);
+
     // TODO : to remove when moving to new Debezium 0.7.0 (https://github.com/debezium/debezium/pull/358)
+    Properties kafkaConfig = new Properties();
     kafkaConfig.setProperty(KafkaConfig.LogFlushIntervalMessagesProp(), String.valueOf(Long.MAX_VALUE));
-    kafkaCluster = new KafkaCluster().usingDirectory(dataDir).withPorts(2181, 9092).withKafkaConfiguration(kafkaConfig);
+    kafkaCluster =
+            new KafkaCluster()
+                    .usingDirectory(dataDir)
+                    .withPorts(ZOOKEEPER_PORT, KAFKA_PORT)
+                    .withKafkaConfiguration(kafkaConfig);
     return kafkaCluster;
   }
 
   @BeforeClass
-  public static void setUp(TestContext ctx) throws IOException {
+  public static void setUp(TestContext context) throws IOException {
     kafkaCluster = kafkaCluster().deleteDataPriorToStartup(true).addBrokers(1).startup();
   }
 
 
   @AfterClass
-  public static void tearDown(TestContext ctx) {
+  public static void tearDown(TestContext context) {
+
     if (kafkaCluster != null) {
       kafkaCluster.shutdown();
       kafkaCluster = null;
