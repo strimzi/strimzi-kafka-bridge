@@ -347,6 +347,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 				});
+			} else {
+				context.fail(ar.cause());
 			}
 		});
 	}
@@ -399,6 +401,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 				});
+			} else {
+				context.fail(ar.cause());
 			}
 		});
 	}
@@ -451,6 +455,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 					LOG.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 				});
+			} else {
+				context.fail(ar.cause());
 			}
 		});
 	}
@@ -483,8 +489,14 @@ public class BridgeTest extends KafkaClusterTestBase {
 					} else {
 						
 						if (++this.count <= BridgeTest.PERIODIC_MAX_MESSAGE) {
-						
+
+							// sending with a key
+							Map<Symbol, Object> map = new HashMap<>();
+							map.put(Symbol.valueOf(Bridge.AMQP_KEY_ANNOTATION), "key-" + this.count);
+							MessageAnnotations messageAnnotations = new MessageAnnotations(map);
+
 							Message message = ProtonHelper.message(topic, "Periodic message [" + this.count + "] from " + connection.getContainer());
+							message.setMessageAnnotations(messageAnnotations);
 							
 							sender.send(ProtonHelper.tag("my_tag_" + String.valueOf(this.count)), message, delivery -> {
 								LOG.info("Message delivered {}", delivery.getRemoteState());
@@ -499,6 +511,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 						}
 					}
 				});
+			} else {
+				context.fail(ar.cause());
 			}
 		});
 	}
@@ -545,6 +559,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 				});
 
+			} else {
+				context.fail(ar.cause());
 			}
 		});
 	}
@@ -578,6 +594,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 				})
 				.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit())
 				.open();
+			} else {
+				context.fail(ar.cause());
 			}
 		});
 	}
@@ -619,6 +637,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 				})
 				.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit())
 				.open();
+			} else {
+				context.fail(ar.cause());
 			}
 		});
 	}
@@ -670,6 +690,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 				})
 				.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit())
 				.open();
+			} else {
+				context.fail(ar.cause());
 			}
 		});
 	}
