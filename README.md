@@ -58,7 +58,8 @@ _[topic]/group.id/[group.id]_
 where _[group.id]_ is the consumer group identifier as needed by Apache Kafka.
 The returned AMQP message contains the Apache Kafka provided message inside its body adding the following message annotations :
 
-* _x-opt-bridge.partition_ : the topic partition on which the message was read;
+* _x-opt-bridge.topic_ : the topic from which the message was read;
+* _x-opt-bridge.partition_ : the topic partition from which the message was read;
 * _x-opt-bridge.offset_ : the message offset inside the partition;
 * _x-opt-bridge.key_ : the message key (used to determine the partition at sending time);
 
