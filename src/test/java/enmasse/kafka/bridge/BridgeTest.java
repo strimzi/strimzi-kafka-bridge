@@ -23,6 +23,7 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.proton.ProtonClient;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonHelper;
@@ -50,9 +51,6 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -161,7 +159,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 					context.assertEquals(record.value(), body);
 					// checking the right partition which should not be just the first one (0)
 					context.assertEquals(record.partition(), 1);
-					LOG.info("Message consumed topic={} partitio={} offset={}, key={}, value={}",
+					LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 							record.topic(), record.partition(), record.offset(), record.key(), record.value());
 					consumer.close();
 					async.complete();
@@ -219,7 +217,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 				consumer.handler(record -> {
 					context.assertEquals(record.value(), body);
 					context.assertEquals(record.key(), "my_key");
-					LOG.info("Message consumed topic={} partitio={} offset={}, key={}, value={}",
+					LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 							record.topic(), record.partition(), record.offset(), record.key(), record.value());
 					consumer.close();
 					async.complete();
@@ -327,7 +325,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 
 				KafkaConsumer<String, Object[]> consumer = KafkaConsumer.create(this.vertx, config);
 				consumer.handler(record -> {
-					LOG.info("Message consumed topic={} partitio={} offset={}, key={}, value={}",
+					LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 							record.topic(), record.partition(), record.offset(), record.key(), record.value());
 					context.assertTrue(Arrays.equals(record.value(), array));
 					consumer.close();
@@ -381,7 +379,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 
 				KafkaConsumer<String, List<Object>> consumer = KafkaConsumer.create(this.vertx, config);
 				consumer.handler(record -> {
-					LOG.info("Message consumed topic={} partitio={} offset={}, key={}, value={}",
+					LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 							record.topic(), record.partition(), record.offset(), record.key(), record.value());
 					context.assertTrue(record.value().equals(list));
 					consumer.close();
@@ -435,7 +433,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 
 				KafkaConsumer<String, Map<Object, Object>> consumer = KafkaConsumer.create(this.vertx, config);
 				consumer.handler(record -> {
-					LOG.info("Message consumed topic={} partitio={} offset={}, key={}, value={}",
+					LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 							record.topic(), record.partition(), record.offset(), record.key(), record.value());
 					context.assertTrue(record.value().equals(map));
 					consumer.close();
@@ -477,6 +475,26 @@ public class BridgeTest extends KafkaClusterTestBase {
 				
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
+
+				Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+				config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+				config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+
+				KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
+				consumer.batchHandler(records -> {
+
+					context.assertEquals(this.count, records.size());
+					for (int i = 0; i < records.size(); i++) {
+						KafkaConsumerRecord<String, String> record = records.recordAt(i);
+						LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+								record.topic(), record.partition(), record.offset(), record.key(), record.value());
+						context.assertEquals("key-" + i, record.key());
+					}
+
+					consumer.close();
+					async.complete();
+				});
+				consumer.handler(record -> {});
 				
 				this.count = 0;
 				
@@ -488,7 +506,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 						context.assertTrue(false);
 					} else {
 						
-						if (++this.count <= BridgeTest.PERIODIC_MAX_MESSAGE) {
+						if (this.count < BridgeTest.PERIODIC_MAX_MESSAGE) {
 
 							// sending with a key
 							Map<Symbol, Object> map = new HashMap<>();
@@ -502,12 +520,18 @@ public class BridgeTest extends KafkaClusterTestBase {
 								LOG.info("Message delivered {}", delivery.getRemoteState());
 								context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 							});
+
+							this.count++;
 							
 						} else {
 							this.vertx.cancelTimer(timerId);
-							// test success and completed
-							context.assertTrue(true);
-							async.complete();
+
+							// subscribe Kafka consumer for getting messages
+							consumer.subscribe(topic, done -> {
+								if (!done.succeeded()) {
+									context.fail(done.cause());
+								}
+							});
 						}
 					}
 				});
