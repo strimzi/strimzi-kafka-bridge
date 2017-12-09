@@ -609,7 +609,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonConnection connection = ar.result();
 				connection.open();
 				
-				ProtonReceiver receiver = connection.createReceiver(topic+"/group.id/my_group");
+				ProtonReceiver receiver = connection.createReceiver(topic + "/group.id/my_group");
 				receiver.handler((delivery, message) -> {
 					
 					Section body = message.getBody();
@@ -748,16 +748,32 @@ public class BridgeTest extends KafkaClusterTestBase {
 
 				receiver.handler((delivery, message) -> {
 
-					Long offset = (Long)message.getMessageAnnotations().getValue().get(Symbol.getSymbol(Bridge.AMQP_OFFSET_ANNOTATION));
-					context.assertEquals(10L, offset);
-
 					Section body = message.getBody();
 					if (body instanceof Data) {
 						byte[] value = ((Data)body).getValue().getArray();
-						LOG.info("Message received {}", new String(value));
+
 						// default is AT_LEAST_ONCE QoS (unsettled) so we need to send disposition (settle) to sender
 						delivery.disposition(Accepted.getInstance(), true);
-						context.assertTrue(true);
+
+						// get topic, partition, offset and key from AMQP annotations
+						MessageAnnotations annotations = message.getMessageAnnotations();
+						context.assertNotNull(annotations);
+						String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_TOPIC_ANNOTATION)));
+						context.assertNotNull(topicAnnotation);
+						Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION));
+						context.assertNotNull(partitionAnnotation);
+						Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_OFFSET_ANNOTATION));
+						context.assertNotNull(offsetAnnotation);
+						Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_KEY_ANNOTATION));
+						context.assertNotNull(keyAnnotation);
+						LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+								topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
+
+						context.assertEquals(topicAnnotation, topic);
+						context.assertEquals(partitionAnnotation, 0);
+						context.assertEquals(offsetAnnotation, 10L);
+						context.assertEquals(keyAnnotation, "key-10");
+						context.assertEquals("value-10", new String(value));
 						async.complete();
 					}
 				})
