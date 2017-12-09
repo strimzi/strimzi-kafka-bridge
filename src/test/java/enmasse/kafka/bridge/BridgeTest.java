@@ -89,45 +89,54 @@ public class BridgeTest extends KafkaClusterTestBase {
 	}
 	
 	@Test
-	public void sendSimpleMessage(TestContext context) {
-		String topic = "sendSimpleMessage";
+	public void sendSimpleMessages(TestContext context) {
+		String topic = "sendSimpleMessages";
 		kafkaCluster.createTopic(topic, 1, 1);
-		sendSimpleMessage(context, topic);
-	}
-	
-	protected void sendSimpleMessage(TestContext context, String topic) {
-		sendSimpleMessages(context, topic, 1);
-	}
 
-	protected void sendSimpleMessages(TestContext context, String topic, int numMessages) {
 		ProtonClient client = ProtonClient.create(this.vertx);
-		
+
 		Async async = context.async();
 		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
-				
+
 				ProtonConnection connection = ar.result();
 				connection.open();
-				
+
 				ProtonSender sender = connection.createSender(null);
 				sender.open();
-				
-				Async async2 = context.async(numMessages);
-				for (int i = 0; i< numMessages; i++) {
-					Message message = ProtonHelper.message(topic, i+"Simple message from " + connection.getContainer());
-    				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-    					LOG.info("Message delivered {}", delivery.getRemoteState());
-    					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
-    					async2.countDown();
-    				});
-				}
-//				async2.await();
-				//connection.close();
-				//connection.disconnect();
-				async.complete();
+
+				String body = "Simple message from " + connection.getContainer();
+				Message message = ProtonHelper.message(topic, body);
+
+				Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+				config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+				config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+
+				KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
+				consumer.handler(record -> {
+					context.assertEquals(record.value(), body);
+					LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+							record.topic(), record.partition(), record.offset(), record.key(), record.value());
+					consumer.close();
+					async.complete();
+				});
+				consumer.subscribe(topic, done -> {
+					if (!done.succeeded()) {
+						context.fail(done.cause());
+					}
+				});
+
+				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
+					LOG.info("Message delivered {}", delivery.getRemoteState());
+					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+
+					sender.close();
+					connection.close();
+				});
+			} else {
+				context.fail(ar.cause());
 			}
 		});
-		async.await();
 	}
 	
 	@Test
