@@ -627,8 +627,15 @@ public class BridgeTest extends KafkaClusterTestBase {
 	@Test	
 	public void receiveSimpleMessageFromPartition(TestContext context) {
 		String topic = "receiveSimpleMessageFromPartition";
-		kafkaCluster.createTopic(topic, 1, 1);
-		sendSimpleMessage(context, topic);
+		kafkaCluster.createTopic(topic, 2, 1);
+
+		String sentBody = "Simple message";
+
+		Async send = context.async();
+		kafkaCluster.useTo().produceStrings(1, send::complete, () ->
+		new ProducerRecord<>(topic, 1, null, sentBody));
+		send.await();
+
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
@@ -638,13 +645,13 @@ public class BridgeTest extends KafkaClusterTestBase {
 				ProtonConnection connection = ar.result();
 				connection.open();
 				
-				ProtonReceiver receiver = connection.createReceiver(topic+"/group.id/my_group");
+				ProtonReceiver receiver = connection.createReceiver(topic + "/group.id/my_group");
 				
 				Source source = (Source)receiver.getSource();
 				
 				// filter on specific partition
 				Map<Symbol, Object> map = new HashMap<>();
-				map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_FILTER), 0);
+				map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_FILTER), 1);
 				source.setFilter(map);
 				
 				receiver.handler((delivery, message) -> {
@@ -652,10 +659,28 @@ public class BridgeTest extends KafkaClusterTestBase {
 					Section body = message.getBody();
 					if (body instanceof Data) {
 						byte[] value = ((Data)body).getValue().getArray();
-						LOG.info("Message received {}", new String(value));
+
 						// default is AT_LEAST_ONCE QoS (unsettled) so we need to send disposition (settle) to sender
 						delivery.disposition(Accepted.getInstance(), true);
-						context.assertTrue(true);
+
+						// get topic, partition, offset and key from AMQP annotations
+						MessageAnnotations annotations = message.getMessageAnnotations();
+						context.assertNotNull(annotations);
+						String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_TOPIC_ANNOTATION)));
+						context.assertNotNull(topicAnnotation);
+						Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION));
+						context.assertNotNull(partitionAnnotation);
+						Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_OFFSET_ANNOTATION));
+						context.assertNotNull(offsetAnnotation);
+						Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_KEY_ANNOTATION));
+						context.assertNull(keyAnnotation);
+						LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+								topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
+
+						context.assertEquals(topicAnnotation, topic);
+						context.assertEquals(partitionAnnotation, 1);
+						context.assertEquals(offsetAnnotation, 0L);
+						context.assertEquals(sentBody, new String(value));
 						async.complete();
 					}
 				})
