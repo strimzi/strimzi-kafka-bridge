@@ -19,7 +19,6 @@ package enmasse.kafka.bridge.amqp;
 import enmasse.kafka.bridge.BridgeEndpoint;
 import enmasse.kafka.bridge.Endpoint;
 import enmasse.kafka.bridge.SinkBridgeEndpoint;
-import enmasse.kafka.bridge.config.BridgeConfigProperties;
 import enmasse.kafka.bridge.config.KafkaConfigProperties;
 import enmasse.kafka.bridge.converter.MessageConverter;
 import enmasse.kafka.bridge.tracker.OffsetTracker;
@@ -79,7 +78,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	// sender link for handling outgoing message
 	private ProtonSender sender;
 
-	private BridgeConfigProperties bridgeConfigProperties;
+	private AmqpBridgeConfigProperties bridgeConfigProperties;
 
 	private KafkaConsumer<K, V> consumer;
 
@@ -106,7 +105,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	 * @param vertx		Vert.x instance
 	 * @param bridgeConfigProperties	Bridge configuration
 	 */
-	public AmqpSinkBridgeEndpoint(Vertx vertx, BridgeConfigProperties bridgeConfigProperties) {
+	public AmqpSinkBridgeEndpoint(Vertx vertx, AmqpBridgeConfigProperties bridgeConfigProperties) {
 		this.vertx = vertx;
 		this.bridgeConfigProperties = bridgeConfigProperties;
 	}
@@ -141,7 +140,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 		try {
 			
 			if (this.converter == null) {
-				this.converter = (MessageConverter<K, V, Message>) AmqpBridge.instantiateConverter(this.bridgeConfigProperties.getAmqpConfigProperties().getMessageConverter());
+				this.converter = (MessageConverter<K, V, Message>) AmqpBridge.instantiateConverter(this.bridgeConfigProperties.getEndpointConfigProperties().getMessageConverter());
 			}
 			
 			this.sender = (ProtonSender)link;

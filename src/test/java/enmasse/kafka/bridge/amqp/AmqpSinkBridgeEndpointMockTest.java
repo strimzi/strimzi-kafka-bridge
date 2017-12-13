@@ -38,7 +38,6 @@ import org.apache.qpid.proton.message.Message;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import enmasse.kafka.bridge.config.BridgeConfigProperties;
 import enmasse.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -146,7 +145,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
 		MockRecordProducer recordProducer = new MockRecordProducer(topic, 0, 0L);
-		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		
 		// Create a mock for the sender
@@ -212,7 +211,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
 		MockRecordProducer recordProducer = new MockRecordProducer(topic, 0, 0L);
-		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		
 		// Create a mock for the sender
@@ -276,7 +275,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 	@Test
 	public <K, V> void address_badAddressNoGroupId() throws Exception {
 		Vertx vertx = Vertx.vertx();
-		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "missing group id delimiter");
 		// Call handle()
@@ -291,7 +290,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 	@Test
 	public <K, V> void address_badAddressEmptyTopic() throws Exception {
 		Vertx vertx = Vertx.vertx();
-		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "/group.id/blah");
 		// Call handle()
@@ -307,7 +306,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 	public <K, V> void address_badAddressEmptyGroup() throws Exception {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
-		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic+"/group.id/");
 		// Call handle()
@@ -323,7 +322,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 	public <K, V> void filters_nonIntegerPartitionFilter() throws Exception {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
-		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic+"/group.id/blah");
 		// Call handle()
@@ -343,7 +342,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 	public <K, V> void filters_nonLongOffsetFilter() throws Exception {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
-		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic+"/group.id/blah");
 		// Call handle()
@@ -364,7 +363,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 	public <K, V> void filters_negativeIntegerPartitionFilter() throws Exception {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
-		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic+"/group.id/blah");
 		// Call handle()
@@ -388,7 +387,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 	public <K, V> void filters_negativeLongOffsetFilter() throws Exception {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
-		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic+"/group.id/blah");
 		// Call handle()
@@ -408,7 +407,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 	public <K, V> void filters_offsetFilterButNoPartitionFilter() throws Exception {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
-		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic+"/group.id/blah");
 		// Call handle()
@@ -426,8 +425,8 @@ public class AmqpSinkBridgeEndpointMockTest {
 	@Test
 	public <K, V> void config_NoSuchConverterClass() throws AmqpErrorConditionException {
 		Vertx vertx = Vertx.vertx();
-		BridgeConfigProperties config = new BridgeConfigProperties();
-		config.getAmqpConfigProperties().setMessageConverter("foo.bar.Baz");
+		AmqpBridgeConfigProperties config = new AmqpBridgeConfigProperties();
+		config.getEndpointConfigProperties().setMessageConverter("foo.bar.Baz");
 		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, config);
 		
 		endpoint.open();
@@ -443,8 +442,8 @@ public class AmqpSinkBridgeEndpointMockTest {
 	@Test
 	public <K, V> void config_ConverterWrongType() throws AmqpErrorConditionException {
 		Vertx vertx = Vertx.vertx();
-		BridgeConfigProperties config = new BridgeConfigProperties();
-		config.getAmqpConfigProperties().setMessageConverter("java.util.HashSet");
+		AmqpBridgeConfigProperties config = new AmqpBridgeConfigProperties();
+		config.getEndpointConfigProperties().setMessageConverter("java.util.HashSet");
 		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, config);
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
@@ -475,8 +474,8 @@ public class AmqpSinkBridgeEndpointMockTest {
 	@Test
 	public <K, V> void config_ConverterNoDefaultConstructor() throws AmqpErrorConditionException {
 		Vertx vertx = Vertx.vertx();
-		BridgeConfigProperties config = new BridgeConfigProperties();
-		config.getAmqpConfigProperties().setMessageConverter(NoNullaryCtor.class.getName());
+		AmqpBridgeConfigProperties config = new AmqpBridgeConfigProperties();
+		config.getEndpointConfigProperties().setMessageConverter(NoNullaryCtor.class.getName());
 		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, config);
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
@@ -507,8 +506,8 @@ public class AmqpSinkBridgeEndpointMockTest {
 	@Test
 	public <K, V> void config_ConverterDefaultConstructorThrows() throws AmqpErrorConditionException {
 		Vertx vertx = Vertx.vertx();
-		BridgeConfigProperties config = new BridgeConfigProperties();
-		config.getAmqpConfigProperties().setMessageConverter(CtorThrows.class.getName());
+		AmqpBridgeConfigProperties config = new AmqpBridgeConfigProperties();
+		config.getEndpointConfigProperties().setMessageConverter(CtorThrows.class.getName());
 		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, config);
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
@@ -530,7 +529,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 	public <K, V> void partitionsForFails() throws AmqpErrorConditionException {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
-		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		
 		// Create a mock for the sender

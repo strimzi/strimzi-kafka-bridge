@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package enmasse.kafka.bridge.config;
+package enmasse.kafka.bridge.amqp;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

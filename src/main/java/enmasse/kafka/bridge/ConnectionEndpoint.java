@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Wrapper around sinks and source for an AMQP connection
+ * Wrapper around sinks and source for an the endpoint connection
  */
 public class ConnectionEndpoint {
 

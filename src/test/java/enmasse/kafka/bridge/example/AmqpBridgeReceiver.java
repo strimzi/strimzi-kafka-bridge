@@ -36,9 +36,9 @@ import java.util.Map;
 /**
  * Examples on receiving messages from Apache Kafka via AMQP bridge
  */
-public class BridgeReceiver {
+public class AmqpBridgeReceiver {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(BridgeReceiver.class);
+	private static final Logger LOG = LoggerFactory.getLogger(AmqpBridgeReceiver.class);
 	
 	private static final String BRIDGE_HOST = "localhost";
 	private static final int BRIDGE_PORT = 5672;
@@ -47,10 +47,10 @@ public class BridgeReceiver {
 		
 		Vertx vertx = Vertx.vertx();
 		
-		BridgeReceiver receiver = new BridgeReceiver();
+		AmqpBridgeReceiver receiver = new AmqpBridgeReceiver();
 		
 		// multiple receivers on same connection, same session but different links
-		BridgeReceiver.ExampleOne ex1 = receiver.new ExampleOne();
+		AmqpBridgeReceiver.ExampleOne ex1 = receiver.new ExampleOne();
 		ex1.run(vertx);
 		
 		vertx.close();
@@ -79,7 +79,7 @@ public class BridgeReceiver {
 			
 			ProtonClient client = ProtonClient.create(vertx);
 			
-			client.connect(BridgeReceiver.BRIDGE_HOST, BridgeReceiver.BRIDGE_PORT, ar -> {
+			client.connect(AmqpBridgeReceiver.BRIDGE_HOST, AmqpBridgeReceiver.BRIDGE_PORT, ar -> {
 				
 				if (ar.succeeded()) {
 					

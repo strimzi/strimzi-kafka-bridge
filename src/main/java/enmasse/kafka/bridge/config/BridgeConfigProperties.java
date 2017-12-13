@@ -20,13 +20,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Bridge configuration properties (AMQP and Apache Kafka)
+ * Bridge configuration properties
+ * @param <T>   type for configuring specific properties on the endpoint side
  */
 @Component
-public class BridgeConfigProperties {
+public class BridgeConfigProperties<T> {
 
-    private KafkaConfigProperties kafkaConfigProperties = new KafkaConfigProperties();
-    private AmqpConfigProperties amqpConfigProperties = new AmqpConfigProperties();
+    protected KafkaConfigProperties kafkaConfigProperties;
+    protected T endpointConfigProperties;
+
+    public BridgeConfigProperties() {
+        this.kafkaConfigProperties = new KafkaConfigProperties();
+    }
 
     /**
      * Get the Kafka configuration
@@ -40,7 +45,7 @@ public class BridgeConfigProperties {
     /**
      * Set the Kafka configuration
      *
-     * @param kafkaConfigProperties    Kafka configuration
+     * @param kafkaConfigProperties  Kafka configuration
      * @return  this instance for setter chaining
      */
     @Autowired
@@ -50,23 +55,23 @@ public class BridgeConfigProperties {
     }
 
     /**
-     * Get the AMQP configuration
+     * Get the endpoint configuration
      *
      * @return
      */
-    public AmqpConfigProperties getAmqpConfigProperties() {
-        return this.amqpConfigProperties;
+    public T getEndpointConfigProperties() {
+        return this.endpointConfigProperties;
     }
 
     /**
-     * Set the AMQP configuration
+     * Set the endpoint configuration
      *
-     * @param amqpConfigProperties    AMQP configuration
+     * @param endpointConfigProperties  endpoint configuration
      * @return  this instance for setter chaining
      */
     @Autowired
-    public BridgeConfigProperties setAmqpConfigProperties(AmqpConfigProperties amqpConfigProperties) {
-        this.amqpConfigProperties = amqpConfigProperties;
+    public BridgeConfigProperties setEndpointConfigProperties(T endpointConfigProperties) {
+        this.endpointConfigProperties = endpointConfigProperties;
         return this;
     }
 }

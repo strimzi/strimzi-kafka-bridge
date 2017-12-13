@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package enmasse.kafka.bridge;
+package enmasse.kafka.bridge.amqp;
 
-import enmasse.kafka.bridge.amqp.AmqpBridge;
-import enmasse.kafka.bridge.config.BridgeConfigProperties;
+import enmasse.kafka.bridge.KafkaClusterTestBase;
 import enmasse.kafka.bridge.converter.DefaultDeserializer;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
@@ -61,9 +60,9 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @RunWith(VertxUnitRunner.class)
-public class BridgeTest extends KafkaClusterTestBase {
+public class AmqpBridgeTest extends KafkaClusterTestBase {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(BridgeTest.class);
+	private static final Logger LOG = LoggerFactory.getLogger(AmqpBridgeTest.class);
 
 	private static final String BRIDGE_HOST = "localhost";
 	private static final int BRIDGE_PORT = 5672;
@@ -76,7 +75,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 	private Vertx vertx;
 	private AmqpBridge bridge;
 
-	private BridgeConfigProperties bridgeConfigProperties = new BridgeConfigProperties();
+	private AmqpBridgeConfigProperties bridgeConfigProperties = new AmqpBridgeConfigProperties();
 	
 	@Before
 	public void before(TestContext context) {
@@ -103,7 +102,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 		ProtonClient client = ProtonClient.create(this.vertx);
 
 		Async async = context.async();
-		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+		client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 
 				ProtonConnection connection = ar.result();
@@ -154,7 +153,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+		client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -213,7 +212,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+		client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -271,7 +270,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+		client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -323,7 +322,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+		client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -375,7 +374,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+		client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -429,7 +428,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+		client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -483,7 +482,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+		client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -514,7 +513,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 				
 				this.count = 0;
 				
-				this.vertx.setPeriodic(BridgeTest.PERIODIC_DELAY, timerId -> {
+				this.vertx.setPeriodic(AmqpBridgeTest.PERIODIC_DELAY, timerId -> {
 					
 					if (connection.isDisconnected()) {
 						this.vertx.cancelTimer(timerId);
@@ -522,7 +521,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 						context.assertTrue(false);
 					} else {
 						
-						if (this.count < BridgeTest.PERIODIC_MAX_MESSAGE) {
+						if (this.count < AmqpBridgeTest.PERIODIC_MAX_MESSAGE) {
 
 							// sending with a key
 							Map<Symbol, Object> map = new HashMap<>();
@@ -565,7 +564,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 		ProtonClient client = ProtonClient.create(this.vertx);
 
 		Async async = context.async();
-		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+		client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
 
 			if (ar.succeeded()) {
 
@@ -588,7 +587,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 						async.complete();
 					}
 				})
-				.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit())
+				.setPrefetch(this.bridgeConfigProperties.getEndpointConfigProperties().getFlowCredit())
 				.open();
 
 				ProtonSender sender = connection.createSender(null);
@@ -619,7 +618,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 		
 		ProtonClient client = ProtonClient.create(this.vertx);
 		Async async = context.async();
-		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+		client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -656,7 +655,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 						async.complete();
 					}
 				})
-				.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit())
+				.setPrefetch(this.bridgeConfigProperties.getEndpointConfigProperties().getFlowCredit())
 				.open();
 			} else {
 				context.fail(ar.cause());
@@ -679,7 +678,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+		client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 				
 				ProtonConnection connection = ar.result();
@@ -724,7 +723,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 						async.complete();
 					}
 				})
-				.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit())
+				.setPrefetch(this.bridgeConfigProperties.getEndpointConfigProperties().getFlowCredit())
 				.open();
 			} else {
 				context.fail(ar.cause());
@@ -746,7 +745,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 		ProtonClient client = ProtonClient.create(this.vertx);
 		
 		Async async = context.async();
-		client.connect(BridgeTest.BRIDGE_HOST, BridgeTest.BRIDGE_PORT, ar -> {
+		client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
 			if (ar.succeeded()) {
 
 				ProtonConnection connection = ar.result();
@@ -793,7 +792,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 						async.complete();
 					}
 				})
-				.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit())
+				.setPrefetch(this.bridgeConfigProperties.getEndpointConfigProperties().getFlowCredit())
 				.open();
 			} else {
 				context.fail(ar.cause());

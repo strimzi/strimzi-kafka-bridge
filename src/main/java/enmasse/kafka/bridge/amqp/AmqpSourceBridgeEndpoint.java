@@ -19,7 +19,6 @@ package enmasse.kafka.bridge.amqp;
 import enmasse.kafka.bridge.BridgeEndpoint;
 import enmasse.kafka.bridge.Endpoint;
 import enmasse.kafka.bridge.SourceBridgeEndpoint;
-import enmasse.kafka.bridge.config.BridgeConfigProperties;
 import enmasse.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -65,7 +64,7 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 	// receiver link for handling incoming message
 	private Map<String, ProtonReceiver> receivers;
 
-	private BridgeConfigProperties bridgeConfigProperties;
+	private AmqpBridgeConfigProperties bridgeConfigProperties;
 	
 	/**
 	 * Constructor
@@ -73,7 +72,7 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 	 * @param vertx		Vert.x instance
 	 * @param bridgeConfigProperties	Bridge configuration
 	 */
-	public AmqpSourceBridgeEndpoint(Vertx vertx, BridgeConfigProperties bridgeConfigProperties) {
+	public AmqpSourceBridgeEndpoint(Vertx vertx, AmqpBridgeConfigProperties bridgeConfigProperties) {
 		
 		this.vertx = vertx;
 		this.bridgeConfigProperties = bridgeConfigProperties;
@@ -127,7 +126,7 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
 		if (this.converter == null) {
 			try {
-				this.converter = (MessageConverter<String, byte[], Message>) AmqpBridge.instantiateConverter(this.bridgeConfigProperties.getAmqpConfigProperties().getMessageConverter());
+				this.converter = (MessageConverter<String, byte[], Message>) AmqpBridge.instantiateConverter(this.bridgeConfigProperties.getEndpointConfigProperties().getMessageConverter());
 			} catch (AmqpErrorConditionException e) {
 				AmqpBridge.detachWithError(link, e.toCondition());
 				return;
@@ -154,12 +153,12 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 		if (receiver.getRemoteQoS() == ProtonQoS.AT_MOST_ONCE) {
 			// sender settle mode is SETTLED (so AT_MOST_ONCE QoS), we assume Apache Kafka
 			// no problem in throughput terms so use prefetch due to no ack from Kafka server
-			receiver.setPrefetch(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit());
+			receiver.setPrefetch(this.bridgeConfigProperties.getEndpointConfigProperties().getFlowCredit());
 		} else {
 			// sender settle mode is UNSETTLED (or MIXED) (so AT_LEAST_ONCE QoS).
 			// Thanks to the ack from Kafka server we can modulate flow control
 			receiver.setPrefetch(0)
-					.flow(this.bridgeConfigProperties.getAmqpConfigProperties().getFlowCredit());
+					.flow(this.bridgeConfigProperties.getEndpointConfigProperties().getFlowCredit());
 		}
 
 		receiver.open();

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package enmasse.kafka.bridge.config;
+package enmasse.kafka.bridge.amqp;
 
 /**
  * The AMQP side working mode (client or server)
