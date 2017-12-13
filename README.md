@@ -10,14 +10,14 @@ It provides a different way to interact with Apache Kafka because the latter sup
 
 The project leverages on [Vert.x](http://vertx.io/) framework and uses the [Vert.x Proton](https://github.com/vert-x3/vertx-proton) library in order to provide the AMQP server for accepting and handling connections, sessions and links.
 
-All the bridge related classes are defined inside the _enmasse.kafka.bridge_ package and the only class needed to instantiate the bridge is the _Bridge_ class which needs a _Vertx_ instance too.
+All the bridge related classes are defined inside the _enmasse.kafka.bridge_ and _enmasse.kafka.bridge.amqp_ packages and the only class needed to instantiate the bridge is the _AmqpBridge_ class which needs a _Vertx_ instance too.
 
 Other than core classes, the following stuff is provided :
 
-* BridgeTest : a bunch of unit testing classes based on JUnit and Vert.x Unit;
-* BridgeServer : a sample application which instantiates and starts the bridge;
-* BridgeReceiver : a sample applcation with a bunch of examples using AMQP receivers;
-* BridgeSender : a sample application with a bunch of examples using AMQP senders;
+* AmqpBridgeTest : a bunch of unit testing classes based on JUnit and Vert.x Unit;
+* AmqpBridgeServer : a sample application which instantiates and starts the bridge;
+* AmqpBridgeReceiver : a sample applcation with a bunch of examples using AMQP receivers;
+* AmqpBridgeSender : a sample application with a bunch of examples using AMQP senders;
 
 ## Server application
 
@@ -28,7 +28,7 @@ This is a simple application which implements a server running the bridge. It ca
 
 ## Docker image
 
-This is a simple Docker image which containes the server application as a fat JAR with all dependencies related to Vert.x Proton and the AMQP - Kafka Bridge.
+This is a simple Docker image which contains the server application as a fat JAR with all dependencies related to Vert.x Proton and the AMQP - Kafka Bridge.
 
 ## AMQP Senders
 
