@@ -14,10 +14,19 @@
  * limitations under the License.
  */
 
-package enmasse.kafka.bridge;
+package enmasse.kafka.bridge.amqp;
+
+import enmasse.kafka.bridge.config.BridgeConfigProperties;
+import org.springframework.stereotype.Component;
 
 /**
- * Base class for source bridge endpoints
+ * Bridge configuration properties for AMQP support
  */
-public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
+@Component
+public class AmqpBridgeConfigProperties extends BridgeConfigProperties<AmqpConfigProperties> {
+
+    public AmqpBridgeConfigProperties() {
+        super();
+        this.endpointConfigProperties = new AmqpConfigProperties();
+    }
 }

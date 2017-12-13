@@ -31,9 +31,9 @@ import java.io.IOException;
 /**
  * Examples on sending messages from Apache Kafka via AMQP bridge
  */
-public class BridgeSender {
+public class AmqpBridgeSender {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(BridgeSender.class);
+	private static final Logger LOG = LoggerFactory.getLogger(AmqpBridgeSender.class);
 	
 	private static final String BRIDGE_HOST = "localhost";
 	private static final int BRIDGE_PORT = 5672;
@@ -42,14 +42,14 @@ public class BridgeSender {
 		
 		Vertx vertx = Vertx.vertx();
 		
-		BridgeSender sender = new BridgeSender();
+		AmqpBridgeSender sender = new AmqpBridgeSender();
 		
 		// simple message sending
-		BridgeSender.ExampleOne ex1 = sender.new ExampleOne();
+		AmqpBridgeSender.ExampleOne ex1 = sender.new ExampleOne();
 		ex1.run(vertx);
 		
 		// periodic message sending
-		BridgeSender.ExampleTwo ex2 = sender.new ExampleTwo();
+		AmqpBridgeSender.ExampleTwo ex2 = sender.new ExampleTwo();
 		ex2.run(vertx);
 		
 		vertx.close();
@@ -69,7 +69,7 @@ public class BridgeSender {
 			
 			ProtonClient client = ProtonClient.create(vertx);
 			
-			client.connect(BridgeSender.BRIDGE_HOST, BridgeSender.BRIDGE_PORT, ar -> {
+			client.connect(AmqpBridgeSender.BRIDGE_HOST, AmqpBridgeSender.BRIDGE_PORT, ar -> {
 				if (ar.succeeded()) {
 					
 					this.connection = ar.result();
@@ -129,7 +129,7 @@ public class BridgeSender {
 			
 			ProtonClient client = ProtonClient.create(vertx);
 			
-			client.connect(BridgeSender.BRIDGE_HOST, BridgeSender.BRIDGE_PORT, ar -> {
+			client.connect(AmqpBridgeSender.BRIDGE_HOST, AmqpBridgeSender.BRIDGE_PORT, ar -> {
 				if (ar.succeeded()) {
 					
 					this.connection = ar.result();

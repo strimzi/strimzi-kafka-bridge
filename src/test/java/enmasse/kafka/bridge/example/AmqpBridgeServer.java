@@ -16,8 +16,8 @@
 
 package enmasse.kafka.bridge.example;
 
-import enmasse.kafka.bridge.Bridge;
-import enmasse.kafka.bridge.config.BridgeConfigProperties;
+import enmasse.kafka.bridge.amqp.AmqpBridge;
+import enmasse.kafka.bridge.amqp.AmqpBridgeConfigProperties;
 import io.vertx.core.Vertx;
 
 import java.io.IOException;
@@ -25,15 +25,15 @@ import java.io.IOException;
 /**
  * Class example on running the bridge server
  */
-public class BridgeServer {
+public class AmqpBridgeServer {
 	
 	public static void main(String[] args) {
 		
 		Vertx vertx = Vertx.vertx();
 
-		BridgeConfigProperties bridgeConfigProperties = new BridgeConfigProperties();
+		AmqpBridgeConfigProperties bridgeConfigProperties = new AmqpBridgeConfigProperties();
 		
-		Bridge bridge = new Bridge();
+		AmqpBridge bridge = new AmqpBridge();
 		bridge.setBridgeConfigProperties(bridgeConfigProperties);
 
 		vertx.deployVerticle(bridge);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package enmasse.kafka.bridge;
+package enmasse.kafka.bridge.amqp;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -38,7 +38,6 @@ import org.apache.qpid.proton.message.Message;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import enmasse.kafka.bridge.config.BridgeConfigProperties;
 import enmasse.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -53,7 +52,7 @@ import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonSender;
 
-public class SinkBridgeEndpointMockTest {
+public class AmqpSinkBridgeEndpointMockTest {
 	
 	class MockRecordProducer {
 		
@@ -83,9 +82,9 @@ public class SinkBridgeEndpointMockTest {
 	}
 	
 
-	protected <V, K> KafkaConsumer<K, V> installConsumerSpy(SinkBridgeEndpoint<K, V> endpoint)
+	protected <V, K> KafkaConsumer<K, V> installConsumerSpy(AmqpSinkBridgeEndpoint<K, V> endpoint)
 			throws NoSuchFieldException, IllegalAccessException {
-		Field consumerField = SinkBridgeEndpoint.class.getDeclaredField("consumer");
+		Field consumerField = AmqpSinkBridgeEndpoint.class.getDeclaredField("consumer");
 		consumerField.setAccessible(true);
 		KafkaConsumer<K,V> consumer = (KafkaConsumer<K,V>)consumerField.get(endpoint);
 		KafkaConsumer<K,V> consumerSpy = spy(consumer);
@@ -146,14 +145,14 @@ public class SinkBridgeEndpointMockTest {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
 		MockRecordProducer recordProducer = new MockRecordProducer(topic, 0, 0L);
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		
 		// Create a mock for the sender
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic+"/group.id/my_group");
 		
 		// Call handle()
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		
 		// Now the consumer is set we can add a spy for it
 		// ( so we can inspect KafkaConsumer.commit() )
@@ -199,9 +198,9 @@ public class SinkBridgeEndpointMockTest {
 		assertEquals(topic+"/group.id/my_group", message.getAddress());
 		assertArrayEquals("Hello, world".getBytes(), ((Data)message.getBody()).getValue().getArray());
 		MessageAnnotations messageAnnotations = message.getMessageAnnotations();
-		assertEquals(topic, messageAnnotations.getValue().get(Symbol.valueOf(Bridge.AMQP_TOPIC_ANNOTATION)));
-		assertEquals(0, messageAnnotations.getValue().get(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION)));
-		assertEquals(0L, messageAnnotations.getValue().get(Symbol.valueOf(Bridge.AMQP_OFFSET_ANNOTATION)));
+		assertEquals(topic, messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)));
+		assertEquals(0, messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION)));
+		assertEquals(0L, messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION)));
 		
 		// TODO test closure (commit)
 	}
@@ -212,14 +211,14 @@ public class SinkBridgeEndpointMockTest {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
 		MockRecordProducer recordProducer = new MockRecordProducer(topic, 0, 0L);
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		
 		// Create a mock for the sender
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_LEAST_ONCE, topic+"/group.id/my_group");
 		
 		// Call handle()
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		
 		// Now the consumer is set we can add a spy for it
 		// ( so we can inspect KafkaConsumer.commit() )
@@ -249,9 +248,9 @@ public class SinkBridgeEndpointMockTest {
 		assertEquals(topic+"/group.id/my_group", message.getAddress());
 		assertArrayEquals("Hello, world".getBytes(), ((Data)message.getBody()).getValue().getArray());
 		MessageAnnotations messageAnnotations = message.getMessageAnnotations();
-		assertEquals(topic, messageAnnotations.getValue().get(Symbol.valueOf(Bridge.AMQP_TOPIC_ANNOTATION)));
-		assertEquals(0, messageAnnotations.getValue().get(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION)));
-		assertEquals(0L, messageAnnotations.getValue().get(Symbol.valueOf(Bridge.AMQP_OFFSET_ANNOTATION)));
+		assertEquals(topic, messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)));
+		assertEquals(0, messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION)));
+		assertEquals(0L, messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION)));
 		
 		// Simulate Proton delivering settlement
 		ProtonDelivery mockDelivery = mock(ProtonDelivery.class);
@@ -276,14 +275,14 @@ public class SinkBridgeEndpointMockTest {
 	@Test
 	public <K, V> void address_badAddressNoGroupId() throws Exception {
 		Vertx vertx = Vertx.vertx();
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "missing group id delimiter");
 		// Call handle()
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		
 		assertDetach(mockSender, 
-				Bridge.AMQP_ERROR_NO_GROUPID,
+				AmqpBridge.AMQP_ERROR_NO_GROUPID,
 				"Mandatory group.id not specified in the address");
 	}
 	
@@ -291,14 +290,14 @@ public class SinkBridgeEndpointMockTest {
 	@Test
 	public <K, V> void address_badAddressEmptyTopic() throws Exception {
 		Vertx vertx = Vertx.vertx();
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "/group.id/blah");
 		// Call handle()
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		
 		assertDetach(mockSender, 
-				Bridge.AMQP_ERROR_NO_GROUPID,
+				AmqpBridge.AMQP_ERROR_NO_GROUPID,
 				"Empty topic in specified address");
 	}
 	
@@ -307,14 +306,14 @@ public class SinkBridgeEndpointMockTest {
 	public <K, V> void address_badAddressEmptyGroup() throws Exception {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic+"/group.id/");
 		// Call handle()
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		
 		assertDetach(mockSender, 
-				Bridge.AMQP_ERROR_NO_GROUPID,
+				AmqpBridge.AMQP_ERROR_NO_GROUPID,
 				"Empty consumer group in specified address");
 	}
 
@@ -323,18 +322,18 @@ public class SinkBridgeEndpointMockTest {
 	public <K, V> void filters_nonIntegerPartitionFilter() throws Exception {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic+"/group.id/blah");
 		// Call handle()
 		Map<Symbol, Object> filter = new HashMap<>();
-		filter.put(Symbol.getSymbol(Bridge.AMQP_PARTITION_FILTER), "not an integer");
-		filter.put(Symbol.getSymbol(Bridge.AMQP_OFFSET_FILTER), 10L);
+		filter.put(Symbol.getSymbol(AmqpBridge.AMQP_PARTITION_FILTER), "not an integer");
+		filter.put(Symbol.getSymbol(AmqpBridge.AMQP_OFFSET_FILTER), 10L);
 		((Source)mockSender.getRemoteSource()).setFilter(filter);
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		
 		assertDetach(mockSender, 
-				Bridge.AMQP_ERROR_WRONG_PARTITION_FILTER,
+				AmqpBridge.AMQP_ERROR_WRONG_PARTITION_FILTER,
 				"Wrong partition filter");
 	}
 	
@@ -343,19 +342,19 @@ public class SinkBridgeEndpointMockTest {
 	public <K, V> void filters_nonLongOffsetFilter() throws Exception {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic+"/group.id/blah");
 		// Call handle()
 		Map<Symbol, Object> filter = new HashMap<>();
-		filter.put(Symbol.getSymbol(Bridge.AMQP_PARTITION_FILTER), 0);
-		filter.put(Symbol.getSymbol(Bridge.AMQP_OFFSET_FILTER), "not a long");
+		filter.put(Symbol.getSymbol(AmqpBridge.AMQP_PARTITION_FILTER), 0);
+		filter.put(Symbol.getSymbol(AmqpBridge.AMQP_OFFSET_FILTER), "not a long");
 		((Source)mockSender.getRemoteSource()).setFilter(filter);
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		
 		assertDetach(mockSender, 
 				// TODO really?
-				Bridge.AMQP_ERROR_WRONG_OFFSET_FILTER,
+				AmqpBridge.AMQP_ERROR_WRONG_OFFSET_FILTER,
 				"Wrong offset filter");
 	}
 	
@@ -364,22 +363,22 @@ public class SinkBridgeEndpointMockTest {
 	public <K, V> void filters_negativeIntegerPartitionFilter() throws Exception {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic+"/group.id/blah");
 		// Call handle()
 		Map<Symbol, Object> filter = new HashMap<>();
-		filter.put(Symbol.getSymbol(Bridge.AMQP_PARTITION_FILTER), -1);
-		filter.put(Symbol.getSymbol(Bridge.AMQP_OFFSET_FILTER), 10L);
+		filter.put(Symbol.getSymbol(AmqpBridge.AMQP_PARTITION_FILTER), -1);
+		filter.put(Symbol.getSymbol(AmqpBridge.AMQP_OFFSET_FILTER), 10L);
 		((Source)mockSender.getRemoteSource()).setFilter(filter);
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		
 		ArgumentCaptor<ErrorCondition> errorCap = ArgumentCaptor.forClass(ErrorCondition.class);
 		verify(mockSender).setCondition(errorCap.capture());
 		verify(mockSender).close();
 		
 		assertDetach(mockSender, 
-				Bridge.AMQP_ERROR_WRONG_FILTER,
+				AmqpBridge.AMQP_ERROR_WRONG_FILTER,
 				"Wrong filter");
 	}
 	
@@ -388,18 +387,18 @@ public class SinkBridgeEndpointMockTest {
 	public <K, V> void filters_negativeLongOffsetFilter() throws Exception {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic+"/group.id/blah");
 		// Call handle()
 		Map<Symbol, Object> filter = new HashMap<>();
-		filter.put(Symbol.getSymbol(Bridge.AMQP_PARTITION_FILTER), 0);
-		filter.put(Symbol.getSymbol(Bridge.AMQP_OFFSET_FILTER), -10L);
+		filter.put(Symbol.getSymbol(AmqpBridge.AMQP_PARTITION_FILTER), 0);
+		filter.put(Symbol.getSymbol(AmqpBridge.AMQP_OFFSET_FILTER), -10L);
 		((Source)mockSender.getRemoteSource()).setFilter(filter);
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		
 		assertDetach(mockSender, 
-				Bridge.AMQP_ERROR_WRONG_FILTER,
+				AmqpBridge.AMQP_ERROR_WRONG_FILTER,
 				"Wrong filter");
 	}
 	
@@ -408,116 +407,116 @@ public class SinkBridgeEndpointMockTest {
 	public <K, V> void filters_offsetFilterButNoPartitionFilter() throws Exception {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic+"/group.id/blah");
 		// Call handle()
 		Map<Symbol, Object> filter = new HashMap<>();
 		//filter.put(Symbol.getSymbol(Bridge.AMQP_PARTITION_FILTER), 0);
-		filter.put(Symbol.getSymbol(Bridge.AMQP_OFFSET_FILTER), 10L);
+		filter.put(Symbol.getSymbol(AmqpBridge.AMQP_OFFSET_FILTER), 10L);
 		((Source)mockSender.getRemoteSource()).setFilter(filter);
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		
 		assertDetach(mockSender, 
-				Bridge.AMQP_ERROR_NO_PARTITION_FILTER,
+				AmqpBridge.AMQP_ERROR_NO_PARTITION_FILTER,
 				"No partition filter specified");
 	}
 	
 	@Test
-	public <K, V> void config_NoSuchConverterClass() throws ErrorConditionException {
+	public <K, V> void config_NoSuchConverterClass() throws AmqpErrorConditionException {
 		Vertx vertx = Vertx.vertx();
-		BridgeConfigProperties config = new BridgeConfigProperties();
-		config.getAmqpConfigProperties().setMessageConverter("foo.bar.Baz");
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, config);
+		AmqpBridgeConfigProperties config = new AmqpBridgeConfigProperties();
+		config.getEndpointConfigProperties().setMessageConverter("foo.bar.Baz");
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, config);
 		
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
 		// Call handle()
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		
 		assertDetach(mockSender, 
-				Bridge.AMQP_ERROR_CONFIGURATION,
+				AmqpBridge.AMQP_ERROR_CONFIGURATION,
 				"configured message converter class could not be instantiated: foo.bar.Baz");
 	}
 	
 	@Test
-	public <K, V> void config_ConverterWrongType() throws ErrorConditionException {
+	public <K, V> void config_ConverterWrongType() throws AmqpErrorConditionException {
 		Vertx vertx = Vertx.vertx();
-		BridgeConfigProperties config = new BridgeConfigProperties();
-		config.getAmqpConfigProperties().setMessageConverter("java.util.HashSet");
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, config);
+		AmqpBridgeConfigProperties config = new AmqpBridgeConfigProperties();
+		config.getEndpointConfigProperties().setMessageConverter("java.util.HashSet");
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, config);
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
 		// Call handle()
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		
 		assertDetach(mockSender, 
-				Bridge.AMQP_ERROR_CONFIGURATION,
+				AmqpBridge.AMQP_ERROR_CONFIGURATION,
 				"configured message converter class is not an instanceof enmasse.kafka.bridge.converter.MessageConverter: java.util.HashSet");
 	}
 	
-	static class NoNullaryCtor<K, V> implements MessageConverter<K, V>{
+	static class NoNullaryCtor<K, V, M> implements MessageConverter<K, V, M>{
 		private NoNullaryCtor() {
 			throw new RuntimeException();
 		}
 
 		@Override
-		public ProducerRecord<K, V> toKafkaRecord(String kafkaTopic, Message message) {
+		public ProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message) {
 			return null;
 		}
 
 		@Override
-		public Message toAmqpMessage(String amqpAddress, ConsumerRecord<K, V> record) {
+		public M toMessage(String address, ConsumerRecord<K, V> record) {
 			return null;
 		}
 	}
 	
 	@Test
-	public <K, V> void config_ConverterNoDefaultConstructor() throws ErrorConditionException {
+	public <K, V> void config_ConverterNoDefaultConstructor() throws AmqpErrorConditionException {
 		Vertx vertx = Vertx.vertx();
-		BridgeConfigProperties config = new BridgeConfigProperties();
-		config.getAmqpConfigProperties().setMessageConverter(NoNullaryCtor.class.getName());
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, config);
+		AmqpBridgeConfigProperties config = new AmqpBridgeConfigProperties();
+		config.getEndpointConfigProperties().setMessageConverter(NoNullaryCtor.class.getName());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, config);
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
 		// Call handle()
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		
 		assertDetach(mockSender, 
-				Bridge.AMQP_ERROR_CONFIGURATION,
-				"configured message converter class could not be instantiated: enmasse.kafka.bridge.SinkBridgeEndpointMockTest$NoNullaryCtor");
+				AmqpBridge.AMQP_ERROR_CONFIGURATION,
+				"configured message converter class could not be instantiated: enmasse.kafka.bridge.amqp.AmqpSinkBridgeEndpointMockTest$NoNullaryCtor");
 	}
 	
-	static class CtorThrows<K, V> implements MessageConverter<K, V>{
+	static class CtorThrows<K, V, M> implements MessageConverter<K, V, M>{
 		public CtorThrows() {
 			throw new RuntimeException();
 		}
 
 		@Override
-		public ProducerRecord<K, V> toKafkaRecord(String kafkaTopic, Message message) {
+		public ProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message) {
 			return null;
 		}
 
 		@Override
-		public Message toAmqpMessage(String amqpAddress, ConsumerRecord<K, V> record) {
+		public M toMessage(String address, ConsumerRecord<K, V> record) {
 			return null;
 		}
 	}
 	
 	@Test
-	public <K, V> void config_ConverterDefaultConstructorThrows() throws ErrorConditionException {
+	public <K, V> void config_ConverterDefaultConstructorThrows() throws AmqpErrorConditionException {
 		Vertx vertx = Vertx.vertx();
-		BridgeConfigProperties config = new BridgeConfigProperties();
-		config.getAmqpConfigProperties().setMessageConverter(CtorThrows.class.getName());
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, config);
+		AmqpBridgeConfigProperties config = new AmqpBridgeConfigProperties();
+		config.getEndpointConfigProperties().setMessageConverter(CtorThrows.class.getName());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, config);
 		endpoint.open();
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
 		// Call handle()
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		
 		assertDetach(mockSender, 
-				Bridge.AMQP_ERROR_CONFIGURATION,
-				"configured message converter class could not be instantiated: enmasse.kafka.bridge.SinkBridgeEndpointMockTest$CtorThrows");
+				AmqpBridge.AMQP_ERROR_CONFIGURATION,
+				"configured message converter class could not be instantiated: enmasse.kafka.bridge.amqp.AmqpSinkBridgeEndpointMockTest$CtorThrows");
 	}
 	/** What happens if the requested kafka topic doesn't exist? */
 	@Test
@@ -525,23 +524,23 @@ public class SinkBridgeEndpointMockTest {
 		
 	}
 	/** What happens if we can't get the partitions for the given topic? 
-	 * @throws ErrorConditionException */
+	 * @throws AmqpErrorConditionException */
 	@Test
-	public <K, V> void partitionsForFails() throws ErrorConditionException {
+	public <K, V> void partitionsForFails() throws AmqpErrorConditionException {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
-		SinkBridgeEndpoint<K,V> endpoint = new SinkBridgeEndpoint<K,V>(vertx, new BridgeConfigProperties());
+		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
 		endpoint.open();
 		
 		// Create a mock for the sender
 		ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic+"/group.id/my_group");
 		
 		Map<Symbol, Object> filter = new HashMap<>();
-		filter.put(Symbol.getSymbol(Bridge.AMQP_PARTITION_FILTER), 0);
+		filter.put(Symbol.getSymbol(AmqpBridge.AMQP_PARTITION_FILTER), 0);
 		((Source)mockSender.getRemoteSource()).setFilter(filter);
 		
 		// Call handle()
-		endpoint.handle(mockSender);
+		endpoint.handle(new AmqpEndpoint(mockSender));
 		endpoint.partitionsForHandler(new AsyncResult<List<PartitionInfo>>() {
 
 			Throwable cause = new Exception();
@@ -569,7 +568,7 @@ public class SinkBridgeEndpointMockTest {
 		});
 		
 		assertDetach(mockSender, 
-				Bridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
+				AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
 				"Error getting partition info for topic my_topic");
 	}
 	// TODO kafka partition doesn't exist

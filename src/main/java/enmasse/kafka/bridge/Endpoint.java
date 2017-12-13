@@ -17,7 +17,13 @@
 package enmasse.kafka.bridge;
 
 /**
- * Base class for source bridge endpoints
+ * Interface for remote protocol endpoint
+ * @param <T>   class representing the actual protocol endpoint
  */
-public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
+public interface Endpoint<T> {
+
+    /**
+     * @return  instance of the actual protocol endpoint
+     */
+    T get();
 }
