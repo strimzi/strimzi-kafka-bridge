@@ -16,6 +16,7 @@
 
 package enmasse.kafka.bridge;
 
+import enmasse.kafka.bridge.amqp.AmqpBridge;
 import io.vertx.core.Vertx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,7 @@ public class Application {
     private final Vertx vertx = Vertx.vertx();
 
     @Autowired
-    private Bridge bridge;
+    private AmqpBridge bridge;
 
     @PostConstruct
     public void start() {

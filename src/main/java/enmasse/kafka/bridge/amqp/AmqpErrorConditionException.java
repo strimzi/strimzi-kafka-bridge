@@ -1,4 +1,4 @@
-package enmasse.kafka.bridge;
+package enmasse.kafka.bridge.amqp;
 
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
@@ -6,18 +6,18 @@ import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 /**
  * An exception that can be converted into an {@code ErrorCondition}.
  */
-class ErrorConditionException extends Exception {
+class AmqpErrorConditionException extends Exception {
 
 	private static final long serialVersionUID = 887822732457738920L;
 	
 	private final String error;
 	
-	public ErrorConditionException(String error, String message, Throwable cause) {
+	public AmqpErrorConditionException(String error, String message, Throwable cause) {
 		super(message, cause);
 		this.error = error;
 	}
 
-	public ErrorConditionException(String error, String message) {
+	public AmqpErrorConditionException(String error, String message) {
 		super(message);
 		this.error = error;
 	}

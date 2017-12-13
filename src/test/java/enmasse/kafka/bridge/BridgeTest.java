@@ -16,6 +16,7 @@
 
 package enmasse.kafka.bridge;
 
+import enmasse.kafka.bridge.amqp.AmqpBridge;
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
 import enmasse.kafka.bridge.converter.DefaultDeserializer;
 import io.vertx.core.Vertx;
@@ -73,7 +74,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 	private int count;
 	
 	private Vertx vertx;
-	private Bridge bridge;
+	private AmqpBridge bridge;
 
 	private BridgeConfigProperties bridgeConfigProperties = new BridgeConfigProperties();
 	
@@ -82,7 +83,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 		
 		this.vertx = Vertx.vertx();
 
-		this.bridge = new Bridge();
+		this.bridge = new AmqpBridge();
 		this.bridge.setBridgeConfigProperties(this.bridgeConfigProperties);
 
 		this.vertx.deployVerticle(this.bridge, context.asyncAssertSuccess());
@@ -187,7 +188,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 				
 				// sending on specified partition (1)
 				Map<Symbol, Object> map = new HashMap<>();
-				map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION), 1);
+				map.put(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION), 1);
 				MessageAnnotations messageAnnotations = new MessageAnnotations(map);
 				message.setMessageAnnotations(messageAnnotations);
 
@@ -245,7 +246,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 				
 				// sending with a key
 				Map<Symbol, Object> map = new HashMap<>();
-				map.put(Symbol.valueOf(Bridge.AMQP_KEY_ANNOTATION), "my_key");
+				map.put(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION), "my_key");
 				MessageAnnotations messageAnnotations = new MessageAnnotations(map);
 				message.setMessageAnnotations(messageAnnotations);
 				
@@ -525,7 +526,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 
 							// sending with a key
 							Map<Symbol, Object> map = new HashMap<>();
-							map.put(Symbol.valueOf(Bridge.AMQP_KEY_ANNOTATION), "key-" + this.count);
+							map.put(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION), "key-" + this.count);
 							MessageAnnotations messageAnnotations = new MessageAnnotations(map);
 
 							Message message = ProtonHelper.message(topic, "Periodic message [" + this.count + "] from " + connection.getContainer());
@@ -637,13 +638,13 @@ public class BridgeTest extends KafkaClusterTestBase {
 						// get topic, partition, offset and key from AMQP annotations
 						MessageAnnotations annotations = message.getMessageAnnotations();
 						context.assertNotNull(annotations);
-						String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_TOPIC_ANNOTATION)));
+						String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)));
 						context.assertNotNull(topicAnnotation);
-						Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION));
+						Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION));
 						context.assertNotNull(partitionAnnotation);
-						Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_OFFSET_ANNOTATION));
+						Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION));
 						context.assertNotNull(offsetAnnotation);
-						Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_KEY_ANNOTATION));
+						Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
 						context.assertNull(keyAnnotation);
 						LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 								topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
@@ -690,7 +691,7 @@ public class BridgeTest extends KafkaClusterTestBase {
 				
 				// filter on specific partition
 				Map<Symbol, Object> map = new HashMap<>();
-				map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_FILTER), 1);
+				map.put(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_FILTER), 1);
 				source.setFilter(map);
 				
 				receiver.handler((delivery, message) -> {
@@ -705,13 +706,13 @@ public class BridgeTest extends KafkaClusterTestBase {
 						// get topic, partition, offset and key from AMQP annotations
 						MessageAnnotations annotations = message.getMessageAnnotations();
 						context.assertNotNull(annotations);
-						String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_TOPIC_ANNOTATION)));
+						String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)));
 						context.assertNotNull(topicAnnotation);
-						Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION));
+						Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION));
 						context.assertNotNull(partitionAnnotation);
-						Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_OFFSET_ANNOTATION));
+						Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION));
 						context.assertNotNull(offsetAnnotation);
-						Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_KEY_ANNOTATION));
+						Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
 						context.assertNull(keyAnnotation);
 						LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 								topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
@@ -757,8 +758,8 @@ public class BridgeTest extends KafkaClusterTestBase {
 
 				// filter on specific partition
 				Map<Symbol, Object> map = new HashMap<>();
-				map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_FILTER), 0);
-				map.put(Symbol.valueOf(Bridge.AMQP_OFFSET_FILTER), (long)10);
+				map.put(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_FILTER), 0);
+				map.put(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_FILTER), (long)10);
 				source.setFilter(map);
 
 				receiver.handler((delivery, message) -> {
@@ -773,13 +774,13 @@ public class BridgeTest extends KafkaClusterTestBase {
 						// get topic, partition, offset and key from AMQP annotations
 						MessageAnnotations annotations = message.getMessageAnnotations();
 						context.assertNotNull(annotations);
-						String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_TOPIC_ANNOTATION)));
+						String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)));
 						context.assertNotNull(topicAnnotation);
-						Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION));
+						Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION));
 						context.assertNotNull(partitionAnnotation);
-						Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_OFFSET_ANNOTATION));
+						Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION));
 						context.assertNotNull(offsetAnnotation);
-						Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(Bridge.AMQP_KEY_ANNOTATION));
+						Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
 						context.assertNotNull(keyAnnotation);
 						LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 								topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));

@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package enmasse.kafka.bridge.converter;
+package enmasse.kafka.bridge.amqp.converter;
 
-import enmasse.kafka.bridge.Bridge;
+import enmasse.kafka.bridge.amqp.AmqpBridge;
+import enmasse.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -42,7 +43,7 @@ import java.util.Map.Entry;
  * JSON implementation class for the message conversion
  * between Kafka record and AMQP message
  */
-public class JsonMessageConverter implements MessageConverter<String, byte[]> {
+public class AmqpJsonMessageConverter implements MessageConverter<String, byte[], Message> {
 
 	// AMQP message section to encode in JSON
 	public static final String APPLICATION_PROPERTIES = "applicationProperties";
@@ -74,17 +75,17 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 		// make JSON with AMQP properties
 		JsonObject jsonProperties = new JsonObject();
 		if (message.getMessageId() != null)
-			jsonProperties.put(JsonMessageConverter.MESSAGE_ID, message.getMessageId());
+			jsonProperties.put(AmqpJsonMessageConverter.MESSAGE_ID, message.getMessageId());
 		if (message.getAddress() != null)
-			jsonProperties.put(JsonMessageConverter.TO, message.getAddress());
+			jsonProperties.put(AmqpJsonMessageConverter.TO, message.getAddress());
 		if (message.getSubject() != null)
-			jsonProperties.put(JsonMessageConverter.SUBJECT, message.getSubject());
+			jsonProperties.put(AmqpJsonMessageConverter.SUBJECT, message.getSubject());
 		if (message.getReplyTo() != null)
-			jsonProperties.put(JsonMessageConverter.REPLY_TO, message.getReplyTo());
+			jsonProperties.put(AmqpJsonMessageConverter.REPLY_TO, message.getReplyTo());
 		if (message.getCorrelationId() != null)
-			jsonProperties.put(JsonMessageConverter.CORRELATION_ID, message.getCorrelationId());
+			jsonProperties.put(AmqpJsonMessageConverter.CORRELATION_ID, message.getCorrelationId());
 		if (!jsonProperties.isEmpty())
-			json.put(JsonMessageConverter.PROPERTIES, jsonProperties);
+			json.put(AmqpJsonMessageConverter.PROPERTIES, jsonProperties);
 		
 		// make JSON with AMQP application properties 
 		ApplicationProperties applicationProperties = message.getApplicationProperties();
@@ -97,7 +98,7 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 				
 				jsonApplicationProperties.put(entry.getKey(), entry.getValue());
 			}
-			json.put(JsonMessageConverter.APPLICATION_PROPERTIES, jsonApplicationProperties);
+			json.put(AmqpJsonMessageConverter.APPLICATION_PROPERTIES, jsonApplicationProperties);
 		}
 		
 		// get partition and key from AMQP message annotations
@@ -106,8 +107,8 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 		
 		if (messageAnnotations != null) {
 			
-			partition = messageAnnotations.getValue().get(Symbol.getSymbol(Bridge.AMQP_PARTITION_ANNOTATION));
-			key = messageAnnotations.getValue().get(Symbol.getSymbol(Bridge.AMQP_KEY_ANNOTATION));
+			partition = messageAnnotations.getValue().get(Symbol.getSymbol(AmqpBridge.AMQP_PARTITION_ANNOTATION));
+			key = messageAnnotations.getValue().get(Symbol.getSymbol(AmqpBridge.AMQP_KEY_ANNOTATION));
 			
 			if (partition != null && !(partition instanceof Integer))
 				throw new IllegalArgumentException("The partition annotation must be an Integer");
@@ -122,7 +123,7 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 				
 				jsonMessageAnnotations.put(entry.getKey().toString(), entry.getValue());
 			}
-			json.put(JsonMessageConverter.MESSAGE_ANNOTATIONS, jsonMessageAnnotations);
+			json.put(AmqpJsonMessageConverter.MESSAGE_ANNOTATIONS, jsonMessageAnnotations);
 		}
 		
 		// get topic and body from AMQP message
@@ -140,30 +141,30 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 			// section is AMQP value
 			if (body instanceof AmqpValue) {	
 				
-				jsonBody.put(JsonMessageConverter.SECTION_TYPE, JsonMessageConverter.SECTION_AMQP_VALUE_TYPE);
+				jsonBody.put(AmqpJsonMessageConverter.SECTION_TYPE, AmqpJsonMessageConverter.SECTION_AMQP_VALUE_TYPE);
 				
 				Object amqpValue = ((AmqpValue) body).getValue();
 				
 				// encoded as String
 				if (amqpValue instanceof String) {
 					String content = (String)((AmqpValue) body).getValue();
-					jsonBody.put(JsonMessageConverter.SECTION, content);
+					jsonBody.put(AmqpJsonMessageConverter.SECTION, content);
 				// encoded as a List
 				} else if (amqpValue instanceof List) {
 					List<?> list = (List<?>)((AmqpValue) body).getValue();
 					JsonArray jsonArray = new JsonArray(list);
-					jsonBody.put(JsonMessageConverter.SECTION, jsonArray);
+					jsonBody.put(AmqpJsonMessageConverter.SECTION, jsonArray);
 				// encoded as an array
 				} else if (amqpValue instanceof Object[]) {
 					Object[] array = (Object[])((AmqpValue)body).getValue();
 					JsonArray jsonArray = new JsonArray(Arrays.asList(array));
-					jsonBody.put(JsonMessageConverter.SECTION, jsonArray);
+					jsonBody.put(AmqpJsonMessageConverter.SECTION, jsonArray);
 				// encoded as a Map
 				} else if (amqpValue instanceof Map) {
 					Map<?,?> map = (Map<?,?>)((AmqpValue)body).getValue();
 					value = map.toString().getBytes();
 					JsonObject jsonMap = new JsonObject((Map<String,Object>)map);
-					jsonBody.put(JsonMessageConverter.SECTION, jsonMap);
+					jsonBody.put(AmqpJsonMessageConverter.SECTION, jsonMap);
 				}
 			
 			// section is Data (binary)
@@ -171,14 +172,14 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 				Binary binary = (Binary)((Data)body).getValue();
 				value = binary.getArray();
 				
-				jsonBody.put(JsonMessageConverter.SECTION_TYPE, JsonMessageConverter.SECTION_DATA_TYPE);
+				jsonBody.put(AmqpJsonMessageConverter.SECTION_TYPE, AmqpJsonMessageConverter.SECTION_DATA_TYPE);
 				
 				// put the section bytes as Base64 encoded string
-				jsonBody.put(JsonMessageConverter.SECTION, Base64.getEncoder().encode(value));
+				jsonBody.put(AmqpJsonMessageConverter.SECTION, Base64.getEncoder().encode(value));
 			}
 			
 			// put the body into the JSON root
-			json.put(JsonMessageConverter.BODY, jsonBody);
+			json.put(AmqpJsonMessageConverter.BODY, jsonBody);
 		}
 		
 		// build the record for the KafkaProducer and then send it
@@ -186,31 +187,31 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 	}
 
 	@Override
-	public Message toAmqpMessage(String amqpAddress, ConsumerRecord<String, byte[]> record) {
+	public Message toMessage(String address, ConsumerRecord<String, byte[]> record) {
 		
 		Message message = Proton.message();
-		message.setAddress(amqpAddress);
+		message.setAddress(address);
 		
 		// get the root JSON
 		JsonObject json = new JsonObject(new String(record.value()));
 		
 		// get AMQP properties from the JSON
-		JsonObject jsonProperties = json.getJsonObject(JsonMessageConverter.PROPERTIES);
+		JsonObject jsonProperties = json.getJsonObject(AmqpJsonMessageConverter.PROPERTIES);
 		if (jsonProperties != null) {
 			
 			for (Entry<String, Object> entry : jsonProperties) {
 				
 				if (entry.getValue() != null) {
 				
-					if (entry.getKey().equals(JsonMessageConverter.MESSAGE_ID)) {
+					if (entry.getKey().equals(AmqpJsonMessageConverter.MESSAGE_ID)) {
 						message.setMessageId(entry.getValue());
-					} else if (entry.getKey().equals(JsonMessageConverter.TO)) {
+					} else if (entry.getKey().equals(AmqpJsonMessageConverter.TO)) {
 						message.setAddress(entry.getValue().toString());
-					} else if (entry.getKey().equals(JsonMessageConverter.SUBJECT)) {
+					} else if (entry.getKey().equals(AmqpJsonMessageConverter.SUBJECT)) {
 						message.setSubject(entry.getValue().toString());
-					} else if (entry.getKey().equals(JsonMessageConverter.REPLY_TO)) {
+					} else if (entry.getKey().equals(AmqpJsonMessageConverter.REPLY_TO)) {
 						message.setReplyTo(entry.getValue().toString());
-					} else if (entry.getKey().equals(JsonMessageConverter.CORRELATION_ID)) {
+					} else if (entry.getKey().equals(AmqpJsonMessageConverter.CORRELATION_ID)) {
 						message.setCorrelationId(entry.getValue());
 					}
 				}
@@ -218,7 +219,7 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 		}
 		
 		// get AMQP application properties from the JSON
-		JsonObject jsonApplicationProperties = json.getJsonObject(JsonMessageConverter.APPLICATION_PROPERTIES);
+		JsonObject jsonApplicationProperties = json.getJsonObject(AmqpJsonMessageConverter.APPLICATION_PROPERTIES);
 		if (jsonApplicationProperties != null) {
 			
 			Map<Symbol, Object> applicationPropertiesMap = new HashMap<>();
@@ -233,14 +234,14 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 		
 		// put message annotations about partition, offset and key (if not null)
 		Map<Symbol, Object> messageAnnotationsMap = new HashMap<>();
-		messageAnnotationsMap.put(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION), record.partition());
-		messageAnnotationsMap.put(Symbol.valueOf(Bridge.AMQP_OFFSET_ANNOTATION), record.offset());
+		messageAnnotationsMap.put(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION), record.partition());
+		messageAnnotationsMap.put(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION), record.offset());
 		if (record.key() != null)
-			messageAnnotationsMap.put(Symbol.valueOf(Bridge.AMQP_KEY_ANNOTATION), record.key());
-		messageAnnotationsMap.put(Symbol.valueOf(Bridge.AMQP_TOPIC_ANNOTATION), record.topic());
+			messageAnnotationsMap.put(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION), record.key());
+		messageAnnotationsMap.put(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION), record.topic());
 		
 		// get AMQP message annotations from the JSON
-		JsonObject jsonMessageAnnotations = json.getJsonObject(JsonMessageConverter.MESSAGE_ANNOTATIONS);
+		JsonObject jsonMessageAnnotations = json.getJsonObject(AmqpJsonMessageConverter.MESSAGE_ANNOTATIONS);
 		if (jsonMessageAnnotations != null) {
 			
 			for (Entry<String, Object> entry : jsonMessageAnnotations) {
@@ -252,17 +253,17 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 		message.setMessageAnnotations(messageAnnotations);
 		
 		// get the AMQP message body from the JSON
-		JsonObject jsonBody = json.getJsonObject(JsonMessageConverter.BODY);
+		JsonObject jsonBody = json.getJsonObject(AmqpJsonMessageConverter.BODY);
 		
 		if (jsonBody != null) {
 			
 			// type attribtute for following sectin : AMQP value or raw data/binary
-			String type = jsonBody.getString(JsonMessageConverter.SECTION_TYPE);
+			String type = jsonBody.getString(AmqpJsonMessageConverter.SECTION_TYPE);
 			 
-			if (type.equals(JsonMessageConverter.SECTION_AMQP_VALUE_TYPE)) {
+			if (type.equals(AmqpJsonMessageConverter.SECTION_AMQP_VALUE_TYPE)) {
 				
 				// section is an AMQP value
-				Object jsonSection = jsonBody.getValue(JsonMessageConverter.SECTION);
+				Object jsonSection = jsonBody.getValue(AmqpJsonMessageConverter.SECTION);
 				
 				// encoded as String
 				if (jsonSection instanceof String) {
@@ -277,12 +278,12 @@ public class JsonMessageConverter implements MessageConverter<String, byte[]> {
 					message.setBody(new AmqpValue(jsonObject.getMap()));
 				}
 				
-			} else if (type.equals(JsonMessageConverter.SECTION_DATA_TYPE)) {
+			} else if (type.equals(AmqpJsonMessageConverter.SECTION_DATA_TYPE)) {
 				
 				// section is a raw binary data
 				
 				// get the section from the JSON (it's base64 encoded)
-				byte[] value = jsonBody.getBinary(JsonMessageConverter.SECTION);
+				byte[] value = jsonBody.getBinary(AmqpJsonMessageConverter.SECTION);
 				
 				message.setBody(new Data(new Binary(Base64.getDecoder().decode(value))));
 			}

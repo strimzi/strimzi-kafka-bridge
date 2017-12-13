@@ -17,11 +17,10 @@
 package enmasse.kafka.bridge;
 
 import io.vertx.core.Handler;
-import io.vertx.proton.ProtonLink;
 
 /**
  * Interface for classes which acts as endpoints
- * bridging traffic between AMQP and Apache Kafka
+ * bridging traffic between a protocol and Apache Kafka
  */
 public interface BridgeEndpoint {
 
@@ -36,16 +35,16 @@ public interface BridgeEndpoint {
 	void close();
 	
 	/**
-	 * Handler for the Proton link 
-	 * @param link		Proton link to handle
+	 * Handler for the remote protocol endpoint
+	 * @param endpoint	Remote protocol endpoint to handle
 	 */
-	void handle(ProtonLink<?> link);
+	void handle(Endpoint<?> endpoint);
 	
 	/**
-	 * Sets an handler for when an endpoint is closed due to internal processing
+	 * Sets an handler called when a bridge endpoint is closed due to internal processing
 	 * 
-	 * @param endpointCloseHandler		The handler
-	 * @return				The endpoint
+	 * @param endpointCloseHandler	The handler
+	 * @return	The bridge endpoint
 	 */
 	BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler);
 }

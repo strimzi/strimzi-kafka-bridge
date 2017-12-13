@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-package enmasse.kafka.bridge;
+package enmasse.kafka.bridge.tracker;
 
-import enmasse.kafka.bridge.tracker.FullOffsetTracker;
-import enmasse.kafka.bridge.tracker.OffsetTracker;
-import enmasse.kafka.bridge.tracker.SimpleOffsetTracker;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;

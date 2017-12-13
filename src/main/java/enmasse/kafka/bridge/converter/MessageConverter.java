@@ -23,23 +23,23 @@ import org.apache.qpid.proton.message.Message;
 /**
  * Interface for a message converter between Kafka record and AMQP message
  */
-public interface MessageConverter<K, V> {
+public interface MessageConverter<K, V, M> {
 
 	/**
-	 * Converts an AMQP message to a Kafka record
+	 * Converts a message to a Kafka record
 	 *
 	 * @param kafkaTopic	Kafka topic for sending message
-	 * @param message		AMQP message to convert
-	 * @return				Kafka record
+	 * @param message	message to convert
+	 * @return	Kafka record
 	 */
-	ProducerRecord<K, V> toKafkaRecord(String kafkaTopic, Message message);
+	ProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message);
 	
 	/**
-	 * Converts a Kafka record to an AMQP message
+	 * Converts a Kafka record to a message
 	 *
-	 * @param amqpAddress	AMQP address for sending message
-	 * @param record		Kafka record to convert
-	 * @return				AMQP message
+	 * @param address	address for sending message
+	 * @param record	Kafka record to convert
+	 * @return	message
 	 */
-	Message toAmqpMessage(String amqpAddress, ConsumerRecord<K, V> record);
+	M toMessage(String address, ConsumerRecord<K, V> record);
 }

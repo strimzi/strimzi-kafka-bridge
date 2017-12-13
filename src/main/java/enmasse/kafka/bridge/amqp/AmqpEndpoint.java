@@ -14,10 +14,29 @@
  * limitations under the License.
  */
 
-package enmasse.kafka.bridge;
+package enmasse.kafka.bridge.amqp;
+
+import enmasse.kafka.bridge.Endpoint;
+import io.vertx.proton.ProtonLink;
 
 /**
- * Base class for source bridge endpoints
+ * Wrapper for a remote AMQP Proton link endpoint
  */
-public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
+public class AmqpEndpoint implements Endpoint<ProtonLink<?>> {
+
+    private ProtonLink<?> link;
+
+    /**
+     * Contructor
+     *
+     * @param link  AMQP Proton link representing the remote endpoint
+     */
+    public AmqpEndpoint(ProtonLink<?> link) {
+        this.link = link;
+    }
+
+    @Override
+    public ProtonLink<?> get() {
+        return this.link;
+    }
 }

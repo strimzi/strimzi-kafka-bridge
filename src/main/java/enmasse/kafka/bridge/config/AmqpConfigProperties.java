@@ -30,7 +30,7 @@ public class AmqpConfigProperties {
     private static final String DEFAULT_HOST = "0.0.0.0";
     private static final int DEFAULT_PORT = 5672;
     private static final int DEFAULT_FLOW_CREDIT = 1024;
-    private static final String DEFAULT_MESSAGE_CONVERTER = "enmasse.kafka.bridge.converter.DefaultMessageConverter";
+    private static final String DEFAULT_MESSAGE_CONVERTER = "enmasse.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter";
     private static final String DEFAULT_CERT_DIR = null;
 
     private AmqpMode mode = DEFAULT_AMQP_MODE;

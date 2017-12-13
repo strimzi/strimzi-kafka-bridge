@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package enmasse.kafka.bridge;
+package enmasse.kafka.bridge.amqp;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import enmasse.kafka.bridge.ConnectionEndpoint;
+import enmasse.kafka.bridge.SinkBridgeEndpoint;
+import enmasse.kafka.bridge.SourceBridgeEndpoint;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.slf4j.Logger;
@@ -29,7 +32,7 @@ import org.springframework.stereotype.Component;
 
 import enmasse.kafka.bridge.config.AmqpMode;
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
-import enmasse.kafka.bridge.converter.DefaultMessageConverter;
+import enmasse.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
 import enmasse.kafka.bridge.converter.MessageConverter;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AbstractVerticle;
@@ -52,9 +55,9 @@ import io.vertx.core.net.PemTrustOptions;
  * and handling AMQP senders and receivers
  */
 @Component
-public class Bridge extends AbstractVerticle {
+public class AmqpBridge extends AbstractVerticle {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(Bridge.class);
+	private static final Logger LOG = LoggerFactory.getLogger(AmqpBridge.class);
 
 	// AMQP message annotations
 	public static final String AMQP_PARTITION_ANNOTATION = "x-opt-bridge.partition";
@@ -408,7 +411,7 @@ public class Bridge extends AbstractVerticle {
 		SourceBridgeEndpoint source = endpoint.getSource();
 		// the source endpoint is only one, handling more AMQP receiver links internally
 		if (source == null) {
-			source = new SourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
+			source = new AmqpSourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
 
 			source.closeHandler(s -> {
 				endpoint.setSource(null);
@@ -416,7 +419,7 @@ public class Bridge extends AbstractVerticle {
 			source.open();
 			endpoint.setSource(source);
 		}
-		source.handle(receiver);
+		source.handle(new AmqpEndpoint(receiver));
 	}
 	
 	/**
@@ -431,7 +434,7 @@ public class Bridge extends AbstractVerticle {
 		LOG.info("Remote receiver attached {}", sender.getName());
 		
 		// create and add a new sink to the map
-		SinkBridgeEndpoint<?,?> sink = new SinkBridgeEndpoint<>(this.vertx, this.bridgeConfigProperties);
+		SinkBridgeEndpoint<?,?> sink = new AmqpSinkBridgeEndpoint<>(this.vertx, this.bridgeConfigProperties);
 
 		sink.closeHandler(s -> {
 			this.endpoints.get(connection).getSinks().remove(s);
@@ -439,7 +442,7 @@ public class Bridge extends AbstractVerticle {
 		sink.open();
 		this.endpoints.get(connection).getSinks().add(sink);
 
-		sink.handle(sender);
+		sink.handle(new AmqpEndpoint(sender));
 	}
 
 	/**
@@ -483,12 +486,12 @@ public class Bridge extends AbstractVerticle {
 	 *
 	 * @param className		message converter class name to instantiate
 	 * @return				an AMQP message converter instance
-	 * @throws ErrorConditionException
+	 * @throws AmqpErrorConditionException
 	 */
-	static MessageConverter<?, ?> instantiateConverter(String className) throws ErrorConditionException {
+	static MessageConverter<?, ?, ?> instantiateConverter(String className) throws AmqpErrorConditionException {
 		
 		if (className == null || className.isEmpty()) {
-			return (MessageConverter<?, ?>)new DefaultMessageConverter();
+			return (MessageConverter<?, ?, ?>)new AmqpDefaultMessageConverter();
 		} else {
 			Object instance = null;
 			try {
@@ -496,13 +499,13 @@ public class Bridge extends AbstractVerticle {
 			} catch (ClassNotFoundException | InstantiationException | IllegalAccessException 
 					| RuntimeException e) {
 				LOG.debug("Could not instantiate message converter {}", className, e);
-				throw new ErrorConditionException(Bridge.AMQP_ERROR_CONFIGURATION, "configured message converter class could not be instantiated: " + className);
+				throw new AmqpErrorConditionException(AmqpBridge.AMQP_ERROR_CONFIGURATION, "configured message converter class could not be instantiated: " + className);
 			} 
 			
 			if (instance instanceof MessageConverter) {
-				return (MessageConverter<?,?>)instance;
+				return (MessageConverter<?,?,?>)instance;
 			} else {
-				throw new ErrorConditionException(Bridge.AMQP_ERROR_CONFIGURATION, "configured message converter class is not an instanceof " + MessageConverter.class.getName() + ": " + className);
+				throw new AmqpErrorConditionException(AmqpBridge.AMQP_ERROR_CONFIGURATION, "configured message converter class is not an instanceof " + MessageConverter.class.getName() + ": " + className);
 			}
 		}
 	}

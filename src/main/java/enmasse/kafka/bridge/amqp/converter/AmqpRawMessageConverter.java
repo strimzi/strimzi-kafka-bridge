@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package enmasse.kafka.bridge.converter;
+package enmasse.kafka.bridge.amqp.converter;
 
-import enmasse.kafka.bridge.Bridge;
+import enmasse.kafka.bridge.amqp.AmqpBridge;
+import enmasse.kafka.bridge.converter.MessageConverter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.qpid.proton.Proton;
@@ -33,7 +34,7 @@ import java.util.Map;
  * between Kafka record and AMQP message.
  * It passes the AMQP message as is (raw bytes) as Kafka record value and vice versa.
  */
-public class RawMessageConverter implements MessageConverter<String, byte[]> {
+public class AmqpRawMessageConverter implements MessageConverter<String, byte[], Message> {
 
 	// TODO : should be it configurable or based on max frame size ?
 	private static final int BUFFER_SIZE = 32768;
@@ -43,14 +44,14 @@ public class RawMessageConverter implements MessageConverter<String, byte[]> {
 		
 		Object partition = null, key = null;
 		byte[] value;
-		byte[] buffer = new byte[RawMessageConverter.BUFFER_SIZE];
+		byte[] buffer = new byte[AmqpRawMessageConverter.BUFFER_SIZE];
 		
 		// get topic and body from AMQP message
 		String topic = (message.getAddress() == null) ?
 				kafkaTopic :
 				message.getAddress().replace('/', '.');
 		
-		int encoded = message.encode(buffer, 0, RawMessageConverter.BUFFER_SIZE);
+		int encoded = message.encode(buffer, 0, AmqpRawMessageConverter.BUFFER_SIZE);
 		value = Arrays.copyOfRange(buffer, 0, encoded);
 		
 		// get partition and key from AMQP message annotations
@@ -59,8 +60,8 @@ public class RawMessageConverter implements MessageConverter<String, byte[]> {
 		
 		if (messageAnnotations != null) {
 			
-			partition = messageAnnotations.getValue().get(Symbol.getSymbol(Bridge.AMQP_PARTITION_ANNOTATION));
-			key = messageAnnotations.getValue().get(Symbol.getSymbol(Bridge.AMQP_KEY_ANNOTATION));
+			partition = messageAnnotations.getValue().get(Symbol.getSymbol(AmqpBridge.AMQP_PARTITION_ANNOTATION));
+			key = messageAnnotations.getValue().get(Symbol.getSymbol(AmqpBridge.AMQP_KEY_ANNOTATION));
 			
 			if (partition != null && !(partition instanceof Integer))
 				throw new IllegalArgumentException("The partition annotation must be an Integer");
@@ -74,20 +75,20 @@ public class RawMessageConverter implements MessageConverter<String, byte[]> {
 	}
 
 	@Override
-	public Message toAmqpMessage(String amqpAddress, ConsumerRecord<String, byte[]> record) {
+	public Message toMessage(String address, ConsumerRecord<String, byte[]> record) {
 		
 		Message message = Proton.message();
-		message.setAddress(amqpAddress);
+		message.setAddress(address);
 		
 		message.decode(record.value(), 0, record.value().length);
 		
 		// put message annotations about partition, offset and key (if not null)
 		Map<Symbol, Object> map = new HashMap<>();
-		map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION), record.partition());
-		map.put(Symbol.valueOf(Bridge.AMQP_OFFSET_ANNOTATION), record.offset());
+		map.put(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION), record.partition());
+		map.put(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION), record.offset());
 		if (record.key() != null)
-			map.put(Symbol.valueOf(Bridge.AMQP_KEY_ANNOTATION), record.key());
-		map.put(Symbol.valueOf(Bridge.AMQP_TOPIC_ANNOTATION), record.topic());
+			map.put(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION), record.key());
+		map.put(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION), record.topic());
 		
 		MessageAnnotations messageAnnotations = new MessageAnnotations(map);
 		message.setMessageAnnotations(messageAnnotations);

@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package enmasse.kafka.bridge.converter;
+package enmasse.kafka.bridge.amqp.converter;
 
-import enmasse.kafka.bridge.Bridge;
+import enmasse.kafka.bridge.amqp.AmqpBridge;
+import enmasse.kafka.bridge.converter.DefaultSerializer;
+import enmasse.kafka.bridge.converter.MessageConverter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.qpid.proton.Proton;
@@ -36,7 +38,7 @@ import java.util.Map;
  * Default implementation class for the message conversion
  * between Kafka record and AMQP message
  */
-public class DefaultMessageConverter implements MessageConverter<String, byte[]> {
+public class AmqpDefaultMessageConverter implements MessageConverter<String, byte[], Message> {
 
 	@Override
 	public ProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Message message) {
@@ -93,8 +95,8 @@ public class DefaultMessageConverter implements MessageConverter<String, byte[]>
 		
 		if (messageAnnotations != null) {
 			
-			partition = messageAnnotations.getValue().get(Symbol.getSymbol(Bridge.AMQP_PARTITION_ANNOTATION));
-			key = messageAnnotations.getValue().get(Symbol.getSymbol(Bridge.AMQP_KEY_ANNOTATION));
+			partition = messageAnnotations.getValue().get(Symbol.getSymbol(AmqpBridge.AMQP_PARTITION_ANNOTATION));
+			key = messageAnnotations.getValue().get(Symbol.getSymbol(AmqpBridge.AMQP_KEY_ANNOTATION));
 			
 			if (partition != null && !(partition instanceof Integer))
 				throw new IllegalArgumentException("The partition annotation must be an Integer");
@@ -108,18 +110,18 @@ public class DefaultMessageConverter implements MessageConverter<String, byte[]>
 	}
 
 	@Override
-	public Message toAmqpMessage(String amqpAddress, ConsumerRecord<String, byte[]> record) {
+	public Message toMessage(String address, ConsumerRecord<String, byte[]> record) {
 		
 		Message message = Proton.message();
-		message.setAddress(amqpAddress);
+		message.setAddress(address);
 		
 		// put message annotations about partition, offset and key (if not null)
 		Map<Symbol, Object> map = new HashMap<>();
-		map.put(Symbol.valueOf(Bridge.AMQP_PARTITION_ANNOTATION), record.partition());
-		map.put(Symbol.valueOf(Bridge.AMQP_OFFSET_ANNOTATION), record.offset());
+		map.put(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION), record.partition());
+		map.put(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION), record.offset());
 		if (record.key() != null)
-			map.put(Symbol.valueOf(Bridge.AMQP_KEY_ANNOTATION), record.key());
-		map.put(Symbol.valueOf(Bridge.AMQP_TOPIC_ANNOTATION), record.topic());
+			map.put(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION), record.key());
+		map.put(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION), record.topic());
 		
 		MessageAnnotations messageAnnotations = new MessageAnnotations(map);
 		message.setMessageAnnotations(messageAnnotations);
