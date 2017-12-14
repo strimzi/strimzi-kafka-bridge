@@ -33,7 +33,7 @@ import static org.junit.Assert.assertTrue;
 
 public class OffsetTrackerTest {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(OffsetTrackerTest.class);
+	private static final Logger log = LoggerFactory.getLogger(OffsetTrackerTest.class);
 
 	private List<ConsumerRecord<String, byte[]>> records = new ArrayList<>();
 	private Map<TopicPartition, OffsetAndMetadata> offsets;
@@ -58,42 +58,42 @@ public class OffsetTrackerTest {
 			offsetTracker.track(record.partition(), record.offset(), record);
 		}
 		
-		LOG.info("0_2 deliverd");
+		log.info("0_2 deliverd");
 		offsetTracker.delivered(0, 2);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.isEmpty());
 		
-		LOG.info("0_3 deliverd");
+		log.info("0_3 deliverd");
 		offsetTracker.delivered(0, 3);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.isEmpty());
 		
-		LOG.info("0_0 deliverd");
+		log.info("0_0 deliverd");
 		offsetTracker.delivered(0, 0);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 0);
 		
-		LOG.info("0_1 deliverd");
+		log.info("0_1 deliverd");
 		offsetTracker.delivered(0, 1);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 3);
 		
-		LOG.info("0_4 deliverd");
+		log.info("0_4 deliverd");
 		offsetTracker.delivered(0, 4);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 4);
 		
-		LOG.info("0_5 deliverd");
+		log.info("0_5 deliverd");
 		offsetTracker.delivered(0, 5);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
@@ -112,42 +112,42 @@ public class OffsetTrackerTest {
 			offsetTracker.track(record.partition(), record.offset(), record);
 		}
 		
-		LOG.info("0_0 deliverd");
+		log.info("0_0 deliverd");
 		offsetTracker.delivered(0, 0);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 0);
 		
-		LOG.info("0_1 deliverd");
+		log.info("0_1 deliverd");
 		offsetTracker.delivered(0, 1);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 1);
 		
-		LOG.info("0_2 deliverd");
+		log.info("0_2 deliverd");
 		offsetTracker.delivered(0, 2);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 2);
 		
-		LOG.info("0_3 deliverd");
+		log.info("0_3 deliverd");
 		offsetTracker.delivered(0, 3);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 3);
 		
-		LOG.info("0_4 deliverd");
+		log.info("0_4 deliverd");
 		offsetTracker.delivered(0, 4);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 4);
 		
-		LOG.info("0_5 deliverd");
+		log.info("0_5 deliverd");
 		offsetTracker.delivered(0, 5);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
@@ -166,42 +166,42 @@ public class OffsetTrackerTest {
 			offsetTracker.track(record.partition(), record.offset(), record);
 		}
 		
-		LOG.info("0_2 deliverd");
+		log.info("0_2 deliverd");
 		offsetTracker.delivered(0, 2);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 2);
 		
-		LOG.info("0_3 deliverd");
+		log.info("0_3 deliverd");
 		offsetTracker.delivered(0, 3);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 3);
 		
-		LOG.info("0_0 deliverd");
+		log.info("0_0 deliverd");
 		offsetTracker.delivered(0, 0);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.isEmpty());
 		
-		LOG.info("0_1 deliverd");
+		log.info("0_1 deliverd");
 		offsetTracker.delivered(0, 1);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.isEmpty());
 		
-		LOG.info("0_4 deliverd");
+		log.info("0_4 deliverd");
 		offsetTracker.delivered(0, 4);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 4);
 		
-		LOG.info("0_5 deliverd");
+		log.info("0_5 deliverd");
 		offsetTracker.delivered(0, 5);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
@@ -220,42 +220,42 @@ public class OffsetTrackerTest {
 			offsetTracker.track(record.partition(), record.offset(), record);
 		}
 		
-		LOG.info("0_0 deliverd");
+		log.info("0_0 deliverd");
 		offsetTracker.delivered(0, 0);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 0);
 		
-		LOG.info("0_1 deliverd");
+		log.info("0_1 deliverd");
 		offsetTracker.delivered(0, 1);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 1);
 		
-		LOG.info("0_2 deliverd");
+		log.info("0_2 deliverd");
 		offsetTracker.delivered(0, 2);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 2);
 		
-		LOG.info("0_3 deliverd");
+		log.info("0_3 deliverd");
 		offsetTracker.delivered(0, 3);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 3);
 		
-		LOG.info("0_4 deliverd");
+		log.info("0_4 deliverd");
 		offsetTracker.delivered(0, 4);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
 		offsetTracker.commit(this.offsets);
 		assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 4);
 		
-		LOG.info("0_5 deliverd");
+		log.info("0_5 deliverd");
 		offsetTracker.delivered(0, 5);
 		this.offsets = offsetTracker.getOffsets();
 		printOffsetsToCommit(this.offsets);
@@ -267,7 +267,7 @@ public class OffsetTrackerTest {
 	
 	private void printOffsetsToCommit(Map<TopicPartition, OffsetAndMetadata> offsets) {
 		for (Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
-			LOG.info("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
+			log.info("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
 		}
 	}
 }

@@ -16,6 +16,12 @@
 
 package enmasse.kafka.bridge;
 
+import enmasse.kafka.bridge.config.BridgeConfigProperties;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Base class for sink bridge endpoints
  *
@@ -23,4 +29,39 @@ package enmasse.kafka.bridge;
  * @param <V>   type of Kafka message payload
  */
 public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
+
+    protected final Logger log = LoggerFactory.getLogger(getClass());
+
+    protected Vertx vertx;
+
+    protected BridgeConfigProperties bridgeConfigProperties;
+
+    private Handler<BridgeEndpoint> closeHandler;
+
+    /**
+     * Constructor
+     *
+     * @param vertx	Vert.x instance
+     * @param bridgeConfigProperties	Bridge configuration
+     */
+    public SinkBridgeEndpoint(Vertx vertx, BridgeConfigProperties bridgeConfigProperties) {
+        this.vertx = vertx;
+        this.bridgeConfigProperties = bridgeConfigProperties;
+    }
+
+    @Override
+    public BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler) {
+        this.closeHandler = endpointCloseHandler;
+        return this;
+    }
+
+    /**
+     * Raise close event
+     */
+    protected void handleClose() {
+
+        if (this.closeHandler != null) {
+            this.closeHandler.handle(this);
+        }
+    }
 }

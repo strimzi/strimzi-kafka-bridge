@@ -33,7 +33,7 @@ import java.io.IOException;
  */
 public class AmqpBridgeSender {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(AmqpBridgeSender.class);
+	private static final Logger log = LoggerFactory.getLogger(AmqpBridgeSender.class);
 	
 	private static final String BRIDGE_HOST = "localhost";
 	private static final int BRIDGE_PORT = 5672;
@@ -75,7 +75,7 @@ public class AmqpBridgeSender {
 					this.connection = ar.result();
 					this.connection.open();
 					
-					LOG.info("Connected as {}", this.connection.getContainer());
+					log.info("Connected as {}", this.connection.getContainer());
 					
 					this.sender = this.connection.createSender(ExampleOne.TOPIC);
 					this.sender.open();
@@ -84,14 +84,14 @@ public class AmqpBridgeSender {
 					Message message = ProtonHelper.message(topic, "Simple message from " + this.connection.getContainer());
 					
 					this.sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-						LOG.info("Message delivered {}", delivery.getRemoteState());
+						log.info("Message delivered {}", delivery.getRemoteState());
 						if (delivery.getRemoteState() instanceof Rejected) {
 							Rejected rejected = (Rejected)delivery.getRemoteState();
-							LOG.info("... but rejected {} {}", rejected.getError().getCondition(), rejected.getError().getDescription());
+							log.info("... but rejected {} {}", rejected.getError().getCondition(), rejected.getError().getDescription());
 						}
 					});
 				} else {
-					LOG.info("Error on connection ... {}", ar.cause());
+					log.info("Error on connection ... {}", ar.cause());
 				}
 			});
 			
@@ -135,7 +135,7 @@ public class AmqpBridgeSender {
 					this.connection = ar.result();
 					this.connection.open();
 					
-					LOG.info("Connected as {}", this.connection.getContainer());
+					log.info("Connected as {}", this.connection.getContainer());
 					
 					String topic = ExampleTwo.TOPIC;
 					this.delivered = 0;
@@ -161,10 +161,10 @@ public class AmqpBridgeSender {
 									
 									this.senders[index].send(ProtonHelper.tag("my_tag" + String.valueOf(this.count[index])), message, delivery -> {
 										this.delivered++;
-										LOG.info("Message delivered {} for sender {}", delivery.getRemoteState(), index);
+										log.info("Message delivered {} for sender {}", delivery.getRemoteState(), index);
 										if (delivery.getRemoteState() instanceof Rejected) {
 											Rejected rejected = (Rejected)delivery.getRemoteState();
-											LOG.info("... but rejected {} {}", rejected.getError().getCondition(), rejected.getError().getDescription());
+											log.info("... but rejected {} {}", rejected.getError().getCondition(), rejected.getError().getDescription());
 										}
 									});
 									
@@ -176,7 +176,7 @@ public class AmqpBridgeSender {
 					}
 					
 				} else {
-					LOG.info("Error on connection ... {}", ar.cause());
+					log.info("Error on connection ... {}", ar.cause());
 				}
 			});
 			
@@ -189,7 +189,7 @@ public class AmqpBridgeSender {
 				}
 				this.connection.close();
 				
-				LOG.info("Total delivered {}", this.delivered);
+				log.info("Total delivered {}", this.delivered);
 				
 			} catch (IOException e) {
 				e.printStackTrace();

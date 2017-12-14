@@ -16,11 +16,9 @@
 
 package enmasse.kafka.bridge.amqp;
 
-import enmasse.kafka.bridge.BridgeEndpoint;
 import enmasse.kafka.bridge.Endpoint;
 import enmasse.kafka.bridge.SourceBridgeEndpoint;
 import enmasse.kafka.bridge.converter.MessageConverter;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.producer.KafkaProducer;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
@@ -36,8 +34,6 @@ import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.Rejected;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,35 +45,24 @@ import java.util.Properties;
  */
 public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(SourceBridgeEndpoint.class);
-	
 	// converter from AMQP message to ConsumerRecord
 	private MessageConverter<String, byte[], Message> converter;
 	
 	private KafkaProducer<String, byte[]> producerUnsettledMode;
 	private KafkaProducer<String, byte[]> producerSettledMode;
 	
-	private Vertx vertx;
-	
-	private Handler<BridgeEndpoint> closeHandler;
-
 	// receiver link for handling incoming message
 	private Map<String, ProtonReceiver> receivers;
-
-	private AmqpBridgeConfigProperties bridgeConfigProperties;
 	
 	/**
 	 * Constructor
 	 * 
-	 * @param vertx		Vert.x instance
+	 * @param vertx	Vert.x instance
 	 * @param bridgeConfigProperties	Bridge configuration
 	 */
 	public AmqpSourceBridgeEndpoint(Vertx vertx, AmqpBridgeConfigProperties bridgeConfigProperties) {
-		
-		this.vertx = vertx;
-		this.bridgeConfigProperties = bridgeConfigProperties;
+		super(vertx, bridgeConfigProperties);
 		this.receivers = new HashMap<>();
-
 	}
 	
 	@Override
@@ -119,6 +104,8 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 	public void handle(Endpoint<?> endpoint) {
 
 		ProtonLink<?> link = (ProtonLink<?>) endpoint.get();
+		AmqpConfigProperties amqpConfigProperties =
+				(AmqpConfigProperties) this.bridgeConfigProperties.getEndpointConfigProperties();
 
 		if (!(link instanceof ProtonReceiver)) {
 			throw new IllegalArgumentException("This Proton link must be a receiver");
@@ -126,7 +113,7 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
 		if (this.converter == null) {
 			try {
-				this.converter = (MessageConverter<String, byte[], Message>) AmqpBridge.instantiateConverter(this.bridgeConfigProperties.getEndpointConfigProperties().getMessageConverter());
+				this.converter = (MessageConverter<String, byte[], Message>) AmqpBridge.instantiateConverter(amqpConfigProperties.getMessageConverter());
 			} catch (AmqpErrorConditionException e) {
 				AmqpBridge.detachWithError(link, e.toCondition());
 				return;
@@ -153,12 +140,12 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 		if (receiver.getRemoteQoS() == ProtonQoS.AT_MOST_ONCE) {
 			// sender settle mode is SETTLED (so AT_MOST_ONCE QoS), we assume Apache Kafka
 			// no problem in throughput terms so use prefetch due to no ack from Kafka server
-			receiver.setPrefetch(this.bridgeConfigProperties.getEndpointConfigProperties().getFlowCredit());
+			receiver.setPrefetch(amqpConfigProperties.getFlowCredit());
 		} else {
 			// sender settle mode is UNSETTLED (or MIXED) (so AT_LEAST_ONCE QoS).
 			// Thanks to the ack from Kafka server we can modulate flow control
 			receiver.setPrefetch(0)
-					.flow(this.bridgeConfigProperties.getEndpointConfigProperties().getFlowCredit());
+					.flow(amqpConfigProperties.getFlowCredit());
 		}
 
 		receiver.open();
@@ -175,7 +162,7 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 	private void acceptedDelivery(String linkName, ProtonDelivery delivery) {
 
 		delivery.disposition(Accepted.getInstance(), true);
-		LOG.debug("Delivery sent [accepted] on link {}", linkName);
+		log.debug("Delivery sent [accepted] on link {}", linkName);
 	}
 
 	/**
@@ -191,7 +178,7 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 		rejected.setError(new ErrorCondition(Symbol.valueOf(AmqpBridge.AMQP_ERROR_SEND_TO_KAFKA),
 				cause.getMessage()));
 		delivery.disposition(rejected, true);
-		LOG.debug("Delivery sent [rejected] on link {}", linkName);
+		log.debug("Delivery sent [rejected] on link {}", linkName);
 	}
 
 	/**
@@ -210,7 +197,7 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
 		ProducerRecord<String, byte[]> record = this.converter.toKafkaRecord(kafkaTopic, message);
 		KafkaProducerRecord<String, byte[]> krecord = KafkaProducerRecord.create(record.topic(), record.key(), record.value(), record.timestamp(), record.partition());
-		LOG.debug("Sending to Kafka on topic {} at partition {} and key {}", record.topic(), record.partition(), record.key());
+		log.debug("Sending to Kafka on topic {} at partition {} and key {}", record.topic(), record.partition(), record.key());
 				
 		if (delivery.remotelySettled()) {
 			
@@ -225,25 +212,18 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
 					Throwable exception = writeResult.cause();
 					// record not delivered, send REJECTED disposition to the AMQP sender
-					LOG.error("Error on delivery to Kafka {}", exception.getMessage());
+					log.error("Error on delivery to Kafka {}", exception.getMessage());
 					this.rejectedDelivery(receiver.getName(), delivery, exception);
 					
 				} else {
 
 					RecordMetadata metadata = writeResult.result();
 					// record delivered, send ACCEPTED disposition to the AMQP sender
-					LOG.debug("Delivered to Kafka on topic {} at partition {} [{}]", metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
+					log.debug("Delivered to Kafka on topic {} at partition {} [{}]", metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
 					this.acceptedDelivery(receiver.getName(), delivery);
 				}
 			});
 		}
-	}
-
-	@Override
-	public BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler) {
-
-		this.closeHandler = endpointCloseHandler;
-		return this;
 	}
 
 	/**
@@ -252,7 +232,7 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 	 */
 	private void processCloseReceiver(ProtonReceiver receiver) {
 
-		LOG.info("Remote AMQP sender detached");
+		log.info("Remote AMQP sender detached");
 
 		// close and remove the receiver link
 		receiver.close();
@@ -262,16 +242,6 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 		if (this.receivers.isEmpty()) {
 			this.close();
 			this.handleClose();
-		}
-	}
-	
-	/**
-	 * Raise close event
-	 */
-	private void handleClose() {
-
-		if (this.closeHandler != null) {
-			this.closeHandler.handle(this);
 		}
 	}
 }
