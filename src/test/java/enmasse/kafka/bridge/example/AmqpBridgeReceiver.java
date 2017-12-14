@@ -38,7 +38,7 @@ import java.util.Map;
  */
 public class AmqpBridgeReceiver {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(AmqpBridgeReceiver.class);
+	private static final Logger log = LoggerFactory.getLogger(AmqpBridgeReceiver.class);
 	
 	private static final String BRIDGE_HOST = "localhost";
 	private static final int BRIDGE_PORT = 5672;
@@ -88,7 +88,7 @@ public class AmqpBridgeReceiver {
 					this.connection = ar.result();
 					this.connection.open();
 					
-					LOG.info("Connected as {}", this.connection.getContainer());
+					log.info("Connected as {}", this.connection.getContainer());
 					
 					for (int i = 0; i < this.receivers.length; i++) {
 						
@@ -108,26 +108,26 @@ public class AmqpBridgeReceiver {
 							
 							if (body instanceof Data) {
 								byte[] value = ((Data)body).getValue().getArray();
-								LOG.info("Message received {} by receiver {} ...", new String(value), index);
+								log.info("Message received {} by receiver {} ...", new String(value), index);
 								
 							} else if (body instanceof AmqpValue) {
 								Object amqpValue = ((AmqpValue) body).getValue();
 								// encoded as String
 								if (amqpValue instanceof String) {
 									String content = (String)((AmqpValue) body).getValue();
-									LOG.info("Message received {} by receiver {} ...", content, index);
+									log.info("Message received {} by receiver {} ...", content, index);
 								// encoded as a List
 								} else if (amqpValue instanceof List) {
 									List<?> list = (List<?>)((AmqpValue) body).getValue();
-									LOG.info("Message received {} by receiver {} ...", list, index);
+									log.info("Message received {} by receiver {} ...", list, index);
 								// encoded as an array
 								} else if (amqpValue instanceof Object[]) {
 									Object[] array = (Object[])((AmqpValue)body).getValue();
-									LOG.info("Message received {} by receiver {} ...", array, index);
+									log.info("Message received {} by receiver {} ...", array, index);
 								// encoded as a Map
 								} else if (amqpValue instanceof Map) {
 									Map<?,?> map = (Map<?,?>)((AmqpValue)body).getValue();
-									LOG.info("Message received {} by receiver {} ...", map, index);
+									log.info("Message received {} by receiver {} ...", map, index);
 								}
 							}
 							
@@ -140,7 +140,7 @@ public class AmqpBridgeReceiver {
 								Object offset = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.offset"));
 								Object key = messageAnnotations.getValue().get(Symbol.getSymbol("x-opt-bridge.key"));
 								Object topic = messageAnnotations.getValue().get(Symbol.valueOf("x-opt-bridge.topic"));
-								LOG.info("... on topic {} partition {} [{}], key = {}", topic, partition, offset, key);
+								log.info("... on topic {} partition {} [{}], key = {}", topic, partition, offset, key);
 							}
 						})
 						.open();
@@ -158,7 +158,7 @@ public class AmqpBridgeReceiver {
 				}
 				this.connection.close();
 				
-				LOG.info("Total received {}", this.received);
+				log.info("Total received {}", this.received);
 				
 			} catch (IOException e) {
 				e.printStackTrace();

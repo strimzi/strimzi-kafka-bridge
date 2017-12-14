@@ -54,7 +54,7 @@ import java.util.Map;
 @Component
 public class AmqpBridge extends AbstractVerticle {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(AmqpBridge.class);
+	private static final Logger log = LoggerFactory.getLogger(AmqpBridge.class);
 
 	// AMQP message annotations
 	public static final String AMQP_PARTITION_ANNOTATION = "x-opt-bridge.partition";
@@ -117,8 +117,8 @@ public class AmqpBridge extends AbstractVerticle {
 					
 					if (ar.succeeded()) {
 
-						LOG.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
-						LOG.info("Kafka bootstrap servers {}",
+						log.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
+						log.info("Kafka bootstrap servers {}",
 								this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
 
 						this.isReady = true;
@@ -126,7 +126,7 @@ public class AmqpBridge extends AbstractVerticle {
 
 						startFuture.complete();
 					} else {
-						LOG.error("Error starting AMQP-Kafka Bridge", ar.cause());
+						log.error("Error starting AMQP-Kafka Bridge", ar.cause());
 						startFuture.fail(ar.cause());
 					}
 				});
@@ -159,8 +159,8 @@ public class AmqpBridge extends AbstractVerticle {
 
 				this.processConnection(connection);
 
-				LOG.info("AMQP-Kafka Bridge started and connected in client mode to {}:{}", host, port);
-				LOG.info("Kafka bootstrap servers {}",
+				log.info("AMQP-Kafka Bridge started and connected in client mode to {}:{}", host, port);
+				log.info("Kafka bootstrap servers {}",
 						this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
 
 				this.isReady = true;
@@ -168,7 +168,7 @@ public class AmqpBridge extends AbstractVerticle {
 				startFuture.complete();
 
 			} else {
-				LOG.error("Error connecting AMQP-Kafka Bridge as client", ar.cause());
+				log.error("Error connecting AMQP-Kafka Bridge as client", ar.cause());
 				startFuture.fail(ar.cause());
 			}
 		});
@@ -177,12 +177,12 @@ public class AmqpBridge extends AbstractVerticle {
 	@Override
 	public void start(Future<Void> startFuture) throws Exception {
 
-		LOG.info("Starting AMQP-Kafka bridge verticle...");
+		log.info("Starting AMQP-Kafka bridge verticle...");
 
 		this.endpoints = new HashMap<>();
 
 		AmqpMode mode = this.bridgeConfigProperties.getEndpointConfigProperties().getMode();
-		LOG.info("AMQP-Kafka Bridge configured in {} mode", mode);
+		log.info("AMQP-Kafka Bridge configured in {} mode", mode);
 		if (mode == AmqpMode.SERVER) {
 			this.bindAmqpServer(startFuture);
 		} else {
@@ -193,7 +193,7 @@ public class AmqpBridge extends AbstractVerticle {
 	@Override
 	public void stop(Future<Void> stopFuture) throws Exception {
 
-		LOG.info("Stopping AMQP-Kafka bridge verticle ...");
+		log.info("Stopping AMQP-Kafka bridge verticle ...");
 
 		this.isReady = false;
 
@@ -216,10 +216,10 @@ public class AmqpBridge extends AbstractVerticle {
 			this.server.close(done -> {
 
 				if (done.succeeded()) {
-					LOG.info("AMQP-Kafka bridge has been shut down successfully");
+					log.info("AMQP-Kafka bridge has been shut down successfully");
 					stopFuture.complete();
 				} else {
-					LOG.info("Error while shutting down AMQP-Kafka bridge", done.cause());
+					log.info("Error while shutting down AMQP-Kafka bridge", done.cause());
 					stopFuture.fail(done.cause());
 				}
 			});
@@ -273,7 +273,7 @@ public class AmqpBridge extends AbstractVerticle {
 
 		if (this.bridgeConfigProperties.getEndpointConfigProperties().getCertDir() != null && this.bridgeConfigProperties.getEndpointConfigProperties().getCertDir().length() > 0) {
 			String certDir = this.bridgeConfigProperties.getEndpointConfigProperties().getCertDir();
-			LOG.info("Enabling SSL configuration for AMQP with TLS certificates from {}", certDir);
+			log.info("Enabling SSL configuration for AMQP with TLS certificates from {}", certDir);
 			options.setSsl(true)
 					.addEnabledSaslMechanism("EXTERNAL")
 					.setHostnameVerificationAlgorithm("")
@@ -320,7 +320,7 @@ public class AmqpBridge extends AbstractVerticle {
 
 		if (ar.succeeded()) {
 
-			LOG.info("Connection opened by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
+			log.info("Connection opened by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
 
 			ProtonConnection connection = ar.result();
 			connection.open();
@@ -340,7 +340,7 @@ public class AmqpBridge extends AbstractVerticle {
 	private void processCloseConnection(AsyncResult<ProtonConnection> ar) {
 
 		if (ar.succeeded()) {
-			LOG.info("Connection closed by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
+			log.info("Connection closed by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
 			this.closeConnectionEndpoint(ar.result());
 		}
 	}
@@ -352,7 +352,7 @@ public class AmqpBridge extends AbstractVerticle {
 	 */
 	private void processDisconnection(ProtonConnection connection) {
 
-		LOG.info("Disconnection from {} {}", connection.getRemoteHostname(), connection.getRemoteContainer());
+		log.info("Disconnection from {} {}", connection.getRemoteHostname(), connection.getRemoteContainer());
 		this.closeConnectionEndpoint(connection);
 	}
 
@@ -402,7 +402,7 @@ public class AmqpBridge extends AbstractVerticle {
 	 */
 	private void processOpenReceiver(ProtonConnection connection, ProtonReceiver receiver) {
 
-		LOG.info("Remote sender attached {}", receiver.getName());
+		log.info("Remote sender attached {}", receiver.getName());
 
 		ConnectionEndpoint endpoint = this.endpoints.get(connection);
 		SourceBridgeEndpoint source = endpoint.getSource();
@@ -428,7 +428,7 @@ public class AmqpBridge extends AbstractVerticle {
 	 */
 	private void processOpenSender(ProtonConnection connection, ProtonSender sender) {
 
-		LOG.info("Remote receiver attached {}", sender.getName());
+		log.info("Remote receiver attached {}", sender.getName());
 		
 		// create and add a new sink to the map
 		SinkBridgeEndpoint<?,?> sink = new AmqpSinkBridgeEndpoint<>(this.vertx, this.bridgeConfigProperties);
@@ -471,7 +471,7 @@ public class AmqpBridge extends AbstractVerticle {
 	 * @param error			AMQP error condition
 	 */
 	static void detachWithError(ProtonLink<?> link, ErrorCondition error) {
-		LOG.error("Detaching link {} due to error {}, description: {}", link, error.getCondition(), error.getDescription());
+		log.error("Detaching link {} due to error {}, description: {}", link, error.getCondition(), error.getDescription());
 		link.setSource(null)
 		.open()
 		.setCondition(error)
@@ -495,7 +495,7 @@ public class AmqpBridge extends AbstractVerticle {
 				instance = Class.forName(className).newInstance();
 			} catch (ClassNotFoundException | InstantiationException | IllegalAccessException 
 					| RuntimeException e) {
-				LOG.debug("Could not instantiate message converter {}", className, e);
+				log.debug("Could not instantiate message converter {}", className, e);
 				throw new AmqpErrorConditionException(AmqpBridge.AMQP_ERROR_CONFIGURATION, "configured message converter class could not be instantiated: " + className);
 			} 
 			

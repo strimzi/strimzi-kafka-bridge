@@ -33,7 +33,7 @@ import javax.annotation.PreDestroy;
 @SpringBootApplication
 public class Application {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Application.class);
+    private static final Logger log = LoggerFactory.getLogger(Application.class);
 
     private final Vertx vertx = Vertx.vertx();
 
@@ -46,9 +46,9 @@ public class Application {
         this.vertx.deployVerticle(this.bridge, done -> {
 
             if (done.succeeded()) {
-                LOG.debug("Verticle instance deployed [{}]", done.result());
+                log.debug("Verticle instance deployed [{}]", done.result());
             } else {
-                LOG.debug("Failed to deploy verticle instance", done.cause());
+                log.debug("Failed to deploy verticle instance", done.cause());
             }
         });
     }
@@ -58,7 +58,7 @@ public class Application {
 
         this.vertx.close(done -> {
             if (done.failed()) {
-                LOG.error("Could not shut down AMQP-Kafka bridge cleanly", done.cause());
+                log.error("Could not shut down AMQP-Kafka bridge cleanly", done.cause());
             }
         });
     }

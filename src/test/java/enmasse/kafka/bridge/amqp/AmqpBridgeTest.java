@@ -62,7 +62,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RunWith(VertxUnitRunner.class)
 public class AmqpBridgeTest extends KafkaClusterTestBase {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(AmqpBridgeTest.class);
+	private static final Logger log = LoggerFactory.getLogger(AmqpBridgeTest.class);
 
 	private static final String BRIDGE_HOST = "localhost";
 	private static final int BRIDGE_PORT = 5672;
@@ -121,7 +121,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 				KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
 				consumer.handler(record -> {
 					context.assertEquals(record.value(), body);
-					LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+					log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 							record.topic(), record.partition(), record.offset(), record.key(), record.value());
 					consumer.close();
 					async.complete();
@@ -133,7 +133,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 				});
 
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered {}", delivery.getRemoteState());
+					log.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 
 					sender.close();
@@ -174,7 +174,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 					context.assertEquals(record.value(), body);
 					// checking the right partition which should not be just the first one (0)
 					context.assertEquals(record.partition(), 1);
-					LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+					log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 							record.topic(), record.partition(), record.offset(), record.key(), record.value());
 					consumer.close();
 					async.complete();
@@ -192,7 +192,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 				message.setMessageAnnotations(messageAnnotations);
 
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered {}", delivery.getRemoteState());
+					log.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 
 					sender.close();
@@ -232,7 +232,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 				consumer.handler(record -> {
 					context.assertEquals(record.value(), body);
 					context.assertEquals(record.key(), "my_key");
-					LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+					log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 							record.topic(), record.partition(), record.offset(), record.key(), record.value());
 					consumer.close();
 					async.complete();
@@ -250,7 +250,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 				message.setMessageAnnotations(messageAnnotations);
 				
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered {}", delivery.getRemoteState());
+					log.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 
 					sender.close();
@@ -302,7 +302,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 				message.setBody(new Data(new Binary(value.getBytes())));
 				
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered {}", delivery.getRemoteState());
+					log.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 
 					sender.close();
@@ -340,7 +340,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 
 				KafkaConsumer<String, Object[]> consumer = KafkaConsumer.create(this.vertx, config);
 				consumer.handler(record -> {
-					LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+					log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 							record.topic(), record.partition(), record.offset(), record.key(), record.value());
 					context.assertTrue(Arrays.equals(record.value(), array));
 					consumer.close();
@@ -357,7 +357,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 				message.setBody(new AmqpValue(array));
 				
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered {}", delivery.getRemoteState());
+					log.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 				});
 			} else {
@@ -394,7 +394,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 
 				KafkaConsumer<String, List<Object>> consumer = KafkaConsumer.create(this.vertx, config);
 				consumer.handler(record -> {
-					LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+					log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 							record.topic(), record.partition(), record.offset(), record.key(), record.value());
 					context.assertTrue(record.value().equals(list));
 					consumer.close();
@@ -411,7 +411,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 				message.setBody(new AmqpValue(list));
 				
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered {}", delivery.getRemoteState());
+					log.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 				});
 			} else {
@@ -448,7 +448,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 
 				KafkaConsumer<String, Map<Object, Object>> consumer = KafkaConsumer.create(this.vertx, config);
 				consumer.handler(record -> {
-					LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+					log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 							record.topic(), record.partition(), record.offset(), record.key(), record.value());
 					context.assertTrue(record.value().equals(map));
 					consumer.close();
@@ -465,7 +465,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 				message.setBody(new AmqpValue(map));
 				
 				sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-					LOG.info("Message delivered {}", delivery.getRemoteState());
+					log.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 				});
 			} else {
@@ -501,7 +501,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 					context.assertEquals(this.count, records.size());
 					for (int i = 0; i < records.size(); i++) {
 						KafkaConsumerRecord<String, String> record = records.recordAt(i);
-						LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+						log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 								record.topic(), record.partition(), record.offset(), record.key(), record.value());
 						context.assertEquals("key-" + i, record.key());
 					}
@@ -532,7 +532,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 							message.setMessageAnnotations(messageAnnotations);
 							
 							sender.send(ProtonHelper.tag("my_tag_" + String.valueOf(this.count)), message, delivery -> {
-								LOG.info("Message delivered {}", delivery.getRemoteState());
+								log.info("Message delivered {}", delivery.getRemoteState());
 								context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 							});
 
@@ -580,7 +580,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 					Section receivedBody = receivedMessage.getBody();
 					if (receivedBody instanceof Data) {
 						byte[] value = ((Data)receivedBody).getValue().getArray();
-						LOG.info("Message received {}", new String(value));
+						log.info("Message received {}", new String(value));
 						// default is AT_LEAST_ONCE QoS (unsettled) so we need to send disposition (settle) to sender
 						delivery.disposition(Accepted.getInstance(), true);
 						context.assertEquals(sentBody, new String(value));
@@ -594,7 +594,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 				sender.open();
 
 				sender.send(ProtonHelper.tag("my_tag"), sentMessage, delivery -> {
-					LOG.info("Message delivered {}", delivery.getRemoteState());
+					log.info("Message delivered {}", delivery.getRemoteState());
 					context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
 				});
 
@@ -645,7 +645,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 						context.assertNotNull(offsetAnnotation);
 						Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
 						context.assertNull(keyAnnotation);
-						LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+						log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 								topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
 						context.assertEquals(topicAnnotation, topic);
@@ -713,7 +713,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 						context.assertNotNull(offsetAnnotation);
 						Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
 						context.assertNull(keyAnnotation);
-						LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+						log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 								topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
 						context.assertEquals(topicAnnotation, topic);
@@ -781,7 +781,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 						context.assertNotNull(offsetAnnotation);
 						Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
 						context.assertNotNull(keyAnnotation);
-						LOG.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+						log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 								topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
 						context.assertEquals(topicAnnotation, topic);

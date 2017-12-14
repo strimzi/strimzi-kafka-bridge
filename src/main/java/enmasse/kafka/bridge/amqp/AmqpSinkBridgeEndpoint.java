@@ -16,7 +16,6 @@
 
 package enmasse.kafka.bridge.amqp;
 
-import enmasse.kafka.bridge.BridgeEndpoint;
 import enmasse.kafka.bridge.Endpoint;
 import enmasse.kafka.bridge.SinkBridgeEndpoint;
 import enmasse.kafka.bridge.config.KafkaConfigProperties;
@@ -24,7 +23,6 @@ import enmasse.kafka.bridge.converter.MessageConverter;
 import enmasse.kafka.bridge.tracker.OffsetTracker;
 import enmasse.kafka.bridge.tracker.SimpleOffsetTracker;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.common.PartitionInfo;
 import io.vertx.kafka.client.common.TopicPartition;
@@ -42,8 +40,6 @@ import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -60,12 +56,8 @@ import static java.lang.String.format;
  * and bridging into AMQP traffic to receivers
  */
 public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
-
-	private static final Logger LOG = LoggerFactory.getLogger(SinkBridgeEndpoint.class);
 	
 	private static final String GROUP_ID_MATCH = "/group.id/";
-	
-	private Vertx vertx;
 	
 	// converter from ConsumerRecord to AMQP message
 	private MessageConverter<K, V, Message> converter;
@@ -73,12 +65,8 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	// used for tracking partitions and related offset for AT_LEAST_ONCE QoS delivery 
 	private OffsetTracker offsetTracker;
 	
-	private Handler<BridgeEndpoint> closeHandler;
-	
 	// sender link for handling outgoing message
 	private ProtonSender sender;
-
-	private AmqpBridgeConfigProperties bridgeConfigProperties;
 
 	private KafkaConsumer<K, V> consumer;
 
@@ -102,12 +90,11 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	/**
 	 * Constructor
 	 *
-	 * @param vertx		Vert.x instance
+	 * @param vertx	Vert.x instance
 	 * @param bridgeConfigProperties	Bridge configuration
 	 */
 	public AmqpSinkBridgeEndpoint(Vertx vertx, AmqpBridgeConfigProperties bridgeConfigProperties) {
-		this.vertx = vertx;
-		this.bridgeConfigProperties = bridgeConfigProperties;
+		super(vertx, bridgeConfigProperties);
 	}
 	
 	@Override
@@ -132,6 +119,8 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	public void handle(Endpoint<?> endpoint) {
 
 		ProtonLink<?> link = (ProtonLink<?>) endpoint.get();
+		AmqpConfigProperties amqpConfigProperties =
+				(AmqpConfigProperties) this.bridgeConfigProperties.getEndpointConfigProperties();
 
 		// Note: This is only called once for each instance
 		if (!(link instanceof ProtonSender)) {
@@ -140,7 +129,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 		try {
 			
 			if (this.converter == null) {
-				this.converter = (MessageConverter<K, V, Message>) AmqpBridge.instantiateConverter(this.bridgeConfigProperties.getEndpointConfigProperties().getMessageConverter());
+				this.converter = (MessageConverter<K, V, Message>) AmqpBridge.instantiateConverter(amqpConfigProperties.getMessageConverter());
 			}
 			
 			this.sender = (ProtonSender)link;
@@ -155,7 +144,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 					|| groupIdIndex == address.length()-AmqpSinkBridgeEndpoint.GROUP_ID_MATCH.length()) {
 			
 				// group.id don't specified in the address, link will be closed
-				LOG.warn("Local detached");
+				log.warn("Local detached");
 	
 				String detail;
 				if (groupIdIndex == -1) {
@@ -181,8 +170,8 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 				
 				this.groupId = address.substring(groupIdIndex + AmqpSinkBridgeEndpoint.GROUP_ID_MATCH.length());
 				this.topic = address.substring(0, groupIdIndex);
-				
-				LOG.debug("topic {} group.id {}", this.topic, this.groupId);
+
+				log.debug("topic {} group.id {}", this.topic, this.groupId);
 				
 				// get filters on partition and offset
 				Source source = (Source) this.sender.getRemoteSource();
@@ -192,8 +181,8 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 					Object partition = filters.get(Symbol.getSymbol(AmqpBridge.AMQP_PARTITION_FILTER));
 					Object offset = filters.get(Symbol.getSymbol(AmqpBridge.AMQP_OFFSET_FILTER));
 					this.checkFilters(partition, offset);
-					
-					LOG.debug("partition {} offset {}", partition, offset);
+
+					log.debug("partition {} offset {}", partition, offset);
 					this.partition = (Integer)partition;
 					this.offset = (Long)offset;
 				}
@@ -290,16 +279,16 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 			
 			// record (converted in AMQP message) is on the way ... ask to tracker to track its delivery
 			this.offsetTracker.track(partition, offset, record);
-			
-			LOG.debug("Tracked {} - {} [{}]", record.topic(), record.partition(), record.offset());
+
+			log.debug("Tracked {} - {} [{}]", record.topic(), record.partition(), record.offset());
 
 			this.sender.send(ProtonHelper.tag(deliveryTag), message, delivery -> {
 				
 				// a record (converted in AMQP message) is delivered ... communicate it to the tracker
 				String tag = new String(delivery.getTag());
 				this.offsetTracker.delivered(partition, offset);
-				
-				LOG.debug("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), this.sender.getSource().getAddress());
+
+				log.debug("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), this.sender.getSource().getAddress());
 			});
 			
 		}
@@ -324,25 +313,9 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	 * @param sender		Proton sender instance
 	 */
 	private void processCloseSender(ProtonSender sender) {
-		LOG.info("Remote AMQP receiver detached");
+		log.info("Remote AMQP receiver detached");
 		this.close();
 		this.handleClose();
-	}
-	
-	@Override
-	public BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler) {
-		this.closeHandler = endpointCloseHandler;
-		return this;
-	}
-	
-	/**
-	 * Raise close event
-	 */
-	private void handleClose() {
-
-		if (this.closeHandler != null) {
-			this.closeHandler.handle(this);
-		}
 	}
 	
 	/**
@@ -387,10 +360,10 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	private void subscribe() {
 		if (this.partition != null) {
 			// read from a specified partition
-			LOG.debug("Assigning to partition {}", this.partition);
+			log.debug("Assigning to partition {}", this.partition);
 			this.consumer.partitionsFor(this.kafkaTopic, this::partitionsForHandler);
 		} else {
-			LOG.info("No explicit partition for consuming from topic {} (will be automatically assigned)", 
+			log.info("No explicit partition for consuming from topic {} (will be automatically assigned)",
 					this.kafkaTopic);
 			automaticPartitionAssignment();
 		}
@@ -408,12 +381,12 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 					partitionsResult);
 			return;
 		}
-		LOG.debug("Getting partitions for {}", this.kafkaTopic);
+		log.debug("Getting partitions for {}", this.kafkaTopic);
 		List<PartitionInfo> availablePartitions = partitionsResult.result();
 		Optional<PartitionInfo> requestedPartitionInfo = availablePartitions.stream().filter(p -> p.getPartition() == this.partition).findFirst();
 		
 		if (requestedPartitionInfo.isPresent()) {
-			LOG.debug("Requested partition {} present", this.partition);
+			log.debug("Requested partition {} present", this.partition);
 			this.consumer.assign(Collections.singleton(new TopicPartition(this.kafkaTopic, this.partition)), assignResult-> {
 				if (assignResult.failed()) {
 					sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
@@ -421,11 +394,11 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 							assignResult);
 					return;
 				}
-				LOG.debug("Assigned to {} partition {}", this.kafkaTopic, this.partition);
+				log.debug("Assigned to {} partition {}", this.kafkaTopic, this.partition);
 				// start reading from specified offset inside partition
 				if (this.offset != null) {
-					
-					LOG.debug("Seeking to offset {}", this.offset);
+
+					log.debug("Seeking to offset {}", this.offset);
 					
 					this.consumer.seek(new TopicPartition(this.kafkaTopic, this.partition), this.offset, seekResult ->{
 						if (seekResult.failed()) {
@@ -444,7 +417,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 				}
 			});
 		} else {
-			LOG.warn("Requested partition {} doesn't exist", this.partition);
+			log.warn("Requested partition {} doesn't exist", this.partition);
 			sendAmqpError(AmqpBridge.newError(AmqpBridge.AMQP_ERROR_PARTITION_NOT_EXISTS,
 					"Specified partition doesn't exist"));
 		}
@@ -456,14 +429,14 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	 */
 	private void automaticPartitionAssignment() {
 		this.consumer.partitionsRevokedHandler(partitions -> {
-			
-			LOG.debug("Partitions revoked {}", partitions.size());
+
+			log.debug("Partitions revoked {}", partitions.size());
 			
 			if (!partitions.isEmpty()) {
 				
-				if (LOG.isDebugEnabled()) {
+				if (log.isDebugEnabled()) {
 					for (TopicPartition partition : partitions) {
-						LOG.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
+						log.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
 					}
 				}
 			
@@ -477,11 +450,11 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 		});
 		
 		this.consumer.partitionsAssignedHandler(partitions -> {
-			LOG.debug("Partitions assigned {}", partitions.size());
+			log.debug("Partitions assigned {}", partitions.size());
 			if (!partitions.isEmpty()) {
-				if (LOG.isDebugEnabled()) {
+				if (log.isDebugEnabled()) {
 					for (TopicPartition partition : partitions) {
-						LOG.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
+						log.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
 					}
 				}
 			} else {
@@ -508,7 +481,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	 * @param record The record
 	 */
 	private void handleKafkaRecord(KafkaConsumerRecord<K, V> record) {
-		LOG.debug("Processing key {} value {} partition {} offset {}", 
+		log.debug("Processing key {} value {} partition {} offset {}",
 				record.key(), record.value(), record.partition(), record.offset());
 		
 		switch (this.qos){
@@ -516,7 +489,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 			case AT_MOST_ONCE:
 				// Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
 				if (startOfBatch()) {
-					LOG.debug("Start of batch in {} mode => commit()", this.qos);
+					log.debug("Start of batch in {} mode => commit()", this.qos);
 					// when start of batch we need to commit, but need to prevent processind any
 					// more messages while we do, so...
 					// 1. pause()
@@ -524,7 +497,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 					// 2. do the commit()
 					this.consumer.commit(ar -> {
 						if (ar.failed()) {
-							LOG.error("Error committing ... {}", ar.cause().getMessage());
+							log.error("Error committing ... {}", ar.cause().getMessage());
 							ErrorCondition condition =
 									new ErrorCondition(Symbol.getSymbol(AmqpBridge.AMQP_ERROR_KAFKA_COMMIT),
 											"Error in commit");
@@ -545,18 +518,18 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 			case AT_LEAST_ONCE:
 				// Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit
 
-				LOG.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
+				log.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
 
 				// 1. start message sending
 				sendAmqpMessage(record.record());
 
 				if (endOfBatch()) {
-					LOG.debug("End of batch in {} mode => commitOffsets()", this.qos);
+					log.debug("End of batch in {} mode => commitOffsets()", this.qos);
 					try {
 						// 2. commit all tracked offsets for partitions
 						commitOffsets(false);
 					} catch (Exception e) {
-						LOG.error("Error committing ... {}", e.getMessage());
+						log.error("Error committing ... {}", e.getMessage());
 					}
 				}
 				break;
@@ -606,13 +579,13 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 					if (clear) {
 						this.offsetTracker.clear();
 					}
-					if (LOG.isDebugEnabled()) {
+					if (log.isDebugEnabled()) {
 						for (Entry<org.apache.kafka.common.TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
-							LOG.debug("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
+							log.debug("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
 						}
 					}
 				} else {
-					LOG.error("Error committing ... {}", ar.cause().getMessage());
+					log.error("Error committing ... {}", ar.cause().getMessage());
 				}
 			});
 		}
