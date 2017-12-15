@@ -20,7 +20,6 @@ import enmasse.kafka.bridge.Endpoint;
 import enmasse.kafka.bridge.SinkBridgeEndpoint;
 import enmasse.kafka.bridge.config.KafkaConfigProperties;
 import enmasse.kafka.bridge.converter.MessageConverter;
-import enmasse.kafka.bridge.tracker.OffsetTracker;
 import enmasse.kafka.bridge.tracker.SimpleOffsetTracker;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Vertx;
@@ -61,10 +60,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	
 	// converter from ConsumerRecord to AMQP message
 	private MessageConverter<K, V, Message> converter;
-	
-	// used for tracking partitions and related offset for AT_LEAST_ONCE QoS delivery 
-	private OffsetTracker offsetTracker;
-	
+
 	// sender link for handling outgoing message
 	private ProtonSender sender;
 
@@ -490,7 +486,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 				// Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
 				if (startOfBatch()) {
 					log.debug("Start of batch in {} mode => commit()", this.qos);
-					// when start of batch we need to commit, but need to prevent processind any
+					// when start of batch we need to commit, but need to prevent processing any
 					// more messages while we do, so...
 					// 1. pause()
 					this.consumer.pause();
@@ -585,7 +581,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 						}
 					}
 				} else {
-					log.error("Error committing ... {}", ar.cause().getMessage());
+					log.error("Error committing", ar.cause());
 				}
 			});
 		}

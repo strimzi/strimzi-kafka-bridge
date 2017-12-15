@@ -17,6 +17,7 @@
 package enmasse.kafka.bridge;
 
 import enmasse.kafka.bridge.config.BridgeConfigProperties;
+import enmasse.kafka.bridge.tracker.OffsetTracker;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import org.slf4j.Logger;
@@ -37,6 +38,9 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected BridgeConfigProperties bridgeConfigProperties;
 
     private Handler<BridgeEndpoint> closeHandler;
+
+    // used for tracking partitions and related offset for AT_LEAST_ONCE QoS delivery
+    protected OffsetTracker offsetTracker;
 
     /**
      * Constructor
