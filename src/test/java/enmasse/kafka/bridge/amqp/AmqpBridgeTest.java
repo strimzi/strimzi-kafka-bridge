@@ -43,6 +43,7 @@ import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.amqp.messaging.Source;
+import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
 import org.junit.After;
 import org.junit.Before;
@@ -794,6 +795,47 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 				})
 				.setPrefetch(this.bridgeConfigProperties.getEndpointConfigProperties().getFlowCredit())
 				.open();
+			} else {
+				context.fail(ar.cause());
+			}
+		});
+	}
+
+	@Test
+	public void noPartitionsAvailable(TestContext context) {
+		String topic = "noPartitionsAvailable";
+		kafkaCluster.createTopic(topic, 1, 1);
+
+		ProtonClient client = ProtonClient.create(this.vertx);
+		Async async = context.async();
+		client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
+			if (ar.succeeded()) {
+
+				ProtonConnection connection = ar.result();
+				connection.open();
+
+				ProtonReceiver receiver = connection.createReceiver(topic + "/group.id/my_group");
+				receiver.setPrefetch(this.bridgeConfigProperties.getEndpointConfigProperties().getFlowCredit())
+						.open();
+
+				this.vertx.setTimer(2000, t -> {
+
+					ProtonReceiver receiver1 = connection.createReceiver(topic + "/group.id/my_group");
+					receiver1.closeHandler(ar1 -> {
+						if (ar1.succeeded()) {
+							context.fail(ar1.cause());
+						} else {
+							ErrorCondition condition = receiver1.getRemoteCondition();
+							log.info(condition.getDescription());
+							context.assertEquals(condition.getCondition(), Symbol.getSymbol(AmqpBridge.AMQP_ERROR_NO_PARTITIONS));
+							async.complete();
+						}
+					})
+					.setPrefetch(this.bridgeConfigProperties.getEndpointConfigProperties().getFlowCredit())
+					.open();
+				});
+
+
 			} else {
 				context.fail(ar.cause());
 			}
