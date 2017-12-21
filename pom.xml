@@ -17,7 +17,7 @@
 		<junit.version>4.12</junit.version>
 		<vertx.version>3.5.1-SNAPSHOT</vertx.version>
 		<spring-boot.version>1.4.2.RELEASE</spring-boot.version>
-		<debezium.version>0.6.1</debezium.version>
+		<debezium.version>0.7.1</debezium.version>
 	</properties>
 
 	<dependencies>
