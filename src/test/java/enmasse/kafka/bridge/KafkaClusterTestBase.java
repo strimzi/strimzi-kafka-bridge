@@ -47,14 +47,10 @@ public class KafkaClusterTestBase {
     }
     dataDir = Testing.Files.createTestingDirectory(DATA_DIR);
 
-    // TODO : to remove when moving to new Debezium 0.7.0 (https://github.com/debezium/debezium/pull/358)
-    Properties kafkaConfig = new Properties();
-    kafkaConfig.setProperty(KafkaConfig.LogFlushIntervalMessagesProp(), String.valueOf(Long.MAX_VALUE));
     kafkaCluster =
             new KafkaCluster()
                     .usingDirectory(dataDir)
-                    .withPorts(ZOOKEEPER_PORT, KAFKA_PORT)
-                    .withKafkaConfiguration(kafkaConfig);
+                    .withPorts(ZOOKEEPER_PORT, KAFKA_PORT);
     return kafkaCluster;
   }
 
