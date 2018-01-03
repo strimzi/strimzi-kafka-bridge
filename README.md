@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/strimzi/amqp-kafka-bridge.svg?branch=master)](https://travis-ci.org/strimzi/amqp-kafka-bridge)
+[![Build Status](https://travis-ci.org/io.strimzi/amqp-kafka-bridge.svg?branch=master)](https://travis-ci.org/io.strimzi/amqp-kafka-bridge)
 
 # AMQP - Apache Kafka bridge
 
@@ -10,7 +10,7 @@ It provides a different way to interact with Apache Kafka because the latter sup
 
 The project leverages on [Vert.x](http://vertx.io/) framework and uses the [Vert.x Proton](https://github.com/vert-x3/vertx-proton) library in order to provide the AMQP server for accepting and handling connections, sessions and links.
 
-All the bridge related classes are defined inside the _enmasse.kafka.bridge_ and _enmasse.kafka.bridge.amqp_ packages and the only class needed to instantiate the bridge is the _AmqpBridge_ class which needs a _Vertx_ instance too.
+All the bridge related classes are defined inside the _io.strimzi.kafka.bridge_ and _io.strimzi.kafka.bridge.amqp_ packages and the only class needed to instantiate the bridge is the _AmqpBridge_ class which needs a _Vertx_ instance too.
 
 Other than core classes, the following stuff is provided :
 
@@ -65,8 +65,8 @@ The returned AMQP message contains the Apache Kafka provided message inside its 
 
 The AMQP client can also specifies filters for reading from a specific partition starting at specific offset. The symbol for filters are :
 
-* _enmasse:partition-filter:uint_ : the topic partition from which reading messages;
-* _enmasse:offset-filter:ulong_ : the starting offset for reading inside the specified partition;
+* _io.strimzi:partition-filter:uint_ : the topic partition from which reading messages;
+* _io.strimzi:offset-filter:ulong_ : the starting offset for reading inside the specified partition;
 
 If the client specifies partition but not the offset, then the bridge will consume messages starting from the last committed offset on the specified partition.
 

@@ -2,7 +2,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    app: enmasse
+    app: strimzi
     name: ${project.artifactId}
   name: ${project.artifactId}
 spec:
@@ -10,12 +10,12 @@ spec:
   template:
     metadata:
       labels:
-        app: enmasse
+        app: strimzi
         capability: bridge
         name: ${project.artifactId}
     spec:
       containers:
-      - image: enmasseproject/${project.artifactId}:${project.version}
+      - image: strimzi/${project.artifactId}:${project.version}
         name: ${project.artifactId}
         ports:
         - containerPort: 5672
