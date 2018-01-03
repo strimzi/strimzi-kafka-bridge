@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/io.strimzi/amqp-kafka-bridge.svg?branch=master)](https://travis-ci.org/io.strimzi/amqp-kafka-bridge)
+[![Build Status](https://travis-ci.org/strimzi/amqp-kafka-bridge.svg?branch=master)](https://travis-ci.org/io.strimzi/amqp-kafka-bridge)
 
 # AMQP - Apache Kafka bridge
 
