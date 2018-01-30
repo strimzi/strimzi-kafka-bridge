@@ -288,7 +288,8 @@ public class AmqpBridge extends AbstractVerticle {
 	}
 	
 	/**
-	 * Process a connection request accepted by the Proton server
+	 * Process a connection request accepted by the Proton server or
+	 * open the connection if it's working as client
 	 * 
 	 * @param connection		Proton connection accepted instance
 	 */

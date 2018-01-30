@@ -20,14 +20,12 @@ import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.Vertx;
-import io.vertx.kafka.client.producer.KafkaProducer;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import io.vertx.kafka.client.producer.RecordMetadata;
 import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonReceiver;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
@@ -37,7 +35,6 @@ import org.apache.qpid.proton.message.Message;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 /**
  * Class in charge for handling incoming AMQP traffic
@@ -47,10 +44,7 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 	
 	// converter from AMQP message to ConsumerRecord
 	private MessageConverter<String, byte[], Message> converter;
-	
-	private KafkaProducer<String, byte[]> producerUnsettledMode;
-	private KafkaProducer<String, byte[]> producerSettledMode;
-	
+
 	// receiver link for handling incoming message
 	private Map<String, ProtonReceiver> receivers;
 	
@@ -66,33 +60,10 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 	}
 	
 	@Override
-	public void open() {
-		
-		Properties props = new Properties();
-		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
-		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getKeySerializer());
-		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getValueSerializer());
-		props.put(ProducerConfig.ACKS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getAcks());
-		
-		this.producerUnsettledMode = KafkaProducer.create(this.vertx, props);
-		
-		props.clear();
-		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
-		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getKeySerializer());
-		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getValueSerializer());
-		props.put(ProducerConfig.ACKS_CONFIG, "0");
-		
-		this.producerSettledMode = KafkaProducer.create(this.vertx, props);
-	}
-
-	@Override
 	public void close() {
 
-		if (this.producerSettledMode != null)
-			this.producerSettledMode.close();
-		
-		if (this.producerUnsettledMode != null)
-			this.producerUnsettledMode.close();
+		// close Kafka related stuff
+		super.close();
 		
 		this.receivers.forEach((name, receiver) -> {
 			receiver.close();
@@ -197,16 +168,15 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
 		ProducerRecord<String, byte[]> record = this.converter.toKafkaRecord(kafkaTopic, message);
 		KafkaProducerRecord<String, byte[]> krecord = KafkaProducerRecord.create(record.topic(), record.key(), record.value(), record.timestamp(), record.partition());
-		log.debug("Sending to Kafka on topic {} at partition {} and key {}", record.topic(), record.partition(), record.key());
 				
 		if (delivery.remotelySettled()) {
 			
 			// message settled (by sender), no feedback need by Apache Kafka, no disposition to be sent
-			this.producerSettledMode.write(krecord);
+			this.send(krecord, null);
 			
 		} else {
 			// message unsettled (by sender), feedback needed by Apache Kafka, disposition to be sent accordingly
-			this.producerUnsettledMode.write(krecord, (writeResult) -> {
+			this.send(krecord, (writeResult) -> {
 
 				if (writeResult.failed()) {
 

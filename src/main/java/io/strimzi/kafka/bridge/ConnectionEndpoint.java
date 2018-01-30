@@ -24,9 +24,9 @@ import java.util.List;
  */
 public class ConnectionEndpoint {
 
-    // more sink endpoints per connection, each of them handling a sender link internally
+    // more sink endpoints per connection, each of them handling a sender internally
     private List<SinkBridgeEndpoint> sinks;
-    // only one source endpoint per connection, handling more receiver links internally
+    // only one source endpoint per connection, handling more receiver internally
     private SourceBridgeEndpoint source;
 
     /**
