@@ -222,10 +222,10 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
 		JsonObject jsonApplicationProperties = json.getJsonObject(AmqpJsonMessageConverter.APPLICATION_PROPERTIES);
 		if (jsonApplicationProperties != null) {
 			
-			Map<Symbol, Object> applicationPropertiesMap = new HashMap<>();
+			Map<String, Object> applicationPropertiesMap = new HashMap<>();
 			
 			for (Entry<String, Object> entry : jsonApplicationProperties) {
-				applicationPropertiesMap.put(Symbol.valueOf(entry.getKey()), entry.getValue());
+				applicationPropertiesMap.put(entry.getKey(), entry.getValue());
 			}
 			
 			ApplicationProperties applicationProperties = new ApplicationProperties(applicationPropertiesMap); 
