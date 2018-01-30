@@ -17,36 +17,27 @@
 package io.strimzi.kafka.bridge.amqp;
 
 import io.strimzi.kafka.bridge.Endpoint;
+import io.strimzi.kafka.bridge.QoSEndpoint;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
-import io.strimzi.kafka.bridge.config.KafkaConfigProperties;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.tracker.SimpleOffsetTracker;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.common.PartitionInfo;
 import io.vertx.kafka.client.common.TopicPartition;
-import io.vertx.kafka.client.consumer.KafkaConsumer;
-import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
-import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonSender;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Properties;
+import java.util.Set;
 
 import static java.lang.String.format;
 
@@ -63,25 +54,6 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
 	// sender link for handling outgoing message
 	private ProtonSender sender;
-
-	private KafkaConsumer<K, V> consumer;
-
-	private String groupId;
-
-	private String topic;
-
-	private String kafkaTopic;
-
-	private Integer partition;
-
-	private Long offset;
-
-	private ProtonQoS qos;
-
-	private int recordIndex;
-
-	private int batchSize;
-	
 	
 	/**
 	 * Constructor
@@ -100,9 +72,10 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
 	@Override
 	public void close() {
-		if (this.consumer != null) {
-			this.consumer.close();
-		}
+
+		// close Kafka related stuff
+		super.close();
+
 		if (this.offsetTracker != null)
 			this.offsetTracker.clear();
 		
@@ -188,27 +161,24 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 				// replace unsupported "/" (in a topic name in Kafka) with "."
 				this.kafkaTopic = this.topic.replace('/', '.');
 				this.offsetTracker = new SimpleOffsetTracker(this.kafkaTopic);
-				this.qos = this.sender.getQoS();
+				this.qos = this.mapQoS(this.sender.getQoS());
 				
-				// create context shared between sink endpoint and Kafka worker
-				
-				// create a consumer
-				KafkaConfigProperties consumerConfig = this.bridgeConfigProperties.getKafkaConfigProperties();
-				Properties props = new Properties();
-				props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, consumerConfig.getBootstrapServers());
-				props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, consumerConfig.getConsumerConfig().getKeyDeserializer());
-				props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, consumerConfig.getConsumerConfig().getValueDeserializer());
-				props.put(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
-				props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, consumerConfig.getConsumerConfig().isEnableAutoCommit());
-				props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, consumerConfig.getConsumerConfig().getAutoOffsetReset());
-				this.consumer = KafkaConsumer.create(this.vertx, props);
-				this.consumer.batchHandler(this::handleKafkaBatch);
+				this.initConsumer();
 				// Set up flow control
 				// (*before* subscribe in case we start with no credit!)
+
+				this.setPartitionsRevokedHandler(this::partitionsRevokedHandler);
+				this.setPartitionsAssignedHandler(this::partitionsAssignedHandler);
+				this.setSubscribeHandler(this::subscribeHandler);
+				this.setPartitionHandler(this::partitionHandler);
+				this.setAssignHandler(this::assignHandler);
+				this.setSeekHandler(this::seekHandler);
+				this.setReceivedHandler(this::sendAmqpMessage);
+				this.setCommitHandler(this::commitHandler);
 				
-				flowCheck();
+				this.flowCheck();
 				// Subscribe to the topic
-				subscribe();
+				this.subscribe();
 			}
 		} catch (AmqpErrorConditionException e) {
 			AmqpBridge.detachWithError(link, e.toCondition());
@@ -238,19 +208,6 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 		AmqpBridge.detachWithError(this.sender, condition);
 		this.close();
 		this.handleClose();
-	}
-
-	/**
-	 * When partitions are assigned, open the AMQP sender and start
-	 * handling records from the Kafka consumer
-	 */
-	private void partitionsAssigned() {
-		if (!this.sender.isOpen()) {
-			this.sender
-					.setSource(this.sender.getRemoteSource())
-					.open();
-		}
-		this.consumer.handler(this::handleKafkaRecord);
 	}
 
 	/**
@@ -297,9 +254,9 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	 */
 	private void flowCheck() {
 		if (this.sender.sendQueueFull()) {
-			this.consumer.pause();
+			this.pause();
 			this.sender.sendQueueDrainHandler(done -> {
-				this.consumer.resume();
+				this.resume();
 			});
 		}
 	}
@@ -349,242 +306,104 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 			throw new AmqpErrorConditionException(AmqpBridge.AMQP_ERROR_WRONG_FILTER, "Wrong filter");
 		}
 	}
-	
-	/**
-	 * Subscribe to the topic
-	 */
-	private void subscribe() {
-		if (this.partition != null) {
-			// read from a specified partition
-			log.debug("Assigning to partition {}", this.partition);
-			this.consumer.partitionsFor(this.kafkaTopic, this::partitionsForHandler);
-		} else {
-			log.info("No explicit partition for consuming from topic {} (will be automatically assigned)",
-					this.kafkaTopic);
-			automaticPartitionAssignment();
+
+	private void partitionsRevokedHandler(Set<TopicPartition> partitions) {
+
+		// Sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
+
+		if (!partitions.isEmpty()) {
+
+			if (this.sender.getQoS() == ProtonQoS.AT_LEAST_ONCE) {
+				// commit all tracked offsets for partitions
+				this.commitOffsets(true);
+			}
 		}
 	}
 
-	/**
-	 * Execute a request for assigning a specific partition
-	 *
-	 * @param partitionsResult	list of requested and assigned partitions
-	 */
-	void partitionsForHandler(AsyncResult<List<PartitionInfo>> partitionsResult) {
-		if (partitionsResult.failed()) {
+	private void partitionsAssignedHandler(Set<TopicPartition> partitions) {
+
+		if (partitions.isEmpty()) {
+
+			sendAmqpError(AmqpBridge.newError(AmqpBridge.AMQP_ERROR_NO_PARTITIONS,
+					"All partitions already have a receiver"));
+		} else {
+
+			if (!this.sender.isOpen()) {
+				this.sender
+						.setSource(this.sender.getRemoteSource())
+						.open();
+			}
+		}
+	}
+
+	private void subscribeHandler(AsyncResult<Void> subscribeResult) {
+
+		if (subscribeResult.failed()) {
 			sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
-					"Error getting partition info for topic " + this.kafkaTopic, 
-					partitionsResult);
-			return;
+					"Error subscribing to topic " + this.kafkaTopic,
+					subscribeResult);
 		}
-		log.debug("Getting partitions for {}", this.kafkaTopic);
-		List<PartitionInfo> availablePartitions = partitionsResult.result();
-		Optional<PartitionInfo> requestedPartitionInfo = availablePartitions.stream().filter(p -> p.getPartition() == this.partition).findFirst();
-		
-		if (requestedPartitionInfo.isPresent()) {
-			log.debug("Requested partition {} present", this.partition);
-			this.consumer.assign(Collections.singleton(new TopicPartition(this.kafkaTopic, this.partition)), assignResult-> {
-				if (assignResult.failed()) {
-					sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
-							"Error assigning to topic %s" + this.kafkaTopic, 
-							assignResult);
-					return;
-				}
-				log.debug("Assigned to {} partition {}", this.kafkaTopic, this.partition);
-				// start reading from specified offset inside partition
-				if (this.offset != null) {
+	}
 
-					log.debug("Seeking to offset {}", this.offset);
-					
-					this.consumer.seek(new TopicPartition(this.kafkaTopic, this.partition), this.offset, seekResult ->{
-						if (seekResult.failed()) {
-							sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
-									format("Error seeking to offset %s for topic %s, partition %s",
-											this.offset, 
-											this.kafkaTopic,
-											this.partition),
-											seekResult);
-							return;
-						}
-						partitionsAssigned();
-					});
-				} else {
-					partitionsAssigned();
-				}
-			});
+	private void partitionHandler(AsyncResult<Optional<PartitionInfo>> partitionResult) {
+
+		if (partitionResult.failed()) {
+			sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
+					"Error getting partition info for topic " + this.kafkaTopic,
+					partitionResult);
 		} else {
-			log.warn("Requested partition {} doesn't exist", this.partition);
-			sendAmqpError(AmqpBridge.newError(AmqpBridge.AMQP_ERROR_PARTITION_NOT_EXISTS,
-					"Specified partition doesn't exist"));
+
+			Optional<PartitionInfo> requestedPartitionInfo = partitionResult.result();
+			if (!requestedPartitionInfo.isPresent()) {
+				sendAmqpError(AmqpBridge.newError(AmqpBridge.AMQP_ERROR_PARTITION_NOT_EXISTS,
+						"Specified partition doesn't exist"));
+			}
+		}
+	}
+
+	private void assignHandler(AsyncResult<Void> assignResult) {
+
+		if (assignResult.failed()) {
+			sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
+					"Error assigning to topic %s" + this.kafkaTopic,
+					assignResult);
+		}
+	}
+
+	private void seekHandler(AsyncResult<Void> seekResult) {
+
+		if (seekResult.failed()) {
+			sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
+					format("Error seeking to offset %s for topic %s, partition %s",
+							this.offset,
+							this.kafkaTopic,
+							this.partition),
+					seekResult);
+		}
+	}
+
+	private void commitHandler(AsyncResult<Void> seekResult) {
+
+		if (seekResult.failed()) {
+			ErrorCondition condition =
+					new ErrorCondition(Symbol.getSymbol(AmqpBridge.AMQP_ERROR_KAFKA_COMMIT),
+							"Error in commit");
+			sendAmqpError(condition);
 		}
 	}
 
 	/**
-	 * Setup the automatic revoke and assign partitions (due to rebalancing)
-	 * and start the subscription request for a topic
-	 */
-	private void automaticPartitionAssignment() {
-		this.consumer.partitionsRevokedHandler(partitions -> {
-
-			log.debug("Partitions revoked {}", partitions.size());
-			
-			if (!partitions.isEmpty()) {
-				
-				if (log.isDebugEnabled()) {
-					for (TopicPartition partition : partitions) {
-						log.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
-					}
-				}
-			
-				// Sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
-				
-				if (this.qos == ProtonQoS.AT_LEAST_ONCE) {
-					// commit all tracked offsets for partitions
-					AmqpSinkBridgeEndpoint.this.commitOffsets(true);
-				}
-			}
-		});
-		
-		this.consumer.partitionsAssignedHandler(partitions -> {
-			log.debug("Partitions assigned {}", partitions.size());
-			if (!partitions.isEmpty()) {
-				if (log.isDebugEnabled()) {
-					for (TopicPartition partition : partitions) {
-						log.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
-					}
-				}
-			} else {
-				sendAmqpError(AmqpBridge.newError(AmqpBridge.AMQP_ERROR_NO_PARTITIONS,
-						"All partitions already have a receiver"));
-			}
-		});
-		
-		this.consumer.subscribe(this.kafkaTopic, subscribeResult-> {
-			if (subscribeResult.failed()) {
-				sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
-						"Error subscribing to topic " + this.kafkaTopic,
-						subscribeResult);
-				return;
-			}
-			partitionsAssigned();
-		});
-		
-	}
-	
-	/**
-	 * Callback to process a kafka record
+	 * Map the ProtonQoS specific type to the QoS Endpoint generic type
 	 *
-	 * @param record The record
+	 * @param protonQoS	ProtonQoS level
+	 * @return	QoS endpoint specific
 	 */
-	private void handleKafkaRecord(KafkaConsumerRecord<K, V> record) {
-		log.debug("Processing key {} value {} partition {} offset {}",
-				record.key(), record.value(), record.partition(), record.offset());
-		
-		switch (this.qos){
-
-			case AT_MOST_ONCE:
-				// Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
-				if (startOfBatch()) {
-					log.debug("Start of batch in {} mode => commit()", this.qos);
-					// when start of batch we need to commit, but need to prevent processing any
-					// more messages while we do, so...
-					// 1. pause()
-					this.consumer.pause();
-					// 2. do the commit()
-					this.consumer.commit(ar -> {
-						if (ar.failed()) {
-							log.error("Error committing ... {}", ar.cause().getMessage());
-							ErrorCondition condition =
-									new ErrorCondition(Symbol.getSymbol(AmqpBridge.AMQP_ERROR_KAFKA_COMMIT),
-											"Error in commit");
-							sendAmqpError(condition);
-						} else {
-							// 3. start message sending
-							sendAmqpMessage(record.record());
-							// 4 resume processing messages
-							this.consumer.resume();
-						}
-					});
-				} else {
-					// Otherwise: immediate send because the record's already committed
-					sendAmqpMessage(record.record());
-				}
-				break;
-
-			case AT_LEAST_ONCE:
-				// Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit
-
-				log.debug("Received from Kafka partition {} [{}], key = {}, value = {}", record.partition(), record.offset(), record.key(), record.value());
-
-				// 1. start message sending
-				sendAmqpMessage(record.record());
-
-				if (endOfBatch()) {
-					log.debug("End of batch in {} mode => commitOffsets()", this.qos);
-					try {
-						// 2. commit all tracked offsets for partitions
-						commitOffsets(false);
-					} catch (Exception e) {
-						log.error("Error committing ... {}", e.getMessage());
-					}
-				}
-				break;
-		}
-		this.recordIndex++;
+	private QoSEndpoint mapQoS(ProtonQoS protonQoS) {
+		if (protonQoS == ProtonQoS.AT_MOST_ONCE)
+			return QoSEndpoint.AT_MOST_ONCE;
+		else if (protonQoS == ProtonQoS.AT_LEAST_ONCE)
+			return QoSEndpoint.AT_LEAST_ONCE;
+		else
+			throw new IllegalArgumentException("Proton QoS not supported !");
 	}
-
-	private boolean endOfBatch() {
-		return this.recordIndex == this.batchSize-1;
-	}
-
-	private boolean startOfBatch() {
-		return this.recordIndex == 0;
-	}
-
-	/**
-	 * Callback to process a kafka records batch
-	 *
-	 * @param records The records batch
-	 */
-	private void handleKafkaBatch(KafkaConsumerRecords<K, V> records) {
-		this.recordIndex = 0;
-		this.batchSize = records.size();
-	}
-	
-	/**
-	 * Commit the offsets in the offset tracker to Kafka.
-	 * 
-	 * @param clear			Whether to clear the offset tracker after committing.
-	 */
-	private void commitOffsets(boolean clear) {
-		Map<org.apache.kafka.common.TopicPartition, OffsetAndMetadata> offsets = this.offsetTracker.getOffsets();
-
-		// as Kafka documentation says, the committed offset should always be the offset of the next message
-		// that your application will read. Thus, when calling commitSync(offsets) you should
-		// add one to the offset of the last message processed.
-		Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata> kafkaOffsets = new HashMap<>();
-		offsets.forEach((topicPartition, offsetAndMetadata) -> {
-			kafkaOffsets.put(new TopicPartition(topicPartition.topic(), topicPartition.partition()), 
-					new io.vertx.kafka.client.consumer.OffsetAndMetadata(offsetAndMetadata.offset() + 1, offsetAndMetadata.metadata()));
-		});
-		
-		if (offsets != null && !offsets.isEmpty()) {
-			this.consumer.commit(kafkaOffsets, ar -> {
-				if (ar.succeeded()) {
-					this.offsetTracker.commit(offsets);
-					if (clear) {
-						this.offsetTracker.clear();
-					}
-					if (log.isDebugEnabled()) {
-						for (Entry<org.apache.kafka.common.TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
-							log.debug("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
-						}
-					}
-				} else {
-					log.error("Error committing", ar.cause());
-				}
-			});
-		}
-	}
-	
 }
