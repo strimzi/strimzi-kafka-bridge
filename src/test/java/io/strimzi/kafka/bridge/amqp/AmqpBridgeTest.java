@@ -317,7 +317,6 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 	}
 	
 	@Test
-	@Ignore
 	public void sendArrayMessage(TestContext context) {
 		String topic = "sendArrayMessage";
 		kafkaCluster.createTopic(topic, 1, 1);
