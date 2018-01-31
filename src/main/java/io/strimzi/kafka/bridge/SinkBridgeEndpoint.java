@@ -125,7 +125,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
-     * Kafka consumer initialization
+     * Kafka consumer initialization. It should be the first call for preparing the Kafka consumer.
      */
     protected void initConsumer() {
 
@@ -143,7 +143,8 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
-     * Subscribe to the topic
+     * Subscribe to the topic. It should be the next call after the {@link #initConsumer()} after getting
+     * the topic information in order to subscribe to it.
      */
     protected void subscribe() {
         if (this.partition != null) {
@@ -226,6 +227,12 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                         log.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
                     }
                 }
+
+                // sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
+                if (this.qos == QoSEndpoint.AT_LEAST_ONCE) {
+                    // commit all tracked offsets for partitions
+                    this.commitOffsets(true);
+                }
             }
 
             this.handlePartitionsRevoked(partitions);
@@ -244,7 +251,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                 }
             }
 
-            //this.handlePartitionsAssigned(partitions);
             partitionsAssigned(partitions);
         });
 
@@ -255,14 +261,13 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             if (subscribeResult.failed()) {
                 return;
             }
-            //partitionsAssigned();
+
             this.consumer.handler(this::handleKafkaRecord);
         });
     }
 
     /**
-     * When partitions are assigned, open the AMQP sender and start
-     * handling records from the Kafka consumer
+     * When partitions are assigned, start handling records from the Kafka consumer
      */
     private void partitionsAssigned(Set<TopicPartition> partitions) {
 
@@ -335,7 +340,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
      *
      * @param clear			Whether to clear the offset tracker after committing.
      */
-    protected void commitOffsets(boolean clear) {
+    private void commitOffsets(boolean clear) {
         Map<org.apache.kafka.common.TopicPartition, OffsetAndMetadata> offsets = this.offsetTracker.getOffsets();
 
         // as Kafka documentation says, the committed offset should always be the offset of the next message
@@ -366,19 +371,25 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         }
     }
 
+    /**
+     * Pause the underlying Kafka consumer
+     */
     protected void pause() {
         this.consumer.pause();
     }
 
+    /**
+     * Resume the underlying Kafka consumer
+     */
     protected void resume() {
         this.consumer.resume();
     }
 
-    protected boolean endOfBatch() {
+    private boolean endOfBatch() {
         return this.recordIndex == this.batchSize-1;
     }
 
-    protected boolean startOfBatch() {
+    private boolean startOfBatch() {
         return this.recordIndex == 0;
     }
 

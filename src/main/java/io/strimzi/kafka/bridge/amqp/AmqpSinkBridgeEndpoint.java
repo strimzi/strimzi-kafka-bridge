@@ -309,15 +309,6 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
 	private void partitionsRevokedHandler(Set<TopicPartition> partitions) {
 
-		// Sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
-
-		if (!partitions.isEmpty()) {
-
-			if (this.sender.getQoS() == ProtonQoS.AT_LEAST_ONCE) {
-				// commit all tracked offsets for partitions
-				this.commitOffsets(true);
-			}
-		}
 	}
 
 	private void partitionsAssignedHandler(Set<TopicPartition> partitions) {
