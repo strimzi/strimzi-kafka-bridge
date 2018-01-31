@@ -317,7 +317,6 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 	}
 	
 	@Test
-	@Ignore
 	public void sendArrayMessage(TestContext context) {
 		String topic = "sendArrayMessage";
 		kafkaCluster.createTopic(topic, 1, 1);
@@ -335,13 +334,13 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 				sender.open();
 
 				// send an array (i.e. integer values)
-				Object[] array = { 1, 2 };
+				int[] array = { 1, 2 };
 
 				Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
 				config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 				config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
 
-				KafkaConsumer<String, Object[]> consumer = KafkaConsumer.create(this.vertx, config);
+				KafkaConsumer<String, int[]> consumer = KafkaConsumer.create(this.vertx, config);
 				consumer.handler(record -> {
 					log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
 							record.topic(), record.partition(), record.offset(), record.key(), record.value());
@@ -804,6 +803,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 	}
 
 	@Test
+	@Ignore
 	public void noPartitionsAvailable(TestContext context) {
 		String topic = "noPartitionsAvailable";
 		kafkaCluster.createTopic(topic, 1, 1);

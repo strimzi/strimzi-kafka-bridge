@@ -67,14 +67,13 @@ public class AmqpDefaultMessageConverter implements MessageConverter<String, byt
 					value = content.getBytes();
 				// encoded as a List
 				} else if (amqpValue instanceof List) {
-					List<?> list = (List<?>)((AmqpValue) body).getValue();
+					List<?> list = (List<?>) ((AmqpValue) body).getValue();
 					DefaultSerializer<List<?>> serializer = new DefaultSerializer<>();
 					value = serializer.serialize(kafkaTopic, list);
 				// encoded as an array
-				} else if (amqpValue instanceof Object[]) {
-					Object[] array = (Object[])((AmqpValue)body).getValue();
-					DefaultSerializer<Object[]> serializer = new DefaultSerializer<>();
-					value = serializer.serialize(kafkaTopic, array);
+				} else if (amqpValue.getClass().isArray()) {
+					DefaultSerializer serializer = new DefaultSerializer();
+					value = serializer.serialize(kafkaTopic, amqpValue);
 				// encoded as a Map
 				} else if (amqpValue instanceof Map) {
 					Map<?,?> map = (Map<?,?>)((AmqpValue)body).getValue();

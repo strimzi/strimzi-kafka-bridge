@@ -155,9 +155,8 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
 					JsonArray jsonArray = new JsonArray(list);
 					jsonBody.put(AmqpJsonMessageConverter.SECTION, jsonArray);
 				// encoded as an array
-				} else if (amqpValue instanceof Object[]) {
-					Object[] array = (Object[])((AmqpValue)body).getValue();
-					JsonArray jsonArray = new JsonArray(Arrays.asList(array));
+				} else if (amqpValue.getClass().isArray()) {
+					JsonArray jsonArray = new JsonArray(Arrays.asList(amqpValue));
 					jsonBody.put(AmqpJsonMessageConverter.SECTION, jsonArray);
 				// encoded as a Map
 				} else if (amqpValue instanceof Map) {
