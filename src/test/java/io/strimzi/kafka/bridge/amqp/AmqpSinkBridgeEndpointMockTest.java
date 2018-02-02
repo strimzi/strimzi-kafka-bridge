@@ -84,7 +84,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 
 	protected <V, K> KafkaConsumer<K, V> installConsumerSpy(AmqpSinkBridgeEndpoint<K, V> endpoint)
 			throws NoSuchFieldException, IllegalAccessException {
-		Field consumerField = AmqpSinkBridgeEndpoint.class.getDeclaredField("consumer");
+		Field consumerField = AmqpSinkBridgeEndpoint.class.getSuperclass().getDeclaredField("consumer");
 		consumerField.setAccessible(true);
 		KafkaConsumer<K,V> consumer = (KafkaConsumer<K,V>)consumerField.get(endpoint);
 		KafkaConsumer<K,V> consumerSpy = spy(consumer);
@@ -159,7 +159,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 		KafkaConsumer<K, V> consumerSpy = installConsumerSpy(endpoint);
 		
 		// Simulate vertx-kafka-client delivering a record
-		Method handler = endpoint.getClass().getDeclaredMethod("handleKafkaRecord", KafkaConsumerRecord.class);
+		Method handler = endpoint.getClass().getSuperclass().getDeclaredMethod("handleKafkaRecord", KafkaConsumerRecord.class);
 		handler.setAccessible(true);
 		handler.invoke(endpoint, recordProducer.mockRecord(null, ()->"Hello, world".getBytes()));
 
@@ -225,12 +225,12 @@ public class AmqpSinkBridgeEndpointMockTest {
 		KafkaConsumer<K, V> consumerSpy = installConsumerSpy(endpoint);
 		
 		// Simulate vertx-kafka-client delivering a batch
-		Method batchHandler = endpoint.getClass().getDeclaredMethod("handleKafkaBatch", KafkaConsumerRecords.class);
+		Method batchHandler = endpoint.getClass().getSuperclass().getDeclaredMethod("handleKafkaBatch", KafkaConsumerRecords.class);
 		batchHandler.setAccessible(true);
 		KafkaConsumerRecords<String, byte[]> mockRecords = mockRecords();
 		
 		// Simulate vertx-kafka-client delivering a record
-		Method handler = endpoint.getClass().getDeclaredMethod("handleKafkaRecord", KafkaConsumerRecord.class);
+		Method handler = endpoint.getClass().getSuperclass().getDeclaredMethod("handleKafkaRecord", KafkaConsumerRecord.class);
 		handler.setAccessible(true);
 		
 		// Kafka batch of 1
@@ -526,7 +526,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 	/** What happens if we can't get the partitions for the given topic? 
 	 * @throws AmqpErrorConditionException */
 	@Test
-	public <K, V> void partitionsForFails() throws AmqpErrorConditionException {
+	public <K, V> void partitionsForFails() throws Exception {
 		String topic = "my_topic";
 		Vertx vertx = Vertx.vertx();
 		AmqpSinkBridgeEndpoint<K,V> endpoint = new AmqpSinkBridgeEndpoint<K,V>(vertx, new AmqpBridgeConfigProperties());
@@ -541,32 +541,34 @@ public class AmqpSinkBridgeEndpointMockTest {
 		
 		// Call handle()
 		endpoint.handle(new AmqpEndpoint(mockSender));
-		endpoint.partitionsForHandler(new AsyncResult<List<PartitionInfo>>() {
+		Method handler = endpoint.getClass().getSuperclass().getDeclaredMethod("partitionsForHandler", AsyncResult.class);
+		handler.setAccessible(true);
+		handler.invoke(endpoint, new AsyncResult<List<PartitionInfo>>() {
 
-			Throwable cause = new Exception();
-			
-			@Override
-			public List<PartitionInfo> result() {
-				fail();
-				return null;
-			}
+					Throwable cause = new Exception();
 
-			@Override
-			public Throwable cause() {
-				return this.cause;
-			}
+					@Override
+					public List<PartitionInfo> result() {
+						fail();
+						return null;
+					}
 
-			@Override
-			public boolean succeeded() {
-				return false;
-			}
+					@Override
+					public Throwable cause() {
+						return this.cause;
+					}
 
-			@Override
-			public boolean failed() {
-				return true;
-			}
-		});
-		
+					@Override
+					public boolean succeeded() {
+						return false;
+					}
+
+					@Override
+					public boolean failed() {
+						return true;
+					}
+				});
+
 		assertDetach(mockSender, 
 				AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
 				"Error getting partition info for topic my_topic");
