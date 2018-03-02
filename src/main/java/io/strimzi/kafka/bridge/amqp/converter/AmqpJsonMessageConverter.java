@@ -235,8 +235,7 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
 		Map<Symbol, Object> messageAnnotationsMap = new HashMap<>();
 		messageAnnotationsMap.put(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION), record.partition());
 		messageAnnotationsMap.put(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION), record.offset());
-		if (record.key() != null)
-			messageAnnotationsMap.put(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION), record.key());
+		messageAnnotationsMap.put(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION), record.key());
 		messageAnnotationsMap.put(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION), record.topic());
 		
 		// get AMQP message annotations from the JSON

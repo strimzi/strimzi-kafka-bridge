@@ -17,7 +17,11 @@
 package io.strimzi.kafka.bridge.amqp;
 
 import io.strimzi.kafka.bridge.KafkaClusterTestBase;
+import io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
+import io.strimzi.kafka.bridge.amqp.converter.AmqpJsonMessageConverter;
+import io.strimzi.kafka.bridge.amqp.converter.AmqpRawMessageConverter;
 import io.strimzi.kafka.bridge.converter.DefaultDeserializer;
+import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -30,6 +34,7 @@ import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -842,5 +847,33 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 				context.fail(ar.cause());
 			}
 		});
+	}
+
+	@Test
+	public void defaultMessageConverterNullKeyTest(TestContext context) {
+		MessageConverter defaultMessageConverter = new AmqpDefaultMessageConverter();
+		context.assertNull(convertedMessageWithNullKey(defaultMessageConverter));
+	}
+
+	@Test
+	public void jsonMessageConverterNullKeyTest(TestContext context) {
+		MessageConverter jsonMessageConverter = new AmqpJsonMessageConverter();
+		context.assertNull(convertedMessageWithNullKey(jsonMessageConverter));
+	}
+
+	@Ignore
+	@Test
+	public void rawMessageConverterNullKeyTest(TestContext context) {
+		MessageConverter rawMessageConverter = new AmqpRawMessageConverter();
+		context.assertNull(convertedMessageWithNullKey(rawMessageConverter));
+	}
+
+	private Object convertedMessageWithNullKey(MessageConverter messageConverter){
+		String payload = "{ \"jsonKey\":\"jsonValue\"}";
+
+		//Record with a null key
+		ConsumerRecord<String,byte[]> record = new ConsumerRecord<String,byte[]>("mytopic", 0, 0, null, payload.getBytes());
+		Message message = (Message) messageConverter.toMessage("0", record);
+		return message.getMessageAnnotations().getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
 	}
 }

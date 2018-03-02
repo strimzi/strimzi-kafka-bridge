@@ -118,8 +118,7 @@ public class AmqpDefaultMessageConverter implements MessageConverter<String, byt
 		Map<Symbol, Object> map = new HashMap<>();
 		map.put(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION), record.partition());
 		map.put(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION), record.offset());
-		if (record.key() != null)
-			map.put(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION), record.key());
+		map.put(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION), record.key());
 		map.put(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION), record.topic());
 		
 		MessageAnnotations messageAnnotations = new MessageAnnotations(map);
