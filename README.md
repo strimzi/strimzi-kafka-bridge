@@ -16,7 +16,7 @@ Other than core classes, the following stuff is provided :
 
 * AmqpBridgeTest : a bunch of unit testing classes based on JUnit and Vert.x Unit;
 * AmqpBridgeServer : a sample application which instantiates and starts the bridge;
-* AmqpBridgeReceiver : a sample applcation with a bunch of examples using AMQP receivers;
+* AmqpBridgeReceiver : a sample application with a bunch of examples using AMQP receivers;
 * AmqpBridgeSender : a sample application with a bunch of examples using AMQP senders;
 
 ## Server application
