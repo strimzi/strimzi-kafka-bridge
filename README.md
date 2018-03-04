@@ -38,7 +38,7 @@ _[topic]_
 
 or specifying it inside the _"To"_ system properties of the AMQP message itself.
 
-> due to unsopported character like "/" for Kafka topic names, the bridge maps it to the "." character. So, in an "hybrid" scenario, it's possible that AMQP clients interacts on addresses using the original "/" character but native Kafka clients need to use the topic name with mapped "." instead of "/".
+> due to unsupported character like "/" for Kafka topic names, the bridge maps it to the "." character. So, in an "hybrid" scenario, it's possible that AMQP clients interacts on addresses using the original "/" character but native Kafka clients need to use the topic name with mapped "." instead of "/".
 
 The AMQP message body contains the Apache Kafka message the client wants to send to the topic. Other than the body, the client can add the following message annotations in order to specify the topic partition destination :
 
