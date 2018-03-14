@@ -16,7 +16,7 @@
 
 package io.strimzi.kafka.bridge.tracker;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
@@ -78,7 +78,7 @@ public class FullOffsetTracker implements OffsetTracker {
 	}
 	
 	@Override
-	public void track(int partition, long offset, ConsumerRecord<?, ?> record) {
+	public void track(int partition, long offset, KafkaConsumerRecord<?, ?> record) {
 		PartitionState state = this.map.get(partition);
 		if (state == null) {
 			this.map.put(partition, new PartitionState(offset));

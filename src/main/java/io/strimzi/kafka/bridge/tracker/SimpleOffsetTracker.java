@@ -16,7 +16,7 @@
 
 package io.strimzi.kafka.bridge.tracker;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
@@ -62,7 +62,7 @@ public class SimpleOffsetTracker implements OffsetTracker {
 	}
 	
 	@Override
-	public void track(int partition, long offset, ConsumerRecord<?, ?> record) {
+	public void track(int partition, long offset, KafkaConsumerRecord<?, ?> record) {
 		// nothing
 	}
 	
