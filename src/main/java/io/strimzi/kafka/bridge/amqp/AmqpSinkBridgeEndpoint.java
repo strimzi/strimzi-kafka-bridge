@@ -25,11 +25,11 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.common.PartitionInfo;
 import io.vertx.kafka.client.common.TopicPartition;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonSender;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
@@ -215,7 +215,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	 *
 	 * @param record	Kafka consumer record
 	 */
-	private void sendAmqpMessage(ConsumerRecord<K, V> record) {
+	private void sendAmqpMessage(KafkaConsumerRecord<K, V> record) {
 		int partition = record.partition();
 		long offset = record.offset();
 		String deliveryTag = partition + "_" + offset;

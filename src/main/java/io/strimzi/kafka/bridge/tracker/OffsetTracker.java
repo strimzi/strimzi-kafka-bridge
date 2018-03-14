@@ -16,7 +16,7 @@
 
 package io.strimzi.kafka.bridge.tracker;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
@@ -34,7 +34,7 @@ public interface OffsetTracker {
 	 * @param offset The offset within the partition
 	 * @param record	Kafka consumer record to track
 	 */
-	void track(int partition, long offset, ConsumerRecord<?, ?> record);
+	void track(int partition, long offset, KafkaConsumerRecord<?, ?> record);
 	
 	/**
 	 * Confirm delivery of AMQP message

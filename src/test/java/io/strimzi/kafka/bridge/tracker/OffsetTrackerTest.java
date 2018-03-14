@@ -16,6 +16,8 @@
 
 package io.strimzi.kafka.bridge.tracker;
 
+import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.consumer.impl.KafkaConsumerRecordImpl;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -35,18 +37,18 @@ public class OffsetTrackerTest {
 	
 	private static final Logger log = LoggerFactory.getLogger(OffsetTrackerTest.class);
 
-	private List<ConsumerRecord<String, byte[]>> records = new ArrayList<>();
+	private List<KafkaConsumerRecord<String, byte[]>> records = new ArrayList<>();
 	private Map<TopicPartition, OffsetAndMetadata> offsets;
 	
 	@Before
 	public void before() {
 		
-		this.records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 0, null, null));
-		this.records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 1, null, null));
-		this.records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 2, null, null));
-		this.records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 3, null, null));
-		this.records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 4, null, null));
-		this.records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 5, null, null));
+		this.records.add(new KafkaConsumerRecordImpl<>(new ConsumerRecord<String, byte[]>("my_topic", 0, 0, null, null)));
+		this.records.add(new KafkaConsumerRecordImpl<>(new ConsumerRecord<String, byte[]>("my_topic", 0, 1, null, null)));
+		this.records.add(new KafkaConsumerRecordImpl<>(new ConsumerRecord<String, byte[]>("my_topic", 0, 2, null, null)));
+		this.records.add(new KafkaConsumerRecordImpl<>(new ConsumerRecord<String, byte[]>("my_topic", 0, 3, null, null)));
+		this.records.add(new KafkaConsumerRecordImpl<>(new ConsumerRecord<String, byte[]>("my_topic", 0, 4, null, null)));
+		this.records.add(new KafkaConsumerRecordImpl<>(new ConsumerRecord<String, byte[]>("my_topic", 0, 5, null, null)));
 	}
 	
 	@Test
@@ -54,7 +56,7 @@ public class OffsetTrackerTest {
 		
 		OffsetTracker offsetTracker  = new FullOffsetTracker("my_topic");
 		
-		for (ConsumerRecord<String, byte[]> record : this.records) {
+		for (KafkaConsumerRecord<String, byte[]> record : this.records) {
 			offsetTracker.track(record.partition(), record.offset(), record);
 		}
 		
@@ -108,7 +110,7 @@ public class OffsetTrackerTest {
 		
 		OffsetTracker offsetTracker  = new FullOffsetTracker("my_topic");
 		
-		for (ConsumerRecord<String, byte[]> record : this.records) {
+		for (KafkaConsumerRecord<String, byte[]> record : this.records) {
 			offsetTracker.track(record.partition(), record.offset(), record);
 		}
 		
@@ -162,7 +164,7 @@ public class OffsetTrackerTest {
 		
 		OffsetTracker offsetTracker  = new SimpleOffsetTracker("my_topic");
 		
-		for (ConsumerRecord<String, byte[]> record : this.records) {
+		for (KafkaConsumerRecord<String, byte[]> record : this.records) {
 			offsetTracker.track(record.partition(), record.offset(), record);
 		}
 		
@@ -216,7 +218,7 @@ public class OffsetTrackerTest {
 		
 		OffsetTracker offsetTracker  = new SimpleOffsetTracker("my_topic");
 		
-		for (ConsumerRecord<String, byte[]> record : this.records) {
+		for (KafkaConsumerRecord<String, byte[]> record : this.records) {
 			offsetTracker.track(record.partition(), record.offset(), record);
 		}
 		
