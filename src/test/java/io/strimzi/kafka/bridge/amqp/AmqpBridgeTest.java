@@ -28,6 +28,7 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.consumer.impl.KafkaConsumerRecordImpl;
 import io.vertx.proton.ProtonClient;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonHelper;
@@ -872,7 +873,8 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 		String payload = "{ \"jsonKey\":\"jsonValue\"}";
 
 		//Record with a null key
-		ConsumerRecord<String,byte[]> record = new ConsumerRecord<String,byte[]>("mytopic", 0, 0, null, payload.getBytes());
+		KafkaConsumerRecord<String,byte[]> record = new KafkaConsumerRecordImpl(
+				new ConsumerRecord("mytopic", 0, 0, null, payload.getBytes()));
 		Message message = (Message) messageConverter.toMessage("0", record);
 		return message.getMessageAnnotations().getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
 	}

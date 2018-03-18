@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
@@ -461,12 +461,12 @@ public class AmqpSinkBridgeEndpointMockTest {
 		}
 
 		@Override
-		public ProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message) {
+		public KafkaProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message) {
 			return null;
 		}
 
 		@Override
-		public M toMessage(String address, ConsumerRecord<K, V> record) {
+		public M toMessage(String address, KafkaConsumerRecord<K, V> record) {
 			return null;
 		}
 	}
@@ -493,12 +493,12 @@ public class AmqpSinkBridgeEndpointMockTest {
 		}
 
 		@Override
-		public ProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message) {
+		public KafkaProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message) {
 			return null;
 		}
 
 		@Override
-		public M toMessage(String address, ConsumerRecord<K, V> record) {
+		public M toMessage(String address, KafkaConsumerRecord<K, V> record) {
 			return null;
 		}
 	}
