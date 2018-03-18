@@ -20,8 +20,8 @@ import io.strimzi.kafka.bridge.amqp.AmqpBridge;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.Symbol;
@@ -64,7 +64,7 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
 	public static final String CORRELATION_ID = "correlationId";
 	
 	@Override
-	public ProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Message message) {
+	public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Message message) {
 		
 		Object partition = null, key = null;
 		byte[] value = null;
@@ -182,11 +182,13 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
 		}
 		
 		// build the record for the KafkaProducer and then send it
-		return new ProducerRecord<>(topic, (Integer)partition, (String)key, json.toString().getBytes());
+        KafkaProducerRecord<String, byte[]> record = KafkaProducerRecord.create(topic, (String)key,
+                json.toString().getBytes(),(Integer) partition);
+		return record;
 	}
 
 	@Override
-	public Message toMessage(String address, ConsumerRecord<String, byte[]> record) {
+	public Message toMessage(String address, KafkaConsumerRecord<String, byte[]> record) {
 		
 		Message message = Proton.message();
 		message.setAddress(address);
