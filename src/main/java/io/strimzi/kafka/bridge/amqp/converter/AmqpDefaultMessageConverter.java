@@ -125,7 +125,7 @@ public class AmqpDefaultMessageConverter implements MessageConverter<String, byt
 		MessageAnnotations messageAnnotations = new MessageAnnotations(map);
 		message.setMessageAnnotations(messageAnnotations);
 		
-		message.setBody(new Data(new Binary(record.value())));
+		message.setBody(new Data(new Binary(record.record().value())));
 		
 		return message;
 	}
