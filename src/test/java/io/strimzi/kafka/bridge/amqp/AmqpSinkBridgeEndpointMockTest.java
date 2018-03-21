@@ -73,8 +73,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 			when(mockVertxRecord.partition()).thenReturn(this.partition);
 			when(mockVertxRecord.offset()).thenReturn(this.offset);
 			
-			mockVertxRecord = new KafkaConsumerRecordImpl<>(new ConsumerRecord(this.topic, this.partition, this.offset,
-                    key != null ? key.get() : null, value != null ? value.get() : null));
+			mockVertxRecord = new KafkaConsumerRecordImpl<>(new ConsumerRecord(this.topic, this.partition, this.offset, key != null ? key.get() : null, value != null ? value.get() : null));
 
 			this.offset++;
 			return mockVertxRecord;

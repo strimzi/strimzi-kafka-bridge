@@ -71,8 +71,7 @@ public class AmqpRawMessageConverter implements MessageConverter<String, byte[],
 		}
 		
 		// build the record for the KafkaProducer and then send it
-        KafkaProducerRecord<String, byte[]> record = KafkaProducerRecord
-				.create(topic, (String)key, value,(Integer) partition);
+        KafkaProducerRecord<String, byte[]> record = KafkaProducerRecord.create(topic, (String)key, value,(Integer) partition);
         return record;
 	}
 
