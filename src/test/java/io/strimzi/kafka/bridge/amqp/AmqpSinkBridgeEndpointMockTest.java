@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import io.vertx.kafka.client.consumer.impl.KafkaConsumerRecordImpl;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.qpid.proton.amqp.Symbol;
@@ -72,10 +73,9 @@ public class AmqpSinkBridgeEndpointMockTest {
 			when(mockVertxRecord.partition()).thenReturn(this.partition);
 			when(mockVertxRecord.offset()).thenReturn(this.offset);
 			
-			ConsumerRecord<K, V> mockKafkaRecord = new ConsumerRecord(this.topic, this.partition, this.offset, key != null ? key.get() : null, value != null ? value.get() : null);
-			
-			when(mockVertxRecord.record()).thenReturn(mockKafkaRecord);
-			
+			mockVertxRecord = new KafkaConsumerRecordImpl<>(new ConsumerRecord(this.topic, this.partition, this.offset,
+                    key != null ? key.get() : null, value != null ? value.get() : null));
+
 			this.offset++;
 			return mockVertxRecord;
 		}

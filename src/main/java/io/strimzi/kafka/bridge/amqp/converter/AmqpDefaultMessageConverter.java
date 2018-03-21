@@ -105,7 +105,8 @@ public class AmqpDefaultMessageConverter implements MessageConverter<String, byt
 		}
 		
 		// build the record for the KafkaProducer and then send it
-        KafkaProducerRecord<String, byte[]> record = KafkaProducerRecord.create(topic, (String)key, value,(Integer) partition);
+        KafkaProducerRecord<String, byte[]> record = KafkaProducerRecord
+                .create(topic, (String)key, value,(Integer) partition);
         return record;
 	}
 
@@ -125,7 +126,7 @@ public class AmqpDefaultMessageConverter implements MessageConverter<String, byt
 		MessageAnnotations messageAnnotations = new MessageAnnotations(map);
 		message.setMessageAnnotations(messageAnnotations);
 		
-		message.setBody(new Data(new Binary(record.record().value())));
+		message.setBody(new Data(new Binary(record.value())));
 		
 		return message;
 	}
