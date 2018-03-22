@@ -26,7 +26,6 @@ import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonReceiver;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.Rejected;
@@ -166,8 +165,7 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 				receiver.getTarget().getAddress().replace('/', '.') :
 				null;
 
-		ProducerRecord<String, byte[]> record = this.converter.toKafkaRecord(kafkaTopic, message);
-		KafkaProducerRecord<String, byte[]> krecord = KafkaProducerRecord.create(record.topic(), record.key(), record.value(), record.timestamp(), record.partition());
+		KafkaProducerRecord<String, byte[]> krecord = this.converter.toKafkaRecord(kafkaTopic, message);
 				
 		if (delivery.remotelySettled()) {
 			
