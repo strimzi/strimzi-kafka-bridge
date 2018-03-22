@@ -165,7 +165,6 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 				receiver.getTarget().getAddress().replace('/', '.') :
 				null;
 
-		//KafkaProducerRecord<String, byte[]> record = this.converter.toKafkaRecord(kafkaTopic, message);
 		KafkaProducerRecord<String, byte[]> krecord = this.converter.toKafkaRecord(kafkaTopic, message);
 				
 		if (delivery.remotelySettled()) {
