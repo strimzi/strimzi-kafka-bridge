@@ -16,8 +16,9 @@
 
 package io.strimzi.kafka.bridge.converter;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerRecord;
+
+import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.producer.KafkaProducerRecord;
 
 /**
  * Interface for a message converter between Kafka record and AMQP message
@@ -31,7 +32,7 @@ public interface MessageConverter<K, V, M> {
 	 * @param message	message to convert
 	 * @return	Kafka record
 	 */
-	ProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message);
+	KafkaProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message);
 	
 	/**
 	 * Converts a Kafka record to a message
@@ -40,5 +41,5 @@ public interface MessageConverter<K, V, M> {
 	 * @param record	Kafka record to convert
 	 * @return	message
 	 */
-	M toMessage(String address, ConsumerRecord<K, V> record);
+	M toMessage(String address, KafkaConsumerRecord<K, V> record);
 }
