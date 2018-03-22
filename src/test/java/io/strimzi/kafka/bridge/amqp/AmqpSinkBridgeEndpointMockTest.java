@@ -27,8 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import io.vertx.kafka.client.consumer.impl.KafkaConsumerRecordImpl;
+import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
@@ -72,10 +73,8 @@ public class AmqpSinkBridgeEndpointMockTest {
 			when(mockVertxRecord.partition()).thenReturn(this.partition);
 			when(mockVertxRecord.offset()).thenReturn(this.offset);
 			
-			ConsumerRecord<K, V> mockKafkaRecord = new ConsumerRecord(this.topic, this.partition, this.offset, key != null ? key.get() : null, value != null ? value.get() : null);
-			
-			when(mockVertxRecord.record()).thenReturn(mockKafkaRecord);
-			
+			mockVertxRecord = new KafkaConsumerRecordImpl<>(new ConsumerRecord(this.topic, this.partition, this.offset, key != null ? key.get() : null, value != null ? value.get() : null));
+
 			this.offset++;
 			return mockVertxRecord;
 		}
@@ -461,12 +460,12 @@ public class AmqpSinkBridgeEndpointMockTest {
 		}
 
 		@Override
-		public ProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message) {
+		public KafkaProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message) {
 			return null;
 		}
 
 		@Override
-		public M toMessage(String address, ConsumerRecord<K, V> record) {
+		public M toMessage(String address, KafkaConsumerRecord<K, V> record) {
 			return null;
 		}
 	}
@@ -493,12 +492,12 @@ public class AmqpSinkBridgeEndpointMockTest {
 		}
 
 		@Override
-		public ProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message) {
+		public KafkaProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message) {
 			return null;
 		}
 
 		@Override
-		public M toMessage(String address, ConsumerRecord<K, V> record) {
+		public M toMessage(String address, KafkaConsumerRecord<K, V> record) {
 			return null;
 		}
 	}

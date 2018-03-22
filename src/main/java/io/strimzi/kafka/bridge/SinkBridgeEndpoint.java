@@ -29,7 +29,6 @@ import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +85,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     // handler called after a seek request on a topic partition
     private Handler<AsyncResult<Void>> seekHandler;
     // handler called when a Kafka record is received
-    private Handler<ConsumerRecord<K, V>> receivedHandler;
+    private Handler<KafkaConsumerRecord<K, V>> receivedHandler;
     // handler called after a commit request
     private Handler<AsyncResult<Void>> commitHandler;
 
@@ -301,14 +300,14 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                             this.handleCommit(ar);
                         } else {
                             // 3. start message sending
-                            this.handleReceived(record.record());
+                            this.handleReceived(record);
                             // 4 resume processing messages
                             this.consumer.resume();
                         }
                     });
                 } else {
                     // Otherwise: immediate send because the record's already committed
-                    this.handleReceived(record.record());
+                    this.handleReceived(record);
                 }
                 break;
 
@@ -319,7 +318,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                         record.partition(), record.offset(), record.key(), record.value());
 
                 // 1. start message sending
-                this.handleReceived(record.record());
+                this.handleReceived(record);
 
                 if (endOfBatch()) {
                     log.debug("End of batch in {} mode => commitOffsets()", this.qos);
@@ -462,7 +461,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
      *
      * @param handler   the handler providing the received Kafka record/message
      */
-    protected void setReceivedHandler(Handler<ConsumerRecord<K, V>> handler) {
+    protected void setReceivedHandler(Handler<KafkaConsumerRecord<K, V>> handler) {
         this.receivedHandler = handler;
     }
 
@@ -511,7 +510,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         }
     }
 
-    private void handleReceived(ConsumerRecord<K, V> record) {
+    private void handleReceived(KafkaConsumerRecord<K, V> record) {
         if (this.receivedHandler != null) {
             this.receivedHandler.handle(record);
         }
