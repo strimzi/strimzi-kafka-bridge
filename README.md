@@ -4,7 +4,7 @@
 
 This project provides a software component which acts as a bridge between [AMQP (Advanced Message Queuing Protocol)](https://www.amqp.org/) based clients and [Apache Kafka](http://kafka.apache.org/) cluster.
 
-It provides a different way to interact with Apache Kafka because the latter supports natively only custom (proprietary) protocol. Thanks to the bridge, all clients which can speak AMQP (which is a standard OASIS and ISO-IEC) protocol can connect to Apache Kafka cluser in order to send and receive messages to/from topics.
+It provides a different way to interact with Apache Kafka because the latter supports natively only custom (proprietary) protocol. Thanks to the bridge, all clients which can speak AMQP (which is a standard OASIS and ISO-IEC) protocol can connect to Apache Kafka cluster in order to send and receive messages to/from topics.
 
 ## Bridge library
 
