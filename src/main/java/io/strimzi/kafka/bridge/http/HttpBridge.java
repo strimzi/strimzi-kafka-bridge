@@ -137,15 +137,9 @@ public class HttpBridge extends AbstractVerticle {
 
     private void processConnection(HttpConnection httpConnection) {
         this.endpoints.put(httpConnection, new ConnectionEndpoint());
-        httpConnection.closeHandler(this::connectionCloseHandler);
-    }
-
-    private void connectionCloseHandler(Void v) {
-        log.info("connection closed");
-    }
-
-    private void connectionShutdownHandler(Void v) {
-
+        httpConnection.closeHandler(close ->{
+            closeConnectionEndpoint(httpConnection);
+        });
     }
 
     /**
@@ -164,7 +158,6 @@ public class HttpBridge extends AbstractVerticle {
             if (!endpoint.getSinks().isEmpty()) {
                 endpoint.getSinks().stream().forEach(sink -> sink.close());
             }
-            connection.close();
             this.endpoints.remove(connection);
         }
     }
