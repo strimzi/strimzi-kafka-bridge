@@ -15,7 +15,7 @@
 		<slf4j-log4j12.version>1.7.18</slf4j-log4j12.version>
 		<log4j.version>1.2.17</log4j.version>
 		<junit.version>4.12</junit.version>
-		<vertx.version>3.5.1-SNAPSHOT</vertx.version>
+		<vertx.version>3.6.0-SNAPSHOT</vertx.version>
 		<spring-boot.version>1.4.2.RELEASE</spring-boot.version>
 		<debezium.version>0.7.1</debezium.version>
 	</properties>
