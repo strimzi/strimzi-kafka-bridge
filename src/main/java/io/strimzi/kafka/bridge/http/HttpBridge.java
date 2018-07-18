@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Red Hat Inc.
+ * Copyright 2018 Red Hat Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.strimzi.kafka.bridge.ConnectionEndpoint;
+import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.*;
@@ -46,7 +47,7 @@ public class HttpBridge extends AbstractVerticle {
     private boolean isReady;
 
     @Autowired
-    private void setBridgeConfigProperties(HttpBridgeConfigProperties httpBridgeConfigProperties) {
+    public void setBridgeConfigProperties(HttpBridgeConfigProperties httpBridgeConfigProperties) {
         this.bridgeConfigProperties = httpBridgeConfigProperties;
     }
 
@@ -124,15 +125,32 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void processRequests(HttpServerRequest httpServerRequest) {
-        if (httpServerRequest.method() == HttpMethod.GET) {
-            log.info("route of GET request is {}", httpServerRequest.path());
-        } else if(httpServerRequest.method() == HttpMethod.POST) {
-            log.info("route of POST request is {}", httpServerRequest.path());
-        } else if(httpServerRequest.method() == HttpMethod.DELETE) {
-            log.info("route of DELETE request is {}", httpServerRequest.path());
-        } else {
-            log.info("Invalid Request");
+        log.info("request method is {} and request path is {}", httpServerRequest.method(), httpServerRequest.path());
+
+        RequestType requestType = RequestIdentifier.getRequestType(httpServerRequest);
+
+        switch (requestType){
+            case PRODUCE:
+                ConnectionEndpoint endpoint = this.endpoints.get(httpServerRequest.connection());
+
+                SourceBridgeEndpoint source = endpoint.getSource();
+
+                if (source == null) {
+                    source = new HttpSourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
+                    source.closeHandler(s -> {
+                        endpoint.setSource(null);
+                    });
+                    source.open();
+                    endpoint.setSource(source);
+                }
+                source.handle(new HttpEndpoint(httpServerRequest));
+
+                break;
+
+            case INVALID:
+                log.info("invalid request");
         }
+
     }
 
     private void processConnection(HttpConnection httpConnection) {

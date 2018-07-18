@@ -16,17 +16,18 @@
 
 package io.strimzi.kafka.bridge.http;
 
-import io.strimzi.kafka.bridge.config.BridgeConfigProperties;
-import org.springframework.stereotype.Component;
+import io.strimzi.kafka.bridge.Endpoint;
+import io.vertx.core.http.HttpServerRequest;
 
-/**
- * Bridge configuration properties for HTTP support
- */
-@Component
-public class HttpBridgeConfigProperties extends BridgeConfigProperties<HttpConfigProperties> {
+public class HttpEndpoint implements Endpoint<HttpServerRequest> {
 
-    public HttpBridgeConfigProperties(){
-        super();
-        this.endpointConfigProperties = new HttpConfigProperties();
+    private HttpServerRequest httpServerRequest;
+
+    public HttpEndpoint(HttpServerRequest httpServerRequest){
+        this.httpServerRequest = httpServerRequest;
+    }
+    @Override
+    public HttpServerRequest get() {
+        return httpServerRequest;
     }
 }

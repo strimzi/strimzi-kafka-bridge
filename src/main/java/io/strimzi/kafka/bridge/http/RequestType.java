@@ -16,17 +16,26 @@
 
 package io.strimzi.kafka.bridge.http;
 
-import io.strimzi.kafka.bridge.config.BridgeConfigProperties;
-import org.springframework.stereotype.Component;
-
 /**
- * Bridge configuration properties for HTTP support
+ * This enum contains types of requests which maps to operations on kafka
  */
-@Component
-public class HttpBridgeConfigProperties extends BridgeConfigProperties<HttpConfigProperties> {
+public enum RequestType {
 
-    public HttpBridgeConfigProperties(){
-        super();
-        this.endpointConfigProperties = new HttpConfigProperties();
-    }
+    //produce records
+    PRODUCE,
+
+    //consumer creation
+    CREATE,
+
+    //subscribe to topic
+    SUBSCRIBE,
+
+    //consume records
+    CONSUME,
+
+    //commit offsets
+    OFFSETS,
+
+    //invalid request
+    INVALID
 }
