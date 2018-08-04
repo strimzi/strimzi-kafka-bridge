@@ -92,6 +92,19 @@ public class RequestIdentifier {
                         }
 
                         break;
+
+                    case DELETE:
+
+                        //delete consumer instance
+                        //request type = DELETE
+                        //path = consumers/{consumer-group}/instances/{instance-id)
+                        //spliting this path will return an array of length 4
+                        //param[0] = "consumers", param[1] = {consumer-group}, param[2] = "instances", param[3] = {instance-id}
+                        if (params.length == 4) {
+                            return RequestType.DELETE;
+                        }
+
+                        break;
                 }
 
                 break;

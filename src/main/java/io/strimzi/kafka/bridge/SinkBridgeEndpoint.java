@@ -73,6 +73,10 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected QoSEndpoint qos;
 
+    protected long pollTimeOut = 100;
+
+    private boolean shouldAttachSubscriberHandler;
+
     // handlers called when partitions are revoked/assigned on rebalancing
     private Handler<Set<TopicPartition>> partitionsRevokedHandler;
     private Handler<Set<TopicPartition>> partitionsAssignedHandler;
@@ -88,6 +92,10 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     private Handler<KafkaConsumerRecord<K, V>> receivedHandler;
     // handler called after a commit request
     private Handler<AsyncResult<Void>> commitHandler;
+
+    private Handler<AsyncResult<KafkaConsumerRecords<K, V>>> manualRecordBatchHandler;
+
+    private Handler<AsyncResult<Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata>>> commitOffsetsHandler;
 
     /**
      * Constructor
@@ -126,7 +134,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     /**
      * Kafka consumer initialization. It should be the first call for preparing the Kafka consumer.
      */
-    protected void initConsumer() {
+    protected void initConsumer(boolean shouldAttachBatchHandler) {
 
         // create a consumer
         KafkaConfigProperties consumerConfig = this.bridgeConfigProperties.getKafkaConfigProperties();
@@ -138,14 +146,19 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, consumerConfig.getConsumerConfig().isEnableAutoCommit());
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, consumerConfig.getConsumerConfig().getAutoOffsetReset());
         this.consumer = KafkaConsumer.create(this.vertx, props);
-        this.consumer.batchHandler(this::handleKafkaBatch);
+
+        if (shouldAttachBatchHandler)
+            this.consumer.batchHandler(this::handleKafkaBatch);
     }
 
     /**
-     * Subscribe to the topic. It should be the next call after the {@link #initConsumer()} after getting
+     * Subscribe to the topic. It should be the next call after the {@link #initConsumer(boolean shoudlAttachHandler)} after getting
      * the topic information in order to subscribe to it.
      */
-    protected void subscribe() {
+    protected void subscribe(boolean shouldAttachHandler) {
+
+        this.shouldAttachSubscriberHandler = shouldAttachHandler;
+
         if (this.partition != null) {
             // read from a specified partition
             log.debug("Assigning to partition {}", this.partition);
@@ -261,7 +274,8 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                 return;
             }
 
-            this.consumer.handler(this::handleKafkaRecord);
+            if (shouldAttachSubscriberHandler)
+                this.consumer.handler(this::handleKafkaRecord);
         });
     }
 
@@ -271,7 +285,9 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     private void partitionsAssigned(Set<TopicPartition> partitions) {
 
         this.handlePartitionsAssigned(partitions);
-        this.consumer.handler(this::handleKafkaRecord);
+
+        if (shouldAttachSubscriberHandler)
+            this.consumer.handler(this::handleKafkaRecord);
     }
 
     /**
@@ -520,5 +536,44 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         if (this.commitHandler != null) {
             this.commitHandler.handle(commitResult);
         }
+    }
+
+    private void handleManualRecords(AsyncResult<KafkaConsumerRecords<K, V>> recordResult) {
+        if (this.manualRecordBatchHandler != null) {
+            if (recordResult.succeeded()) {
+                this.manualRecordBatchHandler.handle(Future.succeededFuture(recordResult.result()));
+            } else {
+                this.manualRecordBatchHandler.handle(Future.failedFuture(recordResult.cause()));
+            }
+        }
+    }
+
+    private void handleCommitedOffsets(AsyncResult<Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata>> offsetsData) {
+        if (this.commitOffsetsHandler != null) {
+            if (offsetsData.succeeded()) {
+                this.commitOffsetsHandler.handle(Future.succeededFuture(offsetsData.result()));
+            } else {
+                this.commitOffsetsHandler.handle(Future.failedFuture(offsetsData.cause()));
+            }
+        }
+    }
+
+    protected void consume(Handler<AsyncResult<KafkaConsumerRecords<K, V>>> manualRecordBatchHandler) {
+        this.manualRecordBatchHandler = manualRecordBatchHandler;
+
+        this.consumer.poll(this.pollTimeOut, pollResult -> {
+            if (this.manualRecordBatchHandler != null){
+                this.handleManualRecords(pollResult);
+            }
+        });
+    }
+
+    protected void commit(Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata> offsetsData, Handler<AsyncResult<Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata>>> commitOffsetsHandler){
+        this.commitOffsetsHandler = commitOffsetsHandler;
+        this.consumer.commit(offsetsData, result -> {
+            if (this.commitOffsetsHandler != null) {
+                this.handleCommitedOffsets(result);
+            }
+        });
     }
 }

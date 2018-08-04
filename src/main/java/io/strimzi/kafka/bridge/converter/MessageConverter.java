@@ -18,12 +18,13 @@ package io.strimzi.kafka.bridge.converter;
 
 
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 
 /**
  * Interface for a message converter between Kafka record and AMQP message
  */
-public interface MessageConverter<K, V, M> {
+public interface MessageConverter<K, V, M, C> {
 
 	/**
 	 * Converts a message to a Kafka record
@@ -42,4 +43,11 @@ public interface MessageConverter<K, V, M> {
 	 * @return	message
 	 */
 	M toMessage(String address, KafkaConsumerRecord<K, V> record);
+
+	/**
+	 * Converts multiple KafkaConsumerRecord from KafkaConsumerRecords to a message
+	 * @param records KafkaRecords to convert
+	 * @return a list of messages
+	 */
+	C toMessages(KafkaConsumerRecords<K, V> records);
 }

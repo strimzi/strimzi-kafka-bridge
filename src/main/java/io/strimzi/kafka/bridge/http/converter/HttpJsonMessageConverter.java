@@ -18,11 +18,13 @@ package io.strimzi.kafka.bridge.http.converter;
 
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 
-public class HttpJsonMessageConverter implements MessageConverter<String,byte[],Buffer> {
+public class HttpJsonMessageConverter implements MessageConverter<String,byte[],Buffer, Buffer> {
 
     @Override
     public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Buffer message) {
@@ -52,5 +54,26 @@ public class HttpJsonMessageConverter implements MessageConverter<String,byte[],
     @Override
     public Buffer toMessage(String address, KafkaConsumerRecord<String, byte[]> record) {
         return null;
+    }
+
+    @Override
+    public Buffer toMessages(KafkaConsumerRecords<String, byte[]> records) {
+
+        JsonArray jsonArray = new JsonArray();
+
+        for (int i = 0; i <records.size(); i++){
+
+            JsonObject jsonObject = new JsonObject();
+
+            jsonObject.put("topic", records.recordAt(i).topic());
+            jsonObject.put("key", records.recordAt(i).key());
+            jsonObject.put("value", new String(records.recordAt(i).value()));
+            jsonObject.put("partition", records.recordAt(i).partition());
+            jsonObject.put("offset", records.recordAt(i).offset());
+
+            jsonArray.add(jsonObject);
+        }
+
+        return jsonArray.toBuffer();
     }
 }

@@ -20,6 +20,7 @@ import io.strimzi.kafka.bridge.amqp.AmqpBridge;
 import io.strimzi.kafka.bridge.converter.DefaultSerializer;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.Binary;
@@ -30,6 +31,7 @@ import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.message.Message;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +40,7 @@ import java.util.Map;
  * Default implementation class for the message conversion
  * between Kafka record and AMQP message
  */
-public class AmqpDefaultMessageConverter implements MessageConverter<String, byte[], Message> {
+public class AmqpDefaultMessageConverter implements MessageConverter<String, byte[], Message, Collection<Message>> {
 
 	@Override
 	public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Message message) {
@@ -128,6 +130,11 @@ public class AmqpDefaultMessageConverter implements MessageConverter<String, byt
 		message.setBody(new Data(new Binary(record.value())));
 		
 		return message;
+	}
+
+	@Override
+	public Collection<Message> toMessages(KafkaConsumerRecords<String, byte[]> records) {
+		return null;
 	}
 
 }

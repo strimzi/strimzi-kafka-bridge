@@ -19,6 +19,7 @@ package io.strimzi.kafka.bridge.amqp.converter;
 import io.strimzi.kafka.bridge.amqp.AmqpBridge;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.Symbol;
@@ -26,6 +27,7 @@ import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.message.Message;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,7 +36,7 @@ import java.util.Map;
  * between Kafka record and AMQP message.
  * It passes the AMQP message as is (raw bytes) as Kafka record value and vice versa.
  */
-public class AmqpRawMessageConverter implements MessageConverter<String, byte[], Message> {
+public class AmqpRawMessageConverter implements MessageConverter<String, byte[], Message, Collection<Message>> {
 
 	// TODO : should be it configurable or based on max frame size ?
 	private static final int BUFFER_SIZE = 32768;
@@ -94,6 +96,11 @@ public class AmqpRawMessageConverter implements MessageConverter<String, byte[],
 		message.setMessageAnnotations(messageAnnotations);
 		
 		return message;
+	}
+
+	@Override
+	public Collection<Message> toMessages(KafkaConsumerRecords<String, byte[]> records) {
+		return null;
 	}
 
 }

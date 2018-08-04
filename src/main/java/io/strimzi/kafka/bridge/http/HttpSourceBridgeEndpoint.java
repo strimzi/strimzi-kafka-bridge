@@ -20,6 +20,7 @@ import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -64,6 +65,11 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
             });
 
         });
+
+    }
+
+    @Override
+    public void handle(Endpoint<?> endpoint, Handler<?> handler) {
 
     }
 

@@ -37,5 +37,8 @@ public enum RequestType {
     OFFSETS,
 
     //invalid request
-    INVALID
+    INVALID,
+
+    //Delete consumer
+    DELETE
 }

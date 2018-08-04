@@ -21,29 +21,22 @@ import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.Symbol;
-import org.apache.qpid.proton.amqp.messaging.AmqpValue;
-import org.apache.qpid.proton.amqp.messaging.ApplicationProperties;
-import org.apache.qpid.proton.amqp.messaging.Data;
-import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
-import org.apache.qpid.proton.amqp.messaging.Section;
+import org.apache.qpid.proton.amqp.messaging.*;
 import org.apache.qpid.proton.message.Message;
 
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 /**
  * JSON implementation class for the message conversion
  * between Kafka record and AMQP message
  */
-public class AmqpJsonMessageConverter implements MessageConverter<String, byte[], Message> {
+public class AmqpJsonMessageConverter implements MessageConverter<String, byte[], Message, Collection<Message>> {
 
 	// AMQP message section to encode in JSON
 	public static final String APPLICATION_PROPERTIES = "applicationProperties";
@@ -291,5 +284,10 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
 		return message;
 	}
 
-	
+	@Override
+	public Collection<Message> toMessages(KafkaConsumerRecords<String, byte[]> records) {
+		return null;
+	}
+
+
 }
