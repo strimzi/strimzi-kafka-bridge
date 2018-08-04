@@ -17,6 +17,7 @@
 package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.amqp.AmqpBridge;
+import io.strimzi.kafka.bridge.http.HttpBridge;
 import io.vertx.core.Vertx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,19 +39,32 @@ public class Application {
     private final Vertx vertx = Vertx.vertx();
 
     @Autowired
-    private AmqpBridge bridge;
+    private AmqpBridge amqpBridge;
+
+    @Autowired
+    private HttpBridge httpBridge;
 
     @PostConstruct
     public void start() {
 
-        this.vertx.deployVerticle(this.bridge, done -> {
+        this.vertx.deployVerticle(this.amqpBridge, done -> {
 
             if (done.succeeded()) {
-                log.debug("Verticle instance deployed [{}]", done.result());
+                log.debug("AMQP verticle instance deployed [{}]", done.result());
             } else {
-                log.debug("Failed to deploy verticle instance", done.cause());
+                log.debug("Failed to deploy AMQP verticle instance", done.cause());
             }
         });
+
+        this.vertx.deployVerticle(this.httpBridge, done -> {
+
+            if (done.succeeded()) {
+                log.debug("HTTP verticle instance deployed [{}]", done.result());
+            } else {
+                log.debug("Failed to deploy HTTP verticle instance", done.cause());
+            }
+        });
+
     }
 
     @PreDestroy
@@ -58,7 +72,7 @@ public class Application {
 
         this.vertx.close(done -> {
             if (done.failed()) {
-                log.error("Could not shut down AMQP-Kafka bridge cleanly", done.cause());
+                log.error("Could not shut down Kafka bridge cleanly", done.cause());
             }
         });
     }

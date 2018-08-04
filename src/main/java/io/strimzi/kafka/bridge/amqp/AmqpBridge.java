@@ -486,10 +486,10 @@ public class AmqpBridge extends AbstractVerticle {
 	 * @return				an AMQP message converter instance
 	 * @throws AmqpErrorConditionException
 	 */
-	static MessageConverter<?, ?, ?> instantiateConverter(String className) throws AmqpErrorConditionException {
+	static MessageConverter<?, ?, ?, ?> instantiateConverter(String className) throws AmqpErrorConditionException {
 		
 		if (className == null || className.isEmpty()) {
-			return (MessageConverter<?, ?, ?>)new AmqpDefaultMessageConverter();
+			return (MessageConverter<?, ?, ?, ?>)new AmqpDefaultMessageConverter();
 		} else {
 			Object instance = null;
 			try {
@@ -501,7 +501,7 @@ public class AmqpBridge extends AbstractVerticle {
 			} 
 			
 			if (instance instanceof MessageConverter) {
-				return (MessageConverter<?,?,?>)instance;
+				return (MessageConverter<?,?,?,?>)instance;
 			} else {
 				throw new AmqpErrorConditionException(AmqpBridge.AMQP_ERROR_CONFIGURATION, "configured message converter class is not an instanceof " + MessageConverter.class.getName() + ": " + className);
 			}

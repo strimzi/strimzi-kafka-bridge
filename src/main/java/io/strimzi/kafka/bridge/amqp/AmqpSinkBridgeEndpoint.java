@@ -22,6 +22,7 @@ import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.tracker.SimpleOffsetTracker;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.common.PartitionInfo;
 import io.vertx.kafka.client.common.TopicPartition;
@@ -35,6 +36,7 @@ import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -50,7 +52,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	private static final String GROUP_ID_MATCH = "/group.id/";
 	
 	// converter from ConsumerRecord to AMQP message
-	private MessageConverter<K, V, Message> converter;
+	private MessageConverter<K, V, Message, Collection<Message>> converter;
 
 	// sender link for handling outgoing message
 	private ProtonSender sender;
@@ -98,7 +100,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 		try {
 			
 			if (this.converter == null) {
-				this.converter = (MessageConverter<K, V, Message>) AmqpBridge.instantiateConverter(amqpConfigProperties.getMessageConverter());
+				this.converter = (MessageConverter<K, V, Message, Collection<Message>>) AmqpBridge.instantiateConverter(amqpConfigProperties.getMessageConverter());
 			}
 			
 			this.sender = (ProtonSender)link;
@@ -163,7 +165,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 				this.offsetTracker = new SimpleOffsetTracker(this.kafkaTopic);
 				this.qos = this.mapQoS(this.sender.getQoS());
 				
-				this.initConsumer();
+				this.initConsumer(true);
 				// Set up flow control
 				// (*before* subscribe in case we start with no credit!)
 
@@ -178,13 +180,18 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 				
 				this.flowCheck();
 				// Subscribe to the topic
-				this.subscribe();
+				this.subscribe(true);
 			}
 		} catch (AmqpErrorConditionException e) {
 			AmqpBridge.detachWithError(link, e.toCondition());
 			this.handleClose();
 			return;
 		}
+	}
+
+	@Override
+	public void handle(Endpoint<?> endpoint, Handler<?> handler) {
+
 	}
 
 	/**
