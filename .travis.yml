@@ -11,10 +11,10 @@ script:
 - if [ -n "${TRAVIS_TAG}" ]; then mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${TRAVIS_TAG};
   fi
 - mvn package
-- curl -s ${SCRIPTS}/generate-bintray-descriptor.sh | bash /dev/stdin amqp-kafka-bridge target/amqp-kafka-bridge-${TAG}-bin.tar.gz > .bintray.json
-- curl -s ${SCRIPTS}/docker-build.sh | bash /dev/stdin strimzi/amqp-kafka-bridge . ${TAG}
+- curl -s ${SCRIPTS}/generate-bintray-descriptor.sh | bash /dev/stdin kafka-bridge target/kafka-bridge-${TAG}-bin.tar.gz > .bintray.json
+- curl -s ${SCRIPTS}/docker-build.sh | bash /dev/stdin strimzi/kafka-bridge . ${TAG}
 after_success:
-- curl -s ${SCRIPTS}/docker-push.sh | bash /dev/stdin strimzi/amqp-kafka-bridge
+- curl -s ${SCRIPTS}/docker-push.sh | bash /dev/stdin strimzi/kafka-bridge
 env:
   global:
   - SCRIPTS=https://raw.githubusercontent.com/EnMasseProject/travis-scripts/master

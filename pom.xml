@@ -2,11 +2,11 @@
   <modelVersion>4.0.0</modelVersion>
   
 	<groupId>io.strimzi</groupId>
-	<artifactId>amqp-kafka-bridge</artifactId>
+	<artifactId>kafka-bridge</artifactId>
 	<version>1.0-SNAPSHOT</version>
 
-	<name>amqp-kafka-bridge</name>
-	<description>AMQP - Apache Kafka bridge</description>
+	<name>kafka-bridge</name>
+	<description>Apache Kafka bridge</description>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -111,7 +111,7 @@
 							<goal>repackage</goal>
 						</goals>
 						<configuration>
-							<finalName>amqp-kafka-bridge</finalName>
+							<finalName>kafka-bridge</finalName>
 						</configuration>
 					</execution>
 				</executions>
@@ -121,7 +121,7 @@
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
 					<descriptor>src/assembly/bin.xml</descriptor>
-					<finalName>amqp-kafka-bridge-${project.version}</finalName>
+					<finalName>kafka-bridge-${project.version}</finalName>
 				</configuration>
 				<executions>
 					<execution>
@@ -148,7 +148,7 @@
 							<verbose>true</verbose>
 							<images>
 								<image>
-									<name>strimzi/amqp-kafka-bridge:${project.version}</name>
+									<name>strimzi/kafka-bridge:${project.version}</name>
 									<build>
 										<from>centos:7</from>
 										<ports>

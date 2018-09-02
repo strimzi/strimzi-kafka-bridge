@@ -81,7 +81,7 @@ public class AmqpBridge extends AbstractVerticle {
 	public static final String AMQP_OFFSET_FILTER = "io.strimzi:offset-filter:long";
 
 	// container-id needed for working in "client" mode
-	private static final String CONTAINER_ID = "amqp-kafka-bridge-service";
+	private static final String CONTAINER_ID = "kafka-bridge-service";
 
 	private static final int HEALTH_SERVER_PORT = 8080;
 	

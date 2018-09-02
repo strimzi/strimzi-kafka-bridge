@@ -10,7 +10,7 @@
       <directory>target</directory>
       <outputDirectory>/</outputDirectory>
       <includes>
-        <include>amqp-kafka-bridge.jar</include>
+        <include>kafka-bridge.jar</include>
       </includes>
     </fileSet>
     <fileSet>
