@@ -43,7 +43,7 @@ The AMQP message body contains the Apache Kafka message the client wants to send
 
 The above message annotations aren't mandatory. If they aren't provided by the clients, the messages are sent across all topic partitions in a round robin fashion.
 
-More information about sender flow are available in the wiki [here](https://github.com/EnMasseProject/amqp-kafka-bridge/wiki/Sender)
+More information about sender flow are available [here](sender.md)
 
 ## AMQP Receivers
 
@@ -72,7 +72,7 @@ The link is automatically detached by the bridge in the following cases :
 * the client specifies a negative value for partition or offset;
 * the client specifies a not existing partition;
 
-More information about receiver flow are available in the wiki [here](https://github.com/EnMasseProject/amqp-kafka-bridge/wiki/Receiver)
+More information about receiver flow are available [here](receiver.md)
 
 ## Supported AMQP clients
 
@@ -81,3 +81,4 @@ The main well known AMQP projects are :
 
 * [Apache Qpid](https://qpid.apache.org/) : provides an AMQP stack implementation in C, Java, C++ and other languages. Other than clients, a [Dispatch Router](https://qpid.apache.org/components/dispatch-router/index.html) is available as well;
 * [AMQP .Net Lite](https://github.com/Azure/amqpnetlite) : .Net and C# based implementation of the AMQP stack;
+* [RHEA](https://github.com/amqp/rhea) : A JavaScript reactive messaging library based on the AMQP protocol;
