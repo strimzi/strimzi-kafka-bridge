@@ -21,33 +21,27 @@ import io.strimzi.kafka.bridge.http.HttpBridge;
 import io.vertx.core.Vertx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 
 /**
  * AMQP - Apache Kafka bridge main application class
  */
-@SpringBootApplication
 public class Application {
 
     private static final Logger log = LoggerFactory.getLogger(Application.class);
 
-    private final Vertx vertx = Vertx.vertx();
+    private Vertx vertx;
 
-    @Autowired
-    private AmqpBridge amqpBridge;
+    Application() {
+        vertx = Vertx.vertx();
+    }
 
-    @Autowired
-    private HttpBridge httpBridge;
-
-    @PostConstruct
     public void start() {
 
-        this.vertx.deployVerticle(this.amqpBridge, done -> {
+        AmqpBridge amqpBridge = new AmqpBridge();
+
+        HttpBridge httpBridge = new HttpBridge();
+
+        vertx.deployVerticle(amqpBridge, done -> {
 
             if (done.succeeded()) {
                 log.debug("AMQP verticle instance deployed [{}]", done.result());
@@ -56,7 +50,7 @@ public class Application {
             }
         });
 
-        this.vertx.deployVerticle(this.httpBridge, done -> {
+        vertx.deployVerticle(httpBridge, done -> {
 
             if (done.succeeded()) {
                 log.debug("HTTP verticle instance deployed [{}]", done.result());
@@ -67,10 +61,9 @@ public class Application {
 
     }
 
-    @PreDestroy
     public void stop() {
 
-        this.vertx.close(done -> {
+        vertx.close(done -> {
             if (done.failed()) {
                 log.error("Could not shut down Kafka bridge cleanly", done.cause());
             }
@@ -78,6 +71,17 @@ public class Application {
     }
 
     public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
+
+        Application application = new Application();
+
+        //starts AMQP and HTTP bridge
+        application.start();
+
+        //receive application shutdown event
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+
+            //close all running verticles
+            application.stop();
+        }));
     }
 }

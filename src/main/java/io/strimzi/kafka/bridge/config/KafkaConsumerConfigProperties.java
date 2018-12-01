@@ -16,14 +16,9 @@
 
 package io.strimzi.kafka.bridge.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
-
 /**
  * Apache Kafka consumer configuration properties
  */
-@Component
-@ConfigurationProperties(prefix = "kafka.consumer")
 public class KafkaConsumerConfigProperties {
 
     private static final String DEFAULT_KEY_DESERIALIZER = "org.apache.kafka.common.serialization.StringDeserializer";

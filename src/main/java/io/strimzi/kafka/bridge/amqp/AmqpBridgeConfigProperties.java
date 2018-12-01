@@ -17,12 +17,10 @@
 package io.strimzi.kafka.bridge.amqp;
 
 import io.strimzi.kafka.bridge.config.BridgeConfigProperties;
-import org.springframework.stereotype.Component;
 
 /**
  * Bridge configuration properties for AMQP support
  */
-@Component
 public class AmqpBridgeConfigProperties extends BridgeConfigProperties<AmqpConfigProperties> {
 
     public AmqpBridgeConfigProperties() {

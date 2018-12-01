@@ -20,11 +20,12 @@ import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
-import io.vertx.core.http.*;
+import io.vertx.core.http.HttpConnection;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +34,6 @@ import java.util.Map;
  * Main bridge class listening for connections
  * and handling HTTP requests.
  */
-@Component
 public class HttpBridge extends AbstractVerticle {
 
     private static final Logger log = LoggerFactory.getLogger(HttpBridge.class);
@@ -48,7 +48,11 @@ public class HttpBridge extends AbstractVerticle {
 
     private boolean isReady;
 
-    @Autowired
+    public HttpBridge() {
+        HttpBridgeConfigProperties bridgeConfigProperties = new HttpBridgeConfigProperties();
+        setBridgeConfigProperties(bridgeConfigProperties);
+    }
+
     public void setBridgeConfigProperties(HttpBridgeConfigProperties httpBridgeConfigProperties) {
         this.bridgeConfigProperties = httpBridgeConfigProperties;
     }

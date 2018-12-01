@@ -16,14 +16,9 @@
 
 package io.strimzi.kafka.bridge.http;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
-
 /**
  * HTTP configuration properties
  */
-@Component
-@ConfigurationProperties(prefix = "http")
 public class HttpConfigProperties {
 
     private static final String DEFAULT_HOST = "0.0.0.0";

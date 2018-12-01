@@ -16,14 +16,9 @@
 
 package io.strimzi.kafka.bridge.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
-
 /**
  * Apache Kafka producer configuration properties
  */
-@Component
-@ConfigurationProperties(prefix = "kafka.producer")
 public class KafkaProducerConfigProperties {
 
     private static final String DEFAULT_KEY_SERIALIZER = "org.apache.kafka.common.serialization.StringSerializer";

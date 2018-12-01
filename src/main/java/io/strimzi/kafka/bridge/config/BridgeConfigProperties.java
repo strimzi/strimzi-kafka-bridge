@@ -16,14 +16,10 @@
 
 package io.strimzi.kafka.bridge.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 /**
  * Bridge configuration properties
  * @param <T>   type for configuring specific properties on the endpoint side
  */
-@Component
 public class BridgeConfigProperties<T> {
 
     protected KafkaConfigProperties kafkaConfigProperties;
@@ -48,7 +44,6 @@ public class BridgeConfigProperties<T> {
      * @param kafkaConfigProperties  Kafka configuration
      * @return  this instance for setter chaining
      */
-    @Autowired
     public BridgeConfigProperties setKafkaConfigProperties(KafkaConfigProperties kafkaConfigProperties) {
         this.kafkaConfigProperties = kafkaConfigProperties;
         return this;
@@ -69,7 +64,6 @@ public class BridgeConfigProperties<T> {
      * @param endpointConfigProperties  endpoint configuration
      * @return  this instance for setter chaining
      */
-    @Autowired
     public BridgeConfigProperties setEndpointConfigProperties(T endpointConfigProperties) {
         this.endpointConfigProperties = endpointConfigProperties;
         return this;

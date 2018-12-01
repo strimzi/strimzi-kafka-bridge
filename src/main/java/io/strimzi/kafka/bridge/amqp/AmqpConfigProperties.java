@@ -16,14 +16,9 @@
 
 package io.strimzi.kafka.bridge.amqp;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
-
 /**
  * AMQP configuration properties
  */
-@Component
-@ConfigurationProperties(prefix = "amqp")
 public class AmqpConfigProperties {
 
     private static final AmqpMode DEFAULT_AMQP_MODE = AmqpMode.SERVER;

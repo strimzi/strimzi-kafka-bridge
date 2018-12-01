@@ -16,15 +16,10 @@
 
 package io.strimzi.kafka.bridge.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 /**
  * Apache Kafka configuration properties
  */
-@Component
-@ConfigurationProperties(prefix = "kafka")
 public class KafkaConfigProperties {
 
     private static final String DEFAULT_BOOTSTRAP_SERVERS = "localhost:9092";
@@ -69,7 +64,6 @@ public class KafkaConfigProperties {
      * @param producerConfig    Kafka producer configuration
      * @return  this instance for setter chaining
      */
-    @Autowired
     public KafkaConfigProperties setProducerConfig(KafkaProducerConfigProperties producerConfig) {
         this.producerConfig = producerConfig;
         return this;
@@ -90,7 +84,7 @@ public class KafkaConfigProperties {
      * @param consumerConfig    Kafka consumer configuration
      * @return  this instance for setter chaining
      */
-    @Autowired
+
     public KafkaConfigProperties setConsumerConfig(KafkaConsumerConfigProperties consumerConfig) {
         this.consumerConfig = consumerConfig;
         return this;

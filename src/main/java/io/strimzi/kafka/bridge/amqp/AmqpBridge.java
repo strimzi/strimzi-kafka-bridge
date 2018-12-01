@@ -16,32 +16,22 @@
 
 package io.strimzi.kafka.bridge.amqp;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.ConnectionEndpoint;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
-import io.vertx.proton.ProtonClient;
-import io.vertx.proton.ProtonClientOptions;
-import io.vertx.proton.ProtonConnection;
-import io.vertx.proton.ProtonLink;
-import io.vertx.proton.ProtonReceiver;
-import io.vertx.proton.ProtonSender;
-import io.vertx.proton.ProtonServer;
-import io.vertx.proton.ProtonServerOptions;
-import io.vertx.proton.ProtonSession;
+import io.vertx.proton.*;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.util.HashMap;
@@ -51,7 +41,6 @@ import java.util.Map;
  * Main bridge class listening for connections
  * and handling AMQP senders and receivers
  */
-@Component
 public class AmqpBridge extends AbstractVerticle {
 	
 	private static final Logger log = LoggerFactory.getLogger(AmqpBridge.class);
@@ -97,9 +86,13 @@ public class AmqpBridge extends AbstractVerticle {
 	// if the bridge is ready to handle requests
 	private boolean isReady = false;
 
-	@Autowired
 	public void setBridgeConfigProperties(AmqpBridgeConfigProperties bridgeConfigProperties) {
 		this.bridgeConfigProperties = bridgeConfigProperties;
+	}
+
+	public AmqpBridge() {
+		AmqpBridgeConfigProperties amqpBridgeConfigProperties = new AmqpBridgeConfigProperties();
+		setBridgeConfigProperties(amqpBridgeConfigProperties);
 	}
 
 	/**
