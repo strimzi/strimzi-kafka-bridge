@@ -257,6 +257,18 @@ public class AmqpBridge extends AbstractVerticle {
 		ProtonServerOptions options = new ProtonServerOptions();
 		options.setHost(this.bridgeConfigProperties.getEndpointConfigProperties().getHost());
 		options.setPort(this.bridgeConfigProperties.getEndpointConfigProperties().getPort());
+
+		if (this.bridgeConfigProperties.getEndpointConfigProperties().getCertDir() != null && this.bridgeConfigProperties.getEndpointConfigProperties().getCertDir().length() > 0) {
+			String certDir = this.bridgeConfigProperties.getEndpointConfigProperties().getCertDir();
+			log.info("Enabling SSL configuration for AMQP with TLS certificates from {}", certDir);
+			options.setSsl(true)
+					.setPemTrustOptions(new PemTrustOptions()
+							.addCertPath(new File(certDir, "ca.crt").getAbsolutePath()))
+					.setPemKeyCertOptions(new PemKeyCertOptions()
+							.addCertPath(new File(certDir, "tls.crt").getAbsolutePath())
+							.addKeyPath(new File(certDir, "tls.key").getAbsolutePath()));
+		}
+
 		return options;
 	}
 
