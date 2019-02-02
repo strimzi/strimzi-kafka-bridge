@@ -130,6 +130,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 			
 				// group.id specified in the address, open sender and setup Kafka consumer
 				this.sender
+						.setSource(this.sender.getRemoteSource())
 						.closeHandler(ar -> {
 							if (ar.succeeded()) {
 								this.processCloseSender(ar.result());
@@ -138,6 +139,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 						.detachHandler(ar -> {
 							this.processCloseSender(this.sender);
 						});
+				this.sender.open();
 				
 				this.groupId = address.substring(groupIdIndex + AmqpSinkBridgeEndpoint.GROUP_ID_MATCH.length());
 				this.topic = address.substring(0, groupIdIndex);
