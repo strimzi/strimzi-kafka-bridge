@@ -3,7 +3,7 @@ kind: Service
 metadata:
   labels:
     app: strimzi
-  name: ${project.artifactId}
+  name: strimzi-kafka-bridge
 spec:
   ports:
   - name: amqp
@@ -11,4 +11,4 @@ spec:
     protocol: TCP
     targetPort: 5672
   selector:
-    capability: bridge
+    name: strimzi-kafka-bridge
