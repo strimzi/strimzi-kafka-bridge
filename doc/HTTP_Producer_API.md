@@ -11,13 +11,22 @@ Producer API allows you to send message to a topic, optionally specifying key or
 
 Request body should be in JSON format.
 
-Sample request
+Sample request specifying a key:
 
 ```
 POST /topics/kafka-bridge HTTP/1.1
 Host: localhost:8080
 Content-Type: application/application/json
-{"key":"key01","partition":1,"value":"Hi this is kafka-bridge"}
+{"key":"my-key","value":"Hi this is kafka-bridge"}
+```
+
+Sample request specifying a partition:
+
+```
+POST /topics/kafka-bridge HTTP/1.1
+Host: localhost:8080
+Content-Type: application/application/json
+{"partition":1,"value":"Hi this is kafka-bridge"}
 ```
 
 Response is also a JSON object containing delivery report and metadata of the produced message.
