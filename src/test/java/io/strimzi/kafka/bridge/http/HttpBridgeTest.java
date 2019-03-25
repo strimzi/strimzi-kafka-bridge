@@ -95,22 +95,22 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonObject> response = ar.result();
-                        JsonObject bridgeResponse = response.body();
-                        String deliveryStatus = bridgeResponse.getString("status");
-                        String topic = bridgeResponse.getString("topic");
-                        String key = bridgeResponse.getString("key");
-                        long offset = bridgeResponse.getLong("offset");
-                        //check delivery status
-                        context.assertEquals("Accepted", deliveryStatus);
-                        //check topic
-                        context.assertEquals(kafkaTopic, topic);
-                        //check offset. should be 0 as single message is published
-                        context.assertEquals(0L, offset);
-                        //check key. should be null
-                        context.assertNull(key);
-                    }
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String deliveryStatus = bridgeResponse.getString("status");
+                    String topic = bridgeResponse.getString("topic");
+                    String key = bridgeResponse.getString("key");
+                    long offset = bridgeResponse.getLong("offset");
+                    //check delivery status
+                    context.assertEquals("Accepted", deliveryStatus);
+                    //check topic
+                    context.assertEquals(kafkaTopic, topic);
+                    //check offset. should be 0 as single message is published
+                    context.assertEquals(0L, offset);
+                    //check key. should be null
+                    context.assertNull(key);
                 });
 
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
@@ -158,22 +158,22 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonObject> response = ar.result();
-                        JsonObject bridgeResponse = response.body();
-                        String deliveryStatus = bridgeResponse.getString("status");
-                        String topic = bridgeResponse.getString("topic");
-                        int partition = bridgeResponse.getInteger("partition");
-                        long offset = bridgeResponse.getLong("offset");
-                        //check delivery status
-                        context.assertEquals("Accepted", deliveryStatus);
-                        //check topic
-                        context.assertEquals(kafkaTopic, topic);
-                        //check partition
-                        context.assertEquals(kafkaPartition, partition);
-                        //check offset. should be 0 as single message is published
-                        context.assertEquals(0L, offset);
-                    }
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String deliveryStatus = bridgeResponse.getString("status");
+                    String topic = bridgeResponse.getString("topic");
+                    int partition = bridgeResponse.getInteger("partition");
+                    long offset = bridgeResponse.getLong("offset");
+                    //check delivery status
+                    context.assertEquals("Accepted", deliveryStatus);
+                    //check topic
+                    context.assertEquals(kafkaTopic, topic);
+                    //check partition
+                    context.assertEquals(kafkaPartition, partition);
+                    //check offset. should be 0 as single message is published
+                    context.assertEquals(0L, offset);
                 });
 
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
@@ -223,19 +223,19 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonObject> response = ar.result();
-                        JsonObject bridgeResponse = response.body();
-                        String deliveryStatus = bridgeResponse.getString("status");
-                        String topic = bridgeResponse.getString("topic");
-                        long offset = bridgeResponse.getLong("offset");
-                        //check delivery status
-                        context.assertEquals("Accepted", deliveryStatus);
-                        //check topic
-                        context.assertEquals(kafkaTopic, topic);
-                        //check offset. should be 0 as single message is published
-                        context.assertEquals(0L, offset);
-                    }
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String deliveryStatus = bridgeResponse.getString("status");
+                    String topic = bridgeResponse.getString("topic");
+                    long offset = bridgeResponse.getLong("offset");
+                    //check delivery status
+                    context.assertEquals("Accepted", deliveryStatus);
+                    //check topic
+                    context.assertEquals(kafkaTopic, topic);
+                    //check offset. should be 0 as single message is published
+                    context.assertEquals(0L, offset);
                 });
 
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
@@ -347,15 +347,15 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonObject> response = ar.result();
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        context.assertEquals(consumerInstanceId, name);
-                        context.assertEquals(consumerBaseUri, baseUri);
-                        creationAsync.complete();
-                    }
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String consumerInstanceId = bridgeResponse.getString("instance_id");
+                    String consumerBaseUri = bridgeResponse.getString("base_uri");
+                    context.assertEquals(consumerInstanceId, name);
+                    context.assertEquals(consumerBaseUri, baseUri);
+                    creationAsync.complete();
                 });
 
         creationAsync.await();
@@ -370,13 +370,13 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .putHeader("Content-length", String.valueOf(subJson.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(subJson, ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonObject> response = ar.result();
-                        JsonObject bridgeResponse = response.body();
-                        String status = bridgeResponse.getString("subscription_status");
-                        context.assertEquals(status, "subscribed");
-                        subscriberAsync.complete();
-                    }
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String status = bridgeResponse.getString("subscription_status");
+                    context.assertEquals(status, "subscribed");
+                    subscriberAsync.complete();
                 });
 
         subscriberAsync.await();
@@ -388,22 +388,22 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .putHeader("timeout", String.valueOf(1000))
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonArray> response = ar.result();
-                        JsonObject jsonResponse = response.body().getJsonObject(0);
+                    context.assertTrue(ar.succeeded());
 
-                        String kafkaTopic = jsonResponse.getString("topic");
-                        int kafkaPartition = jsonResponse.getInteger("partition");
-                        String key = jsonResponse.getString("key");
-                        String value = jsonResponse.getString("value");
-                        long offset = jsonResponse.getLong("offset");
+                    HttpResponse<JsonArray> response = ar.result();
+                    JsonObject jsonResponse = response.body().getJsonObject(0);
 
-                        context.assertEquals(topic, kafkaTopic);
-                        context.assertEquals(sentBody, value);
-                        context.assertEquals(0L, offset);
+                    String kafkaTopic = jsonResponse.getString("topic");
+                    int kafkaPartition = jsonResponse.getInteger("partition");
+                    String key = jsonResponse.getString("key");
+                    String value = jsonResponse.getString("value");
+                    long offset = jsonResponse.getLong("offset");
 
-                        consumeAsync.complete();
-                    }
+                    context.assertEquals(topic, kafkaTopic);
+                    context.assertEquals(sentBody, value);
+                    context.assertEquals(0L, offset);
+
+                    consumeAsync.complete();
                 });
 
         consumeAsync.await();
@@ -414,17 +414,17 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonObject> response = ar.result();
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        String deletionStatus = bridgeResponse.getString("status");
+                    context.assertTrue(ar.succeeded());
 
-                        context.assertEquals(consumerInstanceId, name);
-                        context.assertEquals(deletionStatus, "deleted");
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String consumerInstanceId = bridgeResponse.getString("instance_id");
+                    String deletionStatus = bridgeResponse.getString("status");
 
-                        deleteAsync.complete();
-                    }
+                    context.assertEquals(consumerInstanceId, name);
+                    context.assertEquals(deletionStatus, "deleted");
+
+                    deleteAsync.complete();
                 });
 
         deleteAsync.await();
@@ -460,15 +460,15 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonObject> response = ar.result();
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        context.assertEquals(consumerInstanceId, name);
-                        context.assertEquals(consumerBaseUri, baseUri);
-                        creationAsync.complete();
-                    }
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String consumerInstanceId = bridgeResponse.getString("instance_id");
+                    String consumerBaseUri = bridgeResponse.getString("base_uri");
+                    context.assertEquals(consumerInstanceId, name);
+                    context.assertEquals(consumerBaseUri, baseUri);
+                    creationAsync.complete();
                 });
 
         creationAsync.await();
@@ -484,13 +484,13 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .putHeader("Content-length", String.valueOf(subJson.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(subJson, ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonObject> response = ar.result();
-                        JsonObject bridgeResponse = response.body();
-                        String status = bridgeResponse.getString("subscription_status");
-                        context.assertEquals(status, "subscribed");
-                        subscriberAsync.complete();
-                    }
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String status = bridgeResponse.getString("subscription_status");
+                    context.assertEquals(status, "subscribed");
+                    subscriberAsync.complete();
                 });
 
         subscriberAsync.await();
@@ -502,23 +502,23 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .putHeader("timeout", String.valueOf(1000))
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonArray> response = ar.result();
-                        JsonObject jsonResponse = response.body().getJsonObject(0);
+                    context.assertTrue(ar.succeeded());
 
-                        String kafkaTopic = jsonResponse.getString("topic");
-                        int kafkaPartition = jsonResponse.getInteger("partition");
-                        String key = jsonResponse.getString("key");
-                        String value = jsonResponse.getString("value");
-                        long offset = jsonResponse.getLong("offset");
+                    HttpResponse<JsonArray> response = ar.result();
+                    JsonObject jsonResponse = response.body().getJsonObject(0);
 
-                        context.assertEquals(topic, kafkaTopic);
-                        context.assertEquals(sentBody, value);
-                        context.assertEquals(kafkaPartition, partition);
-                        context.assertEquals(0L, offset);
+                    String kafkaTopic = jsonResponse.getString("topic");
+                    int kafkaPartition = jsonResponse.getInteger("partition");
+                    String key = jsonResponse.getString("key");
+                    String value = jsonResponse.getString("value");
+                    long offset = jsonResponse.getLong("offset");
 
-                        consumeAsync.complete();
-                    }
+                    context.assertEquals(topic, kafkaTopic);
+                    context.assertEquals(sentBody, value);
+                    context.assertEquals(kafkaPartition, partition);
+                    context.assertEquals(0L, offset);
+
+                    consumeAsync.complete();
                 });
 
         consumeAsync.await();
@@ -530,17 +530,17 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .putHeader("Content-length",String.valueOf(0))
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonObject> response = ar.result();
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        String deletionStatus = bridgeResponse.getString("status");
+                    context.assertTrue(ar.succeeded());
 
-                        context.assertEquals(consumerInstanceId, name);
-                        context.assertEquals(deletionStatus, "deleted");
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String consumerInstanceId = bridgeResponse.getString("instance_id");
+                    String deletionStatus = bridgeResponse.getString("status");
 
-                        deleteAsync.complete();
-                    }
+                    context.assertEquals(consumerInstanceId, name);
+                    context.assertEquals(deletionStatus, "deleted");
+
+                    deleteAsync.complete();
                 });
 
         deleteAsync.await();
@@ -575,15 +575,15 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonObject> response = ar.result();
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        context.assertEquals(consumerInstanceId, name);
-                        context.assertEquals(consumerBaseUri, baseUri);
-                        creationAsync.complete();
-                    }
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String consumerInstanceId = bridgeResponse.getString("instance_id");
+                    String consumerBaseUri = bridgeResponse.getString("base_uri");
+                    context.assertEquals(consumerInstanceId, name);
+                    context.assertEquals(consumerBaseUri, baseUri);
+                    creationAsync.complete();
                 });
 
         creationAsync.await();
@@ -600,13 +600,13 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .putHeader("Content-length", String.valueOf(subJson.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(subJson, ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonObject> response = ar.result();
-                        JsonObject bridgeResponse = response.body();
-                        String status = bridgeResponse.getString("subscription_status");
-                        context.assertEquals(status, "subscribed");
-                        subscriberAsync.complete();
-                    }
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String status = bridgeResponse.getString("subscription_status");
+                    context.assertEquals(status, "subscribed");
+                    subscriberAsync.complete();
                 });
 
         subscriberAsync.await();
@@ -618,24 +618,24 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .putHeader("timeout", String.valueOf(1000))
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonArray> response = ar.result();
-                        JsonObject jsonResponse = response.body().getJsonObject(0);
+                    context.assertTrue(ar.succeeded());
 
-                        String kafkaTopic = jsonResponse.getString("topic");
-                        int kafkaPartition = jsonResponse.getInteger("partition");
-                        String key = jsonResponse.getString("key");
-                        String value = jsonResponse.getString("value");
-                        long offset = jsonResponse.getLong("offset");
+                    HttpResponse<JsonArray> response = ar.result();
+                    JsonObject jsonResponse = response.body().getJsonObject(0);
 
-                        context.assertEquals("key-10", key);
-                        context.assertEquals(topic, kafkaTopic);
-                        context.assertEquals("value-10", value);
-                        context.assertEquals(kafkaPartition, 0);
-                        context.assertEquals(10L, offset);
+                    String kafkaTopic = jsonResponse.getString("topic");
+                    int kafkaPartition = jsonResponse.getInteger("partition");
+                    String key = jsonResponse.getString("key");
+                    String value = jsonResponse.getString("value");
+                    long offset = jsonResponse.getLong("offset");
 
-                        consumeAsync.complete();
-                    }
+                    context.assertEquals("key-10", key);
+                    context.assertEquals(topic, kafkaTopic);
+                    context.assertEquals("value-10", value);
+                    context.assertEquals(kafkaPartition, 0);
+                    context.assertEquals(10L, offset);
+
+                    consumeAsync.complete();
                 });
 
         consumeAsync.await();
@@ -646,17 +646,17 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
-                    if (ar.succeeded()) {
-                        HttpResponse<JsonObject> response = ar.result();
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        String deletionStatus = bridgeResponse.getString("status");
+                    context.assertTrue(ar.succeeded());
 
-                        context.assertEquals(consumerInstanceId, name);
-                        context.assertEquals(deletionStatus, "deleted");
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String consumerInstanceId = bridgeResponse.getString("instance_id");
+                    String deletionStatus = bridgeResponse.getString("status");
 
-                        deleteAsync.complete();
-                    }
+                    context.assertEquals(consumerInstanceId, name);
+                    context.assertEquals(deletionStatus, "deleted");
+
+                    deleteAsync.complete();
                 });
 
         deleteAsync.await();
