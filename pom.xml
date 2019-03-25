@@ -66,6 +66,12 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-web-client</artifactId>
+			<version>${vertx.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>io.debezium</groupId>
 			<artifactId>debezium-core</artifactId>
 			<version>${debezium.version}</version>
