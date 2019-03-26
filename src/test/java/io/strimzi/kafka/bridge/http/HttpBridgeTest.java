@@ -106,6 +106,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     String deliveryStatus = bridgeResponse.getString("status");
                     String topic = bridgeResponse.getString("topic");
                     String key = bridgeResponse.getString("key");
+                    int code = bridgeResponse.getInteger("code");
+                    String statusMessage = bridgeResponse.getString("statusMessage");
                     long offset = bridgeResponse.getLong("offset");
                     //check delivery status
                     context.assertEquals("Accepted", deliveryStatus);
@@ -115,6 +117,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertEquals(0L, offset);
                     //check key. should be null
                     context.assertNull(key);
+                    context.assertEquals(200, code);
+                    context.assertEquals("OK", statusMessage);
                 });
 
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);

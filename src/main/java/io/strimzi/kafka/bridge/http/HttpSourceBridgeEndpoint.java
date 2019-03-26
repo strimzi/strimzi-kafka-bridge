@@ -77,6 +77,8 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
         JsonObject jsonResponse = new JsonObject();
         jsonResponse.put("status", "Accepted");
+        jsonResponse.put("code", response.getStatusCode());
+        jsonResponse.put("statusMessage", response.getStatusMessage());
         jsonResponse.put("topic", metadata.getTopic());
         jsonResponse.put("partition", metadata.getPartition());
         jsonResponse.put("offset", metadata.getOffset());
@@ -89,6 +91,8 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
     private void sendRejectedDeliveryResponse(HttpServerResponse response){
         JsonObject jsonResponse = new JsonObject();
         jsonResponse.put("status", "rejected");
+        jsonResponse.put("code", response.getStatusCode());
+        jsonResponse.put("statusMessage", response.getStatusMessage());
 
         response.putHeader("Content-length", String.valueOf(jsonResponse.toBuffer().length()));
         response.write(jsonResponse.toBuffer());
