@@ -55,7 +55,7 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 	 * @param vertx	Vert.x instance
 	 * @param bridgeConfigProperties	Bridge configuration
 	 */
-	public AmqpSourceBridgeEndpoint(Vertx vertx, AmqpBridgeConfigProperties bridgeConfigProperties) {
+	public AmqpSourceBridgeEndpoint(Vertx vertx, AmqpBridgeConfig bridgeConfigProperties) {
 		super(vertx, bridgeConfigProperties);
 		this.receivers = new HashMap<>();
 	}
@@ -76,8 +76,8 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 	public void handle(Endpoint<?> endpoint) {
 
 		ProtonLink<?> link = (ProtonLink<?>) endpoint.get();
-		AmqpConfigProperties amqpConfigProperties =
-				(AmqpConfigProperties) this.bridgeConfigProperties.getEndpointConfigProperties();
+		AmqpConfig amqpConfigProperties =
+				(AmqpConfig) this.bridgeConfigProperties.getEndpointConfig();
 
 		if (!(link instanceof ProtonReceiver)) {
 			throw new IllegalArgumentException("This Proton link must be a receiver");

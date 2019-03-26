@@ -17,7 +17,7 @@
 package io.strimzi.kafka.bridge.example;
 
 import io.strimzi.kafka.bridge.amqp.AmqpBridge;
-import io.strimzi.kafka.bridge.amqp.AmqpBridgeConfigProperties;
+import io.strimzi.kafka.bridge.amqp.AmqpBridgeConfig;
 import io.vertx.core.Vertx;
 
 import java.io.IOException;
@@ -31,10 +31,9 @@ public class AmqpBridgeServer {
 		
 		Vertx vertx = Vertx.vertx();
 
-		AmqpBridgeConfigProperties bridgeConfigProperties = new AmqpBridgeConfigProperties();
+		AmqpBridgeConfig bridgeConfigProperties = AmqpBridgeConfig.fromMap(System.getenv());
 		
-		AmqpBridge bridge = new AmqpBridge();
-		bridge.setBridgeConfigProperties(bridgeConfigProperties);
+		AmqpBridge bridge = new AmqpBridge(bridgeConfigProperties);
 
 		vertx.deployVerticle(bridge);
 		

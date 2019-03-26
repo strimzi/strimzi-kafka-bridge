@@ -16,7 +16,7 @@
 
 package io.strimzi.kafka.bridge;
 
-import io.strimzi.kafka.bridge.config.BridgeConfigProperties;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -38,7 +38,7 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
 
     protected Vertx vertx;
 
-    protected BridgeConfigProperties bridgeConfigProperties;
+    protected BridgeConfig bridgeConfigProperties;
 
     private Handler<BridgeEndpoint> closeHandler;
 
@@ -51,7 +51,7 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
      * @param vertx	Vert.x instance
      * @param bridgeConfigProperties	Bridge configuration
      */
-    public SourceBridgeEndpoint(Vertx vertx, BridgeConfigProperties bridgeConfigProperties) {
+    public SourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfigProperties) {
         this.vertx = vertx;
         this.bridgeConfigProperties = bridgeConfigProperties;
     }
@@ -92,17 +92,17 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
     public void open() {
 
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getKeySerializer());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getValueSerializer());
-        props.put(ProducerConfig.ACKS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getAcks());
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getBootstrapServers());
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getKeySerializer());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getValueSerializer());
+        props.put(ProducerConfig.ACKS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getAcks());
 
         this.producerUnsettledMode = KafkaProducer.create(this.vertx, props);
 
         props.clear();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getKeySerializer());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfigProperties().getProducerConfig().getValueSerializer());
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getBootstrapServers());
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getKeySerializer());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getValueSerializer());
         props.put(ProducerConfig.ACKS_CONFIG, "0");
 
         this.producerSettledMode = KafkaProducer.create(this.vertx, props);

@@ -21,8 +21,8 @@ package io.strimzi.kafka.bridge.amqp;
  */
 public enum AmqpMode {
 
-    CLIENT("client"),
-    SERVER("server");
+    CLIENT("CLIENT"),
+    SERVER("SERVER");
 
     private final String mode;
 

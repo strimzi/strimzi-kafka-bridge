@@ -31,7 +31,7 @@ import io.vertx.kafka.client.producer.RecordMetadata;
 public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
     private MessageConverter messageConverter;
 
-    public HttpSourceBridgeEndpoint(Vertx vertx, HttpBridgeConfigProperties bridgeConfigProperties) {
+    public HttpSourceBridgeEndpoint(Vertx vertx, HttpBridgeConfig bridgeConfigProperties) {
         super(vertx, bridgeConfigProperties);
     }
 

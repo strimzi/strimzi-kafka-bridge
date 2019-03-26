@@ -39,6 +39,8 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -46,6 +48,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class HttpBridgeTest extends KafkaClusterTestBase {
 
     private static final Logger log = LoggerFactory.getLogger(HttpBridgeTest.class);
+
+    private static Map<String, String> envVars = new HashMap<>();
 
     private static final String BRIDGE_HOST = "0.0.0.0";
     private static final int BRIDGE_PORT = 8080;
@@ -58,15 +62,15 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     private Vertx vertx;
     private HttpBridge httpBridge;
 
-    private HttpBridgeConfigProperties bridgeConfigProperties = new HttpBridgeConfigProperties();
+    private HttpBridgeConfig bridgeConfigProperties;
 
     @Before
     public void before(TestContext context) {
 
         vertx = Vertx.vertx();
 
-        this.httpBridge = new HttpBridge();
-        this.httpBridge.setBridgeConfigProperties(this.bridgeConfigProperties);
+        this.bridgeConfigProperties = HttpBridgeConfig.fromMap(envVars);
+        this.httpBridge = new HttpBridge(this.bridgeConfigProperties);
 
         this.vertx.deployVerticle(this.httpBridge, context.asyncAssertSuccess());
     }
