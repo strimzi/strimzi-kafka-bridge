@@ -1,6 +1,10 @@
 sudo: required
 language: java
 jdk:
-- oraclejdk8
+  - oraclejdk8
+services:
+  - docker
 script:
-- mvn package
+  - mvn package
+after_success:
+  - docker build -t strimzi/kafka-bridge:latest .
