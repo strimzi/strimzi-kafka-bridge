@@ -4,7 +4,7 @@
 
 Producer API allows you to send message to a topic, optionally specifying key or partition.
 
-* Endpoint : `http://hostip:port/topic/{topic_name}`
+* Endpoint : `http://hostip:port/topics/{topic_name}`
 * Request method : `POST`
 * Path params : `topic_name`
 * Request body params : `partition [optional]` , `key [optional]` , `value`

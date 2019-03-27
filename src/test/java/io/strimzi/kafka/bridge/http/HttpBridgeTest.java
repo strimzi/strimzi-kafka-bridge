@@ -95,7 +95,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         WebClient client = WebClient.create(vertx);
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topic/" + kafkaTopic)
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
@@ -158,7 +158,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         WebClient client = WebClient.create(vertx);
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topic/" + kafkaTopic)
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
@@ -223,7 +223,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         WebClient client = WebClient.create(vertx);
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topic/" + kafkaTopic)
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
@@ -290,7 +290,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 json.put("value", "Periodic message [" + this.count + "]");
                 json.put("key", "key-" + this.count);
 
-                client.post(BRIDGE_PORT, BRIDGE_HOST, "/topic/" + topic)
+                client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
                         .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                         .sendJsonObject(json, ar -> { });
 
