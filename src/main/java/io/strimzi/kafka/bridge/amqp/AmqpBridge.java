@@ -76,7 +76,7 @@ public class AmqpBridge extends AbstractVerticle {
 	public static final String AMQP_PARTITION_FILTER = "io.strimzi:partition-filter:int";
 	public static final String AMQP_OFFSET_FILTER = "io.strimzi:offset-filter:long";
 
-    private final AmqpBridgeConfig amqpBridgeConfig;
+	private final AmqpBridgeConfig amqpBridgeConfig;
 
 	// container-id needed for working in "client" mode
 	private static final String CONTAINER_ID = "kafka-bridge-service";
@@ -100,7 +100,7 @@ public class AmqpBridge extends AbstractVerticle {
      */
 	public AmqpBridge(AmqpBridgeConfig amqpBridgeConfig) {
 	    this.amqpBridgeConfig = amqpBridgeConfig;
-    }
+	}
 
 	/**
 	 * Start the AMQP server

@@ -102,7 +102,7 @@ public class AmqpConfig {
      * Set the AMQP message converter
      *
      * @param messageConverter  AMQP message converter
-     * @return  this instance for setter chaining
+     * @return this instance for setter chaining
      */
     /* test */ AmqpConfig setMessageConverter(String messageConverter) {
         this.messageConverter = messageConverter;
