@@ -8,7 +8,7 @@ script:
 - mvn package
 after_success:
 - docker build -t strimzi/kafka-bridge:latest .
-- docker push strimzi/kafka-bridge:lates
+- docker push strimzi/kafka-bridge:latest
 env:
   global:
   - secure: x+/dNLqAA7GVihb8Cx0/VXyTbAIslFcAPSeq6tDOXrpQqbDzC/LZ8Qzs/OpC6m3Htjogkk85Sibe8RRcxq4ENPUpjx7YZ2pxh2Wye5fjhqX2HVTVE8AQBlKLH/3BaayibzCmc4ydM6daf4gUNq0WTNq5FmW0vUf4dfeICMzbKHMYWVBwDisCiTqCmAXldIm4qoxBoxuSO02Tsfc6cZxXLmjhNGzlwkGOJHnURSGYk5GGM8SFTU4gCJAbSFZSVDGaFvvX9+YRL0UYS505QzPvQqlBizv4szhjx9E67u3px3D5kCOOlteX/npWPQQjr2n2Mi6P0cyC8lwF0Qbcqx/CK+XWlfz+i1wgN6okNVtArsDmFgB/HDLyi9SZkT3WCks6TyObxEJELptbv08YBMydH37SyX8PMeY3tkyUcgByiiQX7M4CZL57sNJ8vJyu21Wv65oZdRETeLlbh1PksqAuP08ldZy73l4NgN8czLlyFY1ujhjk5VZPfQEY5ec5O7I1IRGL6NBpeEc7C//GZRrsBvt39Axwotr7ZOoDcaFBJhs8J5ggsu/zSpf54fiAUy+xMLqc8wD2ujc+3IvD2PUzqxZHT590FrZq/VMrzxm+J0AX729rN69vGcnUCLq6rJclx+ET7Bj4qtuLDIufJPAgAdQwE/BAv1nWE0EIh7JT2GE=
