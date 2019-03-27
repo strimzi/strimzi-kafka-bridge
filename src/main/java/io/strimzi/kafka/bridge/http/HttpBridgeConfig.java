@@ -16,17 +16,25 @@
 
 package io.strimzi.kafka.bridge.http;
 
-import io.strimzi.kafka.bridge.config.BridgeConfigProperties;
-import org.springframework.stereotype.Component;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.strimzi.kafka.bridge.config.KafkaConfig;
+
+import java.util.Map;
 
 /**
- * Bridge configuration properties for HTTP support
+ * Bridge configuration for HTTP support
  */
-@Component
-public class HttpBridgeConfigProperties extends BridgeConfigProperties<HttpConfigProperties> {
+public class HttpBridgeConfig extends BridgeConfig<HttpConfig> {
 
-    public HttpBridgeConfigProperties(){
-        super();
-        this.endpointConfigProperties = new HttpConfigProperties();
+    public HttpBridgeConfig(KafkaConfig kafkaConfig, HttpConfig httpConfig) {
+        super(kafkaConfig);
+        this.endpointConfig = httpConfig;
+    }
+
+    public static HttpBridgeConfig fromMap(Map<String, String> map) {
+        KafkaConfig kafkaConfig = KafkaConfig.fromMap(map);
+        HttpConfig httpConfig = HttpConfig.fromMap(map);
+
+        return new HttpBridgeConfig(kafkaConfig, httpConfig);
     }
 }

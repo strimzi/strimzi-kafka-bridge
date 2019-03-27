@@ -23,8 +23,6 @@ import io.vertx.core.Future;
 import io.vertx.core.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,24 +31,28 @@ import java.util.Map;
  * Main bridge class listening for connections
  * and handling HTTP requests.
  */
-@Component
 public class HttpBridge extends AbstractVerticle {
 
     private static final Logger log = LoggerFactory.getLogger(HttpBridge.class);
 
-    private HttpServer httpServer;
+    private final HttpBridgeConfig httpBridgeConfig;
 
-    private HttpBridgeConfigProperties bridgeConfigProperties;
+    private HttpServer httpServer;
 
     private Map<HttpConnection, SourceBridgeEndpoint> httpSourceEndpoints;
 
     private Map<String, SinkBridgeEndpoint> httpSinkEndpoints;
 
-    private boolean isReady;
+    // if the bridge is ready to handle requests
+    private boolean isReady = false;
 
-    @Autowired
-    public void setBridgeConfigProperties(HttpBridgeConfigProperties httpBridgeConfigProperties) {
-        this.bridgeConfigProperties = httpBridgeConfigProperties;
+    /**
+     * Constructor
+     *
+     * @param httpBridgeConfig bridge configuration for HTTP support
+     */
+    public HttpBridge(HttpBridgeConfig httpBridgeConfig) {
+        this.httpBridgeConfig = httpBridgeConfig;
     }
 
     private void bindHttpServer(Future<Void> startFuture) {
@@ -63,7 +65,7 @@ public class HttpBridge extends AbstractVerticle {
                     if (httpServerAsyncResult.succeeded()) {
                         log.info("HTTP-Kafka Bridge started and listening on port {}", httpServerAsyncResult.result().actualPort());
                         log.info("Kafka bootstrap servers {}",
-                                this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
+                                this.httpBridgeConfig.getKafkaConfig().getBootstrapServers());
 
                         this.isReady = true;
                         startFuture.complete();
@@ -126,8 +128,8 @@ public class HttpBridge extends AbstractVerticle {
 
     private HttpServerOptions httpServerOptions() {
         HttpServerOptions httpServerOptions = new HttpServerOptions();
-        httpServerOptions.setHost(this.bridgeConfigProperties.getEndpointConfigProperties().getHost());
-        httpServerOptions.setPort(this.bridgeConfigProperties.getEndpointConfigProperties().getPort());
+        httpServerOptions.setHost(this.httpBridgeConfig.getEndpointConfig().getHost());
+        httpServerOptions.setPort(this.httpBridgeConfig.getEndpointConfig().getPort());
         return httpServerOptions;
     }
 
@@ -141,7 +143,7 @@ public class HttpBridge extends AbstractVerticle {
                 SourceBridgeEndpoint source = this.httpSourceEndpoints.get(httpServerRequest.connection());
 
                 if (source == null) {
-                    source = new HttpSourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
+                    source = new HttpSourceBridgeEndpoint(this.vertx, this.httpBridgeConfig);
                     source.closeHandler(s -> {
                         this.httpSourceEndpoints.remove(httpServerRequest.connection());
                     });
@@ -154,7 +156,7 @@ public class HttpBridge extends AbstractVerticle {
 
             //create a sink endpoint and initialize consumer
             case CREATE:
-                SinkBridgeEndpoint<?,?> sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.bridgeConfigProperties);
+                SinkBridgeEndpoint<?,?> sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig);
                 sink.closeHandler(s -> {
                     this.httpSinkEndpoints.remove(sink);
                 });

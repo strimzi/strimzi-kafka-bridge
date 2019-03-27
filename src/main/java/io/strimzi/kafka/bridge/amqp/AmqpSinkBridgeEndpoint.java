@@ -63,7 +63,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	 * @param vertx	Vert.x instance
 	 * @param bridgeConfigProperties	Bridge configuration
 	 */
-	public AmqpSinkBridgeEndpoint(Vertx vertx, AmqpBridgeConfigProperties bridgeConfigProperties) {
+	public AmqpSinkBridgeEndpoint(Vertx vertx, AmqpBridgeConfig bridgeConfigProperties) {
 		super(vertx, bridgeConfigProperties);
 	}
 	
@@ -90,8 +90,8 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 	public void handle(Endpoint<?> endpoint) {
 
 		ProtonLink<?> link = (ProtonLink<?>) endpoint.get();
-		AmqpConfigProperties amqpConfigProperties =
-				(AmqpConfigProperties) this.bridgeConfigProperties.getEndpointConfigProperties();
+		AmqpConfig amqpConfigProperties =
+				(AmqpConfig) this.bridgeConfigProperties.getEndpointConfig();
 
 		// Note: This is only called once for each instance
 		if (!(link instanceof ProtonSender)) {

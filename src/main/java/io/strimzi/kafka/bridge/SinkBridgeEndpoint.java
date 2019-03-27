@@ -16,8 +16,8 @@
 
 package io.strimzi.kafka.bridge;
 
-import io.strimzi.kafka.bridge.config.BridgeConfigProperties;
-import io.strimzi.kafka.bridge.config.KafkaConfigProperties;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.tracker.OffsetTracker;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -53,7 +53,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected Vertx vertx;
 
-    protected BridgeConfigProperties bridgeConfigProperties;
+    protected BridgeConfig bridgeConfigProperties;
 
     private Handler<BridgeEndpoint> closeHandler;
 
@@ -103,7 +103,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
      * @param vertx	Vert.x instance
      * @param bridgeConfigProperties	Bridge configuration
      */
-    public SinkBridgeEndpoint(Vertx vertx, BridgeConfigProperties bridgeConfigProperties) {
+    public SinkBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfigProperties) {
         this.vertx = vertx;
         this.bridgeConfigProperties = bridgeConfigProperties;
     }
@@ -137,7 +137,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected void initConsumer(boolean shouldAttachBatchHandler) {
 
         // create a consumer
-        KafkaConfigProperties consumerConfig = this.bridgeConfigProperties.getKafkaConfigProperties();
+        KafkaConfig consumerConfig = this.bridgeConfigProperties.getKafkaConfig();
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, consumerConfig.getBootstrapServers());
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, consumerConfig.getConsumerConfig().getKeyDeserializer());

@@ -40,8 +40,6 @@ import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.util.HashMap;
@@ -51,7 +49,6 @@ import java.util.Map;
  * Main bridge class listening for connections
  * and handling AMQP senders and receivers
  */
-@Component
 public class AmqpBridge extends AbstractVerticle {
 	
 	private static final Logger log = LoggerFactory.getLogger(AmqpBridge.class);
@@ -75,10 +72,11 @@ public class AmqpBridge extends AbstractVerticle {
 	public static final String AMQP_ERROR_KAFKA_COMMIT = "io.strimzi:kafka-commit";
 	public static final String AMQP_ERROR_CONFIGURATION = "io.strimzi:configuration";
 
-	
 	// AMQP filters
 	public static final String AMQP_PARTITION_FILTER = "io.strimzi:partition-filter:int";
 	public static final String AMQP_OFFSET_FILTER = "io.strimzi:offset-filter:long";
+
+	private final AmqpBridgeConfig amqpBridgeConfig;
 
 	// container-id needed for working in "client" mode
 	private static final String CONTAINER_ID = "kafka-bridge-service";
@@ -92,14 +90,16 @@ public class AmqpBridge extends AbstractVerticle {
 	// endpoints for handling incoming and outcoming messages
 	private Map<ProtonConnection, ConnectionEndpoint> endpoints;
 
-	private AmqpBridgeConfigProperties bridgeConfigProperties;
-
 	// if the bridge is ready to handle requests
 	private boolean isReady = false;
 
-	@Autowired
-	public void setBridgeConfigProperties(AmqpBridgeConfigProperties bridgeConfigProperties) {
-		this.bridgeConfigProperties = bridgeConfigProperties;
+    /**
+     * Constructor
+     *
+     * @param amqpBridgeConfig bridge configuration for AMQP support
+     */
+	public AmqpBridge(AmqpBridgeConfig amqpBridgeConfig) {
+	    this.amqpBridgeConfig = amqpBridgeConfig;
 	}
 
 	/**
@@ -119,7 +119,7 @@ public class AmqpBridge extends AbstractVerticle {
 
 						log.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
 						log.info("Kafka bootstrap servers {}",
-								this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
+								this.amqpBridgeConfig.getKafkaConfig().getBootstrapServers());
 
 						this.isReady = true;
 						this.startHealthServer();
@@ -145,8 +145,8 @@ public class AmqpBridge extends AbstractVerticle {
 
 		this.client = ProtonClient.create(this.vertx);
 
-		String host = this.bridgeConfigProperties.getEndpointConfigProperties().getHost();
-		int port = this.bridgeConfigProperties.getEndpointConfigProperties().getPort();
+		String host = this.amqpBridgeConfig.getEndpointConfig().getHost();
+		int port = this.amqpBridgeConfig.getEndpointConfig().getPort();
 
 		ProtonClientOptions options = this.createClientOptions();
 
@@ -161,7 +161,7 @@ public class AmqpBridge extends AbstractVerticle {
 
 				log.info("AMQP-Kafka Bridge started and connected in client mode to {}:{}", host, port);
 				log.info("Kafka bootstrap servers {}",
-						this.bridgeConfigProperties.getKafkaConfigProperties().getBootstrapServers());
+						this.amqpBridgeConfig.getKafkaConfig().getBootstrapServers());
 
 				this.isReady = true;
 
@@ -181,7 +181,7 @@ public class AmqpBridge extends AbstractVerticle {
 
 		this.endpoints = new HashMap<>();
 
-		AmqpMode mode = this.bridgeConfigProperties.getEndpointConfigProperties().getMode();
+		AmqpMode mode = this.amqpBridgeConfig.getEndpointConfig().getMode();
 		log.info("AMQP-Kafka Bridge configured in {} mode", mode);
 		if (mode == AmqpMode.SERVER) {
 			this.bindAmqpServer(startFuture);
@@ -255,11 +255,11 @@ public class AmqpBridge extends AbstractVerticle {
 	private ProtonServerOptions createServerOptions(){
 
 		ProtonServerOptions options = new ProtonServerOptions();
-		options.setHost(this.bridgeConfigProperties.getEndpointConfigProperties().getHost());
-		options.setPort(this.bridgeConfigProperties.getEndpointConfigProperties().getPort());
+		options.setHost(this.amqpBridgeConfig.getEndpointConfig().getHost());
+		options.setPort(this.amqpBridgeConfig.getEndpointConfig().getPort());
 
-		if (this.bridgeConfigProperties.getEndpointConfigProperties().getCertDir() != null && this.bridgeConfigProperties.getEndpointConfigProperties().getCertDir().length() > 0) {
-			String certDir = this.bridgeConfigProperties.getEndpointConfigProperties().getCertDir();
+		if (this.amqpBridgeConfig.getEndpointConfig().getCertDir() != null && this.amqpBridgeConfig.getEndpointConfig().getCertDir().length() > 0) {
+			String certDir = this.amqpBridgeConfig.getEndpointConfig().getCertDir();
 			log.info("Enabling SSL configuration for AMQP with TLS certificates from {}", certDir);
 			options.setSsl(true)
 					.setPemTrustOptions(new PemTrustOptions()
@@ -283,8 +283,8 @@ public class AmqpBridge extends AbstractVerticle {
 		options.setConnectTimeout(1000);
 		options.setReconnectAttempts(-1).setReconnectInterval(1000); // reconnect forever, every 1000 millisecs
 
-		if (this.bridgeConfigProperties.getEndpointConfigProperties().getCertDir() != null && this.bridgeConfigProperties.getEndpointConfigProperties().getCertDir().length() > 0) {
-			String certDir = this.bridgeConfigProperties.getEndpointConfigProperties().getCertDir();
+		if (this.amqpBridgeConfig.getEndpointConfig().getCertDir() != null && this.amqpBridgeConfig.getEndpointConfig().getCertDir().length() > 0) {
+			String certDir = this.amqpBridgeConfig.getEndpointConfig().getCertDir();
 			log.info("Enabling SSL configuration for AMQP with TLS certificates from {}", certDir);
 			options.setSsl(true)
 					.addEnabledSaslMechanism("EXTERNAL")
@@ -319,7 +319,7 @@ public class AmqpBridge extends AbstractVerticle {
 			this.processOpenSender(connection, sender);
 		});
 
-		if (this.bridgeConfigProperties.getEndpointConfigProperties().getMode() == AmqpMode.CLIENT) {
+		if (this.amqpBridgeConfig.getEndpointConfig().getMode() == AmqpMode.CLIENT) {
 			connection.open();
 		}
 	}
@@ -421,7 +421,7 @@ public class AmqpBridge extends AbstractVerticle {
 		SourceBridgeEndpoint source = endpoint.getSource();
 		// the source endpoint is only one, handling more AMQP receiver links internally
 		if (source == null) {
-			source = new AmqpSourceBridgeEndpoint(this.vertx, this.bridgeConfigProperties);
+			source = new AmqpSourceBridgeEndpoint(this.vertx, this.amqpBridgeConfig);
 
 			source.closeHandler(s -> {
 				endpoint.setSource(null);
@@ -444,7 +444,7 @@ public class AmqpBridge extends AbstractVerticle {
 		log.info("Remote receiver attached {}", sender.getName());
 		
 		// create and add a new sink to the map
-		SinkBridgeEndpoint<?,?> sink = new AmqpSinkBridgeEndpoint<>(this.vertx, this.bridgeConfigProperties);
+		SinkBridgeEndpoint<?,?> sink = new AmqpSinkBridgeEndpoint<>(this.vertx, this.amqpBridgeConfig);
 
 		sink.closeHandler(s -> {
 			this.endpoints.get(connection).getSinks().remove(s);

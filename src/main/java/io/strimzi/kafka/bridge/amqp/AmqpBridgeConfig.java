@@ -16,17 +16,25 @@
 
 package io.strimzi.kafka.bridge.amqp;
 
-import io.strimzi.kafka.bridge.config.BridgeConfigProperties;
-import org.springframework.stereotype.Component;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.strimzi.kafka.bridge.config.KafkaConfig;
+
+import java.util.Map;
 
 /**
- * Bridge configuration properties for AMQP support
+ * Bridge configuration for AMQP support
  */
-@Component
-public class AmqpBridgeConfigProperties extends BridgeConfigProperties<AmqpConfigProperties> {
+public class AmqpBridgeConfig extends BridgeConfig<AmqpConfig> {
 
-    public AmqpBridgeConfigProperties() {
-        super();
-        this.endpointConfigProperties = new AmqpConfigProperties();
+    public AmqpBridgeConfig(KafkaConfig kafkaConfig, AmqpConfig amqpConfig) {
+        super(kafkaConfig);
+        this.endpointConfig = amqpConfig;
+    }
+
+    public static AmqpBridgeConfig fromMap(Map<String, String> map) {
+        KafkaConfig kafkaConfig = KafkaConfig.fromMap(map);
+        AmqpConfig amqpConfig = AmqpConfig.fromMap(map);
+
+        return new AmqpBridgeConfig(kafkaConfig, amqpConfig);
     }
 }
