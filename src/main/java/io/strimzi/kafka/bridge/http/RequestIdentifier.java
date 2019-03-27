@@ -35,10 +35,10 @@ public class RequestIdentifier {
 
         switch (params[0]){
 
-            case "topic":
+            case "topics":
                 //produce records
                 //request type = POST
-                //path = topic/{topic-name}
+                //path = topics/{topic-name}
                 //spliting this path will return an array of length 2
                 //param[0] = "topic", param[1] = {topic-name}
                 if (method == HttpMethod.POST && params.length == 2){
