@@ -18,7 +18,7 @@ else
     echo "Login into Docker Hub ..."
     docker login -u $DOCKER_USER -p $DOCKER_PASS
     echo "Building Docker image ..."
-    docker build -t strimzi/kafka-bridge:latest .
+    docker build -t strimzi/kafka-bridge:$TAG .
     echo "Pushing to Docker Hub ..."
-    docker push strimzi/kafka-bridge:latest
+    docker push strimzi/kafka-bridge:$TAG
 fi
