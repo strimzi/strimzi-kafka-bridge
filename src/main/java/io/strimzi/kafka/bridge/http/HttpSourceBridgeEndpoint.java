@@ -53,7 +53,15 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
             this.send(kafkaProducerRecord, writeResult -> {
                 if (writeResult.failed()) {
 
-                    log.error("Error on delivery to Kafka {}", writeResult.cause());
+                    log.error("Error on delivery to Kafka: {}", writeResult.cause().getMessage());
+                    if (writeResult.cause().getMessage().equals("Topic " + kafkaProducerRecord.topic() + " not found")) {
+                        httpServerRequest.response().setStatusCode(40401);
+                        httpServerRequest.response().setStatusMessage(writeResult.cause().getMessage());
+                    }
+                    if (writeResult.cause().getMessage().equals("Partition " + kafkaProducerRecord.partition() + " of Topic " + kafkaProducerRecord.topic() + " not found")) {
+                        httpServerRequest.response().setStatusCode(40402);
+                        httpServerRequest.response().setStatusMessage(writeResult.cause().getMessage());
+                    }
                     this.sendRejectedDeliveryResponse(httpServerRequest.response());
 
                 } else {

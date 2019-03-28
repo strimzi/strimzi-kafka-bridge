@@ -40,5 +40,7 @@ public enum RequestType {
     INVALID,
 
     //Delete consumer
-    DELETE
+    DELETE,
+
+    EMPTY
 }

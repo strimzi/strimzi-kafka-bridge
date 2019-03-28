@@ -17,17 +17,24 @@
 package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.kafka.admin.AdminUtils;
 import io.vertx.kafka.client.producer.KafkaProducer;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import io.vertx.kafka.client.producer.RecordMetadata;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Base class for source bridge endpoints
@@ -44,6 +51,8 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
 
     private KafkaProducer<String, byte[]> producerUnsettledMode;
     private KafkaProducer<String, byte[]> producerSettledMode;
+
+    private String ZOOKEEPERHOST = "localhost:2181"; //TODO
 
     /**
      * Constructor
@@ -80,12 +89,66 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
      */
     protected void send(KafkaProducerRecord<String, byte[]> krecord, Handler<AsyncResult<RecordMetadata>> handler) {
 
-        log.debug("Sending to Kafka on topic {} at partition {} and key {}", krecord.topic(), krecord.partition(), krecord.key());
-        if (handler == null) {
-            this.producerSettledMode.write(krecord);
-        } else {
-            this.producerUnsettledMode.write(krecord, handler);
+        Properties props = new Properties();
+        KafkaConfig consumerConfig = this.bridgeConfigProperties.getKafkaConfig();
+
+        props.put("bootstrap.servers", consumerConfig.getBootstrapServers());
+        AdminClient ac = AdminClient.create(props);
+
+        try {
+            AsyncResult<RecordMetadata> f;
+            if (ac.listTopics().names().get().contains(krecord.topic())) {
+                log.debug("Topic " + krecord.topic() + " exists");
+                if (krecord.partition() != null && krecord.partition() > ac.describeTopics(Collections.singleton(krecord.topic())).values().get(krecord.topic()).get().partitions().size()) {
+                    log.debug("Topic " + krecord.topic() + " not found");
+                    f = Future.failedFuture("Partition " + krecord.partition() + " of Topic " + krecord.topic() + " not found");
+                    handler.handle(f);
+                } else {
+                    // topic and partition found
+                    if (handler == null) {
+                        this.producerSettledMode.write(krecord);
+                    } else {
+                        this.producerUnsettledMode.write(krecord, handler);
+                    }
+                }
+            } else {
+                log.debug("Topic " + krecord.topic() + " not found");
+                f = Future.failedFuture("Topic " + krecord.topic() + " not found");
+                handler.handle(f);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
         }
+
+
+        /*AdminUtils adminUtils = AdminUtils.create(vertx, ZOOKEEPERHOST, true);
+        adminUtils.topicExists(krecord.topic(), result -> {
+            if(result.succeeded()) {
+                if (result.result()) {
+                    log.debug("Topic " + krecord.topic() + " exists");
+                    log.debug("Sending to Kafka on topic {} at partition {} and key {}", krecord.topic(), krecord.partition(), krecord.key());
+                    if (handler == null) {
+                        this.producerSettledMode.write(krecord);
+                    } else {
+                        this.producerUnsettledMode.write(krecord, handler);
+                    }
+                } else {
+                    log.debug("Topic " + krecord.topic() + " not found");
+                    if (handler == null) {
+                        log.error("Topic " + krecord.topic() + " not found");
+                    } else {
+                        AsyncResult<RecordMetadata> f = Future.failedFuture("Topic " + krecord.topic() + " not found");
+                        handler.handle(f);
+                    }
+                }
+            }
+            else
+                log.debug("Failed to check if topic " + krecord.topic() + " exists: "+
+                        result.cause().getLocalizedMessage());
+        });*/
+
     }
 
     @Override

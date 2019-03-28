@@ -199,6 +199,12 @@ public class HttpBridge extends AbstractVerticle {
                 }
                 break;
 
+            case EMPTY:
+                httpServerRequest.response()
+                        .setStatusCode(422)
+                        .setStatusMessage("records may not be empty")
+                        .end();
+                break;
             case INVALID:
                 log.info("invalid request");
         }

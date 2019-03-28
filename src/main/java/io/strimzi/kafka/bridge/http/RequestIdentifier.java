@@ -35,6 +35,8 @@ public class RequestIdentifier {
 
         switch (params[0]){
 
+            case "":
+                return RequestType.EMPTY;
             case "topics":
                 //produce records
                 //request type = POST
@@ -46,7 +48,7 @@ public class RequestIdentifier {
                 }
                 break;
 
-            //all consumer enpoints starts with "/consumers"
+            //all consumer endpoints starts with "/consumers"
             case "consumers":
 
                 switch (method){

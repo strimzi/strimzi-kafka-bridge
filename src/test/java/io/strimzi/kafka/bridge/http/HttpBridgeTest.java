@@ -82,6 +82,96 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
+    public void emptyRecordTest(TestContext context) {
+        Async async = context.async();
+        JsonObject json = new JsonObject();
+        WebClient client = WebClient.create(vertx);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "")
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+                    context.assertEquals(422, ar.result().statusCode());
+                    context.assertEquals("records may not be empty", ar.result().statusMessage());
+                    async.complete();
+                });
+
+    }
+
+    @Test
+    public void sendToNonexistTopic(TestContext context) {
+        String kafkaTopic = "null";
+
+        Async async = context.async();
+
+        String value = "Hi, This is kafka bridge";
+
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+
+        WebClient client = WebClient.create(vertx);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String deliveryStatus = bridgeResponse.getString("status");
+                    String key = bridgeResponse.getString("key");
+                    int code = bridgeResponse.getInteger("code");
+                    String statusMessage = bridgeResponse.getString("statusMessage");
+                    //check delivery status
+                    context.assertEquals("rejected", deliveryStatus);
+                    context.assertNull(key);
+                    context.assertEquals(40401, code);
+                    context.assertEquals("Topic " + kafkaTopic + " not found", statusMessage);
+                    async.complete();
+                });
+
+    }
+
+    @Test
+    public void sendToNonExistPartition(TestContext context) {
+        String kafkaTopic = "sendSimpleMessageToPartitionToNonexistingPartition";
+
+        kafkaCluster.createTopic(kafkaTopic, 2, 1);
+
+        Async async = context.async();
+
+        String value = "Hi, This is kafka bridge";
+
+        int kafkaPartition = 5;
+
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        json.put("partition", kafkaPartition);
+
+        WebClient client = WebClient.create(vertx);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String deliveryStatus = bridgeResponse.getString("status");
+                    int code = bridgeResponse.getInteger("code");
+                    String statusMessage = bridgeResponse.getString("statusMessage");
+                    //check delivery status
+                    context.assertEquals("rejected", deliveryStatus);
+                    context.assertEquals(40402, code);
+                    context.assertEquals("Partition " + kafkaPartition + " of Topic " + kafkaTopic + " not found", statusMessage);
+                    async.complete();
+                });
+    }
+
+    @Test
     public void sendSimpleMessage(TestContext context) {
         String kafkaTopic = "sendSimpleMessage";
         kafkaCluster.createTopic(kafkaTopic, 1, 1);
