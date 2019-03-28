@@ -855,4 +855,79 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 });
 
     }
+
+    @Test
+    public void getOneTooBigPartitionsTest(TestContext context) {
+        String kafkaTopic = "sendSimpleMessage4";
+        kafkaCluster.createTopic(kafkaTopic, 3, 1);
+
+        Async async = context.async();
+
+        String value = "Hi, This is kafka bridge";
+        int partition = 1000;
+
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+
+        WebClient client = WebClient.create(vertx);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String deliveryStatus = bridgeResponse.getString("status");
+
+                    int code = bridgeResponse.getInteger("code");
+                    String statusMessage = bridgeResponse.getString("statusMessage");
+                    String body = bridgeResponse.getString("body");
+
+                    //check delivery status
+                    context.assertEquals("rejected", deliveryStatus);
+                    context.assertEquals(40402, code);
+                    context.assertEquals("Partition " + partition + " of Topic " + kafkaTopic + " not found", statusMessage);
+                    async.complete();
+                });
+
+    }
+
+    @Test
+    public void getOneTooBigPartitionsNonExistingTopicTest(TestContext context) {
+        String kafkaTopic = "sendSimpleMessage5";
+
+        Async async = context.async();
+
+        String value = "Hi, This is kafka bridge";
+        int partition = 1000;
+
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+
+        WebClient client = WebClient.create(vertx);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String deliveryStatus = bridgeResponse.getString("status");
+
+                    int code = bridgeResponse.getInteger("code");
+                    String statusMessage = bridgeResponse.getString("statusMessage");
+                    String body = bridgeResponse.getString("body");
+
+                    //check delivery status
+                    context.assertEquals("rejected", deliveryStatus);
+                    context.assertEquals(40401, code);
+                    context.assertEquals("Topic " + kafkaTopic + " not found", statusMessage);
+                    async.complete();
+                });
+
+    }
 }

@@ -72,7 +72,13 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
                     if (params.length >= 4 && params[3].equals("partitions")) {
                         if (params.length == 5) {
                             this.getPartitions(kafkaProducerRecord.topic(), partitions -> {
-                                this.sendAcceptedDeliveryResponse(metadata, httpServerRequest.response(), new Gson().toJson(partitions.result().get((partitions.result().size() - 1) - Integer.parseInt(params[4]))));
+                                if (Integer.parseInt(params[4]) < partitions.result().size()) {
+                                    this.sendAcceptedDeliveryResponse(metadata, httpServerRequest.response(), new Gson().toJson(partitions.result().get((partitions.result().size() - 1) - Integer.parseInt(params[4]))));
+                                } else {
+                                    httpServerRequest.response().setStatusMessage("Partition " + Integer.parseInt(params[4]) + " of Topic " + kafkaProducerRecord.topic() + " not found");
+                                    httpServerRequest.response().setStatusCode(40402);
+                                    this.sendRejectedDeliveryResponse(httpServerRequest.response());
+                                }
                             });
                         } else {
                             this.getPartitions(kafkaProducerRecord.topic(), partitions -> {
