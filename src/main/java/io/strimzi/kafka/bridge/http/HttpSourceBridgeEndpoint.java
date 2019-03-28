@@ -16,6 +16,7 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import com.google.gson.Gson;
 import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
@@ -24,7 +25,9 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.kafka.client.common.PartitionInfo;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import io.vertx.kafka.client.producer.RecordMetadata;
 
@@ -45,10 +48,10 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
         String[] params = httpServerRequest.path().split("/");
 
         //path is like this : /topics/{topic_name}, topic will be at the last position of param[]
-        String topic = params[params.length - 1];
+        String topic = params[2];
 
         httpServerRequest.bodyHandler(buffer -> {
-            KafkaProducerRecord<String , byte[]> kafkaProducerRecord = messageConverter.toKafkaRecord(topic, buffer);
+            KafkaProducerRecord<String, byte[]> kafkaProducerRecord = messageConverter.toKafkaRecord(topic, buffer);
 
             this.send(kafkaProducerRecord, writeResult -> {
                 if (writeResult.failed()) {
@@ -66,14 +69,25 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
                 } else {
                     RecordMetadata metadata = writeResult.result();
-                    log.debug("Delivered to Kafka on topic {} at partition {} [{}]", metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
-                    this.sendAcceptedDeliveryResponse(metadata, httpServerRequest.response());
+                    if (params.length >= 4 && params[3].equals("partitions")) {
+                        if (params.length == 5) {
+                            this.getPartitions(kafkaProducerRecord.topic(), partitions -> {
+                                this.sendAcceptedDeliveryResponse(metadata, httpServerRequest.response(), new Gson().toJson(partitions.result().get((partitions.result().size() - 1) - Integer.parseInt(params[4]))));
+                            });
+                        } else {
+                            this.getPartitions(kafkaProducerRecord.topic(), partitions -> {
+                                this.sendAcceptedDeliveryResponse(metadata, httpServerRequest.response(), new Gson().toJson(partitions.result()));
+                            });
+                        }
+                    } else {
+                        log.debug("Delivered to Kafka on topic {} at partition {} [{}]", metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
+                        this.sendAcceptedDeliveryResponse(metadata, httpServerRequest.response(), "");
+                    }
 
                 }
             });
 
         });
-
     }
 
     @Override
@@ -81,7 +95,7 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
     }
 
-    private void sendAcceptedDeliveryResponse(RecordMetadata metadata, HttpServerResponse response){
+    private void sendAcceptedDeliveryResponse(RecordMetadata metadata, HttpServerResponse response, String body){
 
         JsonObject jsonResponse = new JsonObject();
         jsonResponse.put("status", "Accepted");
@@ -90,6 +104,7 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
         jsonResponse.put("topic", metadata.getTopic());
         jsonResponse.put("partition", metadata.getPartition());
         jsonResponse.put("offset", metadata.getOffset());
+        jsonResponse.put("body", body);
 
         response.putHeader("Content-length", String.valueOf(jsonResponse.toBuffer().length()));
         response.write(jsonResponse.toBuffer());

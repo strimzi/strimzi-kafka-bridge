@@ -42,5 +42,7 @@ public enum RequestType {
     //Delete consumer
     DELETE,
 
-    EMPTY
+    EMPTY,
+
+    PARTITIONS
 }

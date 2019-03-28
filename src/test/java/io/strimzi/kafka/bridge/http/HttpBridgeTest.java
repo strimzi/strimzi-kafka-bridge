@@ -16,6 +16,8 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import io.strimzi.kafka.bridge.KafkaClusterTestBase;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
@@ -31,6 +33,7 @@ import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.After;
 import org.junit.Before;
@@ -39,7 +42,11 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -84,19 +91,14 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     @Test
     public void emptyRecordTest(TestContext context) {
         Async async = context.async();
-        JsonObject json = new JsonObject();
         WebClient client = WebClient.create(vertx);
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "")
-                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(json, ar -> {
-                    context.assertTrue(ar.succeeded());
-                    context.assertEquals(422, ar.result().statusCode());
-                    context.assertEquals("records may not be empty", ar.result().statusMessage());
-                    async.complete();
-                });
-
+        client.get(BRIDGE_PORT, BRIDGE_HOST, "").send( ar -> {
+            context.assertTrue(ar.succeeded());
+            context.assertEquals(422, ar.result().statusCode());
+            context.assertEquals("records may not be empty", ar.result().statusMessage());
+            async.complete();
+        });
     }
 
     @Test
@@ -758,5 +760,99 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 });
 
         deleteAsync.await();
+    }
+
+    @Test
+    public void getPartitionsTest(TestContext context) {
+        String kafkaTopic = "sendSimpleMessage2";
+        kafkaCluster.createTopic(kafkaTopic, 3, 1);
+
+        Async async = context.async();
+
+        String value = "Hi, This is kafka bridge";
+
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+
+        WebClient client = WebClient.create(vertx);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions")
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String deliveryStatus = bridgeResponse.getString("status");
+                    String topic = bridgeResponse.getString("topic");
+                    String key = bridgeResponse.getString("key");
+                    int code = bridgeResponse.getInteger("code");
+                    String statusMessage = bridgeResponse.getString("statusMessage");
+                    String body = bridgeResponse.getString("body");
+
+                    //check delivery status
+                    context.assertEquals("Accepted", deliveryStatus);
+                    //check topic
+                    context.assertEquals(kafkaTopic, topic);
+                    //check offset. should be 0 as single message is published
+
+                    //check key. should be null
+                    context.assertNull(key);
+                    context.assertEquals(200, code);
+                    context.assertEquals("OK", statusMessage);
+                    List<PartitionInfo> pi = new Gson().fromJson(body, new TypeToken<List<PartitionInfo>>(){}.getType());
+                    context.assertEquals(3, pi.size());
+                    async.complete();
+                });
+
+    }
+
+
+    @Test
+    public void getOnePartitionsTest(TestContext context) {
+        String kafkaTopic = "sendSimpleMessage3";
+        kafkaCluster.createTopic(kafkaTopic, 3, 1);
+
+        Async async = context.async();
+
+        String value = "Hi, This is kafka bridge";
+        int partition = 2;
+
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+
+        WebClient client = WebClient.create(vertx);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String deliveryStatus = bridgeResponse.getString("status");
+                    String topic = bridgeResponse.getString("topic");
+                    String key = bridgeResponse.getString("key");
+                    int code = bridgeResponse.getInteger("code");
+                    String statusMessage = bridgeResponse.getString("statusMessage");
+                    String body = bridgeResponse.getString("body");
+
+                    //check delivery status
+                    context.assertEquals("Accepted", deliveryStatus);
+                    //check topic
+                    context.assertEquals(kafkaTopic, topic);
+                    //check offset. should be 0 as single message is published
+
+                    //check key. should be null
+                    context.assertNull(key);
+                    context.assertEquals(200, code);
+                    context.assertEquals("OK", statusMessage);
+                    PartitionInfo pi = new Gson().fromJson(body, PartitionInfo.class);
+                    context.assertEquals(partition, pi.partition());
+                    async.complete();
+                });
+
     }
 }

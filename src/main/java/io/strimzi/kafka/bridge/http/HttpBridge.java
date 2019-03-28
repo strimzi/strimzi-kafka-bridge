@@ -140,6 +140,7 @@ public class HttpBridge extends AbstractVerticle {
 
         switch (requestType){
             case PRODUCE:
+            case PARTITIONS:
                 SourceBridgeEndpoint source = this.httpSourceEndpoints.get(httpServerRequest.connection());
 
                 if (source == null) {
@@ -198,7 +199,6 @@ public class HttpBridge extends AbstractVerticle {
                             .end();
                 }
                 break;
-
             case EMPTY:
                 httpServerRequest.response()
                         .setStatusCode(422)
