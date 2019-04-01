@@ -467,6 +467,11 @@ public class AmqpSinkBridgeEndpointMockTest {
 		}
 
 		@Override
+		public List<KafkaProducerRecord<K, V>>toKafkaRecords(String kafkaTopic, C messages) {
+			return null;
+		}
+
+		@Override
 		public M toMessage(String address, KafkaConsumerRecord<K, V> record) {
 			return null;
 		}
@@ -500,6 +505,11 @@ public class AmqpSinkBridgeEndpointMockTest {
 
 		@Override
 		public KafkaProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message) {
+			return null;
+		}
+
+		@Override
+		public List<KafkaProducerRecord<K, V>> toKafkaRecords(String kafkaTopic, C messages) {
 			return null;
 		}
 

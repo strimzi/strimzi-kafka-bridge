@@ -23,8 +23,12 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-public class HttpJsonMessageConverter implements MessageConverter<String,byte[],Buffer, Buffer> {
+import java.util.ArrayList;
+import java.util.List;
+
+public class HttpJsonMessageConverter implements MessageConverter<String, byte[], Buffer, Buffer> {
 
     @Override
     public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Buffer message) {
@@ -52,8 +56,24 @@ public class HttpJsonMessageConverter implements MessageConverter<String,byte[],
     }
 
     @Override
+    public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Buffer messages) {
+
+        List<KafkaProducerRecord<String, byte[]>> records = new ArrayList<>();
+
+        JsonObject json = messages.toJsonObject();
+        JsonArray jsonArray = json.getJsonArray("records");
+
+        for (Object obj : jsonArray) {
+            JsonObject jsonObj = (JsonObject) obj;
+            records.add(toKafkaRecord(kafkaTopic, jsonObj.toBuffer()));
+        }
+
+        return records;
+    }
+
+    @Override
     public Buffer toMessage(String address, KafkaConsumerRecord<String, byte[]> record) {
-        return null;
+        throw new NotImplementedException();
     }
 
     @Override
