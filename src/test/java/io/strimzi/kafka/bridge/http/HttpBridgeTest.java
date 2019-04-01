@@ -414,15 +414,15 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         WebClient client = WebClient.create(vertx);
 
-        String name = "kafkaconsumer123";
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
 
-        String baseUri = "http://"+BRIDGE_HOST+":"+BRIDGE_PORT+"/consumers/group1/instances/"+name;
+        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
 
         JsonObject json = new JsonObject();
-
         json.put("name", name);
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/group1/")
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
@@ -432,20 +432,20 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     JsonObject bridgeResponse = response.body();
                     String consumerInstanceId = bridgeResponse.getString("instance_id");
                     String consumerBaseUri = bridgeResponse.getString("base_uri");
-                    context.assertEquals(consumerInstanceId, name);
-                    context.assertEquals(consumerBaseUri, baseUri);
+                    context.assertEquals(name, consumerInstanceId);
+                    context.assertEquals(baseUri, consumerBaseUri);
                     creationAsync.complete();
                 });
 
         creationAsync.await();
 
-        //subscribe to a topic
+        // subscribe to a topic
         Async subscriberAsync = context.async();
 
         JsonObject subJson = new JsonObject();
         subJson.put("topic", topic);
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri+"/subscription")
+        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(subJson.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(subJson, ar -> {
@@ -454,16 +454,16 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     HttpResponse<JsonObject> response = ar.result();
                     JsonObject bridgeResponse = response.body();
                     String status = bridgeResponse.getString("subscription_status");
-                    context.assertEquals(status, "subscribed");
+                    context.assertEquals("subscribed", status);
                     subscriberAsync.complete();
                 });
 
         subscriberAsync.await();
 
-        //consume records
+        // consume records
         Async consumeAsync = context.async();
 
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri+"/records")
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
                 .putHeader("timeout", String.valueOf(1000))
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -481,13 +481,15 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertEquals(topic, kafkaTopic);
                     context.assertEquals(sentBody, value);
                     context.assertEquals(0L, offset);
+                    context.assertNotNull(kafkaPartition);
+                    context.assertNull(key);
 
                     consumeAsync.complete();
                 });
 
         consumeAsync.await();
 
-        //consumer deletion
+        // consumer deletion
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
@@ -500,8 +502,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     String consumerInstanceId = bridgeResponse.getString("instance_id");
                     String deletionStatus = bridgeResponse.getString("status");
 
-                    context.assertEquals(consumerInstanceId, name);
-                    context.assertEquals(deletionStatus, "deleted");
+                    context.assertEquals(name, consumerInstanceId);
+                    context.assertEquals("deleted", deletionStatus);
 
                     deleteAsync.complete();
                 });
@@ -519,23 +521,23 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         Async send = context.async();
         kafkaCluster.useTo().produceStrings(1, send::complete, () ->
-                new ProducerRecord<>(topic, 1, null, sentBody));
+                new ProducerRecord<>(topic, partition, null, sentBody));
         send.await();
 
         Async creationAsync = context.async();
 
         WebClient client = WebClient.create(vertx);
 
-        String name = "kafkaconsumer123";
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
 
-        String baseUri = "http://"+BRIDGE_HOST+":"+BRIDGE_PORT+"/consumers/group1/instances/"+name;
+        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
 
         JsonObject json = new JsonObject();
-
         json.put("name", name);
 
-        //create a consumer
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/group1/")
+        // create a consumer
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
@@ -545,21 +547,21 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     JsonObject bridgeResponse = response.body();
                     String consumerInstanceId = bridgeResponse.getString("instance_id");
                     String consumerBaseUri = bridgeResponse.getString("base_uri");
-                    context.assertEquals(consumerInstanceId, name);
-                    context.assertEquals(consumerBaseUri, baseUri);
+                    context.assertEquals(name, consumerInstanceId);
+                    context.assertEquals(baseUri, consumerBaseUri);
                     creationAsync.complete();
                 });
 
         creationAsync.await();
 
-        //subscribe to a topic
+        // subscribe to a topic
         Async subscriberAsync = context.async();
 
         JsonObject subJson = new JsonObject();
         subJson.put("topic", topic);
         subJson.put("partition",partition);
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri+"/subscription")
+        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(subJson.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(subJson, ar -> {
@@ -568,16 +570,16 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     HttpResponse<JsonObject> response = ar.result();
                     JsonObject bridgeResponse = response.body();
                     String status = bridgeResponse.getString("subscription_status");
-                    context.assertEquals(status, "subscribed");
+                    context.assertEquals("subscribed", status);
                     subscriberAsync.complete();
                 });
 
         subscriberAsync.await();
 
-        //consume records
+        // consume records
         Async consumeAsync = context.async();
 
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri+"/records")
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
                 .putHeader("timeout", String.valueOf(1000))
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -594,15 +596,16 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
                     context.assertEquals(topic, kafkaTopic);
                     context.assertEquals(sentBody, value);
-                    context.assertEquals(kafkaPartition, partition);
+                    context.assertEquals(partition, kafkaPartition);
                     context.assertEquals(0L, offset);
+                    context.assertNull(key);
 
                     consumeAsync.complete();
                 });
 
         consumeAsync.await();
 
-        //consumer deletion
+        // consumer deletion
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
@@ -616,8 +619,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     String consumerInstanceId = bridgeResponse.getString("instance_id");
                     String deletionStatus = bridgeResponse.getString("status");
 
-                    context.assertEquals(consumerInstanceId, name);
-                    context.assertEquals(deletionStatus, "deleted");
+                    context.assertEquals(name, consumerInstanceId);
+                    context.assertEquals("deleted", deletionStatus);
 
                     deleteAsync.complete();
                 });
@@ -636,21 +639,20 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
         batch.awaitSuccess(10000);
 
-
         Async creationAsync = context.async();
 
         WebClient client = WebClient.create(vertx);
 
-        String name = "kafkaconsumer123";
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
 
-        String baseUri = "http://"+BRIDGE_HOST+":"+BRIDGE_PORT+"/consumers/group1/instances/"+name;
+        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
 
         JsonObject json = new JsonObject();
-
         json.put("name", name);
 
-        //create a consumer
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/group1/")
+        // create a consumer
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
@@ -660,14 +662,14 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     JsonObject bridgeResponse = response.body();
                     String consumerInstanceId = bridgeResponse.getString("instance_id");
                     String consumerBaseUri = bridgeResponse.getString("base_uri");
-                    context.assertEquals(consumerInstanceId, name);
-                    context.assertEquals(consumerBaseUri, baseUri);
+                    context.assertEquals(name, consumerInstanceId);
+                    context.assertEquals(baseUri, consumerBaseUri);
                     creationAsync.complete();
                 });
 
         creationAsync.await();
 
-        //subscribe to a topic
+        // subscribe to a topic
         Async subscriberAsync = context.async();
 
         JsonObject subJson = new JsonObject();
@@ -675,7 +677,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         subJson.put("partition", 0);
         subJson.put("offset", 10L);
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri+"/subscription")
+        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(subJson.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(subJson, ar -> {
@@ -684,16 +686,16 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     HttpResponse<JsonObject> response = ar.result();
                     JsonObject bridgeResponse = response.body();
                     String status = bridgeResponse.getString("subscription_status");
-                    context.assertEquals(status, "subscribed");
+                    context.assertEquals("subscribed", status);
                     subscriberAsync.complete();
                 });
 
         subscriberAsync.await();
 
-        //consume records
+        // consume records
         Async consumeAsync = context.async();
 
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri+"/records")
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
                 .putHeader("timeout", String.valueOf(1000))
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -711,7 +713,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertEquals("key-10", key);
                     context.assertEquals(topic, kafkaTopic);
                     context.assertEquals("value-10", value);
-                    context.assertEquals(kafkaPartition, 0);
+                    context.assertEquals(0, kafkaPartition);
                     context.assertEquals(10L, offset);
 
                     consumeAsync.complete();
@@ -719,7 +721,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         consumeAsync.await();
 
-        //consumer deletion
+        // consumer deletion
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
@@ -733,7 +735,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     String deletionStatus = bridgeResponse.getString("status");
 
                     context.assertEquals(consumerInstanceId, name);
-                    context.assertEquals(deletionStatus, "deleted");
+                    context.assertEquals("deleted", deletionStatus);
 
                     deleteAsync.complete();
                 });
