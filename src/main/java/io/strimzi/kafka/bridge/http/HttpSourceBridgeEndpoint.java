@@ -46,9 +46,11 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
         //split path to extract params
         String[] params = httpServerRequest.path().split("/");
-
-        //path is like this : /topics/{topic_name}, topic will be at the last position of param[]
         String topic = params[2];
+        int partition = 0;
+        if (params.length == 5) {
+            partition = Integer.parseInt(params[4]);
+        }
 
         httpServerRequest.bodyHandler(buffer -> {
             KafkaProducerRecord<String, byte[]> kafkaProducerRecord = messageConverter.toKafkaRecord(topic, buffer);
@@ -69,27 +71,21 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
                 } else {
                     RecordMetadata metadata = writeResult.result();
-                    if (params.length >= 4 && params[3].equals("partitions")) {
-                        if (params.length == 5) {
-                            this.getPartitions(kafkaProducerRecord.topic(), partitions -> {
-                                if (Integer.parseInt(params[4]) < partitions.result().size()) {
-                                    this.sendAcceptedDeliveryResponse(metadata, httpServerRequest.response(), new Gson().toJson(partitions.result().get((partitions.result().size() - 1) - Integer.parseInt(params[4]))));
-                                } else {
-                                    httpServerRequest.response().setStatusMessage("Partition " + Integer.parseInt(params[4]) + " of Topic " + kafkaProducerRecord.topic() + " not found");
-                                    httpServerRequest.response().setStatusCode(40402);
-                                    this.sendRejectedDeliveryResponse(httpServerRequest.response());
-                                }
-                            });
-                        } else {
-                            this.getPartitions(kafkaProducerRecord.topic(), partitions -> {
-                                this.sendAcceptedDeliveryResponse(metadata, httpServerRequest.response(), new Gson().toJson(partitions.result()));
-                            });
-                        }
+                    // partitions/n
+                    if (params.length == 5) {
+                        this.getPartitions(kafkaProducerRecord.topic(), partitions -> {
+                            if (Integer.parseInt(params[4]) < partitions.result().size()) {
+                                this.sendAcceptedDeliveryResponse(metadata, httpServerRequest.response(), new Gson().toJson(partitions.result().get(Integer.parseInt(params[4]))));
+                            } else {
+                                httpServerRequest.response().setStatusMessage("Partition " + Integer.parseInt(params[4]) + " of Topic " + kafkaProducerRecord.topic() + " not found");
+                                httpServerRequest.response().setStatusCode(40402);
+                                this.sendRejectedDeliveryResponse(httpServerRequest.response());
+                            }
+                        });
                     } else {
                         log.debug("Delivered to Kafka on topic {} at partition {} [{}]", metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
                         this.sendAcceptedDeliveryResponse(metadata, httpServerRequest.response(), "");
                     }
-
                 }
             });
 

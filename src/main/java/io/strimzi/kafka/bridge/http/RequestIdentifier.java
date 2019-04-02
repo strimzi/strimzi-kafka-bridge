@@ -38,19 +38,12 @@ public class RequestIdentifier {
             case "":
                 return RequestType.EMPTY;
             case "topics":
-                //produce records
-                //request type = POST
-                //path = topics/{topic-name}
-                //spliting this path will return an array of length 2
-                //param[0] = "topics", param[1] = {topic-name}
+                // we are asking for topic info
                 if (method == HttpMethod.POST && params.length == 2){
                     return RequestType.PRODUCE;
                 }
-                if (method == HttpMethod.POST && params.length == 3 && params[2].equals("partitions")){
-                    return RequestType.PARTITIONS;
-                }
                 if (method == HttpMethod.POST && params.length == 4 && params[2].equals("partitions") && isNumeric(params[3])){
-                    return RequestType.PARTITIONS;
+                    return RequestType.PRODUCE;
                 }
                 break;
 
