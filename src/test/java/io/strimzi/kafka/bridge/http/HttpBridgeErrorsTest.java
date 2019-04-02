@@ -137,7 +137,7 @@ public class HttpBridgeErrorsTest extends KafkaClusterTestBase {
         });
     }
 
-    //@Test
+    @Test
     public void emptyRecordTest(TestContext context) {
         Async async = context.async();
         WebClient client = WebClient.create(vertx);
@@ -150,7 +150,7 @@ public class HttpBridgeErrorsTest extends KafkaClusterTestBase {
         });
     }
 
-    //@Test
+    @Test
     public void invalidRequestTest(TestContext context) {
         Async async = context.async();
 
@@ -210,10 +210,16 @@ public class HttpBridgeErrorsTest extends KafkaClusterTestBase {
 
     }
 
-    //@Test
+    @Test
     public void sendToNonExistingPartitionsTest2(TestContext context) {
         String kafkaTopic = "sendToNonExistingPartitionsTest2";
         kafkaCluster.createTopic(kafkaTopic, 3, 1);
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         Async async = context.async();
 

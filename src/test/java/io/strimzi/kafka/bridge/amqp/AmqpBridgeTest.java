@@ -109,6 +109,13 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 		String topic = "sendSimpleMessages";
 		kafkaCluster.createTopic(topic, 1, 1);
 
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+
 		ProtonClient client = ProtonClient.create(this.vertx);
 
 		Async async = context.async();
@@ -159,6 +166,12 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 	public void sendSimpleMessageToPartition(TestContext context) {
 		String topic = "sendSimpleMessageToPartition";
 		kafkaCluster.createTopic(topic, 2, 1);
+
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 
 		ProtonClient client = ProtonClient.create(this.vertx);
 		

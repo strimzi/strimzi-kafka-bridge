@@ -74,6 +74,12 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         this.httpBridge = new HttpBridge(this.bridgeConfigProperties);
 
         this.vertx.deployVerticle(this.httpBridge, context.asyncAssertSuccess());
+        try {
+            // wait for kafka broker
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @After
@@ -87,6 +93,12 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         String topic = "sendSimpleMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         Async async = context.async();
 
         String value = "message-value";
@@ -94,6 +106,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         JsonArray records = new JsonArray();
         JsonObject json = new JsonObject();
         json.put("value", value);
+        json.put("partition", 0);
         records.add(json);
 
         JsonObject root = new JsonObject();
@@ -145,6 +158,12 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     public void sendSimpleMessageToPartition(TestContext context) {
         String topic = "sendSimpleMessageToPartition";
         kafkaCluster.createTopic(topic, 2, 1);
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         Async async = context.async();
 
@@ -269,6 +288,12 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         String topic = "sendPeriodicMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         Async async = context.async();
 
         WebClient client = WebClient.create(vertx);
@@ -334,6 +359,12 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     public void sendMultipleMessages(TestContext context) {
         String topic = "sendMultipleMessages";
         kafkaCluster.createTopic(topic, 1, 1);
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         Async async = context.async();
 
