@@ -53,10 +53,10 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
         String[] params = httpServerRequest.path().split("/");
 
         // path is like this : /topics/{topic_name}, topic will be at the last position of params
-        String topic = params[params.length - 1];
+        String topic = params[2];
 
         httpServerRequest.bodyHandler(buffer -> {
-            List<KafkaProducerRecord<String , byte[]>> records = messageConverter.toKafkaRecords(topic, buffer);
+            List<KafkaProducerRecord<String, byte[]>> records = messageConverter.toKafkaRecords(topic, buffer);
             List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
 
             // start sending records asynchronously
@@ -69,16 +69,18 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
             // wait for ALL futures completed
             CompositeFuture.join(sendHandlers).setHandler(done -> {
+
                 for (int i = 0; i < sendHandlers.size(); i++) {
                     // check if, for each future, the sending operation is completed successfully or failed
-                    if (done.result().succeeded(i)) {
+                    if (done.result() != null && done.result().succeeded(i)) {
                         RecordMetadata metadata = done.result().resultAt(i);
                         log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", records.get(i), metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
                         results.add(new HttpBridgeResult<>(metadata));
                     } else {
-                        log.error("Failed to deliver record " + records.get(i) + " due to {}", done.result().cause(i));
+                        log.error("Failed to deliver record " + records.get(i) + " due to {}", done.cause());
                         // TODO: error codes definition
-                        results.add(new HttpBridgeResult<>(new HttpBridgeError(0, done.result().cause(i).getMessage())));
+                        String[] msg = done.cause().getMessage().split("#");
+                        results.add(new HttpBridgeResult<>(new HttpBridgeError(Integer.parseInt(msg[0]), msg[1])));
                     }
                 }
                 sendMetadataResponse(results, httpServerRequest.response());

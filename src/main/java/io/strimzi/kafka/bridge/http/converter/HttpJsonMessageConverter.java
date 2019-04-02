@@ -42,10 +42,10 @@ public class HttpJsonMessageConverter implements MessageConverter<String, byte[]
             if (json.containsKey("partition")) {
                 partition = json.getInteger("partition");
             }
-            if (json.containsKey("key")){
+            if (json.containsKey("key")) {
                 key = json.getString("key");
             }
-            if (json.containsKey("value")){
+            if (json.containsKey("value")) {
                 value = json.getString("value").getBytes();
             }
         }

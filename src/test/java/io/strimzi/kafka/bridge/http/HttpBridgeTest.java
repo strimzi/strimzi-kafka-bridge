@@ -742,4 +742,44 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         deleteAsync.await();
     }
+
+    //@Test
+    public void sendToOnePartitionTest(TestContext context) {
+        String kafkaTopic = "sendToOnePartitionTest";
+        kafkaCluster.createTopic(kafkaTopic, 3, 1);
+
+        Async async = context.async();
+
+        String value = "Hi, This is kafka bridge";
+        int partition = 2;
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        WebClient client = WebClient.create(vertx);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
+                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(root, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+
+                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                    context.assertEquals(1, offsets.size());
+                    JsonObject metadata = offsets.getJsonObject(0);
+                    context.assertNotNull(metadata.getInteger("partition"));
+                    context.assertEquals(partition, metadata.getInteger("partition"));
+                    context.assertEquals(0L, metadata.getLong("offset"));
+                    async.complete();
+                });
+
+    }
 }

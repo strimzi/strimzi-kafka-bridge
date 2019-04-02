@@ -34,7 +34,8 @@ public class RequestIdentifier {
         String [] params = requestPath.substring(1).split("/");
 
         switch (params[0]){
-
+            case "":
+                return RequestType.EMPTY;
             case "topics":
                 //produce records
                 //request type = POST
@@ -42,6 +43,9 @@ public class RequestIdentifier {
                 //spliting this path will return an array of length 2
                 //param[0] = "topic", param[1] = {topic-name}
                 if (method == HttpMethod.POST && params.length == 2){
+                    return RequestType.PRODUCE;
+                }
+                if (method == HttpMethod.POST && params.length == 4 && params[2].equals("partitions") && isNumeric(params[3])){
                     return RequestType.PRODUCE;
                 }
                 break;
@@ -114,4 +118,12 @@ public class RequestIdentifier {
         return RequestType.INVALID;
     }
 
+    public static boolean isNumeric(String str) {
+        try {
+            Integer.parseInt(str);
+            return true;
+        } catch(NumberFormatException e){
+            return false;
+        }
+    }
 }
