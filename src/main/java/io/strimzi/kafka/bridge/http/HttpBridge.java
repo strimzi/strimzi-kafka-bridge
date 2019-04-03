@@ -194,20 +194,21 @@ public class HttpBridge extends AbstractVerticle {
                     this.httpSinkEndpoints.remove(deleteInstanceID);
                 } else {
                     httpServerRequest.response()
-                            .setStatusCode(404)
+                            .setStatusCode(ErrorCodeEnum.UNKNOWN_REQUEST.getValue())
+                            .setStatusMessage("endpoint not found")
                             .end();
                 }
                 break;
             case EMPTY:
                 httpServerRequest.response()
-                        .setStatusCode(422)
-                        .setStatusMessage("records may not be empty")
+                        .setStatusCode(ErrorCodeEnum.EMPTY_REQUEST.getValue())
+                        .setStatusMessage("records cannot not be empty")
                         .end();
                 break;
             case INVALID:
                 log.info("invalid request");
                 httpServerRequest.response()
-                        .setStatusCode(400)
+                        .setStatusCode(ErrorCodeEnum.INVALID_REQUEST.getValue())
                         .setStatusMessage("invalid request")
                         .end();
         }

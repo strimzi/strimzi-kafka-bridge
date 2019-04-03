@@ -77,10 +77,11 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
                         log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", records.get(i), metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
                         results.add(new HttpBridgeResult<>(metadata));
                     } else {
-                        log.error("Failed to deliver record " + records.get(i) + " due to {}", done.cause());
+                        int code = Integer.parseInt(done.cause().getMessage());
+                        String msg = getMsgFromCode(code, records.get(i).topic(), records.get(i).partition());
+                        log.error("Failed to deliver record " + records.get(i) + " due to {}", msg);
                         // TODO: error codes definition
-                        String[] msg = done.cause().getMessage().split("#");
-                        results.add(new HttpBridgeResult<>(new HttpBridgeError(Integer.parseInt(msg[0]), msg[1])));
+                        results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                     }
                 }
                 sendMetadataResponse(results, httpServerRequest.response());
@@ -115,5 +116,17 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
         response.putHeader("Content-length", String.valueOf(jsonResponse.toBuffer().length()));
         response.write(jsonResponse.toBuffer());
         response.end();
+    }
+
+    private String getMsgFromCode(int code, String topic, int partition) {
+
+        switch (ErrorCodeEnum.valueOf(code)) {
+            case TOPIC_NOT_FOUND:
+                return "Topic " + topic + " not found";
+            case PARTITION_NOT_FOUND:
+                return "Partition " + partition + " of Topic " + topic + " not found";
+            default:
+                return "Unknown error";
+        }
     }
 }

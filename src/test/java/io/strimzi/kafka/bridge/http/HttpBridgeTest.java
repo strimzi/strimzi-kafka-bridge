@@ -74,12 +74,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         this.httpBridge = new HttpBridge(this.bridgeConfigProperties);
 
         this.vertx.deployVerticle(this.httpBridge, context.asyncAssertSuccess());
-        try {
-            // wait for kafka broker
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+
     }
 
     @After
@@ -92,12 +87,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     public void sendSimpleMessage(TestContext context) {
         String topic = "sendSimpleMessage";
         kafkaCluster.createTopic(topic, 1, 1);
-
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
 
         Async async = context.async();
 
@@ -158,12 +147,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     public void sendSimpleMessageToPartition(TestContext context) {
         String topic = "sendSimpleMessageToPartition";
         kafkaCluster.createTopic(topic, 2, 1);
-
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
 
         Async async = context.async();
 
@@ -236,6 +219,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject json = new JsonObject();
         json.put("value", value);
         json.put("key", key);
+        json.put("partition", 0);
         records.add(json);
 
         JsonObject root = new JsonObject();
@@ -288,12 +272,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         String topic = "sendPeriodicMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
         Async async = context.async();
 
         WebClient client = WebClient.create(vertx);
@@ -314,6 +292,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 JsonObject json = new JsonObject();
                 json.put("value", "Periodic message [" + this.count + "]");
                 json.put("key", "key-" + this.count);
+                json.put("partition", 0);
                 records.add(json);
 
                 JsonObject root = new JsonObject();
@@ -360,12 +339,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         String topic = "sendMultipleMessages";
         kafkaCluster.createTopic(topic, 1, 1);
 
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
         Async async = context.async();
 
         String value = "message-value";
@@ -376,6 +349,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         for (int i = 0; i < numMessages; i++) {
             JsonObject json = new JsonObject();
             json.put("value", value + "-" + i);
+            json.put("partition", 0);
             records.add(json);
         }
         JsonObject root = new JsonObject();
@@ -590,7 +564,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         JsonObject subJson = new JsonObject();
         subJson.put("topic", topic);
-        subJson.put("partition",partition);
+        subJson.put("partition", partition);
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(subJson.toBuffer().length()))
@@ -774,7 +748,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         deleteAsync.await();
     }
 
-    //@Test
+    //@Test TODO not implemented "/topics/" + kafkaTopic + "/partitions/" + partition
+    // partition should be set to partition --------------------------------^
     public void sendToOnePartitionTest(TestContext context) {
         String kafkaTopic = "sendToOnePartitionTest";
         kafkaCluster.createTopic(kafkaTopic, 3, 1);
@@ -811,6 +786,5 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertEquals(0L, metadata.getLong("offset"));
                     async.complete();
                 });
-
     }
 }

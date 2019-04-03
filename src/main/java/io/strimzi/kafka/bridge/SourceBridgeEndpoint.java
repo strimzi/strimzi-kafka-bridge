@@ -17,7 +17,7 @@
 package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.strimzi.kafka.bridge.config.KafkaConfig;
+import io.strimzi.kafka.bridge.http.ErrorCodeEnum;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -25,14 +25,11 @@ import io.vertx.core.Vertx;
 import io.vertx.kafka.client.producer.KafkaProducer;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import io.vertx.kafka.client.producer.RecordMetadata;
-import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Base class for source bridge endpoints
@@ -49,10 +46,6 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
 
     private KafkaProducer<String, byte[]> producerUnsettledMode;
     private KafkaProducer<String, byte[]> producerSettledMode;
-
-    protected final String SEPARATOR = "#";
-    protected final int TOPIC_NOT_FOUND = 40401;
-    protected final int PARTITION_NOT_FOUND = 40402;
 
     /**
      * Constructor
@@ -89,33 +82,22 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
      */
     protected void send(KafkaProducerRecord<String, byte[]> krecord, Handler<AsyncResult<RecordMetadata>> handler) {
 
-        Properties props = new Properties();
-        KafkaConfig consumerConfig = this.bridgeConfigProperties.getKafkaConfig();
-        props.put("bootstrap.servers", consumerConfig.getBootstrapServers());
-        AdminClient ac = AdminClient.create(props);
-        try {
-            AsyncResult<RecordMetadata> f;
-            if (ac.listTopics().names().get().contains(krecord.topic())) {
-                log.debug("Topic " + krecord.topic() + " exists");
-                if (krecord.partition() != null && krecord.partition() > ac.describeTopics(Collections.singleton(krecord.topic())).values().get(krecord.topic()).get().partitions().size()) {
-                    f = Future.failedFuture(PARTITION_NOT_FOUND + SEPARATOR + "Partition " + krecord.partition() + " of Topic " + krecord.topic() + " not found");
-                    handler.handle(f);
-                } else {
-                    // topic and partition found
-                    if (handler == null) {
-                        this.producerSettledMode.write(krecord);
-                    } else {
-                        log.debug("Sending to topic " + krecord.topic() + " at partition {}", krecord.partition());
+        if (handler == null) {
+            this.producerSettledMode.write(krecord);
+        } else {
+            log.debug("Sending to topic " + krecord.topic() + " at partition {}", krecord.partition());
+            this.producerUnsettledMode.partitionsFor(krecord.topic(), part -> {
+                if (part.succeeded()) {
+                    if (part.result().size() > krecord.partition()) {
                         this.producerUnsettledMode.write(krecord, handler);
+
+                    } else {
+                        handler.handle(Future.failedFuture(Integer.toString(ErrorCodeEnum.PARTITION_NOT_FOUND.getValue())));
                     }
+                } else {
+                    handler.handle(Future.failedFuture(Integer.toString(ErrorCodeEnum.TOPIC_NOT_FOUND.getValue())));
                 }
-            } else {
-                log.debug("Topic " + krecord.topic() + " not found");
-                f = Future.failedFuture(TOPIC_NOT_FOUND + SEPARATOR + "Topic " + krecord.topic() + " not found");
-                handler.handle(f);
-            }
-        } catch (ExecutionException | InterruptedException e) {
-            e.printStackTrace();
+            });
         }
     }
 
@@ -127,6 +109,7 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getKeySerializer());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getValueSerializer());
         props.put(ProducerConfig.ACKS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getAcks());
+        props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 10000);
 
         this.producerUnsettledMode = KafkaProducer.create(this.vertx, props);
 
