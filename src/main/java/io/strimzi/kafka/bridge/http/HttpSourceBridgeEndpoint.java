@@ -47,13 +47,18 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
     public void handle(Endpoint<?> endpoint) {
         HttpServerRequest httpServerRequest = (HttpServerRequest) endpoint.get();
 
-        messageConverter = new HttpJsonMessageConverter();
 
         // split path to extract params
         String[] params = httpServerRequest.path().split("/");
 
         // path is like this : /topics/{topic_name}, topic will be at the last position of params
         String topic = params[2];
+
+        if (params.length == 5) {
+            messageConverter = new HttpJsonMessageConverter(Integer.parseInt(params[4]));
+        } else {
+            messageConverter = new HttpJsonMessageConverter();
+        }
 
         httpServerRequest.bodyHandler(buffer -> {
             List<KafkaProducerRecord<String, byte[]>> records = messageConverter.toKafkaRecords(topic, buffer);

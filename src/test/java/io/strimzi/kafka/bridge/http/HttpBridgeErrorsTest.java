@@ -102,7 +102,7 @@ public class HttpBridgeErrorsTest extends KafkaClusterTestBase {
             });
     }
 
-    //@Test //TODO! now working `"/topics/" + kafkaTopic + "/partitions/" + partition` partition is ignored
+    @Test
     public void sendToNonExistingPartitionsTest(TestContext context) {
         String kafkaTopic = "sendToNonExistingPartitionsTest";
         kafkaCluster.createTopic(kafkaTopic, 3, 1);

@@ -30,6 +30,17 @@ import java.util.List;
 
 public class HttpJsonMessageConverter implements MessageConverter<String, byte[], Buffer, Buffer> {
 
+    private Integer partition;
+
+    public HttpJsonMessageConverter(int partition) {
+        this.partition = partition;
+    }
+
+    public HttpJsonMessageConverter() {
+        super();
+        this.partition = null;
+    }
+
     @Override
     public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Buffer message) {
 
@@ -38,13 +49,28 @@ public class HttpJsonMessageConverter implements MessageConverter<String, byte[]
 
         JsonObject json = message.toJsonObject();
 
-        if (!json.isEmpty()){
-            if (json.containsKey("partition")) {
-                partition = json.getInteger("partition");
-            }
+        if (!json.isEmpty()) {
             if (json.containsKey("key")) {
                 key = json.getString("key");
             }
+            if (json.containsKey("partition")) {
+                partition = json.getInteger("partition");
+            }
+            if (this.partition != null) {
+                partition = this.partition;
+            }
+            if (partition == null) {
+                // TODO
+                // If no partition is provided, one will be chosen based on the hash of the key.
+                // If no key is provided, the partition will be chosen for each message in a round-robin fashion.
+                /*if (key != null) {
+                    partition = key.hashCode();
+                } else {
+                    partition = roundRobin();
+                }*/
+                partition = 0;
+            }
+
             if (json.containsKey("value")) {
                 value = json.getString("value").getBytes();
             }
