@@ -109,13 +109,6 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 		String topic = "sendSimpleMessages";
 		kafkaCluster.createTopic(topic, 1, 1);
 
-		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
-
 		ProtonClient client = ProtonClient.create(this.vertx);
 
 		Async async = context.async();
