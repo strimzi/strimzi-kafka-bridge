@@ -86,21 +86,7 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
             this.producerSettledMode.write(krecord);
         } else {
             log.debug("Sending to topic " + krecord.topic() + " at partition {}", krecord.partition());
-            this.producerUnsettledMode.partitionsFor(krecord.topic(), part -> {
-                if (part.succeeded()) {
-                    if (krecord.partition() == null) {
-                        //TODO should not to be!
-                        this.producerUnsettledMode.write(krecord, handler);
-                    } else if (part.result().size() > krecord.partition()) {
-                        this.producerUnsettledMode.write(krecord, handler);
-
-                    } else {
-                        handler.handle(Future.failedFuture(Integer.toString(ErrorCodeEnum.PARTITION_NOT_FOUND.getValue())));
-                    }
-                } else {
-                    handler.handle(Future.failedFuture(Integer.toString(ErrorCodeEnum.TOPIC_NOT_FOUND.getValue())));
-                }
-            });
+            this.producerUnsettledMode.write(krecord, handler).exceptionHandler(k -> handler.handle(Future.failedFuture(k)));
         }
     }
 

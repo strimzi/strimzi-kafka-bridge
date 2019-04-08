@@ -82,8 +82,8 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
                         log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", records.get(i), metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
                         results.add(new HttpBridgeResult<>(metadata));
                     } else {
-                        int code = Integer.parseInt(done.cause().getMessage());
-                        String msg = getMsgFromCode(code, records.get(i).topic(), records.get(i).partition());
+                        String msg = done.cause().getMessage();
+                        int code = getCodeFromMsg(msg);
                         log.error("Failed to deliver record " + records.get(i) + " due to {}", msg);
                         // TODO: error codes definition
                         results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
@@ -123,15 +123,9 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
         response.end();
     }
 
-    private String getMsgFromCode(int code, String topic, int partition) {
-
-        switch (ErrorCodeEnum.valueOf(code)) {
-            case TOPIC_NOT_FOUND:
-                return "Topic " + topic + " not found";
-            case PARTITION_NOT_FOUND:
-                return "Partition " + partition + " of Topic " + topic + " not found";
-            default:
-                return "Unknown error";
-        }
+    private int getCodeFromMsg(String msg) {
+        if (msg.contains("Invalid partition")) {
+            return ErrorCodeEnum.PARTITION_NOT_FOUND.getValue();
+        } else return ErrorCodeEnum.UNKNOWN_ERROR.getValue();
     }
 }

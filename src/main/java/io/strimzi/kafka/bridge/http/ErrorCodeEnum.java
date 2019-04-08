@@ -8,7 +8,8 @@ public enum ErrorCodeEnum {
     PARTITION_NOT_FOUND(40402),
     INVALID_REQUEST(400),
     UNKNOWN_REQUEST(404),
-    EMPTY_REQUEST(422);
+    EMPTY_REQUEST(422),
+    UNKNOWN_ERROR(500);
 
     private int value;
     private static Map map = new HashMap<>();
