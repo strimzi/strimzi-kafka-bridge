@@ -34,7 +34,8 @@ public class RequestIdentifier {
         String [] params = requestPath.substring(1).split("/");
 
         switch (params[0]){
-
+            case "":
+                return RequestType.EMPTY;
             case "topics":
                 //produce records
                 //request type = POST
@@ -114,4 +115,12 @@ public class RequestIdentifier {
         return RequestType.INVALID;
     }
 
+    public static boolean isNumeric(String str) {
+        try {
+            Integer.parseInt(str);
+            return true;
+        } catch(NumberFormatException e){
+            return false;
+        }
+    }
 }

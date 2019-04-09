@@ -47,7 +47,6 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
     public void handle(Endpoint<?> endpoint) {
         HttpServerRequest httpServerRequest = (HttpServerRequest) endpoint.get();
 
-        messageConverter = new HttpJsonMessageConverter();
 
         // split path to extract params
         String[] params = httpServerRequest.path().split("/");
@@ -55,8 +54,10 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
         // path is like this : /topics/{topic_name}, topic will be at the last position of params
         String topic = params[params.length - 1];
 
+        messageConverter = new HttpJsonMessageConverter();
+
         httpServerRequest.bodyHandler(buffer -> {
-            List<KafkaProducerRecord<String , byte[]>> records = messageConverter.toKafkaRecords(topic, buffer);
+            List<KafkaProducerRecord<String, byte[]>> records = messageConverter.toKafkaRecords(topic, buffer);
             List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
 
             // start sending records asynchronously
@@ -69,16 +70,19 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
             // wait for ALL futures completed
             CompositeFuture.join(sendHandlers).setHandler(done -> {
+
                 for (int i = 0; i < sendHandlers.size(); i++) {
                     // check if, for each future, the sending operation is completed successfully or failed
-                    if (done.result().succeeded(i)) {
+                    if (done.result() != null && done.result().succeeded(i)) {
                         RecordMetadata metadata = done.result().resultAt(i);
                         log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", records.get(i), metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
                         results.add(new HttpBridgeResult<>(metadata));
                     } else {
-                        log.error("Failed to deliver record " + records.get(i) + " due to {}", done.result().cause(i));
+                        String msg = done.cause().getMessage();
+                        int code = getCodeFromMsg(msg);
+                        log.error("Failed to deliver record " + records.get(i) + " due to {}", msg);
                         // TODO: error codes definition
-                        results.add(new HttpBridgeResult<>(new HttpBridgeError(0, done.result().cause(i).getMessage())));
+                        results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                     }
                 }
                 sendMetadataResponse(results, httpServerRequest.response());
@@ -113,5 +117,11 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
         response.putHeader("Content-length", String.valueOf(jsonResponse.toBuffer().length()));
         response.write(jsonResponse.toBuffer());
         response.end();
+    }
+
+    private int getCodeFromMsg(String msg) {
+        if (msg.contains("Invalid partition")) {
+            return ErrorCodeEnum.PARTITION_NOT_FOUND.getValue();
+        } else return ErrorCodeEnum.INTERNAL_SERVER_ERROR.getValue();
     }
 }

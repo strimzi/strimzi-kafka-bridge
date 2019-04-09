@@ -18,6 +18,7 @@ package io.strimzi.kafka.bridge;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Properties;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -45,10 +46,14 @@ public class KafkaClusterTestBase {
     }
     dataDir = Testing.Files.createTestingDirectory(DATA_DIR);
 
+    Properties props = new Properties();
+    props.put("auto.create.topics.enable", "false");
+
     kafkaCluster =
             new KafkaCluster()
                     .usingDirectory(dataDir)
-                    .withPorts(ZOOKEEPER_PORT, KAFKA_PORT);
+                    .withPorts(ZOOKEEPER_PORT, KAFKA_PORT)
+                    .withKafkaConfiguration(props);
     return kafkaCluster;
   }
 
