@@ -86,7 +86,7 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
             this.producerSettledMode.write(krecord);
         } else {
             log.debug("Sending to topic " + krecord.topic() + " at partition {}", krecord.partition());
-            this.producerUnsettledMode.write(krecord, handler).exceptionHandler(k -> handler.handle(Future.failedFuture(k)));
+            this.producerUnsettledMode.exceptionHandler(e -> handler.handle(Future.failedFuture(e))).write(krecord, handler);
         }
     }
 
