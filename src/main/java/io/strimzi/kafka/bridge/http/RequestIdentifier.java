@@ -45,9 +45,6 @@ public class RequestIdentifier {
                 if (method == HttpMethod.POST && params.length == 2){
                     return RequestType.PRODUCE;
                 }
-                if (method == HttpMethod.POST && params.length == 4 && params[2].equals("partitions") && isNumeric(params[3])){
-                    return RequestType.PRODUCE;
-                }
                 break;
 
             //all consumer enpoints starts with "/consumers"

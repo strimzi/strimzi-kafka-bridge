@@ -52,13 +52,9 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
         String[] params = httpServerRequest.path().split("/");
 
         // path is like this : /topics/{topic_name}, topic will be at the last position of params
-        String topic = params[2];
+        String topic = params[params.length - 1];
 
-        if (params.length == 5) {
-            messageConverter = new HttpJsonMessageConverter(Integer.parseInt(params[4]));
-        } else {
-            messageConverter = new HttpJsonMessageConverter();
-        }
+        messageConverter = new HttpJsonMessageConverter();
 
         httpServerRequest.bodyHandler(buffer -> {
             List<KafkaProducerRecord<String, byte[]>> records = messageConverter.toKafkaRecords(topic, buffer);
@@ -126,6 +122,6 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
     private int getCodeFromMsg(String msg) {
         if (msg.contains("Invalid partition")) {
             return ErrorCodeEnum.PARTITION_NOT_FOUND.getValue();
-        } else return ErrorCodeEnum.UNKNOWN_ERROR.getValue();
+        } else return ErrorCodeEnum.INTERNAL_SERVER_ERROR.getValue();
     }
 }

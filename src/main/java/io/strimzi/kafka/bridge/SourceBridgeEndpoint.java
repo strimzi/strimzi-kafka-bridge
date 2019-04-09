@@ -17,7 +17,6 @@
 package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.strimzi.kafka.bridge.http.ErrorCodeEnum;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -82,11 +81,13 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
      */
     protected void send(KafkaProducerRecord<String, byte[]> krecord, Handler<AsyncResult<RecordMetadata>> handler) {
 
+        log.debug("Sending to topic " + krecord.topic() + " at partition {}", krecord.partition());
         if (handler == null) {
             this.producerSettledMode.write(krecord);
         } else {
-            log.debug("Sending to topic " + krecord.topic() + " at partition {}", krecord.partition());
-            this.producerUnsettledMode.exceptionHandler(e -> handler.handle(Future.failedFuture(e))).write(krecord, handler);
+            this.producerUnsettledMode.exceptionHandler(e -> {
+                handler.handle(Future.failedFuture(e));
+            }).write(krecord, handler);
         }
     }
 
@@ -98,7 +99,6 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getKeySerializer());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getValueSerializer());
         props.put(ProducerConfig.ACKS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getAcks());
-        props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 10000);
 
         this.producerUnsettledMode = KafkaProducer.create(this.vertx, props);
 

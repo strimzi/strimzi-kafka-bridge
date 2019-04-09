@@ -6,10 +6,10 @@ import java.util.Map;
 public enum ErrorCodeEnum {
     TOPIC_NOT_FOUND(40401),
     PARTITION_NOT_FOUND(40402),
-    INVALID_REQUEST(400),
-    UNKNOWN_REQUEST(404),
-    EMPTY_REQUEST(422),
-    UNKNOWN_ERROR(500);
+    BAD_REQUEST(400),
+    NOT_FOUND(404),
+    UNPROCESSABLE_ENTITY(422),
+    INTERNAL_SERVER_ERROR(500);
 
     private int value;
     private static Map map = new HashMap<>();
