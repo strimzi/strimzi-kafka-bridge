@@ -206,7 +206,6 @@ public class HttpBridge extends AbstractVerticle {
                         .end();
                 break;
             case INVALID:
-                log.info("invalid request");
                 httpServerRequest.response()
                         .setStatusCode(ErrorCodeEnum.BAD_REQUEST.getValue())
                         .setStatusMessage("Invalid request")
