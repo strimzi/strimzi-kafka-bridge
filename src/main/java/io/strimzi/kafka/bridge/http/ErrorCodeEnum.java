@@ -6,6 +6,7 @@ import java.util.Map;
 public enum ErrorCodeEnum {
     TOPIC_NOT_FOUND(40401),
     PARTITION_NOT_FOUND(40402),
+    CONSUMER_ALREADY_EXISTS(40902),
     BAD_REQUEST(400),
     NOT_FOUND(404),
     UNPROCESSABLE_ENTITY(422),
