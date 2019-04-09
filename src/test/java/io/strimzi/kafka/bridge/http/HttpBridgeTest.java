@@ -566,7 +566,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         WebClient client = WebClient.create(vertx);
 
-        String name = "my-kafka-consumer";
+        String name = "my-kafka-consumer2";
         String groupId = "my-group";
 
         String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
@@ -681,7 +681,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         WebClient client = WebClient.create(vertx);
 
-        String name = "my-kafka-consumer";
+        String name = "my-kafka-consumer3";
         String groupId = "my-group";
 
         String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
@@ -912,7 +912,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         WebClient client = WebClient.create(vertx);
 
-        String name = "my-kafka-consumer";
+        String name = "my-kafka-consumer4";
         String groupId = "my-group";
 
         String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
