@@ -81,7 +81,7 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
      */
     protected void send(KafkaProducerRecord<String, byte[]> krecord, Handler<AsyncResult<RecordMetadata>> handler) {
 
-        log.debug("Sending to topic " + krecord.topic() + " at partition {}", krecord.partition());
+        log.debug("Sending record {}", krecord);
         if (handler == null) {
             this.producerSettledMode.write(krecord);
         } else {

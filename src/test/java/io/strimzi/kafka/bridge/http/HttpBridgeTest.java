@@ -96,7 +96,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         JsonArray records = new JsonArray();
         JsonObject json = new JsonObject();
         json.put("value", value);
-        json.put("partition", 0);
         records.add(json);
 
         JsonObject root = new JsonObject();
@@ -220,7 +219,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject json = new JsonObject();
         json.put("value", value);
         json.put("key", key);
-        json.put("partition", 0);
         records.add(json);
 
         JsonObject root = new JsonObject();
@@ -293,7 +291,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 JsonObject json = new JsonObject();
                 json.put("value", "Periodic message [" + this.count + "]");
                 json.put("key", "key-" + this.count);
-                json.put("partition", 0);
                 records.add(json);
 
                 JsonObject root = new JsonObject();
@@ -350,7 +347,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         for (int i = 0; i < numMessages; i++) {
             JsonObject json = new JsonObject();
             json.put("value", value + "-" + i);
-            json.put("partition", 0);
             records.add(json);
         }
         JsonObject root = new JsonObject();
@@ -749,99 +745,15 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         deleteAsync.await();
     }
 
-    @Ignore
-    @Test
-    public void sendToOnePartitionTest(TestContext context) {
-        String kafkaTopic = "sendToOnePartitionTest";
-        kafkaCluster.createTopic(kafkaTopic, 3, 1);
-
-        Async async = context.async();
-
-        String value = "Hi, This is kafka bridge";
-        int partition = 1;
-
-        JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("value", value);
-        records.add(json);
-
-        JsonObject root = new JsonObject();
-        root.put("records", records);
-
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
-                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(root, ar -> {
-                    context.assertTrue(ar.succeeded());
-
-                    HttpResponse<JsonObject> response = ar.result();
-                    JsonObject bridgeResponse = response.body();
-
-                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                    context.assertEquals(1, offsets.size());
-                    JsonObject metadata = offsets.getJsonObject(0);
-                    context.assertNotNull(metadata.getInteger("partition"));
-                    context.assertEquals(partition, metadata.getInteger("partition"));
-                    context.assertEquals(0L, metadata.getLong("offset"));
-                    async.complete();
-                });
-    }
-
-    @Ignore
-    @Test
-    public void partitionPriorityTest(TestContext context) {
-        // partition is specified in the message body and in the POST request
-        // what does have higher priority? Lets say POST one
-        String kafkaTopic = "partitionPriorityTest";
-        kafkaCluster.createTopic(kafkaTopic, 3, 1);
-
-        Async async = context.async();
-
-        String value = "Hi, This is kafka bridge";
-        int partitionInJson = 1;
-        int partition = 2;
-
-        JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("value", value);
-        json.put("partition", partitionInJson);
-        records.add(json);
-
-        JsonObject root = new JsonObject();
-        root.put("records", records);
-
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
-                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(root, ar -> {
-                    context.assertTrue(ar.succeeded());
-
-                    HttpResponse<JsonObject> response = ar.result();
-                    JsonObject bridgeResponse = response.body();
-
-                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                    context.assertEquals(1, offsets.size());
-                    JsonObject metadata = offsets.getJsonObject(0);
-                    context.assertNotNull(metadata.getInteger("partition"));
-                    context.assertEquals(partition, metadata.getInteger("partition"));
-                    context.assertEquals(0L, metadata.getLong("offset"));
-                    async.complete();
-                });
-    }
-
     @Test
     public void emptyRecordTest(TestContext context) {
         Async async = context.async();
         WebClient client = WebClient.create(vertx);
 
-        client.get(BRIDGE_PORT, BRIDGE_HOST, "").send( ar -> {
+        client.get(BRIDGE_PORT, BRIDGE_HOST, "").send(ar -> {
             context.assertTrue(ar.succeeded());
             context.assertEquals(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), ar.result().statusCode());
-            context.assertEquals("records cannot not be empty", ar.result().statusMessage());
+            context.assertEquals("The request cannot have empty payload", ar.result().statusMessage());
             async.complete();
         });
     }
@@ -852,7 +764,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         WebClient client = WebClient.create(vertx);
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/karel")
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/not-existing-endpoint")
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(null, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -860,56 +772,14 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     HttpResponse<JsonObject> response = ar.result();
 
                     context.assertEquals(ErrorCodeEnum.BAD_REQUEST.getValue(), response.statusCode());
-                    context.assertEquals("invalid request", response.statusMessage());
+                    context.assertEquals("Invalid request", response.statusMessage());
                     async.complete();
                 });
     }
 
-    @Ignore
     @Test
     public void sendToNonExistingPartitionsTest(TestContext context) {
         String kafkaTopic = "sendToNonExistingPartitionsTest";
-        kafkaCluster.createTopic(kafkaTopic, 3, 1);
-
-        Async async = context.async();
-
-        String value = "Hi, This is kafka bridge";
-        int partition = 1000;
-
-        JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("value", value);
-        records.add(json);
-
-        JsonObject root = new JsonObject();
-        root.put("records", records);
-
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
-                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(root, ar -> {
-                    context.assertTrue(ar.succeeded());
-
-                    HttpResponse<JsonObject> response = ar.result();
-                    JsonObject bridgeResponse = response.body();
-
-                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                    context.assertEquals(1, offsets.size());
-                    int code = offsets.getJsonObject(0).getInteger("error_code");
-                    String statusMessage = offsets.getJsonObject(0).getString("error");
-
-                    context.assertEquals(ErrorCodeEnum.PARTITION_NOT_FOUND.getValue(), code);
-                    context.assertEquals("Invalid partition given with record: 1000 is not in the range [0...3).", statusMessage);
-                    async.complete();
-                });
-
-    }
-
-    @Test
-    public void sendToNonExistingPartitionsTest2(TestContext context) {
-        String kafkaTopic = "sendToNonExistingPartitionsTest2";
         kafkaCluster.createTopic(kafkaTopic, 3, 1);
 
         Async async = context.async();
@@ -957,47 +827,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         String value = "Hi, This is kafka bridge";
         int partition = 1;
-
-        JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("value", value);
-        json.put("partition", partition);
-        records.add(json);
-
-        JsonObject root = new JsonObject();
-        root.put("records", records);
-
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic)
-                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(root, ar -> {
-                    context.assertTrue(ar.succeeded());
-
-                    HttpResponse<JsonObject> response = ar.result();
-                    JsonObject bridgeResponse = response.body();
-
-                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                    context.assertEquals(1, offsets.size());
-                    int code = offsets.getJsonObject(0).getInteger("error_code");
-                    String statusMessage = offsets.getJsonObject(0).getString("error");
-
-                    context.assertEquals(ErrorCodeEnum.TOPIC_NOT_FOUND.getValue(), code);
-                    context.assertEquals("Topic " + kafkaTopic + " not found", statusMessage);
-                    async.complete();
-                });
-    }
-
-    @Ignore
-    @Test
-    public void sendToNonExistingTopicNonExistingPartitionTest(TestContext context) {
-        String kafkaTopic = "sendToNonExistingTopicNonExistingPartitionTest";
-
-        Async async = context.async();
-
-        String value = "Hi, This is kafka bridge";
-        int partition = 1000;
 
         JsonArray records = new JsonArray();
         JsonObject json = new JsonObject();

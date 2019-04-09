@@ -80,7 +80,7 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
                     } else {
                         String msg = done.cause().getMessage();
                         int code = getCodeFromMsg(msg);
-                        log.error("Failed to deliver record " + records.get(i) + " due to {}", msg);
+                        log.error("Failed to deliver record " + records.get(i) + " due to {}", done.cause());
                         // TODO: error codes definition
                         results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                     }
@@ -122,6 +122,8 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
     private int getCodeFromMsg(String msg) {
         if (msg.contains("Invalid partition")) {
             return ErrorCodeEnum.PARTITION_NOT_FOUND.getValue();
-        } else return ErrorCodeEnum.INTERNAL_SERVER_ERROR.getValue();
+        } else {
+            return ErrorCodeEnum.INTERNAL_SERVER_ERROR.getValue();
+        }
     }
 }
