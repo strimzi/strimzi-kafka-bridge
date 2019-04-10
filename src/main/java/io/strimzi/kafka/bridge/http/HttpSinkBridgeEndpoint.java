@@ -45,8 +45,6 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
     private String consumerBaseUri;
 
-    private Handler consumerIdHandler;
-
     private MessageConverter messageConverter;
 
     HttpSinkBridgeEndpoint(Vertx vertx, HttpBridgeConfig httpBridgeConfigProperties) {
@@ -203,8 +201,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                     // create the consumer
                     this.initConsumer(false, config);
 
-                    this.consumerIdHandler = handler;
-                    this.consumerIdHandler.handle(consumerInstanceId);
+                    ((Handler<String>) handler).handle(consumerInstanceId);
 
                     // send consumer instance id(name) and base URI as response
                     sendConsumerCreationResponse(httpServerRequest.response(), consumerInstanceId, consumerBaseUri);
