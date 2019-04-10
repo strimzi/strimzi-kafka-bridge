@@ -167,7 +167,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 				this.offsetTracker = new SimpleOffsetTracker(this.kafkaTopic);
 				this.qos = this.mapQoS(this.sender.getQoS());
 				
-				this.initConsumer(true);
+				this.initConsumer(true, null);
 				// Set up flow control
 				// (*before* subscribe in case we start with no credit!)
 
