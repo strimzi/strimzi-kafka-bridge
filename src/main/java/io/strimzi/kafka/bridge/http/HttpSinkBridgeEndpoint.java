@@ -212,10 +212,11 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                         this.initConsumer(false, config);
 
                         ((Handler<String>) handler).handle(consumerInstanceId);
+
+                        // send consumer instance id(name) and base URI as response
+                        sendConsumerCreationResponse(httpServerRequest.response(), consumerInstanceId, consumerBaseUri);
                     }
 
-                    // send consumer instance id(name) and base URI as response
-                    sendConsumerCreationResponse(httpServerRequest.response(), consumerInstanceId, consumerBaseUri);
                 });
                 break;
 
