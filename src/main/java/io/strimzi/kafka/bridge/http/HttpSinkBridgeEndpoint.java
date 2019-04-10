@@ -49,7 +49,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
     private MessageConverter messageConverter;
 
-    private static List<String> consumerNames = new ArrayList<>();
+    private static List<String> consumerIds = new ArrayList<>();
 
     HttpSinkBridgeEndpoint(Vertx vertx, HttpBridgeConfig httpBridgeConfigProperties) {
         super(vertx, httpBridgeConfigProperties);
@@ -189,23 +189,30 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                     consumerInstanceId = json.getString("name",
                             "kafka-bridge-consumer-" + UUID.randomUUID().toString());
 
-                    // construct base URI for consumer
-                    String requestUri = httpServerRequest.absoluteURI();
-                    if (!httpServerRequest.path().endsWith("/")){
-                        requestUri += "/";
+                    if (consumerIds.contains(consumerInstanceId)) {
+                        httpServerRequest.response().setStatusCode(ErrorCodeEnum.CONSUMER_ALREADY_EXISTS.getValue())
+                                .setStatusMessage("Consumer instance with the specified name already exists.")
+                                .end();
+                    } else {
+                        consumerIds.add(consumerInstanceId);
+                        // construct base URI for consumer
+                        String requestUri = httpServerRequest.absoluteURI();
+                        if (!httpServerRequest.path().endsWith("/")) {
+                            requestUri += "/";
+                        }
+                        consumerBaseUri = requestUri + "instances/" + consumerInstanceId;
+
+                        // get supported consumer configuration parameters
+                        Properties config = new Properties();
+                        addConfigParameter(json, config, ConsumerConfig.AUTO_OFFSET_RESET_CONFIG);
+                        addConfigParameter(json, config, ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG);
+                        addConfigParameter(json, config, ConsumerConfig.FETCH_MIN_BYTES_CONFIG);
+
+                        // create the consumer
+                        this.initConsumer(false, config);
+
+                        ((Handler<String>) handler).handle(consumerInstanceId);
                     }
-                    consumerBaseUri = requestUri + "instances/" + consumerInstanceId;
-
-                    // get supported consumer configuration parameters
-                    Properties config = new Properties();
-                    addConfigParameter(json, config, ConsumerConfig.AUTO_OFFSET_RESET_CONFIG);
-                    addConfigParameter(json, config, ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG);
-                    addConfigParameter(json, config, ConsumerConfig.FETCH_MIN_BYTES_CONFIG);
-
-                    // create the consumer
-                    this.initConsumer(false, config);
-
-                    ((Handler<String>) handler).handle(consumerInstanceId);
 
                     // send consumer instance id(name) and base URI as response
                     sendConsumerCreationResponse(httpServerRequest.response(), consumerInstanceId, consumerBaseUri);
@@ -243,6 +250,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
     }
 
     private void sendConsumerDeletionResponse(HttpServerResponse response) {
+        HttpSinkBridgeEndpoint.consumerIds.remove(this.consumerInstanceId);
         JsonObject jsonResponse = new JsonObject();
         jsonResponse.put("instance_id", this.consumerInstanceId);
         jsonResponse.put("status", "deleted");
