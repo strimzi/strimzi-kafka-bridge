@@ -909,6 +909,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         Async creationAsync = context.async();
         Async creation2Async = context.async();
+        Async creation3Async = context.async();
 
         WebClient client = WebClient.create(vertx);
 
@@ -937,6 +938,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         creationAsync.await();
 
+        // create the same consumer again
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
@@ -951,5 +953,26 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 });
 
         creation2Async.await();
+
+        // create another consumer
+
+        json.put("name", name + "diff");
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String consumerInstanceId = bridgeResponse.getString("instance_id");
+                    String consumerBaseUri = bridgeResponse.getString("base_uri");
+                    context.assertEquals(name + "diff", consumerInstanceId);
+                    context.assertEquals(baseUri + "diff", consumerBaseUri);
+
+                    creation3Async.complete();
+                });
+
+        creation3Async.await();
     }
 }
