@@ -134,7 +134,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     /**
      * Kafka consumer initialization. It should be the first call for preparing the Kafka consumer.
      */
-    protected void initConsumer(boolean shouldAttachBatchHandler) {
+    protected void initConsumer(boolean shouldAttachBatchHandler, Properties config) {
 
         // create a consumer
         KafkaConfig consumerConfig = this.bridgeConfigProperties.getKafkaConfig();
@@ -145,6 +145,10 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         props.put(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, consumerConfig.getConsumerConfig().isEnableAutoCommit());
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, consumerConfig.getConsumerConfig().getAutoOffsetReset());
+
+        if (config != null)
+            props.putAll(config);
+
         this.consumer = KafkaConsumer.create(this.vertx, props);
 
         if (shouldAttachBatchHandler)
@@ -152,7 +156,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
-     * Subscribe to the topic. It should be the next call after the {@link #initConsumer(boolean shoudlAttachHandler)} after getting
+     * Subscribe to the topic. It should be the next call after the {@link #initConsumer(boolean shoudlAttachHandler, Properties config)} after getting
      * the topic information in order to subscribe to it.
      */
     protected void subscribe(boolean shouldAttachHandler) {

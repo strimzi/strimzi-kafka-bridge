@@ -29,23 +29,21 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.OffsetAndMetadata;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.UUID;
 
 public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
     private HttpServerRequest httpServerRequest;
 
-    private String consumerName;
-
     //unique id assigned to every consumer during its creation.
     private String consumerInstanceId;
 
     private String consumerBaseUri;
-
-    private Handler consumerIdHandler;
 
     private MessageConverter messageConverter;
 
@@ -155,6 +153,19 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
     }
 
+    /**
+     * Add a configuration parameter with key to the provided Properties bag from the JSON object
+     *
+     * @param json JSON object containing configuration parameters
+     * @param props Properties bag where to put the configuration parameter
+     * @param key key of the configuration parameter
+     */
+    private void addConfigParameter(JsonObject json, Properties props, String key) {
+        if (json.containsKey(key)) {
+            props.put(key, json.getString(key));
+        }
+    }
+
     @Override
     public void handle(Endpoint<?> endpoint, Handler<?> handler) {
         httpServerRequest = (HttpServerRequest) endpoint.get();
@@ -165,33 +176,34 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
             case CREATE:
 
-                //set group id of consumer
+                // get the consumer group-id
                 groupId = PathParamsExtractor.getConsumerCreationParams(httpServerRequest).get("group-id");
                 httpServerRequest.bodyHandler(buffer -> {
-                    if (buffer.toJsonObject().containsKey("name")) {
-                        consumerName = buffer.toJsonObject().getString("name");
-                    }
-                    //in case name is not mentioned by the client explicitly, assign a random name.
-                    else {
-                        consumerName = "kafka-bridge-consumer-";
-                        consumerName += UUID.randomUUID().toString();
-                    }
-                    //construct consumer instance id
-                    consumerInstanceId = consumerName;
-                    //construct base URI for consumer
+
+                    JsonObject json = buffer.toJsonObject();
+                    // if no name, a random one is assigned
+                    consumerInstanceId = json.getString("name",
+                            "kafka-bridge-consumer-" + UUID.randomUUID().toString());
+
+                    // construct base URI for consumer
                     String requestUri = httpServerRequest.absoluteURI();
                     if (!httpServerRequest.path().endsWith("/")){
                         requestUri += "/";
                     }
-                    consumerBaseUri = requestUri+"instances/"+consumerInstanceId;
+                    consumerBaseUri = requestUri + "instances/" + consumerInstanceId;
 
-                    //create the consumer
-                    this.initConsumer(false);
+                    // get supported consumer configuration parameters
+                    Properties config = new Properties();
+                    addConfigParameter(json, config, ConsumerConfig.AUTO_OFFSET_RESET_CONFIG);
+                    addConfigParameter(json, config, ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG);
+                    addConfigParameter(json, config, ConsumerConfig.FETCH_MIN_BYTES_CONFIG);
 
-                    this.consumerIdHandler = handler;
-                    this.consumerIdHandler.handle(consumerInstanceId);
+                    // create the consumer
+                    this.initConsumer(false, config);
 
-                    //send consumer instance id(name) and base URI as response
+                    ((Handler<String>) handler).handle(consumerInstanceId);
+
+                    // send consumer instance id(name) and base URI as response
                     sendConsumerCreationResponse(httpServerRequest.response(), consumerInstanceId, consumerBaseUri);
                 });
                 break;
