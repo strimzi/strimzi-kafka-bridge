@@ -41,7 +41,7 @@ public class HttpBridge extends AbstractVerticle {
 
     private Map<HttpConnection, SourceBridgeEndpoint> httpSourceEndpoints;
 
-    private Map<String, SinkBridgeEndpoint> httpSinkEndpoints;
+    protected static Map<String, SinkBridgeEndpoint> httpSinkEndpoints;
 
     // if the bridge is ready to handle requests
     private boolean isReady = false;
@@ -158,13 +158,13 @@ public class HttpBridge extends AbstractVerticle {
             case CREATE:
                 SinkBridgeEndpoint<?,?> sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig);
                 sink.closeHandler(s -> {
-                    this.httpSinkEndpoints.remove(sink);
+                    httpSinkEndpoints.remove(sink);
                 });
 
                 sink.open();
 
                 sink.handle(new HttpEndpoint(httpServerRequest), consumerId -> {
-                    this.httpSinkEndpoints.put(consumerId.toString(), sink);
+                    httpSinkEndpoints.put(consumerId.toString(), sink);
                 });
 
                 break;

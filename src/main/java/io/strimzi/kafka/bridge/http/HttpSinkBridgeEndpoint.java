@@ -185,6 +185,13 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                     consumerInstanceId = json.getString("name",
                             "kafka-bridge-consumer-" + UUID.randomUUID().toString());
 
+                    if (HttpBridge.httpSinkEndpoints.containsKey(consumerInstanceId)) {
+                        httpServerRequest.response().setStatusMessage("Consumer instance with the specified name already exists.")
+                                .setStatusCode(ErrorCodeEnum.CONSUMER_ALREADY_EXISTS.getValue())
+                                .end();
+                        return;
+                    }
+
                     // construct base URI for consumer
                     String requestUri = httpServerRequest.absoluteURI();
                     if (!httpServerRequest.path().endsWith("/")){
