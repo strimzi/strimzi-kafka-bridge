@@ -30,6 +30,16 @@ import java.util.List;
 
 public class HttpJsonMessageConverter implements MessageConverter<String, byte[], Buffer, Buffer> {
 
+    private Integer partition;
+
+    public HttpJsonMessageConverter(int partition) {
+        this.partition = partition;
+    }
+
+    public HttpJsonMessageConverter() {
+        this.partition = null;
+    }
+
     @Override
     public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Buffer message) {
 
@@ -44,6 +54,13 @@ public class HttpJsonMessageConverter implements MessageConverter<String, byte[]
             }
             if (json.containsKey("partition")) {
                 partition = json.getInteger("partition");
+            }
+            if (this.partition != null && partition != null) {
+                // unprocessable
+                throw new IllegalStateException("Partition specified in body and in request path.");
+            }
+            if (this.partition != null) {
+                partition = this.partition;
             }
             if (json.containsKey("value")) {
                 value = json.getString("value").getBytes();

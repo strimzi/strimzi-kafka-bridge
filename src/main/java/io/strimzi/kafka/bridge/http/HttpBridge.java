@@ -210,6 +210,12 @@ public class HttpBridge extends AbstractVerticle {
                         .setStatusCode(ErrorCodeEnum.BAD_REQUEST.getValue())
                         .setStatusMessage("Invalid request")
                         .end();
+                break;
+            case UNPROCESSABLE:
+                httpServerRequest.response().setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue())
+                        .setStatusMessage("Unprocessable request.")
+                        .end();
+                break;
         }
 
     }

@@ -45,6 +45,13 @@ public class RequestIdentifier {
                 if (method == HttpMethod.POST && params.length == 2){
                     return RequestType.PRODUCE;
                 }
+                if (method == HttpMethod.POST && params.length == 4) {
+                    if (isNumeric(params[3])) {
+                        return RequestType.PRODUCE;
+                    } else {
+                        return RequestType.UNPROCESSABLE;
+                    }
+                }
                 break;
 
             //all consumer enpoints starts with "/consumers"
@@ -113,5 +120,14 @@ public class RequestIdentifier {
         }
 
         return RequestType.INVALID;
+    }
+
+    public static boolean isNumeric(String str) {
+        try {
+            Integer.parseInt(str);
+            return true;
+        } catch(NumberFormatException e){
+            return false;
+        }
     }
 }

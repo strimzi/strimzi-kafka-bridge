@@ -51,13 +51,25 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
         // split path to extract params
         String[] params = httpServerRequest.path().split("/");
 
-        // path is like this : /topics/{topic_name}, topic will be at the last position of params
-        String topic = params[params.length - 1];
+        // path is like this : /topics/{topic_name}[/partitions/partition_id]
+        String topic = params[2];
 
-        messageConverter = new HttpJsonMessageConverter();
+        if (params.length == 5) {
+            messageConverter = new HttpJsonMessageConverter(Integer.parseInt(params[4]));
+        } else {
+            messageConverter = new HttpJsonMessageConverter();
+        }
 
         httpServerRequest.bodyHandler(buffer -> {
-            List<KafkaProducerRecord<String, byte[]>> records = messageConverter.toKafkaRecords(topic, buffer);
+            List<KafkaProducerRecord<String, byte[]>> records;
+            try {
+                records = messageConverter.toKafkaRecords(topic, buffer);
+            } catch (IllegalStateException e) {
+                httpServerRequest.response().setStatusMessage(e.getMessage())
+                        .setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue())
+                        .end();
+                return;
+            }
             List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
 
             // start sending records asynchronously
@@ -69,18 +81,19 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
             }
 
             // wait for ALL futures completed
+            List<KafkaProducerRecord<String, byte[]>> finalRecords = records;
             CompositeFuture.join(sendHandlers).setHandler(done -> {
 
                 for (int i = 0; i < sendHandlers.size(); i++) {
                     // check if, for each future, the sending operation is completed successfully or failed
                     if (done.result() != null && done.result().succeeded(i)) {
                         RecordMetadata metadata = done.result().resultAt(i);
-                        log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", records.get(i), metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
+                        log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", finalRecords.get(i), metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
                         results.add(new HttpBridgeResult<>(metadata));
                     } else {
                         String msg = done.cause().getMessage();
                         int code = getCodeFromMsg(msg);
-                        log.error("Failed to deliver record " + records.get(i) + " due to {}", done.cause());
+                        log.error("Failed to deliver record " + finalRecords.get(i) + " due to {}", done.cause());
                         // TODO: error codes definition
                         results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                     }

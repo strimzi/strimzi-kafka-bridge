@@ -898,6 +898,14 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     @Test
     public void subscriptionConsumerDoesNotExist(TestContext context) {
         String topic = "subscriptionConsumerDoesNotExist";
+        kafkaCluster.createTopic(topic, 1, 1);
+
+        String sentBody = "Simple message";
+
+        Async send = context.async();
+        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
+                new ProducerRecord<>(topic, 0, null, sentBody));
+        send.await();
 
         WebClient client = WebClient.create(vertx);
 
@@ -932,8 +940,125 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         subscriberAsync.await();
     }
 
+
+    @Test
+    public void sendToOnePartitionTest(TestContext context) {
+        String kafkaTopic = "sendToOnePartitionTest";
+        kafkaCluster.createTopic(kafkaTopic, 3, 1);
+
+        Async async = context.async();
+
+        String value = "Hi, This is kafka bridge";
+        int partition = 1;
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        WebClient client = WebClient.create(vertx);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
+                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(root, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+
+                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                    context.assertEquals(1, offsets.size());
+                    JsonObject metadata = offsets.getJsonObject(0);
+                    context.assertNotNull(metadata.getInteger("partition"));
+                    context.assertEquals(partition, metadata.getInteger("partition"));
+                    context.assertEquals(0L, metadata.getLong("offset"));
+                    async.complete();
+                });
+    }
+
+    @Test
+    public void sendToOneStringPartitionTest(TestContext context) {
+        String kafkaTopic = "sendToOneStringPartitionTest";
+        kafkaCluster.createTopic(kafkaTopic, 3, 1);
+
+        Async async = context.async();
+
+        String value = "Hi, This is kafka bridge";
+        String partition = "karel";
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        WebClient client = WebClient.create(vertx);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
+                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(root, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    context.assertEquals("Unprocessable request.", response.statusMessage());
+                    context.assertEquals(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), response.statusCode());
+                    async.complete();
+                });
+    }
+
+    @Test
+    public void sendToBothPartitionTest(TestContext context) {
+        String kafkaTopic = "sendToBothPartitionTest";
+        kafkaCluster.createTopic(kafkaTopic, 3, 1);
+
+        Async async = context.async();
+
+        String value = "Hi, This is kafka bridge";
+        int partition = 1;
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        json.put("partition", 2);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        WebClient client = WebClient.create(vertx);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
+                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(root, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    context.assertEquals("Partition specified in body and in request path.", response.statusMessage());
+                    context.assertEquals(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), response.statusCode());
+                    async.complete();
+                });
+    }
+
     @Test
     public void consumerAlreadyExistsTest(TestContext context) {
+        String topic = "consumerAlreadyExistsTest";
+        kafkaCluster.createTopic(topic, 1, 1);
+
+        String sentBody = "Simple message";
+
+        Async send = context.async();
+        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
+                new ProducerRecord<>(topic, 0, null, sentBody));
+        send.await();
+
         Async creationAsync = context.async();
         Async creation2Async = context.async();
         Async creation3Async = context.async();
@@ -1002,4 +1127,5 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         creation3Async.await();
     }
+
 }
