@@ -271,7 +271,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             this.handleSubscribe(subscribeResult);
 
             if (subscribeResult.failed()) {
-                throw new IllegalStateException(subscribeResult.cause());
+                return;
             }
 
             if (shouldAttachSubscriberHandler)

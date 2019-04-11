@@ -91,14 +91,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                         }
                     });
 
-                    try {
-                        this.subscribe(false);
-                    } catch (IllegalArgumentException e) {
-                        httpServerRequest.response().setStatusCode(ErrorCodeEnum.SUBSCRIPTION_EXCLUSIVE.getValue())
-                                .setStatusMessage("Subscription to topics, partitions and pattern are mutually exclusive.")
-                                .end();
-                        sendConsumerSubscriptionResponse(httpServerRequest.response());
-                    }
+                    this.subscribe(false);
                 });
 
                 break;
