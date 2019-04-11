@@ -39,9 +39,7 @@ public class HttpBridge extends AbstractVerticle {
 
     private HttpServer httpServer;
 
-    private Map<HttpConnection, SourceBridgeEndpoint> httpSourceEndpoints;
-
-    protected static Map<String, SinkBridgeEndpoint> httpSinkEndpoints;
+    private HttpBridgeContext httpBridgeContext;
 
     // if the bridge is ready to handle requests
     private boolean isReady = false;
@@ -80,8 +78,7 @@ public class HttpBridge extends AbstractVerticle {
     public void start(Future<Void> startFuture) throws Exception {
 
         log.info("Starting HTTP-Kafka bridge verticle...");
-        this.httpSourceEndpoints = new HashMap<>();
-        this.httpSinkEndpoints = new HashMap<>();
+        this.httpBridgeContext = new HttpBridgeContext();
         this.bindHttpServer(startFuture);
     }
 
@@ -93,23 +90,23 @@ public class HttpBridge extends AbstractVerticle {
         this.isReady = false;
 
         //Consumers cleanup
-        this.httpSinkEndpoints.forEach((consumerId, httpEndpoint) -> {
+        this.httpBridgeContext.getHttpSinkEndpoints().forEach((consumerId, httpEndpoint) -> {
             if (httpEndpoint != null){
                 httpEndpoint.close();
             }
         });
-        this.httpSinkEndpoints.clear();
+        this.httpBridgeContext.getHttpSinkEndpoints().clear();
 
         //prducer cleanup
         // for each connection, we have to close the connection itself but before that
         // all the sink/source endpoints (so the related links inside each of them)
-        this.httpSourceEndpoints.forEach((connection, endpoint) -> {
+        this.httpBridgeContext.getHttpSourceEndpoints().forEach((connection, endpoint) -> {
 
             if (endpoint != null) {
                 endpoint.close();
             }
         });
-        this.httpSourceEndpoints.clear();
+        this.httpBridgeContext.getHttpSourceEndpoints().clear();
 
         if (this.httpServer != null) {
 
@@ -140,15 +137,15 @@ public class HttpBridge extends AbstractVerticle {
 
         switch (requestType){
             case PRODUCE:
-                SourceBridgeEndpoint source = this.httpSourceEndpoints.get(httpServerRequest.connection());
+                SourceBridgeEndpoint source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
 
                 if (source == null) {
                     source = new HttpSourceBridgeEndpoint(this.vertx, this.httpBridgeConfig);
                     source.closeHandler(s -> {
-                        this.httpSourceEndpoints.remove(httpServerRequest.connection());
+                        this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
                     });
                     source.open();
-                    this.httpSourceEndpoints.put(httpServerRequest.connection(), source);
+                    this.httpBridgeContext.getHttpSourceEndpoints().put(httpServerRequest.connection(), source);
                 }
                 source.handle(new HttpEndpoint(httpServerRequest));
 
@@ -156,15 +153,15 @@ public class HttpBridge extends AbstractVerticle {
 
             //create a sink endpoint and initialize consumer
             case CREATE:
-                SinkBridgeEndpoint<?,?> sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig);
+                SinkBridgeEndpoint<?,?> sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext);
                 sink.closeHandler(s -> {
-                    httpSinkEndpoints.remove(sink);
+                    httpBridgeContext.getHttpSinkEndpoints().remove(sink);
                 });
 
                 sink.open();
 
                 sink.handle(new HttpEndpoint(httpServerRequest), consumerId -> {
-                    httpSinkEndpoints.put(consumerId.toString(), sink);
+                    httpBridgeContext.getHttpSinkEndpoints().put(consumerId.toString(), sink);
                 });
 
                 break;
@@ -174,7 +171,7 @@ public class HttpBridge extends AbstractVerticle {
             case OFFSETS:
                 String instanceId = PathParamsExtractor.getConsumerSubscriptionParams(httpServerRequest).get("instance-id");
 
-                final SinkBridgeEndpoint sinkEndpoint = this.httpSinkEndpoints.get(instanceId);
+                final SinkBridgeEndpoint sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(instanceId);
 
                 if (sinkEndpoint != null) {
                     sinkEndpoint.handle(new HttpEndpoint(httpServerRequest));
@@ -189,12 +186,12 @@ public class HttpBridge extends AbstractVerticle {
             case DELETE:
                 String deleteInstanceID = PathParamsExtractor.getConsumerDeletionParams(httpServerRequest).get("instance-id");
 
-                final SinkBridgeEndpoint deleteSinkEndpoint = this.httpSinkEndpoints.get(deleteInstanceID);
+                final SinkBridgeEndpoint deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(deleteInstanceID);
 
                 if (deleteSinkEndpoint != null) {
                     deleteSinkEndpoint.handle(new HttpEndpoint(httpServerRequest));
 
-                    this.httpSinkEndpoints.remove(deleteInstanceID);
+                    this.httpBridgeContext.getHttpSinkEndpoints().remove(deleteInstanceID);
                 } else {
                     httpServerRequest.response()
                             .setStatusCode(ErrorCodeEnum.NOT_FOUND.getValue())
@@ -231,12 +228,12 @@ public class HttpBridge extends AbstractVerticle {
     private void closeConnectionEndpoint(HttpConnection connection) {
 
         // closing connection, but before closing all sink/source endpoints
-        if (this.httpSourceEndpoints.containsKey(connection)) {
-            SourceBridgeEndpoint sourceEndpoint = this.httpSourceEndpoints.get(connection);
+        if (this.httpBridgeContext.getHttpSourceEndpoints().containsKey(connection)) {
+            SourceBridgeEndpoint sourceEndpoint = this.httpBridgeContext.getHttpSourceEndpoints().get(connection);
             if (sourceEndpoint != null) {
                 sourceEndpoint.close();
             }
-            this.httpSourceEndpoints.remove(connection);
+            this.httpBridgeContext.getHttpSourceEndpoints().remove(connection);
         }
     }
 

@@ -47,8 +47,11 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
     private MessageConverter messageConverter;
 
-    HttpSinkBridgeEndpoint(Vertx vertx, HttpBridgeConfig httpBridgeConfigProperties) {
+    private HttpBridgeContext httpBridgeContext;
+
+    HttpSinkBridgeEndpoint(Vertx vertx, HttpBridgeConfig httpBridgeConfigProperties, HttpBridgeContext context) {
         super(vertx, httpBridgeConfigProperties);
+        this.httpBridgeContext = context;
     }
 
     @Override
@@ -185,7 +188,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                     consumerInstanceId = json.getString("name",
                             "kafka-bridge-consumer-" + UUID.randomUUID().toString());
 
-                    if (HttpBridge.httpSinkEndpoints.containsKey(consumerInstanceId)) {
+                    if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(consumerInstanceId)) {
                         httpServerRequest.response().setStatusMessage("Consumer instance with the specified name already exists.")
                                 .setStatusCode(ErrorCodeEnum.CONSUMER_ALREADY_EXISTS.getValue())
                                 .end();
