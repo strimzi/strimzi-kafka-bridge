@@ -54,16 +54,18 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
         // path is like this : /topics/{topic_name}[/partitions/partition_id]
         String topic = params[2];
 
-        if (params.length == 5) {
-            messageConverter = new HttpJsonMessageConverter(Integer.parseInt(params[4]));
-        } else {
-            messageConverter = new HttpJsonMessageConverter();
-        }
+
+        messageConverter = new HttpJsonMessageConverter();
+
 
         httpServerRequest.bodyHandler(buffer -> {
             List<KafkaProducerRecord<String, byte[]>> records;
+            Integer partition = null;
+            if (params.length == 5) {
+                partition = Integer.parseInt(params[4]);
+            }
             try {
-                records = messageConverter.toKafkaRecords(topic, buffer);
+                records = messageConverter.toKafkaRecords(topic, buffer, partition);
             } catch (IllegalStateException e) {
                 httpServerRequest.response().setStatusMessage(e.getMessage())
                         .setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue())

@@ -30,18 +30,8 @@ import java.util.List;
 
 public class HttpJsonMessageConverter implements MessageConverter<String, byte[], Buffer, Buffer> {
 
-    private Integer partition;
-
-    public HttpJsonMessageConverter(int partition) {
-        this.partition = partition;
-    }
-
-    public HttpJsonMessageConverter() {
-        this.partition = null;
-    }
-
     @Override
-    public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Buffer message) {
+    public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Buffer message, Integer partitionFromUrl) {
 
         Object partition = null, key = null;
         byte[] value = null;
@@ -55,12 +45,12 @@ public class HttpJsonMessageConverter implements MessageConverter<String, byte[]
             if (json.containsKey("partition")) {
                 partition = json.getInteger("partition");
             }
-            if (this.partition != null && partition != null) {
+            if (partitionFromUrl != null && partition != null) {
                 // unprocessable
                 throw new IllegalStateException("Partition specified in body and in request path.");
             }
-            if (this.partition != null) {
-                partition = this.partition;
+            if (partitionFromUrl != null) {
+                partition = partitionFromUrl;
             }
             if (json.containsKey("value")) {
                 value = json.getString("value").getBytes();
@@ -73,7 +63,7 @@ public class HttpJsonMessageConverter implements MessageConverter<String, byte[]
     }
 
     @Override
-    public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Buffer messages) {
+    public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Buffer messages, Integer partition) {
 
         List<KafkaProducerRecord<String, byte[]>> records = new ArrayList<>();
 
@@ -82,7 +72,7 @@ public class HttpJsonMessageConverter implements MessageConverter<String, byte[]
 
         for (Object obj : jsonArray) {
             JsonObject jsonObj = (JsonObject) obj;
-            records.add(toKafkaRecord(kafkaTopic, jsonObj.toBuffer()));
+            records.add(toKafkaRecord(kafkaTopic, jsonObj.toBuffer(), partition));
         }
 
         return records;

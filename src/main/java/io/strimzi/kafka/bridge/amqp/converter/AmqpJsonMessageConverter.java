@@ -58,7 +58,7 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
 	public static final String CORRELATION_ID = "correlationId";
 	
 	@Override
-	public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Message message) {
+	public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Message message, Integer partitionFromRequest) {
 		
 		Object partition = null, key = null;
 		byte[] value = null;
@@ -291,7 +291,7 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
 	}
 
 	@Override
-	public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Collection<Message> messages) {
+	public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Collection<Message> messages, Integer partition) {
 		throw new NotImplementedException();
 	}
 }
