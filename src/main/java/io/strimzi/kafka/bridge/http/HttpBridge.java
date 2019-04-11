@@ -179,7 +179,10 @@ public class HttpBridge extends AbstractVerticle {
                 if (sinkEndpoint != null) {
                     sinkEndpoint.handle(new HttpEndpoint(httpServerRequest));
                 } else {
-                    throw new RuntimeException("no consumer instance found with this id");
+                    httpServerRequest.response()
+                            .setStatusCode(ErrorCodeEnum.CONSUMER_NOT_FOUND.getValue())
+                            .setStatusMessage("Consumer instance not found")
+                            .end();
                 }
                 break;
 
