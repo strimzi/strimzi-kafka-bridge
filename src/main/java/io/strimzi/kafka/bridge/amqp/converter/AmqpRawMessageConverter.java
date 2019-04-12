@@ -44,7 +44,7 @@ public class AmqpRawMessageConverter implements MessageConverter<String, byte[],
 	private static final int BUFFER_SIZE = 32768;
 	
 	@Override
-	public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Message message, Integer partitionFromRequest) {
+	public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Integer partitionFromRequest, Message message) {
 		
 		Object partition = null, key = null;
 		byte[] value;
@@ -106,7 +106,7 @@ public class AmqpRawMessageConverter implements MessageConverter<String, byte[],
 	}
 
 	@Override
-	public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Collection<Message> messages, Integer partition) {
+	public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Integer partition, Collection<Message> messages) {
 		throw new NotImplementedException();
 	}
 }

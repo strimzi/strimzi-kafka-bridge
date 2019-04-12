@@ -44,7 +44,7 @@ import java.util.Map;
 public class AmqpDefaultMessageConverter implements MessageConverter<String, byte[], Message, Collection<Message>> {
 
 	@Override
-	public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Message message, Integer partitionFromRequest) {
+	public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Integer partitionFromRequest, Message message) {
 		
 		Object partition = null, key = null;
 		byte[] value = null;
@@ -139,7 +139,7 @@ public class AmqpDefaultMessageConverter implements MessageConverter<String, byt
 	}
 
 	@Override
-	public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Collection<Message> messages, Integer partition) {
+	public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Integer partition, Collection<Message> messages) {
 		throw new NotImplementedException();
 	}
 }

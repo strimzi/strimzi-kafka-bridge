@@ -31,7 +31,7 @@ import java.util.List;
 public class HttpJsonMessageConverter implements MessageConverter<String, byte[], Buffer, Buffer> {
 
     @Override
-    public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Buffer message, Integer partitionFromUrl) {
+    public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Integer partitionFromUrl, Buffer message) {
 
         Object partition = null, key = null;
         byte[] value = null;
@@ -63,7 +63,7 @@ public class HttpJsonMessageConverter implements MessageConverter<String, byte[]
     }
 
     @Override
-    public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Buffer messages, Integer partition) {
+    public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Integer partition, Buffer messages) {
 
         List<KafkaProducerRecord<String, byte[]>> records = new ArrayList<>();
 
@@ -72,7 +72,7 @@ public class HttpJsonMessageConverter implements MessageConverter<String, byte[]
 
         for (Object obj : jsonArray) {
             JsonObject jsonObj = (JsonObject) obj;
-            records.add(toKafkaRecord(kafkaTopic, jsonObj.toBuffer(), partition));
+            records.add(toKafkaRecord(kafkaTopic, partition, jsonObj.toBuffer()));
         }
 
         return records;

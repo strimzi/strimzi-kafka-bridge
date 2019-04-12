@@ -462,12 +462,12 @@ public class AmqpSinkBridgeEndpointMockTest {
 		}
 
 		@Override
-		public KafkaProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message, Integer partition) {
+		public KafkaProducerRecord<K, V> toKafkaRecord(String kafkaTopic, Integer partition, M message) {
 			return null;
 		}
 
 		@Override
-		public List<KafkaProducerRecord<K, V>>toKafkaRecords(String kafkaTopic, C messages, Integer partition) {
+		public List<KafkaProducerRecord<K, V>>toKafkaRecords(String kafkaTopic, Integer partition, C messages) {
 			return null;
 		}
 
@@ -504,12 +504,12 @@ public class AmqpSinkBridgeEndpointMockTest {
 		}
 
 		@Override
-		public KafkaProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message, Integer partition) {
+		public KafkaProducerRecord<K, V> toKafkaRecord(String kafkaTopic, Integer partition, M message) {
 			return null;
 		}
 
 		@Override
-		public List<KafkaProducerRecord<K, V>> toKafkaRecords(String kafkaTopic, C messages, Integer partition) {
+		public List<KafkaProducerRecord<K, V>> toKafkaRecords(String kafkaTopic, Integer partition, C messages) {
 			return null;
 		}
 

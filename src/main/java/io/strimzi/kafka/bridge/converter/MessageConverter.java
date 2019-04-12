@@ -31,21 +31,21 @@ public interface MessageConverter<K, V, M, C> {
 	 * Converts a message to a Kafka record
 	 *
 	 * @param kafkaTopic Kafka topic for sending message
+	 * @param partition partition of topic where the messages are sent when partition is specified in the request
 	 * @param message message to convert
-	 * @param partition partition of topic where the messages are sent when partition is specified in the URL
 	 * @return Kafka record
 	 */
-	KafkaProducerRecord<K, V> toKafkaRecord(String kafkaTopic, M message, Integer partition);
+	KafkaProducerRecord<K, V> toKafkaRecord(String kafkaTopic, Integer partition, M message);
 
 	/**
 	 * Convert a collection of messages to Kafka records
 	 *
 	 * @param kafkaTopic Kafka topic for sending message
+	 * @param partition partition of topic where the messages are sent when partition is specified in the request
 	 * @param messages collection of messages to convert
-	 * @param partition partition of topic where the messages are sent when partition is specified in the URL
 	 * @return Kafka records
 	 */
-	List<KafkaProducerRecord<K, V>> toKafkaRecords(String kafkaTopic, C messages, Integer partition);
+	List<KafkaProducerRecord<K, V>> toKafkaRecords(String kafkaTopic, Integer partition, C messages);
 	
 	/**
 	 * Converts a Kafka record to a message

@@ -65,7 +65,7 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
                 partition = Integer.parseInt(params[4]);
             }
             try {
-                records = messageConverter.toKafkaRecords(topic, buffer, partition);
+                records = messageConverter.toKafkaRecords(topic, partition, buffer);
             } catch (IllegalStateException e) {
                 httpServerRequest.response().setStatusMessage(e.getMessage())
                         .setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue())
