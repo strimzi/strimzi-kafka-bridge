@@ -24,15 +24,25 @@ import io.vertx.core.http.HttpConnection;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Context class which is used for storing endpoints.
+ * Using context in lower-level classes for better state determination.
+ */
 public class HttpBridgeContext {
     private Map<String, SinkBridgeEndpoint> httpSinkEndpoints = new HashMap<>();
     private Map<HttpConnection, SourceBridgeEndpoint> httpSourceEndpoints = new HashMap<>();
 
 
+    /**
+     * @return map of sink endpoints
+     */
     public Map<String, SinkBridgeEndpoint> getHttpSinkEndpoints() {
         return this.httpSinkEndpoints;
     }
 
+    /**
+     * @return map of source endpoints
+     */
     public Map<HttpConnection, SourceBridgeEndpoint> getHttpSourceEndpoints() {
         return this.httpSourceEndpoints;
     }
