@@ -31,9 +31,9 @@ import java.util.List;
 public class HttpJsonMessageConverter implements MessageConverter<String, byte[], Buffer, Buffer> {
 
     @Override
-    public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Integer partitionFromUrl, Buffer message) {
+    public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Integer partition, Buffer message) {
 
-        Object partition = null, key = null;
+        Object partitionFromBody = null, key = null;
         byte[] value = null;
 
         JsonObject json = message.toJsonObject();
@@ -43,21 +43,21 @@ public class HttpJsonMessageConverter implements MessageConverter<String, byte[]
                 key = json.getString("key");
             }
             if (json.containsKey("partition")) {
-                partition = json.getInteger("partition");
+                partitionFromBody = json.getInteger("partition");
             }
-            if (partitionFromUrl != null && partition != null) {
+            if (partition != null && partitionFromBody != null) {
                 // unprocessable
                 throw new IllegalStateException("Partition specified in body and in request path.");
             }
-            if (partitionFromUrl != null) {
-                partition = partitionFromUrl;
+            if (partition != null) {
+                partitionFromBody = partition;
             }
             if (json.containsKey("value")) {
                 value = json.getString("value").getBytes();
             }
         }
 
-        KafkaProducerRecord<String, byte[]> record = KafkaProducerRecord.create(kafkaTopic,(String) key, value, (Integer) partition);
+        KafkaProducerRecord<String, byte[]> record = KafkaProducerRecord.create(kafkaTopic,(String) key, value, (Integer) partitionFromBody);
 
         return record;
     }
