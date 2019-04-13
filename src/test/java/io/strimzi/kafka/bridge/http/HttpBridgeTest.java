@@ -898,14 +898,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     @Test
     public void subscriptionConsumerDoesNotExist(TestContext context) {
         String topic = "subscriptionConsumerDoesNotExist";
-        kafkaCluster.createTopic(topic, 1, 1);
-
-        String sentBody = "Simple message";
-
-        Async send = context.async();
-        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
-                new ProducerRecord<>(topic, 0, null, sentBody));
-        send.await();
 
         WebClient client = WebClient.create(vertx);
 
@@ -942,16 +934,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
     @Test
     public void consumerAlreadyExistsTest(TestContext context) {
-        String topic = "consumerAlreadyExistsTest";
-        kafkaCluster.createTopic(topic, 1, 1);
-
-        String sentBody = "Simple message";
-
-        Async send = context.async();
-        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
-                new ProducerRecord<>(topic, 0, null, sentBody));
-        send.await();
-
         Async creationAsync = context.async();
         Async creation2Async = context.async();
         Async creation3Async = context.async();
