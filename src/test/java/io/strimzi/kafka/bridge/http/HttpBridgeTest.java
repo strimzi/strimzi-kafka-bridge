@@ -939,4 +939,85 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 });
         subscriberAsync.await();
     }
+
+    @Test
+    public void consumerAlreadyExistsTest(TestContext context) {
+        String topic = "consumerAlreadyExistsTest";
+        kafkaCluster.createTopic(topic, 1, 1);
+
+        String sentBody = "Simple message";
+
+        Async send = context.async();
+        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
+                new ProducerRecord<>(topic, 0, null, sentBody));
+        send.await();
+
+        Async creationAsync = context.async();
+        Async creation2Async = context.async();
+        Async creation3Async = context.async();
+
+        WebClient client = WebClient.create(vertx);
+
+        String name = "my-kafka-consumer4";
+        String groupId = "my-group";
+
+        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String consumerInstanceId = bridgeResponse.getString("instance_id");
+                    String consumerBaseUri = bridgeResponse.getString("base_uri");
+                    context.assertEquals(name, consumerInstanceId);
+                    context.assertEquals(baseUri, consumerBaseUri);
+                    creationAsync.complete();
+                });
+
+        creationAsync.await();
+
+        // create the same consumer again
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    context.assertEquals(response.statusCode(), ErrorCodeEnum.CONSUMER_ALREADY_EXISTS.getValue());
+                    context.assertEquals(response.statusMessage(), "Consumer instance with the specified name already exists.");
+
+                    creation2Async.complete();
+                });
+
+        creation2Async.await();
+
+        // create another consumer
+
+        json.put("name", name + "diff");
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String consumerInstanceId = bridgeResponse.getString("instance_id");
+                    String consumerBaseUri = bridgeResponse.getString("base_uri");
+                    context.assertEquals(name + "diff", consumerInstanceId);
+                    context.assertEquals(baseUri + "diff", consumerBaseUri);
+
+                    creation3Async.complete();
+                });
+
+        creation3Async.await();
+    }
 }
