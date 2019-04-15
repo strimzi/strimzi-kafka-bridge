@@ -43,5 +43,7 @@ public enum RequestType {
     DELETE,
 
     //empty request
-    EMPTY
+    EMPTY,
+
+    UNPROCESSABLE
 }

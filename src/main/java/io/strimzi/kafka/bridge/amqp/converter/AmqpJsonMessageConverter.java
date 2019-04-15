@@ -58,9 +58,9 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
 	public static final String CORRELATION_ID = "correlationId";
 	
 	@Override
-	public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Message message) {
+	public KafkaProducerRecord<String, byte[]> toKafkaRecord(String kafkaTopic, Integer partition, Message message) {
 		
-		Object partition = null, key = null;
+		Object partitionFromMessage = null, key = null;
 		byte[] value = null;
 		
 		// root JSON
@@ -101,10 +101,10 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
 		
 		if (messageAnnotations != null) {
 			
-			partition = messageAnnotations.getValue().get(Symbol.getSymbol(AmqpBridge.AMQP_PARTITION_ANNOTATION));
+			partitionFromMessage = messageAnnotations.getValue().get(Symbol.getSymbol(AmqpBridge.AMQP_PARTITION_ANNOTATION));
 			key = messageAnnotations.getValue().get(Symbol.getSymbol(AmqpBridge.AMQP_KEY_ANNOTATION));
 			
-			if (partition != null && !(partition instanceof Integer))
+			if (partitionFromMessage != null && !(partitionFromMessage instanceof Integer))
 				throw new IllegalArgumentException("The partition annotation must be an Integer");
 			
 			if (key != null && !(key instanceof String))
@@ -176,7 +176,7 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
 		}
 		
 		// build the record for the KafkaProducer and then send it
-                KafkaProducerRecord<String, byte[]> record = KafkaProducerRecord.create(topic, (String)key, json.toString().getBytes(),(Integer) partition);
+                KafkaProducerRecord<String, byte[]> record = KafkaProducerRecord.create(topic, (String)key, json.toString().getBytes(),(Integer) partitionFromMessage);
 		return record;
 	}
 
@@ -291,7 +291,7 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
 	}
 
 	@Override
-	public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Collection<Message> messages) {
+	public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Integer partition, Collection<Message> messages) {
 		throw new NotImplementedException();
 	}
 }

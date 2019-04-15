@@ -152,6 +152,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
             case INVALID:
                 log.info("invalid request");
+                break;
         }
 
     }
