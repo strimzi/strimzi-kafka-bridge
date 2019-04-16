@@ -39,6 +39,8 @@ public class Application {
         HttpBridgeConfig httpBridgeConfig = HttpBridgeConfig.fromMap(System.getenv());
         HttpBridge httpBridge = new HttpBridge(httpBridgeConfig);
 
+        SwaggerVerticle swaggerVerticle = new SwaggerVerticle();
+
         vertx.deployVerticle(amqpBridge, done -> {
             if (done.succeeded()) {
                 log.debug("AMQP verticle instance deployed [{}]", done.result());
@@ -52,6 +54,14 @@ public class Application {
                 log.debug("HTTP verticle instance deployed [{}]", done.result());
             } else {
                 log.debug("Failed to deploy HTTP verticle instance", done.cause());
+            }
+        });
+
+        vertx.deployVerticle(swaggerVerticle, done -> {
+            if (done.succeeded()) {
+                log.debug("Swagger verticle deployed");
+            } else {
+                log.debug("Failed to deploy Swagger verticle {}", done.cause().getMessage());
             }
         });
     }
