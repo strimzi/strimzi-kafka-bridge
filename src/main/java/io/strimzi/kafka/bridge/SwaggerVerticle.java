@@ -141,14 +141,7 @@ public class SwaggerVerticle extends AbstractVerticle {
         router.post("/consumers/:group_name/instances/:instance/positions/end").handler(endPoints::seekLastOffset);
 
 
-        router.get("/topics").handler(endPoints::listTopics);
-        router.get("/topics/:topic_name").handler(endPoints::getTopicMetadata);
-        router.get("/topics/:topic_name/partitions").handler(endPoints::getTopicPartitions);
-        router.get("/topics/:topic_name/partitions/:partition_id").handler(endPoints::getTopicPartition);
-
         router.get("/consumers/:group_name/instances/:instance/offsets").handler(endPoints::lastOffsets);
-        router.get("/consumers/:group_name/instances/:instance/subscription").handler(endPoints::subscribedTopics);
-        router.get("/consumers/:group_name/instances/:instance/assignments").handler(endPoints::manuallyAssignedPartitions);
         router.get("/consumers/:group_name/instances/:instance/records").handler(endPoints::fetchData);
 
         router.delete("/consumers/:group_name/instances/:instance").handler(endPoints::destroyConsumer);
