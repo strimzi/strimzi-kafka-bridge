@@ -1130,16 +1130,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
     @Test
     public void recordsConsumerDoesNotExist(TestContext context) {
-        String topic = "recordsConsumerDoesNotExist";
-        kafkaCluster.createTopic(topic, 1, 1);
-
-        String sentBody = "Simple message";
-
-        Async send = context.async();
-        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
-                new ProducerRecord<>(topic, 0, null, sentBody));
-        send.await();
-
         WebClient client = WebClient.create(vertx);
 
         String name = "my-kafka-consumer";
@@ -1147,14 +1137,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
 
-        JsonObject json = new JsonObject();
-        json.put("name", name);
-
-        // subscribe to a topic
-        Async subscriberAsync = context.async();
-
-        JsonObject subJson = new JsonObject();
-        subJson.put("topic", topic);
+        // consume records
+        Async consumeAsync = context.async();
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
                 .putHeader("timeout", String.valueOf(1000))
@@ -1166,22 +1150,12 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertEquals("Consumer instance not found", response.statusMessage());
                     context.assertEquals(ErrorCodeEnum.CONSUMER_NOT_FOUND.getValue(), response.statusCode());
 
-                    subscriberAsync.complete();
+                    consumeAsync.complete();
                 });
     }
 
     @Test
     public void offsetsConsumerDoesNotExist(TestContext context) {
-        String topic = "offsetsConsumerDoesNotExist";
-        kafkaCluster.createTopic(topic, 1, 1);
-
-        String sentBody = "Simple message";
-
-        Async send = context.async();
-        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
-                new ProducerRecord<>(topic, 0, null, sentBody));
-        send.await();
-
         WebClient client = WebClient.create(vertx);
 
         String name = "my-kafka-consumer";
@@ -1189,19 +1163,23 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
 
+        // commit offsets
+        Async commitAsync = context.async();
+
+        JsonArray offsets = new JsonArray();
         JsonObject json = new JsonObject();
-        json.put("name", name);
+        json.put("topic", "offsetsConsumerDoesNotExist");
+        json.put("partition", 0);
+        json.put("offset", 10);
+        offsets.add(json);
 
-        // subscribe to a topic
-        Async subscriberAsync = context.async();
-
-        JsonObject subJson = new JsonObject();
-        subJson.put("topic", topic);
+        JsonObject root = new JsonObject();
+        root.put("offsets", offsets);
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/offsets")
-                .putHeader("Content-length", String.valueOf(subJson.toBuffer().length()))
+                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(subJson, ar -> {
+                .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
@@ -1210,8 +1188,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     String status = response.statusMessage();
                     context.assertEquals(ErrorCodeEnum.CONSUMER_NOT_FOUND.getValue(), code);
                     context.assertEquals("Consumer instance not found", status);
-                    subscriberAsync.complete();
+                    commitAsync.complete();
                 });
-        subscriberAsync.await();
     }
 }
