@@ -1128,4 +1128,45 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         creation3Async.await();
     }
 
+    @Test
+    public void recordsConsumerDoesNotExist(TestContext context) {
+        String topic = "recordsConsumerDoesNotExist";
+        kafkaCluster.createTopic(topic, 1, 1);
+
+        String sentBody = "Simple message";
+
+        Async send = context.async();
+        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
+                new ProducerRecord<>(topic, 0, null, sentBody));
+        send.await();
+
+        WebClient client = WebClient.create(vertx);
+
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+
+        // subscribe to a topic
+        Async subscriberAsync = context.async();
+
+        JsonObject subJson = new JsonObject();
+        subJson.put("topic", topic);
+
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
+                .putHeader("timeout", String.valueOf(1000))
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonArray> response = ar.result();
+                    context.assertEquals("Consumer instance not found", response.statusMessage());
+                    context.assertEquals(ErrorCodeEnum.CONSUMER_NOT_FOUND.getValue(), response.statusCode());
+
+                    subscriberAsync.complete();
+                });
+    }
 }
