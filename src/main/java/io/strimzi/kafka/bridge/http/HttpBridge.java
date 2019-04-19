@@ -21,11 +21,11 @@ import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.*;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Main bridge class listening for connections
@@ -44,6 +44,8 @@ public class HttpBridge extends AbstractVerticle {
     // if the bridge is ready to handle requests
     private boolean isReady = false;
 
+    private Router router;
+
     /**
      * Constructor
      *
@@ -58,7 +60,7 @@ public class HttpBridge extends AbstractVerticle {
 
         this.httpServer = this.vertx.createHttpServer(httpServerOptions)
                 .connectionHandler(this::processConnection)
-                .requestHandler(this::processRequests)
+                .requestHandler(this.router)
                 .listen(httpServerAsyncResult -> {
                     if (httpServerAsyncResult.succeeded()) {
                         log.info("HTTP-Kafka Bridge started and listening on port {}", httpServerAsyncResult.result().actualPort());
@@ -77,9 +79,41 @@ public class HttpBridge extends AbstractVerticle {
     @Override
     public void start(Future<Void> startFuture) throws Exception {
 
-        log.info("Starting HTTP-Kafka bridge verticle...");
-        this.httpBridgeContext = new HttpBridgeContext();
-        this.bindHttpServer(startFuture);
+        OpenAPI3RouterFactory.create(vertx, "src/main/resources/openapi.json", ar -> {
+            if (ar.succeeded()) {
+                OpenAPI3RouterFactory routerFactory = ar.result();
+                routerFactory.addHandlerByOperationId("writeToTopic", this::processRequests);
+                routerFactory.addHandlerByOperationId("writeToTopicPartition", this::processRequests);
+                routerFactory.addHandlerByOperationId("createConsumer", this::processRequests);
+                routerFactory.addHandlerByOperationId("deleteConsumer", this::processRequests);
+                routerFactory.addHandlerByOperationId("subscribe", this::processRequests);
+                routerFactory.addHandlerByOperationId("unsubscribe", this::processRequests);
+                routerFactory.addHandlerByOperationId("getRecords", this::processRequests);
+                routerFactory.addHandlerByOperationId("commit", this::processRequests);
+                routerFactory.addHandlerByOperationId("seek", this::processRequests);
+                routerFactory.addHandlerByOperationId("seekBeginning", this::processRequests);
+                routerFactory.addHandlerByOperationId("seekEnd", this::processRequests);
+
+                routerFactory.addFailureHandlerByOperationId("writeToTopic", this::processRequests);
+                routerFactory.addFailureHandlerByOperationId("writeToTopicPartition", this::processRequests);
+
+                this.router = routerFactory.getRouter();
+
+                this.router.errorHandler(404, r -> {
+                    r.response()
+                            .setStatusCode(ErrorCodeEnum.BAD_REQUEST.getValue())
+                            .setStatusMessage("Invalid request")
+                            .end();
+                });
+
+                log.info("Starting HTTP-Kafka bridge verticle...");
+                this.httpBridgeContext = new HttpBridgeContext();
+                this.bindHttpServer(startFuture);
+            } else {
+                log.error("Failed to create OpenAPI router factory");
+                startFuture.fail(ar.cause());
+            }
+        });
     }
 
     @Override
@@ -130,10 +164,12 @@ public class HttpBridge extends AbstractVerticle {
         return httpServerOptions;
     }
 
-    private void processRequests(HttpServerRequest httpServerRequest) {
+    private void processRequests(RoutingContext routingContext) {
+        HttpServerRequest httpServerRequest = routingContext.request();
+
         log.info("request method is {} and request path is {}", httpServerRequest.method(), httpServerRequest.path());
 
-        RequestType requestType = RequestIdentifier.getRequestType(httpServerRequest);
+        RequestType requestType = RequestIdentifier.getRequestType(routingContext);
 
         switch (requestType){
             case PRODUCE:
@@ -147,7 +183,7 @@ public class HttpBridge extends AbstractVerticle {
                     source.open();
                     this.httpBridgeContext.getHttpSourceEndpoints().put(httpServerRequest.connection(), source);
                 }
-                source.handle(new HttpEndpoint(httpServerRequest));
+                source.handle(new HttpEndpoint(routingContext));
 
                 break;
 
@@ -160,7 +196,7 @@ public class HttpBridge extends AbstractVerticle {
 
                 sink.open();
 
-                sink.handle(new HttpEndpoint(httpServerRequest), consumerId -> {
+                sink.handle(new HttpEndpoint(routingContext), consumerId -> {
                     httpBridgeContext.getHttpSinkEndpoints().put(consumerId.toString(), sink);
                 });
 
@@ -169,12 +205,12 @@ public class HttpBridge extends AbstractVerticle {
             case SUBSCRIBE:
             case CONSUME:
             case OFFSETS:
-                String instanceId = PathParamsExtractor.getConsumerSubscriptionParams(httpServerRequest).get("instance-id");
+                String instanceId = routingContext.pathParam("name");
 
                 final SinkBridgeEndpoint sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(instanceId);
 
                 if (sinkEndpoint != null) {
-                    sinkEndpoint.handle(new HttpEndpoint(httpServerRequest));
+                    sinkEndpoint.handle(new HttpEndpoint(routingContext));
                 } else {
                     httpServerRequest.response()
                             .setStatusCode(ErrorCodeEnum.CONSUMER_NOT_FOUND.getValue())
@@ -184,12 +220,12 @@ public class HttpBridge extends AbstractVerticle {
                 break;
 
             case DELETE:
-                String deleteInstanceID = PathParamsExtractor.getConsumerDeletionParams(httpServerRequest).get("instance-id");
+                String deleteInstanceID = routingContext.pathParam("name");
 
                 final SinkBridgeEndpoint deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(deleteInstanceID);
 
                 if (deleteSinkEndpoint != null) {
-                    deleteSinkEndpoint.handle(new HttpEndpoint(httpServerRequest));
+                    deleteSinkEndpoint.handle(new HttpEndpoint(routingContext));
 
                     this.httpBridgeContext.getHttpSinkEndpoints().remove(deleteInstanceID);
                 } else {
@@ -198,12 +234,6 @@ public class HttpBridge extends AbstractVerticle {
                             .setStatusMessage("Endpoint not found")
                             .end();
                 }
-                break;
-            case EMPTY:
-                httpServerRequest.response()
-                        .setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue())
-                        .setStatusMessage("The request cannot have empty payload")
-                        .end();
                 break;
             case INVALID:
                 httpServerRequest.response()

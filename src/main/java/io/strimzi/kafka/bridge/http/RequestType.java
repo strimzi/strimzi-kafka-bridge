@@ -42,8 +42,5 @@ public enum RequestType {
     //Delete consumer
     DELETE,
 
-    //empty request
-    EMPTY,
-
     UNPROCESSABLE
 }

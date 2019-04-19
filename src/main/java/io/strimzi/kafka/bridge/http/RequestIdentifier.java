@@ -17,25 +17,21 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * This class contains utility functions which identifies the RequestType based on several factors
  */
 public class RequestIdentifier {
 
-    static RequestType getRequestType(HttpServerRequest request){
+    static RequestType getRequestType(RoutingContext routingContext){
 
-        final HttpMethod method =  request.method();
-
-        final String requestPath =  request.path();
+        final HttpMethod method =  routingContext.request().method();
 
         //request path always starts with "/" which is not required in path parameters
-        String [] params = requestPath.substring(1).split("/");
+        String [] params = routingContext.normalisedPath().substring(1).split("/");
 
         switch (params[0]){
-            case "":
-                return RequestType.EMPTY;
             case "topics":
                 //produce records
                 //request type = POST

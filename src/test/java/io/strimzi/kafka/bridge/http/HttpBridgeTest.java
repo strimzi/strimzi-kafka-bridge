@@ -783,15 +783,24 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
     @Test
     public void emptyRecordTest(TestContext context) {
+        String topic = "emptyRecordTest";
+        kafkaCluster.createTopic(topic, 1, 1);
+
         Async async = context.async();
+
+        JsonObject root = new JsonObject();
+
         WebClient client = WebClient.create(vertx);
 
-        client.get(BRIDGE_PORT, BRIDGE_HOST, "").send(ar -> {
-            context.assertTrue(ar.succeeded());
-            context.assertEquals(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), ar.result().statusCode());
-            context.assertEquals("The request cannot have empty payload", ar.result().statusMessage());
-            async.complete();
-        });
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
+                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(root, ar -> {
+                    context.assertTrue(ar.succeeded());
+                    context.assertEquals(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), ar.result().statusCode());
+                    context.assertEquals("Unprocessable request.", ar.result().statusMessage());
+                    async.complete();
+                });
     }
 
     @Test
@@ -1041,7 +1050,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals("Partition specified in body and in request path.", response.statusMessage());
+                    context.assertEquals("Unprocessable request.", response.statusMessage());
                     context.assertEquals(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), response.statusCode());
                     async.complete();
                 });

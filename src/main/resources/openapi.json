@@ -1,0 +1,286 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "HTTP Kafka bridge",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/topics/{topicname}": {
+      "post": {
+        "description": "Write to topic",
+        "operationId": "writeToTopic",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "topicname",
+          "in": "path",
+          "description": "Topic name",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/topics/{topicname}/partitions/{partitionid}": {
+      "post": {
+        "operationId": "writeToTopicPartition",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "topicname",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "partitionid",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "/consumers/{groupid}": {
+      "post": {
+        "operationId": "createConsumer",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}": {
+      "delete": {
+        "operationId": "deleteConsumer",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}/subscription": {
+      "post": {
+        "operationId": "subscribe",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "unsubscribe",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}/records": {
+      "get": {
+        "operationId": "getRecords",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}/offsets": {
+      "post": {
+        "operationId": "commit",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}/partitions": {
+      "post": {
+        "operationId": "seek",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}/partitions/beginning": {
+      "post": {
+        "operationId": "seekBeginning",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}/partitions/end": {
+      "post": {
+        "operationId": "seekEnd",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -46,6 +46,7 @@ public class HttpJsonMessageConverter implements MessageConverter<String, byte[]
             }
             if (partition != null && partitionFromBody != null) {
                 // unprocessable
+                // TODO: check this one because the message of the catched exception is not used anymore
                 throw new IllegalStateException("Partition specified in body and in request path.");
             }
             if (partition != null) {

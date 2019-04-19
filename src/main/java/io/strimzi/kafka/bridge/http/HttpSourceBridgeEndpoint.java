@@ -26,10 +26,10 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import io.vertx.kafka.client.producer.RecordMetadata;
 
@@ -45,11 +45,11 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
     @Override
     public void handle(Endpoint<?> endpoint) {
-        HttpServerRequest httpServerRequest = (HttpServerRequest) endpoint.get();
+        RoutingContext routingContext = (RoutingContext) endpoint.get();
 
 
         // split path to extract params
-        String[] params = httpServerRequest.path().split("/");
+        String[] params = routingContext.request().path().split("/");
 
         // path is like this : /topics/{topic_name}[/partitions/partition_id]
         String topic = params[2];
@@ -57,51 +57,48 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
         messageConverter = new HttpJsonMessageConverter();
 
+        List<KafkaProducerRecord<String, byte[]>> records;
+        Integer partition = null;
+        if (params.length == 5) {
+            partition = Integer.parseInt(params[4]);
+        }
+        try {
+            records = messageConverter.toKafkaRecords(topic, partition, routingContext.getBody());
+        } catch (Exception e) {
+            routingContext.response().setStatusMessage("Unprocessable request.")
+                    .setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue())
+                    .end();
+            return;
+        }
+        List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
 
-        httpServerRequest.bodyHandler(buffer -> {
-            List<KafkaProducerRecord<String, byte[]>> records;
-            Integer partition = null;
-            if (params.length == 5) {
-                partition = Integer.parseInt(params[4]);
-            }
-            try {
-                records = messageConverter.toKafkaRecords(topic, partition, buffer);
-            } catch (IllegalStateException e) {
-                httpServerRequest.response().setStatusMessage(e.getMessage())
-                        .setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue())
-                        .end();
-                return;
-            }
-            List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
+        // start sending records asynchronously
+        List<Future> sendHandlers = new ArrayList<>(records.size());
+        for (KafkaProducerRecord<String, byte[]> record : records) {
+            Future<RecordMetadata> fut = Future.future();
+            sendHandlers.add(fut);
+            this.send(record, fut.completer());
+        }
 
-            // start sending records asynchronously
-            List<Future> sendHandlers = new ArrayList<>(records.size());
-            for (KafkaProducerRecord<String, byte[]> record : records) {
-                Future<RecordMetadata> fut = Future.future();
-                sendHandlers.add(fut);
-                this.send(record, fut.completer());
-            }
+        // wait for ALL futures completed
+        List<KafkaProducerRecord<String, byte[]>> finalRecords = records;
+        CompositeFuture.join(sendHandlers).setHandler(done -> {
 
-            // wait for ALL futures completed
-            List<KafkaProducerRecord<String, byte[]>> finalRecords = records;
-            CompositeFuture.join(sendHandlers).setHandler(done -> {
-
-                for (int i = 0; i < sendHandlers.size(); i++) {
-                    // check if, for each future, the sending operation is completed successfully or failed
-                    if (done.result() != null && done.result().succeeded(i)) {
-                        RecordMetadata metadata = done.result().resultAt(i);
-                        log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", finalRecords.get(i), metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
-                        results.add(new HttpBridgeResult<>(metadata));
-                    } else {
-                        String msg = done.cause().getMessage();
-                        int code = getCodeFromMsg(msg);
-                        log.error("Failed to deliver record " + finalRecords.get(i) + " due to {}", done.cause());
-                        // TODO: error codes definition
-                        results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
-                    }
+            for (int i = 0; i < sendHandlers.size(); i++) {
+                // check if, for each future, the sending operation is completed successfully or failed
+                if (done.result() != null && done.result().succeeded(i)) {
+                    RecordMetadata metadata = done.result().resultAt(i);
+                    log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", finalRecords.get(i), metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
+                    results.add(new HttpBridgeResult<>(metadata));
+                } else {
+                    String msg = done.cause().getMessage();
+                    int code = getCodeFromMsg(msg);
+                    log.error("Failed to deliver record " + finalRecords.get(i) + " due to {}", done.cause());
+                    // TODO: error codes definition
+                    results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                 }
-                sendMetadataResponse(results, httpServerRequest.response());
-            });
+            }
+            sendMetadataResponse(results, routingContext.response());
         });
     }
 
