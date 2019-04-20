@@ -17,30 +17,31 @@
 package io.strimzi.kafka.bridge.http;
 
 /**
- * This enum contains types of requests which maps to operations on kafka
+ * OpenAPI operations ids
  */
-public enum RequestType {
+public enum HttpOpenApiOperations {
 
-    //produce records
-    PRODUCE,
+    SEND("send"),
+    SEND_TO_PARTITION("sendToPartition"),
+    CREATE_CONSUMER("createConsumer"),
+    DELETE_CONSUMER("deleteConsumer"),
+    SUBSCRIBE("subscribe"),
+    UNSUBSCRIBE("unsubscribe"),
+    POLL("poll"),
+    COMMIT("commit"),
+    SEEK("seek"),
+    SEEK_TO_BEGINNING("seekToBeginning"),
+    SEEK_TO_END("seekToEnd");
 
-    //consumer creation
-    CREATE,
+    private final String text;
 
-    //subscribe to topic
-    SUBSCRIBE,
+    HttpOpenApiOperations(final String text) {
+        this.text = text;
+    }
 
-    //consume records
-    CONSUME,
+    @Override
+    public String toString() {
+        return text;
+    }
 
-    //commit offsets
-    OFFSETS,
-
-    //invalid request
-    INVALID,
-
-    //Delete consumer
-    DELETE,
-
-    UNPROCESSABLE
 }

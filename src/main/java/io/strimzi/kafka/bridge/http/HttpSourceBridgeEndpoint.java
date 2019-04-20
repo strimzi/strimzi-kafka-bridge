@@ -37,10 +37,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
+
     private MessageConverter messageConverter;
 
-    public HttpSourceBridgeEndpoint(Vertx vertx, HttpBridgeConfig bridgeConfigProperties) {
+    private HttpBridgeContext httpBridgeContext;
+
+    public HttpSourceBridgeEndpoint(Vertx vertx, HttpBridgeConfig bridgeConfigProperties, HttpBridgeContext httpBridgeContext) {
         super(vertx, bridgeConfigProperties);
+        this.httpBridgeContext = httpBridgeContext;
     }
 
     @Override

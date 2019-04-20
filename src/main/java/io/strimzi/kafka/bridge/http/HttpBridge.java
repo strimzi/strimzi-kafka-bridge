@@ -82,20 +82,20 @@ public class HttpBridge extends AbstractVerticle {
         OpenAPI3RouterFactory.create(vertx, "src/main/resources/openapi.json", ar -> {
             if (ar.succeeded()) {
                 OpenAPI3RouterFactory routerFactory = ar.result();
-                routerFactory.addHandlerByOperationId("send", this::send);
-                routerFactory.addHandlerByOperationId("sendToPartition", this::send);
-                routerFactory.addHandlerByOperationId("createConsumer", this::createConsumer);
-                routerFactory.addHandlerByOperationId("deleteConsumer", this::deleteConsumer);
-                routerFactory.addHandlerByOperationId("subscribe", this::processConsumer);
-                routerFactory.addHandlerByOperationId("unsubscribe", this::processConsumer);
-                routerFactory.addHandlerByOperationId("poll", this::processConsumer);
-                routerFactory.addHandlerByOperationId("commit", this::processConsumer);
-                routerFactory.addHandlerByOperationId("seek", this::seek);
-                routerFactory.addHandlerByOperationId("seekToBeginning", this::seekToBeginning);
-                routerFactory.addHandlerByOperationId("seekToEnd", this::seekToEnd);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEND.toString(), this::send);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEND_TO_PARTITION.toString(), this::sendToPartition);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.CREATE_CONSUMER.toString(), this::createConsumer);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.DELETE_CONSUMER.toString(), this::deleteConsumer);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SUBSCRIBE.toString(), this::subscribe);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.UNSUBSCRIBE.toString(), this::unsubscribe);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.POLL.toString(), this::poll);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.COMMIT.toString(), this::commit);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK.toString(), this::seek);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString(), this::seekToBeginning);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this::seekToEnd);
 
-                routerFactory.addFailureHandlerByOperationId("send", this::send);
-                routerFactory.addFailureHandlerByOperationId("sendToPartition", this::send);
+                routerFactory.addFailureHandlerByOperationId(HttpOpenApiOperations.SEND.toString(), this::send);
+                routerFactory.addFailureHandlerByOperationId(HttpOpenApiOperations.SEND_TO_PARTITION.toString(), this::sendToPartition);
 
                 this.router = routerFactory.getRouter();
 
@@ -165,22 +165,17 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void send(RoutingContext routingContext) {
-        HttpServerRequest httpServerRequest = routingContext.request();
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SEND);
+        this.processProducer(routingContext);
+    }
 
-        SourceBridgeEndpoint source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
-
-        if (source == null) {
-            source = new HttpSourceBridgeEndpoint(this.vertx, this.httpBridgeConfig);
-            source.closeHandler(s -> {
-                this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
-            });
-            source.open();
-            this.httpBridgeContext.getHttpSourceEndpoints().put(httpServerRequest.connection(), source);
-        }
-        source.handle(new HttpEndpoint(routingContext));
+    private void sendToPartition(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SEND_TO_PARTITION);
+        this.processProducer(routingContext);
     }
 
     private void createConsumer(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
         SinkBridgeEndpoint<?,?> sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext);
         sink.closeHandler(s -> {
             httpBridgeContext.getHttpSinkEndpoints().remove(sink);
@@ -194,6 +189,7 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void deleteConsumer(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.DELETE_CONSUMER);
         String deleteInstanceID = routingContext.pathParam("name");
 
         final SinkBridgeEndpoint deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(deleteInstanceID);
@@ -210,6 +206,43 @@ public class HttpBridge extends AbstractVerticle {
         }
     }
 
+    private void subscribe(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SUBSCRIBE);
+        processConsumer(routingContext);
+    }
+
+    private void unsubscribe(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.UNSUBSCRIBE);
+        processConsumer(routingContext);
+    }
+
+    private void poll(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.POLL);
+        processConsumer(routingContext);
+    }
+
+    private void commit(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.COMMIT);
+        processConsumer(routingContext);
+    }
+
+    private void seek(RoutingContext routingContext) {
+        //TODO
+    }
+
+    private void seekToBeginning(RoutingContext routingContext) {
+        //TODO
+    }
+
+    private void seekToEnd(RoutingContext routingContext) {
+        //TODO
+    }
+
+    /**
+     * Process an HTTP request related to the consumer
+     * 
+     * @param routingContext RoutingContext instance
+     */
     private void processConsumer(RoutingContext routingContext) {
         String instanceId = routingContext.pathParam("name");
 
@@ -225,16 +258,25 @@ public class HttpBridge extends AbstractVerticle {
         }
     }
 
-    private void seek(RoutingContext routingContext) {
-        //TODO
-    }
+    /**
+     * Process an HTTP request related to the producer
+     * 
+     * @param routingContext RoutingContext instance
+     */
+    private void processProducer(RoutingContext routingContext) {
+        HttpServerRequest httpServerRequest = routingContext.request();
 
-    private void seekToBeginning(RoutingContext routingContext) {
-        //TODO
-    }
+        SourceBridgeEndpoint source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
 
-    private void seekToEnd(RoutingContext routingContext) {
-        //TODO
+        if (source == null) {
+            source = new HttpSourceBridgeEndpoint(this.vertx, this.httpBridgeConfig, this.httpBridgeContext);
+            source.closeHandler(s -> {
+                this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
+            });
+            source.open();
+            this.httpBridgeContext.getHttpSourceEndpoints().put(httpServerRequest.connection(), source);
+        }
+        source.handle(new HttpEndpoint(routingContext));
     }
 
     private void processConnection(HttpConnection httpConnection) {

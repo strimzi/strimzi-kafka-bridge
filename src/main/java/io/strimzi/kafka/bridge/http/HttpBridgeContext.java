@@ -31,6 +31,7 @@ import java.util.Map;
 public class HttpBridgeContext {
     private Map<String, SinkBridgeEndpoint> httpSinkEndpoints = new HashMap<>();
     private Map<HttpConnection, SourceBridgeEndpoint> httpSourceEndpoints = new HashMap<>();
+    private HttpOpenApiOperations openApiOperation;
 
 
     /**
@@ -47,4 +48,19 @@ public class HttpBridgeContext {
         return this.httpSourceEndpoints;
     }
 
+    /**
+     * Set the OpenAPI operation invoked
+     *
+     * @param openApiOperation OpenAPI operation
+     */
+    public void setOpenApiOperation(HttpOpenApiOperations openApiOperation) {
+        this.openApiOperation = openApiOperation;
+    }
+
+    /**
+     * @return the OpenAPI operation invoked
+     */
+    public HttpOpenApiOperations getOpenApiOperation() {
+        return this.openApiOperation;
+    }
 }

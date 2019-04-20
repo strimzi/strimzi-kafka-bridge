@@ -73,9 +73,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
         messageConverter = new HttpJsonMessageConverter();
 
-        RequestType requestType = RequestIdentifier.getRequestType(routingContext);
-
-        switch (requestType){
+        switch (this.httpBridgeContext.getOpenApiOperation()){
 
             case SUBSCRIBE:
 
@@ -101,7 +99,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                 this.subscribe(false);
                 break;
 
-            case CONSUME:
+            case POLL:
 
                 if (routingContext.request().getHeader("timeout") != null) {
                     this.pollTimeOut = Long.parseLong(routingContext.request().getHeader("timeout"));
@@ -118,12 +116,13 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                 });
 
                 break;
-            case DELETE:
+
+            case DELETE_CONSUMER:
 
                 sendConsumerDeletionResponse(routingContext.response());
                 break;
 
-            case OFFSETS:
+            case COMMIT:
 
                 Map<TopicPartition, OffsetAndMetadata> offsetData = new HashMap<>();
 
@@ -148,10 +147,6 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                     }
                 });
                 break;
-
-            case INVALID:
-                log.info("invalid request");
-                break;
         }
 
     }
@@ -174,11 +169,9 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
         routingContext = (RoutingContext) endpoint.get();
         JsonObject bodyAsJson = routingContext.getBodyAsJson();
 
-        RequestType requestType = RequestIdentifier.getRequestType(routingContext);
+        switch (this.httpBridgeContext.getOpenApiOperation()){
 
-        switch (requestType){
-
-            case CREATE:
+            case CREATE_CONSUMER:
 
                 // get the consumer group-id
                 groupId = routingContext.pathParam("groupid");
@@ -216,9 +209,6 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                 // send consumer instance id(name) and base URI as response
                 sendConsumerCreationResponse(routingContext.response(), consumerInstanceId, consumerBaseUri);
                 break;
-
-            case INVALID:
-                log.info("invalid request");
         }
     }
 
