@@ -60,14 +60,17 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
         List<KafkaProducerRecord<String, byte[]>> records;
         Integer partition = null;
         if (params.length == 5) {
-            partition = Integer.parseInt(params[4]);
+            try {
+                partition = Integer.parseInt(params[4]);
+            } catch (NumberFormatException ne) {
+                sendUnprocessableResponse(routingContext.response());
+                return;
+            }
         }
         try {
             records = messageConverter.toKafkaRecords(topic, partition, routingContext.getBody());
         } catch (Exception e) {
-            routingContext.response().setStatusMessage("Unprocessable request.")
-                    .setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue())
-                    .end();
+            sendUnprocessableResponse(routingContext.response());
             return;
         }
         List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
@@ -137,5 +140,11 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
         } else {
             return ErrorCodeEnum.INTERNAL_SERVER_ERROR.getValue();
         }
+    }
+
+    private void sendUnprocessableResponse(HttpServerResponse response) {
+        response.setStatusMessage("Unprocessable request.")
+                .setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue())
+                .end();
     }
 }
