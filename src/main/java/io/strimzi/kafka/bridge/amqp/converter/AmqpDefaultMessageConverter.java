@@ -30,7 +30,6 @@ import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.message.Message;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -135,11 +134,11 @@ public class AmqpDefaultMessageConverter implements MessageConverter<String, byt
 
 	@Override
 	public Collection<Message> toMessages(KafkaConsumerRecords<String, byte[]> records) {
-		throw new NotImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Integer partition, Collection<Message> messages) {
-		throw new NotImplementedException();
+		throw new UnsupportedOperationException();
 	}
 }

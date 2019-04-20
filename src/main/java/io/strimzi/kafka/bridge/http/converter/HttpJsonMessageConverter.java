@@ -23,7 +23,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -80,7 +79,7 @@ public class HttpJsonMessageConverter implements MessageConverter<String, byte[]
 
     @Override
     public Buffer toMessage(String address, KafkaConsumerRecord<String, byte[]> record) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
