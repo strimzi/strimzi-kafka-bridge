@@ -8,7 +8,7 @@
     "/topics/{topicname}": {
       "post": {
         "description": "Write to topic",
-        "operationId": "writeToTopic",
+        "operationId": "send",
         "responses": {
           "200": {
             "description": "OK",
@@ -32,7 +32,7 @@
     },
     "/topics/{topicname}/partitions/{partitionid}": {
       "post": {
-        "operationId": "writeToTopicPartition",
+        "operationId": "sendToPartition",
         "responses": {
           "200": {
             "description": "OK"
@@ -144,7 +144,7 @@
     },
     "/consumers/{groupid}/instances/{name}/records": {
       "get": {
-        "operationId": "getRecords",
+        "operationId": "poll",
         "responses": {
           "200": {
             "description": "OK"
@@ -228,7 +228,7 @@
     },
     "/consumers/{groupid}/instances/{name}/partitions/beginning": {
       "post": {
-        "operationId": "seekBeginning",
+        "operationId": "seekToBeginning",
         "responses": {
           "200": {
             "description": "OK"
@@ -256,7 +256,7 @@
     },
     "/consumers/{groupid}/instances/{name}/partitions/end": {
       "post": {
-        "operationId": "seekEnd",
+        "operationId": "seekToEnd",
         "responses": {
           "200": {
             "description": "OK"

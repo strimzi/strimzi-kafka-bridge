@@ -82,20 +82,20 @@ public class HttpBridge extends AbstractVerticle {
         OpenAPI3RouterFactory.create(vertx, "src/main/resources/openapi.json", ar -> {
             if (ar.succeeded()) {
                 OpenAPI3RouterFactory routerFactory = ar.result();
-                routerFactory.addHandlerByOperationId("writeToTopic", this::processRequests);
-                routerFactory.addHandlerByOperationId("writeToTopicPartition", this::processRequests);
+                routerFactory.addHandlerByOperationId("send", this::processRequests);
+                routerFactory.addHandlerByOperationId("sendToPartition", this::processRequests);
                 routerFactory.addHandlerByOperationId("createConsumer", this::processRequests);
                 routerFactory.addHandlerByOperationId("deleteConsumer", this::processRequests);
                 routerFactory.addHandlerByOperationId("subscribe", this::processRequests);
                 routerFactory.addHandlerByOperationId("unsubscribe", this::processRequests);
-                routerFactory.addHandlerByOperationId("getRecords", this::processRequests);
+                routerFactory.addHandlerByOperationId("poll", this::processRequests);
                 routerFactory.addHandlerByOperationId("commit", this::processRequests);
                 routerFactory.addHandlerByOperationId("seek", this::processRequests);
-                routerFactory.addHandlerByOperationId("seekBeginning", this::processRequests);
-                routerFactory.addHandlerByOperationId("seekEnd", this::processRequests);
+                routerFactory.addHandlerByOperationId("seekToBeginning", this::processRequests);
+                routerFactory.addHandlerByOperationId("seekToEnd", this::processRequests);
 
-                routerFactory.addFailureHandlerByOperationId("writeToTopic", this::processRequests);
-                routerFactory.addFailureHandlerByOperationId("writeToTopicPartition", this::processRequests);
+                routerFactory.addFailureHandlerByOperationId("send", this::processRequests);
+                routerFactory.addFailureHandlerByOperationId("sendToPartition", this::processRequests);
 
                 this.router = routerFactory.getRouter();
 
