@@ -25,7 +25,6 @@ import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.message.Message;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -102,11 +101,11 @@ public class AmqpRawMessageConverter implements MessageConverter<String, byte[],
 
 	@Override
 	public Collection<Message> toMessages(KafkaConsumerRecords<String, byte[]> records) {
-		throw new NotImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public List<KafkaProducerRecord<String, byte[]>> toKafkaRecords(String kafkaTopic, Integer partition, Collection<Message> messages) {
-		throw new NotImplementedException();
+		throw new UnsupportedOperationException();
 	}
 }
