@@ -488,11 +488,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(subJson, ar -> {
                     context.assertTrue(ar.succeeded());
-
-                    HttpResponse<JsonObject> response = ar.result();
-                    JsonObject bridgeResponse = response.body();
-                    String status = bridgeResponse.getString("subscription_status");
-                    context.assertEquals("subscribed", status);
+                    context.assertEquals(204, ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -604,11 +600,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(subJson, ar -> {
                     context.assertTrue(ar.succeeded());
-
-                    HttpResponse<JsonObject> response = ar.result();
-                    JsonObject bridgeResponse = response.body();
-                    String status = bridgeResponse.getString("subscription_status");
-                    context.assertEquals("subscribed", status);
+                    context.assertEquals(204, ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -720,11 +712,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(subJson, ar -> {
                     context.assertTrue(ar.succeeded());
-
-                    HttpResponse<JsonObject> response = ar.result();
-                    JsonObject bridgeResponse = response.body();
-                    String status = bridgeResponse.getString("subscription_status");
-                    context.assertEquals("subscribed", status);
+                    context.assertEquals(204, ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
