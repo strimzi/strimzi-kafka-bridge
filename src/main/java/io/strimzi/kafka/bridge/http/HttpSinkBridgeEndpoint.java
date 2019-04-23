@@ -223,11 +223,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
     }
 
     private void sendConsumerSubscriptionResponse(HttpServerResponse response) {
-        JsonObject jsonResponse = new JsonObject();
-        jsonResponse.put("subscription_status", "subscribed");
-
-        response.putHeader("Content-length", String.valueOf(jsonResponse.toBuffer().length()))
-                .write(jsonResponse.toBuffer())
+        response.setStatusCode(204)
                 .end();
     }
 
