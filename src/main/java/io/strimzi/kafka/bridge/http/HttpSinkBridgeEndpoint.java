@@ -23,10 +23,10 @@ import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -38,7 +38,7 @@ import java.util.UUID;
 
 public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
-    private HttpServerRequest httpServerRequest;
+    private RoutingContext routingContext;
 
     //unique id assigned to every consumer during its creation.
     private String consumerInstanceId;
@@ -62,96 +62,90 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
     @Override
     public void handle(Endpoint<?> endpoint) {
 
-        httpServerRequest = (HttpServerRequest) endpoint.get();
+        routingContext = (RoutingContext) endpoint.get();
+        JsonObject bodyAsJson = null;
+        // TODO: it seems that getBodyAsJson raises an exception when the body is empty and not null
+        try {
+            bodyAsJson = routingContext.getBodyAsJson();
+        } catch (Exception ex) {
+
+        }
 
         messageConverter = new HttpJsonMessageConverter();
 
-        RequestType requestType = RequestIdentifier.getRequestType(httpServerRequest);
-
-        switch (requestType){
+        switch (this.httpBridgeContext.getOpenApiOperation()){
 
             case SUBSCRIBE:
 
-                httpServerRequest.bodyHandler(buffer -> {
-                    this.topic = buffer.toJsonObject().getString("topic");
-                    this.partition = buffer.toJsonObject().getInteger("partition");
-                    if (buffer.toJsonObject().containsKey("offset")) {
-                        this.offset = buffer.toJsonObject().getLong("offset");
+                this.topic = bodyAsJson.getString("topic");
+                this.partition = bodyAsJson.getInteger("partition");
+                if (bodyAsJson.containsKey("offset")) {
+                    this.offset = bodyAsJson.getLong("offset");
+                }
+                this.kafkaTopic = this.topic;
+
+                this.setSubscribeHandler(subscribeResult -> {
+                    if (subscribeResult.succeeded()) {
+                        sendConsumerSubscriptionResponse(routingContext.response());
                     }
-                    this.kafkaTopic = this.topic;
-
-                    this.setSubscribeHandler(subscribeResult -> {
-                        if (subscribeResult.succeeded()) {
-                            sendConsumerSubscriptionResponse(httpServerRequest.response());
-                        }
-                    });
-
-                    this.setAssignHandler(assignResult -> {
-                        if (assignResult.succeeded()) {
-                            sendConsumerSubscriptionResponse(httpServerRequest.response());
-                        }
-                    });
-
-                    this.subscribe(false);
                 });
 
+                this.setAssignHandler(assignResult -> {
+                    if (assignResult.succeeded()) {
+                        sendConsumerSubscriptionResponse(routingContext.response());
+                    }
+                });
+
+                this.subscribe(false);
                 break;
 
-            case CONSUME:
+            case POLL:
 
-                if (httpServerRequest.getHeader("timeout") != null) {
-                    this.pollTimeOut = Long.parseLong(httpServerRequest.getHeader("timeout"));
+                if (routingContext.request().getHeader("timeout") != null) {
+                    this.pollTimeOut = Long.parseLong(routingContext.request().getHeader("timeout"));
                 }
 
                 this.consume(records -> {
                     if (records.succeeded()){
                         Buffer buffer = (Buffer) messageConverter.toMessages(records.result());
-                        sendConsumerRecordsResponse(httpServerRequest.response(), buffer);
+                        sendConsumerRecordsResponse(routingContext.response(), buffer);
 
                     } else {
-                        sendConsumerRecordsFailedResponse(httpServerRequest.response());
+                        sendConsumerRecordsFailedResponse(routingContext.response());
                     }
                 });
 
                 break;
-            case DELETE:
 
-                sendConsumerDeletionResponse(httpServerRequest.response());
+            case DELETE_CONSUMER:
+
+                sendConsumerDeletionResponse(routingContext.response());
                 break;
 
-            case OFFSETS:
+            case COMMIT:
 
-                httpServerRequest.bodyHandler(buffer -> {
+                Map<TopicPartition, OffsetAndMetadata> offsetData = new HashMap<>();
 
-                    Map<TopicPartition, OffsetAndMetadata> offsetData = new HashMap<>();
+                JsonObject jsonOffsetData = bodyAsJson;
 
-                    JsonObject jsonOffsetData = buffer.toJsonObject();
+                JsonArray offsetsList = jsonOffsetData.getJsonArray("offsets");
 
-                    JsonArray offsetsList = jsonOffsetData.getJsonArray("offsets");
+                for (int i = 0 ; i < offsetsList.size() ; i++) {
 
-                    for (int i = 0 ; i < offsetsList.size() ; i++) {
+                    TopicPartition topicPartition = new TopicPartition(offsetsList.getJsonObject(i));
 
-                        TopicPartition topicPartition = new TopicPartition(offsetsList.getJsonObject(i));
+                    OffsetAndMetadata offsetAndMetadata = new OffsetAndMetadata(offsetsList.getJsonObject(i));
 
-                        OffsetAndMetadata offsetAndMetadata = new OffsetAndMetadata(offsetsList.getJsonObject(i));
+                    offsetData.put(topicPartition, offsetAndMetadata);
+                }
 
-                        offsetData.put(topicPartition, offsetAndMetadata);
+                this.commit(offsetData, status -> {
+                    if (status.succeeded()) {
+                        sendConsumerCommitOffsetResponse(routingContext.response(), status.succeeded());
+                    } else {
+                        sendConsumerCommitOffsetResponse(routingContext.response(), status.succeeded());
                     }
-
-                    this.commit(offsetData, status -> {
-                        if (status.succeeded()) {
-                            sendConsumerCommitOffsetResponse(httpServerRequest.response(), status.succeeded());
-                        } else {
-                            sendConsumerCommitOffsetResponse(httpServerRequest.response(), status.succeeded());
-                        }
-                    });
-
                 });
-
-                break;
-
-            case INVALID:
-                log.info("invalid request");
                 break;
         }
 
@@ -172,55 +166,49 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
     @Override
     public void handle(Endpoint<?> endpoint, Handler<?> handler) {
-        httpServerRequest = (HttpServerRequest) endpoint.get();
+        routingContext = (RoutingContext) endpoint.get();
+        JsonObject bodyAsJson = routingContext.getBodyAsJson();
 
-        RequestType requestType = RequestIdentifier.getRequestType(httpServerRequest);
+        switch (this.httpBridgeContext.getOpenApiOperation()){
 
-        switch (requestType){
-
-            case CREATE:
+            case CREATE_CONSUMER:
 
                 // get the consumer group-id
-                groupId = PathParamsExtractor.getConsumerCreationParams(httpServerRequest).get("group-id");
-                httpServerRequest.bodyHandler(buffer -> {
+                groupId = routingContext.pathParam("groupid");
 
-                    JsonObject json = buffer.toJsonObject();
-                    // if no name, a random one is assigned
-                    consumerInstanceId = json.getString("name",
-                            "kafka-bridge-consumer-" + UUID.randomUUID().toString());
+                JsonObject json = bodyAsJson;
+                // if no name, a random one is assigned
+                consumerInstanceId = json.getString("name",
+                        "kafka-bridge-consumer-" + UUID.randomUUID().toString());
 
-                    if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(consumerInstanceId)) {
-                        httpServerRequest.response().setStatusMessage("Consumer instance with the specified name already exists.")
-                                .setStatusCode(ErrorCodeEnum.CONSUMER_ALREADY_EXISTS.getValue())
-                                .end();
-                        return;
-                    }
+                if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(consumerInstanceId)) {
+                    routingContext.response().setStatusMessage("Consumer instance with the specified name already exists.")
+                            .setStatusCode(ErrorCodeEnum.CONSUMER_ALREADY_EXISTS.getValue())
+                            .end();
+                    return;
+                }
 
-                    // construct base URI for consumer
-                    String requestUri = httpServerRequest.absoluteURI();
-                    if (!httpServerRequest.path().endsWith("/")){
-                        requestUri += "/";
-                    }
-                    consumerBaseUri = requestUri + "instances/" + consumerInstanceId;
+                // construct base URI for consumer
+                String requestUri = routingContext.request().absoluteURI();
+                if (!routingContext.request().path().endsWith("/")){
+                    requestUri += "/";
+                }
+                consumerBaseUri = requestUri + "instances/" + consumerInstanceId;
 
-                    // get supported consumer configuration parameters
-                    Properties config = new Properties();
-                    addConfigParameter(json, config, ConsumerConfig.AUTO_OFFSET_RESET_CONFIG);
-                    addConfigParameter(json, config, ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG);
-                    addConfigParameter(json, config, ConsumerConfig.FETCH_MIN_BYTES_CONFIG);
+                // get supported consumer configuration parameters
+                Properties config = new Properties();
+                addConfigParameter(json, config, ConsumerConfig.AUTO_OFFSET_RESET_CONFIG);
+                addConfigParameter(json, config, ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG);
+                addConfigParameter(json, config, ConsumerConfig.FETCH_MIN_BYTES_CONFIG);
 
-                    // create the consumer
-                    this.initConsumer(false, config);
+                // create the consumer
+                this.initConsumer(false, config);
 
-                    ((Handler<String>) handler).handle(consumerInstanceId);
+                ((Handler<String>) handler).handle(consumerInstanceId);
 
-                    // send consumer instance id(name) and base URI as response
-                    sendConsumerCreationResponse(httpServerRequest.response(), consumerInstanceId, consumerBaseUri);
-                });
+                // send consumer instance id(name) and base URI as response
+                sendConsumerCreationResponse(routingContext.response(), consumerInstanceId, consumerBaseUri);
                 break;
-
-            case INVALID:
-                log.info("invalid request");
         }
     }
 

@@ -17,17 +17,17 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.strimzi.kafka.bridge.Endpoint;
-import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
-public class HttpEndpoint implements Endpoint<HttpServerRequest> {
+public class HttpEndpoint implements Endpoint<RoutingContext> {
 
-    private HttpServerRequest httpServerRequest;
+    private RoutingContext routingContext;
 
-    public HttpEndpoint(HttpServerRequest httpServerRequest){
-        this.httpServerRequest = httpServerRequest;
+    public HttpEndpoint(RoutingContext routingContext){
+        this.routingContext = routingContext;
     }
     @Override
-    public HttpServerRequest get() {
-        return httpServerRequest;
+    public RoutingContext get() {
+        return routingContext;
     }
 }

@@ -21,11 +21,11 @@ import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.*;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Main bridge class listening for connections
@@ -44,6 +44,8 @@ public class HttpBridge extends AbstractVerticle {
     // if the bridge is ready to handle requests
     private boolean isReady = false;
 
+    private Router router;
+
     /**
      * Constructor
      *
@@ -58,7 +60,7 @@ public class HttpBridge extends AbstractVerticle {
 
         this.httpServer = this.vertx.createHttpServer(httpServerOptions)
                 .connectionHandler(this::processConnection)
-                .requestHandler(this::processRequests)
+                .requestHandler(this.router)
                 .listen(httpServerAsyncResult -> {
                     if (httpServerAsyncResult.succeeded()) {
                         log.info("HTTP-Kafka Bridge started and listening on port {}", httpServerAsyncResult.result().actualPort());
@@ -77,9 +79,41 @@ public class HttpBridge extends AbstractVerticle {
     @Override
     public void start(Future<Void> startFuture) throws Exception {
 
-        log.info("Starting HTTP-Kafka bridge verticle...");
-        this.httpBridgeContext = new HttpBridgeContext();
-        this.bindHttpServer(startFuture);
+        OpenAPI3RouterFactory.create(vertx, "src/main/resources/openapi.json", ar -> {
+            if (ar.succeeded()) {
+                OpenAPI3RouterFactory routerFactory = ar.result();
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEND.toString(), this::send);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEND_TO_PARTITION.toString(), this::sendToPartition);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.CREATE_CONSUMER.toString(), this::createConsumer);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.DELETE_CONSUMER.toString(), this::deleteConsumer);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SUBSCRIBE.toString(), this::subscribe);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.UNSUBSCRIBE.toString(), this::unsubscribe);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.POLL.toString(), this::poll);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.COMMIT.toString(), this::commit);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK.toString(), this::seek);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString(), this::seekToBeginning);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this::seekToEnd);
+
+                routerFactory.addFailureHandlerByOperationId(HttpOpenApiOperations.SEND.toString(), this::send);
+                routerFactory.addFailureHandlerByOperationId(HttpOpenApiOperations.SEND_TO_PARTITION.toString(), this::sendToPartition);
+
+                this.router = routerFactory.getRouter();
+
+                this.router.errorHandler(404, r -> {
+                    r.response()
+                            .setStatusCode(ErrorCodeEnum.BAD_REQUEST.getValue())
+                            .setStatusMessage("Invalid request")
+                            .end();
+                });
+
+                log.info("Starting HTTP-Kafka bridge verticle...");
+                this.httpBridgeContext = new HttpBridgeContext();
+                this.bindHttpServer(startFuture);
+            } else {
+                log.error("Failed to create OpenAPI router factory");
+                startFuture.fail(ar.cause());
+            }
+        });
     }
 
     @Override
@@ -130,94 +164,119 @@ public class HttpBridge extends AbstractVerticle {
         return httpServerOptions;
     }
 
-    private void processRequests(HttpServerRequest httpServerRequest) {
-        log.info("request method is {} and request path is {}", httpServerRequest.method(), httpServerRequest.path());
+    private void send(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SEND);
+        this.processProducer(routingContext);
+    }
 
-        RequestType requestType = RequestIdentifier.getRequestType(httpServerRequest);
+    private void sendToPartition(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SEND_TO_PARTITION);
+        this.processProducer(routingContext);
+    }
 
-        switch (requestType){
-            case PRODUCE:
-                SourceBridgeEndpoint source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
+    private void createConsumer(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
+        SinkBridgeEndpoint<?,?> sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext);
+        sink.closeHandler(s -> {
+            httpBridgeContext.getHttpSinkEndpoints().remove(sink);
+        });
 
-                if (source == null) {
-                    source = new HttpSourceBridgeEndpoint(this.vertx, this.httpBridgeConfig);
-                    source.closeHandler(s -> {
-                        this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
-                    });
-                    source.open();
-                    this.httpBridgeContext.getHttpSourceEndpoints().put(httpServerRequest.connection(), source);
-                }
-                source.handle(new HttpEndpoint(httpServerRequest));
+        sink.open();
 
-                break;
+        sink.handle(new HttpEndpoint(routingContext), consumerId -> {
+            httpBridgeContext.getHttpSinkEndpoints().put(consumerId.toString(), sink);
+        });
+    }
 
-            //create a sink endpoint and initialize consumer
-            case CREATE:
-                SinkBridgeEndpoint<?,?> sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext);
-                sink.closeHandler(s -> {
-                    httpBridgeContext.getHttpSinkEndpoints().remove(sink);
-                });
+    private void deleteConsumer(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.DELETE_CONSUMER);
+        String deleteInstanceID = routingContext.pathParam("name");
 
-                sink.open();
+        final SinkBridgeEndpoint deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(deleteInstanceID);
 
-                sink.handle(new HttpEndpoint(httpServerRequest), consumerId -> {
-                    httpBridgeContext.getHttpSinkEndpoints().put(consumerId.toString(), sink);
-                });
+        if (deleteSinkEndpoint != null) {
+            deleteSinkEndpoint.handle(new HttpEndpoint(routingContext));
 
-                break;
-
-            case SUBSCRIBE:
-            case CONSUME:
-            case OFFSETS:
-                String instanceId = PathParamsExtractor.getConsumerSubscriptionParams(httpServerRequest).get("instance-id");
-
-                final SinkBridgeEndpoint sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(instanceId);
-
-                if (sinkEndpoint != null) {
-                    sinkEndpoint.handle(new HttpEndpoint(httpServerRequest));
-                } else {
-                    httpServerRequest.response()
-                            .setStatusCode(ErrorCodeEnum.CONSUMER_NOT_FOUND.getValue())
-                            .setStatusMessage("Consumer instance not found")
-                            .end();
-                }
-                break;
-
-            case DELETE:
-                String deleteInstanceID = PathParamsExtractor.getConsumerDeletionParams(httpServerRequest).get("instance-id");
-
-                final SinkBridgeEndpoint deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(deleteInstanceID);
-
-                if (deleteSinkEndpoint != null) {
-                    deleteSinkEndpoint.handle(new HttpEndpoint(httpServerRequest));
-
-                    this.httpBridgeContext.getHttpSinkEndpoints().remove(deleteInstanceID);
-                } else {
-                    httpServerRequest.response()
-                            .setStatusCode(ErrorCodeEnum.NOT_FOUND.getValue())
-                            .setStatusMessage("Endpoint not found")
-                            .end();
-                }
-                break;
-            case EMPTY:
-                httpServerRequest.response()
-                        .setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue())
-                        .setStatusMessage("The request cannot have empty payload")
-                        .end();
-                break;
-            case INVALID:
-                httpServerRequest.response()
-                        .setStatusCode(ErrorCodeEnum.BAD_REQUEST.getValue())
-                        .setStatusMessage("Invalid request")
-                        .end();
-                break;
-            case UNPROCESSABLE:
-                httpServerRequest.response().setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue())
-                        .setStatusMessage("Unprocessable request.")
-                        .end();
-                break;
+            this.httpBridgeContext.getHttpSinkEndpoints().remove(deleteInstanceID);
+        } else {
+            routingContext.response()
+                    .setStatusCode(ErrorCodeEnum.NOT_FOUND.getValue())
+                    .setStatusMessage("Endpoint not found")
+                    .end();
         }
+    }
 
+    private void subscribe(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SUBSCRIBE);
+        processConsumer(routingContext);
+    }
+
+    private void unsubscribe(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.UNSUBSCRIBE);
+        processConsumer(routingContext);
+    }
+
+    private void poll(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.POLL);
+        processConsumer(routingContext);
+    }
+
+    private void commit(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.COMMIT);
+        processConsumer(routingContext);
+    }
+
+    private void seek(RoutingContext routingContext) {
+        //TODO
+    }
+
+    private void seekToBeginning(RoutingContext routingContext) {
+        //TODO
+    }
+
+    private void seekToEnd(RoutingContext routingContext) {
+        //TODO
+    }
+
+    /**
+     * Process an HTTP request related to the consumer
+     * 
+     * @param routingContext RoutingContext instance
+     */
+    private void processConsumer(RoutingContext routingContext) {
+        String instanceId = routingContext.pathParam("name");
+
+        final SinkBridgeEndpoint sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(instanceId);
+
+        if (sinkEndpoint != null) {
+            sinkEndpoint.handle(new HttpEndpoint(routingContext));
+        } else {
+            routingContext.response()
+                    .setStatusCode(ErrorCodeEnum.CONSUMER_NOT_FOUND.getValue())
+                    .setStatusMessage("Consumer instance not found")
+                    .end();
+        }
+    }
+
+    /**
+     * Process an HTTP request related to the producer
+     * 
+     * @param routingContext RoutingContext instance
+     */
+    private void processProducer(RoutingContext routingContext) {
+        HttpServerRequest httpServerRequest = routingContext.request();
+
+        SourceBridgeEndpoint source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
+
+        if (source == null) {
+            source = new HttpSourceBridgeEndpoint(this.vertx, this.httpBridgeConfig, this.httpBridgeContext);
+            source.closeHandler(s -> {
+                this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
+            });
+            source.open();
+            this.httpBridgeContext.getHttpSourceEndpoints().put(httpServerRequest.connection(), source);
+        }
+        source.handle(new HttpEndpoint(routingContext));
     }
 
     private void processConnection(HttpConnection httpConnection) {
