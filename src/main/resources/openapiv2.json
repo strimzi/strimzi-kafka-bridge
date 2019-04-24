@@ -1,0 +1,629 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "HTTP Kafka Bridge",
+        "description": "This is a HTTP Kafka Bridge server",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "email": "strimzi@redhat.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0.0"
+    },
+    "host": "petstore.swagger.io",
+    "basePath": "/v2",
+    "schemes": [
+        "https",
+        "http"
+    ],
+    "paths": {
+        "/consumers/{groupid}": {
+            "post": {
+                "tags": [
+                    "Consumers"
+                ],
+                "summary": "Create a new consumer instance in the consumer group",
+                "operationId": "createConsumer",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Consumer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "409": {
+                        "description": "Consumer instance with the specified name already exists"
+                    },
+                    "422": {
+                        "description": "Invalid consumer configuration. One of the settings specified in the request contained an invalid value"
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "groupid",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/consumers/{groupid}/instances/{name}": {
+            "delete": {
+                "tags": [
+                    "Consumers"
+                ],
+                "summary": "Destroy the consumer instance",
+                "operationId": "deleteConsumer",
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "404": {
+                        "description": "Consumer instance not found"
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "groupid",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "name": "name",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/consumers/{groupid}/instances/{name}/offsets": {
+            "post": {
+                "tags": [
+                    "Consumers"
+                ],
+                "summary": "Commit a list of offsets for the consumer",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Offsets"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "404": {
+                        "description": "Consumer instance not found"
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "groupid",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "name": "name",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/consumers/{groupid}/instances/{name}/positions/beginning": {
+            "post": {
+                "tags": [
+                    "Consumers"
+                ],
+                "summary": "Seek to the first offset for each of the given partitions",
+                "operationId": "seekToBeginning",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PartitionsForPositions"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Consumer instance not found"
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "groupid",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "name": "name",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/consumers/{groupid}/instances/{name}/positions/end": {
+            "post": {
+                "tags": [
+                    "Consumers"
+                ],
+                "summary": "Seek to the last offset for each of the given partitions",
+                "operationId": "seekToEnd",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PartitionsForPositions"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Consumer instance not found"
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "groupid",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "name": "name",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/consumers/{groupid}/instances/{name}/records": {
+            "get": {
+                "tags": [
+                    "Consumers"
+                ],
+                "summary": "Fetch data for the topics or partitions specified using one of the subscribe/assign APIs",
+                "operationId": "poll",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "404": {
+                        "description": "Consumer instance not found"
+                    },
+                    "406": {
+                        "description": "Consumer format does not match the embedded format requested by the Accept header"
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "groupid",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "name": "name",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "name": "timeout",
+                    "in": "query",
+                    "description": "Maximum amount of milliseconds the REST proxy will spend fetching records",
+                    "required": false,
+                    "type": "integer"
+                },
+                {
+                    "name": "max_bytes",
+                    "in": "query",
+                    "description": "The maximum number of bytes of unencoded keys and values that should be included in the response",
+                    "required": false,
+                    "type": "integer"
+                }
+            ]
+        },
+        "/consumers/{groupid}/instances/{name}/subscription": {
+            "post": {
+                "tags": [
+                    "Consumers"
+                ],
+                "summary": "Subscribe to the given list of topics",
+                "operationId": "subscribe",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Topics"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Consumer instance not found"
+                    },
+                    "409": {
+                        "description": "Subscription to topics, partitions and pattern are mutually exclusive"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Consumers"
+                ],
+                "summary": "Unsubscribe from topics currently subscribed",
+                "operationId": "unsubscribe",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Consumer instance not found"
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "groupid",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "name": "name",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/topics/{topicname}": {
+            "post": {
+                "tags": [
+                    "Topics"
+                ],
+                "summary": "Send a record to topic",
+                "operationId": "send",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Records"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "404": {
+                        "description": "Topic not found"
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "topicname",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/topics/{topicname}/partitions/{partitionid}": {
+            "post": {
+                "tags": [
+                    "Topics"
+                ],
+                "summary": "Send a record to specified partition of topic",
+                "operationId": "sendToPartition",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RecordsWithoutPartitions"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "404": {
+                        "description": "Topic or Partition not found"
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity"
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "topicname",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "name": "partitionid",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/consumers/{groupid}/instances/{name}/positions": {
+            "post": {
+                "tags": [
+                    "Consumers"
+                ],
+                "summary": "Overrides the fetch offsets that the consumer will use for the next set of records to fetch",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Offsets"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Consumer instance not found"
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "groupid",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "name": "name",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        }
+    },
+    "definitions": {
+        "ApiResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "Consumer": {
+            "title": "Root Type for Consumer",
+            "description": "The root of the Consumer type's schema.",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "format": {
+                    "type": "string"
+                },
+                "auto.offset.reset": {
+                    "type": "string"
+                },
+                "auto.commit.enable": {
+                    "type": "string"
+                },
+                "fetch.min.bytes": {
+                    "type": "string"
+                },
+                "consumer.request.timeout.ms": {
+                    "type": "string"
+                }
+            },
+            "example": "{\n    \"name\": \"consumer1\",\n    \"format\": \"binary\",\n    \"auto.offset.reset\": \"earliest\",\n    \"auto.commit.enable\": \"false\",\n    \"fetch.min.bytes\": \"512\",\n    \"consumer.request.timeout.ms\": \"30000\"\n}"
+        },
+        "Offset": {
+            "title": "Offset",
+            "required": [],
+            "type": "object",
+            "properties": {
+                "partition": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "topic": {
+                    "type": "string"
+                }
+            }
+        },
+        "Partition": {
+            "title": "Partition",
+            "type": "object",
+            "properties": {
+                "partition": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "leader": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "replicas": {
+                    "type": "object"
+                }
+            },
+            "example": "{\n    \"partition\": 1,\n    \"leader\": 1,\n    \"replicas\": [\n        {\n            \"broker\": 1,\n            \"leader\": true,\n            \"in_sync\": true\n        },\n        {\n            \"broker\": 2,\n            \"leader\": false,\n            \"in_sync\": false\n        }\n    ]\n}"
+        },
+        "Record": {
+            "title": "Record",
+            "required": [
+                "value"
+            ],
+            "type": "object",
+            "properties": {
+                "partition": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "topic": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "object"
+                },
+                "key": {
+                    "type": "object"
+                }
+            }
+        },
+        "RecordsWithoutPartitions": {
+            "title": "Root Type for RecordsWithoutPartitions",
+            "description": "The root of the RecordsWithoutPartitions type's schema.",
+            "type": "object",
+            "properties": {
+                "records": {
+                    "$ref": "#/definitions/Records"
+                }
+            },
+            "example": "{\n    \"records\": [\n        {\n            \"key\": \"1abcd\",\n            \"value\": \"msg1\"\n        },\n        {\n            \"value\": \"msg2\"\n        }\n    ]\n}"
+        },
+        "Topics": {
+            "title": "Topics",
+            "type": "object",
+            "properties": {
+                "topics": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "example": "{\n    \"topics\": [\n        \"topic1\",\n        \"topic2\"\n    ]\n}"
+        },
+        "Records": {
+            "title": "Records",
+            "type": "object",
+            "properties": {
+                "records": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Record"
+                    }
+                }
+            },
+            "example": "{\n    \"records\": [\n        {\n            \"key\": \"1abcd\",\n            \"value\": \"msg1\"\n        },\n        {\n            \"value\": \"msg2\",\n            \"partition\": 1\n        },\n        {\n            \"value\": \"msg3\"\n        }\n    ]\n}"
+        },
+        "PartitionsForPositions": {
+            "title": "PartitionsForPositions",
+            "type": "object",
+            "properties": {
+                "partitions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Partition"
+                    }
+                }
+            },
+            "example": "{\n    \"partitions\": [\n        {\n            \"topic\": \"topic\",\n            \"partition\": 0\n        },\n        {\n            \"topic\": \"topic\",\n            \"partition\": 1\n        }\n    ]\n}"
+        },
+        "Partitions": {
+            "title": "Partitions",
+            "type": "object",
+            "properties": {
+                "partitions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Partition"
+                    }
+                }
+            },
+            "example": "{\n    \"partitions\": [\n        {\n            \"partition\": 1,\n            \"leader\": 1,\n            \"replicas\": [\n                {\n                    \"broker\": 1,\n                    \"leader\": true,\n                    \"in_sync\": true\n                },\n                {\n                    \"broker\": 2,\n                    \"leader\": false,\n                    \"in_sync\": false\n                }\n            ]\n        },\n        {\n            \"partition\": 2,\n            \"leader\": 2,\n            \"replicas\": [\n                {\n                    \"broker\": 1,\n                    \"leader\": false,\n                    \"in_sync\": true\n                },\n                {\n                    \"broker\": 2,\n                    \"leader\": true,\n                    \"in_sync\": false\n                }\n            ]\n        }\n    ]\n}"
+        },
+        "Offsets": {
+            "title": "Offsets",
+            "type": "object",
+            "properties": {
+                "offsets": {
+                    "$ref": "#/definitions/Offset"
+                }
+            },
+            "example": "{\n    \"offsets\": [\n        {\n            \"topic\": \"topic\",\n            \"partition\": 0,\n            \"offset\": 15\n        },\n        {\n            \"topic\": \"topic\",\n            \"partition\": 1,\n            \"offset\": 42\n        }\n    ]\n}"
+        }
+    },
+    "tags": [
+        {
+            "name": "Consumers",
+            "description": "Consumers management"
+        },
+        {
+            "name": "Topics",
+            "description": "Topics management"
+        }
+    ],
+    "externalDocs": {
+        "description": "Find out more about Swagger",
+        "url": "http://swagger.io"
+    }
+}
