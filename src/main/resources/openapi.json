@@ -13,6 +13,14 @@
         },
         "version": "1.0.0"
     },
+    "servers": [
+        {
+            "url": "https://bridge.swagger.io/v2"
+        },
+        {
+            "url": "http://bridge.swagger.io/v2"
+        }
+    ],
     "paths": {
         "/consumers/{groupid}": {
             "post": {
@@ -95,6 +103,7 @@
                     "Consumers"
                 ],
                 "summary": "Commit a list of offsets for the consumer",
+                "operationId": "commit",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/Offsets"
                 },
@@ -412,6 +421,7 @@
                     "Consumers"
                 ],
                 "summary": "Overrides the fetch offsets that the consumer will use for the next set of records to fetch",
+                "operationId": "seek",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/Offsets"
                 },
@@ -444,51 +454,7 @@
             ]
         }
     },
-    "tags": [
-        {
-            "name": "Consumers",
-            "description": "Consumers management"
-        },
-        {
-            "name": "Topics",
-            "description": "Topics management"
-        }
-    ],
-    "externalDocs": {
-        "description": "Find out more about Swagger",
-        "url": "http://swagger.io"
-    },
-    "servers": [
-        {
-            "url": "https://petstore.swagger.io/v2"
-        },
-        {
-            "url": "http://petstore.swagger.io/v2"
-        }
-    ],
     "components": {
-        "requestBodies": {
-            "Offsets": {
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/Offsets"
-                        }
-                    }
-                },
-                "required": true
-            },
-            "PartitionsForPositions": {
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/PartitionsForPositions"
-                        }
-                    }
-                },
-                "required": true
-            }
-        },
         "schemas": {
             "ApiResponse": {
                 "type": "object",
@@ -662,6 +628,42 @@
                 },
                 "example": "{\n    \"offsets\": [\n        {\n            \"topic\": \"topic\",\n            \"partition\": 0,\n            \"offset\": 15\n        },\n        {\n            \"topic\": \"topic\",\n            \"partition\": 1,\n            \"offset\": 42\n        }\n    ]\n}"
             }
+        },
+        "requestBodies": {
+            "Offsets": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Offsets"
+                        }
+                    }
+                },
+                "required": true
+            },
+            "PartitionsForPositions": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/PartitionsForPositions"
+                        }
+                    }
+                },
+                "required": true
+            }
         }
+    },
+    "tags": [
+        {
+            "name": "Consumers",
+            "description": "Consumers management"
+        },
+        {
+            "name": "Topics",
+            "description": "Topics management"
+        }
+    ],
+    "externalDocs": {
+        "description": "Find out more about Swagger",
+        "url": "http://swagger.io"
     }
 }

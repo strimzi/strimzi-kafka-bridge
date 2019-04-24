@@ -13,7 +13,7 @@
         },
         "version": "1.0.0"
     },
-    "host": "petstore.swagger.io",
+    "host": "bridge.swagger.io",
     "basePath": "/v2",
     "schemes": [
         "https",
@@ -95,6 +95,7 @@
                     "Consumers"
                 ],
                 "summary": "Commit a list of offsets for the consumer",
+                "operationId": "commit",
                 "parameters": [
                     {
                         "name": "body",
@@ -403,6 +404,7 @@
                     "Consumers"
                 ],
                 "summary": "Overrides the fetch offsets that the consumer will use for the next set of records to fetch",
+                "operationId": "seek",
                 "parameters": [
                     {
                         "name": "body",
