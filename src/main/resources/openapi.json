@@ -623,7 +623,10 @@
                 "type": "object",
                 "properties": {
                     "offsets": {
-                        "$ref": "#/components/schemas/Offset"
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Offset"
+                        }
                     }
                 },
                 "example": "{\n    \"offsets\": [\n        {\n            \"topic\": \"topic\",\n            \"partition\": 0,\n            \"offset\": 15\n        },\n        {\n            \"topic\": \"topic\",\n            \"partition\": 1,\n            \"offset\": 42\n        }\n    ]\n}"
