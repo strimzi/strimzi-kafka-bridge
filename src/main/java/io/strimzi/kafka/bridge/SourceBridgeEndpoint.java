@@ -49,8 +49,8 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
     /**
      * Constructor
      *
-     * @param vertx	Vert.x instance
-     * @param bridgeConfigProperties	Bridge configuration
+     * @param vertx Vert.x instance
+     * @param bridgeConfigProperties Bridge configuration
      */
     public SourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfigProperties) {
         this.vertx = vertx;

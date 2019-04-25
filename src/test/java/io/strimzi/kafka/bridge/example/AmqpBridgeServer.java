@@ -26,23 +26,23 @@ import java.io.IOException;
  * Class example on running the bridge server
  */
 public class AmqpBridgeServer {
-	
-	public static void main(String[] args) {
-		
-		Vertx vertx = Vertx.vertx();
 
-		AmqpBridgeConfig bridgeConfigProperties = AmqpBridgeConfig.fromMap(System.getenv());
-		
-		AmqpBridge bridge = new AmqpBridge(bridgeConfigProperties);
+    public static void main(String[] args) {
 
-		vertx.deployVerticle(bridge);
-		
-		try {
-			System.in.read();
-			vertx.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+        Vertx vertx = Vertx.vertx();
+
+        AmqpBridgeConfig bridgeConfigProperties = AmqpBridgeConfig.fromMap(System.getenv());
+
+        AmqpBridge bridge = new AmqpBridge(bridgeConfigProperties);
+
+        vertx.deployVerticle(bridge);
+
+        try {
+            System.in.read();
+            vertx.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 }

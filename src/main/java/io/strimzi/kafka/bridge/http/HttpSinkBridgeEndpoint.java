@@ -73,7 +73,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
         messageConverter = new HttpJsonMessageConverter();
 
-        switch (this.httpBridgeContext.getOpenApiOperation()){
+        switch (this.httpBridgeContext.getOpenApiOperation()) {
 
             case SUBSCRIBE:
 
@@ -106,7 +106,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                 }
 
                 this.consume(records -> {
-                    if (records.succeeded()){
+                    if (records.succeeded()) {
                         Buffer buffer = (Buffer) messageConverter.toMessages(records.result());
                         sendConsumerRecordsResponse(routingContext.response(), buffer);
 
@@ -130,7 +130,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
                 JsonArray offsetsList = jsonOffsetData.getJsonArray("offsets");
 
-                for (int i = 0 ; i < offsetsList.size() ; i++) {
+                for (int i = 0; i < offsetsList.size(); i++) {
 
                     TopicPartition topicPartition = new TopicPartition(offsetsList.getJsonObject(i));
 
@@ -165,7 +165,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
         routingContext = (RoutingContext) endpoint.get();
         JsonObject bodyAsJson = routingContext.getBodyAsJson();
 
-        switch (this.httpBridgeContext.getOpenApiOperation()){
+        switch (this.httpBridgeContext.getOpenApiOperation()) {
 
             case CREATE_CONSUMER:
 
@@ -186,7 +186,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
                 // construct base URI for consumer
                 String requestUri = routingContext.request().absoluteURI();
-                if (!routingContext.request().path().endsWith("/")){
+                if (!routingContext.request().path().endsWith("/")) {
                     requestUri += "/";
                 }
                 consumerBaseUri = requestUri + "instances/" + consumerInstanceId;
@@ -240,7 +240,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
     }
 
     private void sendConsumerCommitOffsetResponse(HttpServerResponse response, boolean result) {
-        if (result){
+        if (result) {
             response.setStatusCode(200);
         } else {
             response.setStatusCode(500);

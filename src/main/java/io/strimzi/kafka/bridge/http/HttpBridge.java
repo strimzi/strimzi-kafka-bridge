@@ -20,7 +20,10 @@ import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
-import io.vertx.core.http.*;
+import io.vertx.core.http.HttpConnection;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
@@ -125,7 +128,7 @@ public class HttpBridge extends AbstractVerticle {
 
         //Consumers cleanup
         this.httpBridgeContext.getHttpSinkEndpoints().forEach((consumerId, httpEndpoint) -> {
-            if (httpEndpoint != null){
+            if (httpEndpoint != null) {
                 httpEndpoint.close();
             }
         });
@@ -176,7 +179,7 @@ public class HttpBridge extends AbstractVerticle {
 
     private void createConsumer(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
-        SinkBridgeEndpoint<?,?> sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext);
+        SinkBridgeEndpoint<?, ?> sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext);
         sink.closeHandler(s -> {
             httpBridgeContext.getHttpSinkEndpoints().remove(sink);
         });
@@ -280,7 +283,7 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void processConnection(HttpConnection httpConnection) {
-        httpConnection.closeHandler(close ->{
+        httpConnection.closeHandler(close -> {
             closeConnectionEndpoint(httpConnection);
         });
     }
@@ -288,7 +291,7 @@ public class HttpBridge extends AbstractVerticle {
     /**
      * Close a connection endpoint and before that all the related sink/source endpoints
      *
-     * @param connection	connection for which closing related endpoint
+     * @param connection connection for which closing related endpoint
      */
     private void closeConnectionEndpoint(HttpConnection connection) {
 

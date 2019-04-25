@@ -267,7 +267,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void sendPeriodicMessage(TestContext context){
+    public void sendPeriodicMessage(TestContext context) {
         String topic = "sendPeriodicMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
@@ -285,7 +285,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         this.vertx.setPeriodic(HttpBridgeTest.PERIODIC_DELAY, timerId -> {
 
-            if (this.count < HttpBridgeTest.PERIODIC_MAX_MESSAGE){
+            if (this.count < HttpBridgeTest.PERIODIC_MAX_MESSAGE) {
 
                 JsonArray records = new JsonArray();
                 JsonObject json = new JsonObject();
@@ -329,7 +329,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
             async.complete();
         });
 
-        consumer.handler(record -> {});
+        consumer.handler(record -> { });
     }
 
     @Test
@@ -639,7 +639,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
-                .putHeader("Content-length",String.valueOf(0))
+                .putHeader("Content-length", String.valueOf(0))
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());

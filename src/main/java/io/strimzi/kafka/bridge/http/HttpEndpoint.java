@@ -23,7 +23,7 @@ public class HttpEndpoint implements Endpoint<RoutingContext> {
 
     private RoutingContext routingContext;
 
-    public HttpEndpoint(RoutingContext routingContext){
+    public HttpEndpoint(RoutingContext routingContext) {
         this.routingContext = routingContext;
     }
     @Override

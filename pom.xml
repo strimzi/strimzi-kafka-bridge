@@ -17,7 +17,8 @@
 		<junit.version>4.12</junit.version>
 		<vertx.version>3.7.1-SNAPSHOT</vertx.version>
 		<debezium.version>0.8.3.Final</debezium.version>
-	</properties>
+        <maven.checkstyle.version>3.0.0</maven.checkstyle.version>
+    </properties>
 
 	<dependencies>
 		<dependency>
@@ -127,6 +128,37 @@
 						<phase>package</phase>
 						<goals>
 							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>${maven.checkstyle.version}</version>
+				<dependencies>
+					<dependency>
+						<groupId>com.puppycrawl.tools</groupId>
+						<artifactId>checkstyle</artifactId>
+						<version>8.18</version>
+					</dependency>
+				</dependencies>
+				<executions>
+					<execution>
+						<id>validate</id>
+						<phase>validate</phase>
+						<configuration>
+							<configLocation>.checkstyle/checkstyle.xml</configLocation>
+							<headerLocation>.checkstyle/java.header</headerLocation>
+							<suppressionsLocation>.checkstyle/suppressions.xml</suppressionsLocation>
+							<includeTestSourceDirectory>true</includeTestSourceDirectory>
+							<encoding>UTF-8</encoding>
+							<consoleOutput>true</consoleOutput>
+							<failsOnError>true</failsOnError>
+						</configuration>
+						<goals>
+							<goal>check</goal>
 						</goals>
 					</execution>
 				</executions>

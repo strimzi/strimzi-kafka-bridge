@@ -50,474 +50,471 @@ import java.util.Map;
  * and handling AMQP senders and receivers
  */
 public class AmqpBridge extends AbstractVerticle {
-	
-	private static final Logger log = LoggerFactory.getLogger(AmqpBridge.class);
 
-	// AMQP message annotations
-	public static final String AMQP_PARTITION_ANNOTATION = "x-opt-bridge.partition";
-	public static final String AMQP_KEY_ANNOTATION = "x-opt-bridge.key";
-	public static final String AMQP_OFFSET_ANNOTATION = "x-opt-bridge.offset";
-	public static final String AMQP_TOPIC_ANNOTATION = "x-opt-bridge.topic";
-	
-	// AMQP errors
-	public static final String AMQP_ERROR_NO_PARTITIONS = "io.strimzi:no-free-partitions";
-	public static final String AMQP_ERROR_NO_GROUPID = "io.strimzi:no-group-id";
-	public static final String AMQP_ERROR_PARTITION_NOT_EXISTS = "io.strimzi:partition-not-exists";
-	public static final String AMQP_ERROR_SEND_TO_KAFKA = "io.strimzi:error-to-kafka";
-	public static final String AMQP_ERROR_WRONG_PARTITION_FILTER = "io.strimzi:wrong-partition-filter";
-	public static final String AMQP_ERROR_WRONG_OFFSET_FILTER = "io.strimzi:wrong-offset-filter";
-	public static final String AMQP_ERROR_NO_PARTITION_FILTER = "io.strimzi:no-partition-filter";
-	public static final String AMQP_ERROR_WRONG_FILTER = "io.strimzi:wrong-filter";
-	public static final String AMQP_ERROR_KAFKA_SUBSCRIBE = "io.strimzi:kafka-subscribe";
-	public static final String AMQP_ERROR_KAFKA_COMMIT = "io.strimzi:kafka-commit";
-	public static final String AMQP_ERROR_CONFIGURATION = "io.strimzi:configuration";
+    private static final Logger log = LoggerFactory.getLogger(AmqpBridge.class);
 
-	// AMQP filters
-	public static final String AMQP_PARTITION_FILTER = "io.strimzi:partition-filter:int";
-	public static final String AMQP_OFFSET_FILTER = "io.strimzi:offset-filter:long";
+    // AMQP message annotations
+    public static final String AMQP_PARTITION_ANNOTATION = "x-opt-bridge.partition";
+    public static final String AMQP_KEY_ANNOTATION = "x-opt-bridge.key";
+    public static final String AMQP_OFFSET_ANNOTATION = "x-opt-bridge.offset";
+    public static final String AMQP_TOPIC_ANNOTATION = "x-opt-bridge.topic";
 
-	private final AmqpBridgeConfig amqpBridgeConfig;
+    // AMQP errors
+    public static final String AMQP_ERROR_NO_PARTITIONS = "io.strimzi:no-free-partitions";
+    public static final String AMQP_ERROR_NO_GROUPID = "io.strimzi:no-group-id";
+    public static final String AMQP_ERROR_PARTITION_NOT_EXISTS = "io.strimzi:partition-not-exists";
+    public static final String AMQP_ERROR_SEND_TO_KAFKA = "io.strimzi:error-to-kafka";
+    public static final String AMQP_ERROR_WRONG_PARTITION_FILTER = "io.strimzi:wrong-partition-filter";
+    public static final String AMQP_ERROR_WRONG_OFFSET_FILTER = "io.strimzi:wrong-offset-filter";
+    public static final String AMQP_ERROR_NO_PARTITION_FILTER = "io.strimzi:no-partition-filter";
+    public static final String AMQP_ERROR_WRONG_FILTER = "io.strimzi:wrong-filter";
+    public static final String AMQP_ERROR_KAFKA_SUBSCRIBE = "io.strimzi:kafka-subscribe";
+    public static final String AMQP_ERROR_KAFKA_COMMIT = "io.strimzi:kafka-commit";
+    public static final String AMQP_ERROR_CONFIGURATION = "io.strimzi:configuration";
 
-	// container-id needed for working in "client" mode
-	private static final String CONTAINER_ID = "kafka-bridge-service";
+    // AMQP filters
+    public static final String AMQP_PARTITION_FILTER = "io.strimzi:partition-filter:int";
+    public static final String AMQP_OFFSET_FILTER = "io.strimzi:offset-filter:long";
 
-	private static final int HEALTH_SERVER_PORT = 8080;
-	
-	// AMQP client/server related stuff
-	private ProtonServer server;
-	private ProtonClient client;
+    private final AmqpBridgeConfig amqpBridgeConfig;
 
-	// endpoints for handling incoming and outcoming messages
-	private Map<ProtonConnection, ConnectionEndpoint> endpoints;
+    // container-id needed for working in "client" mode
+    private static final String CONTAINER_ID = "kafka-bridge-service";
 
-	// if the bridge is ready to handle requests
-	private boolean isReady = false;
+    private static final int HEALTH_SERVER_PORT = 8080;
+
+    // AMQP client/server related stuff
+    private ProtonServer server;
+    private ProtonClient client;
+
+    // endpoints for handling incoming and outcoming messages
+    private Map<ProtonConnection, ConnectionEndpoint> endpoints;
+
+    // if the bridge is ready to handle requests
+    private boolean isReady = false;
 
     /**
      * Constructor
      *
      * @param amqpBridgeConfig bridge configuration for AMQP support
      */
-	public AmqpBridge(AmqpBridgeConfig amqpBridgeConfig) {
-	    this.amqpBridgeConfig = amqpBridgeConfig;
-	}
+    public AmqpBridge(AmqpBridgeConfig amqpBridgeConfig) {
+        this.amqpBridgeConfig = amqpBridgeConfig;
+    }
 
-	/**
-	 * Start the AMQP server
-	 *
-	 * @param startFuture
-	 */
-	private void bindAmqpServer(Future<Void> startFuture) {
-		
-		ProtonServerOptions options = this.createServerOptions();
-		
-		this.server = ProtonServer.create(this.vertx, options)
-				.connectHandler(this::processConnection)
-				.listen(ar -> {
-					
-					if (ar.succeeded()) {
+    /**
+     * Start the AMQP server
+     *
+     * @param startFuture
+     */
+    private void bindAmqpServer(Future<Void> startFuture) {
 
-						log.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
-						log.info("Kafka bootstrap servers {}",
-								this.amqpBridgeConfig.getKafkaConfig().getBootstrapServers());
+        ProtonServerOptions options = this.createServerOptions();
 
-						this.isReady = true;
-						this.startHealthServer();
+        this.server = ProtonServer.create(this.vertx, options)
+                .connectHandler(this::processConnection)
+                .listen(ar -> {
 
-						startFuture.complete();
-					} else {
-						log.error("Error starting AMQP-Kafka Bridge", ar.cause());
-						startFuture.fail(ar.cause());
-					}
-				});
-	}
+                    if (ar.succeeded()) {
 
-	/**
-	 * Connect to an AMQP server/router
-	 *
-	 * @param startFuture
-	 */
-	private void connectAmqpClient(Future<Void> startFuture) {
+                        log.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
+                        log.info("Kafka bootstrap servers {}",
+                                this.amqpBridgeConfig.getKafkaConfig().getBootstrapServers());
 
-		// the health server starts before connection is made to an AMQP server/router
-		// because the bridge is already alive but not ready yet
-		this.startHealthServer();
+                        this.isReady = true;
+                        this.startHealthServer();
 
-		this.client = ProtonClient.create(this.vertx);
+                        startFuture.complete();
+                    } else {
+                        log.error("Error starting AMQP-Kafka Bridge", ar.cause());
+                        startFuture.fail(ar.cause());
+                    }
+                });
+    }
 
-		String host = this.amqpBridgeConfig.getEndpointConfig().getHost();
-		int port = this.amqpBridgeConfig.getEndpointConfig().getPort();
+    /**
+     * Connect to an AMQP server/router
+     *
+     * @param startFuture
+     */
+    private void connectAmqpClient(Future<Void> startFuture) {
 
-		ProtonClientOptions options = this.createClientOptions();
+        // the health server starts before connection is made to an AMQP server/router
+        // because the bridge is already alive but not ready yet
+        this.startHealthServer();
 
-		this.client.connect(options, host, port, ar -> {
+        this.client = ProtonClient.create(this.vertx);
 
-			if (ar.succeeded()) {
+        String host = this.amqpBridgeConfig.getEndpointConfig().getHost();
+        int port = this.amqpBridgeConfig.getEndpointConfig().getPort();
 
-				ProtonConnection connection = ar.result();
-				connection.setContainer(CONTAINER_ID);
+        ProtonClientOptions options = this.createClientOptions();
 
-				this.processConnection(connection);
+        this.client.connect(options, host, port, ar -> {
 
-				log.info("AMQP-Kafka Bridge started and connected in client mode to {}:{}", host, port);
-				log.info("Kafka bootstrap servers {}",
-						this.amqpBridgeConfig.getKafkaConfig().getBootstrapServers());
+            if (ar.succeeded()) {
 
-				this.isReady = true;
+                ProtonConnection connection = ar.result();
+                connection.setContainer(CONTAINER_ID);
 
-				startFuture.complete();
+                this.processConnection(connection);
 
-			} else {
-				log.error("Error connecting AMQP-Kafka Bridge as client", ar.cause());
-				startFuture.fail(ar.cause());
-			}
-		});
-	}
-	
-	@Override
-	public void start(Future<Void> startFuture) throws Exception {
+                log.info("AMQP-Kafka Bridge started and connected in client mode to {}:{}", host, port);
+                log.info("Kafka bootstrap servers {}",
+                        this.amqpBridgeConfig.getKafkaConfig().getBootstrapServers());
 
-		log.info("Starting AMQP-Kafka bridge verticle...");
+                this.isReady = true;
 
-		this.endpoints = new HashMap<>();
+                startFuture.complete();
 
-		AmqpMode mode = this.amqpBridgeConfig.getEndpointConfig().getMode();
-		log.info("AMQP-Kafka Bridge configured in {} mode", mode);
-		if (mode == AmqpMode.SERVER) {
-			this.bindAmqpServer(startFuture);
-		} else {
-			this.connectAmqpClient(startFuture);
-		}
-	}
+            } else {
+                log.error("Error connecting AMQP-Kafka Bridge as client", ar.cause());
+                startFuture.fail(ar.cause());
+            }
+        });
+    }
 
-	@Override
-	public void stop(Future<Void> stopFuture) throws Exception {
+    @Override
+    public void start(Future<Void> startFuture) throws Exception {
 
-		log.info("Stopping AMQP-Kafka bridge verticle ...");
+        log.info("Starting AMQP-Kafka bridge verticle...");
 
-		this.isReady = false;
+        this.endpoints = new HashMap<>();
 
-		// for each connection, we have to close the connection itself but before that
-		// all the sink/source endpoints (so the related links inside each of them)
-		this.endpoints.forEach((connection, endpoint) -> {
+        AmqpMode mode = this.amqpBridgeConfig.getEndpointConfig().getMode();
+        log.info("AMQP-Kafka Bridge configured in {} mode", mode);
+        if (mode == AmqpMode.SERVER) {
+            this.bindAmqpServer(startFuture);
+        } else {
+            this.connectAmqpClient(startFuture);
+        }
+    }
 
-			if (endpoint.getSource() != null) {
-				endpoint.getSource().close();
-			}
-			if (!endpoint.getSinks().isEmpty()) {
-				endpoint.getSinks().stream().forEach(sink -> sink.close());
-			}
-			connection.close();
-		});
-		this.endpoints.clear();
+    @Override
+    public void stop(Future<Void> stopFuture) throws Exception {
 
-		if (this.server != null) {
+        log.info("Stopping AMQP-Kafka bridge verticle ...");
 
-			this.server.close(done -> {
+        this.isReady = false;
 
-				if (done.succeeded()) {
-					log.info("AMQP-Kafka bridge has been shut down successfully");
-					stopFuture.complete();
-				} else {
-					log.info("Error while shutting down AMQP-Kafka bridge", done.cause());
-					stopFuture.fail(done.cause());
-				}
-			});
-		}
-	}
+        // for each connection, we have to close the connection itself but before that
+        // all the sink/source endpoints (so the related links inside each of them)
+        this.endpoints.forEach((connection, endpoint) -> {
 
-	/**
-	 * Start an HTTP health server
-	 */
-	private void startHealthServer() {
+            if (endpoint.getSource() != null) {
+                endpoint.getSource().close();
+            }
+            if (!endpoint.getSinks().isEmpty()) {
+                endpoint.getSinks().stream().forEach(sink -> sink.close());
+            }
+            connection.close();
+        });
+        this.endpoints.clear();
 
-		this.vertx.createHttpServer()
-				.requestHandler(request -> {
+        if (this.server != null) {
 
-					if (request.path().equals("/health")) {
-						request.response().setStatusCode(HttpResponseStatus.OK.code()).end();
-					} else if (request.path().equals("/ready")) {
-						HttpResponseStatus httpResponseStatus = isReady ?
-								HttpResponseStatus.OK :
-								HttpResponseStatus.NOT_FOUND;
-						request.response().setStatusCode(httpResponseStatus.code()).end();
-					}
-				})
-				.listen(HEALTH_SERVER_PORT);
-	}
-	
-	/**
-	 * Create an options instance for the ProtonServer
-	 * based on AMQP-Kafka bridge internal configuration
-	 * 
-	 * @return		ProtonServer options instance
-	 */
-	private ProtonServerOptions createServerOptions(){
+            this.server.close(done -> {
 
-		ProtonServerOptions options = new ProtonServerOptions();
-		options.setHost(this.amqpBridgeConfig.getEndpointConfig().getHost());
-		options.setPort(this.amqpBridgeConfig.getEndpointConfig().getPort());
+                if (done.succeeded()) {
+                    log.info("AMQP-Kafka bridge has been shut down successfully");
+                    stopFuture.complete();
+                } else {
+                    log.info("Error while shutting down AMQP-Kafka bridge", done.cause());
+                    stopFuture.fail(done.cause());
+                }
+            });
+        }
+    }
 
-		if (this.amqpBridgeConfig.getEndpointConfig().getCertDir() != null && this.amqpBridgeConfig.getEndpointConfig().getCertDir().length() > 0) {
-			String certDir = this.amqpBridgeConfig.getEndpointConfig().getCertDir();
-			log.info("Enabling SSL configuration for AMQP with TLS certificates from {}", certDir);
-			options.setSsl(true)
-					.setPemTrustOptions(new PemTrustOptions()
-							.addCertPath(new File(certDir, "ca.crt").getAbsolutePath()))
-					.setPemKeyCertOptions(new PemKeyCertOptions()
-							.addCertPath(new File(certDir, "tls.crt").getAbsolutePath())
-							.addKeyPath(new File(certDir, "tls.key").getAbsolutePath()));
-		}
+    /**
+     * Start an HTTP health server
+     */
+    private void startHealthServer() {
 
-		return options;
-	}
+        this.vertx.createHttpServer()
+                .requestHandler(request -> {
 
-	/**
-	 * Create an options instance for the ProtonClient
-	 *
-	 * @return		ProtonClient options instance
-	 */
-	private ProtonClientOptions createClientOptions() {
+                    if (request.path().equals("/health")) {
+                        request.response().setStatusCode(HttpResponseStatus.OK.code()).end();
+                    } else if (request.path().equals("/ready")) {
+                        HttpResponseStatus httpResponseStatus = isReady ?
+                                HttpResponseStatus.OK :
+                                HttpResponseStatus.NOT_FOUND;
+                        request.response().setStatusCode(httpResponseStatus.code()).end();
+                    }
+                })
+                .listen(HEALTH_SERVER_PORT);
+    }
 
-		ProtonClientOptions options = new ProtonClientOptions();
-		options.setConnectTimeout(1000);
-		options.setReconnectAttempts(-1).setReconnectInterval(1000); // reconnect forever, every 1000 millisecs
+    /**
+     * Create an options instance for the ProtonServer
+     * based on AMQP-Kafka bridge internal configuration
+     *
+     * @return ProtonServer options instance
+     */
+    private ProtonServerOptions createServerOptions() {
 
-		if (this.amqpBridgeConfig.getEndpointConfig().getCertDir() != null && this.amqpBridgeConfig.getEndpointConfig().getCertDir().length() > 0) {
-			String certDir = this.amqpBridgeConfig.getEndpointConfig().getCertDir();
-			log.info("Enabling SSL configuration for AMQP with TLS certificates from {}", certDir);
-			options.setSsl(true)
-					.addEnabledSaslMechanism("EXTERNAL")
-					.setHostnameVerificationAlgorithm("")
-					.setPemTrustOptions(new PemTrustOptions()
-							.addCertPath(new File(certDir, "ca.crt").getAbsolutePath()))
-					.setPemKeyCertOptions(new PemKeyCertOptions()
-							.addCertPath(new File(certDir, "tls.crt").getAbsolutePath())
-							.addKeyPath(new File(certDir, "tls.key").getAbsolutePath()));
-		}
+        ProtonServerOptions options = new ProtonServerOptions();
+        options.setHost(this.amqpBridgeConfig.getEndpointConfig().getHost());
+        options.setPort(this.amqpBridgeConfig.getEndpointConfig().getPort());
 
-		return options;
-	}
-	
-	/**
-	 * Process a connection request accepted by the Proton server or
-	 * open the connection if it's working as client
-	 * 
-	 * @param connection		Proton connection accepted instance
-	 */
-	private void processConnection(ProtonConnection connection) {
+        if (this.amqpBridgeConfig.getEndpointConfig().getCertDir() != null && this.amqpBridgeConfig.getEndpointConfig().getCertDir().length() > 0) {
+            String certDir = this.amqpBridgeConfig.getEndpointConfig().getCertDir();
+            log.info("Enabling SSL configuration for AMQP with TLS certificates from {}", certDir);
+            options.setSsl(true)
+                    .setPemTrustOptions(new PemTrustOptions()
+                            .addCertPath(new File(certDir, "ca.crt").getAbsolutePath()))
+                    .setPemKeyCertOptions(new PemKeyCertOptions()
+                            .addCertPath(new File(certDir, "tls.crt").getAbsolutePath())
+                            .addKeyPath(new File(certDir, "tls.key").getAbsolutePath()));
+        }
 
-		connection
-		.openHandler(this::processOpenConnection)
-		.closeHandler(this::processCloseConnection)
-		.disconnectHandler(this::processDisconnection)
-		.sessionOpenHandler(this::processOpenSession)
-		.receiverOpenHandler(receiver -> {
-			this.processOpenReceiver(connection, receiver);
-		})
-		.senderOpenHandler(sender -> {
-			this.processOpenSender(connection, sender);
-		});
+        return options;
+    }
 
-		if (this.amqpBridgeConfig.getEndpointConfig().getMode() == AmqpMode.CLIENT) {
-			connection.open();
-		}
-	}
-	
-	/**
-	 * Handler for connection opened by remote
-	 *
-	 * @param ar		async result with info on related Proton connection
-	 */
-	private void processOpenConnection(AsyncResult<ProtonConnection> ar) {
+    /**
+     * Create an options instance for the ProtonClient
+     *
+     * @return ProtonClient options instance
+     */
+    private ProtonClientOptions createClientOptions() {
 
-		if (ar.succeeded()) {
+        ProtonClientOptions options = new ProtonClientOptions();
+        options.setConnectTimeout(1000);
+        options.setReconnectAttempts(-1).setReconnectInterval(1000); // reconnect forever, every 1000 millisecs
 
-			log.info("Connection opened by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
+        if (this.amqpBridgeConfig.getEndpointConfig().getCertDir() != null && this.amqpBridgeConfig.getEndpointConfig().getCertDir().length() > 0) {
+            String certDir = this.amqpBridgeConfig.getEndpointConfig().getCertDir();
+            log.info("Enabling SSL configuration for AMQP with TLS certificates from {}", certDir);
+            options.setSsl(true)
+                    .addEnabledSaslMechanism("EXTERNAL")
+                    .setHostnameVerificationAlgorithm("")
+                    .setPemTrustOptions(new PemTrustOptions()
+                            .addCertPath(new File(certDir, "ca.crt").getAbsolutePath()))
+                    .setPemKeyCertOptions(new PemKeyCertOptions()
+                            .addCertPath(new File(certDir, "tls.crt").getAbsolutePath())
+                            .addKeyPath(new File(certDir, "tls.key").getAbsolutePath()));
+        }
 
-			ProtonConnection connection = ar.result();
-			connection.open();
+        return options;
+    }
 
-			// new connection, preparing for hosting related sink/source endpoints
-			if (!this.endpoints.containsKey(connection)) {
-				this.endpoints.put(connection, new ConnectionEndpoint());
-			}
-		}
-	}
-	
-	/**
-	 * Handler for connection closed by remote
-	 *
-	 * @param ar		async result with info on related Proton connection
-	 */
-	private void processCloseConnection(AsyncResult<ProtonConnection> ar) {
+    /**
+     * Process a connection request accepted by the Proton server or
+     * open the connection if it's working as client
+     *
+     * @param connection Proton connection accepted instance
+     */
+    private void processConnection(ProtonConnection connection) {
 
-		if (ar.succeeded()) {
-			log.info("Connection closed by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
-			this.closeConnectionEndpoint(ar.result());
-		}
-	}
-	
-	/**
-	 * Handler for disconnection from the remote
-	 *
-	 * @param connection	related Proton connection closed
-	 */
-	private void processDisconnection(ProtonConnection connection) {
+        connection
+                .openHandler(this::processOpenConnection)
+                .closeHandler(this::processCloseConnection)
+                .disconnectHandler(this::processDisconnection)
+                .sessionOpenHandler(this::processOpenSession)
+                .receiverOpenHandler(receiver -> {
+                    this.processOpenReceiver(connection, receiver);
+                })
+                .senderOpenHandler(sender -> {
+                    this.processOpenSender(connection, sender);
+                });
 
-		log.info("Disconnection from {} {}", connection.getRemoteHostname(), connection.getRemoteContainer());
-		this.closeConnectionEndpoint(connection);
-	}
+        if (this.amqpBridgeConfig.getEndpointConfig().getMode() == AmqpMode.CLIENT) {
+            connection.open();
+        }
+    }
 
-	/**
-	 * Close a connection endpoint and before that all the related sink/source endpoints
-	 *
-	 * @param connection	connection for which closing related endpoint
-	 */
-	private void closeConnectionEndpoint(ProtonConnection connection) {
+    /**
+     * Handler for connection opened by remote
+     *
+     * @param ar async result with info on related Proton connection
+     */
+    private void processOpenConnection(AsyncResult<ProtonConnection> ar) {
 
-		// closing connection, but before closing all sink/source endpoints
-		if (this.endpoints.containsKey(connection)) {
-			ConnectionEndpoint endpoint = this.endpoints.get(connection);
-			if (endpoint.getSource() != null) {
-				endpoint.getSource().close();
-			}
-			if (!endpoint.getSinks().isEmpty()) {
-				endpoint.getSinks().stream().forEach(sink -> sink.close());
-			}
-			connection.close();
-			this.endpoints.remove(connection);
-		}
-	}
+        if (ar.succeeded()) {
 
-	/**
-	 * Handler for session closing from the remote
-	 *
-	 * @param session	related Proton session closed
-	 */
-	private void processOpenSession(ProtonSession session) {
+            log.info("Connection opened by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
 
-		session.closeHandler(ar -> {
+            ProtonConnection connection = ar.result();
+            connection.open();
 
-			if (ar.succeeded()) {
-				ar.result().close();
-			}
+            // new connection, preparing for hosting related sink/source endpoints
+            if (!this.endpoints.containsKey(connection)) {
+                this.endpoints.put(connection, new ConnectionEndpoint());
+            }
+        }
+    }
 
-		}).open();
-	}
-	
-	/**
-	 * Handler for attached link by a remote sender
-	 *
-	 * @param connection	connection which the receiver link belong to
-	 * @param receiver		receiver link created by the underlying Proton library
-	 * 						by which handling communication with remote sender
-	 */
-	private void processOpenReceiver(ProtonConnection connection, ProtonReceiver receiver) {
+    /**
+     * Handler for connection closed by remote
+     *
+     * @param ar async result with info on related Proton connection
+     */
+    private void processCloseConnection(AsyncResult<ProtonConnection> ar) {
 
-		log.info("Remote sender attached {}", receiver.getName());
+        if (ar.succeeded()) {
+            log.info("Connection closed by {} {}", ar.result().getRemoteHostname(), ar.result().getRemoteContainer());
+            this.closeConnectionEndpoint(ar.result());
+        }
+    }
 
-		ConnectionEndpoint endpoint = this.endpoints.get(connection);
-		SourceBridgeEndpoint source = endpoint.getSource();
-		// the source endpoint is only one, handling more AMQP receiver links internally
-		if (source == null) {
-			source = new AmqpSourceBridgeEndpoint(this.vertx, this.amqpBridgeConfig);
+    /**
+     * Handler for disconnection from the remote
+     *
+     * @param connection related Proton connection closed
+     */
+    private void processDisconnection(ProtonConnection connection) {
 
-			source.closeHandler(s -> {
-				endpoint.setSource(null);
-			});
-			source.open();
-			endpoint.setSource(source);
-		}
-		source.handle(new AmqpEndpoint(receiver));
-	}
-	
-	/**
-	 * Handler for attached link by a remote receiver
-	 *
-	 * @param connection	connection which the sender link belong to
-	 * @param sender		sender link created by the underlying Proton library
-	 * 						by which handling communication with remote receiver
-	 */
-	private void processOpenSender(ProtonConnection connection, ProtonSender sender) {
+        log.info("Disconnection from {} {}", connection.getRemoteHostname(), connection.getRemoteContainer());
+        this.closeConnectionEndpoint(connection);
+    }
 
-		log.info("Remote receiver attached {}", sender.getName());
-		
-		// create and add a new sink to the map
-		SinkBridgeEndpoint<?,?> sink = new AmqpSinkBridgeEndpoint<>(this.vertx, this.amqpBridgeConfig);
+    /**
+     * Close a connection endpoint and before that all the related sink/source endpoints
+     *
+     * @param connection connection for which closing related endpoint
+     */
+    private void closeConnectionEndpoint(ProtonConnection connection) {
 
-		sink.closeHandler(s -> {
-			this.endpoints.get(connection).getSinks().remove(s);
-		});
-		sink.open();
-		this.endpoints.get(connection).getSinks().add(sink);
+        // closing connection, but before closing all sink/source endpoints
+        if (this.endpoints.containsKey(connection)) {
+            ConnectionEndpoint endpoint = this.endpoints.get(connection);
+            if (endpoint.getSource() != null) {
+                endpoint.getSource().close();
+            }
+            if (!endpoint.getSinks().isEmpty()) {
+                endpoint.getSinks().stream().forEach(sink -> sink.close());
+            }
+            connection.close();
+            this.endpoints.remove(connection);
+        }
+    }
 
-		sink.handle(new AmqpEndpoint(sender));
-	}
+    /**
+     * Handler for session closing from the remote
+     *
+     * @param session related Proton session closed
+     */
+    private void processOpenSession(ProtonSession session) {
 
-	/**
-	 * Create a new AMQP error condition
-	 *
-	 * @param error			AMQP error
-	 * @param description	description for the AMQP error condition
-	 * @return				AMQP error condition
-	 */
-	static ErrorCondition newError(String error, String description) {
-		return new ErrorCondition(Symbol.getSymbol(error), description);
-	}
+        session.closeHandler(ar -> {
 
-	/**
-	 * Detach the provided link with a related error (and description)
-	 *
-	 * @param link			AMQP link to detach
-	 * @param error			AMQP error
-	 * @param description	description for the AMQP error condition
-	 */
-	static void detachWithError(ProtonLink<?> link, String error, String description) {
-		detachWithError(link, newError(error, description));
-	}
+            if (ar.succeeded()) {
+                ar.result().close();
+            }
 
-	/**
-	 * Detach the provided link with an AMQP error condition
-	 *
-	 * @param link			AMQP link to detach
-	 * @param error			AMQP error condition
-	 */
-	static void detachWithError(ProtonLink<?> link, ErrorCondition error) {
-		log.error("Detaching link {} due to error {}, description: {}", link, error.getCondition(), error.getDescription());
-		link.setSource(null)
-		.open()
-		.setCondition(error)
-		.close();
-	}
+        }).open();
+    }
 
-	/**
-	 * Instantiate and return an AMQP message converter
-	 *
-	 * @param className		message converter class name to instantiate
-	 * @return				an AMQP message converter instance
-	 * @throws AmqpErrorConditionException
-	 */
-	static MessageConverter<?, ?, ?, ?> instantiateConverter(String className) throws AmqpErrorConditionException {
-		
-		if (className == null || className.isEmpty()) {
-			return (MessageConverter<?, ?, ?, ?>)new AmqpDefaultMessageConverter();
-		} else {
-			Object instance = null;
-			try {
-				instance = Class.forName(className).newInstance();
-			} catch (ClassNotFoundException | InstantiationException | IllegalAccessException 
-					| RuntimeException e) {
-				log.debug("Could not instantiate message converter {}", className, e);
-				throw new AmqpErrorConditionException(AmqpBridge.AMQP_ERROR_CONFIGURATION, "configured message converter class could not be instantiated: " + className);
-			} 
-			
-			if (instance instanceof MessageConverter) {
-				return (MessageConverter<?,?,?,?>)instance;
-			} else {
-				throw new AmqpErrorConditionException(AmqpBridge.AMQP_ERROR_CONFIGURATION, "configured message converter class is not an instanceof " + MessageConverter.class.getName() + ": " + className);
-			}
-		}
-	}
+    /**
+     * Handler for attached link by a remote sender
+     *
+     * @param connection connection which the receiver link belong to
+     * @param receiver receiver link created by the underlying Proton library
+     *                 by which handling communication with remote sender
+     */
+    private void processOpenReceiver(ProtonConnection connection, ProtonReceiver receiver) {
+
+        log.info("Remote sender attached {}", receiver.getName());
+
+        ConnectionEndpoint endpoint = this.endpoints.get(connection);
+        SourceBridgeEndpoint source = endpoint.getSource();
+        // the source endpoint is only one, handling more AMQP receiver links internally
+        if (source == null) {
+            source = new AmqpSourceBridgeEndpoint(this.vertx, this.amqpBridgeConfig);
+
+            source.closeHandler(s -> {
+                endpoint.setSource(null);
+            });
+            source.open();
+            endpoint.setSource(source);
+        }
+        source.handle(new AmqpEndpoint(receiver));
+    }
+
+    /**
+     * Handler for attached link by a remote receiver
+     *
+     * @param connection connection which the sender link belong to
+     * @param sender sender link created by the underlying Proton library
+     *               by which handling communication with remote receiver
+     */
+    private void processOpenSender(ProtonConnection connection, ProtonSender sender) {
+
+        log.info("Remote receiver attached {}", sender.getName());
+
+        // create and add a new sink to the map
+        SinkBridgeEndpoint<?, ?> sink = new AmqpSinkBridgeEndpoint<>(this.vertx, this.amqpBridgeConfig);
+
+        sink.closeHandler(s -> {
+            this.endpoints.get(connection).getSinks().remove(s);
+        });
+        sink.open();
+        this.endpoints.get(connection).getSinks().add(sink);
+
+        sink.handle(new AmqpEndpoint(sender));
+    }
+
+    /**
+     * Create a new AMQP error condition
+     *
+     * @param error AMQP error
+     * @param description description for the AMQP error condition
+     * @return AMQP error condition
+     */
+    static ErrorCondition newError(String error, String description) {
+        return new ErrorCondition(Symbol.getSymbol(error), description);
+    }
+
+    /**
+     * Detach the provided link with a related error (and description)
+     *
+     * @param link AMQP link to detach
+     * @param error AMQP error
+     * @param description description for the AMQP error condition
+     */
+    static void detachWithError(ProtonLink<?> link, String error, String description) {
+        detachWithError(link, newError(error, description));
+    }
+
+    /**
+     * Detach the provided link with an AMQP error condition
+     *
+     * @param link AMQP link to detach
+     * @param error AMQP error condition
+     */
+    static void detachWithError(ProtonLink<?> link, ErrorCondition error) {
+        log.error("Detaching link {} due to error {}, description: {}", link, error.getCondition(), error.getDescription());
+        link.setSource(null).open().setCondition(error).close();
+    }
+
+    /**
+     * Instantiate and return an AMQP message converter
+     *
+     * @param className message converter class name to instantiate
+     * @return an AMQP message converter instance
+     * @throws AmqpErrorConditionException
+     */
+    static MessageConverter<?, ?, ?, ?> instantiateConverter(String className) throws AmqpErrorConditionException {
+
+        if (className == null || className.isEmpty()) {
+            return (MessageConverter<?, ?, ?, ?>) new AmqpDefaultMessageConverter();
+        } else {
+            Object instance = null;
+            try {
+                instance = Class.forName(className).newInstance();
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+                    | RuntimeException e) {
+                log.debug("Could not instantiate message converter {}", className, e);
+                throw new AmqpErrorConditionException(AmqpBridge.AMQP_ERROR_CONFIGURATION, "configured message converter class could not be instantiated: " + className);
+            }
+
+            if (instance instanceof MessageConverter) {
+                return (MessageConverter<?, ?, ?, ?>) instance;
+            } else {
+                throw new AmqpErrorConditionException(AmqpBridge.AMQP_ERROR_CONFIGURATION, "configured message converter class is not an instanceof " + MessageConverter.class.getName() + ": " + className);
+            }
+        }
+    }
 
 }
