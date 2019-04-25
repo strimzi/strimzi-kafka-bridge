@@ -45,6 +45,7 @@ import java.util.Map.Entry;
  * JSON implementation class for the message conversion
  * between Kafka record and AMQP message
  */
+@SuppressWarnings({"checkstyle:NPathComplexity", "checkstyle:CyclomaticComplexity"})
 public class AmqpJsonMessageConverter implements MessageConverter<String, byte[], Message, Collection<Message>> {
 
     // AMQP message section to encode in JSON

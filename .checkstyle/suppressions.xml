@@ -8,7 +8,4 @@
 
     <!-- Note that [/\\] must be used as the path separator for cross-platform support -->
 
-    <suppress checks="NPathComplexity|CyclomaticComplexity"
-              files="io[/\\]strimzi[/\\]kafka[/\\]bridge[/\\]amqp[/\\]converter[/\\]AmqpJsonMessageConverter.java"/>
-
 </suppressions>
