@@ -470,7 +470,7 @@
                 "auto.offset.reset": {
                     "type": "string"
                 },
-                "auto.commit.enable": {
+                "enable.auto.commit": {
                     "type": "string"
                 },
                 "fetch.min.bytes": {
@@ -480,7 +480,7 @@
                     "type": "string"
                 }
             },
-            "example": "{\n    \"name\": \"consumer1\",\n    \"format\": \"binary\",\n    \"auto.offset.reset\": \"earliest\",\n    \"auto.commit.enable\": \"false\",\n    \"fetch.min.bytes\": \"512\",\n    \"consumer.request.timeout.ms\": \"30000\"\n}"
+            "example": "{\n    \"name\": \"consumer1\",\n    \"format\": \"binary\",\n    \"auto.offset.reset\": \"earliest\",\n    \"enable.auto.commit\": \"false\",\n    \"fetch.min.bytes\": \"512\",\n    \"consumer.request.timeout.ms\": \"30000\"\n}"
         },
         "Offset": {
             "title": "Offset",
