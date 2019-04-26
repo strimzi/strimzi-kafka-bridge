@@ -47,6 +47,7 @@ import static java.lang.String.format;
  * Class in charge for reading from Apache Kafka
  * and bridging into AMQP traffic to receivers
  */
+@SuppressWarnings("checkstyle:NPathComplexity")
 public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     private static final String GROUP_ID_MATCH = "/group.id/";
