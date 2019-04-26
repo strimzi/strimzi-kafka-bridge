@@ -100,8 +100,8 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     /**
      * Constructor
      *
-     * @param vertx	Vert.x instance
-     * @param bridgeConfigProperties	Bridge configuration
+     * @param vertx Vert.x instance
+     * @param bridgeConfigProperties Bridge configuration
      */
     public SinkBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfigProperties) {
         this.vertx = vertx;
@@ -177,7 +177,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     /**
      * Execute a request for assigning a specific partition
      *
-     * @param partitionsResult	list of requested and assigned partitions
+     * @param partitionsResult list of requested and assigned partitions
      */
     private void partitionsForHandler(AsyncResult<List<PartitionInfo>> partitionsResult) {
 
@@ -197,7 +197,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             log.debug("Requested partition {} present", this.partition);
             TopicPartition topicPartition = new TopicPartition(this.kafkaTopic, this.partition);
 
-            this.consumer.assign(Collections.singleton(topicPartition), assignResult-> {
+            this.consumer.assign(Collections.singleton(topicPartition), assignResult -> {
 
                 this.handleAssign(assignResult);
                 if (assignResult.failed()) {
@@ -210,7 +210,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
                     log.debug("Seeking to offset {}", this.offset);
 
-                    this.consumer.seek(topicPartition, this.offset, seekResult ->{
+                    this.consumer.seek(topicPartition, this.offset, seekResult -> {
 
                         this.handleSeek(seekResult);
                         if (seekResult.failed()) {
@@ -270,7 +270,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             partitionsAssigned(partitions);
         });
 
-        this.consumer.subscribe(this.kafkaTopic, subscribeResult-> {
+        this.consumer.subscribe(this.kafkaTopic, subscribeResult -> {
 
             this.handleSubscribe(subscribeResult);
 
@@ -303,7 +303,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         log.debug("Processing key {} value {} partition {} offset {}",
                 record.key(), record.value(), record.partition(), record.offset());
 
-        switch (this.qos){
+        switch (this.qos) {
 
             case AT_MOST_ONCE:
                 // Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
@@ -357,7 +357,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     /**
      * Commit the offsets in the offset tracker to Kafka.
      *
-     * @param clear			Whether to clear the offset tracker after committing.
+     * @param clear Whether to clear the offset tracker after committing.
      */
     private void commitOffsets(boolean clear) {
         Map<org.apache.kafka.common.TopicPartition, OffsetAndMetadata> offsets = this.offsetTracker.getOffsets();
@@ -405,7 +405,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     private boolean endOfBatch() {
-        return this.recordIndex == this.batchSize-1;
+        return this.recordIndex == this.batchSize - 1;
     }
 
     private boolean startOfBatch() {
@@ -566,13 +566,13 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.manualRecordBatchHandler = manualRecordBatchHandler;
 
         this.consumer.poll(this.pollTimeOut, pollResult -> {
-            if (this.manualRecordBatchHandler != null){
+            if (this.manualRecordBatchHandler != null) {
                 this.handleManualRecords(pollResult);
             }
         });
     }
 
-    protected void commit(Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata> offsetsData, Handler<AsyncResult<Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata>>> commitOffsetsHandler){
+    protected void commit(Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata> offsetsData, Handler<AsyncResult<Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata>>> commitOffsetsHandler) {
         this.commitOffsetsHandler = commitOffsetsHandler;
         this.consumer.commit(offsetsData, result -> {
             if (this.commitOffsetsHandler != null) {

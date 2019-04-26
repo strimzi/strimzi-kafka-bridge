@@ -24,34 +24,34 @@ import io.vertx.core.Handler;
  */
 public interface BridgeEndpoint {
 
-	/**
-	 * Open the bridge endpoint
-	 */
-	void open();
-	
-	/**
-	 * Close the bridge endpoint
-	 */
-	void close();
-	
-	/**
-	 * Handler for the remote protocol endpoint
-	 * @param endpoint	Remote protocol endpoint to handle
-	 */
-	void handle(Endpoint<?> endpoint);
+    /**
+     * Open the bridge endpoint
+     */
+    void open();
+
+    /**
+     * Close the bridge endpoint
+     */
+    void close();
 
     /**
      * Handler for the remote protocol endpoint
-     * @param endpoint	Remote protocol endpoint to handle
+     * @param endpoint Remote protocol endpoint to handle
+     */
+    void handle(Endpoint<?> endpoint);
+
+    /**
+     * Handler for the remote protocol endpoint
+     * @param endpoint Remote protocol endpoint to handle
      * @param handler handler for result
      */
-	void handle(Endpoint<?> endpoint, Handler<?> handler);
-	
-	/**
-	 * Sets an handler called when a bridge endpoint is closed due to internal processing
-	 * 
-	 * @param endpointCloseHandler	The handler
-	 * @return	The bridge endpoint
-	 */
-	BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler);
+    void handle(Endpoint<?> endpoint, Handler<?> handler);
+
+    /**
+     * Sets an handler called when a bridge endpoint is closed due to internal processing
+     *
+     * @param endpointCloseHandler The handler
+     * @return The bridge endpoint
+     */
+    BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler);
 }

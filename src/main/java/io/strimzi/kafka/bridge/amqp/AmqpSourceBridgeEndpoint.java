@@ -42,181 +42,181 @@ import java.util.Map;
  * from senders and bridging into Apache Kafka
  */
 public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
-	
-	// converter from AMQP message to ConsumerRecord
-	private MessageConverter<String, byte[], Message, Collection<Message>> converter;
 
-	// receiver link for handling incoming message
-	private Map<String, ProtonReceiver> receivers;
-	
-	/**
-	 * Constructor
-	 * 
-	 * @param vertx	Vert.x instance
-	 * @param bridgeConfigProperties	Bridge configuration
-	 */
-	public AmqpSourceBridgeEndpoint(Vertx vertx, AmqpBridgeConfig bridgeConfigProperties) {
-		super(vertx, bridgeConfigProperties);
-		this.receivers = new HashMap<>();
-	}
-	
-	@Override
-	public void close() {
+    // converter from AMQP message to ConsumerRecord
+    private MessageConverter<String, byte[], Message, Collection<Message>> converter;
 
-		// close Kafka related stuff
-		super.close();
-		
-		this.receivers.forEach((name, receiver) -> {
-			receiver.close();
-		});
-		this.receivers.clear();
-	}
+    // receiver link for handling incoming message
+    private Map<String, ProtonReceiver> receivers;
 
-	@Override
-	public void handle(Endpoint<?> endpoint) {
+    /**
+     * Constructor
+     *
+     * @param vertx Vert.x instance
+     * @param bridgeConfigProperties Bridge configuration
+     */
+    public AmqpSourceBridgeEndpoint(Vertx vertx, AmqpBridgeConfig bridgeConfigProperties) {
+        super(vertx, bridgeConfigProperties);
+        this.receivers = new HashMap<>();
+    }
 
-		ProtonLink<?> link = (ProtonLink<?>) endpoint.get();
-		AmqpConfig amqpConfigProperties =
-				(AmqpConfig) this.bridgeConfigProperties.getEndpointConfig();
+    @Override
+    public void close() {
 
-		if (!(link instanceof ProtonReceiver)) {
-			throw new IllegalArgumentException("This Proton link must be a receiver");
-		}
+        // close Kafka related stuff
+        super.close();
 
-		if (this.converter == null) {
-			try {
-				this.converter = (MessageConverter<String, byte[], Message, Collection<Message>>) AmqpBridge.instantiateConverter(amqpConfigProperties.getMessageConverter());
-			} catch (AmqpErrorConditionException e) {
-				AmqpBridge.detachWithError(link, e.toCondition());
-				return;
-			}
-		}
+        this.receivers.forEach((name, receiver) -> {
+            receiver.close();
+        });
+        this.receivers.clear();
+    }
 
-		ProtonReceiver receiver = (ProtonReceiver)link;
-		
-		// the delivery state is related to the acknowledgement from Apache Kafka
-		receiver.setTarget(receiver.getRemoteTarget())
-				.setAutoAccept(false)
-				.closeHandler(ar -> {
-					if (ar.succeeded()) {
-						this.processCloseReceiver(ar.result());
-					}
-				})
-				.detachHandler(ar -> {
-					this.processCloseReceiver(receiver);
-				})
-				.handler((delivery, message) -> {
-					this.processMessage(receiver, delivery, message);
-				});
-				
-		if (receiver.getRemoteQoS() == ProtonQoS.AT_MOST_ONCE) {
-			// sender settle mode is SETTLED (so AT_MOST_ONCE QoS), we assume Apache Kafka
-			// no problem in throughput terms so use prefetch due to no ack from Kafka server
-			receiver.setPrefetch(amqpConfigProperties.getFlowCredit());
-		} else {
-			// sender settle mode is UNSETTLED (or MIXED) (so AT_LEAST_ONCE QoS).
-			// Thanks to the ack from Kafka server we can modulate flow control
-			receiver.setPrefetch(0)
-					.flow(amqpConfigProperties.getFlowCredit());
-		}
+    @Override
+    public void handle(Endpoint<?> endpoint) {
 
-		receiver.open();
+        ProtonLink<?> link = (ProtonLink<?>) endpoint.get();
+        AmqpConfig amqpConfigProperties =
+                (AmqpConfig) this.bridgeConfigProperties.getEndpointConfig();
 
-		this.receivers.put(receiver.getName(), receiver);
-	}
+        if (!(link instanceof ProtonReceiver)) {
+            throw new IllegalArgumentException("This Proton link must be a receiver");
+        }
 
-	@Override
-	public void handle(Endpoint<?> endpoint, Handler<?> handler) {
+        if (this.converter == null) {
+            try {
+                this.converter = (MessageConverter<String, byte[], Message, Collection<Message>>) AmqpBridge.instantiateConverter(amqpConfigProperties.getMessageConverter());
+            } catch (AmqpErrorConditionException e) {
+                AmqpBridge.detachWithError(link, e.toCondition());
+                return;
+            }
+        }
 
-	}
+        ProtonReceiver receiver = (ProtonReceiver) link;
 
-	/**
-	 * Send an "accepted" delivery to the AMQP remote sender
-	 *
-	 * @param linkName	AMQP link name
-	 * @param delivery	AMQP delivery
-	 */
-	private void acceptedDelivery(String linkName, ProtonDelivery delivery) {
+        // the delivery state is related to the acknowledgement from Apache Kafka
+        receiver.setTarget(receiver.getRemoteTarget())
+                .setAutoAccept(false)
+                .closeHandler(ar -> {
+                    if (ar.succeeded()) {
+                        this.processCloseReceiver(ar.result());
+                    }
+                })
+                .detachHandler(ar -> {
+                    this.processCloseReceiver(receiver);
+                })
+                .handler((delivery, message) -> {
+                    this.processMessage(receiver, delivery, message);
+                });
 
-		delivery.disposition(Accepted.getInstance(), true);
-		log.debug("Delivery sent [accepted] on link {}", linkName);
-	}
+        if (receiver.getRemoteQoS() == ProtonQoS.AT_MOST_ONCE) {
+            // sender settle mode is SETTLED (so AT_MOST_ONCE QoS), we assume Apache Kafka
+            // no problem in throughput terms so use prefetch due to no ack from Kafka server
+            receiver.setPrefetch(amqpConfigProperties.getFlowCredit());
+        } else {
+            // sender settle mode is UNSETTLED (or MIXED) (so AT_LEAST_ONCE QoS).
+            // Thanks to the ack from Kafka server we can modulate flow control
+            receiver.setPrefetch(0)
+                    .flow(amqpConfigProperties.getFlowCredit());
+        }
 
-	/**
-	 * Send a "rejected" delivery to the AMQP remote sender
-	 *
-	 * @param linkName	AMQP link name
-	 * @param delivery	AMQP delivery
-	 * @param cause	exception related to the rejection cause
-	 */
-	private void rejectedDelivery(String linkName, ProtonDelivery delivery, Throwable cause) {
+        receiver.open();
 
-		Rejected rejected = new Rejected();
-		rejected.setError(new ErrorCondition(Symbol.valueOf(AmqpBridge.AMQP_ERROR_SEND_TO_KAFKA),
-				cause.getMessage()));
-		delivery.disposition(rejected, true);
-		log.debug("Delivery sent [rejected] on link {}", linkName);
-	}
+        this.receivers.put(receiver.getName(), receiver);
+    }
 
-	/**
-	 * Process the message received on the related receiver link 
-	 *
-	 * @param receiver		Proton receiver instance
-	 * @param delivery		Proton delivery instance
-	 * @param message		AMQP message received
-	 */
-	private void processMessage(ProtonReceiver receiver, ProtonDelivery delivery, Message message) {
+    @Override
+    public void handle(Endpoint<?> endpoint, Handler<?> handler) {
 
-		// replace unsupported "/" (in a topic name in Kafka) with "."
-		String kafkaTopic = (receiver.getTarget().getAddress() != null) ?
-				receiver.getTarget().getAddress().replace('/', '.') :
-				null;
+    }
 
-		KafkaProducerRecord<String, byte[]> krecord = this.converter.toKafkaRecord(kafkaTopic, null, message);
-				
-		if (delivery.remotelySettled()) {
-			
-			// message settled (by sender), no feedback need by Apache Kafka, no disposition to be sent
-			this.send(krecord, null);
-			
-		} else {
-			// message unsettled (by sender), feedback needed by Apache Kafka, disposition to be sent accordingly
-			this.send(krecord, (writeResult) -> {
+    /**
+     * Send an "accepted" delivery to the AMQP remote sender
+     *
+     * @param linkName AMQP link name
+     * @param delivery AMQP delivery
+     */
+    private void acceptedDelivery(String linkName, ProtonDelivery delivery) {
 
-				if (writeResult.failed()) {
+        delivery.disposition(Accepted.getInstance(), true);
+        log.debug("Delivery sent [accepted] on link {}", linkName);
+    }
 
-					Throwable exception = writeResult.cause();
-					// record not delivered, send REJECTED disposition to the AMQP sender
-					log.error("Error on delivery to Kafka {}", exception.getMessage());
-					this.rejectedDelivery(receiver.getName(), delivery, exception);
-					
-				} else {
+    /**
+     * Send a "rejected" delivery to the AMQP remote sender
+     *
+     * @param linkName AMQP link name
+     * @param delivery AMQP delivery
+     * @param cause exception related to the rejection cause
+     */
+    private void rejectedDelivery(String linkName, ProtonDelivery delivery, Throwable cause) {
 
-					RecordMetadata metadata = writeResult.result();
-					// record delivered, send ACCEPTED disposition to the AMQP sender
-					log.debug("Delivered to Kafka on topic {} at partition {} [{}]", metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
-					this.acceptedDelivery(receiver.getName(), delivery);
-				}
-			});
-		}
-	}
+        Rejected rejected = new Rejected();
+        rejected.setError(new ErrorCondition(Symbol.valueOf(AmqpBridge.AMQP_ERROR_SEND_TO_KAFKA),
+                cause.getMessage()));
+        delivery.disposition(rejected, true);
+        log.debug("Delivery sent [rejected] on link {}", linkName);
+    }
 
-	/**
-	 * Handle for detached link by the remote sender
-	 * @param receiver		Proton receiver instance
-	 */
-	private void processCloseReceiver(ProtonReceiver receiver) {
+    /**
+     * Process the message received on the related receiver link
+     *
+     * @param receiver Proton receiver instance
+     * @param delivery Proton delivery instance
+     * @param message AMQP message received
+     */
+    private void processMessage(ProtonReceiver receiver, ProtonDelivery delivery, Message message) {
 
-		log.info("Remote AMQP sender detached");
+        // replace unsupported "/" (in a topic name in Kafka) with "."
+        String kafkaTopic = (receiver.getTarget().getAddress() != null) ?
+                receiver.getTarget().getAddress().replace('/', '.') :
+                null;
 
-		// close and remove the receiver link
-		receiver.close();
-		this.receivers.remove(receiver.getName());
+        KafkaProducerRecord<String, byte[]> krecord = this.converter.toKafkaRecord(kafkaTopic, null, message);
 
-		// if the source endpoint has no receiver links, it can be closed
-		if (this.receivers.isEmpty()) {
-			this.close();
-			this.handleClose();
-		}
-	}
+        if (delivery.remotelySettled()) {
+
+            // message settled (by sender), no feedback need by Apache Kafka, no disposition to be sent
+            this.send(krecord, null);
+
+        } else {
+            // message unsettled (by sender), feedback needed by Apache Kafka, disposition to be sent accordingly
+            this.send(krecord, writeResult -> {
+
+                if (writeResult.failed()) {
+
+                    Throwable exception = writeResult.cause();
+                    // record not delivered, send REJECTED disposition to the AMQP sender
+                    log.error("Error on delivery to Kafka {}", exception.getMessage());
+                    this.rejectedDelivery(receiver.getName(), delivery, exception);
+
+                } else {
+
+                    RecordMetadata metadata = writeResult.result();
+                    // record delivered, send ACCEPTED disposition to the AMQP sender
+                    log.debug("Delivered to Kafka on topic {} at partition {} [{}]", metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
+                    this.acceptedDelivery(receiver.getName(), delivery);
+                }
+            });
+        }
+    }
+
+    /**
+     * Handle for detached link by the remote sender
+     * @param receiver Proton receiver instance
+     */
+    private void processCloseReceiver(ProtonReceiver receiver) {
+
+        log.info("Remote AMQP sender detached");
+
+        // close and remove the receiver link
+        receiver.close();
+        this.receivers.remove(receiver.getName());
+
+        // if the source endpoint has no receiver links, it can be closed
+        if (this.receivers.isEmpty()) {
+            this.close();
+            this.handleClose();
+        }
+    }
 }

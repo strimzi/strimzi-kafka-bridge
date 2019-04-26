@@ -57,7 +57,7 @@ public class HttpJsonMessageConverter implements MessageConverter<String, byte[]
             }
         }
 
-        KafkaProducerRecord<String, byte[]> record = KafkaProducerRecord.create(kafkaTopic,(String) key, value, (Integer) partitionFromBody);
+        KafkaProducerRecord<String, byte[]> record = KafkaProducerRecord.create(kafkaTopic, (String) key, value, (Integer) partitionFromBody);
 
         return record;
     }
@@ -88,7 +88,7 @@ public class HttpJsonMessageConverter implements MessageConverter<String, byte[]
 
         JsonArray jsonArray = new JsonArray();
 
-        for (int i = 0; i <records.size(); i++){
+        for (int i = 0; i < records.size(); i++) {
 
             JsonObject jsonObject = new JsonObject();
 
