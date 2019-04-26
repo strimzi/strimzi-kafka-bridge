@@ -76,7 +76,6 @@ public class KafkaConsumerConfig {
      * @return if auto commit is enabled or not
      */
     public boolean isEnableAutoCommit() {
-        // enable.auto.commit isn't configurable
         return this.isEnableAutoCommit;
     }
 

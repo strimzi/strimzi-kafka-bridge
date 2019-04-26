@@ -415,7 +415,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject json = new JsonObject();
         json.put("name", name);
         json.put("auto.offset.reset", "earliest");
-        json.put("auto.commit.enable", "true");
+        json.put("enable.auto.commit", "true");
         json.put("fetch.min.bytes", "100");
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
@@ -792,7 +792,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         JsonObject json = new JsonObject();
         json.put("name", name);
-        json.put("auto.commit.enable", "false");
+        json.put("enable.auto.commit", "false");
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
@@ -875,15 +875,12 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
 
-                    /*
+
                     HttpResponse<JsonObject> response = ar.result();
 
                     int code = response.statusCode();
-                    String status = response.statusMessage();
-                    context.assertEquals(ErrorCodeEnum.CONSUMER_NOT_FOUND.getValue(), code);
-                    context.assertEquals("Consumer instance not found", status);
+                    context.assertEquals(200, code);
                     commitAsync.complete();
-                    */
                 });
 
         commitAsync.await();
