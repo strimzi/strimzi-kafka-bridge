@@ -792,6 +792,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         JsonObject json = new JsonObject();
         json.put("name", name);
+        json.put("auto.commit.enable", "false");
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
