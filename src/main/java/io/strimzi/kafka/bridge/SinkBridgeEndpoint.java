@@ -552,7 +552,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         }
     }
 
-    private void handleCommitedOffsets(AsyncResult<Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata>> offsetsData) {
+    private void handleCommittedOffsets(AsyncResult<Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata>> offsetsData) {
         if (this.commitOffsetsHandler != null) {
             if (offsetsData.succeeded()) {
                 this.commitOffsetsHandler.handle(Future.succeededFuture(offsetsData.result()));
@@ -576,7 +576,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.commitOffsetsHandler = commitOffsetsHandler;
         this.consumer.commit(offsetsData, result -> {
             if (this.commitOffsetsHandler != null) {
-                this.handleCommitedOffsets(result);
+                this.handleCommittedOffsets(result);
             }
         });
     }

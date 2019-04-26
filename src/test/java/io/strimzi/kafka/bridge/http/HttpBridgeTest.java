@@ -875,7 +875,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
 
-
                     HttpResponse<JsonObject> response = ar.result();
 
                     int code = response.statusCode();
