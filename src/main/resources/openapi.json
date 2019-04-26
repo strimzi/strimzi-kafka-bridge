@@ -13,14 +13,6 @@
         },
         "version": "1.0.0"
     },
-    "servers": [
-        {
-            "url": "https://bridge.swagger.io/v2"
-        },
-        {
-            "url": "http://bridge.swagger.io/v2"
-        }
-    ],
     "paths": {
         "/consumers/{groupid}": {
             "post": {
@@ -72,44 +64,6 @@
                 "responses": {
                     "204": {
                         "description": "No content"
-                    },
-                    "404": {
-                        "description": "Consumer instance not found"
-                    }
-                }
-            },
-            "parameters": [
-                {
-                    "name": "groupid",
-                    "in": "path",
-                    "required": true,
-                    "schema": {
-                        "type": "string"
-                    }
-                },
-                {
-                    "name": "name",
-                    "in": "path",
-                    "required": true,
-                    "schema": {
-                        "type": "string"
-                    }
-                }
-            ]
-        },
-        "/consumers/{groupid}/instances/{name}/offsets": {
-            "post": {
-                "tags": [
-                    "Consumers"
-                ],
-                "summary": "Commit a list of offsets for the consumer",
-                "operationId": "commit",
-                "requestBody": {
-                    "$ref": "#/components/requestBodies/Offsets"
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK"
                     },
                     "404": {
                         "description": "Consumer instance not found"
@@ -423,7 +377,14 @@
                 "summary": "Overrides the fetch offsets that the consumer will use for the next set of records to fetch",
                 "operationId": "seek",
                 "requestBody": {
-                    "$ref": "#/components/requestBodies/Offsets"
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Offsets"
+                            }
+                        }
+                    },
+                    "required": true
                 },
                 "responses": {
                     "204": {
@@ -452,9 +413,87 @@
                     }
                 }
             ]
+        },
+        "/consumers/{groupid}/instances/{name}/offsets": {
+            "post": {
+                "tags": [
+                    "Consumers"
+                ],
+                "summary": "Commit a list of offsets for the consumer",
+                "operationId": "commit",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Offsets"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "404": {
+                        "description": "Consumer instance not found"
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "groupid",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "name",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ]
         }
     },
+    "tags": [
+        {
+            "name": "Consumers",
+            "description": "Consumers management"
+        },
+        {
+            "name": "Topics",
+            "description": "Topics management"
+        }
+    ],
+    "externalDocs": {
+        "description": "Find out more about Swagger",
+        "url": "http://swagger.io"
+    },
+    "servers": [
+        {
+            "url": "https://bridge.swagger.io/v2"
+        },
+        {
+            "url": "http://bridge.swagger.io/v2"
+        }
+    ],
     "components": {
+        "requestBodies": {
+            "PartitionsForPositions": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/PartitionsForPositions"
+                        }
+                    }
+                },
+                "required": true
+            }
+        },
         "schemas": {
             "ApiResponse": {
                 "type": "object",
@@ -631,42 +670,6 @@
                 },
                 "example": "{\n    \"offsets\": [\n        {\n            \"topic\": \"topic\",\n            \"partition\": 0,\n            \"offset\": 15\n        },\n        {\n            \"topic\": \"topic\",\n            \"partition\": 1,\n            \"offset\": 42\n        }\n    ]\n}"
             }
-        },
-        "requestBodies": {
-            "Offsets": {
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/Offsets"
-                        }
-                    }
-                },
-                "required": true
-            },
-            "PartitionsForPositions": {
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/PartitionsForPositions"
-                        }
-                    }
-                },
-                "required": true
-            }
         }
-    },
-    "tags": [
-        {
-            "name": "Consumers",
-            "description": "Consumers management"
-        },
-        {
-            "name": "Topics",
-            "description": "Topics management"
-        }
-    ],
-    "externalDocs": {
-        "description": "Find out more about Swagger",
-        "url": "http://swagger.io"
     }
 }

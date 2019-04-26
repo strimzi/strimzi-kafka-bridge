@@ -89,47 +89,6 @@
                 }
             ]
         },
-        "/consumers/{groupid}/instances/{name}/offsets": {
-            "post": {
-                "tags": [
-                    "Consumers"
-                ],
-                "summary": "Commit a list of offsets for the consumer",
-                "operationId": "commit",
-                "parameters": [
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/Offsets"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    },
-                    "404": {
-                        "description": "Consumer instance not found"
-                    }
-                }
-            },
-            "parameters": [
-                {
-                    "name": "groupid",
-                    "in": "path",
-                    "required": true,
-                    "type": "string"
-                },
-                {
-                    "name": "name",
-                    "in": "path",
-                    "required": true,
-                    "type": "string"
-                }
-            ]
-        },
         "/consumers/{groupid}/instances/{name}/positions/beginning": {
             "post": {
                 "tags": [
@@ -418,6 +377,47 @@
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Consumer instance not found"
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "groupid",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "name": "name",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/consumers/{groupid}/instances/{name}/offsets": {
+            "post": {
+                "tags": [
+                    "Consumers"
+                ],
+                "summary": "Commit a list of offsets for the consumer",
+                "operationId": "commit",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/Offsets"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     },
                     "404": {
                         "description": "Consumer instance not found"
