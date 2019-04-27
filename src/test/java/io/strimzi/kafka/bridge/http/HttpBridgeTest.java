@@ -532,12 +532,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    JsonObject bridgeResponse = response.body();
-                    String consumerInstanceId = bridgeResponse.getString("instance_id");
-                    String deletionStatus = bridgeResponse.getString("status");
-
-                    context.assertEquals(name, consumerInstanceId);
-                    context.assertEquals("deleted", deletionStatus);
+                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -645,12 +640,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    JsonObject bridgeResponse = response.body();
-                    String consumerInstanceId = bridgeResponse.getString("instance_id");
-                    String deletionStatus = bridgeResponse.getString("status");
-
-                    context.assertEquals(name, consumerInstanceId);
-                    context.assertEquals("deleted", deletionStatus);
+                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -756,12 +746,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    JsonObject bridgeResponse = response.body();
-                    String consumerInstanceId = bridgeResponse.getString("instance_id");
-                    String deletionStatus = bridgeResponse.getString("status");
-
-                    context.assertEquals(consumerInstanceId, name);
-                    context.assertEquals("deleted", deletionStatus);
+                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -893,12 +878,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    JsonObject bridgeResponse = response.body();
-                    String consumerInstanceId = bridgeResponse.getString("instance_id");
-                    String deletionStatus = bridgeResponse.getString("status");
-
-                    context.assertEquals(name, consumerInstanceId);
-                    context.assertEquals("deleted", deletionStatus);
+                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
 
                     deleteAsync.complete();
                 });

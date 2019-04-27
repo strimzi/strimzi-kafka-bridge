@@ -119,6 +119,9 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
             case DELETE_CONSUMER:
 
+                this.close();
+                this.handleClose();
+                log.info("Deleted consumer {} from group {}", routingContext.pathParam("name"), routingContext.pathParam("groupid"));
                 sendConsumerDeletionResponse(routingContext.response());
                 break;
 
@@ -202,6 +205,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
                 ((Handler<String>) handler).handle(consumerInstanceId);
 
+                log.info("Created consumer {} in group {}", consumerInstanceId, groupId);
                 // send consumer instance id(name) and base URI as response
                 sendConsumerCreationResponse(routingContext.response(), consumerInstanceId, consumerBaseUri);
                 break;
@@ -230,12 +234,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
     }
 
     private void sendConsumerDeletionResponse(HttpServerResponse response) {
-        JsonObject jsonResponse = new JsonObject();
-        jsonResponse.put("instance_id", this.consumerInstanceId);
-        jsonResponse.put("status", "deleted");
-
-        response.putHeader("Content-length", String.valueOf(jsonResponse.toBuffer().length()))
-                .write(jsonResponse.toBuffer())
+        response.setStatusCode(204)
                 .end();
     }
 
