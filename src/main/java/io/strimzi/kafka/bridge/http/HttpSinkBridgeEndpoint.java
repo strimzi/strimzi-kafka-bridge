@@ -151,15 +151,15 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
     }
 
     /**
-     * Add a configuration parameter with key to the provided Properties bag from the JSON object
+     * Add a configuration parameter with key and value to the provided Properties bag
      *
-     * @param json JSON object containing configuration parameters
-     * @param props Properties bag where to put the configuration parameter
      * @param key key of the configuration parameter
+     * @param value value of the configuration parameter
+     * @param props Properties bag where to put the configuration parameter
      */
-    private void addConfigParameter(JsonObject json, Properties props, String key) {
-        if (json.containsKey(key)) {
-            props.put(key, json.getString(key));
+    private void addConfigParameter(String key, String value, Properties props) {
+        if (value != null) {
+            props.put(key, value);
         }
     }
 
@@ -196,9 +196,13 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
                 // get supported consumer configuration parameters
                 Properties config = new Properties();
-                addConfigParameter(json, config, ConsumerConfig.AUTO_OFFSET_RESET_CONFIG);
-                addConfigParameter(json, config, ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG);
-                addConfigParameter(json, config, ConsumerConfig.FETCH_MIN_BYTES_CONFIG);
+                addConfigParameter(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
+                        json.getString(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, null), config);
+                addConfigParameter(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,
+                        json.getString(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, null), config);
+                addConfigParameter(ConsumerConfig.FETCH_MIN_BYTES_CONFIG,
+                        json.getString(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, null), config);
+                addConfigParameter(ConsumerConfig.CLIENT_ID_CONFIG, consumerInstanceId, config);
 
                 // create the consumer
                 this.initConsumer(false, config);
