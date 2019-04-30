@@ -82,7 +82,6 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                 if (bodyAsJson.containsKey("offset")) {
                     this.offset = bodyAsJson.getLong("offset");
                 }
-                this.kafkaTopic = this.topic;
 
                 this.setSubscribeHandler(subscribeResult -> {
                     if (subscribeResult.succeeded()) {
