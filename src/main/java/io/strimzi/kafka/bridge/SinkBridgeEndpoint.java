@@ -64,7 +64,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected String groupId;
     protected String topic;
-    protected String kafkaTopic;
     protected Integer partition;
     protected Long offset;
 
@@ -166,10 +165,10 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         if (this.partition != null) {
             // read from a specified partition
             log.debug("Assigning to partition {}", this.partition);
-            this.consumer.partitionsFor(this.kafkaTopic, this::partitionsForHandler);
+            this.consumer.partitionsFor(this.topic, this::partitionsForHandler);
         } else {
             log.info("No explicit partition for consuming from topic {} (will be automatically assigned)",
-                    this.kafkaTopic);
+                    this.topic);
             automaticPartitionAssignment();
         }
     }
@@ -186,7 +185,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             return;
         }
 
-        log.debug("Getting partitions for {}", this.kafkaTopic);
+        log.debug("Getting partitions for {}", this.topic);
         List<PartitionInfo> availablePartitions = partitionsResult.result();
         Optional<PartitionInfo> requestedPartitionInfo =
                 availablePartitions.stream().filter(p -> p.getPartition() == this.partition).findFirst();
@@ -195,7 +194,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         if (requestedPartitionInfo.isPresent()) {
             log.debug("Requested partition {} present", this.partition);
-            TopicPartition topicPartition = new TopicPartition(this.kafkaTopic, this.partition);
+            TopicPartition topicPartition = new TopicPartition(this.topic, this.partition);
 
             this.consumer.assign(Collections.singleton(topicPartition), assignResult -> {
 
@@ -204,7 +203,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                     return;
                 }
 
-                log.debug("Assigned to {} partition {}", this.kafkaTopic, this.partition);
+                log.debug("Assigned to {} partition {}", this.topic, this.partition);
                 // start reading from specified offset inside partition
                 if (this.offset != null) {
 
@@ -270,7 +269,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             partitionsAssigned(partitions);
         });
 
-        this.consumer.subscribe(this.kafkaTopic, subscribeResult -> {
+        this.consumer.subscribe(this.topic, subscribeResult -> {
 
             this.handleSubscribe(subscribeResult);
 
