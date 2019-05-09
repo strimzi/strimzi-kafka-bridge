@@ -82,7 +82,7 @@ public class HttpBridge extends AbstractVerticle {
     @Override
     public void start(Future<Void> startFuture) throws Exception {
 
-        OpenAPI3RouterFactory.create(vertx, "src/main/resources/openapi.json", ar -> {
+        OpenAPI3RouterFactory.create(vertx, "openapi.json", ar -> {
             if (ar.succeeded()) {
                 OpenAPI3RouterFactory routerFactory = ar.result();
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEND.toString(), this::send);
