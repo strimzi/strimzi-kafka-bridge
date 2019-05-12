@@ -31,20 +31,20 @@ public enum ErrorCodeEnum {
     NO_CONTENT(204);
 
     private int value;
-    private static Map map = new HashMap<>();
+    private static Map<Integer, ErrorCodeEnum> map = new HashMap<>();
 
     ErrorCodeEnum(int value) {
         this.value = value;
     }
 
     static {
-        for (ErrorCodeEnum pageType : ErrorCodeEnum.values()) {
-            map.put(pageType.value, pageType);
+        for (ErrorCodeEnum errorCodeEnum : ErrorCodeEnum.values()) {
+            map.put(errorCodeEnum.value, errorCodeEnum);
         }
     }
 
-    public static ErrorCodeEnum valueOf(int pageType) {
-        return (ErrorCodeEnum) map.get(pageType);
+    public static ErrorCodeEnum valueOf(int errorCodeEnum) {
+        return (ErrorCodeEnum) map.get(errorCodeEnum);
     }
 
     public int getValue() {

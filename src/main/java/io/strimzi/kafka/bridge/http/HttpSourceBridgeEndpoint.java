@@ -101,7 +101,6 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
                     String msg = done.cause().getMessage();
                     int code = getCodeFromMsg(msg);
                     log.error("Failed to deliver record " + finalRecords.get(i) + " due to {}", done.cause());
-                    // TODO: error codes definition
                     results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                 }
             }
