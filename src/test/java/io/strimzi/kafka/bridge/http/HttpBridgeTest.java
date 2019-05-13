@@ -541,6 +541,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
+    @Ignore
     public void receiveSimpleMessageFromPartition(TestContext context) {
         String topic = "receiveSimpleMessageFromPartition";
         int partition = 1;
@@ -649,6 +650,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
+    @Ignore
     public void receiveSimpleMessageFromPartitionAndOffset(TestContext context) {
         String topic = "receiveSimpleMessageFromPartitionAndOffset";
         kafkaCluster.createTopic(topic, 1, 1);

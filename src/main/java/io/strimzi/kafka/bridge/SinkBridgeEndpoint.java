@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Base class for sink bridge endpoints
@@ -166,15 +167,25 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         this.shouldAttachSubscriberHandler = shouldAttachHandler;
 
-        if (this.topicSubscription().getPartition() != null) {
-            // read from a specified partition
-            log.debug("Assigning to partition {}", this.topicSubscription().getPartition());
-            this.consumer.partitionsFor(this.topicSubscription().getTopic(), this::partitionsForHandler);
-        } else {
-            log.info("No explicit partition for consuming from topic {} (will be automatically assigned)",
-                    this.topicSubscription().getTopic());
-            automaticPartitionAssignment();
+        log.info("No explicit partition for consuming from topic {} (will be automatically assigned)",
+                this.topicSubscription().getTopic());
+        this.automaticPartitionAssignment();
+    }
+
+    /**
+     * Request for assignment of topics partitions
+     */
+    protected void assign(boolean shouldAttachHandler) {
+
+        if (this.topicSubscriptions.isEmpty()) {
+            throw new IllegalArgumentException("At least one topic to subscribe has to be specified!");
         }
+
+        this.shouldAttachSubscriberHandler = shouldAttachHandler;
+
+        // read from a specified partition
+        log.info("Assigning to partition {}", this.topicSubscription().getPartition());
+        this.consumer.partitionsFor(this.topicSubscription().getTopic(), this::partitionsForHandler);
     }
 
     /**
@@ -273,7 +284,9 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             partitionsAssigned(partitions);
         });
 
-        this.consumer.subscribe(this.topicSubscription().getTopic(), subscribeResult -> {
+        Set<String> topics = this.topicSubscriptions.stream().map(ts -> ts.getTopic()).collect(Collectors.toSet());
+
+        this.consumer.subscribe(topics, subscribeResult -> {
 
             this.handleSubscribe(subscribeResult);
 
