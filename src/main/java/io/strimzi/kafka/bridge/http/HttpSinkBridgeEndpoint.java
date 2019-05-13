@@ -78,10 +78,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
             case SUBSCRIBE:
 
-                SinkTopicSubscription topicSubscription = new SinkTopicSubscription(
-                        bodyAsJson.getString("topic"),
-                        bodyAsJson.getInteger("partition"),
-                        bodyAsJson.getLong("offset"));
+                SinkTopicSubscription topicSubscription = new SinkTopicSubscription(bodyAsJson.getString("topic"));
 
                 this.setSubscribeHandler(subscribeResult -> {
                     if (subscribeResult.succeeded()) {

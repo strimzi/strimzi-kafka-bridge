@@ -184,7 +184,12 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 this.flowCheck();
                 // Subscribe to the topic
                 this.topicSubscriptions.add(topicSubscription);
-                this.subscribe(true);
+                // subscribing to topics or assigning partitions
+                if (topicSubscription.getPartition() == null) {
+                    this.subscribe(true);
+                } else {
+                    this.assign(true);
+                }
             }
         } catch (AmqpErrorConditionException e) {
             AmqpBridge.detachWithError(link, e.toCondition());
