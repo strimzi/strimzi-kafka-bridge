@@ -22,10 +22,15 @@ spec:
           value: SERVER
         - name: AMQP_PORT
           value: "5672"
+        - name: HTTP_PORT
+          value: "8080"
         ports:
         - containerPort: 5672
           protocol: TCP
           name: amqp
+        - containerPort: 8080
+          protocol: TCP
+          name: http
         livenessProbe:
           tcpSocket:
             port: amqp
