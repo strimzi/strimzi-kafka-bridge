@@ -19,6 +19,7 @@ package io.strimzi.kafka.bridge.amqp;
 import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.QoSEndpoint;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
+import io.strimzi.kafka.bridge.SinkTopicSubscription;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.tracker.SimpleOffsetTracker;
 import io.vertx.core.AsyncResult;
@@ -143,9 +144,11 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 this.sender.open();
 
                 this.groupId = address.substring(groupIdIndex + AmqpSinkBridgeEndpoint.GROUP_ID_MATCH.length());
-                String topic = address.substring(0, groupIdIndex);
+                // replace unsupported "/" (in a topic name in Kafka) with "."
+                String topic = address.substring(0, groupIdIndex).replace('/', '.');
+                SinkTopicSubscription topicSubscription = new SinkTopicSubscription(topic);
 
-                log.debug("topic {} group.id {}", topic, this.groupId);
+                log.debug("topic {} group.id {}", topicSubscription.getTopic(), this.groupId);
 
                 // get filters on partition and offset
                 Source source = (Source) this.sender.getRemoteSource();
@@ -157,15 +160,12 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                     this.checkFilters(partition, offset);
 
                     log.debug("partition {} offset {}", partition, offset);
-                    this.partition = (Integer) partition;
-                    this.offset = (Long) offset;
+                    topicSubscription.setPartition((Integer) partition);
+                    topicSubscription.setOffset((Long) offset);
                 }
 
                 // creating configuration for Kafka consumer
-
-                // replace unsupported "/" (in a topic name in Kafka) with "."
-                this.topic = topic.replace('/', '.');
-                this.offsetTracker = new SimpleOffsetTracker(this.topic);
+                this.offsetTracker = new SimpleOffsetTracker(topicSubscription.getTopic());
                 this.qos = this.mapQoS(this.sender.getQoS());
 
                 this.initConsumer(true, null);
@@ -183,6 +183,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
                 this.flowCheck();
                 // Subscribe to the topic
+                this.topicSubscriptions.add(topicSubscription);
                 this.subscribe(true);
             }
         } catch (AmqpErrorConditionException e) {
@@ -341,7 +342,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
         if (subscribeResult.failed()) {
             sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
-                    "Error subscribing to topic " + this.topic,
+                    "Error subscribing to topic " + this.topicSubscription().getTopic(),
                     subscribeResult);
         }
     }
@@ -350,7 +351,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
         if (partitionResult.failed()) {
             sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
-                    "Error getting partition info for topic " + this.topic,
+                    "Error getting partition info for topic " + this.topicSubscription().getTopic(),
                     partitionResult);
         } else {
 
@@ -366,7 +367,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
         if (assignResult.failed()) {
             sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
-                    "Error assigning to topic %s" + this.topic,
+                    "Error assigning to topic %s" + this.topicSubscription().getTopic(),
                     assignResult);
         }
     }
@@ -376,9 +377,9 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         if (seekResult.failed()) {
             sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
                     format("Error seeking to offset %s for topic %s, partition %s",
-                            this.offset,
-                            this.topic,
-                            this.partition),
+                            this.topicSubscription().getOffset(),
+                            this.topicSubscription().getTopic(),
+                            this.topicSubscription().getPartition()),
                     seekResult);
         }
     }
