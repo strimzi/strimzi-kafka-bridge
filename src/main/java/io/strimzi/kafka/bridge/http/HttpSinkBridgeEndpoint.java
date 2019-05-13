@@ -18,6 +18,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
+import io.strimzi.kafka.bridge.SinkTopicSubscription;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
 import io.vertx.core.Handler;
@@ -77,11 +78,10 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
             case SUBSCRIBE:
 
-                this.topic = bodyAsJson.getString("topic");
-                this.partition = bodyAsJson.getInteger("partition");
-                if (bodyAsJson.containsKey("offset")) {
-                    this.offset = bodyAsJson.getLong("offset");
-                }
+                SinkTopicSubscription topicSubscription = new SinkTopicSubscription(
+                        bodyAsJson.getString("topic"),
+                        bodyAsJson.getInteger("partition"),
+                        bodyAsJson.getLong("offset"));
 
                 this.setSubscribeHandler(subscribeResult -> {
                     if (subscribeResult.succeeded()) {
@@ -95,6 +95,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                     }
                 });
 
+                this.topicSubscriptions.add(topicSubscription);
                 this.subscribe(false);
                 break;
 

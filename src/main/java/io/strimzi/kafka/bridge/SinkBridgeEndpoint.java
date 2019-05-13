@@ -33,6 +33,7 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -63,9 +64,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     private KafkaConsumer<K, V> consumer;
 
     protected String groupId;
-    protected String topic;
-    protected Integer partition;
-    protected Long offset;
+    protected List<SinkTopicSubscription> topicSubscriptions;
 
     private int recordIndex;
     private int batchSize;
@@ -105,6 +104,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     public SinkBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfigProperties) {
         this.vertx = vertx;
         this.bridgeConfigProperties = bridgeConfigProperties;
+        this.topicSubscriptions = new ArrayList<>();
     }
 
     @Override
@@ -160,15 +160,19 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
      */
     protected void subscribe(boolean shouldAttachHandler) {
 
+        if (this.topicSubscriptions.isEmpty()) {
+            throw new IllegalArgumentException("At least one topic to subscribe has to be specified!");
+        }
+
         this.shouldAttachSubscriberHandler = shouldAttachHandler;
 
-        if (this.partition != null) {
+        if (this.topicSubscription().getPartition() != null) {
             // read from a specified partition
-            log.debug("Assigning to partition {}", this.partition);
-            this.consumer.partitionsFor(this.topic, this::partitionsForHandler);
+            log.debug("Assigning to partition {}", this.topicSubscription().getPartition());
+            this.consumer.partitionsFor(this.topicSubscription().getTopic(), this::partitionsForHandler);
         } else {
             log.info("No explicit partition for consuming from topic {} (will be automatically assigned)",
-                    this.topic);
+                    this.topicSubscription().getTopic());
             automaticPartitionAssignment();
         }
     }
@@ -185,16 +189,16 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             return;
         }
 
-        log.debug("Getting partitions for {}", this.topic);
+        log.debug("Getting partitions for {}", this.topicSubscription().getTopic());
         List<PartitionInfo> availablePartitions = partitionsResult.result();
         Optional<PartitionInfo> requestedPartitionInfo =
-                availablePartitions.stream().filter(p -> p.getPartition() == this.partition).findFirst();
+                availablePartitions.stream().filter(p -> p.getPartition() == this.topicSubscription().getPartition()).findFirst();
 
         this.handlePartition(Future.succeededFuture(requestedPartitionInfo));
 
         if (requestedPartitionInfo.isPresent()) {
-            log.debug("Requested partition {} present", this.partition);
-            TopicPartition topicPartition = new TopicPartition(this.topic, this.partition);
+            log.debug("Requested partition {} present", this.topicSubscription().getPartition());
+            TopicPartition topicPartition = new TopicPartition(this.topicSubscription().getTopic(), this.topicSubscription().getPartition());
 
             this.consumer.assign(Collections.singleton(topicPartition), assignResult -> {
 
@@ -203,13 +207,13 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                     return;
                 }
 
-                log.debug("Assigned to {} partition {}", this.topic, this.partition);
+                log.debug("Assigned to {} partition {}", this.topicSubscription().getTopic(), this.topicSubscription().getPartition());
                 // start reading from specified offset inside partition
-                if (this.offset != null) {
+                if (this.topicSubscription().getOffset() != null) {
 
-                    log.debug("Seeking to offset {}", this.offset);
+                    log.debug("Seeking to offset {}", this.topicSubscription().getOffset());
 
-                    this.consumer.seek(topicPartition, this.offset, seekResult -> {
+                    this.consumer.seek(topicPartition, this.topicSubscription().getOffset(), seekResult -> {
 
                         this.handleSeek(seekResult);
                         if (seekResult.failed()) {
@@ -222,7 +226,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                 }
             });
         } else {
-            log.warn("Requested partition {} doesn't exist", this.partition);
+            log.warn("Requested partition {} doesn't exist", this.topicSubscription().getPartition());
         }
     }
 
@@ -269,7 +273,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             partitionsAssigned(partitions);
         });
 
-        this.consumer.subscribe(this.topic, subscribeResult -> {
+        this.consumer.subscribe(this.topicSubscription().getTopic(), subscribeResult -> {
 
             this.handleSubscribe(subscribeResult);
 
@@ -578,5 +582,10 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                 this.handleCommittedOffsets(result);
             }
         });
+    }
+
+    // TODO: helper method for supporting just one topic but within the list, to remove
+    protected SinkTopicSubscription topicSubscription() {
+        return this.topicSubscriptions.get(0);
     }
 }
