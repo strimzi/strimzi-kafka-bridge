@@ -78,7 +78,10 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
             case SUBSCRIBE:
 
-                SinkTopicSubscription topicSubscription = new SinkTopicSubscription(bodyAsJson.getString("topic"));
+                JsonArray topicsList = bodyAsJson.getJsonArray("topics");
+                for (int i = 0; i < topicsList.size(); i++) {
+                    this.topicSubscriptions.add(new SinkTopicSubscription(topicsList.getString(i)));
+                }
 
                 this.setSubscribeHandler(subscribeResult -> {
                     if (subscribeResult.succeeded()) {
@@ -92,7 +95,6 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                     }
                 });
 
-                this.topicSubscriptions.add(topicSubscription);
                 this.subscribe(false);
                 break;
 
