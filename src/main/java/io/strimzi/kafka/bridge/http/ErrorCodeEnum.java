@@ -28,7 +28,8 @@ public enum ErrorCodeEnum {
     NOT_FOUND(404),
     UNPROCESSABLE_ENTITY(422),
     INTERNAL_SERVER_ERROR(500),
-    NO_CONTENT(204);
+    NO_CONTENT(204),
+    CONFLICT(409);
 
     private int value;
     private static Map<Integer, ErrorCodeEnum> map = new HashMap<>();
