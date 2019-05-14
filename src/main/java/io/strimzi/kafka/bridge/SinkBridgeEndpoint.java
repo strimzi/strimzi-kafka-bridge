@@ -167,8 +167,8 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         this.shouldAttachSubscriberHandler = shouldAttachHandler;
 
-        log.info("No explicit partition for consuming from topic {} (will be automatically assigned)",
-                this.topicSubscription().getTopic());
+        log.info("No explicit partition for consuming from topics {} (will be automatically assigned)",
+                this.topicSubscriptions);
         this.automaticPartitionAssignment();
     }
 
@@ -598,7 +598,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     // TODO: helper method for supporting just one topic but within the list, to remove
-    protected SinkTopicSubscription topicSubscription() {
+    private SinkTopicSubscription topicSubscription() {
         return this.topicSubscriptions.get(0);
     }
 }

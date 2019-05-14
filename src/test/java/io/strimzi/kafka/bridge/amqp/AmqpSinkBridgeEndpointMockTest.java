@@ -16,6 +16,7 @@
 
 package io.strimzi.kafka.bridge.amqp;
 
+import io.strimzi.kafka.bridge.SinkTopicSubscription;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -43,6 +44,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -596,9 +598,10 @@ public class AmqpSinkBridgeEndpointMockTest {
             }
         });
 
+        SinkTopicSubscription topicSubscription = new SinkTopicSubscription(topic, 0, null);
         assertDetach(mockSender,
                 AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
-                "Error getting partition info for topic my_topic");
+                "Error getting partition info for topic " + Collections.singleton(topicSubscription));
     }
     // TODO kafka partition doesn't exist
     // TODO assign fails

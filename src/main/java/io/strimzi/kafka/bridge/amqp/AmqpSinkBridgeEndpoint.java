@@ -347,7 +347,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
         if (subscribeResult.failed()) {
             sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
-                    "Error subscribing to topic " + this.topicSubscription().getTopic(),
+                    "Error subscribing to topic " + this.topicSubscriptions,
                     subscribeResult);
         }
     }
@@ -356,7 +356,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
         if (partitionResult.failed()) {
             sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
-                    "Error getting partition info for topic " + this.topicSubscription().getTopic(),
+                    "Error getting partition info for topic " + this.topicSubscriptions,
                     partitionResult);
         } else {
 
@@ -372,7 +372,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
         if (assignResult.failed()) {
             sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
-                    "Error assigning to topic %s" + this.topicSubscription().getTopic(),
+                    "Error assigning to topic %s" + this.topicSubscriptions,
                     assignResult);
         }
     }
@@ -381,10 +381,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
         if (seekResult.failed()) {
             sendAmqpError(AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
-                    format("Error seeking to offset %s for topic %s, partition %s",
-                            this.topicSubscription().getOffset(),
-                            this.topicSubscription().getTopic(),
-                            this.topicSubscription().getPartition()),
+                    format("Error seeking for topic %s", this.topicSubscriptions),
                     seekResult);
         }
     }
