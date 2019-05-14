@@ -13,6 +13,14 @@
         },
         "version": "1.0.0"
     },
+    "servers": [
+        {
+            "url": "https://bridge.swagger.io/v2"
+        },
+        {
+            "url": "http://bridge.swagger.io/v2"
+        }
+    ],
     "paths": {
         "/consumers/{groupid}": {
             "post": {
@@ -22,6 +30,7 @@
                 "summary": "Create a new consumer instance in the consumer group",
                 "operationId": "createConsumer",
                 "requestBody": {
+                    "description": "Consumer specification",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -47,6 +56,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
+                    "description": "The name of the consumer group",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -74,6 +84,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
+                    "description": "The name of the consumer group",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -82,6 +93,7 @@
                 {
                     "name": "name",
                     "in": "path",
+                    "description": "The ID of the consumer instance",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -112,6 +124,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
+                    "description": "The name of the consumer group",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -120,6 +133,7 @@
                 {
                     "name": "name",
                     "in": "path",
+                    "description": "The ID of the consumer instance",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -150,6 +164,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
+                    "description": "The name of the consumer group",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -158,6 +173,7 @@
                 {
                     "name": "name",
                     "in": "path",
+                    "description": "The ID of the consumer instance",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -188,6 +204,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
+                    "description": "The name of the consumer group",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -196,6 +213,7 @@
                 {
                     "name": "name",
                     "in": "path",
+                    "description": "The ID of the consumer instance",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -229,6 +247,7 @@
                 "summary": "Subscribe to the given list of topics",
                 "operationId": "subscribe",
                 "requestBody": {
+                    "description": "A list of topics to subscribe",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -269,6 +288,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
+                    "description": "The name of the consumer group",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -277,6 +297,7 @@
                 {
                     "name": "name",
                     "in": "path",
+                    "description": "The ID of the consumer instance",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -314,6 +335,7 @@
                 {
                     "name": "topicname",
                     "in": "path",
+                    "description": "Name of the topic",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -354,6 +376,7 @@
                 {
                     "name": "topicname",
                     "in": "path",
+                    "description": "Name of the topic",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -362,6 +385,7 @@
                 {
                     "name": "partitionid",
                     "in": "path",
+                    "description": "ID of the partition",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -377,6 +401,7 @@
                 "summary": "Overrides the fetch offsets that the consumer will use for the next set of records to fetch",
                 "operationId": "seek",
                 "requestBody": {
+                    "description": "A list of offsets",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -399,6 +424,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
+                    "description": "The name of the consumer group",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -407,6 +433,7 @@
                 {
                     "name": "name",
                     "in": "path",
+                    "description": "The ID of the consumer instance",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -422,6 +449,7 @@
                 "summary": "Commit a list of offsets for the consumer",
                 "operationId": "commit",
                 "requestBody": {
+                    "description": "A list of offsets to commit for partitions",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -443,6 +471,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
+                    "description": "The name of the consumer group",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -451,6 +480,58 @@
                 {
                     "name": "name",
                     "in": "path",
+                    "description": "The ID of the consumer instance",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ]
+        },
+        "/consumers/{groupid}/instances/{name}/assignments": {
+            "post": {
+                "tags": [
+                    "Consumers"
+                ],
+                "summary": "Manually assign a list of partitions to the consumer",
+                "operationId": "assign",
+                "requestBody": {
+                    "description": "A list of partitions to assign to the consumer",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PartitionsForPositions"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "OK"
+                    },
+                    "404": {
+                        "description": "Consumer instance not found"
+                    },
+                    "409": {
+                        "description": "Subscription to topics, partitions and pattern are mutually exclusive"
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "groupid",
+                    "in": "path",
+                    "description": "The name of the consumer group",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "name",
+                    "in": "path",
+                    "description": "The ID of the consumer instance",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -459,41 +540,7 @@
             ]
         }
     },
-    "tags": [
-        {
-            "name": "Consumers",
-            "description": "Consumers management"
-        },
-        {
-            "name": "Topics",
-            "description": "Topics management"
-        }
-    ],
-    "externalDocs": {
-        "description": "Find out more about Swagger",
-        "url": "http://swagger.io"
-    },
-    "servers": [
-        {
-            "url": "https://bridge.swagger.io/v2"
-        },
-        {
-            "url": "http://bridge.swagger.io/v2"
-        }
-    ],
     "components": {
-        "requestBodies": {
-            "PartitionsForPositions": {
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/PartitionsForPositions"
-                        }
-                    }
-                },
-                "required": true
-            }
-        },
         "schemas": {
             "ApiResponse": {
                 "type": "object",
@@ -524,7 +571,7 @@
                     "auto.offset.reset": {
                         "type": "string"
                     },
-                    "enable.auto.commit": {
+                    "auto.commit.enable": {
                         "type": "string"
                     },
                     "fetch.min.bytes": {
@@ -534,7 +581,7 @@
                         "type": "string"
                     }
                 },
-                "example": "{\n    \"name\": \"consumer1\",\n    \"format\": \"binary\",\n    \"auto.offset.reset\": \"earliest\",\n    \"enable.auto.commit\": \"false\",\n    \"fetch.min.bytes\": \"512\",\n    \"consumer.request.timeout.ms\": \"30000\"\n}"
+                "example": "{\n    \"name\": \"consumer1\",\n    \"format\": \"binary\",\n    \"auto.offset.reset\": \"earliest\",\n    \"auto.commit.enable\": \"false\",\n    \"fetch.min.bytes\": \"512\",\n    \"consumer.request.timeout.ms\": \"30000\"\n}"
             },
             "Offset": {
                 "title": "Offset",
@@ -670,6 +717,33 @@
                 },
                 "example": "{\n    \"offsets\": [\n        {\n            \"topic\": \"topic\",\n            \"partition\": 0,\n            \"offset\": 15\n        },\n        {\n            \"topic\": \"topic\",\n            \"partition\": 1,\n            \"offset\": 42\n        }\n    ]\n}"
             }
+        },
+        "requestBodies": {
+            "PartitionsForPositions": {
+                "description": "A list of partitions",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/PartitionsForPositions"
+                        }
+                    }
+                },
+                "required": true
+            }
         }
+    },
+    "tags": [
+        {
+            "name": "Consumers",
+            "description": "Consumers management"
+        },
+        {
+            "name": "Topics",
+            "description": "Topics management"
+        }
+    ],
+    "externalDocs": {
+        "description": "Find out more about Swagger",
+        "url": "http://swagger.io"
     }
 }
