@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -156,8 +157,12 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
-     * Subscribe to the topic. It should be the next call after the {@link #initConsumer(boolean shoudlAttachHandler, Properties config)} after getting
-     * the topic information in order to subscribe to it.
+     * Subscribe to the topics specified in the related {@link #topicSubscriptions} list
+     *
+     * It should be the next call after the {@link #initConsumer(boolean shoudlAttachHandler, Properties config)} after getting
+     * the topics information in order to subscribe to them.
+     *
+     * @param shouldAttachHandler if the handler for getting messages should be set up
      */
     protected void subscribe(boolean shouldAttachHandler) {
 
@@ -167,13 +172,49 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         this.shouldAttachSubscriberHandler = shouldAttachHandler;
 
-        log.info("No explicit partition for consuming from topics {} (will be automatically assigned)",
-                this.topicSubscriptions);
-        this.automaticPartitionAssignment();
+        log.info("Subscribe to topics {}", this.topicSubscriptions);
+        this.setPartitionsAssignmentHandlers();
+
+        Set<String> topics = this.topicSubscriptions.stream().map(ts -> ts.getTopic()).collect(Collectors.toSet());
+        this.consumer.subscribe(topics, this::subscribeHandler);
     }
 
     /**
-     * Request for assignment of topics partitions
+     * Subscribe to topics via the provided pattern represented by a Java regex
+     *
+     * @param pattern Java regex for topics subscription
+     * @param shouldAttachHandler if the handler for getting messages should be set up
+     */
+    protected void subscribe(Pattern pattern, boolean shouldAttachHandler) {
+
+        this.shouldAttachSubscriberHandler = shouldAttachHandler;
+
+        log.info("Subscribe to topics with pattern {}", pattern);
+        this.setPartitionsAssignmentHandlers();
+        this.consumer.subscribe(pattern, this::subscribeHandler);
+    }
+
+    /**
+     * Handler of the subscription request (via multiple topics or pattern)
+     *
+     * @param subscribeResult result of subscription request
+     */
+    private void subscribeHandler(AsyncResult<Void> subscribeResult) {
+
+        this.handleSubscribe(subscribeResult);
+
+        if (subscribeResult.failed()) {
+            return;
+        }
+
+        if (shouldAttachSubscriberHandler)
+            this.consumer.handler(this::handleKafkaRecord);
+    }
+
+    /**
+     * Request for assignment of topics partitions specified in the related {@link #topicSubscriptions} list
+     *
+     * @param shouldAttachHandler if the handler for getting messages should be set up
      */
     protected void assign(boolean shouldAttachHandler) {
 
@@ -183,13 +224,13 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         this.shouldAttachSubscriberHandler = shouldAttachHandler;
 
-        // read from a specified partition
-        log.info("Assigning to partition {}", this.topicSubscription().getPartition());
+        log.info("Assigning to topics partitions {}", this.topicSubscriptions);
+        // TODO: handling assignment of multiple topics partitions
         this.consumer.partitionsFor(this.topicSubscription().getTopic(), this::partitionsForHandler);
     }
 
     /**
-     * Execute a request for assigning a specific partition
+     * Handler of the request for assigning a specific partition
      *
      * @param partitionsResult list of requested and assigned partitions
      */
@@ -242,10 +283,9 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
-     * Setup the automatic revoke and assign partitions (due to rebalancing)
-     * and start the subscription request for a topic
+     * Set up the handlers for automatic revoke and assignment partitions (due to rebalancing) for the consumer
      */
-    private void automaticPartitionAssignment() {
+    private void setPartitionsAssignmentHandlers() {
         this.consumer.partitionsRevokedHandler(partitions -> {
 
             log.debug("Partitions revoked {}", partitions.size());
@@ -282,20 +322,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             }
 
             partitionsAssigned(partitions);
-        });
-
-        Set<String> topics = this.topicSubscriptions.stream().map(ts -> ts.getTopic()).collect(Collectors.toSet());
-
-        this.consumer.subscribe(topics, subscribeResult -> {
-
-            this.handleSubscribe(subscribeResult);
-
-            if (subscribeResult.failed()) {
-                return;
-            }
-
-            if (shouldAttachSubscriberHandler)
-                this.consumer.handler(this::handleKafkaRecord);
         });
     }
 

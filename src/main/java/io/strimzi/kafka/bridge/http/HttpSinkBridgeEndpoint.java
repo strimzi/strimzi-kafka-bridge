@@ -36,6 +36,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
@@ -61,6 +63,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
     }
 
     @Override
+    @SuppressWarnings({"checkstyle:CyclomaticComplexity", "checkstyle:NPathComplexity"})
     public void handle(Endpoint<?> endpoint) {
 
         routingContext = (RoutingContext) endpoint.get();
@@ -78,24 +81,43 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
             case SUBSCRIBE:
 
-                JsonArray topicsList = bodyAsJson.getJsonArray("topics");
-                for (int i = 0; i < topicsList.size(); i++) {
-                    this.topicSubscriptions.add(new SinkTopicSubscription(topicsList.getString(i)));
+                // cannot specify both topics list and topic pattern
+                if (bodyAsJson.containsKey("topics") && bodyAsJson.containsKey("topic_pattern")) {
+                    sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.CONFLICT);
+                    return;
+                }
+
+                // one of topics list or topic pattern has to be specified
+                if (!bodyAsJson.containsKey("topics") && !bodyAsJson.containsKey("topic_pattern")) {
+                    sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.BAD_REQUEST);
+                    return;
                 }
 
                 this.setSubscribeHandler(subscribeResult -> {
                     if (subscribeResult.succeeded()) {
-                        sendConsumerSubscriptionResponse(routingContext.response());
+                        sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
                     }
                 });
 
                 this.setAssignHandler(assignResult -> {
                     if (assignResult.succeeded()) {
-                        sendConsumerSubscriptionResponse(routingContext.response());
+                        sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
                     }
                 });
 
-                this.subscribe(false);
+                if (bodyAsJson.containsKey("topics")) {
+                    JsonArray topicsList = bodyAsJson.getJsonArray("topics");
+                    this.topicSubscriptions.addAll(
+                        topicsList.stream()
+                                .map(String.class::cast)
+                                .map(topic -> new SinkTopicSubscription(topic))
+                                .collect(Collectors.toList())
+                    );
+                    this.subscribe(false);
+                } else if (bodyAsJson.containsKey("topic_pattern")) {
+                    Pattern pattern = Pattern.compile(bodyAsJson.getString("topic_pattern"));
+                    this.subscribe(pattern, false);
+                }
                 break;
 
             case POLL:
@@ -225,8 +247,8 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                 .end();
     }
 
-    private void sendConsumerSubscriptionResponse(HttpServerResponse response) {
-        response.setStatusCode(204)
+    private void sendConsumerSubscriptionResponse(HttpServerResponse response, ErrorCodeEnum errorCodeEnum) {
+        response.setStatusCode(errorCodeEnum.getValue())
                 .end();
     }
 
