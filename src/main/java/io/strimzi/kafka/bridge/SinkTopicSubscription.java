@@ -95,4 +95,13 @@ public class SinkTopicSubscription {
     public void setOffset(Long offset) {
         this.offset = offset;
     }
+
+    @Override
+    public String toString() {
+        return "SinkTopicSubscription(" +
+                "topic=" + this.topic +
+                ",partition=" + this.partition +
+                ",offset=" + this.offset +
+                ")";
+    }
 }

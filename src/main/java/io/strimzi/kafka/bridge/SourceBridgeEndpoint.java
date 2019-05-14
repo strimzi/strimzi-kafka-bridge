@@ -87,7 +87,7 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
         } else {
             this.producerUnsettledMode.exceptionHandler(e -> {
                 handler.handle(Future.failedFuture(e));
-            }).write(krecord, handler);
+            }).send(krecord, handler);
         }
     }
 
