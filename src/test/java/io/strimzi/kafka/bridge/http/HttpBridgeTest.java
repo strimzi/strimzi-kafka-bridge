@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @RunWith(VertxUnitRunner.class)
 public class HttpBridgeTest extends KafkaClusterTestBase {

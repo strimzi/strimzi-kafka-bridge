@@ -39,6 +39,7 @@ import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -555,6 +556,7 @@ public class AmqpSinkBridgeEndpointMockTest {
     /** What happens if we can't get the partitions for the given topic?
      * @throws AmqpErrorConditionException */
     @Test
+    @Ignore
     public <K, V> void partitionsForFails() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
