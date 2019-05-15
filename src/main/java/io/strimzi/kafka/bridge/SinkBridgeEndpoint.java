@@ -283,7 +283,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                             return;
                         }
 
-                        log.debug("Assigned to {} partition {} on topic {}", topicSubscription.getTopic(), topicSubscription.getPartition());
+                        log.debug("Assigned to {} partition on topic {}", topicSubscription.getPartition(), topicSubscription.getTopic());
                         // start reading from specified offset inside partition
                         if (topicSubscription.getOffset() != null) {
 
@@ -650,10 +650,5 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                 this.handleCommittedOffsets(result);
             }
         });
-    }
-
-    // TODO: helper method for supporting just one topic but within the list, to remove
-    private SinkTopicSubscription topicSubscription() {
-        return this.topicSubscriptions.get(0);
     }
 }
