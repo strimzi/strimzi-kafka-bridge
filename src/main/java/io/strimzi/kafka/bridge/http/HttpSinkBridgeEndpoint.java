@@ -139,10 +139,18 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                     this.pollTimeOut = Long.parseLong(routingContext.request().getParam("timeout"));
                 }
 
+                if (routingContext.request().getParam("max_bytes") != null) {
+                    this.maxBytes = Long.parseLong(routingContext.request().getParam("max_bytes"));
+                }
+
                 this.consume(records -> {
                     if (records.succeeded()) {
                         Buffer buffer = (Buffer) messageConverter.toMessages(records.result());
-                        sendConsumerRecordsResponse(routingContext.response(), buffer);
+                        if (buffer.getBytes().length > this.maxBytes) {
+                            routingContext.response().setStatusMessage("Response is too large").setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue()).end();
+                        } else {
+                            sendConsumerRecordsResponse(routingContext.response(), buffer);
+                        }
 
                     } else {
                         sendConsumerRecordsFailedResponse(routingContext.response());

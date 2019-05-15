@@ -75,6 +75,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected QoSEndpoint qos;
 
     protected long pollTimeOut = 100;
+    protected long maxBytes = Long.MAX_VALUE;
 
     private boolean shouldAttachSubscriberHandler;
 
