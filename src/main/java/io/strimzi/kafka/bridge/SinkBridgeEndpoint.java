@@ -20,6 +20,7 @@ import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.tracker.OffsetTracker;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -225,61 +226,89 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.shouldAttachSubscriberHandler = shouldAttachHandler;
 
         log.info("Assigning to topics partitions {}", this.topicSubscriptions);
-        // TODO: handling assignment of multiple topics partitions
-        this.consumer.partitionsFor(this.topicSubscription().getTopic(), this::partitionsForHandler);
+        this.partitionsAssignmentAndSeek();
     }
 
-    /**
-     * Handler of the request for assigning a specific partition
-     *
-     * @param partitionsResult list of requested and assigned partitions
-     */
-    private void partitionsForHandler(AsyncResult<List<PartitionInfo>> partitionsResult) {
+    private void partitionsAssignmentAndSeek() {
 
-        if (partitionsResult.failed()) {
-            this.handlePartition(Future.failedFuture(partitionsResult.cause()));
-            return;
+        List<Future> partitionsForHandlers = new ArrayList<>();
+        // ask about partitions for all the requested topic subscriptions
+        for (SinkTopicSubscription topicSubscription : this.topicSubscriptions) {
+            Future<List<PartitionInfo>> fut = Future.future();
+            partitionsForHandlers.add(fut);
+            this.consumer.partitionsFor(topicSubscription.getTopic(), fut.completer());
         }
 
-        log.debug("Getting partitions for {}", this.topicSubscription().getTopic());
-        List<PartitionInfo> availablePartitions = partitionsResult.result();
-        Optional<PartitionInfo> requestedPartitionInfo =
-                availablePartitions.stream().filter(p -> p.getPartition() == this.topicSubscription().getPartition()).findFirst();
+        CompositeFuture.join(partitionsForHandlers).setHandler(partitionsResult -> {
 
-        this.handlePartition(Future.succeededFuture(requestedPartitionInfo));
+            if (partitionsResult.failed()) {
+                this.handlePartition(Future.failedFuture(partitionsResult.cause()));
+                return;
+            }
 
-        if (requestedPartitionInfo.isPresent()) {
-            log.debug("Requested partition {} present", this.topicSubscription().getPartition());
-            TopicPartition topicPartition = new TopicPartition(this.topicSubscription().getTopic(), this.topicSubscription().getPartition());
 
-            this.consumer.assign(Collections.singleton(topicPartition), assignResult -> {
-
-                this.handleAssign(assignResult);
-                if (assignResult.failed()) {
-                    return;
+            // fill a list with all available partitions as result of the partitionsFor for all topic subscriptions
+            List<PartitionInfo> availablePartitions = new ArrayList<>();
+            for (int i = 0; i < partitionsForHandlers.size(); i++) {
+                // check if, for each future, the partitionsFor operation is completed successfully or failed
+                if (partitionsResult.result() != null && partitionsResult.result().succeeded(i)) {
+                    availablePartitions.addAll(partitionsResult.result().resultAt(i));
+                } else {
+                    // TODO: what to do?
+                    //  it seems cannot be failed ones. The native Kafka client doesn't raise exceptions
+                    //  for not existing partitions
                 }
+            }
 
-                log.debug("Assigned to {} partition {}", this.topicSubscription().getTopic(), this.topicSubscription().getPartition());
-                // start reading from specified offset inside partition
-                if (this.topicSubscription().getOffset() != null) {
+            for (SinkTopicSubscription topicSubscription : this.topicSubscriptions) {
 
-                    log.debug("Seeking to offset {}", this.topicSubscription().getOffset());
+                // check if a requested partition for a topic exists in the available partitions for that topic
+                Optional<PartitionInfo> requestedPartitionInfo =
+                        availablePartitions.stream()
+                                .filter(p -> p.getTopic().equals(topicSubscription.getTopic()) &&
+                                            p.getPartition() == topicSubscription.getPartition())
+                                .findFirst();
 
-                    this.consumer.seek(topicPartition, this.topicSubscription().getOffset(), seekResult -> {
+                this.handlePartition(Future.succeededFuture(requestedPartitionInfo));
 
-                        this.handleSeek(seekResult);
-                        if (seekResult.failed()) {
+                if (requestedPartitionInfo.isPresent()) {
+                    log.debug("Requested partition {} for topic {} does exist",
+                            topicSubscription.getPartition(), topicSubscription.getTopic());
+                    TopicPartition topicPartition = new TopicPartition(topicSubscription.getTopic(), topicSubscription.getPartition());
+
+                    this.consumer.assign(Collections.singleton(topicPartition), assignResult -> {
+
+                        this.handleAssign(assignResult);
+                        if (assignResult.failed()) {
                             return;
                         }
-                        partitionsAssigned(Collections.singleton(topicPartition));
+
+                        log.debug("Assigned to {} partition {} on topic {}", topicSubscription.getTopic(), topicSubscription.getPartition());
+                        // start reading from specified offset inside partition
+                        if (topicSubscription.getOffset() != null) {
+
+                            log.debug("Seeking to offset {}", topicSubscription.getOffset());
+
+                            this.consumer.seek(topicPartition, topicSubscription.getOffset(), seekResult -> {
+
+                                this.handleSeek(seekResult);
+                                if (seekResult.failed()) {
+                                    return;
+                                }
+                                partitionsAssigned(Collections.singleton(topicPartition));
+                            });
+                        } else {
+                            partitionsAssigned(Collections.singleton(topicPartition));
+                        }
                     });
+
                 } else {
-                    partitionsAssigned(Collections.singleton(topicPartition));
+                    log.warn("Requested partition {} for topic {} doesn't exist",
+                            topicSubscription.getPartition(), topicSubscription.getTopic());
                 }
-            });
-        } else {
-            log.warn("Requested partition {} doesn't exist", this.topicSubscription().getPartition());
-        }
+            }
+
+        });
     }
 
     /**

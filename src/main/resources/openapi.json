@@ -281,6 +281,34 @@
           }
         }
       ]
+    },
+    "/consumers/{groupid}/instances/{name}/assignments": {
+      "post": {
+        "operationId": "assign",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
     }
   }
 }

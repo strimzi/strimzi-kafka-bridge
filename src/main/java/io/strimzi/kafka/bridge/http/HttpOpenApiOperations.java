@@ -27,6 +27,7 @@ public enum HttpOpenApiOperations {
     DELETE_CONSUMER("deleteConsumer"),
     SUBSCRIBE("subscribe"),
     UNSUBSCRIBE("unsubscribe"),
+    ASSIGN("assign"),
     POLL("poll"),
     COMMIT("commit"),
     SEEK("seek"),

@@ -91,6 +91,7 @@ public class HttpBridge extends AbstractVerticle {
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.DELETE_CONSUMER.toString(), this::deleteConsumer);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SUBSCRIBE.toString(), this::subscribe);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.UNSUBSCRIBE.toString(), this::unsubscribe);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.ASSIGN.toString(), this::assign);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.POLL.toString(), this::poll);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.COMMIT.toString(), this::commit);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK.toString(), this::seek);
@@ -216,6 +217,11 @@ public class HttpBridge extends AbstractVerticle {
 
     private void unsubscribe(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.UNSUBSCRIBE);
+        processConsumer(routingContext);
+    }
+
+    private void assign(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.ASSIGN);
         processConsumer(routingContext);
     }
 

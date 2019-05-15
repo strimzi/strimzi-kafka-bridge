@@ -772,7 +772,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    @Ignore
     public void receiveSimpleMessageFromPartition(TestContext context) {
         String topic = "receiveSimpleMessageFromPartition";
         int partition = 1;
@@ -818,14 +817,16 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         // subscribe to a topic
         Async subscriberAsync = context.async();
 
-        JsonObject subJson = new JsonObject();
-        subJson.put("topic", topic);
-        subJson.put("partition", partition);
+        JsonArray partitions = new JsonArray();
+        partitions.add(new JsonObject().put("topic", topic).put("partition", partition));
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
-                .putHeader("Content-length", String.valueOf(subJson.toBuffer().length()))
+        JsonObject partitionsRoot = new JsonObject();
+        partitionsRoot.put("partitions", partitions);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/assignments")
+                .putHeader("Content-length", String.valueOf(partitionsRoot.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(subJson, ar -> {
+                .sendJsonObject(partitionsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
                     context.assertEquals(204, ar.result().statusCode());
                     subscriberAsync.complete();
@@ -882,15 +883,18 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
     @Test
     @Ignore
-    public void receiveSimpleMessageFromPartitionAndOffset(TestContext context) {
-        String topic = "receiveSimpleMessageFromPartitionAndOffset";
-        kafkaCluster.createTopic(topic, 1, 1);
+    public void receiveSimpleMessageFromMultiplePartitions(TestContext context) {
+        String topic = "receiveSimpleMessageFromMultiplePartitions";
+        kafkaCluster.createTopic(topic, 2, 1);
 
-        Async batch = context.async();
-        AtomicInteger index = new AtomicInteger();
-        kafkaCluster.useTo().produceStrings(11, batch::complete,  () ->
-                new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
-        batch.awaitSuccess(10000);
+        String sentBody = "Simple message from partition";
+
+        Async send = context.async(2);
+        kafkaCluster.useTo().produceStrings(1, send::countDown, () ->
+                new ProducerRecord<>(topic, 0, null, sentBody));
+        kafkaCluster.useTo().produceStrings(1, send::countDown, () ->
+                new ProducerRecord<>(topic, 1, null, sentBody));
+        send.await();
 
         Async creationAsync = context.async();
 
@@ -925,15 +929,17 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         // subscribe to a topic
         Async subscriberAsync = context.async();
 
-        JsonObject subJson = new JsonObject();
-        subJson.put("topic", topic);
-        subJson.put("partition", 0);
-        subJson.put("offset", 10L);
+        JsonArray partitions = new JsonArray();
+        partitions.add(new JsonObject().put("topic", topic).put("partition", 0));
+        partitions.add(new JsonObject().put("topic", topic).put("partition", 1));
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
-                .putHeader("Content-length", String.valueOf(subJson.toBuffer().length()))
+        JsonObject partitionsRoot = new JsonObject();
+        partitionsRoot.put("partitions", partitions);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/assignments")
+                .putHeader("Content-length", String.valueOf(partitionsRoot.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(subJson, ar -> {
+                .sendJsonObject(partitionsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
                     context.assertEquals(204, ar.result().statusCode());
                     subscriberAsync.complete();
@@ -951,20 +957,24 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonArray> response = ar.result();
-                    JsonObject jsonResponse = response.body().getJsonObject(0);
+                    context.assertEquals(2, response.body().size());
 
-                    String kafkaTopic = jsonResponse.getString("topic");
-                    int kafkaPartition = jsonResponse.getInteger("partition");
-                    String key = jsonResponse.getString("key");
-                    String value = jsonResponse.getString("value");
-                    long offset = jsonResponse.getLong("offset");
+                    for (int i = 0; i < 2; i++) {
+                        JsonObject jsonResponse = response.body().getJsonObject(i);
 
-                    context.assertEquals("key-10", key);
-                    context.assertEquals(topic, kafkaTopic);
-                    context.assertEquals("value-10", value);
-                    context.assertEquals(0, kafkaPartition);
-                    context.assertEquals(10L, offset);
+                        String kafkaTopic = jsonResponse.getString("topic");
+                        int kafkaPartition = jsonResponse.getInteger("partition");
+                        String key = jsonResponse.getString("key");
+                        String value = jsonResponse.getString("value");
+                        long offset = jsonResponse.getLong("offset");
 
+                        context.assertEquals("receiveSimpleMessageFromMultiplePartitions", kafkaTopic);
+                        context.assertEquals("Simple message from partition", value);
+                        context.assertEquals(0L, offset);
+                        //context.assertNotNull(kafkaPartition);
+                        context.assertEquals(i, kafkaPartition);
+                        context.assertNull(key);
+                    }
                     consumeAsync.complete();
                 });
 
@@ -974,6 +984,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-length", String.valueOf(0))
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
