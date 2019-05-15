@@ -99,12 +99,6 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                     }
                 });
 
-                this.setAssignHandler(assignResult -> {
-                    if (assignResult.succeeded()) {
-                        sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
-                    }
-                });
-
                 if (bodyAsJson.containsKey("topics")) {
                     JsonArray topicsList = bodyAsJson.getJsonArray("topics");
                     this.topicSubscriptions.addAll(
@@ -118,6 +112,25 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                     Pattern pattern = Pattern.compile(bodyAsJson.getString("topic_pattern"));
                     this.subscribe(pattern, false);
                 }
+                break;
+
+            case ASSIGN:
+
+                JsonArray partitionsList = bodyAsJson.getJsonArray("partitions");
+                this.topicSubscriptions.addAll(
+                        partitionsList.stream()
+                                .map(JsonObject.class::cast)
+                                .map(json -> new SinkTopicSubscription(json.getString("topic"), json.getInteger("partition"), json.getLong("offset")))
+                                .collect(Collectors.toList())
+                );
+
+                this.setAssignHandler(assignResult -> {
+                    if (assignResult.succeeded()) {
+                        sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
+                    }
+                });
+
+                this.assign(false);
                 break;
 
             case POLL:
