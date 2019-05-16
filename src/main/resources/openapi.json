@@ -42,7 +42,14 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/createdConsumer"
+                                }
+                            }
+                        }
                     },
                     "409": {
                         "description": "Consumer instance with the specified name already exists"
@@ -190,7 +197,39 @@
                 "operationId": "poll",
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Records2"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": [
+                                            {
+                                                "topic": "topic",
+                                                "key": "key1",
+                                                "value": {
+                                                    "foo": "bar"
+                                                },
+                                                "partition": 0,
+                                                "offset": 2
+                                            },
+                                            {
+                                                "topic": "topic",
+                                                "key": "key2",
+                                                "value": [
+                                                    "foo2",
+                                                    "bar2"
+                                                ],
+                                                "partition": 1,
+                                                "offset": 3
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Consumer instance not found"
@@ -324,7 +363,34 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OffsetsWithoutTopic"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "offsets": [
+                                                {
+                                                    "partition": 2,
+                                                    "offset": 0
+                                                },
+                                                {
+                                                    "partition": 1,
+                                                    "offset": 1
+                                                },
+                                                {
+                                                    "partition": 2,
+                                                    "offset": 2
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Topic not found"
@@ -362,7 +428,62 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Partitions"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": [
+                                            {
+                                                "partition": 1,
+                                                "leader": 1,
+                                                "replicas": [
+                                                    {
+                                                        "broker": 1,
+                                                        "leader": true,
+                                                        "in_sync": true
+                                                    },
+                                                    {
+                                                        "broker": 2,
+                                                        "leader": false,
+                                                        "in_sync": true
+                                                    },
+                                                    {
+                                                        "broker": 3,
+                                                        "leader": false,
+                                                        "in_sync": false
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "partition": 2,
+                                                "leader": 2,
+                                                "replicas": [
+                                                    {
+                                                        "broker": 1,
+                                                        "leader": false,
+                                                        "in_sync": true
+                                                    },
+                                                    {
+                                                        "broker": 2,
+                                                        "leader": true,
+                                                        "in_sync": true
+                                                    },
+                                                    {
+                                                        "broker": 3,
+                                                        "leader": false,
+                                                        "in_sync": false
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Topic or Partition not found"
@@ -459,7 +580,7 @@
                     }
                 },
                 "responses": {
-                    "200": {
+                    "204": {
                         "description": "OK"
                     },
                     "404": {
@@ -716,6 +837,67 @@
                     }
                 },
                 "example": "{\n    \"offsets\": [\n        {\n            \"topic\": \"topic\",\n            \"partition\": 0,\n            \"offset\": 15\n        },\n        {\n            \"topic\": \"topic\",\n            \"partition\": 1,\n            \"offset\": 42\n        }\n    ]\n}"
+            },
+            "createdConsumer": {
+                "title": "Root Type for createdConsumer",
+                "description": "The root of the createdConsumer type's schema.",
+                "type": "object",
+                "properties": {
+                    "instance_id": {
+                        "description": "Unique ID for the consumer instance in the group",
+                        "type": "string"
+                    },
+                    "base_uri": {
+                        "description": "Base URI used to construct URIs for subsequent requests against this consumer instance",
+                        "type": "string"
+                    }
+                },
+                "example": "{\n    \"instance_id\": \"consumer1\",\n    \"base_uri\": \"http://localhost:8080/consumers/my-group/instances/consumer1\"\n}"
+            },
+            "OffsetsWithoutTopic": {
+                "title": "Root Type for OffsetsWithoutTopic",
+                "description": "The root of the OffsetsWithoutTopic type's schema.",
+                "type": "object",
+                "properties": {
+                    "offsets": {
+                        "type": "array",
+                        "items": {}
+                    }
+                },
+                "example": "{\n    \"offsets\": [\n        {\n            \"partition\": 2,\n            \"offset\": 0\n        },\n        {\n            \"partition\": 1,\n            \"offset\": 1\n        },\n        {\n            \"partition\": 2,\n            \"offset\": 2\n        }\n    ]\n}"
+            },
+            "Records2": {
+                "title": "Root Type for Records2",
+                "description": "The root of the Records2 type's schema.",
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "topic": {
+                            "type": "string"
+                        },
+                        "key": {
+                            "type": "string"
+                        },
+                        "value": {
+                            "type": "object",
+                            "properties": {
+                                "foo": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "partition": {
+                            "format": "int32",
+                            "type": "integer"
+                        },
+                        "offset": {
+                            "format": "int32",
+                            "type": "integer"
+                        }
+                    }
+                },
+                "example": "[\n    {\n        \"topic\": \"topic\",\n        \"key\": \"key1\",\n        \"value\": {\n            \"foo\": \"bar\"\n        },\n        \"partition\": 0,\n        \"offset\": 2\n    },\n    {\n        \"topic\": \"topic\",\n        \"key\": \"key2\",\n        \"value\": [\n            \"foo2\",\n            \"bar2\"\n        ],\n        \"partition\": 1,\n        \"offset\": 3\n    }\n]"
             }
         },
         "requestBodies": {
