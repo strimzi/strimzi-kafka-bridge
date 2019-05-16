@@ -499,8 +499,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         // consume records
         Async consumeAsync = context.async();
 
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
-                .putHeader("timeout", String.valueOf(1000))
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -612,8 +611,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         // consume records
         Async consumeAsync = context.async();
 
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
-                .putHeader("timeout", String.valueOf(1000))
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -724,8 +722,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         // consume records
         Async consumeAsync = context.async();
 
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
-                .putHeader("timeout", String.valueOf(1000))
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -836,8 +833,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         // consume records
         Async consumeAsync = context.async();
 
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
-                .putHeader("timeout", String.valueOf(1000))
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -949,8 +945,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         // consume records
         Async consumeAsync = context.async();
 
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
-                .putHeader("timeout", String.valueOf(1000))
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1062,8 +1057,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         // consume records
         Async consumeAsync = context.async();
 
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
-                .putHeader("timeout", String.valueOf(1000))
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1500,8 +1494,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         // consume records
         Async consumeAsync = context.async();
 
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
-                .putHeader("timeout", String.valueOf(1000))
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());

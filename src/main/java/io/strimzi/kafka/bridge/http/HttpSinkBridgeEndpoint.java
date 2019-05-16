@@ -135,8 +135,8 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
             case POLL:
 
-                if (routingContext.request().getHeader("timeout") != null) {
-                    this.pollTimeOut = Long.parseLong(routingContext.request().getHeader("timeout"));
+                if (routingContext.request().getParam("timeout") != null) {
+                    this.pollTimeOut = Long.parseLong(routingContext.request().getParam("timeout"));
                 }
 
                 this.consume(records -> {
