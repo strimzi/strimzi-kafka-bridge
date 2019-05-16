@@ -139,13 +139,21 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                     this.pollTimeOut = Long.parseLong(routingContext.request().getParam("timeout"));
                 }
 
+                if (routingContext.request().getParam("max_bytes") != null) {
+                    this.maxBytes = Long.parseLong(routingContext.request().getParam("max_bytes"));
+                }
+
                 this.consume(records -> {
                     if (records.succeeded()) {
                         Buffer buffer = (Buffer) messageConverter.toMessages(records.result());
-                        sendConsumerRecordsResponse(routingContext.response(), buffer);
+                        if (buffer.getBytes().length > this.maxBytes) {
+                            sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), "Response is too large");
+                        } else {
+                            sendConsumerRecordsResponse(routingContext.response(), buffer);
+                        }
 
                     } else {
-                        sendConsumerRecordsFailedResponse(routingContext.response());
+                        sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR.getValue(), "Internal server error");
                     }
                 });
 
@@ -285,8 +293,9 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
         response.end();
     }
 
-    private void sendConsumerRecordsFailedResponse(HttpServerResponse response) {
-        response.setStatusCode(500);
+    private void sendConsumerRecordsFailedResponse(HttpServerResponse response, int errCode, String errMsg) {
+        response.setStatusCode(errCode);
+        response.setStatusMessage(errMsg);
         response.end();
     }
 }
