@@ -147,13 +147,13 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                     if (records.succeeded()) {
                         Buffer buffer = (Buffer) messageConverter.toMessages(records.result());
                         if (buffer.getBytes().length > this.maxBytes) {
-                            routingContext.response().setStatusMessage("Response is too large").setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue()).end();
+                            sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), "Response is too large");
                         } else {
                             sendConsumerRecordsResponse(routingContext.response(), buffer);
                         }
 
                     } else {
-                        sendConsumerRecordsFailedResponse(routingContext.response());
+                        sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR.getValue(), "Internal server error");
                     }
                 });
 
@@ -293,8 +293,9 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
         response.end();
     }
 
-    private void sendConsumerRecordsFailedResponse(HttpServerResponse response) {
-        response.setStatusCode(500);
+    private void sendConsumerRecordsFailedResponse(HttpServerResponse response, int errCode, String errMsg) {
+        response.setStatusCode(errCode);
+        response.setStatusMessage(errMsg);
         response.end();
     }
 }
