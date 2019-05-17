@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "title": "HTTP Kafka Bridge",
+        "title": "Strimzi HTTP Bridge for Apache Kafka",
         "description": "This is a HTTP Kafka Bridge server",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
