@@ -25,7 +25,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Creates a consumer instance in a given consumer group. You can optionally specify a consumer name and supported configuration options.",
+                "description": "Creates a consumer instance in a given consumer group. You can optionally specify a consumer name and supported configuration options.",
                 "operationId": "createConsumer",
                 "parameters": [
                     {
@@ -69,7 +69,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Deletes a consumer instance from your Kafka cluster.",
+                "description": "Deletes a consumer instance from your Kafka cluster.",
                 "operationId": "deleteConsumer",
                 "responses": {
                     "204": {
@@ -102,7 +102,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Configures a subscribed consumer to seek to (and subsequently read from) the first offset in one or more given topic partitions.",
+                "description": "Configures a subscribed consumer to seek to (and subsequently read from) the first offset in one or more given topic partitions.",
                 "operationId": "seekToBeginning",
                 "parameters": [
                     {
@@ -146,7 +146,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Configures a subscribed consumer to seek to (and subsequently read from) the last offset in one or more given topic partitions. This is the default behavior.",
+                "description": "Configures a subscribed consumer to seek to (and subsequently read from) the last offset in one or more given topic partitions. This is the default behavior.",
                 "operationId": "seekToEnd",
                 "parameters": [
                     {
@@ -190,7 +190,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Retrieves information about the records processed by a subscribed consumer, including message values, topics, and partitions. Uses the `subscribe` or `assign` API.",
+                "description": "Retrieves information about the records processed by a subscribed consumer, including message values, topics, and partitions. Uses the `subscribe` or `assign` API.",
                 "operationId": "poll",
                 "produces": [
                     "application/json"
@@ -269,7 +269,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Subscribes a consumer to one or more topics.",
+                "description": "Subscribes a consumer to one or more topics.",
                 "operationId": "subscribe",
                 "parameters": [
                     {
@@ -298,7 +298,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Unsubscribes a consumer from all topics.",
+                "description": "Unsubscribes a consumer from all topics.",
                 "operationId": "unsubscribe",
                 "responses": {
                     "204": {
@@ -331,7 +331,7 @@
                 "tags": [
                     "Topics"
                 ],
-                "summary": "Sends one or more records to a given topic, optionally specifying a partition, key, or both.",
+                "description": "Sends one or more records to a given topic, optionally specifying a partition, key, or both.",
                 "operationId": "send",
                 "produces": [
                     "application/json"
@@ -391,7 +391,7 @@
                 "tags": [
                     "Topics"
                 ],
-                "summary": "Sends one or more records to a given topic partition, optionally specifying a key.",
+                "description": "Sends one or more records to a given topic partition, optionally specifying a key.",
                 "operationId": "sendToPartition",
                 "produces": [
                     "application/json"
@@ -400,6 +400,7 @@
                     {
                         "name": "body",
                         "in": "body",
+                        "description": "List of records to send to a given topic partition, including a value (required) and a key (optional).",
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/RecordsWithoutPartitions"
@@ -489,7 +490,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Configures a subscribed consumer to fetch offsets from a particular offset ID the next time it fetches a set of records from a given topic partition. This overrides the default fetch behavior for consumers. You can specify one or more topic partitions.",
+                "description": "Configures a subscribed consumer to fetch offsets from a particular offset ID the next time it fetches a set of records from a given topic partition. This overrides the default fetch behavior for consumers. You can specify one or more topic partitions.",
                 "operationId": "seek",
                 "parameters": [
                     {
@@ -533,7 +534,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Commits a list of consumer offsets to the consumer offsets commit log. To commit offsets for all records fetched by the consumer, leave the request body empty.",
+                "description": "Commits a list of consumer offsets to the consumer offsets commit log. To commit offsets for all records fetched by the consumer, leave the request body empty.",
                 "operationId": "commit",
                 "parameters": [
                     {
@@ -577,7 +578,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Assigns one or more topic partitions to a consumer.",
+                "description": "Assigns one or more topic partitions to a consumer.",
                 "operationId": "assign",
                 "parameters": [
                     {

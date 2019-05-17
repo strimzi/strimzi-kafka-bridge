@@ -1,8 +1,8 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "HTTP Kafka Bridge",
-        "description": "This is a HTTP Kafka Bridge server",
+        "title": "Strimzi HTTP Bridge for Apache Kafka",
+        "description": "The Strimzi HTTP Bridge for Apache Kafka provides a REST API for integrating client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. The HTTP Bridge can be deployed on bare metal or in a container.",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
             "email": "strimzi@redhat.com"
@@ -27,10 +27,10 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Create a new consumer instance in the consumer group",
+                "description": "Creates a consumer instance in a given consumer group. You can optionally specify a consumer name and supported configuration options.",
                 "operationId": "createConsumer",
                 "requestBody": {
-                    "description": "Consumer specification",
+                    "description": "Name and configuration of the consumer. If a name is not specified, a randomly generated name is assigned. All parameters are optional. The supported configuration options are shown in the following example.",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -52,10 +52,10 @@
                         }
                     },
                     "409": {
-                        "description": "Consumer instance with the specified name already exists"
+                        "description": "A consumer instance with the specified name already exists in your Kafka cluster."
                     },
                     "422": {
-                        "description": "Invalid consumer configuration. One of the settings specified in the request contained an invalid value"
+                        "description": "One or more consumer configuration options have invalid values. Ensure that the values of the configuration options specified in the request body are valid."
                     }
                 }
             },
@@ -63,7 +63,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
-                    "description": "The name of the consumer group",
+                    "description": "ID of the consumer group in which to create the consumer.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -76,14 +76,14 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Destroy the consumer instance",
+                "description": "Deletes a consumer instance from your Kafka cluster.",
                 "operationId": "deleteConsumer",
                 "responses": {
                     "204": {
-                        "description": "No content"
+                        "description": "No content."
                     },
                     "404": {
-                        "description": "Consumer instance not found"
+                        "description": "The specified consumer instance was not found."
                     }
                 }
             },
@@ -91,7 +91,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
-                    "description": "The name of the consumer group",
+                    "description": "ID of the consumer group to which the consumer belongs.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -100,7 +100,7 @@
                 {
                     "name": "name",
                     "in": "path",
-                    "description": "The ID of the consumer instance",
+                    "description": "Name of the consumer that you want to delete.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -113,17 +113,25 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Seek to the first offset for each of the given partitions",
+                "description": "Configures a subscribed consumer to seek to (and subsequently read from) the first offset in one or more given topic partitions.",
                 "operationId": "seekToBeginning",
                 "requestBody": {
-                    "$ref": "#/components/requestBodies/PartitionsForPositions"
+                    "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek to the first offset in the specified partitions.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PartitionsForPositions"
+                            }
+                        }
+                    },
+                    "required": true
                 },
                 "responses": {
                     "204": {
-                        "description": "No Content"
+                        "description": "No content."
                     },
                     "404": {
-                        "description": "Consumer instance not found"
+                        "description": "The specified consumer instance was not found."
                     }
                 }
             },
@@ -131,7 +139,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
-                    "description": "The name of the consumer group",
+                    "description": "ID of the consumer group to which the subscribed consumer belongs.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -140,7 +148,7 @@
                 {
                     "name": "name",
                     "in": "path",
-                    "description": "The ID of the consumer instance",
+                    "description": "Name of the subscribed consumer.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -153,17 +161,25 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Seek to the last offset for each of the given partitions",
+                "description": "Configures a subscribed consumer to seek to (and subsequently read from) the last offset in one or more given topic partitions. This is the default behavior.",
                 "operationId": "seekToEnd",
                 "requestBody": {
-                    "$ref": "#/components/requestBodies/PartitionsForPositions"
+                    "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek to the last offset in the specified partitions.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PartitionsForPositions"
+                            }
+                        }
+                    },
+                    "required": true
                 },
                 "responses": {
                     "204": {
-                        "description": "No Content"
+                        "description": "No content."
                     },
                     "404": {
-                        "description": "Consumer instance not found"
+                        "description": "The specified consumer instance was not found."
                     }
                 }
             },
@@ -171,7 +187,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
-                    "description": "The name of the consumer group",
+                    "description": "ID of the consumer group to which the subscribed consumer belongs.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -180,7 +196,7 @@
                 {
                     "name": "name",
                     "in": "path",
-                    "description": "The ID of the consumer instance",
+                    "description": "Name of the subscribed consumer.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -193,7 +209,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Fetch data for the topics or partitions specified using one of the subscribe/assign APIs",
+                "description": "Retrieves information about the records processed by a subscribed consumer, including message values, topics, and partitions. Uses the `subscribe` or `assign` API.",
                 "operationId": "poll",
                 "responses": {
                     "200": {
@@ -232,10 +248,10 @@
                         }
                     },
                     "404": {
-                        "description": "Consumer instance not found"
+                        "description": "The specified consumer instance was not found."
                     },
                     "406": {
-                        "description": "Consumer format does not match the embedded format requested by the Accept header"
+                        "description": "The format of the consumer does not match the embedded format requested in the Accept header."
                     }
                 }
             },
@@ -243,7 +259,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
-                    "description": "The name of the consumer group",
+                    "description": "ID of the consumer group to which the subscribed consumer belongs.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -252,7 +268,7 @@
                 {
                     "name": "name",
                     "in": "path",
-                    "description": "The ID of the consumer instance",
+                    "description": "Name of the subscribed consumer for which you want to retrieve information on processed records.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -261,7 +277,7 @@
                 {
                     "name": "timeout",
                     "in": "query",
-                    "description": "Maximum amount of milliseconds the REST proxy will spend fetching records",
+                    "description": "The maximum amount of time in ms that the HTTP Bridge spends retrieving records before timing out the request.",
                     "required": false,
                     "schema": {
                         "type": "integer"
@@ -270,7 +286,7 @@
                 {
                     "name": "max_bytes",
                     "in": "query",
-                    "description": "The maximum number of bytes of unencoded keys and values that should be included in the response",
+                    "description": "The maximum size, in bytes, of unencoded keys and values that will be included in the response.",
                     "required": false,
                     "schema": {
                         "type": "integer"
@@ -283,10 +299,10 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Subscribe to the given list of topics",
+                "description": "Subscribes a consumer to one or more topics.",
                 "operationId": "subscribe",
                 "requestBody": {
-                    "description": "A list of topics to subscribe",
+                    "description": "List of topics to which the consumer will subscribe.",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -298,13 +314,13 @@
                 },
                 "responses": {
                     "204": {
-                        "description": "No Content"
+                        "description": "No content."
                     },
                     "404": {
-                        "description": "Consumer instance not found"
+                        "description": "The specified consumer instance was not found."
                     },
                     "409": {
-                        "description": "Subscription to topics, partitions and pattern are mutually exclusive"
+                        "description": "Subscription to topics, partitions, and pattern are mutually exclusive."
                     }
                 }
             },
@@ -312,14 +328,14 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Unsubscribe from topics currently subscribed",
+                "description": "Unsubscribes a consumer from all topics.",
                 "operationId": "unsubscribe",
                 "responses": {
                     "204": {
-                        "description": "No Content"
+                        "description": "No content."
                     },
                     "404": {
-                        "description": "Consumer instance not found"
+                        "description": "The specified consumer instance was not found."
                     }
                 }
             },
@@ -327,7 +343,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
-                    "description": "The name of the consumer group",
+                    "description": "ID of the consumer group to which the subscribed consumer belongs.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -336,7 +352,7 @@
                 {
                     "name": "name",
                     "in": "path",
-                    "description": "The ID of the consumer instance",
+                    "description": "Name of the consumer that you want to unsubscribe from topics.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -349,7 +365,7 @@
                 "tags": [
                     "Topics"
                 ],
-                "summary": "Send a record to topic",
+                "description": "Sends one or more records to a given topic, optionally specifying a partition, key, or both.",
                 "operationId": "send",
                 "requestBody": {
                     "content": {
@@ -393,7 +409,7 @@
                         }
                     },
                     "404": {
-                        "description": "Topic not found"
+                        "description": "The specified topic was not found."
                     }
                 }
             },
@@ -401,7 +417,7 @@
                 {
                     "name": "topicname",
                     "in": "path",
-                    "description": "Name of the topic",
+                    "description": "Name of the topic to which you want to send records.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -414,9 +430,10 @@
                 "tags": [
                     "Topics"
                 ],
-                "summary": "Send a record to specified partition of topic",
+                "description": "Sends one or more records to a given topic partition, optionally specifying a key.",
                 "operationId": "sendToPartition",
                 "requestBody": {
+                    "description": "List of records to send to a given topic partition, including a value (required) and a key (optional).",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -486,7 +503,7 @@
                         }
                     },
                     "404": {
-                        "description": "Topic or Partition not found"
+                        "description": "The specified topic partition was not found."
                     },
                     "422": {
                         "description": "Unprocessable Entity"
@@ -497,7 +514,7 @@
                 {
                     "name": "topicname",
                     "in": "path",
-                    "description": "Name of the topic",
+                    "description": "Name of the topic containing the partition to which you want to send records.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -506,7 +523,7 @@
                 {
                     "name": "partitionid",
                     "in": "path",
-                    "description": "ID of the partition",
+                    "description": "ID of the partition to which you want to send records.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -519,10 +536,10 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Overrides the fetch offsets that the consumer will use for the next set of records to fetch",
+                "description": "Configures a subscribed consumer to fetch offsets from a particular offset ID the next time it fetches a set of records from a given topic partition. This overrides the default fetch behavior for consumers. You can specify one or more topic partitions.",
                 "operationId": "seek",
                 "requestBody": {
-                    "description": "A list of offsets",
+                    "description": "List of partition offsets from which the subscribed consumer will next fetch records.",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -534,10 +551,10 @@
                 },
                 "responses": {
                     "204": {
-                        "description": "No Content"
+                        "description": "No content."
                     },
                     "404": {
-                        "description": "Consumer instance not found"
+                        "description": "The specified consumer instance was not found."
                     }
                 }
             },
@@ -545,7 +562,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
-                    "description": "The name of the consumer group",
+                    "description": "ID of the consumer group to which the consumer belongs.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -554,7 +571,7 @@
                 {
                     "name": "name",
                     "in": "path",
-                    "description": "The ID of the consumer instance",
+                    "description": "Name of the subscribed consumer.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -567,10 +584,10 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Commit a list of offsets for the consumer",
+                "description": "Commits a list of consumer offsets to the consumer offsets commit log. To commit offsets for all records fetched by the consumer, leave the request body empty.",
                 "operationId": "commit",
                 "requestBody": {
-                    "description": "A list of offsets to commit for partitions",
+                    "description": "List of consumer offsets to commit to the consumer offsets commit log. You can specify one or more topic partitions to commit offsets for.",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -584,7 +601,7 @@
                         "description": "OK"
                     },
                     "404": {
-                        "description": "Consumer instance not found"
+                        "description": "The specified consumer instance was not found."
                     }
                 }
             },
@@ -592,7 +609,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
-                    "description": "The name of the consumer group",
+                    "description": "ID of the consumer group to which the consumer belongs.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -601,7 +618,7 @@
                 {
                     "name": "name",
                     "in": "path",
-                    "description": "The ID of the consumer instance",
+                    "description": "Name of the consumer.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -614,10 +631,10 @@
                 "tags": [
                     "Consumers"
                 ],
-                "summary": "Manually assign a list of partitions to the consumer",
+                "description": "Assigns one or more topic partitions to a consumer.",
                 "operationId": "assign",
                 "requestBody": {
-                    "description": "A list of partitions to assign to the consumer",
+                    "description": "List of topic partitions to assign to the consumer.",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -632,10 +649,10 @@
                         "description": "OK"
                     },
                     "404": {
-                        "description": "Consumer instance not found"
+                        "description": "The specified consumer instance was not found."
                     },
                     "409": {
-                        "description": "Subscription to topics, partitions and pattern are mutually exclusive"
+                        "description": "Subscription to topics, partitions, and pattern are mutually exclusive."
                     }
                 }
             },
@@ -643,7 +660,7 @@
                 {
                     "name": "groupid",
                     "in": "path",
-                    "description": "The name of the consumer group",
+                    "description": "ID of the consumer group to which the consumer belongs.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -652,7 +669,7 @@
                 {
                     "name": "name",
                     "in": "path",
-                    "description": "The ID of the consumer instance",
+                    "description": "Name of the consumer to which you want to assign topic partitions.",
                     "required": true,
                     "schema": {
                         "type": "string"
@@ -899,29 +916,16 @@
                 },
                 "example": "[\n    {\n        \"topic\": \"topic\",\n        \"key\": \"key1\",\n        \"value\": {\n            \"foo\": \"bar\"\n        },\n        \"partition\": 0,\n        \"offset\": 2\n    },\n    {\n        \"topic\": \"topic\",\n        \"key\": \"key2\",\n        \"value\": [\n            \"foo2\",\n            \"bar2\"\n        ],\n        \"partition\": 1,\n        \"offset\": 3\n    }\n]"
             }
-        },
-        "requestBodies": {
-            "PartitionsForPositions": {
-                "description": "A list of partitions",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/PartitionsForPositions"
-                        }
-                    }
-                },
-                "required": true
-            }
         }
     },
     "tags": [
         {
             "name": "Consumers",
-            "description": "Consumers management"
+            "description": "The `consumers` resource allows you to create consumers in your Kafka cluster and perform common actions, such as subscribing to topics, retrieving processed records, and committing offsets."
         },
         {
             "name": "Topics",
-            "description": "Topics management"
+            "description": "The `topics` resource allows you to send messages to a specified topic or topic partition. You can include message keys in requests."
         }
     ],
     "externalDocs": {
