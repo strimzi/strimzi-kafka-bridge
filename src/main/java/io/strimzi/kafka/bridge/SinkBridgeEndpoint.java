@@ -652,4 +652,28 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             }
         });
     }
+
+    protected void seek(TopicPartition topicPartition, long offset, Handler<AsyncResult<Void>> seekHandler) {
+        this.consumer.seek(topicPartition, offset, result -> {
+            if (seekHandler != null) {
+                seekHandler.handle(result);
+            }
+        });
+    }
+
+    protected void seekToBeginning(Set<TopicPartition> topicPartitionSet, Handler<AsyncResult<Void>> seekHandler) {
+        this.consumer.seekToBeginning(topicPartitionSet, result -> {
+            if (seekHandler != null) {
+                seekHandler.handle(result);
+            }
+        });
+    }
+
+    protected void seekToEnd(Set<TopicPartition> topicPartitionSet, Handler<AsyncResult<Void>> seekHandler) {
+        this.consumer.seekToEnd(topicPartitionSet, result -> {
+            if (seekHandler != null) {
+                seekHandler.handle(result);
+            }
+        });
+    }
 }

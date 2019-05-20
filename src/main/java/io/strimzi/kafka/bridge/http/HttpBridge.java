@@ -236,15 +236,18 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void seek(RoutingContext routingContext) {
-        //TODO
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SEEK);
+        processConsumer(routingContext);
     }
 
     private void seekToBeginning(RoutingContext routingContext) {
-        //TODO
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SEEK_TO_BEGINNING);
+        processConsumer(routingContext);
     }
 
     private void seekToEnd(RoutingContext routingContext) {
-        //TODO
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SEEK_TO_END);
+        processConsumer(routingContext);
     }
 
     /**

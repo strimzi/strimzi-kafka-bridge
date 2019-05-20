@@ -21,6 +21,9 @@ import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -32,9 +35,12 @@ import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -63,7 +69,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
     }
 
     @Override
-    @SuppressWarnings({"checkstyle:CyclomaticComplexity", "checkstyle:NPathComplexity"})
+    @SuppressWarnings({"checkstyle:CyclomaticComplexity", "checkstyle:NPathComplexity", "checkstyle:MethodLength"})
     public void handle(Endpoint<?> endpoint) {
 
         routingContext = (RoutingContext) endpoint.get();
@@ -188,6 +194,53 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                     sendConsumerCommitOffsetResponse(routingContext.response(), status.succeeded());
                 });
                 break;
+
+            case SEEK:
+
+                JsonArray seekOffsetsList = bodyAsJson.getJsonArray("offsets");
+
+                List<Future> seekHandlers = new ArrayList<>(seekOffsetsList.size());
+                for (int i = 0; i < seekOffsetsList.size(); i++) {
+                    TopicPartition topicPartition = new TopicPartition(seekOffsetsList.getJsonObject(i));
+                    long offset = seekOffsetsList.getJsonObject(i).getLong("offset");
+                    Future<Void> fut = Future.future();
+                    seekHandlers.add(fut);
+                    this.seek(topicPartition, offset, fut.completer());
+                }
+
+                CompositeFuture.join(seekHandlers).setHandler(done -> {
+                    if (done.succeeded()) {
+                        sendSeekResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
+                    } else {
+                        sendSeekResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR);
+                    }
+                });
+                break;
+
+            case SEEK_TO_BEGINNING:
+            case SEEK_TO_END:
+
+                JsonArray seekPartitionsList = bodyAsJson.getJsonArray("partitions");
+
+                Set<TopicPartition> set = seekPartitionsList.stream()
+                        .map(JsonObject.class::cast)
+                        .map(json -> new TopicPartition(json.getString("topic"), json.getInteger("partition")))
+                        .collect(Collectors.toSet());
+
+                Handler<AsyncResult<Void>> seekHandler = done -> {
+                    if (done.succeeded()) {
+                        sendSeekResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
+                    } else {
+                        sendSeekResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR);
+                    }
+                };
+
+                if (this.httpBridgeContext.getOpenApiOperation() == HttpOpenApiOperations.SEEK_TO_BEGINNING) {
+                    this.seekToBeginning(set, seekHandler);
+                } else {
+                    this.seekToEnd(set, seekHandler);
+                }
+                break;
         }
 
     }
@@ -297,5 +350,10 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
         response.setStatusCode(errCode);
         response.setStatusMessage(errMsg);
         response.end();
+    }
+
+    private void sendSeekResponse(HttpServerResponse response, ErrorCodeEnum errorCodeEnum) {
+        response.setStatusCode(errorCodeEnum.getValue())
+                .end();
     }
 }
