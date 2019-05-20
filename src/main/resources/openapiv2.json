@@ -102,13 +102,13 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Configures a subscribed consumer to seek to (and subsequently read from) the first offset in one or more given topic partitions.",
+                "description": "Configures a subscribed consumer to seek (and subsequently read from) the first offset in one or more given topic partitions.",
                 "operationId": "seekToBeginning",
                 "parameters": [
                     {
                         "name": "body",
                         "in": "body",
-                        "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek to the first offset in the specified partitions.",
+                        "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek the first offset in the specified partitions.",
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/PartitionsForPositions"
@@ -146,13 +146,13 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Configures a subscribed consumer to seek to (and subsequently read from) the last offset in one or more given topic partitions. This is the default behavior.",
+                "description": "Configures a subscribed consumer to seek (and subsequently read from) the last offset in one or more given topic partitions. This is the default behavior.",
                 "operationId": "seekToEnd",
                 "parameters": [
                     {
                         "name": "body",
                         "in": "body",
-                        "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek to the last offset in the specified partitions.",
+                        "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek the last offset in the specified partitions.",
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/PartitionsForPositions"
@@ -803,11 +803,11 @@
             "type": "object",
             "properties": {
                 "instance_id": {
-                    "description": "Unique ID for the consumer instance in the group",
+                    "description": "Unique ID for the consumer instance in the group.",
                     "type": "string"
                 },
                 "base_uri": {
-                    "description": "Base URI used to construct URIs for subsequent requests against this consumer instance",
+                    "description": "Base URI used to construct URIs for subsequent requests against this consumer instance.",
                     "type": "string"
                 }
             },
