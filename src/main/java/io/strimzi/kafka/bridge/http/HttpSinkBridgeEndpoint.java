@@ -330,6 +330,11 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                 .end();
     }
 
+    private void sendConsumerUnubscriptionResponse(HttpServerResponse response) {
+        response.setStatusCode(204).setStatusMessage("Consumer unsubscribed from all topics")
+                .end();
+    }
+
     private void sendConsumerRecordsResponse(HttpServerResponse response, Buffer buffer) {
         response.putHeader("Content-length", String.valueOf(buffer.length()))
                 .write(buffer)

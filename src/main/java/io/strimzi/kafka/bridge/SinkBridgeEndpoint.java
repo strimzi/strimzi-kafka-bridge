@@ -67,12 +67,15 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected long maxBytes = Long.MAX_VALUE;
 
     private boolean shouldAttachSubscriberHandler;
+    private boolean shouldAttachUnsubscriberHandler;
 
     // handlers called when partitions are revoked/assigned on rebalancing
     private Handler<Set<TopicPartition>> partitionsRevokedHandler;
     private Handler<Set<TopicPartition>> partitionsAssignedHandler;
     // handler called after a topic subscription request
     private Handler<AsyncResult<Void>> subscribeHandler;
+    // handler called after an unsubscription request
+    private Handler<AsyncResult<Void>> unsubscribeHandler;
     // handler called after a request for a specific partition
     private Handler<AsyncResult<Optional<PartitionInfo>>> partitionHandler;
     // handler called after a topic partition assign request
@@ -171,6 +174,19 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
+     * Unubscribe all the topics which the consumer currently subscribes
+     *
+     * @param shouldAttachHandler if the handler for getting messages should be set up
+     */
+    protected void unsubscribe(boolean shouldAttachHandler) {
+
+        this.shouldAttachUnsubscriberHandler = shouldAttachHandler;
+        log.info("Unsubscribe from topics {}", this.topicSubscriptions);
+        topicSubscriptions.clear();
+        this.consumer.unsubscribe(this::unsubscribeHandler);
+    }
+
+    /**
      * Subscribe to topics via the provided pattern represented by a Java regex
      *
      * @param pattern Java regex for topics subscription
@@ -199,6 +215,23 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         }
 
         if (shouldAttachSubscriberHandler)
+            this.consumer.handler(this::handleKafkaRecord);
+    }
+
+    /**
+     * Handler of the unsubscription request
+     *
+     * @param unsubscribeResult result of unsubscription request
+     */
+    private void unsubscribeHandler(AsyncResult<Void> unsubscribeResult) {
+
+        this.handleUnsubscribe(unsubscribeResult);
+
+        if (unsubscribeResult.failed()) {
+            return;
+        }
+
+        if (shouldAttachUnsubscriberHandler)
             this.consumer.handler(this::handleKafkaRecord);
     }
 
@@ -511,6 +544,16 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
+     * Set the handler called when an unsubscription request is executed
+     *
+     * @param handler   the handler
+     */
+    protected void setUnsubscribeHandler(Handler<AsyncResult<Void>> handler) {
+        this.unsubscribeHandler = handler;
+    }
+
+
+    /**
      * Set the handler called after a request for a specific partition is executed
      *
      * @param handler   the handler providing the info about the requested specific partition
@@ -570,6 +613,12 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     private void handleSubscribe(AsyncResult<Void> subscribeResult) {
         if (this.subscribeHandler != null) {
             this.subscribeHandler.handle(subscribeResult);
+        }
+    }
+
+    private void handleUnsubscribe(AsyncResult<Void> unsubscribeResult) {
+        if (this.unsubscribeHandler != null) {
+            this.unsubscribeHandler.handle(unsubscribeResult);
         }
     }
 
