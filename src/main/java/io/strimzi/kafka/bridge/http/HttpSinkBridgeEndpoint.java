@@ -102,6 +102,10 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
             case SEEK_TO_END:
                 doSeekTo(bodyAsJson, this.httpBridgeContext.getOpenApiOperation());
                 break;
+
+            case UNSUBSCRIBE:
+                doUnsubscribe();
+                break;
         }
 
     }
@@ -249,6 +253,17 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
         }
     }
 
+    public void doUnsubscribe() {
+        this.setUnsubscribeHandler(unsubscribeResult -> {
+            if (unsubscribeResult.succeeded()) {
+                sendConsumerUnubscriptionResponse(routingContext.response());
+            } else {
+                sendConsumerUnubscriptionFailedResponse(routingContext.response());
+            }
+        });
+        this.unsubscribe();
+    }
+
     /**
      * Add a configuration parameter with key and value to the provided Properties bag
      *
@@ -327,6 +342,16 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
     private void sendConsumerSubscriptionResponse(HttpServerResponse response, ErrorCodeEnum errorCodeEnum) {
         response.setStatusCode(errorCodeEnum.getValue())
+                .end();
+    }
+
+    private void sendConsumerUnubscriptionResponse(HttpServerResponse response) {
+        response.setStatusCode(204).setStatusMessage("Consumer unsubscribed from all topics")
+                .end();
+    }
+
+    private void sendConsumerUnubscriptionFailedResponse(HttpServerResponse response) {
+        response.setStatusCode(500).setStatusMessage("Internal server error")
                 .end();
     }
 
