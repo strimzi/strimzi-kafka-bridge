@@ -5,7 +5,7 @@
         "description": "The Strimzi HTTP Bridge for Apache Kafka provides a REST API for integrating client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. The HTTP Bridge can be deployed on bare metal or in a container.",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
-            "email": "strimzi@redhat.com"
+            "email": "messaging@redhat.com"
         },
         "license": {
             "name": "Apache 2.0",
@@ -13,14 +13,6 @@
         },
         "version": "1.0.0"
     },
-    "servers": [
-        {
-            "url": "https://bridge.swagger.io/v2"
-        },
-        {
-            "url": "http://bridge.swagger.io/v2"
-        }
-    ],
     "paths": {
         "/consumers/{groupid}": {
             "post": {
@@ -30,7 +22,6 @@
                 "description": "Creates a consumer instance in a given consumer group. You can optionally specify a consumer name and supported configuration options.",
                 "operationId": "createConsumer",
                 "requestBody": {
-                    "description": "Name and configuration of the consumer. If a name is not specified, a randomly generated name is assigned. All parameters are optional. The supported configuration options are shown in the following example.",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -38,13 +29,14 @@
                             }
                         }
                     },
+                    "description": "Name and configuration of the consumer. If a name is not specified, a randomly generated name is assigned. All parameters are optional. The supported configuration options are shown in the following example.",
                     "required": true
                 },
                 "responses": {
                     "200": {
                         "description": "OK",
                         "content": {
-                            "*/*": {
+                            "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/createdConsumer"
                                 }
@@ -113,10 +105,9 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Configures a subscribed consumer to seek to (and subsequently read from) the first offset in one or more given topic partitions.",
+                "description": "Configures a subscribed consumer to seek (and subsequently read from) the first offset in one or more given topic partitions.",
                 "operationId": "seekToBeginning",
                 "requestBody": {
-                    "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek to the first offset in the specified partitions.",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -124,6 +115,7 @@
                             }
                         }
                     },
+                    "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek the first offset in the specified partitions.",
                     "required": true
                 },
                 "responses": {
@@ -161,10 +153,9 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Configures a subscribed consumer to seek to (and subsequently read from) the last offset in one or more given topic partitions. This is the default behavior.",
+                "description": "Configures a subscribed consumer to seek (and subsequently read from) the last offset in one or more given topic partitions. This is the default behavior.",
                 "operationId": "seekToEnd",
                 "requestBody": {
-                    "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek to the last offset in the specified partitions.",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -172,6 +163,7 @@
                             }
                         }
                     },
+                    "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek the last offset in the specified partitions.",
                     "required": true
                 },
                 "responses": {
@@ -302,7 +294,6 @@
                 "description": "Subscribes a consumer to one or more topics.",
                 "operationId": "subscribe",
                 "requestBody": {
-                    "description": "List of topics to which the consumer will subscribe.",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -310,6 +301,7 @@
                             }
                         }
                     },
+                    "description": "List of topics to which the consumer will subscribe.",
                     "required": true
                 },
                 "responses": {
@@ -433,7 +425,6 @@
                 "description": "Sends one or more records to a given topic partition, optionally specifying a key.",
                 "operationId": "sendToPartition",
                 "requestBody": {
-                    "description": "List of records to send to a given topic partition, including a value (required) and a key (optional).",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -441,6 +432,7 @@
                             }
                         }
                     },
+                    "description": "List of records to send to a given topic partition, including a value (required) and a key (optional).",
                     "required": true
                 },
                 "responses": {
@@ -539,7 +531,6 @@
                 "description": "Configures a subscribed consumer to fetch offsets from a particular offset ID the next time it fetches a set of records from a given topic partition. This overrides the default fetch behavior for consumers. You can specify one or more topic partitions.",
                 "operationId": "seek",
                 "requestBody": {
-                    "description": "List of partition offsets from which the subscribed consumer will next fetch records.",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -547,6 +538,7 @@
                             }
                         }
                     },
+                    "description": "List of partition offsets from which the subscribed consumer will next fetch records.",
                     "required": true
                 },
                 "responses": {
@@ -587,14 +579,14 @@
                 "description": "Commits a list of consumer offsets to the consumer offsets commit log. To commit offsets for all records fetched by the consumer, leave the request body empty.",
                 "operationId": "commit",
                 "requestBody": {
-                    "description": "List of consumer offsets to commit to the consumer offsets commit log. You can specify one or more topic partitions to commit offsets for.",
                     "content": {
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/Offsets"
                             }
                         }
-                    }
+                    },
+                    "description": "List of consumer offsets to commit to the consumer offsets commit log. You can specify one or more topic partitions to commit offsets for."
                 },
                 "responses": {
                     "204": {
@@ -634,7 +626,6 @@
                 "description": "Assigns one or more topic partitions to a consumer.",
                 "operationId": "assign",
                 "requestBody": {
-                    "description": "List of topic partitions to assign to the consumer.",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -642,6 +633,7 @@
                             }
                         }
                     },
+                    "description": "List of topic partitions to assign to the consumer.",
                     "required": true
                 },
                 "responses": {
@@ -678,49 +670,30 @@
             ]
         }
     },
+    "tags": [
+        {
+            "name": "Consumers",
+            "description": "The `consumers` resource allows you to create consumers in your Kafka cluster and perform common actions, such as subscribing to topics, retrieving processed records, and committing offsets."
+        },
+        {
+            "name": "Topics",
+            "description": "The `topics` resource allows you to send messages to a specified topic or topic partition. You can include message keys in requests."
+        }
+    ],
+    "externalDocs": {
+        "description": "Find out more about Swagger",
+        "url": "http://swagger.io"
+    },
+    "servers": [
+        {
+            "url": "https://bridge.swagger.io/v2"
+        },
+        {
+            "url": "http://bridge.swagger.io/v2"
+        }
+    ],
     "components": {
         "schemas": {
-            "ApiResponse": {
-                "type": "object",
-                "properties": {
-                    "code": {
-                        "format": "int32",
-                        "type": "integer"
-                    },
-                    "type": {
-                        "type": "string"
-                    },
-                    "message": {
-                        "type": "string"
-                    }
-                }
-            },
-            "Consumer": {
-                "title": "Root Type for Consumer",
-                "description": "The root of the Consumer type's schema.",
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string"
-                    },
-                    "format": {
-                        "type": "string"
-                    },
-                    "auto.offset.reset": {
-                        "type": "string"
-                    },
-                    "auto.commit.enable": {
-                        "type": "string"
-                    },
-                    "fetch.min.bytes": {
-                        "type": "string"
-                    },
-                    "consumer.request.timeout.ms": {
-                        "type": "string"
-                    }
-                },
-                "example": "{\n    \"name\": \"consumer1\",\n    \"format\": \"binary\",\n    \"auto.offset.reset\": \"earliest\",\n    \"auto.commit.enable\": \"false\",\n    \"fetch.min.bytes\": \"512\",\n    \"consumer.request.timeout.ms\": \"30000\"\n}"
-            },
             "Offset": {
                 "title": "Offset",
                 "required": [],
@@ -779,17 +752,6 @@
                     }
                 }
             },
-            "RecordsWithoutPartitions": {
-                "title": "Root Type for RecordsWithoutPartitions",
-                "description": "The root of the RecordsWithoutPartitions type's schema.",
-                "type": "object",
-                "properties": {
-                    "records": {
-                        "$ref": "#/components/schemas/Records"
-                    }
-                },
-                "example": "{\n    \"records\": [\n        {\n            \"key\": \"1abcd\",\n            \"value\": \"msg1\"\n        },\n        {\n            \"value\": \"msg2\"\n        }\n    ]\n}"
-            },
             "Topics": {
                 "title": "Topics",
                 "type": "object",
@@ -815,19 +777,6 @@
                     }
                 },
                 "example": "{\n    \"records\": [\n        {\n            \"key\": \"1abcd\",\n            \"value\": \"msg1\"\n        },\n        {\n            \"value\": \"msg2\",\n            \"partition\": 1\n        },\n        {\n            \"value\": \"msg3\"\n        }\n    ]\n}"
-            },
-            "PartitionsForPositions": {
-                "title": "PartitionsForPositions",
-                "type": "object",
-                "properties": {
-                    "partitions": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/Partition"
-                        }
-                    }
-                },
-                "example": "{\n    \"partitions\": [\n        {\n            \"topic\": \"topic\",\n            \"partition\": 0\n        },\n        {\n            \"topic\": \"topic\",\n            \"partition\": 1\n        }\n    ]\n}"
             },
             "Partitions": {
                 "title": "Partitions",
@@ -855,25 +804,48 @@
                 },
                 "example": "{\n    \"offsets\": [\n        {\n            \"topic\": \"topic\",\n            \"partition\": 0,\n            \"offset\": 15\n        },\n        {\n            \"topic\": \"topic\",\n            \"partition\": 1,\n            \"offset\": 42\n        }\n    ]\n}"
             },
+            "Consumer": {
+                "title": "Consumer",
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "format": {
+                        "type": "string"
+                    },
+                    "auto.offset.reset": {
+                        "type": "string"
+                    },
+                    "auto.commit.enable": {
+                        "type": "string"
+                    },
+                    "fetch.min.bytes": {
+                        "type": "string"
+                    },
+                    "consumer.request.timeout.ms": {
+                        "type": "string"
+                    }
+                },
+                "example": "{\n    \"name\": \"consumer1\",\n    \"format\": \"binary\",\n    \"auto.offset.reset\": \"earliest\",\n    \"auto.commit.enable\": \"false\",\n    \"fetch.min.bytes\": \"512\",\n    \"consumer.request.timeout.ms\": \"30000\"\n}"
+            },
             "createdConsumer": {
-                "title": "Root Type for createdConsumer",
-                "description": "The root of the createdConsumer type's schema.",
+                "title": "Consumer",
                 "type": "object",
                 "properties": {
                     "instance_id": {
-                        "description": "Unique ID for the consumer instance in the group",
+                        "description": "Unique ID for the consumer instance in the group.",
                         "type": "string"
                     },
                     "base_uri": {
-                        "description": "Base URI used to construct URIs for subsequent requests against this consumer instance",
+                        "description": "Base URI used to construct URIs for subsequent requests against this consumer instance.",
                         "type": "string"
                     }
                 },
                 "example": "{\n    \"instance_id\": \"consumer1\",\n    \"base_uri\": \"http://localhost:8080/consumers/my-group/instances/consumer1\"\n}"
             },
             "OffsetsWithoutTopic": {
-                "title": "Root Type for OffsetsWithoutTopic",
-                "description": "The root of the OffsetsWithoutTopic type's schema.",
+                "title": "Offsets",
                 "type": "object",
                 "properties": {
                     "offsets": {
@@ -883,9 +855,21 @@
                 },
                 "example": "{\n    \"offsets\": [\n        {\n            \"partition\": 2,\n            \"offset\": 0\n        },\n        {\n            \"partition\": 1,\n            \"offset\": 1\n        },\n        {\n            \"partition\": 2,\n            \"offset\": 2\n        }\n    ]\n}"
             },
+            "PartitionsForPositions": {
+                "title": "Partitions",
+                "type": "object",
+                "properties": {
+                    "partitions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Partition"
+                        }
+                    }
+                },
+                "example": "{\n    \"partitions\": [\n        {\n            \"topic\": \"topic\",\n            \"partition\": 0\n        },\n        {\n            \"topic\": \"topic\",\n            \"partition\": 1\n        }\n    ]\n}"
+            },
             "Records2": {
-                "title": "Root Type for Records2",
-                "description": "The root of the Records2 type's schema.",
+                "title": "Records",
                 "type": "array",
                 "items": {
                     "type": "object",
@@ -915,21 +899,17 @@
                     }
                 },
                 "example": "[\n    {\n        \"topic\": \"topic\",\n        \"key\": \"key1\",\n        \"value\": {\n            \"foo\": \"bar\"\n        },\n        \"partition\": 0,\n        \"offset\": 2\n    },\n    {\n        \"topic\": \"topic\",\n        \"key\": \"key2\",\n        \"value\": [\n            \"foo2\",\n            \"bar2\"\n        ],\n        \"partition\": 1,\n        \"offset\": 3\n    }\n]"
+            },
+            "RecordsWithoutPartitions": {
+                "title": "Records",
+                "type": "object",
+                "properties": {
+                    "records": {
+                        "$ref": "#/components/schemas/Records"
+                    }
+                },
+                "example": "{\n    \"records\": [\n        {\n            \"key\": \"1abcd\",\n            \"value\": \"msg1\"\n        },\n        {\n            \"value\": \"msg2\"\n        }\n    ]\n}"
             }
         }
-    },
-    "tags": [
-        {
-            "name": "Consumers",
-            "description": "The `consumers` resource allows you to create consumers in your Kafka cluster and perform common actions, such as subscribing to topics, retrieving processed records, and committing offsets."
-        },
-        {
-            "name": "Topics",
-            "description": "The `topics` resource allows you to send messages to a specified topic or topic partition. You can include message keys in requests."
-        }
-    ],
-    "externalDocs": {
-        "description": "Find out more about Swagger",
-        "url": "http://swagger.io"
     }
 }
