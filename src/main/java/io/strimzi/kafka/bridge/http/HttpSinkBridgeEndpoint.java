@@ -102,6 +102,10 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
             case SEEK_TO_END:
                 doSeekTo(bodyAsJson, this.httpBridgeContext.getOpenApiOperation());
                 break;
+
+            case UNSUBSCRIBE:
+                doUnsubscribe();
+                break;
         }
 
     }
@@ -247,6 +251,17 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
             Pattern pattern = Pattern.compile(bodyAsJson.getString("topic_pattern"));
             this.subscribe(pattern, false);
         }
+    }
+
+    public void doUnsubscribe() {
+        this.setUnsubscribeHandler(unsubscribeResult -> {
+            if (unsubscribeResult.succeeded()) {
+                sendConsumerUnubscriptionResponse(routingContext.response());
+            } else {
+                sendConsumerUnubscriptionFailedResponse(routingContext.response());
+            }
+        });
+        this.unsubscribe();
     }
 
     /**
