@@ -67,7 +67,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected long maxBytes = Long.MAX_VALUE;
 
     private boolean shouldAttachSubscriberHandler;
-    private boolean shouldAttachUnsubscriberHandler;
 
     // handlers called when partitions are revoked/assigned on rebalancing
     private Handler<Set<TopicPartition>> partitionsRevokedHandler;
@@ -180,7 +179,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
      */
     protected void unsubscribe(boolean shouldAttachHandler) {
 
-        this.shouldAttachUnsubscriberHandler = shouldAttachHandler;
         log.info("Unsubscribe from topics {}", this.topicSubscriptions);
         topicSubscriptions.clear();
         this.consumer.unsubscribe(this::unsubscribeHandler);
@@ -230,9 +228,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         if (unsubscribeResult.failed()) {
             return;
         }
-
-        if (shouldAttachUnsubscriberHandler)
-            this.consumer.handler(this::handleKafkaRecord);
     }
 
     /**

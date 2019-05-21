@@ -335,6 +335,11 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                 .end();
     }
 
+    private void sendConsumerUnubscriptionFailedResponse(HttpServerResponse response) {
+        response.setStatusCode(500).setStatusMessage("Internal server error")
+                .end();
+    }
+
     private void sendConsumerRecordsResponse(HttpServerResponse response, Buffer buffer) {
         response.putHeader("Content-length", String.valueOf(buffer.length()))
                 .write(buffer)
