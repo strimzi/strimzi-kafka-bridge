@@ -1641,8 +1641,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void seekToOffsetAndReceiveSimpleMessage(TestContext context) {
-        String topic = "seekToOffsetAndReceiveSimpleMessage";
+    public void seekToOffsetAndReceive(TestContext context) {
+        String topic = "seekToOffsetAndReceive";
         kafkaCluster.createTopic(topic, 2, 1);
 
         Async batch = context.async(2);
@@ -1792,8 +1792,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void seekToBeginningAndReceiveSimpleMessage(TestContext context) {
-        String topic = "seekToBeginningAndReceiveSimpleMessage";
+    public void seekToBeginningAndReceive(TestContext context) {
+        String topic = "seekToBeginningAndReceive";
         kafkaCluster.createTopic(topic, 1, 1);
 
         Async batch = context.async();
@@ -1916,8 +1916,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void seekToEndAndReceiveSimpleMessage(TestContext context) {
-        String topic = "seekToEndAndReceiveSimpleMessage";
+    public void seekToEndAndReceive(TestContext context) {
+        String topic = "seekToEndAndReceive";
         kafkaCluster.createTopic(topic, 1, 1);
 
         Async creationAsync = context.async();
