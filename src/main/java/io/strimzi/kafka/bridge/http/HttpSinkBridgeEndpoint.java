@@ -106,53 +106,59 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                 break;
 
             case SEEK:
-
-                JsonArray seekOffsetsList = bodyAsJson.getJsonArray("offsets");
-
-                List<Future> seekHandlers = new ArrayList<>(seekOffsetsList.size());
-                for (int i = 0; i < seekOffsetsList.size(); i++) {
-                    TopicPartition topicPartition = new TopicPartition(seekOffsetsList.getJsonObject(i));
-                    long offset = seekOffsetsList.getJsonObject(i).getLong("offset");
-                    Future<Void> fut = Future.future();
-                    seekHandlers.add(fut);
-                    this.seek(topicPartition, offset, fut.completer());
-                }
-
-                CompositeFuture.join(seekHandlers).setHandler(done -> {
-                    if (done.succeeded()) {
-                        sendSeekResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
-                    } else {
-                        sendSeekResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR);
-                    }
-                });
+                doSeek(bodyAsJson);
                 break;
 
             case SEEK_TO_BEGINNING:
             case SEEK_TO_END:
-
-                JsonArray seekPartitionsList = bodyAsJson.getJsonArray("partitions");
-
-                Set<TopicPartition> set = seekPartitionsList.stream()
-                        .map(JsonObject.class::cast)
-                        .map(json -> new TopicPartition(json.getString("topic"), json.getInteger("partition")))
-                        .collect(Collectors.toSet());
-
-                Handler<AsyncResult<Void>> seekHandler = done -> {
-                    if (done.succeeded()) {
-                        sendSeekResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
-                    } else {
-                        sendSeekResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR);
-                    }
-                };
-
-                if (this.httpBridgeContext.getOpenApiOperation() == HttpOpenApiOperations.SEEK_TO_BEGINNING) {
-                    this.seekToBeginning(set, seekHandler);
-                } else {
-                    this.seekToEnd(set, seekHandler);
-                }
+                doSeekTo(bodyAsJson, this.httpBridgeContext.getOpenApiOperation());
                 break;
         }
 
+    }
+
+    private void doSeek(JsonObject bodyAsJson) {
+        JsonArray seekOffsetsList = bodyAsJson.getJsonArray("offsets");
+
+        List<Future> seekHandlers = new ArrayList<>(seekOffsetsList.size());
+        for (int i = 0; i < seekOffsetsList.size(); i++) {
+            TopicPartition topicPartition = new TopicPartition(seekOffsetsList.getJsonObject(i));
+            long offset = seekOffsetsList.getJsonObject(i).getLong("offset");
+            Future<Void> fut = Future.future();
+            seekHandlers.add(fut);
+            this.seek(topicPartition, offset, fut.completer());
+        }
+
+        CompositeFuture.join(seekHandlers).setHandler(done -> {
+            if (done.succeeded()) {
+                sendSeekResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
+            } else {
+                sendSeekResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR);
+            }
+        });
+    }
+
+    private void doSeekTo(JsonObject bodyAsJson, HttpOpenApiOperations seekToType) {
+        JsonArray seekPartitionsList = bodyAsJson.getJsonArray("partitions");
+
+        Set<TopicPartition> set = seekPartitionsList.stream()
+                .map(JsonObject.class::cast)
+                .map(json -> new TopicPartition(json.getString("topic"), json.getInteger("partition")))
+                .collect(Collectors.toSet());
+
+        Handler<AsyncResult<Void>> seekHandler = done -> {
+            if (done.succeeded()) {
+                sendSeekResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
+            } else {
+                sendSeekResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR);
+            }
+        };
+
+        if (seekToType == HttpOpenApiOperations.SEEK_TO_BEGINNING) {
+            this.seekToBeginning(set, seekHandler);
+        } else {
+            this.seekToEnd(set, seekHandler);
+        }
     }
 
     private void doCommit(JsonObject bodyAsJson) {
