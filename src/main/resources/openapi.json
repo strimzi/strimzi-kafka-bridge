@@ -198,7 +198,7 @@
         }
       ]
     },
-    "/consumers/{groupid}/instances/{name}/partitions": {
+    "/consumers/{groupid}/instances/{name}/positions": {
       "post": {
         "operationId": "seek",
         "responses": {
@@ -226,7 +226,7 @@
         }
       ]
     },
-    "/consumers/{groupid}/instances/{name}/partitions/beginning": {
+    "/consumers/{groupid}/instances/{name}/positions/beginning": {
       "post": {
         "operationId": "seekToBeginning",
         "responses": {
@@ -254,7 +254,7 @@
         }
       ]
     },
-    "/consumers/{groupid}/instances/{name}/partitions/end": {
+    "/consumers/{groupid}/instances/{name}/positions/end": {
       "post": {
         "operationId": "seekToEnd",
         "responses": {

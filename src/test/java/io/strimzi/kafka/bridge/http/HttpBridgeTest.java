@@ -30,8 +30,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @RunWith(VertxUnitRunner.class)
 public class HttpBridgeTest extends KafkaClusterTestBase {
@@ -1608,6 +1611,402 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 });
 
         consumeAsync.await();
+
+        // consumer deletion
+        Async deleteAsync = context.async();
+
+        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+
+                    deleteAsync.complete();
+                });
+
+        deleteAsync.await();
+    }
+
+    @Test
+    public void seekToOffsetAndReceive(TestContext context) {
+        String topic = "seekToOffsetAndReceive";
+        kafkaCluster.createTopic(topic, 2, 1);
+
+        Async batch = context.async(2);
+        AtomicInteger index0 = new AtomicInteger();
+        AtomicInteger index1 = new AtomicInteger();
+        kafkaCluster.useTo().produceStrings(10, batch::countDown,  () ->
+                new ProducerRecord<>(topic, 0, "key-" + index0.get(), "value-" + index0.getAndIncrement()));
+        kafkaCluster.useTo().produceStrings(10, batch::countDown,  () ->
+                new ProducerRecord<>(topic, 1, "key-" + index1.get(), "value-" + index1.getAndIncrement()));
+        batch.awaitSuccess(10000);
+
+        Async creationAsync = context.async();
+
+        WebClient client = WebClient.create(vertx);
+
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String consumerInstanceId = bridgeResponse.getString("instance_id");
+                    String consumerBaseUri = bridgeResponse.getString("base_uri");
+                    context.assertEquals(name, consumerInstanceId);
+                    context.assertEquals(baseUri, consumerBaseUri);
+                    creationAsync.complete();
+                });
+
+        creationAsync.await();
+
+        // subscribe to a topic
+        Async subscriberAsync = context.async();
+
+        JsonObject topics = new JsonObject();
+        topics.put("topics", new JsonArray().add(topic));
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+                .putHeader("Content-length", String.valueOf(topics.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(topics, ar -> {
+                    context.assertTrue(ar.succeeded());
+                    context.assertEquals(204, ar.result().statusCode());
+                    subscriberAsync.complete();
+                });
+
+        subscriberAsync.await();
+
+        // dummy poll for having re-balancing starting
+        Async dummyPoll = context.async();
+
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.assertTrue(ar.succeeded());
+                    dummyPoll.complete();
+                });
+
+        dummyPoll.await();
+
+        // seek
+        Async seekAsync = context.async();
+
+        JsonArray offsets = new JsonArray();
+        offsets.add(new JsonObject().put("topic", topic).put("partition", 0).put("offset", 9));
+        offsets.add(new JsonObject().put("topic", topic).put("partition", 1).put("offset", 5));
+
+        JsonObject root = new JsonObject();
+        root.put("offsets", offsets);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/positions")
+                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(root, ar -> {
+                    context.assertTrue(ar.succeeded());
+                    context.assertEquals(204, ar.result().statusCode());
+                    seekAsync.complete();
+                });
+
+        seekAsync.await();
+
+        // consume records
+        Async consumeAsync = context.async();
+
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    JsonArray body = ar.result().body();
+
+                    // check it read from partition 0, at offset 9, just one message
+                    List<JsonObject> metadata = body.stream()
+                            .map(JsonObject.class::cast)
+                            .filter(jo -> jo.getInteger("partition") == 0 && jo.getLong("offset") == 9)
+                            .collect(Collectors.toList());
+                    context.assertFalse(metadata.isEmpty());
+                    context.assertEquals(1, metadata.size());
+
+                    context.assertEquals(topic, metadata.get(0).getString("topic"));
+                    context.assertEquals("value-9", metadata.get(0).getString("value"));
+                    context.assertEquals("key-9", metadata.get(0).getString("key"));
+
+                    // check it read from partition 1, starting from offset 5, the last 5 messages
+                    metadata = body.stream()
+                            .map(JsonObject.class::cast)
+                            .filter(jo -> jo.getInteger("partition") == 1)
+                            .collect(Collectors.toList());
+                    context.assertFalse(metadata.isEmpty());
+                    context.assertEquals(5, metadata.size());
+
+                    for (int i = 0; i < metadata.size(); i++) {
+                        context.assertEquals(topic, metadata.get(i).getString("topic"));
+                        context.assertEquals("value-" + (i + 5), metadata.get(i).getString("value"));
+                        context.assertEquals("key-" + (i + 5), metadata.get(i).getString("key"));
+                    }
+
+                    consumeAsync.complete();
+                });
+
+        consumeAsync.await();
+
+        // consumer deletion
+        Async deleteAsync = context.async();
+
+        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+
+                    deleteAsync.complete();
+                });
+
+        deleteAsync.await();
+    }
+
+    @Test
+    public void seekToBeginningAndReceive(TestContext context) {
+        String topic = "seekToBeginningAndReceive";
+        kafkaCluster.createTopic(topic, 1, 1);
+
+        Async batch = context.async();
+        AtomicInteger index = new AtomicInteger();
+        kafkaCluster.useTo().produceStrings(10, batch::complete,  () ->
+                new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
+        batch.awaitSuccess(10000);
+
+        Async creationAsync = context.async();
+
+        WebClient client = WebClient.create(vertx);
+
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String consumerInstanceId = bridgeResponse.getString("instance_id");
+                    String consumerBaseUri = bridgeResponse.getString("base_uri");
+                    context.assertEquals(name, consumerInstanceId);
+                    context.assertEquals(baseUri, consumerBaseUri);
+                    creationAsync.complete();
+                });
+
+        creationAsync.await();
+
+        // subscribe to a topic
+        Async subscriberAsync = context.async();
+
+        JsonObject topics = new JsonObject();
+        topics.put("topics", new JsonArray().add(topic));
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+                .putHeader("Content-length", String.valueOf(topics.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(topics, ar -> {
+                    context.assertTrue(ar.succeeded());
+                    context.assertEquals(204, ar.result().statusCode());
+                    subscriberAsync.complete();
+                });
+
+        subscriberAsync.await();
+
+        // consume records
+        Async consumeAsync = context.async();
+
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    JsonArray body = ar.result().body();
+                    context.assertEquals(10, body.size());
+                    consumeAsync.complete();
+                });
+
+        consumeAsync.await();
+
+        // seek
+        Async seekAsync = context.async();
+
+        JsonArray partitions = new JsonArray();
+        partitions.add(new JsonObject().put("topic", topic).put("partition", 0));
+
+        JsonObject root = new JsonObject();
+        root.put("partitions", partitions);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/positions/beginning")
+                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(root, ar -> {
+                    context.assertTrue(ar.succeeded());
+                    context.assertEquals(204, ar.result().statusCode());
+                    seekAsync.complete();
+                });
+
+        seekAsync.await();
+
+        // consume records
+        Async consumeSeekAsync = context.async();
+
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    JsonArray body = ar.result().body();
+                    context.assertEquals(10, body.size());
+                    consumeSeekAsync.complete();
+                });
+
+        consumeSeekAsync.await();
+
+        // consumer deletion
+        Async deleteAsync = context.async();
+
+        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+
+                    deleteAsync.complete();
+                });
+
+        deleteAsync.await();
+    }
+
+    @Test
+    public void seekToEndAndReceive(TestContext context) {
+        String topic = "seekToEndAndReceive";
+        kafkaCluster.createTopic(topic, 1, 1);
+
+        Async creationAsync = context.async();
+
+        WebClient client = WebClient.create(vertx);
+
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String consumerInstanceId = bridgeResponse.getString("instance_id");
+                    String consumerBaseUri = bridgeResponse.getString("base_uri");
+                    context.assertEquals(name, consumerInstanceId);
+                    context.assertEquals(baseUri, consumerBaseUri);
+                    creationAsync.complete();
+                });
+
+        creationAsync.await();
+
+        // subscribe to a topic
+        Async subscriberAsync = context.async();
+
+        JsonObject topics = new JsonObject();
+        topics.put("topics", new JsonArray().add(topic));
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+                .putHeader("Content-length", String.valueOf(topics.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(topics, ar -> {
+                    context.assertTrue(ar.succeeded());
+                    context.assertEquals(204, ar.result().statusCode());
+                    subscriberAsync.complete();
+                });
+
+        subscriberAsync.await();
+
+        // dummy poll for having re-balancing starting
+        Async dummyPoll = context.async();
+
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.assertTrue(ar.succeeded());
+                    dummyPoll.complete();
+                });
+
+        dummyPoll.await();
+
+        Async batch = context.async();
+        AtomicInteger index = new AtomicInteger();
+        kafkaCluster.useTo().produceStrings(10, batch::complete,  () ->
+                new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
+        batch.awaitSuccess(10000);
+
+        // seek
+        Async seekAsync = context.async();
+
+        JsonArray partitions = new JsonArray();
+        partitions.add(new JsonObject().put("topic", topic).put("partition", 0));
+
+        JsonObject root = new JsonObject();
+        root.put("partitions", partitions);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/positions/end")
+                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(root, ar -> {
+                    context.assertTrue(ar.succeeded());
+                    context.assertEquals(204, ar.result().statusCode());
+                    seekAsync.complete();
+                });
+
+        seekAsync.await();
+
+        // consume records
+        Async consumeSeekAsync = context.async();
+
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    JsonArray body = ar.result().body();
+                    context.assertEquals(0, body.size());
+                    consumeSeekAsync.complete();
+                });
+
+        consumeSeekAsync.await();
 
         // consumer deletion
         Async deleteAsync = context.async();
