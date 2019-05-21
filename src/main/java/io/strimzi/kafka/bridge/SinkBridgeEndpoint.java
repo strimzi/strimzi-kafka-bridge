@@ -174,10 +174,8 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     /**
      * Unubscribe all the topics which the consumer currently subscribes
-     *
-     * @param shouldAttachHandler if the handler for getting messages should be set up
      */
-    protected void unsubscribe(boolean shouldAttachHandler) {
+    protected void unsubscribe() {
 
         log.info("Unsubscribe from topics {}", this.topicSubscriptions);
         topicSubscriptions.clear();
