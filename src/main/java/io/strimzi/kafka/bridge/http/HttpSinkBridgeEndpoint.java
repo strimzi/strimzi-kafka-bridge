@@ -69,7 +69,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
     }
 
     @Override
-    @SuppressWarnings({"checkstyle:CyclomaticComplexity", "checkstyle:NPathComplexity", "checkstyle:MethodLength"})
+    @SuppressWarnings({"checkstyle:CyclomaticComplexity", "checkstyle:NPathComplexity"})
     public void handle(Endpoint<?> endpoint) {
 
         routingContext = (RoutingContext) endpoint.get();
@@ -86,113 +86,23 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
         switch (this.httpBridgeContext.getOpenApiOperation()) {
 
             case SUBSCRIBE:
-
-                // cannot specify both topics list and topic pattern
-                if (bodyAsJson.containsKey("topics") && bodyAsJson.containsKey("topic_pattern")) {
-                    sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.CONFLICT);
-                    return;
-                }
-
-                // one of topics list or topic pattern has to be specified
-                if (!bodyAsJson.containsKey("topics") && !bodyAsJson.containsKey("topic_pattern")) {
-                    sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.BAD_REQUEST);
-                    return;
-                }
-
-                this.setSubscribeHandler(subscribeResult -> {
-                    if (subscribeResult.succeeded()) {
-                        sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
-                    }
-                });
-
-                if (bodyAsJson.containsKey("topics")) {
-                    JsonArray topicsList = bodyAsJson.getJsonArray("topics");
-                    this.topicSubscriptions.addAll(
-                        topicsList.stream()
-                                .map(String.class::cast)
-                                .map(topic -> new SinkTopicSubscription(topic))
-                                .collect(Collectors.toList())
-                    );
-                    this.subscribe(false);
-                } else if (bodyAsJson.containsKey("topic_pattern")) {
-                    Pattern pattern = Pattern.compile(bodyAsJson.getString("topic_pattern"));
-                    this.subscribe(pattern, false);
-                }
+                doSubscribe(bodyAsJson);
                 break;
 
             case ASSIGN:
-
-                JsonArray partitionsList = bodyAsJson.getJsonArray("partitions");
-                this.topicSubscriptions.addAll(
-                        partitionsList.stream()
-                                .map(JsonObject.class::cast)
-                                .map(json -> new SinkTopicSubscription(json.getString("topic"), json.getInteger("partition"), json.getLong("offset")))
-                                .collect(Collectors.toList())
-                );
-
-                this.setAssignHandler(assignResult -> {
-                    if (assignResult.succeeded()) {
-                        sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
-                    }
-                });
-
-                this.assign(false);
+                doAssign(bodyAsJson);
                 break;
 
             case POLL:
-
-                if (routingContext.request().getParam("timeout") != null) {
-                    this.pollTimeOut = Long.parseLong(routingContext.request().getParam("timeout"));
-                }
-
-                if (routingContext.request().getParam("max_bytes") != null) {
-                    this.maxBytes = Long.parseLong(routingContext.request().getParam("max_bytes"));
-                }
-
-                this.consume(records -> {
-                    if (records.succeeded()) {
-                        Buffer buffer = (Buffer) messageConverter.toMessages(records.result());
-                        if (buffer.getBytes().length > this.maxBytes) {
-                            sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), "Response is too large");
-                        } else {
-                            sendConsumerRecordsResponse(routingContext.response(), buffer);
-                        }
-
-                    } else {
-                        sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR.getValue(), "Internal server error");
-                    }
-                });
-
+                doPoll();
                 break;
 
             case DELETE_CONSUMER:
-
-                this.close();
-                this.handleClose();
-                log.info("Deleted consumer {} from group {}", routingContext.pathParam("name"), routingContext.pathParam("groupid"));
-                sendConsumerDeletionResponse(routingContext.response());
+                doDeleteConsumer();
                 break;
 
             case COMMIT:
-
-                Map<TopicPartition, OffsetAndMetadata> offsetData = new HashMap<>();
-
-                JsonObject jsonOffsetData = bodyAsJson;
-
-                JsonArray offsetsList = jsonOffsetData.getJsonArray("offsets");
-
-                for (int i = 0; i < offsetsList.size(); i++) {
-
-                    TopicPartition topicPartition = new TopicPartition(offsetsList.getJsonObject(i));
-
-                    OffsetAndMetadata offsetAndMetadata = new OffsetAndMetadata(offsetsList.getJsonObject(i));
-
-                    offsetData.put(topicPartition, offsetAndMetadata);
-                }
-
-                this.commit(offsetData, status -> {
-                    sendConsumerCommitOffsetResponse(routingContext.response(), status.succeeded());
-                });
+                doCommit(bodyAsJson);
                 break;
 
             case SEEK:
@@ -243,6 +153,105 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                 break;
         }
 
+    }
+
+    private void doCommit(JsonObject bodyAsJson) {
+        Map<TopicPartition, OffsetAndMetadata> offsetData = new HashMap<>();
+        JsonObject jsonOffsetData = bodyAsJson;
+        JsonArray offsetsList = jsonOffsetData.getJsonArray("offsets");
+
+        for (int i = 0; i < offsetsList.size(); i++) {
+            TopicPartition topicPartition = new TopicPartition(offsetsList.getJsonObject(i));
+            OffsetAndMetadata offsetAndMetadata = new OffsetAndMetadata(offsetsList.getJsonObject(i));
+            offsetData.put(topicPartition, offsetAndMetadata);
+        }
+
+        this.commit(offsetData, status -> {
+            sendConsumerCommitOffsetResponse(routingContext.response(), status.succeeded());
+        });
+    }
+
+    private void doDeleteConsumer() {
+        this.close();
+        this.handleClose();
+        log.info("Deleted consumer {} from group {}", routingContext.pathParam("name"), routingContext.pathParam("groupid"));
+        sendConsumerDeletionResponse(routingContext.response());
+    }
+
+    private void doPoll() {
+        if (routingContext.request().getParam("timeout") != null) {
+            this.pollTimeOut = Long.parseLong(routingContext.request().getParam("timeout"));
+        }
+
+        if (routingContext.request().getParam("max_bytes") != null) {
+            this.maxBytes = Long.parseLong(routingContext.request().getParam("max_bytes"));
+        }
+
+        this.consume(records -> {
+            if (records.succeeded()) {
+                Buffer buffer = (Buffer) messageConverter.toMessages(records.result());
+                if (buffer.getBytes().length > this.maxBytes) {
+                    sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), "Response is too large");
+                } else {
+                    sendConsumerRecordsResponse(routingContext.response(), buffer);
+                }
+
+            } else {
+                sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR.getValue(), "Internal server error");
+            }
+        });
+    }
+
+    private void doAssign(JsonObject bodyAsJson) {
+        JsonArray partitionsList = bodyAsJson.getJsonArray("partitions");
+        this.topicSubscriptions.addAll(
+                partitionsList.stream()
+                        .map(JsonObject.class::cast)
+                        .map(json -> new SinkTopicSubscription(json.getString("topic"), json.getInteger("partition"), json.getLong("offset")))
+                        .collect(Collectors.toList())
+        );
+
+        this.setAssignHandler(assignResult -> {
+            if (assignResult.succeeded()) {
+                sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
+            }
+        });
+
+        this.assign(false);
+    }
+
+    private void doSubscribe(JsonObject bodyAsJson) {
+        // cannot specify both topics list and topic pattern
+        if (bodyAsJson.containsKey("topics") && bodyAsJson.containsKey("topic_pattern")) {
+            sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.CONFLICT);
+            return;
+        }
+
+        // one of topics list or topic pattern has to be specified
+        if (!bodyAsJson.containsKey("topics") && !bodyAsJson.containsKey("topic_pattern")) {
+            sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.BAD_REQUEST);
+            return;
+        }
+
+        this.setSubscribeHandler(subscribeResult -> {
+            if (subscribeResult.succeeded()) {
+                sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
+            }
+        });
+
+        if (bodyAsJson.containsKey("topics")) {
+            JsonArray topicsList = bodyAsJson.getJsonArray("topics");
+            this.topicSubscriptions.addAll(
+                topicsList.stream()
+                        .map(String.class::cast)
+                        .map(topic -> new SinkTopicSubscription(topic))
+                        .collect(Collectors.toList())
+            );
+            this.subscribe(false);
+        } else if (bodyAsJson.containsKey("topic_pattern")) {
+            Pattern pattern = Pattern.compile(bodyAsJson.getString("topic_pattern"));
+            this.subscribe(pattern, false);
+        }
     }
 
     /**
