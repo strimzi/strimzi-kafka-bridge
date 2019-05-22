@@ -6,6 +6,7 @@
 package io.strimzi.kafka.bridge.amqp;
 
 import io.strimzi.kafka.bridge.ConnectionEndpoint;
+import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
@@ -25,6 +26,10 @@ import io.vertx.proton.ProtonSender;
 import io.vertx.proton.ProtonServer;
 import io.vertx.proton.ProtonServerOptions;
 import io.vertx.proton.ProtonSession;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.slf4j.Logger;
@@ -38,6 +43,7 @@ import java.util.Map;
  * Main bridge class listening for connections
  * and handling AMQP senders and receivers
  */
+@SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
 public class AmqpBridge extends AbstractVerticle {
 
     private static final Logger log = LoggerFactory.getLogger(AmqpBridge.class);
@@ -410,7 +416,9 @@ public class AmqpBridge extends AbstractVerticle {
         SourceBridgeEndpoint source = endpoint.getSource();
         // the source endpoint is only one, handling more AMQP receiver links internally
         if (source == null) {
-            source = new AmqpSourceBridgeEndpoint(this.vertx, this.amqpBridgeConfig);
+            // TODO: the AMQP client should be able to specify the format during link attachment
+            source = new AmqpSourceBridgeEndpoint<>(this.vertx, this.amqpBridgeConfig,
+                    EmbeddedFormat.JSON, new StringSerializer(), new ByteArraySerializer());
 
             source.closeHandler(s -> {
                 endpoint.setSource(null);
@@ -433,7 +441,9 @@ public class AmqpBridge extends AbstractVerticle {
         log.info("Remote receiver attached {}", sender.getName());
 
         // create and add a new sink to the map
-        SinkBridgeEndpoint<?, ?> sink = new AmqpSinkBridgeEndpoint<>(this.vertx, this.amqpBridgeConfig);
+        // TODO: the AMQP client should be able to specify the format during link attachment
+        SinkBridgeEndpoint<?, ?> sink = new AmqpSinkBridgeEndpoint<>(this.vertx, this.amqpBridgeConfig,
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
 
         sink.closeHandler(s -> {
             this.endpoints.get(connection).getSinks().remove(s);

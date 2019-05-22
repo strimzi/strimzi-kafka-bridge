@@ -20,6 +20,7 @@ import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.serialization.Deserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,9 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
+    protected EmbeddedFormat format;
+    protected Deserializer<K> keyDeserializer;
+    protected Deserializer<V> valueDeserializer;
     protected Vertx vertx;
 
     protected BridgeConfig bridgeConfigProperties;
@@ -95,11 +99,18 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
      *
      * @param vertx Vert.x instance
      * @param bridgeConfigProperties Bridge configuration
+     * @param format embedded format for the key/value in the Kafka message
+     * @param keyDeserializer Kafka deserializer for the message key
+     * @param valueDeserializer Kafka deserializer for the message value
      */
-    public SinkBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfigProperties) {
+    public SinkBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfigProperties,
+                              EmbeddedFormat format, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
         this.vertx = vertx;
         this.bridgeConfigProperties = bridgeConfigProperties;
         this.topicSubscriptions = new ArrayList<>();
+        this.format = format;
+        this.keyDeserializer = keyDeserializer;
+        this.valueDeserializer = valueDeserializer;
     }
 
     @Override
@@ -134,8 +145,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         KafkaConfig consumerConfig = this.bridgeConfigProperties.getKafkaConfig();
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, consumerConfig.getBootstrapServers());
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, consumerConfig.getConsumerConfig().getKeyDeserializer());
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, consumerConfig.getConsumerConfig().getValueDeserializer());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, consumerConfig.getConsumerConfig().isEnableAutoCommit());
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, consumerConfig.getConsumerConfig().getAutoOffsetReset());
@@ -143,7 +152,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         if (config != null)
             props.putAll(config);
 
-        this.consumer = KafkaConsumer.create(this.vertx, props);
+        this.consumer = KafkaConsumer.create(this.vertx, props, keyDeserializer, valueDeserializer);
 
         if (shouldAttachBatchHandler)
             this.consumer.batchHandler(this::handleKafkaBatch);

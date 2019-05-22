@@ -12,46 +12,22 @@ import java.util.Map;
  */
 public class KafkaConsumerConfig {
 
-    private static final String KAFKA_CONSUMER_KEY_DESERIALIZER = "KAFKA_CONSUMER_KEY_DESERIALIZER";
-    private static final String KAFKA_CONSUMER_VALUE_DESERIALIZER = "KAFKA_CONSUMER_VALUE_DESERIALIZER";
     private static final String KAFKA_CONSUMER_AUTO_OFFSET_RESET = "KAFKA_CONSUMER_AUTO_OFFSET_RESET";
 
-    private static final String DEFAULT_KEY_DESERIALIZER = "org.apache.kafka.common.serialization.StringDeserializer";
-    private static final String DEFAULT_VALUE_DESERIALIZER = "org.apache.kafka.common.serialization.ByteArrayDeserializer";
     private static final String DEFAULT_AUTO_OFFSET_RESET = "earliest";
     private static final boolean DEFAULT_ENABLE_AUTO_COMMIT = false;
 
-    private String keyDeserializer;
-    private String valueDeserializer;
     private String autoOffsetReset;
     private boolean isEnableAutoCommit;
 
     /**
      * Constructor
      *
-     * @param keyDeserializer the Key Deserializer class
-     * @param valueDeserializer the Value deserializer class
      * @param autoOffsetReset the initial offset behavior
      */
-    public KafkaConsumerConfig(String keyDeserializer, String valueDeserializer, String autoOffsetReset) {
-        this.keyDeserializer = keyDeserializer;
-        this.valueDeserializer = valueDeserializer;
+    public KafkaConsumerConfig(String autoOffsetReset) {
         this.autoOffsetReset = autoOffsetReset;
         this.isEnableAutoCommit = DEFAULT_ENABLE_AUTO_COMMIT;
-    }
-
-    /**
-     * @return the Key Deserializer class
-     */
-    public String getKeyDeserializer() {
-        return this.keyDeserializer;
-    }
-
-    /**
-     * @return the Value deserializer class
-     */
-    public String getValueDeserializer() {
-        return this.valueDeserializer;
     }
 
     /**
@@ -75,19 +51,15 @@ public class KafkaConsumerConfig {
      * @return Kafka consumer related configuration
      */
     public static KafkaConsumerConfig fromMap(Map<String, String> map) {
-        String keyDeserializer = map.getOrDefault(KafkaConsumerConfig.KAFKA_CONSUMER_KEY_DESERIALIZER, KafkaConsumerConfig.DEFAULT_KEY_DESERIALIZER);
-        String valueDeserializer = map.getOrDefault(KafkaConsumerConfig.KAFKA_CONSUMER_VALUE_DESERIALIZER, KafkaConsumerConfig.DEFAULT_VALUE_DESERIALIZER);
         String autoOffsetReset = map.getOrDefault(KafkaConsumerConfig.KAFKA_CONSUMER_AUTO_OFFSET_RESET, KafkaConsumerConfig.DEFAULT_AUTO_OFFSET_RESET);
 
-        return new KafkaConsumerConfig(keyDeserializer, valueDeserializer, autoOffsetReset);
+        return new KafkaConsumerConfig(autoOffsetReset);
     }
 
     @Override
     public String toString() {
         return "KafkaConsumerConfig(" +
-                "keyDeserializer=" + this.keyDeserializer +
-                ",valueDeserializer=" + this.valueDeserializer +
-                ",autoOffsetReset=" + this.autoOffsetReset +
+                "autoOffsetReset=" + this.autoOffsetReset +
                 ",isEnableAutoCommit=" + this.isEnableAutoCommit +
                 ")";
     }

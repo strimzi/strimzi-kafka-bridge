@@ -5,10 +5,12 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
+import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
@@ -23,6 +25,7 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.serialization.Deserializer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,21 +37,17 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
+public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     private RoutingContext routingContext;
 
-    //unique id assigned to every consumer during its creation.
-    private String consumerInstanceId;
-
-    private String consumerBaseUri;
-
-    private MessageConverter messageConverter;
+    private MessageConverter<K, V, Buffer, Buffer> messageConverter;
 
     private HttpBridgeContext httpBridgeContext;
 
-    HttpSinkBridgeEndpoint(Vertx vertx, HttpBridgeConfig httpBridgeConfigProperties, HttpBridgeContext context) {
-        super(vertx, httpBridgeConfigProperties);
+    HttpSinkBridgeEndpoint(Vertx vertx, HttpBridgeConfig httpBridgeConfigProperties, HttpBridgeContext context,
+                           EmbeddedFormat format, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
+        super(vertx, httpBridgeConfigProperties, format, keyDeserializer, valueDeserializer);
         this.httpBridgeContext = context;
     }
 
@@ -70,7 +69,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
         }
 
-        messageConverter = new HttpJsonMessageConverter();
+        messageConverter = this.buildMessageConverter();
 
         switch (this.httpBridgeContext.getOpenApiOperation()) {
 
@@ -291,7 +290,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
 
                 JsonObject json = bodyAsJson;
                 // if no name, a random one is assigned
-                consumerInstanceId = json.getString("name",
+                String consumerInstanceId = json.getString("name",
                         "kafka-bridge-consumer-" + UUID.randomUUID().toString());
 
                 if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(consumerInstanceId)) {
@@ -306,7 +305,7 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
                 if (!routingContext.request().path().endsWith("/")) {
                     requestUri += "/";
                 }
-                consumerBaseUri = requestUri + "instances/" + consumerInstanceId;
+                String consumerBaseUri = requestUri + "instances/" + consumerInstanceId;
 
                 // get supported consumer configuration parameters
                 Properties config = new Properties();
@@ -384,5 +383,15 @@ public class HttpSinkBridgeEndpoint<V, K> extends SinkBridgeEndpoint<V, K> {
     private void sendSeekResponse(HttpServerResponse response, ErrorCodeEnum errorCodeEnum) {
         response.setStatusCode(errorCodeEnum.getValue())
                 .end();
+    }
+
+    private MessageConverter<K, V, Buffer, Buffer> buildMessageConverter() {
+        if (this.format == EmbeddedFormat.JSON) {
+            return (MessageConverter<K, V, Buffer, Buffer>) new HttpJsonMessageConverter();
+        } else if (this.format == EmbeddedFormat.BINARY) {
+            return (MessageConverter<K, V, Buffer, Buffer>) new HttpBinaryMessageConverter();
+        } else {
+            return null;
+        }
     }
 }

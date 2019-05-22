@@ -5,7 +5,10 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.KafkaClusterTestBase;
+import io.strimzi.kafka.bridge.KafkaJsonDeserializer;
+import io.strimzi.kafka.bridge.KafkaJsonSerializer;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -17,9 +20,10 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.After;
 import org.junit.Before;
@@ -29,6 +33,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.bind.DatatypeConverter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +48,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
     private static Map<String, String> envVars = new HashMap<>();
 
-    private static final String BRIDGE_HOST = "0.0.0.0";
+    private static final String BRIDGE_HOST = "127.0.0.1";
     private static final int BRIDGE_PORT = 8080;
 
     // for periodic/multiple messages test
@@ -96,6 +101,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -111,10 +117,9 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 });
 
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
-        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+                new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
         consumer.handler(record -> {
             context.assertEquals(value, record.value());
             context.assertEquals(topic, record.topic());
@@ -158,6 +163,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -173,10 +179,9 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 });
 
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
-        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+                new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
         consumer.handler(record -> {
             context.assertEquals(value, record.value());
             context.assertEquals(topic, record.topic());
@@ -219,6 +224,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -234,16 +240,76 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 });
 
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
-        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+                new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
         consumer.handler(record -> {
             context.assertEquals(value, record.value());
             context.assertEquals(topic, record.topic());
             context.assertNotNull(record.partition());
             context.assertEquals(0L, record.offset());
             context.assertEquals(record.key(), key);
+            log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                    record.topic(), record.partition(), record.offset(), record.key(), record.value());
+            consumer.close();
+            async.complete();
+        });
+
+        consumer.subscribe(topic, done -> {
+            if (!done.succeeded()) {
+                context.fail(done.cause());
+            }
+        });
+    }
+
+    @Test
+    public void sendBinaryMessageWithKey(TestContext context) {
+        String topic = "sendBinaryMessageWithKey";
+        kafkaCluster.createTopic(topic, 2, 1);
+
+        Async async = context.async();
+
+        String value = "message-value";
+        String key = "my-key";
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", DatatypeConverter.printBase64Binary(value.getBytes()));
+        json.put("key", DatatypeConverter.printBase64Binary(key.getBytes()));
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        WebClient client = WebClient.create(vertx);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
+                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_BINARY)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(root, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+
+                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                    context.assertEquals(1, offsets.size());
+                    JsonObject metadata = offsets.getJsonObject(0);
+                    context.assertNotNull(metadata.getInteger("partition"));
+                    context.assertEquals(0L, metadata.getLong("offset"));
+                });
+
+        Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+
+        KafkaConsumer<byte[], byte[]> consumer = KafkaConsumer.create(this.vertx, config,
+                new ByteArrayDeserializer(), new ByteArrayDeserializer());
+        consumer.handler(record -> {
+            context.assertEquals(value, new String(record.value()));
+            context.assertEquals(topic, record.topic());
+            context.assertNotNull(record.partition());
+            context.assertEquals(0L, record.offset());
+            context.assertEquals(key, new String(record.key()));
             log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                     record.topic(), record.partition(), record.offset(), record.key(), record.value());
             consumer.close();
@@ -267,10 +333,9 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         WebClient client = WebClient.create(vertx);
 
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
-        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+                new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
 
         this.count = 0;
 
@@ -289,6 +354,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
                 client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
                         .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                        .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                         .sendJsonObject(root, ar -> { });
 
                 this.count++;
@@ -347,6 +413,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", "application/vnd.kafka.json.v2+json")
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -364,10 +431,9 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 });
 
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
-        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+                new StringDeserializer(), new KafkaJsonDeserializer<String>(String.class));
         this.count = 0;
         consumer.handler(record -> {
             context.assertEquals(value + "-" + this.count++, record.value());
@@ -435,8 +501,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         String sentBody = "Simple message";
 
         Async send = context.async();
-        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
-                new ProducerRecord<>(topic, 0, null, sentBody));
+        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
+                send::complete, () -> new ProducerRecord<>(topic, 0, null, sentBody));
         send.await();
 
         Async creationAsync = context.async();
@@ -450,6 +516,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         JsonObject json = new JsonObject();
         json.put("name", name);
+        json.put("format", "json");
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
@@ -492,6 +559,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async consumeAsync = context.async();
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -534,20 +602,15 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void receiveFromMultipleTopics(TestContext context) {
-        String topic1 = "receiveSimpleMessage-1";
-        String topic2 = "receiveSimpleMessage-2";
-        kafkaCluster.createTopic(topic1, 1, 1);
-        kafkaCluster.createTopic(topic2, 1, 1);
+    public void receiveBinaryMessage(TestContext context) {
+        String topic = "receiveBinaryMessage";
+        kafkaCluster.createTopic(topic, 1, 1);
 
-        String sentBody1 = "Simple message-1";
-        String sentBody2 = "Simple message-2";
+        String sentBody = "Simple message";
 
         Async send = context.async();
-        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
-                new ProducerRecord<>(topic1, 0, null, sentBody1));
-        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
-                new ProducerRecord<>(topic2, 0, null, sentBody2));
+        kafkaCluster.useTo().produce("", 1, new ByteArraySerializer(), new ByteArraySerializer(),
+                send::complete, () -> new ProducerRecord<>(topic, 0, null, sentBody.getBytes()));
         send.await();
 
         Async creationAsync = context.async();
@@ -561,6 +624,120 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         JsonObject json = new JsonObject();
         json.put("name", name);
+        json.put("format", "binary");
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    JsonObject bridgeResponse = response.body();
+                    String consumerInstanceId = bridgeResponse.getString("instance_id");
+                    String consumerBaseUri = bridgeResponse.getString("base_uri");
+                    context.assertEquals(name, consumerInstanceId);
+                    context.assertEquals(baseUri, consumerBaseUri);
+                    creationAsync.complete();
+                });
+
+        creationAsync.await();
+
+        // subscribe to a topic
+        Async subscriberAsync = context.async();
+
+        JsonArray topics = new JsonArray();
+        topics.add(topic);
+
+        JsonObject topicsRoot = new JsonObject();
+        topicsRoot.put("topics", topics);
+
+        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+                .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(topicsRoot, ar -> {
+                    context.assertTrue(ar.succeeded());
+                    context.assertEquals(204, ar.result().statusCode());
+                    subscriberAsync.complete();
+                });
+
+        subscriberAsync.await();
+
+        // consume records
+        Async consumeAsync = context.async();
+
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonArray> response = ar.result();
+                    JsonObject jsonResponse = response.body().getJsonObject(0);
+
+                    String kafkaTopic = jsonResponse.getString("topic");
+                    int kafkaPartition = jsonResponse.getInteger("partition");
+                    String key = jsonResponse.getString("key");
+                    String value = new String(DatatypeConverter.parseBase64Binary(jsonResponse.getString("value")));
+                    long offset = jsonResponse.getLong("offset");
+
+                    context.assertEquals(topic, kafkaTopic);
+                    context.assertEquals(sentBody, value);
+                    context.assertEquals(0L, offset);
+                    context.assertNotNull(kafkaPartition);
+                    context.assertNull(key);
+
+                    consumeAsync.complete();
+                });
+
+        consumeAsync.await();
+
+        // consumer deletion
+        Async deleteAsync = context.async();
+
+        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.assertTrue(ar.succeeded());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+
+                    deleteAsync.complete();
+                });
+
+        deleteAsync.await();
+    }
+
+    @Test
+    public void receiveFromMultipleTopics(TestContext context) {
+        String topic1 = "receiveSimpleMessage-1";
+        String topic2 = "receiveSimpleMessage-2";
+        kafkaCluster.createTopic(topic1, 1, 1);
+        kafkaCluster.createTopic(topic2, 1, 1);
+
+        String sentBody1 = "Simple message-1";
+        String sentBody2 = "Simple message-2";
+
+        Async send = context.async();
+        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
+                send::complete, () -> new ProducerRecord<>(topic1, 0, null, sentBody1));
+        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
+                send::complete, () -> new ProducerRecord<>(topic2, 0, null, sentBody2));
+        send.await();
+
+        Async creationAsync = context.async();
+
+        WebClient client = WebClient.create(vertx);
+
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("format", "json");
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
@@ -604,6 +781,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async consumeAsync = context.async();
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -659,10 +837,10 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         String sentBody2 = "Simple message-2";
 
         Async send = context.async();
-        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
-                new ProducerRecord<>(topic1, 0, null, sentBody1));
-        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
-                new ProducerRecord<>(topic2, 0, null, sentBody2));
+        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
+                send::complete, () -> new ProducerRecord<>(topic1, 0, null, sentBody1));
+        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
+                send::complete, () -> new ProducerRecord<>(topic2, 0, null, sentBody2));
         send.await();
 
         Async creationAsync = context.async();
@@ -676,6 +854,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         JsonObject json = new JsonObject();
         json.put("name", name);
+        json.put("format", "json");
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
@@ -715,6 +894,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async consumeAsync = context.async();
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -768,8 +948,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         String sentBody = "Simple message from partition";
 
         Async send = context.async();
-        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
-                new ProducerRecord<>(topic, partition, null, sentBody));
+        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
+                send::complete, () -> new ProducerRecord<>(topic, partition, null, sentBody));
         send.await();
 
         Async creationAsync = context.async();
@@ -783,6 +963,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         JsonObject json = new JsonObject();
         json.put("name", name);
+        json.put("format", "json");
 
         // create a consumer
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
@@ -826,6 +1007,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async consumeAsync = context.async();
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -992,8 +1174,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         String sentBody = "Simple message";
 
         Async send = context.async();
-        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
-                new ProducerRecord<>(topic, 0, null, sentBody));
+        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
+                send::complete, () -> new ProducerRecord<>(topic, 0, null, sentBody));
         send.await();
 
         Async creationAsync = context.async();
@@ -1007,6 +1189,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         JsonObject json = new JsonObject();
         json.put("name", name);
+        json.put("format", "json");
         json.put("enable.auto.commit", "false");
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
@@ -1050,6 +1233,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async consumeAsync = context.async();
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1131,6 +1315,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1182,6 +1367,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1309,6 +1495,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1348,6 +1535,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1382,6 +1570,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1637,10 +1826,10 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async batch = context.async(2);
         AtomicInteger index0 = new AtomicInteger();
         AtomicInteger index1 = new AtomicInteger();
-        kafkaCluster.useTo().produceStrings(10, batch::countDown,  () ->
-                new ProducerRecord<>(topic, 0, "key-" + index0.get(), "value-" + index0.getAndIncrement()));
-        kafkaCluster.useTo().produceStrings(10, batch::countDown,  () ->
-                new ProducerRecord<>(topic, 1, "key-" + index1.get(), "value-" + index1.getAndIncrement()));
+        kafkaCluster.useTo().produce("", 10, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
+                batch::countDown, () -> new ProducerRecord<>(topic, 0, "key-" + index0.get(), "value-" + index0.getAndIncrement()));
+        kafkaCluster.useTo().produce("", 10, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
+                batch::countDown, () -> new ProducerRecord<>(topic, 1, "key-" + index1.get(), "value-" + index1.getAndIncrement()));
         batch.awaitSuccess(10000);
 
         Async creationAsync = context.async();
@@ -1654,6 +1843,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         JsonObject json = new JsonObject();
         json.put("name", name);
+        json.put("format", "json");
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
@@ -1669,7 +1859,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertEquals(baseUri, consumerBaseUri);
                     creationAsync.complete();
                 });
-
         creationAsync.await();
 
         // subscribe to a topic
@@ -1686,19 +1875,18 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertEquals(204, ar.result().statusCode());
                     subscriberAsync.complete();
                 });
-
         subscriberAsync.await();
 
         // dummy poll for having re-balancing starting
         Async dummyPoll = context.async();
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
                     dummyPoll.complete();
                 });
-
         dummyPoll.await();
 
         // seek
@@ -1719,13 +1907,13 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertEquals(204, ar.result().statusCode());
                     seekAsync.complete();
                 });
-
         seekAsync.await();
 
         // consume records
         Async consumeAsync = context.async();
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1760,7 +1948,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
                     consumeAsync.complete();
                 });
-
         consumeAsync.await();
 
         // consumer deletion
@@ -1776,7 +1963,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
                     deleteAsync.complete();
                 });
-
         deleteAsync.await();
     }
 
@@ -2033,8 +2219,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         String sentBody = "Simple message";
 
         Async send = context.async();
-        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
-                new ProducerRecord<>(topic, 0, null, sentBody));
+        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
+                send::complete, () -> new ProducerRecord<>(topic, 0, null, sentBody));
         send.await();
 
         Async creationAsync = context.async();
@@ -2048,6 +2234,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         JsonObject json = new JsonObject();
         json.put("name", name);
+        json.put("format", "json");
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
@@ -2090,6 +2277,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async consumeAsync = context.async();
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2129,14 +2317,15 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         // Send new record
         Async send2 = context.async();
-        kafkaCluster.useTo().produceStrings(1, send2::complete, () ->
-                new ProducerRecord<>(topic, 0, null, sentBody));
+        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
+                send2::complete, () -> new ProducerRecord<>(topic, 0, null, sentBody));
         send2.await();
 
         // Try to consume after unsubscription
         Async consumeAsync2 = context.async();
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());

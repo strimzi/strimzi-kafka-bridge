@@ -5,43 +5,43 @@
 
 package io.strimzi.kafka.bridge.amqp;
 
-import io.strimzi.kafka.bridge.SinkTopicSubscription;
-import io.strimzi.kafka.bridge.converter.MessageConverter;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.kafka.client.common.PartitionInfo;
-import io.vertx.kafka.client.common.TopicPartition;
+//import io.strimzi.kafka.bridge.SinkTopicSubscription;
+//import io.strimzi.kafka.bridge.converter.MessageConverter;
+//import io.vertx.core.AsyncResult;
+//import io.vertx.core.Handler;
+//import io.vertx.core.Vertx;
+//import io.vertx.kafka.client.common.PartitionInfo;
+//import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
-import io.vertx.kafka.client.consumer.OffsetAndMetadata;
+//import io.vertx.kafka.client.consumer.OffsetAndMetadata;
 import io.vertx.kafka.client.consumer.impl.KafkaConsumerRecordImpl;
-import io.vertx.kafka.client.producer.KafkaProducerRecord;
-import io.vertx.proton.ProtonDelivery;
+//import io.vertx.kafka.client.producer.KafkaProducerRecord;
+//import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonSender;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.qpid.proton.amqp.Symbol;
-import org.apache.qpid.proton.amqp.messaging.Data;
-import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
+//import org.apache.qpid.proton.amqp.Symbol;
+//import org.apache.qpid.proton.amqp.messaging.Data;
+//import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
-import org.apache.qpid.proton.message.Message;
-import org.junit.Ignore;
-import org.junit.Test;
+//import org.apache.qpid.proton.message.Message;
+//import org.junit.Ignore;
+//import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.Collections;
+//import java.lang.reflect.Method;
+//import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
+//import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static junit.framework.TestCase.fail;
-import static org.junit.Assert.assertArrayEquals;
+//import static junit.framework.TestCase.fail;
+//import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -137,7 +137,8 @@ public class AmqpSinkBridgeEndpointMockTest {
         assertEquals(errorMessage, errorCap.getValue().getDescription());
     }
 
-    /** Test normal flow in AT_MOST_ONCE mode. */
+    /*
+    // Test normal flow in AT_MOST_ONCE mode.
     @Test
     public <K, V> void normalFlow_AtMostOnce() throws Exception {
         String topic = "my_topic";
@@ -203,7 +204,7 @@ public class AmqpSinkBridgeEndpointMockTest {
         // TODO test closure (commit)
     }
 
-    /** Test normal flow in AT_LEAST_ONCE mode. */
+    // Test normal flow in AT_LEAST_ONCE mode.
     @Test
     public <K, V> void normalFlow_AtLeastOnce() throws Exception {
         String topic = "my_topic";
@@ -269,7 +270,7 @@ public class AmqpSinkBridgeEndpointMockTest {
         // TODO test closure (commit)
     }
 
-    /** When happens when the address is malformed? */
+    // When happens when the address is malformed?
     @Test
     public <K, V> void address_badAddressNoGroupId() throws Exception {
         Vertx vertx = Vertx.vertx();
@@ -284,7 +285,7 @@ public class AmqpSinkBridgeEndpointMockTest {
                 "Mandatory group.id not specified in the address");
     }
 
-    /** When happens when the topic is empty? */
+    // When happens when the topic is empty?
     @Test
     public <K, V> void address_badAddressEmptyTopic() throws Exception {
         Vertx vertx = Vertx.vertx();
@@ -299,7 +300,7 @@ public class AmqpSinkBridgeEndpointMockTest {
                 "Empty topic in specified address");
     }
 
-    /** When happens when the consumer group is empty? */
+    // When happens when the consumer group is empty?
     @Test
     public <K, V> void address_badAddressEmptyGroup() throws Exception {
         String topic = "my_topic";
@@ -315,7 +316,7 @@ public class AmqpSinkBridgeEndpointMockTest {
                 "Empty consumer group in specified address");
     }
 
-    /** When happens when partition filter is not an Integer? */
+    // When happens when partition filter is not an Integer?
     @Test
     public <K, V> void filters_nonIntegerPartitionFilter() throws Exception {
         String topic = "my_topic";
@@ -335,7 +336,7 @@ public class AmqpSinkBridgeEndpointMockTest {
                 "Wrong partition filter");
     }
 
-    /** When happens when offset filter is not a Long? */
+    // When happens when offset filter is not a Long?
     @Test
     public <K, V> void filters_nonLongOffsetFilter() throws Exception {
         String topic = "my_topic";
@@ -356,7 +357,7 @@ public class AmqpSinkBridgeEndpointMockTest {
                 "Wrong offset filter");
     }
 
-    /** When happens when the partition filter &lt; 0? */
+    // When happens when the partition filter &lt; 0?
     @Test
     public <K, V> void filters_negativeIntegerPartitionFilter() throws Exception {
         String topic = "my_topic";
@@ -380,7 +381,7 @@ public class AmqpSinkBridgeEndpointMockTest {
                 "Wrong filter");
     }
 
-    /** When happens when the offset filter is &lt; 0? */
+    // When happens when the offset filter is &lt; 0?
     @Test
     public <K, V> void filters_negativeLongOffsetFilter() throws Exception {
         String topic = "my_topic";
@@ -400,7 +401,7 @@ public class AmqpSinkBridgeEndpointMockTest {
                 "Wrong filter");
     }
 
-    /** When happens when there's a filter for offset, but not for partition? */
+    // When happens when there's a filter for offset, but not for partition?
     @Test
     public <K, V> void filters_offsetFilterButNoPartitionFilter() throws Exception {
         String topic = "my_topic";
@@ -537,13 +538,13 @@ public class AmqpSinkBridgeEndpointMockTest {
                 AmqpBridge.AMQP_ERROR_CONFIGURATION,
                 "configured message converter class could not be instantiated: io.strimzi.kafka.bridge.amqp.AmqpSinkBridgeEndpointMockTest$CtorThrows");
     }
-    /** What happens if the requested kafka topic doesn't exist? */
+    // What happens if the requested kafka topic doesn't exist?
     @Test
     public <K, V> void noSuchTopic() {
 
     }
-    /** What happens if we can't get the partitions for the given topic?
-     * @throws AmqpErrorConditionException */
+    // What happens if we can't get the partitions for the given topic?
+    // @throws AmqpErrorConditionException
     @Test
     @Ignore
     public <K, V> void partitionsForFails() throws Exception {
@@ -594,6 +595,7 @@ public class AmqpSinkBridgeEndpointMockTest {
                 AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
                 "Error getting partition info for topic " + Collections.singleton(topicSubscription));
     }
+    */
     // TODO kafka partition doesn't exist
     // TODO assign fails
     // TODO seek fails

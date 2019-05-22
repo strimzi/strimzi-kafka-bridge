@@ -5,6 +5,10 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.strimzi.kafka.bridge.BridgeContentType;
+import io.strimzi.kafka.bridge.EmbeddedFormat;
+import io.strimzi.kafka.bridge.KafkaJsonDeserializer;
+import io.strimzi.kafka.bridge.KafkaJsonSerializer;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.vertx.core.AbstractVerticle;
@@ -13,9 +17,12 @@ import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,17 +174,33 @@ public class HttpBridge extends AbstractVerticle {
         this.processProducer(routingContext);
     }
 
+    @SuppressWarnings("checkstyle:Regexp")
     private void createConsumer(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
-        SinkBridgeEndpoint<?, ?> sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext);
+
+        JsonObject body = routingContext.getBodyAsJson();
+        String bodyFormat = body.getString("format", EmbeddedFormat.BINARY.toString()).toUpperCase();
+
+        SinkBridgeEndpoint<?, ?> sink = null;
+        if (bodyFormat.equals(EmbeddedFormat.BINARY.toString())) {
+            sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+                    EmbeddedFormat.BINARY, new ByteArrayDeserializer(), new ByteArrayDeserializer());
+        } else if (bodyFormat.equals(EmbeddedFormat.JSON.toString())) {
+            sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+                    EmbeddedFormat.JSON, new KafkaJsonDeserializer<>(Object.class), new KafkaJsonDeserializer<>(Object.class));
+        } else {
+            throw new IllegalArgumentException("format not supported");
+        }
+
+        final SinkBridgeEndpoint<?, ?> httpSink = sink;
         sink.closeHandler(s -> {
-            httpBridgeContext.getHttpSinkEndpoints().remove(sink);
+            httpBridgeContext.getHttpSinkEndpoints().remove(httpSink);
         });
 
         sink.open();
 
         sink.handle(new HttpEndpoint(routingContext), consumerId -> {
-            httpBridgeContext.getHttpSinkEndpoints().put(consumerId.toString(), sink);
+            httpBridgeContext.getHttpSinkEndpoints().put(consumerId.toString(), httpSink);
         });
     }
 
@@ -266,11 +289,22 @@ public class HttpBridge extends AbstractVerticle {
      */
     private void processProducer(RoutingContext routingContext) {
         HttpServerRequest httpServerRequest = routingContext.request();
+        String contentType = httpServerRequest.getHeader("Content-Type");
 
         SourceBridgeEndpoint source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
 
         if (source == null) {
-            source = new HttpSourceBridgeEndpoint(this.vertx, this.httpBridgeConfig, this.httpBridgeContext);
+
+            if (contentType == null || contentType.equals(BridgeContentType.KAFKA_JSON_BINARY)) {
+                source = new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+                        EmbeddedFormat.BINARY, new ByteArraySerializer(), new ByteArraySerializer());
+            } else if (contentType.equals(BridgeContentType.KAFKA_JSON_JSON)) {
+                source = new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+                        EmbeddedFormat.JSON, new KafkaJsonSerializer(), new KafkaJsonSerializer());
+            } else {
+                throw new IllegalArgumentException("Content-Type not supported");
+            }
+
             source.closeHandler(s -> {
                 this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
             });
