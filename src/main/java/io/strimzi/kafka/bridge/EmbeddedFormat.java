@@ -7,5 +7,15 @@ package io.strimzi.kafka.bridge;
 
 public enum EmbeddedFormat {
     BINARY,
-    JSON
+    JSON;
+
+    public static EmbeddedFormat from(String value) {
+        switch (value) {
+            case "json":
+                return JSON;
+            case "binary":
+                return BINARY;
+        }
+        throw new IllegalArgumentException(value);
+    }
 }

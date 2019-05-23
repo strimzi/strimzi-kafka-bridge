@@ -174,33 +174,22 @@ public class HttpBridge extends AbstractVerticle {
         this.processProducer(routingContext);
     }
 
-    @SuppressWarnings("checkstyle:Regexp")
     private void createConsumer(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
 
         JsonObject body = routingContext.getBodyAsJson();
-        String bodyFormat = body.getString("format", EmbeddedFormat.BINARY.toString()).toUpperCase();
+        EmbeddedFormat format = EmbeddedFormat.from(body.getString("format", "binary"));
 
-        SinkBridgeEndpoint<?, ?> sink = null;
-        if (bodyFormat.equals(EmbeddedFormat.BINARY.toString())) {
-            sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
-                    EmbeddedFormat.BINARY, new ByteArrayDeserializer(), new ByteArrayDeserializer());
-        } else if (bodyFormat.equals(EmbeddedFormat.JSON.toString())) {
-            sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
-                    EmbeddedFormat.JSON, new KafkaJsonDeserializer<>(Object.class), new KafkaJsonDeserializer<>(Object.class));
-        } else {
-            throw new IllegalArgumentException("format not supported");
-        }
+        final SinkBridgeEndpoint sink = this.getHttpSinkBridgeEndpoint(format);
 
-        final SinkBridgeEndpoint<?, ?> httpSink = sink;
         sink.closeHandler(s -> {
-            httpBridgeContext.getHttpSinkEndpoints().remove(httpSink);
+            httpBridgeContext.getHttpSinkEndpoints().remove(sink);
         });
 
         sink.open();
 
         sink.handle(new HttpEndpoint(routingContext), consumerId -> {
-            httpBridgeContext.getHttpSinkEndpoints().put(consumerId.toString(), httpSink);
+            httpBridgeContext.getHttpSinkEndpoints().put(consumerId.toString(), sink);
         });
     }
 
@@ -289,21 +278,13 @@ public class HttpBridge extends AbstractVerticle {
      */
     private void processProducer(RoutingContext routingContext) {
         HttpServerRequest httpServerRequest = routingContext.request();
-        String contentType = httpServerRequest.getHeader("Content-Type");
+        String contentType = httpServerRequest.getHeader("Content-Type") != null ?
+                httpServerRequest.getHeader("Content-Type") : BridgeContentType.KAFKA_JSON_BINARY;
 
         SourceBridgeEndpoint source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
 
         if (source == null) {
-
-            if (contentType == null || contentType.equals(BridgeContentType.KAFKA_JSON_BINARY)) {
-                source = new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
-                        EmbeddedFormat.BINARY, new ByteArraySerializer(), new ByteArraySerializer());
-            } else if (contentType.equals(BridgeContentType.KAFKA_JSON_JSON)) {
-                source = new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
-                        EmbeddedFormat.JSON, new KafkaJsonSerializer(), new KafkaJsonSerializer());
-            } else {
-                throw new IllegalArgumentException("Content-Type not supported");
-            }
+            source = this.getHttpSourceBridgeEndpoint(contentType);
 
             source.closeHandler(s -> {
                 this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
@@ -335,6 +316,31 @@ public class HttpBridge extends AbstractVerticle {
             }
             this.httpBridgeContext.getHttpSourceEndpoints().remove(connection);
         }
+    }
+
+    private HttpSinkBridgeEndpoint getHttpSinkBridgeEndpoint(EmbeddedFormat format) {
+        switch (format) {
+            case BINARY:
+                return new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+                        EmbeddedFormat.BINARY, new ByteArrayDeserializer(), new ByteArrayDeserializer());
+            case JSON:
+                return new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+                        EmbeddedFormat.JSON, new KafkaJsonDeserializer<>(Object.class), new KafkaJsonDeserializer<>(Object.class));
+            default:
+                return null;
+        }
+    }
+
+    private HttpSourceBridgeEndpoint getHttpSourceBridgeEndpoint(String contentType) {
+        switch (contentType) {
+            case BridgeContentType.KAFKA_JSON_BINARY:
+                return new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+                        EmbeddedFormat.BINARY, new ByteArraySerializer(), new ByteArraySerializer());
+            case BridgeContentType.KAFKA_JSON_JSON:
+                return new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+                        EmbeddedFormat.JSON, new KafkaJsonSerializer(), new KafkaJsonSerializer());
+        }
+        throw new IllegalArgumentException(contentType);
     }
 
 }

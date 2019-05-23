@@ -14,7 +14,7 @@ public class KafkaJsonDeserializer<T> implements Deserializer<T> {
 
     private Class<T> type;
 
-    public KafkaJsonDeserializer(Class type) {
+    public KafkaJsonDeserializer(Class<T> type) {
         this.type = type;
     }
 

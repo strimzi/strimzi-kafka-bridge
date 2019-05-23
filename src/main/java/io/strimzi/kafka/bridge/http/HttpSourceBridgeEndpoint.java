@@ -140,12 +140,12 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
     }
 
     private MessageConverter<K, V, Buffer, Buffer> buildMessageConverter() {
-        if (this.format == EmbeddedFormat.JSON) {
-            return (MessageConverter<K, V, Buffer, Buffer>) new HttpJsonMessageConverter();
-        } else if (this.format == EmbeddedFormat.BINARY) {
-            return (MessageConverter<K, V, Buffer, Buffer>) new HttpBinaryMessageConverter();
-        } else {
-            return null;
+        switch (this.format) {
+            case JSON:
+                return (MessageConverter<K, V, Buffer, Buffer>) new HttpJsonMessageConverter();
+            case BINARY:
+                return (MessageConverter<K, V, Buffer, Buffer>) new HttpBinaryMessageConverter();
         }
+        return null;
     }
 }
