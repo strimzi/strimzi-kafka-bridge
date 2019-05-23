@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
@@ -182,27 +183,35 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     }
 
     private void doPoll() {
-        if (routingContext.request().getParam("timeout") != null) {
-            this.pollTimeOut = Long.parseLong(routingContext.request().getParam("timeout"));
-        }
+        String accept = routingContext.request().getHeader("Accept");
 
-        if (routingContext.request().getParam("max_bytes") != null) {
-            this.maxBytes = Long.parseLong(routingContext.request().getParam("max_bytes"));
-        }
+        // check that the accepted body by the client is the same as the format on creation
+        if (accept != null && this.checkAcceptedBody(accept)) {
 
-        this.consume(records -> {
-            if (records.succeeded()) {
-                Buffer buffer = (Buffer) messageConverter.toMessages(records.result());
-                if (buffer.getBytes().length > this.maxBytes) {
-                    sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), "Response is too large");
-                } else {
-                    sendConsumerRecordsResponse(routingContext.response(), buffer);
-                }
-
-            } else {
-                sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR.getValue(), "Internal server error");
+            if (routingContext.request().getParam("timeout") != null) {
+                this.pollTimeOut = Long.parseLong(routingContext.request().getParam("timeout"));
             }
-        });
+
+            if (routingContext.request().getParam("max_bytes") != null) {
+                this.maxBytes = Long.parseLong(routingContext.request().getParam("max_bytes"));
+            }
+
+            this.consume(records -> {
+                if (records.succeeded()) {
+                    Buffer buffer = messageConverter.toMessages(records.result());
+                    if (buffer.getBytes().length > this.maxBytes) {
+                        sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), "Response is too large");
+                    } else {
+                        sendConsumerRecordsResponse(routingContext.response(), buffer);
+                    }
+
+                } else {
+                    sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR.getValue(), "Internal server error");
+                }
+            });
+        } else {
+            sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.NOT_ACCEPTABLE.getValue(), "Consumer format does not match the embedded format requested by the Accept header.");
+        }
     }
 
     private void doAssign(JsonObject bodyAsJson) {
@@ -398,5 +407,15 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 return (MessageConverter<K, V, Buffer, Buffer>) new HttpBinaryMessageConverter();
         }
         return null;
+    }
+
+    private boolean checkAcceptedBody(String accept) {
+        switch (accept) {
+            case BridgeContentType.KAFKA_JSON_JSON:
+                return format == EmbeddedFormat.JSON;
+            case BridgeContentType.KAFKA_JSON_BINARY:
+                return format == EmbeddedFormat.BINARY;
+        }
+        return false;
     }
 }
