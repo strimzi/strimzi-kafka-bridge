@@ -693,6 +693,15 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         });
     }
 
+    protected void commit(Handler<AsyncResult<Void>> commitHandler) {
+        this.commitHandler = commitHandler;
+        this.consumer.commit(result -> {
+            if (this.commitHandler != null) {
+                this.handleCommit(result);
+            }
+        });
+    }
+
     protected void seek(TopicPartition topicPartition, long offset, Handler<AsyncResult<Void>> seekHandler) {
         this.consumer.seek(topicPartition, offset, result -> {
             if (seekHandler != null) {
