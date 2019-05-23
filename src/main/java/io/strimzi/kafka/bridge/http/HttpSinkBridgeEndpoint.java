@@ -154,19 +154,24 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     }
 
     private void doCommit(JsonObject bodyAsJson) {
-        Map<TopicPartition, OffsetAndMetadata> offsetData = new HashMap<>();
-        JsonObject jsonOffsetData = bodyAsJson;
-        JsonArray offsetsList = jsonOffsetData.getJsonArray("offsets");
 
-        for (int i = 0; i < offsetsList.size(); i++) {
-            TopicPartition topicPartition = new TopicPartition(offsetsList.getJsonObject(i));
-            OffsetAndMetadata offsetAndMetadata = new OffsetAndMetadata(offsetsList.getJsonObject(i));
-            offsetData.put(topicPartition, offsetAndMetadata);
+        if (bodyAsJson != null) {
+            JsonArray offsetsList = bodyAsJson.getJsonArray("offsets");
+            Map<TopicPartition, OffsetAndMetadata> offsetData = new HashMap<>();
+
+            for (int i = 0; i < offsetsList.size(); i++) {
+                TopicPartition topicPartition = new TopicPartition(offsetsList.getJsonObject(i));
+                OffsetAndMetadata offsetAndMetadata = new OffsetAndMetadata(offsetsList.getJsonObject(i));
+                offsetData.put(topicPartition, offsetAndMetadata);
+            }
+            this.commit(offsetData, status -> {
+                sendConsumerCommitOffsetResponse(routingContext.response(), status.succeeded());
+            });
+        } else {
+            this.commit(status -> {
+                sendConsumerCommitOffsetResponse(routingContext.response(), status.succeeded());
+            });
         }
-
-        this.commit(offsetData, status -> {
-            sendConsumerCommitOffsetResponse(routingContext.response(), status.succeeded());
-        });
     }
 
     private void doDeleteConsumer() {
