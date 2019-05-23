@@ -45,12 +45,12 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
-    protected EmbeddedFormat format;
-    protected Deserializer<K> keyDeserializer;
-    protected Deserializer<V> valueDeserializer;
-    protected Vertx vertx;
+    protected final EmbeddedFormat format;
+    protected final Deserializer<K> keyDeserializer;
+    protected final Deserializer<V> valueDeserializer;
+    protected final Vertx vertx;
 
-    protected BridgeConfig bridgeConfigProperties;
+    protected final BridgeConfig bridgeConfigProperties;
 
     private Handler<BridgeEndpoint> closeHandler;
 

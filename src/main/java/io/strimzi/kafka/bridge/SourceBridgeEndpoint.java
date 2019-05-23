@@ -27,12 +27,12 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
-    protected EmbeddedFormat format;
-    protected Serializer<K> keySerializer;
-    protected Serializer<V> valueSerializer;
-    protected Vertx vertx;
+    protected final EmbeddedFormat format;
+    protected final Serializer<K> keySerializer;
+    protected final Serializer<V> valueSerializer;
+    protected final Vertx vertx;
 
-    protected BridgeConfig bridgeConfigProperties;
+    protected final BridgeConfig bridgeConfigProperties;
 
     private Handler<BridgeEndpoint> closeHandler;
 
