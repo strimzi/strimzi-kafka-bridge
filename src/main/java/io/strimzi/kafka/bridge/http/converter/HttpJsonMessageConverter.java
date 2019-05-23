@@ -22,7 +22,8 @@ public class HttpJsonMessageConverter implements MessageConverter<Object, Object
     public KafkaProducerRecord<Object, Object> toKafkaRecord(String kafkaTopic, Integer partition, Buffer message) {
 
         Integer partitionFromBody = null;
-        Object key = null, value = null;
+        Object key = null;
+        Object value = null;
 
         JsonObject json = message.toJsonObject();
 

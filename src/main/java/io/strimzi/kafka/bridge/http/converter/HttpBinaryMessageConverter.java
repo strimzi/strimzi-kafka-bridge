@@ -24,7 +24,8 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
     public KafkaProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, Buffer message) {
 
         Integer partitionFromBody = null;
-        byte[] key = null, value = null;
+        byte[] key = null;
+        byte[] value = null;
 
         JsonObject json = message.toJsonObject();
 
