@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.amqp;
 
+import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.QoSEndpoint;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
@@ -21,6 +22,7 @@ import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonSender;
+import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
@@ -48,14 +50,9 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     // sender link for handling outgoing message
     private ProtonSender sender;
 
-    /**
-     * Constructor
-     *
-     * @param vertx Vert.x instance
-     * @param bridgeConfigProperties Bridge configuration
-     */
-    public AmqpSinkBridgeEndpoint(Vertx vertx, AmqpBridgeConfig bridgeConfigProperties) {
-        super(vertx, bridgeConfigProperties);
+    public AmqpSinkBridgeEndpoint(Vertx vertx, AmqpBridgeConfig bridgeConfigProperties,
+                                  EmbeddedFormat format, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
+        super(vertx, bridgeConfigProperties, format, keyDeserializer, valueDeserializer);
     }
 
     @Override

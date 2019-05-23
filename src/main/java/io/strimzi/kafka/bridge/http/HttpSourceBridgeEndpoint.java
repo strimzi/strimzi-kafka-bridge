@@ -5,9 +5,11 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
+import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeResult;
@@ -15,24 +17,27 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import io.vertx.kafka.client.producer.RecordMetadata;
+import org.apache.kafka.common.serialization.Serializer;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
+public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
-    private MessageConverter messageConverter;
+    private MessageConverter<K, V, Buffer, Buffer> messageConverter;
 
     private HttpBridgeContext httpBridgeContext;
 
-    public HttpSourceBridgeEndpoint(Vertx vertx, HttpBridgeConfig bridgeConfigProperties, HttpBridgeContext httpBridgeContext) {
-        super(vertx, bridgeConfigProperties);
+    public HttpSourceBridgeEndpoint(Vertx vertx, HttpBridgeConfig bridgeConfigProperties, HttpBridgeContext httpBridgeContext,
+                                    EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+        super(vertx, bridgeConfigProperties, format, keySerializer, valueSerializer);
         this.httpBridgeContext = httpBridgeContext;
     }
 
@@ -40,21 +45,15 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
     public void handle(Endpoint<?> endpoint) {
         RoutingContext routingContext = (RoutingContext) endpoint.get();
 
+        messageConverter = this.buildMessageConverter();
 
-        // split path to extract params
-        String[] params = routingContext.request().path().split("/");
+        String topic = routingContext.pathParam("topicname");
 
-        // path is like this : /topics/{topic_name}[/partitions/partition_id]
-        String topic = params[2];
-
-
-        messageConverter = new HttpJsonMessageConverter();
-
-        List<KafkaProducerRecord<String, byte[]>> records;
+        List<KafkaProducerRecord<K, V>> records;
         Integer partition = null;
-        if (params.length == 5) {
+        if (routingContext.pathParam("partitionid") != null) {
             try {
-                partition = Integer.parseInt(params[4]);
+                partition = Integer.parseInt(routingContext.pathParam("partitionid"));
             } catch (NumberFormatException ne) {
                 sendUnprocessableResponse(routingContext.response());
                 return;
@@ -70,14 +69,14 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
         // start sending records asynchronously
         List<Future> sendHandlers = new ArrayList<>(records.size());
-        for (KafkaProducerRecord<String, byte[]> record : records) {
+        for (KafkaProducerRecord<K, V> record : records) {
             Future<RecordMetadata> fut = Future.future();
             sendHandlers.add(fut);
             this.send(record, fut.completer());
         }
 
         // wait for ALL futures completed
-        List<KafkaProducerRecord<String, byte[]>> finalRecords = records;
+        List<KafkaProducerRecord<K, V>> finalRecords = records;
         CompositeFuture.join(sendHandlers).setHandler(done -> {
 
             for (int i = 0; i < sendHandlers.size(); i++) {
@@ -138,5 +137,15 @@ public class HttpSourceBridgeEndpoint extends SourceBridgeEndpoint {
         response.setStatusMessage("Unprocessable request.")
                 .setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue())
                 .end();
+    }
+
+    private MessageConverter<K, V, Buffer, Buffer> buildMessageConverter() {
+        switch (this.format) {
+            case JSON:
+                return (MessageConverter<K, V, Buffer, Buffer>) new HttpJsonMessageConverter();
+            case BINARY:
+                return (MessageConverter<K, V, Buffer, Buffer>) new HttpBinaryMessageConverter();
+        }
+        return null;
     }
 }

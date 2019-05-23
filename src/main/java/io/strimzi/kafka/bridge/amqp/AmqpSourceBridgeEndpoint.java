@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.amqp;
 
+import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
@@ -16,6 +17,7 @@ import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonLink;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonReceiver;
+import org.apache.kafka.common.serialization.Serializer;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.Rejected;
@@ -30,22 +32,17 @@ import java.util.Map;
  * Class in charge for handling incoming AMQP traffic
  * from senders and bridging into Apache Kafka
  */
-public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
+public class AmqpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
     // converter from AMQP message to ConsumerRecord
-    private MessageConverter<String, byte[], Message, Collection<Message>> converter;
+    private MessageConverter<K, V, Message, Collection<Message>> converter;
 
     // receiver link for handling incoming message
     private Map<String, ProtonReceiver> receivers;
 
-    /**
-     * Constructor
-     *
-     * @param vertx Vert.x instance
-     * @param bridgeConfigProperties Bridge configuration
-     */
-    public AmqpSourceBridgeEndpoint(Vertx vertx, AmqpBridgeConfig bridgeConfigProperties) {
-        super(vertx, bridgeConfigProperties);
+    public AmqpSourceBridgeEndpoint(Vertx vertx, AmqpBridgeConfig bridgeConfigProperties,
+                                    EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+        super(vertx, bridgeConfigProperties, format, keySerializer, valueSerializer);
         this.receivers = new HashMap<>();
     }
 
@@ -74,7 +71,7 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
 
         if (this.converter == null) {
             try {
-                this.converter = (MessageConverter<String, byte[], Message, Collection<Message>>) AmqpBridge.instantiateConverter(amqpConfigProperties.getMessageConverter());
+                this.converter = (MessageConverter<K, V, Message, Collection<Message>>) AmqpBridge.instantiateConverter(amqpConfigProperties.getMessageConverter());
             } catch (AmqpErrorConditionException e) {
                 AmqpBridge.detachWithError(link, e.toCondition());
                 return;
@@ -161,7 +158,7 @@ public class AmqpSourceBridgeEndpoint extends SourceBridgeEndpoint {
                 receiver.getTarget().getAddress().replace('/', '.') :
                 null;
 
-        KafkaProducerRecord<String, byte[]> krecord = this.converter.toKafkaRecord(kafkaTopic, null, message);
+        KafkaProducerRecord<K, V> krecord = this.converter.toKafkaRecord(kafkaTopic, null, message);
 
         if (delivery.remotelySettled()) {
 

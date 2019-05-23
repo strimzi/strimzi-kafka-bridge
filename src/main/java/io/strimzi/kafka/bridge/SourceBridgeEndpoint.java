@@ -14,6 +14,7 @@ import io.vertx.kafka.client.producer.KafkaProducer;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import io.vertx.kafka.client.producer.RecordMetadata;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,28 +23,38 @@ import java.util.Properties;
 /**
  * Base class for source bridge endpoints
  */
-public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
+public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
-    protected Vertx vertx;
+    protected final EmbeddedFormat format;
+    protected final Serializer<K> keySerializer;
+    protected final Serializer<V> valueSerializer;
+    protected final Vertx vertx;
 
-    protected BridgeConfig bridgeConfigProperties;
+    protected final BridgeConfig bridgeConfigProperties;
 
     private Handler<BridgeEndpoint> closeHandler;
 
-    private KafkaProducer<String, byte[]> producerUnsettledMode;
-    private KafkaProducer<String, byte[]> producerSettledMode;
+    private KafkaProducer<K, V> producerUnsettledMode;
+    private KafkaProducer<K, V> producerSettledMode;
 
     /**
      * Constructor
      *
      * @param vertx Vert.x instance
      * @param bridgeConfigProperties Bridge configuration
+     * @param format embedded format for the key/value in the Kafka message
+     * @param keySerializer Kafka serializer for the message key
+     * @param valueSerializer Kafka serializer for the message value
      */
-    public SourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfigProperties) {
+    public SourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfigProperties,
+                                EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
         this.vertx = vertx;
         this.bridgeConfigProperties = bridgeConfigProperties;
+        this.format = format;
+        this.keySerializer = keySerializer;
+        this.valueSerializer = valueSerializer;
     }
 
     @Override
@@ -68,7 +79,7 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
      * @param krecord   Kafka record to send
      * @param handler   handler to call if producer with unsettled is used
      */
-    protected void send(KafkaProducerRecord<String, byte[]> krecord, Handler<AsyncResult<RecordMetadata>> handler) {
+    protected void send(KafkaProducerRecord<K, V> krecord, Handler<AsyncResult<RecordMetadata>> handler) {
 
         log.debug("Sending record {}", krecord);
         if (handler == null) {
@@ -85,19 +96,15 @@ public abstract class SourceBridgeEndpoint implements BridgeEndpoint {
 
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getBootstrapServers());
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getKeySerializer());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getValueSerializer());
         props.put(ProducerConfig.ACKS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getAcks());
 
-        this.producerUnsettledMode = KafkaProducer.create(this.vertx, props);
+        this.producerUnsettledMode = KafkaProducer.create(this.vertx, props, this.keySerializer, this.valueSerializer);
 
         props.clear();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getBootstrapServers());
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getKeySerializer());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getValueSerializer());
         props.put(ProducerConfig.ACKS_CONFIG, "0");
 
-        this.producerSettledMode = KafkaProducer.create(this.vertx, props);
+        this.producerSettledMode = KafkaProducer.create(this.vertx, props, this.keySerializer, this.valueSerializer);
     }
 
     @Override

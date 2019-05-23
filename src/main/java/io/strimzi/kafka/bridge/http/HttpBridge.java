@@ -5,6 +5,10 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.strimzi.kafka.bridge.BridgeContentType;
+import io.strimzi.kafka.bridge.EmbeddedFormat;
+import io.strimzi.kafka.bridge.KafkaJsonDeserializer;
+import io.strimzi.kafka.bridge.KafkaJsonSerializer;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.vertx.core.AbstractVerticle;
@@ -13,9 +17,12 @@ import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,7 +176,12 @@ public class HttpBridge extends AbstractVerticle {
 
     private void createConsumer(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
-        SinkBridgeEndpoint<?, ?> sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext);
+
+        JsonObject body = routingContext.getBodyAsJson();
+        EmbeddedFormat format = EmbeddedFormat.from(body.getString("format", "binary"));
+
+        final SinkBridgeEndpoint sink = this.getHttpSinkBridgeEndpoint(format);
+
         sink.closeHandler(s -> {
             httpBridgeContext.getHttpSinkEndpoints().remove(sink);
         });
@@ -266,11 +278,14 @@ public class HttpBridge extends AbstractVerticle {
      */
     private void processProducer(RoutingContext routingContext) {
         HttpServerRequest httpServerRequest = routingContext.request();
+        String contentType = httpServerRequest.getHeader("Content-Type") != null ?
+                httpServerRequest.getHeader("Content-Type") : BridgeContentType.KAFKA_JSON_BINARY;
 
         SourceBridgeEndpoint source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
 
         if (source == null) {
-            source = new HttpSourceBridgeEndpoint(this.vertx, this.httpBridgeConfig, this.httpBridgeContext);
+            source = this.getHttpSourceBridgeEndpoint(contentType);
+
             source.closeHandler(s -> {
                 this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
             });
@@ -301,6 +316,31 @@ public class HttpBridge extends AbstractVerticle {
             }
             this.httpBridgeContext.getHttpSourceEndpoints().remove(connection);
         }
+    }
+
+    private HttpSinkBridgeEndpoint getHttpSinkBridgeEndpoint(EmbeddedFormat format) {
+        switch (format) {
+            case BINARY:
+                return new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+                        EmbeddedFormat.BINARY, new ByteArrayDeserializer(), new ByteArrayDeserializer());
+            case JSON:
+                return new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+                        EmbeddedFormat.JSON, new KafkaJsonDeserializer<>(Object.class), new KafkaJsonDeserializer<>(Object.class));
+            default:
+                return null;
+        }
+    }
+
+    private HttpSourceBridgeEndpoint getHttpSourceBridgeEndpoint(String contentType) {
+        switch (contentType) {
+            case BridgeContentType.KAFKA_JSON_BINARY:
+                return new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+                        EmbeddedFormat.BINARY, new ByteArraySerializer(), new ByteArraySerializer());
+            case BridgeContentType.KAFKA_JSON_JSON:
+                return new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+                        EmbeddedFormat.JSON, new KafkaJsonSerializer(), new KafkaJsonSerializer());
+        }
+        throw new IllegalArgumentException(contentType);
     }
 
 }

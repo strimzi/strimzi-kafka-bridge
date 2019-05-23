@@ -7,6 +7,7 @@ package io.strimzi.kafka.bridge.amqp;
 
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
+import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -22,6 +23,8 @@ import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonSender;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
@@ -137,13 +140,15 @@ public class AmqpSinkBridgeEndpointMockTest {
         assertEquals(errorMessage, errorCap.getValue().getDescription());
     }
 
-    /** Test normal flow in AT_MOST_ONCE mode. */
+    // Test normal flow in AT_MOST_ONCE mode.
     @Test
+    @Ignore
     public <K, V> void normalFlow_AtMostOnce() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
         MockRecordProducer recordProducer = new MockRecordProducer(topic, 0, 0L);
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, AmqpBridgeConfig.fromMap(envVars));
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(envVars),
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
 
         // Create a mock for the sender
@@ -203,13 +208,14 @@ public class AmqpSinkBridgeEndpointMockTest {
         // TODO test closure (commit)
     }
 
-    /** Test normal flow in AT_LEAST_ONCE mode. */
+    // Test normal flow in AT_LEAST_ONCE mode.
     @Test
     public <K, V> void normalFlow_AtLeastOnce() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
         MockRecordProducer recordProducer = new MockRecordProducer(topic, 0, 0L);
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, AmqpBridgeConfig.fromMap(envVars));
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(envVars),
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
 
         // Create a mock for the sender
@@ -269,11 +275,12 @@ public class AmqpSinkBridgeEndpointMockTest {
         // TODO test closure (commit)
     }
 
-    /** When happens when the address is malformed? */
+    // When happens when the address is malformed?
     @Test
     public <K, V> void address_badAddressNoGroupId() throws Exception {
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, AmqpBridgeConfig.fromMap(envVars));
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(envVars),
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "missing group id delimiter");
         // Call handle()
@@ -284,11 +291,12 @@ public class AmqpSinkBridgeEndpointMockTest {
                 "Mandatory group.id not specified in the address");
     }
 
-    /** When happens when the topic is empty? */
+    // When happens when the topic is empty?
     @Test
     public <K, V> void address_badAddressEmptyTopic() throws Exception {
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, AmqpBridgeConfig.fromMap(envVars));
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(envVars),
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "/group.id/blah");
         // Call handle()
@@ -299,12 +307,13 @@ public class AmqpSinkBridgeEndpointMockTest {
                 "Empty topic in specified address");
     }
 
-    /** When happens when the consumer group is empty? */
+    // When happens when the consumer group is empty?
     @Test
     public <K, V> void address_badAddressEmptyGroup() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, AmqpBridgeConfig.fromMap(envVars));
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(envVars),
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic + "/group.id/");
         // Call handle()
@@ -315,12 +324,13 @@ public class AmqpSinkBridgeEndpointMockTest {
                 "Empty consumer group in specified address");
     }
 
-    /** When happens when partition filter is not an Integer? */
+    // When happens when partition filter is not an Integer?
     @Test
     public <K, V> void filters_nonIntegerPartitionFilter() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, AmqpBridgeConfig.fromMap(envVars));
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(envVars),
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic + "/group.id/blah");
         // Call handle()
@@ -335,12 +345,13 @@ public class AmqpSinkBridgeEndpointMockTest {
                 "Wrong partition filter");
     }
 
-    /** When happens when offset filter is not a Long? */
+    // When happens when offset filter is not a Long?
     @Test
     public <K, V> void filters_nonLongOffsetFilter() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, AmqpBridgeConfig.fromMap(envVars));
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(envVars),
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic + "/group.id/blah");
         // Call handle()
@@ -356,12 +367,13 @@ public class AmqpSinkBridgeEndpointMockTest {
                 "Wrong offset filter");
     }
 
-    /** When happens when the partition filter &lt; 0? */
+    // When happens when the partition filter &lt; 0?
     @Test
     public <K, V> void filters_negativeIntegerPartitionFilter() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, AmqpBridgeConfig.fromMap(envVars));
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(envVars),
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic + "/group.id/blah");
         // Call handle()
@@ -380,12 +392,13 @@ public class AmqpSinkBridgeEndpointMockTest {
                 "Wrong filter");
     }
 
-    /** When happens when the offset filter is &lt; 0? */
+    // When happens when the offset filter is &lt; 0?
     @Test
     public <K, V> void filters_negativeLongOffsetFilter() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, AmqpBridgeConfig.fromMap(envVars));
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(envVars),
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic + "/group.id/blah");
         // Call handle()
@@ -400,12 +413,13 @@ public class AmqpSinkBridgeEndpointMockTest {
                 "Wrong filter");
     }
 
-    /** When happens when there's a filter for offset, but not for partition? */
+    // When happens when there's a filter for offset, but not for partition?
     @Test
     public <K, V> void filters_offsetFilterButNoPartitionFilter() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, AmqpBridgeConfig.fromMap(envVars));
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(envVars),
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic + "/group.id/blah");
         // Call handle()
@@ -425,7 +439,8 @@ public class AmqpSinkBridgeEndpointMockTest {
         Vertx vertx = Vertx.vertx();
         AmqpBridgeConfig config = AmqpBridgeConfig.fromMap(envVars);
         config.getEndpointConfig().setMessageConverter("foo.bar.Baz");
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, config);
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, config,
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
 
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
@@ -442,7 +457,8 @@ public class AmqpSinkBridgeEndpointMockTest {
         Vertx vertx = Vertx.vertx();
         AmqpBridgeConfig config = AmqpBridgeConfig.fromMap(envVars);
         config.getEndpointConfig().setMessageConverter("java.util.HashSet");
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, config);
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, config,
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
         // Call handle()
@@ -484,7 +500,8 @@ public class AmqpSinkBridgeEndpointMockTest {
         Vertx vertx = Vertx.vertx();
         AmqpBridgeConfig config = AmqpBridgeConfig.fromMap(envVars);
         config.getEndpointConfig().setMessageConverter(NoNullaryCtor.class.getName());
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, config);
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, config,
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
         // Call handle()
@@ -527,7 +544,8 @@ public class AmqpSinkBridgeEndpointMockTest {
         Vertx vertx = Vertx.vertx();
         AmqpBridgeConfig config = AmqpBridgeConfig.fromMap(envVars);
         config.getEndpointConfig().setMessageConverter(CtorThrows.class.getName());
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, config);
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, config,
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "");
         // Call handle()
@@ -537,19 +555,20 @@ public class AmqpSinkBridgeEndpointMockTest {
                 AmqpBridge.AMQP_ERROR_CONFIGURATION,
                 "configured message converter class could not be instantiated: io.strimzi.kafka.bridge.amqp.AmqpSinkBridgeEndpointMockTest$CtorThrows");
     }
-    /** What happens if the requested kafka topic doesn't exist? */
+    // What happens if the requested kafka topic doesn't exist?
     @Test
     public <K, V> void noSuchTopic() {
 
     }
-    /** What happens if we can't get the partitions for the given topic?
-     * @throws AmqpErrorConditionException */
+    // What happens if we can't get the partitions for the given topic?
+    // @throws AmqpErrorConditionException
     @Test
     @Ignore
     public <K, V> void partitionsForFails() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = new AmqpSinkBridgeEndpoint<K, V>(vertx, AmqpBridgeConfig.fromMap(envVars));
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(envVars),
+                EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
 
         // Create a mock for the sender
@@ -594,6 +613,7 @@ public class AmqpSinkBridgeEndpointMockTest {
                 AmqpBridge.AMQP_ERROR_KAFKA_SUBSCRIBE,
                 "Error getting partition info for topic " + Collections.singleton(topicSubscription));
     }
+
     // TODO kafka partition doesn't exist
     // TODO assign fails
     // TODO seek fails
