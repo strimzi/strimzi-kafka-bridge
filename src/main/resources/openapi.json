@@ -5,7 +5,7 @@
         "description": "The Strimzi HTTP Bridge for Apache Kafka provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. The HTTP Bridge can be deployed on bare metal or in a container running on Kubernetes or OpenShift platform.",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
-            "email": "messaging@redhat.com"
+            "email": "strimzi@redhat.com"
         },
         "license": {
             "name": "Apache 2.0",
@@ -61,7 +61,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -79,7 +79,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -111,7 +111,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Deletes a consumer instance from your Kafka Bridge instance.",
+                "description": "Deletes a specified consumer instance. The operation MUST be performed on the the Kafka Bridge instance that contains the consumer.",
                 "operationId": "deleteConsumer",
                 "responses": {
                     "204": {
@@ -122,7 +122,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -171,7 +171,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/PartitionsForPositions"
+                                "$ref": "#/components/schemas/Partitions"
                             }
                         }
                     },
@@ -186,7 +186,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -228,14 +228,14 @@
                     "Seek",
                     "Consumers"
                 ],
-                "description": "Configures a subscribed consumer to seek (and subsequently read from) the last offset in one or more given topic partitions. This is the default behavior.",
+                "description": "Configures a subscribed consumer to seek (and subsequently read from) the offset at the end of one or more given topic partitions. This is the default behavior.",
                 "operationId": "seekToEnd",
                 "requestBody": {
                     "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek the last offset in the specified partitions.",
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/PartitionsForPositions"
+                                "$ref": "#/components/schemas/Partitions"
                             }
                         }
                     },
@@ -250,7 +250,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -291,7 +291,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Subscribes a consumer to one or more topics.",
+                "description": "Subscribes a consumer to one or more topics. You can describe the topics to which the consumer will subscribe in a list (of `Topics` type) or as a `topic_pattern` field.",
                 "operationId": "subscribe",
                 "requestBody": {
                     "description": "List of topics to which the consumer will subscribe.",
@@ -313,7 +313,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -331,7 +331,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -361,7 +361,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -421,7 +421,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/OffsetsWithoutTopic"
+                                    "$ref": "#/components/schemas/OffsetsRecordsSent"
                                 },
                                 "examples": {
                                     "response": {
@@ -451,13 +451,31 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
                                         "value": {
                                             "error_code": 404,
                                             "message": "The specified topic was not found."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "The record is not valid.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 422,
+                                            "message": "The record is not valid."
                                         }
                                     }
                                 }
@@ -503,7 +521,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/OffsetsWithoutTopic"
+                                    "$ref": "#/components/schemas/OffsetsRecordsSent"
                                 },
                                 "examples": {
                                     "response": {
@@ -533,7 +551,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -551,7 +569,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -600,7 +618,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/Offsets"
+                                "$ref": "#/components/schemas/OffsetsToCommitSeek"
                             }
                         }
                     },
@@ -615,7 +633,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -656,14 +674,14 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Commits a list of consumer offsets to the consumer offsets commit log. To commit offsets for all records fetched by the consumer, leave the request body empty.",
+                "description": "Commits a list of consumer offsets. To commit offsets for all records fetched by the consumer, leave the request body empty.",
                 "operationId": "commit",
                 "requestBody": {
                     "description": "List of consumer offsets to commit to the consumer offsets commit log. You can specify one or more topic partitions to commit offsets for.",
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/Offsets"
+                                "$ref": "#/components/schemas/OffsetsToCommitSeek"
                             }
                         }
                     }
@@ -677,7 +695,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -725,7 +743,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/PartitionsForPositions"
+                                "$ref": "#/components/schemas/Partitions"
                             }
                         }
                     },
@@ -740,7 +758,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -758,7 +776,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -799,7 +817,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Retrieves records for subscribed consumer, including message values, topics, and partitions.",
+                "description": "Retrieves records for a subscribed consumer, including message values, topics, and partitions. The operation MUST be performed on the the Kafka Bridge instance that contains the consumer.",
                 "operationId": "poll",
                 "responses": {
                     "200": {
@@ -842,7 +860,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -860,7 +878,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorBody"
+                                    "$ref": "#/components/schemas/Error"
                                 },
                                 "examples": {
                                     "response": {
@@ -971,58 +989,6 @@
                     "consumer.request.timeout.ms": "30000"
                 }
             },
-            "Offsets": {
-                "title": "Offsets",
-                "type": "object",
-                "properties": {
-                    "offsets": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/Offset"
-                        }
-                    }
-                },
-                "example": {
-                    "offsets": [
-                        {
-                            "topic": "topic",
-                            "partition": 0,
-                            "offset": 15
-                        },
-                        {
-                            "topic": "topic",
-                            "partition": 1,
-                            "offset": 42
-                        }
-                    ]
-                }
-            },
-            "OffsetsWithoutTopic": {
-                "title": "Offsets",
-                "type": "object",
-                "properties": {
-                    "offsets": {
-                        "type": "array",
-                        "items": {}
-                    }
-                },
-                "example": {
-                    "offsets": [
-                        {
-                            "partition": 2,
-                            "offset": 0
-                        },
-                        {
-                            "partition": 1,
-                            "offset": 1
-                        },
-                        {
-                            "partition": 2,
-                            "offset": 2
-                        }
-                    ]
-                }
-            },
             "Partition": {
                 "title": "Partition",
                 "type": "object",
@@ -1031,73 +997,9 @@
                         "format": "int32",
                         "type": "integer"
                     },
-                    "leader": {
-                        "format": "int32",
-                        "type": "integer"
-                    },
-                    "replicas": {
-                        "type": "object"
+                    "topic": {
+                        "type": "string"
                     }
-                },
-                "example": {
-                    "partition": 1,
-                    "leader": 1,
-                    "replicas": [
-                        {
-                            "broker": 1,
-                            "leader": true,
-                            "in_sync": true
-                        },
-                        {
-                            "broker": 2,
-                            "leader": false,
-                            "in_sync": false
-                        }
-                    ]
-                }
-            },
-            "PartitionsForPositions": {
-                "title": "Partitions",
-                "type": "object",
-                "properties": {
-                    "partitions": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/Partition"
-                        }
-                    }
-                },
-                "example": {
-                    "partitions": [
-                        {
-                            "topic": "topic",
-                            "partition": 0
-                        },
-                        {
-                            "topic": "topic",
-                            "partition": 1
-                        }
-                    ]
-                }
-            },
-            "RecordsWithoutPartitions": {
-                "title": "Records",
-                "type": "object",
-                "properties": {
-                    "records": {
-                        "$ref": "#/components/schemas/ProducerRecordList"
-                    }
-                },
-                "example": {
-                    "records": [
-                        {
-                            "key": "1abcd",
-                            "value": "msg1"
-                        },
-                        {
-                            "value": "msg2"
-                        }
-                    ]
                 }
             },
             "Topics": {
@@ -1132,8 +1034,8 @@
                     }
                 },
                 "example": {
-                    "instance_id": "consumer1",
-                    "base_uri": "http://localhost:8080/consumers/my-group/instances/consumer1"
+                    "instance_id": "my-consumer",
+                    "base_uri": "http://localhost:8080/consumers/my-group/instances/my-consumer"
                 }
             },
             "ConsumerRecordList": {
@@ -1239,7 +1141,79 @@
                     ]
                 }
             },
-            "ErrorBody": {
+            "OffsetsRecordsSent": {
+                "title": "Offsets",
+                "type": "object",
+                "properties": {
+                    "offsets": {
+                        "type": "array",
+                        "items": {}
+                    }
+                },
+                "example": {
+                    "offsets": [
+                        {
+                            "partition": 2,
+                            "offset": 0
+                        },
+                        {
+                            "partition": 1,
+                            "offset": 1
+                        },
+                        {
+                            "partition": 2,
+                            "offset": 2
+                        }
+                    ]
+                }
+            },
+            "OffsetsToCommitSeek": {
+                "title": "Offsets",
+                "type": "object",
+                "properties": {
+                    "offsets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Offset"
+                        }
+                    }
+                },
+                "example": {
+                    "offsets": [
+                        {
+                            "topic": "topic",
+                            "partition": 0,
+                            "offset": 15
+                        },
+                        {
+                            "topic": "topic",
+                            "partition": 1,
+                            "offset": 42
+                        }
+                    ]
+                }
+            },
+            "RecordsWithoutPartitions": {
+                "title": "Records",
+                "type": "object",
+                "properties": {
+                    "records": {
+                        "$ref": "#/components/schemas/ProducerRecordList"
+                    }
+                },
+                "example": {
+                    "records": [
+                        {
+                            "key": "1abcd",
+                            "value": "msg1"
+                        },
+                        {
+                            "value": "msg2"
+                        }
+                    ]
+                }
+            },
+            "Error": {
                 "title": "Root Type for ErrorBody",
                 "description": "The root of the ErrorBody type's schema.",
                 "type": "object",
@@ -1253,25 +1227,49 @@
                     }
                 },
                 "example": "{\n    \"error_code\": 404,\n    \"message\": \"resource not found\"\n}"
+            },
+            "Partitions": {
+                "title": "Partitions",
+                "type": "object",
+                "properties": {
+                    "partitions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Partition"
+                        }
+                    }
+                },
+                "example": {
+                    "partitions": [
+                        {
+                            "topic": "topic",
+                            "partition": 0
+                        },
+                        {
+                            "topic": "topic",
+                            "partition": 1
+                        }
+                    ]
+                }
             }
         }
     },
     "tags": [
         {
             "name": "Consumers",
-            "description": "The `consumers` endpoints allow you to create consumers in your Kafka cluster and perform common actions, such as subscribing to topics, retrieving processed records, and committing offsets."
+            "description": "Consumer operations to create consumers in your Kafka cluster and perform common actions, such as subscribing to topics, retrieving processed records, and committing offsets."
         },
         {
             "name": "Topics",
-            "description": "The `topics` endpoints allow you to send messages to a specified topic or topic partition. You can include message keys in requests."
+            "description": "Topic operations to send messages to a specified topic or topic partition. You can include message keys in requests."
         },
         {
             "name": "Seek",
-            "description": "`Seek` related operations enable a consumer to begin receiving messages from a given offset position."
+            "description": "Seek operations that enable a consumer to begin receiving messages from a given offset position."
         },
         {
             "name": "Producer",
-            "description": "The `producer` endpoints allow you to send records to a specified topic or topic partition."
+            "description": "Producer operations to send records to a specified topic or topic partition."
         }
     ],
     "externalDocs": {
