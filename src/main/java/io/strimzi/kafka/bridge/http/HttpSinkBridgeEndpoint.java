@@ -304,10 +304,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
                 JsonObject json = bodyAsJson;
                 // if no name, a random one is assigned
-                String consumerInstanceId = json.getString("name",
-                        "kafka-bridge-consumer-" + UUID.randomUUID().toString());
+                this.name = json.getString("name", "kafka-bridge-consumer-" + UUID.randomUUID());
 
-                if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(consumerInstanceId)) {
+                if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(this.name)) {
                     routingContext.response().setStatusMessage("Consumer instance with the specified name already exists.")
                             .setStatusCode(ErrorCodeEnum.CONSUMER_ALREADY_EXISTS.getValue())
                             .end();
@@ -319,7 +318,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 if (!routingContext.request().path().endsWith("/")) {
                     requestUri += "/";
                 }
-                String consumerBaseUri = requestUri + "instances/" + consumerInstanceId;
+                String consumerBaseUri = requestUri + "instances/" + this.name;
 
                 // get supported consumer configuration parameters
                 Properties config = new Properties();
@@ -329,16 +328,16 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                         json.getString(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, null), config);
                 addConfigParameter(ConsumerConfig.FETCH_MIN_BYTES_CONFIG,
                         json.getString(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, null), config);
-                addConfigParameter(ConsumerConfig.CLIENT_ID_CONFIG, consumerInstanceId, config);
+                addConfigParameter(ConsumerConfig.CLIENT_ID_CONFIG, this.name, config);
 
                 // create the consumer
                 this.initConsumer(false, config);
 
-                ((Handler<String>) handler).handle(consumerInstanceId);
+                ((Handler<String>) handler).handle(this.name);
 
-                log.info("Created consumer {} in group {}", consumerInstanceId, groupId);
+                log.info("Created consumer {} in group {}", this.name, groupId);
                 // send consumer instance id(name) and base URI as response
-                sendConsumerCreationResponse(routingContext.response(), consumerInstanceId, consumerBaseUri);
+                sendConsumerCreationResponse(routingContext.response(), this.name, consumerBaseUri);
                 break;
         }
     }
