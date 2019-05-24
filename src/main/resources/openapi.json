@@ -2,7 +2,7 @@
     "openapi": "3.0.0",
     "info": {
         "title": "Strimzi HTTP Bridge for Apache Kafka",
-        "description": "The Strimzi HTTP Bridge for Apache Kafka provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. The HTTP Bridge can be deployed on bare metal or in a container running on Kubernetes or OpenShift platform.",
+        "description": "The Strimzi HTTP Bridge for Apache Kafka provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. ",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
             "email": "strimzi@redhat.com"
@@ -1002,6 +1002,26 @@
                     }
                 }
             },
+            "RecordsWithoutPartitions": {
+                "title": "Records",
+                "type": "object",
+                "properties": {
+                    "records": {
+                        "$ref": "#/components/schemas/ProducerRecordList"
+                    }
+                },
+                "example": {
+                    "records": [
+                        {
+                            "key": "1abcd",
+                            "value": "msg1"
+                        },
+                        {
+                            "value": "msg2"
+                        }
+                    ]
+                }
+            },
             "Topics": {
                 "title": "Topics",
                 "type": "object",
@@ -1112,33 +1132,15 @@
                     "key": {
                         "type": "object"
                     }
-                }
-            },
-            "ProducerRecordList": {
-                "title": "Records",
-                "type": "object",
-                "properties": {
-                    "records": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/ProducerRecord"
-                        }
-                    }
                 },
                 "example": {
-                    "records": [
-                        {
-                            "key": "1abcd",
-                            "value": "msg1"
-                        },
-                        {
-                            "value": "msg2",
-                            "partition": 1
-                        },
-                        {
-                            "value": "msg3"
-                        }
-                    ]
+                    "topic": "topic",
+                    "value": {
+                        "v": 128
+                    },
+                    "key": {
+                        "k": "key_record"
+                    }
                 }
             },
             "OffsetsRecordsSent": {
@@ -1193,41 +1195,6 @@
                     ]
                 }
             },
-            "RecordsWithoutPartitions": {
-                "title": "Records",
-                "type": "object",
-                "properties": {
-                    "records": {
-                        "$ref": "#/components/schemas/ProducerRecordList"
-                    }
-                },
-                "example": {
-                    "records": [
-                        {
-                            "key": "1abcd",
-                            "value": "msg1"
-                        },
-                        {
-                            "value": "msg2"
-                        }
-                    ]
-                }
-            },
-            "Error": {
-                "title": "Root Type for ErrorBody",
-                "description": "The root of the ErrorBody type's schema.",
-                "type": "object",
-                "properties": {
-                    "error_code": {
-                        "format": "int32",
-                        "type": "integer"
-                    },
-                    "message": {
-                        "type": "string"
-                    }
-                },
-                "example": "{\n    \"error_code\": 404,\n    \"message\": \"resource not found\"\n}"
-            },
             "Partitions": {
                 "title": "Partitions",
                 "type": "object",
@@ -1248,6 +1215,65 @@
                         {
                             "topic": "topic",
                             "partition": 1
+                        }
+                    ]
+                }
+            },
+            "Error": {
+                "title": "Root Type for ErrorBody",
+                "description": "The root of the ErrorBody type's schema.",
+                "type": "object",
+                "properties": {
+                    "error_code": {
+                        "format": "int32",
+                        "type": "integer"
+                    },
+                    "message": {
+                        "type": "string"
+                    }
+                },
+                "example": "{\n    \"error_code\": 404,\n    \"message\": \"resource not found\"\n}"
+            },
+            "ProducerRecordList": {
+                "title": "ProducerRecordList",
+                "type": "object",
+                "properties": {
+                    "records": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "partition": {
+                                    "type": "integer"
+                                },
+                                "offset": {
+                                    "type": "integer"
+                                },
+                                "topic": {
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "type": "object"
+                                },
+                                "key": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "example": {
+                    "records": [
+                        {
+                            "key": "1abcd",
+                            "value": "msg1"
+                        },
+                        {
+                            "value": "msg2",
+                            "partition": 1
+                        },
+                        {
+                            "value": "msg3"
                         }
                     ]
                 }
