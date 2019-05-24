@@ -44,7 +44,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
     @Override
     public void open() {
-        this.name = "kafka-bridge-producer-" + UUID.randomUUID().toString();
+        this.name = "kafka-bridge-producer-" + UUID.randomUUID();
         super.open();
     }
 

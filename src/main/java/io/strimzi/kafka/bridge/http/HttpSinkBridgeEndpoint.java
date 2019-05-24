@@ -304,7 +304,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
                 JsonObject json = bodyAsJson;
                 // if no name, a random one is assigned
-                this.name = json.getString("name", "kafka-bridge-consumer-" + UUID.randomUUID().toString());
+                this.name = json.getString("name", "kafka-bridge-consumer-" + UUID.randomUUID());
 
                 if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(this.name)) {
                     routingContext.response().setStatusMessage("Consumer instance with the specified name already exists.")
