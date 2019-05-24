@@ -111,7 +111,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Deletes a specified consumer instance. The operation MUST be performed on the the Kafka Bridge instance that contains the consumer.",
+                "description": "Deletes a specified consumer instance. The operation MUST be performed on the Kafka Bridge instance that contains the consumer.",
                 "operationId": "deleteConsumer",
                 "responses": {
                     "204": {
