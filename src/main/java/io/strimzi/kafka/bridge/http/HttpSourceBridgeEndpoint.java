@@ -28,6 +28,7 @@ import org.apache.kafka.common.serialization.Serializer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
@@ -39,6 +40,12 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                                     EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
         super(vertx, bridgeConfigProperties, format, keySerializer, valueSerializer);
         this.httpBridgeContext = httpBridgeContext;
+    }
+
+    @Override
+    public void open() {
+        this.name = "kafka-bridge-producer-" + UUID.randomUUID().toString();
+        super.open();
     }
 
     @Override

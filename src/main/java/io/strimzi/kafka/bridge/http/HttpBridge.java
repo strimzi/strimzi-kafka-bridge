@@ -183,7 +183,7 @@ public class HttpBridge extends AbstractVerticle {
         final SinkBridgeEndpoint sink = this.getHttpSinkBridgeEndpoint(format);
 
         sink.closeHandler(s -> {
-            httpBridgeContext.getHttpSinkEndpoints().remove(sink);
+            httpBridgeContext.getHttpSinkEndpoints().remove(sink.name());
         });
 
         sink.open();

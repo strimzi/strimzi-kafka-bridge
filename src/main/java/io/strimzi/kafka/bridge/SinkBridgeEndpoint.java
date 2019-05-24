@@ -45,6 +45,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
+    protected String name;
     protected final EmbeddedFormat format;
     protected final Deserializer<K> keyDeserializer;
     protected final Deserializer<V> valueDeserializer;
@@ -111,6 +112,11 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.format = format;
         this.keyDeserializer = keyDeserializer;
         this.valueDeserializer = valueDeserializer;
+    }
+
+    @Override
+    public String name() {
+        return this.name;
     }
 
     @Override

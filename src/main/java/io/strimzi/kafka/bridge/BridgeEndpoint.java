@@ -14,6 +14,11 @@ import io.vertx.core.Handler;
 public interface BridgeEndpoint {
 
     /**
+     * Name of the bridge endpoint
+     */
+    String name();
+
+    /**
      * Open the bridge endpoint
      */
     void open();

@@ -27,6 +27,7 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
+    protected String name;
     protected final EmbeddedFormat format;
     protected final Serializer<K> keySerializer;
     protected final Serializer<V> valueSerializer;
@@ -55,6 +56,11 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.format = format;
         this.keySerializer = keySerializer;
         this.valueSerializer = valueSerializer;
+    }
+
+    @Override
+    public String name() {
+        return this.name;
     }
 
     @Override

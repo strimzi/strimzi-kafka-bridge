@@ -92,6 +92,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             }
 
             this.sender = (ProtonSender) link;
+            this.name = this.sender.getName();
 
             // address is like this : [topic]/group.id/[group.id]
             String address = this.sender.getRemoteSource().getAddress();

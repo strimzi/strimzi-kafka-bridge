@@ -79,6 +79,7 @@ public class AmqpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         }
 
         ProtonReceiver receiver = (ProtonReceiver) link;
+        this.name = receiver.getName();
 
         // the delivery state is related to the acknowledgement from Apache Kafka
         receiver.setTarget(receiver.getRemoteTarget())
