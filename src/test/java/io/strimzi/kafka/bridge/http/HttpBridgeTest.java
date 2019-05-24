@@ -414,7 +414,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
-                .putHeader("Content-Type", "application/vnd.kafka.json.v2+json")
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -478,6 +478,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -521,6 +522,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -547,6 +549,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -589,6 +592,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -629,6 +633,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -655,6 +660,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -697,6 +703,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -742,6 +749,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -769,6 +777,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -814,6 +823,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -859,6 +869,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -882,6 +893,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicPattern.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicPattern, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -927,6 +939,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -969,6 +982,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         // create a consumer
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -995,6 +1009,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/assignments")
                 .putHeader("Content-length", String.valueOf(partitionsRoot.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(partitionsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1037,7 +1052,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
-                .putHeader("Content-length", String.valueOf(0))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1077,10 +1092,12 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         JsonObject json = new JsonObject();
         json.put("name", name);
+        json.put("format", "json");
 
         // create a consumer
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1108,6 +1125,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/assignments")
                 .putHeader("Content-length", String.valueOf(partitionsRoot.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(partitionsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1121,6 +1139,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async consumeAsync = context.async();
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1153,7 +1172,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
-                .putHeader("Content-length", String.valueOf(0))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1195,6 +1214,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1221,6 +1241,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1273,6 +1294,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/offsets")
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1280,7 +1302,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     HttpResponse<JsonObject> response = ar.result();
 
                     int code = response.statusCode();
-                    context.assertEquals(200, code);
+                    context.assertEquals(204, code);
                     commitAsync.complete();
                 });
 
@@ -1290,6 +1312,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1331,6 +1354,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1357,6 +1381,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1404,7 +1429,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     HttpResponse<Buffer> response = ar.result();
 
                     int code = response.statusCode();
-                    context.assertEquals(200, code);
+                    context.assertEquals(204, code);
                     commitAsync.complete();
                 });
 
@@ -1414,6 +1439,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1534,6 +1560,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1582,6 +1609,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(subJson.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(subJson, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1735,6 +1763,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1753,6 +1782,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         // create the same consumer again
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1771,6 +1801,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("name", name + "diff");
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1801,6 +1832,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async consumeAsync = context.async();
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1837,6 +1869,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/offsets")
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1877,6 +1910,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1903,6 +1937,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1931,6 +1966,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1973,6 +2009,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -1995,6 +2032,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topics.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topics, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2027,6 +2065,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/positions")
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2080,6 +2119,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2117,6 +2157,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2140,6 +2181,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topics.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topics, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2176,6 +2218,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/positions/beginning")
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2205,6 +2248,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2237,6 +2281,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2260,6 +2305,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topics.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topics, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2299,6 +2345,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/positions/end")
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2328,6 +2375,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2368,6 +2416,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2394,6 +2443,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2473,6 +2523,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2513,6 +2564,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2539,6 +2591,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2566,6 +2619,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2606,6 +2660,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2632,6 +2687,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2659,6 +2715,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         Async deleteAsync = context.async();
 
         client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());

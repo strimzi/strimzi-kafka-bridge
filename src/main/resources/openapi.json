@@ -2,7 +2,7 @@
     "openapi": "3.0.0",
     "info": {
         "title": "Strimzi HTTP Bridge for Apache Kafka",
-        "description": "The Strimzi HTTP Bridge for Apache Kafka provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. ",
+        "description": "The Strimzi HTTP Bridge for Apache Kafka provides a REST API for\nintegrating HTTP based client applications with a Kafka cluster. You can use\nthe API to create and manage consumers and send and receive records over\nHTTP rather than the native Kafka protocol. ",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
             "email": "strimzi@redhat.com"
@@ -13,35 +13,30 @@
         },
         "version": "0.1.0"
     },
-    "servers": [
-        {
-            "url": "http://bridge.swagger.io/v2"
-        }
-    ],
     "paths": {
         "/consumers/{groupid}": {
             "post": {
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Creates a consumer instance in the given consumer group. You can optionally specify a consumer name and supported configuration options.",
+                "description": "Creates a consumer instance in the given consumer group. You can\noptionally specify a consumer name and supported configuration options.",
                 "operationId": "createConsumer",
                 "requestBody": {
-                    "description": "Name and configuration of the consumer. The name is unique within the scope of the consumer group. If a name is not specified, a randomly generated name is assigned. All parameters are optional. The supported configuration options are shown in the following example.",
                     "content": {
-                        "application/json": {
+                        "application/vnd.kafka.v2+json": {
                             "schema": {
                                 "$ref": "#/components/schemas/Consumer"
                             }
                         }
                     },
+                    "description": "Name and configuration of the consumer. The name is unique within the\nscope of the consumer group. If a name is not specified, a randomly\ngenerated name is assigned. All parameters are optional. The supported\nconfiguration options are shown in the following example.",
                     "required": true
                 },
                 "responses": {
                     "200": {
                         "description": "Consumer created successfully.",
                         "content": {
-                            "application/json": {
+                            "application/vnd.kafka.v2+json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/CreatedConsumer"
                                 },
@@ -57,9 +52,9 @@
                         }
                     },
                     "409": {
-                        "description": "A consumer instance with the specified name already exists in the Kafka Bridge.",
+                        "description": "A consumer instance with the specified name already exists in the\nKafka Bridge.",
                         "content": {
-                            "application/json": {
+                            "application/vnd.kafka.v2+json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Error"
                                 },
@@ -67,7 +62,7 @@
                                     "response": {
                                         "value": {
                                             "error_code": 409,
-                                            "message": "A consumer instance with the specified name already exists in the Kafka Bridge."
+                                            "message": "A consumer instance with the specified name already exists\nin the Kafka Bridge."
                                         }
                                     }
                                 }
@@ -77,7 +72,7 @@
                     "422": {
                         "description": "One or more consumer configuration options have invalid values.",
                         "content": {
-                            "application/json": {
+                            "application/vnd.kafka.v2+json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Error"
                                 },
@@ -85,7 +80,7 @@
                                     "response": {
                                         "value": {
                                             "error_code": 422,
-                                            "message": "One or more consumer configuration options have invalid values."
+                                            "message": "One or more consumer configuration options have invalid\nvalues."
                                         }
                                     }
                                 }
@@ -106,75 +101,23 @@
                 }
             ]
         },
-        "/consumers/{groupid}/instances/{name}": {
-            "delete": {
-                "tags": [
-                    "Consumers"
-                ],
-                "description": "Deletes a specified consumer instance. The operation MUST be routed to the Kafka Bridge instance that contains the consumer.",
-                "operationId": "deleteConsumer",
-                "responses": {
-                    "204": {
-                        "description": "Consumer removed successfully."
-                    },
-                    "404": {
-                        "description": "The specified consumer instance was not found.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "error_code": 404,
-                                            "message": "The specified consumer instance was not found."
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "parameters": [
-                {
-                    "name": "groupid",
-                    "in": "path",
-                    "description": "ID of the consumer group to which the consumer belongs.",
-                    "required": true,
-                    "schema": {
-                        "type": "string"
-                    }
-                },
-                {
-                    "name": "name",
-                    "in": "path",
-                    "description": "Name of the consumer that you want to delete.",
-                    "required": true,
-                    "schema": {
-                        "type": "string"
-                    }
-                }
-            ]
-        },
         "/consumers/{groupid}/instances/{name}/positions/beginning": {
             "post": {
                 "tags": [
                     "Seek",
                     "Consumers"
                 ],
-                "description": "Configures a subscribed consumer to seek (and subsequently read from) the first offset in one or more given topic partitions.",
+                "description": "Configures a subscribed consumer to seek (and subsequently read from)\nthe first offset in one or more given topic partitions.",
                 "operationId": "seekToBeginning",
                 "requestBody": {
-                    "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek the first offset in the specified partitions.",
                     "content": {
-                        "application/json": {
+                        "application/vnd.kafka.v2+json": {
                             "schema": {
                                 "$ref": "#/components/schemas/Partitions"
                             }
                         }
                     },
+                    "description": "List of topic partitions to which the consumer is subscribed. The\nconsumer will seek the first offset in the specified partitions.",
                     "required": true
                 },
                 "responses": {
@@ -184,7 +127,7 @@
                     "404": {
                         "description": "The specified consumer instance was not found.",
                         "content": {
-                            "application/json": {
+                            "application/vnd.kafka.v2+json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Error"
                                 },
@@ -228,17 +171,17 @@
                     "Seek",
                     "Consumers"
                 ],
-                "description": "Configures a subscribed consumer to seek (and subsequently read from) the offset at the end of one or more of the given topic partitions.",
+                "description": "Configures a subscribed consumer to seek (and subsequently read from)\nthe offset at the end of one or more of the given topic partitions.",
                 "operationId": "seekToEnd",
                 "requestBody": {
-                    "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek the last offset in the specified partitions.",
                     "content": {
-                        "application/json": {
+                        "application/vnd.kafka.v2+json": {
                             "schema": {
                                 "$ref": "#/components/schemas/Partitions"
                             }
                         }
                     },
+                    "description": "List of topic partitions to which the consumer is subscribed. The\nconsumer will seek the last offset in the specified partitions.",
                     "required": true
                 },
                 "responses": {
@@ -248,7 +191,7 @@
                     "404": {
                         "description": "The specified consumer instance was not found.",
                         "content": {
-                            "application/json": {
+                            "application/vnd.kafka.v2+json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Error"
                                 },
@@ -291,17 +234,17 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Subscribes a consumer to one or more topics. You can describe the topics to which the consumer will subscribe in a list (of `Topics` type) or as a `topic_pattern` field. Each call replaces the subscriptions for the subscriber.",
+                "description": "Subscribes a consumer to one or more topics. You can describe the topics\nto which the consumer will subscribe in a list (of `Topics` type) or as\na `topic_pattern` field. Each call replaces the subscriptions for the\nsubscriber.",
                 "operationId": "subscribe",
                 "requestBody": {
-                    "description": "List of topics to which the consumer will subscribe.",
                     "content": {
-                        "application/json": {
+                        "application/vnd.kafka.v2+json": {
                             "schema": {
                                 "$ref": "#/components/schemas/Topics"
                             }
                         }
                     },
+                    "description": "List of topics to which the consumer will subscribe.",
                     "required": true
                 },
                 "responses": {
@@ -311,7 +254,7 @@
                     "404": {
                         "description": "The specified consumer instance was not found.",
                         "content": {
-                            "application/json": {
+                            "application/vnd.kafka.v2+json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Error"
                                 },
@@ -327,9 +270,9 @@
                         }
                     },
                     "409": {
-                        "description": "Subscription to topics, partitions, and patterns are mutually exclusive.",
+                        "description": "Subscription to topics, partitions, and patterns are mutually\nexclusive.",
                         "content": {
-                            "application/json": {
+                            "application/vnd.kafka.v2+json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Error"
                                 },
@@ -337,7 +280,7 @@
                                     "response": {
                                         "value": {
                                             "error_code": 409,
-                                            "message": "Subscription to topics, partitions, and patterns are mutually exclusive."
+                                            "message": "Subscription to topics, partitions, and patterns are\nmutually exclusive."
                                         }
                                     }
                                 }
@@ -397,132 +340,23 @@
                 }
             ]
         },
-        "/topics/{topicname}/partitions/{partitionid}": {
-            "post": {
-                "tags": [
-                    "Topics",
-                    "Producer"
-                ],
-                "description": "Sends one or more records to a given topic partition, optionally specifying a key.",
-                "operationId": "sendToPartition",
-                "requestBody": {
-                    "description": "List of records to send to a given topic partition, including a value (required) and a key (optional).",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/RecordsWithoutPartitions"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Records sent successfully.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/OffsetsRecordsSent"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "offsets": [
-                                                {
-                                                    "partition": 2,
-                                                    "offset": 0
-                                                },
-                                                {
-                                                    "partition": 1,
-                                                    "offset": 1
-                                                },
-                                                {
-                                                    "partition": 2,
-                                                    "offset": 2
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "The specified topic partition was not found.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "error_code": 404,
-                                            "message": "The specified topic partition was not found."
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "The record is not valid.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "error_code": 422,
-                                            "message": "The record is not valid."
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "parameters": [
-                {
-                    "name": "topicname",
-                    "in": "path",
-                    "description": "Name of the topic containing the partition to which you want to send records.",
-                    "required": true,
-                    "schema": {
-                        "type": "string"
-                    }
-                },
-                {
-                    "name": "partitionid",
-                    "in": "path",
-                    "description": "ID of the partition to which you want to send records.",
-                    "required": true,
-                    "schema": {
-                        "type": "string"
-                    }
-                }
-            ]
-        },
         "/consumers/{groupid}/instances/{name}/positions": {
             "post": {
                 "tags": [
                     "Seek",
                     "Consumers"
                 ],
-                "description": "Configures a subscribed consumer to fetch offsets from a particular offset the next time it fetches a set of records from a given topic partition. This overrides the default fetch behavior for consumers. You can specify one or more topic partitions.",
+                "description": "Configures a subscribed consumer to fetch offsets from a particular\noffset the next time it fetches a set of records from a given topic\npartition. This overrides the default fetch behavior for consumers. You\ncan specify one or more topic partitions.",
                 "operationId": "seek",
                 "requestBody": {
-                    "description": "List of partition offsets from which the subscribed consumer will next fetch records.",
                     "content": {
-                        "application/json": {
+                        "application/vnd.kafka.v2+json": {
                             "schema": {
-                                "$ref": "#/components/schemas/OffsetsToCommitSeek"
+                                "$ref": "#/components/schemas/OffsetCommitSeekList"
                             }
                         }
                     },
+                    "description": "List of partition offsets from which the subscribed consumer will next\nfetch records.",
                     "required": true
                 },
                 "responses": {
@@ -532,7 +366,7 @@
                     "404": {
                         "description": "The specified consumer instance was not found.",
                         "content": {
-                            "application/json": {
+                            "application/vnd.kafka.v2+json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Error"
                                 },
@@ -570,22 +404,528 @@
                 }
             ]
         },
+        "/consumers/{groupid}/instances/{name}/assignments": {
+            "post": {
+                "tags": [
+                    "Consumers"
+                ],
+                "description": "Assigns one or more topic partitions to a consumer.",
+                "operationId": "assign",
+                "requestBody": {
+                    "content": {
+                        "application/vnd.kafka.v2+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Partitions"
+                            }
+                        }
+                    },
+                    "description": "List of topic partitions to assign to the consumer.",
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "Partitions assigned successfully."
+                    },
+                    "404": {
+                        "description": "The specified consumer instance was not found.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 404,
+                                            "message": "The specified consumer instance was not found."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Subscription to topics, partitions, and patterns are mutually\nexclusive.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 409,
+                                            "message": "Subscription to topics, partitions, and patterns are\nmutually exclusive."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "groupid",
+                    "in": "path",
+                    "description": "ID of the consumer group to which the consumer belongs.",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "name",
+                    "in": "path",
+                    "description": "Name of the consumer to which you want to assign topic partitions.",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ]
+        },
+        "/topics/{topicname}": {
+            "post": {
+                "tags": [
+                    "Topics",
+                    "Producer"
+                ],
+                "description": "Sends one or more records to a given topic, optionally specifying a\npartition, key, or both.",
+                "operationId": "send",
+                "requestBody": {
+                    "content": {
+                        "application/vnd.kafka.json.v2+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProducerRecordList"
+                            }
+                        },
+                        "application/vnd.kafka.binary.v2+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProducerRecordList"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Records sent successfully.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OffsetRecordSentList"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "offsets": [
+                                                {
+                                                    "partition": 2,
+                                                    "offset": 0
+                                                },
+                                                {
+                                                    "partition": 1,
+                                                    "offset": 1
+                                                },
+                                                {
+                                                    "partition": 2,
+                                                    "offset": 2
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The specified topic was not found.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 404,
+                                            "message": "The specified topic was not found."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "The record list is not valid.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 422,
+                                            "message": "The record list contains invalid records."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "topicname",
+                    "in": "path",
+                    "description": "Name of the topic to which you want to send records.",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ]
+        },
+        "/consumers/{groupid}/instances/{name}/records": {
+            "get": {
+                "tags": [
+                    "Consumers"
+                ],
+                "description": "Retrieves records for a subscribed consumer, including message values,\ntopics, and partitions. The operation MUST be routed to the Kafka Bridge\ninstance that contains the consumer.",
+                "operationId": "poll",
+                "responses": {
+                    "200": {
+                        "description": "Poll request executed successfully.",
+                        "content": {
+                            "application/vnd.kafka.json.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConsumerRecordList"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": [
+                                            {
+                                                "topic": "topic",
+                                                "key": "key1",
+                                                "value": {
+                                                    "foo": "bar"
+                                                },
+                                                "partition": 0,
+                                                "offset": 2
+                                            },
+                                            {
+                                                "topic": "topic",
+                                                "key": "key2",
+                                                "value": [
+                                                    "foo2",
+                                                    "bar2"
+                                                ],
+                                                "partition": 1,
+                                                "offset": 3
+                                            }
+                                        ]
+                                    }
+                                }
+                            },
+                            "application/vnd.kafka.binary.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConsumerRecordList"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": "[\n  {\n    \"topic\": \"test\",\n    \"key\": \"a2V5\",\n    \"value\": \"Y29uZmx1ZW50\",\n    \"partition\": 1,\n    \"offset\": 100,\n  },\n  {\n    \"topic\": \"test\",\n    \"key\": \"a2V5\",\n    \"value\": \"a2Fma2E=\",\n    \"partition\": 2,\n    \"offset\": 101,\n  }\n]"
+                                    }
+                                }
+                            },
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConsumerRecordList"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The specified consumer instance was not found.",
+                        "content": {
+                            "application/vnd.kafka.json.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/vnd.kafka.binary.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 404,
+                                            "message": "The specified consumer instance was not found."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "406": {
+                        "description": "The `format` used in the consumer creation request does not match\nthe embedded format in the Accept header of this request.",
+                        "content": {
+                            "application/vnd.kafka.json.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/vnd.kafka.binary.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 406,
+                                            "message": "The `format` used in the consumer creation request does\nnot match the embedded format in the Accept header of this\nrequest."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "groupid",
+                    "in": "path",
+                    "description": "ID of the consumer group to which the subscribed consumer belongs.",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "name",
+                    "in": "path",
+                    "description": "Name of the subscribed consumer for which you want to retrieve records.",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "timeout",
+                    "in": "query",
+                    "description": "The maximum amount of time, in milliseconds, that the HTTP Bridge\nspends retrieving records before timing out the request.",
+                    "required": false,
+                    "schema": {
+                        "type": "integer"
+                    }
+                },
+                {
+                    "name": "max_bytes",
+                    "in": "query",
+                    "description": "The maximum size, in bytes, of unencoded keys and values that can be\nincluded in the response. Otherwise, an error response with code 422\nis returned.",
+                    "required": false,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ]
+        },
+        "/topics/{topicname}/partitions/{partitionid}": {
+            "post": {
+                "tags": [
+                    "Topics",
+                    "Producer"
+                ],
+                "description": "Sends one or more records to a given topic partition, optionally\nspecifying a key.",
+                "operationId": "sendToPartition",
+                "requestBody": {
+                    "content": {
+                        "application/vnd.kafka.json.v2+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RecordsWithoutPartitions"
+                            }
+                        },
+                        "application/vnd.kafka.binary.v2+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RecordsWithoutPartitions"
+                            }
+                        }
+                    },
+                    "description": "List of records to send to a given topic partition, including a value\n(required) and a key (optional).",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Records sent successfully.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OffsetRecordSentList"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "offsets": [
+                                                {
+                                                    "partition": 2,
+                                                    "offset": 0
+                                                },
+                                                {
+                                                    "partition": 1,
+                                                    "offset": 1
+                                                },
+                                                {
+                                                    "partition": 2,
+                                                    "offset": 2
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The specified topic partition was not found.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 404,
+                                            "message": "The specified topic partition was not found."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "The record is not valid.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 422,
+                                            "message": "The record is not valid."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "topicname",
+                    "in": "path",
+                    "description": "Name of the topic containing the partition to which you want to send\nrecords.",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "partitionid",
+                    "in": "path",
+                    "description": "ID of the partition to which you want to send records.",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ]
+        },
+        "/consumers/{groupid}/instances/{name}": {
+            "delete": {
+                "tags": [
+                    "Consumers"
+                ],
+                "description": "Deletes a specified consumer instance. The operation MUST be routed to\nthe Kafka Bridge instance that contains the consumer.",
+                "operationId": "deleteConsumer",
+                "responses": {
+                    "204": {
+                        "description": "Consumer removed successfully."
+                    },
+                    "404": {
+                        "description": "The specified consumer instance was not found.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 404,
+                                            "message": "The specified consumer instance was not found."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "groupid",
+                    "in": "path",
+                    "description": "ID of the consumer group to which the consumer belongs.",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "name",
+                    "in": "path",
+                    "description": "Name of the consumer that you want to delete.",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ]
+        },
         "/consumers/{groupid}/instances/{name}/offsets": {
             "post": {
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Commits a list of consumer offsets. To commit offsets for all records fetched by the consumer, leave the request body empty.",
+                "description": "Commits a list of consumer offsets. To commit offsets for all records\nfetched by the consumer, leave the request body empty.",
                 "operationId": "commit",
                 "requestBody": {
-                    "description": "List of consumer offsets to commit to the consumer offsets commit log. You can specify one or more topic partitions to commit offsets for.",
                     "content": {
-                        "application/json": {
+                        "application/vnd.kafka.v2+json": {
                             "schema": {
-                                "$ref": "#/components/schemas/OffsetsToCommitSeek"
+                                "$ref": "#/components/schemas/OffsetCommitSeekList"
                             }
                         }
-                    }
+                    },
+                    "description": "List of consumer offsets to commit to the consumer offsets commit log.\nYou can specify one or more topic partitions to commit offsets for."
                 },
                 "responses": {
                     "204": {
@@ -594,7 +934,7 @@
                     "404": {
                         "description": "The specified consumer instance was not found.",
                         "content": {
-                            "application/json": {
+                            "application/vnd.kafka.v2+json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Error"
                                 },
@@ -631,336 +971,47 @@
                     }
                 }
             ]
-        },
-        "/consumers/{groupid}/instances/{name}/assignments": {
-            "post": {
-                "tags": [
-                    "Consumers"
-                ],
-                "description": "Assigns one or more topic partitions to a consumer.",
-                "operationId": "assign",
-                "requestBody": {
-                    "description": "List of topic partitions to assign to the consumer.",
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/Partitions"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "204": {
-                        "description": "Partitions assigned successfully."
-                    },
-                    "404": {
-                        "description": "The specified consumer instance was not found.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "error_code": 404,
-                                            "message": "The specified consumer instance was not found."
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "Subscription to topics, partitions, and patterns are mutually exclusive.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "error_code": 409,
-                                            "message": "Subscription to topics, partitions, and patterns are mutually exclusive."
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "parameters": [
-                {
-                    "name": "groupid",
-                    "in": "path",
-                    "description": "ID of the consumer group to which the consumer belongs.",
-                    "required": true,
-                    "schema": {
-                        "type": "string"
-                    }
-                },
-                {
-                    "name": "name",
-                    "in": "path",
-                    "description": "Name of the consumer to which you want to assign topic partitions.",
-                    "required": true,
-                    "schema": {
-                        "type": "string"
-                    }
-                }
-            ]
-        },
-        "/topics/{topicname}": {
-            "post": {
-                "tags": [
-                    "Topics",
-                    "Producer"
-                ],
-                "description": "Sends one or more records to a given topic, optionally specifying a partition, key, or both.",
-                "operationId": "send",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ProducerRecordList"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Records sent successfully.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/OffsetsRecordsSent"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "offsets": [
-                                                {
-                                                    "partition": 2,
-                                                    "offset": 0
-                                                },
-                                                {
-                                                    "partition": 1,
-                                                    "offset": 1
-                                                },
-                                                {
-                                                    "partition": 2,
-                                                    "offset": 2
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "The specified topic was not found.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "error_code": 404,
-                                            "message": "The specified topic was not found."
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "The record list is not valid.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "error_code": 422,
-                                            "message": "The record list contains invalid records."
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "parameters": [
-                {
-                    "name": "topicname",
-                    "in": "path",
-                    "description": "Name of the topic to which you want to send records.",
-                    "required": true,
-                    "schema": {
-                        "type": "string"
-                    }
-                }
-            ]
-        },
-        "/consumers/{groupid}/instances/{name}/records": {
-            "get": {
-                "tags": [
-                    "Consumers"
-                ],
-                "description": "Retrieves records for a subscribed consumer, including message values, topics, and partitions. The operation MUST be routed to the Kafka Bridge instance that contains the consumer.",
-                "operationId": "poll",
-                "responses": {
-                    "200": {
-                        "description": "Poll request executed successfully.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ConsumerRecordList"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": [
-                                            {
-                                                "topic": "topic",
-                                                "key": "key1",
-                                                "value": {
-                                                    "foo": "bar"
-                                                },
-                                                "partition": 0,
-                                                "offset": 2
-                                            },
-                                            {
-                                                "topic": "topic",
-                                                "key": "key2",
-                                                "value": [
-                                                    "foo2",
-                                                    "bar2"
-                                                ],
-                                                "partition": 1,
-                                                "offset": 3
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "The specified consumer instance was not found.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "error_code": 404,
-                                            "message": "The specified consumer instance was not found."
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "406": {
-                        "description": "The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "error_code": 406,
-                                            "message": "The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request."
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "parameters": [
-                {
-                    "name": "groupid",
-                    "in": "path",
-                    "description": "ID of the consumer group to which the subscribed consumer belongs.",
-                    "required": true,
-                    "schema": {
-                        "type": "string"
-                    }
-                },
-                {
-                    "name": "name",
-                    "in": "path",
-                    "description": "Name of the subscribed consumer for which you want to retrieve records.",
-                    "required": true,
-                    "schema": {
-                        "type": "string"
-                    }
-                },
-                {
-                    "name": "timeout",
-                    "in": "query",
-                    "description": "The maximum amount of time, in milliseconds, that the HTTP Bridge spends retrieving records before timing out the request.",
-                    "required": false,
-                    "schema": {
-                        "type": "integer"
-                    }
-                },
-                {
-                    "name": "max_bytes",
-                    "in": "query",
-                    "description": "The maximum size, in bytes, of unencoded keys and values that can be included in the response. Otherwise, an error response with code 422 is returned.",
-                    "required": false,
-                    "schema": {
-                        "type": "integer"
-                    }
-                }
-            ]
         }
     },
+    "tags": [
+        {
+            "name": "Consumers",
+            "description": "Consumer operations to create consumers in your Kafka cluster and perform\ncommon actions, such as subscribing to topics, retrieving processed\nrecords, and committing offsets."
+        },
+        {
+            "name": "Topics",
+            "description": "Topic operations to send messages to a specified topic or topic partition.\nYou can include message keys in requests."
+        },
+        {
+            "name": "Seek",
+            "description": "Seek operations that enable a consumer to begin receiving messages from a\ngiven offset position."
+        },
+        {
+            "name": "Producer",
+            "description": "Producer operations to send records to a specified topic or topic\npartition."
+        }
+    ],
+    "externalDocs": {
+        "description": "Find out more about the Strimzi HTTP Bridge",
+        "url": "https://strimzi.io/documentation/"
+    },
+    "servers": [
+        {
+            "url": "http://bridge.swagger.io/v2"
+        }
+    ],
     "components": {
         "schemas": {
-            "Offset": {
-                "title": "Offset",
-                "required": [],
-                "type": "object",
-                "properties": {
-                    "partition": {
-                        "type": "integer"
-                    },
-                    "offset": {
-                        "type": "integer"
-                    },
-                    "topic": {
-                        "type": "string"
-                    }
-                }
-            },
             "Consumer": {
                 "title": "Consumer",
                 "type": "object",
                 "properties": {
                     "name": {
-                        "description": "The unique name for the consumer instance. The name is unique within the scope of the consumer group. The name is used in URLs. ",
+                        "description": "The unique name for the consumer instance. The name is unique\nwithin the scope of the consumer group. The name is used in URLs. ",
                         "type": "string"
                     },
                     "format": {
-                        "description": "The allowable message format for the consumer, which can be `binary` (default) or `json`. The messages are converted into a JSON format. ",
+                        "description": "The allowable message format for the consumer, which can be\n`binary` (default) or `json`. The messages are converted into a JSON\nformat. ",
                         "type": "string"
                     },
                     "auto.offset.reset": {
@@ -968,15 +1019,15 @@
                         "type": "string"
                     },
                     "auto.commit.enable": {
-                        "description": "If set to `true`, message offsets are committed automatically for the consumer. If set to `false`, message offsets must be committed manually.",
+                        "description": "If set to `true`, message offsets are committed automatically for\nthe consumer. If set to `false`, message offsets must be committed\nmanually.",
                         "type": "string"
                     },
                     "fetch.min.bytes": {
-                        "description": "Sets the minimum ammount of data in bytes for the consumer to receive. The broker waits until the data to send exceeds this amount.",
+                        "description": "Sets the minimum ammount of data in bytes for the consumer to\nreceive. The broker waits until the data to send exceeds this\namount.",
                         "type": "string"
                     },
                     "consumer.request.timeout.ms": {
-                        "description": "Sets the maximum amount of time, in milliseconds, for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned.",
+                        "description": "Sets the maximum amount of time, in milliseconds, for the consumer\nto wait for messages for a request. If the timeout period is reached\nwithout a response, an error is returned.",
                         "type": "string"
                     }
                 },
@@ -1049,65 +1100,13 @@
                         "type": "string"
                     },
                     "base_uri": {
-                        "description": "Base URI used to construct URIs for subsequent requests against this consumer instance.",
+                        "description": "Base URI used to construct URIs for subsequent requests against this\nconsumer instance.",
                         "type": "string"
                     }
                 },
                 "example": {
                     "instance_id": "my-consumer",
                     "base_uri": "http://localhost:8080/consumers/my-group/instances/my-consumer"
-                }
-            },
-            "OffsetsRecordsSent": {
-                "title": "Offsets",
-                "type": "object",
-                "properties": {
-                    "offsets": {
-                        "type": "array",
-                        "items": {}
-                    }
-                },
-                "example": {
-                    "offsets": [
-                        {
-                            "partition": 2,
-                            "offset": 0
-                        },
-                        {
-                            "partition": 1,
-                            "offset": 1
-                        },
-                        {
-                            "partition": 2,
-                            "offset": 2
-                        }
-                    ]
-                }
-            },
-            "OffsetsToCommitSeek": {
-                "title": "Offsets",
-                "type": "object",
-                "properties": {
-                    "offsets": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/Offset"
-                        }
-                    }
-                },
-                "example": {
-                    "offsets": [
-                        {
-                            "topic": "topic",
-                            "partition": 0,
-                            "offset": 15
-                        },
-                        {
-                            "topic": "topic",
-                            "partition": 1,
-                            "offset": 42
-                        }
-                    ]
                 }
             },
             "Partitions": {
@@ -1230,10 +1229,24 @@
                         "type": "integer"
                     },
                     "value": {
-                        "type": "object"
+                        "oneOf": [
+                            {
+                                "type": "object"
+                            },
+                            {
+                                "type": "string"
+                            }
+                        ]
                     },
                     "key": {
-                        "type": "object"
+                        "oneOf": [
+                            {
+                                "type": "object"
+                            },
+                            {
+                                "type": "string"
+                            }
+                        ]
                     }
                 },
                 "example": {
@@ -1245,29 +1258,97 @@
                         "k": "key_record"
                     }
                 }
+            },
+            "OffsetCommitSeek": {
+                "title": "Offset",
+                "required": [],
+                "type": "object",
+                "properties": {
+                    "partition": {
+                        "format": "int32",
+                        "type": "integer"
+                    },
+                    "offset": {
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "topic": {
+                        "type": "string"
+                    }
+                },
+                "example": {
+                    "partition": 43,
+                    "offset": 92,
+                    "topic": "some_topic"
+                }
+            },
+            "OffsetCommitSeekList": {
+                "title": "Offsets",
+                "type": "object",
+                "properties": {
+                    "offsets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OffsetCommitSeek"
+                        }
+                    }
+                },
+                "example": {
+                    "offsets": [
+                        {
+                            "topic": "topic",
+                            "partition": 0,
+                            "offset": 15
+                        },
+                        {
+                            "topic": "topic",
+                            "partition": 1,
+                            "offset": 42
+                        }
+                    ]
+                }
+            },
+            "OffsetRecordSent": {
+                "type": "object",
+                "properties": {
+                    "partition": {
+                        "format": "int32",
+                        "type": "integer"
+                    },
+                    "offset": {
+                        "format": "int64",
+                        "type": "integer"
+                    }
+                },
+                "example": {
+                    "partition": 31,
+                    "offset": 86
+                }
+            },
+            "OffsetRecordSentList": {
+                "title": "Offsets",
+                "type": "object",
+                "properties": {
+                    "offsets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OffsetRecordSent"
+                        }
+                    }
+                },
+                "example": {
+                    "offsets": [
+                        {
+                            "partition": 92,
+                            "offset": 98
+                        },
+                        {
+                            "partition": 65,
+                            "offset": 91
+                        }
+                    ]
+                }
             }
         }
-    },
-    "tags": [
-        {
-            "name": "Consumers",
-            "description": "Consumer operations to create consumers in your Kafka cluster and perform common actions, such as subscribing to topics, retrieving processed records, and committing offsets."
-        },
-        {
-            "name": "Topics",
-            "description": "Topic operations to send messages to a specified topic or topic partition. You can include message keys in requests."
-        },
-        {
-            "name": "Seek",
-            "description": "Seek operations that enable a consumer to begin receiving messages from a given offset position."
-        },
-        {
-            "name": "Producer",
-            "description": "Producer operations to send records to a specified topic or topic partition."
-        }
-    ],
-    "externalDocs": {
-        "description": "Find out more about the Strimzi HTTP Bridge",
-        "url": "https://strimzi.io/documentation/"
     }
 }
