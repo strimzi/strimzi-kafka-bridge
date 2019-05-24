@@ -11,7 +11,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "1.0.0"
+        "version": "0.1.0"
     },
     "host": "bridge.swagger.io",
     "basePath": "/v2",
@@ -30,7 +30,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Creates a consumer instance in a given consumer group. You can optionally specify a consumer name and supported configuration options.",
+                "description": "Creates a consumer instance in the given consumer group. You can optionally specify a consumer name and supported configuration options.",
                 "operationId": "createConsumer",
                 "consumes": [
                     "application/json"
@@ -42,7 +42,7 @@
                     {
                         "name": "body",
                         "in": "body",
-                        "description": "Name and configuration of the consumer. If a name is not specified, a randomly generated name is assigned. All parameters are optional. The supported configuration options are shown in the following example.",
+                        "description": "Name and configuration of the consumer. The name is unique within the scope of the consumer group. If a name is not specified, a randomly generated name is assigned. All parameters are optional. The supported configuration options are shown in the following example.",
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/Consumer"
@@ -103,7 +103,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Deletes a specified consumer instance. The operation MUST be performed on the Kafka Bridge instance that contains the consumer.",
+                "description": "Deletes a specified consumer instance. The operation MUST be routed to the Kafka Bridge instance that contains the consumer.",
                 "operationId": "deleteConsumer",
                 "responses": {
                     "204": {
@@ -164,7 +164,7 @@
                 ],
                 "responses": {
                     "204": {
-                        "description": "Seek to the beggining performed successfully."
+                        "description": "Seek to the beginning performed successfully."
                     },
                     "404": {
                         "description": "The specified consumer instance was not found.",
@@ -203,7 +203,7 @@
                     "Seek",
                     "Consumers"
                 ],
-                "description": "Configures a subscribed consumer to seek (and subsequently read from) the offset at the end of one or more given topic partitions. This is the default behavior.",
+                "description": "Configures a subscribed consumer to seek (and subsequently read from) the offset at the end of one or more of the given topic partitions.",
                 "operationId": "seekToEnd",
                 "consumes": [
                     "application/json"
@@ -259,7 +259,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Subscribes a consumer to one or more topics. You can describe the topics to which the consumer will subscribe in a list (of `Topics` type) or as a `topic_pattern` field.",
+                "description": "Subscribes a consumer to one or more topics. You can describe the topics to which the consumer will subscribe in a list (of `Topics` type) or as a `topic_pattern` field. Each call replaces the subscriptions for the subscriber.",
                 "operationId": "subscribe",
                 "parameters": [
                     {
@@ -338,91 +338,6 @@
                     "name": "name",
                     "in": "path",
                     "description": "Name of the consumer that you want to unsubscribe from topics.",
-                    "required": true,
-                    "type": "string"
-                }
-            ]
-        },
-        "/topics/{topicname}": {
-            "post": {
-                "tags": [
-                    "Topics",
-                    "Producer"
-                ],
-                "description": "Sends one or more records to a given topic, optionally specifying a partition, key, or both.",
-                "operationId": "send",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "parameters": [
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/ProducerRecordList"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Records sent successfully.",
-                        "schema": {
-                            "$ref": "#/definitions/OffsetsRecordsSent"
-                        },
-                        "examples": {
-                            "application/json": {
-                                "offsets": [
-                                    {
-                                        "partition": 2,
-                                        "offset": 0
-                                    },
-                                    {
-                                        "partition": 1,
-                                        "offset": 1
-                                    },
-                                    {
-                                        "partition": 2,
-                                        "offset": 2
-                                    }
-                                ]
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "The specified topic was not found.",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        },
-                        "examples": {
-                            "application/json": {
-                                "error_code": 404,
-                                "message": "The specified topic was not found."
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "The record is not valid.",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        },
-                        "examples": {
-                            "application/json": {
-                                "error_code": 422,
-                                "message": "The record is not valid."
-                            }
-                        }
-                    }
-                }
-            },
-            "parameters": [
-                {
-                    "name": "topicname",
-                    "in": "path",
-                    "description": "Name of the topic to which you want to send records.",
                     "required": true,
                     "type": "string"
                 }
@@ -699,12 +614,97 @@
                 }
             ]
         },
+        "/topics/{topicname}": {
+            "post": {
+                "tags": [
+                    "Topics",
+                    "Producer"
+                ],
+                "description": "Sends one or more records to a given topic, optionally specifying a partition, key, or both.",
+                "operationId": "send",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ProducerRecordList"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Records sent successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/OffsetsRecordsSent"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "offsets": [
+                                    {
+                                        "partition": 2,
+                                        "offset": 0
+                                    },
+                                    {
+                                        "partition": 1,
+                                        "offset": 1
+                                    },
+                                    {
+                                        "partition": 2,
+                                        "offset": 2
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The specified topic was not found.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "error_code": 404,
+                                "message": "The specified topic was not found."
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "The record list is not valid.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "error_code": 422,
+                                "message": "The record list contains invalid records."
+                            }
+                        }
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "topicname",
+                    "in": "path",
+                    "description": "Name of the topic to which you want to send records.",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
         "/consumers/{groupid}/instances/{name}/records": {
             "get": {
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Retrieves records for a subscribed consumer, including message values, topics, and partitions. The operation MUST be performed on the the Kafka Bridge instance that contains the consumer.",
+                "description": "Retrieves records for a subscribed consumer, including message values, topics, and partitions. The operation MUST be routed to the Kafka Bridge instance that contains the consumer.",
                 "operationId": "poll",
                 "produces": [
                     "application/json"
@@ -752,14 +752,14 @@
                         }
                     },
                     "406": {
-                        "description": "The format of the consumer does not match the embedded format requested in the Accept header.",
+                        "description": "The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request.",
                         "schema": {
                             "$ref": "#/definitions/Error"
                         },
                         "examples": {
                             "application/json": {
                                 "error_code": 406,
-                                "message": "The format of the consumer does not match the embedded format requested in the Accept header."
+                                "message": "The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request."
                             }
                         }
                     }
@@ -783,7 +783,7 @@
                 {
                     "name": "timeout",
                     "in": "query",
-                    "description": "The maximum amount of time in milliseconds that the HTTP Bridge spends retrieving records before timing out the request.",
+                    "description": "The maximum amount of time, in milliseconds, that the HTTP Bridge spends retrieving records before timing out the request.",
                     "required": false,
                     "type": "integer"
                 },
@@ -819,19 +819,19 @@
             "type": "object",
             "properties": {
                 "name": {
-                    "description": "The unique name for the consumer instance. The name is used in URLs. ",
+                    "description": "The unique name for the consumer instance. The name is unique within the scope of the consumer group. The name is used in URLs. ",
                     "type": "string"
                 },
                 "format": {
-                    "description": "The allowable message format for the consumer, which can be binary (default), avro or json. The messages are converted into a JSON format. ",
+                    "description": "The allowable message format for the consumer, which can be `binary` (default) or `json`. The messages are converted into a JSON format. ",
                     "type": "string"
                 },
                 "auto.offset.reset": {
-                    "description": "Resets the offset position for the consumer. \nIf set to earliest, messages are read from the first offset. \nIf set to latest, messages are read from the latest offset.",
+                    "description": "Resets the offset position for the consumer. \nIf set to `earliest`, messages are read from the first offset. \nIf set to `latest`, messages are read from the latest offset.",
                     "type": "string"
                 },
                 "auto.commit.enable": {
-                    "description": "If set to true, message offsets are committed automatically for the consumer. If set to false, message offsets must be committed manually.",
+                    "description": "If set to `true`, message offsets are committed automatically for the consumer. If set to `false`, message offsets must be committed manually.",
                     "type": "string"
                 },
                 "fetch.min.bytes": {
@@ -839,7 +839,7 @@
                     "type": "string"
                 },
                 "consumer.request.timeout.ms": {
-                    "description": "Sets the maximum amount of time in milliseconds (ms) for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned.",
+                    "description": "Sets the maximum amount of time, in milliseconds, for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned.",
                     "type": "string"
                 }
             },
@@ -919,91 +919,6 @@
             "example": {
                 "instance_id": "my-consumer",
                 "base_uri": "http://localhost:8080/consumers/my-group/instances/my-consumer"
-            }
-        },
-        "ConsumerRecordList": {
-            "title": "Records",
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "topic": {
-                        "type": "string"
-                    },
-                    "key": {
-                        "type": "string"
-                    },
-                    "value": {
-                        "type": "object",
-                        "properties": {
-                            "foo": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "partition": {
-                        "format": "int32",
-                        "type": "integer"
-                    },
-                    "offset": {
-                        "format": "int32",
-                        "type": "integer"
-                    }
-                }
-            },
-            "example": [
-                {
-                    "topic": "topic",
-                    "key": "key1",
-                    "value": {
-                        "foo": "bar"
-                    },
-                    "partition": 0,
-                    "offset": 2
-                },
-                {
-                    "topic": "topic",
-                    "key": "key2",
-                    "value": [
-                        "foo2",
-                        "bar2"
-                    ],
-                    "partition": 1,
-                    "offset": 3
-                }
-            ]
-        },
-        "ProducerRecord": {
-            "title": "Record",
-            "required": [
-                "value"
-            ],
-            "type": "object",
-            "properties": {
-                "partition": {
-                    "type": "integer"
-                },
-                "offset": {
-                    "type": "integer"
-                },
-                "topic": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "object"
-                },
-                "key": {
-                    "type": "object"
-                }
-            },
-            "example": {
-                "topic": "topic",
-                "value": {
-                    "v": 128
-                },
-                "key": {
-                    "k": "key_record"
-                }
             }
         },
         "OffsetsRecordsSent": {
@@ -1104,25 +1019,7 @@
                 "records": {
                     "type": "array",
                     "items": {
-                        "type": "object",
-                        "properties": {
-                            "partition": {
-                                "type": "integer"
-                            },
-                            "offset": {
-                                "type": "integer"
-                            },
-                            "topic": {
-                                "type": "string"
-                            },
-                            "value": {
-                                "required": true,
-                                "type": "object"
-                            },
-                            "key": {
-                                "type": "object"
-                            }
-                        }
+                        "$ref": "#/definitions/ProducerRecord"
                     }
                 }
             },
@@ -1140,6 +1037,76 @@
                         "value": "msg3"
                     }
                 ]
+            }
+        },
+        "ConsumerRecordList": {
+            "title": "ConsumerRecordList",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "topic": {
+                        "type": "string"
+                    },
+                    "key": {
+                        "type": "string"
+                    },
+                    "value": {
+                        "type": "string"
+                    },
+                    "partition": {
+                        "format": "int32",
+                        "type": "integer"
+                    },
+                    "offset": {
+                        "format": "int64",
+                        "type": "long"
+                    }
+                }
+            },
+            "example": [
+                {
+                    "topic": "topic",
+                    "key": "key1",
+                    "value": "value1",
+                    "partition": 0,
+                    "offset": 2
+                },
+                {
+                    "topic": "topic",
+                    "key": "key2",
+                    "value": "value2",
+                    "partition": 1,
+                    "offset": 3
+                }
+            ]
+        },
+        "ProducerRecord": {
+            "title": "ProducerRecord",
+            "required": [
+                "value"
+            ],
+            "type": "object",
+            "properties": {
+                "partition": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "object"
+                },
+                "key": {
+                    "type": "object"
+                }
+            },
+            "example": {
+                "topic": "topic",
+                "value": {
+                    "v": 128
+                },
+                "key": {
+                    "k": "key_record"
+                }
             }
         }
     },
@@ -1162,7 +1129,7 @@
         }
     ],
     "externalDocs": {
-        "description": "Find out more about Swagger",
-        "url": "http://swagger.io"
+        "description": "Find out more about the Strimzi HTTP Bridge",
+        "url": "https://strimzi.io/documentation/"
     }
 }
