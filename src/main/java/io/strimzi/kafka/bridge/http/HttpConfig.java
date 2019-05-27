@@ -16,9 +16,9 @@ public class HttpConfig {
     private static final String HTTP_HOST = "HTTP_HOST";
     private static final String HTTP_PORT = "HTTP_PORT";
 
-    private static final boolean DEFAULT_HTTP_ENABLED = true;
-    private static final String DEFAULT_HOST = "0.0.0.0";
-    private static final int DEFAULT_PORT = 8080;
+    public static final boolean DEFAULT_HTTP_ENABLED = true;
+    public static final String DEFAULT_HOST = "0.0.0.0";
+    public static final int DEFAULT_PORT = 8080;
 
     private boolean enabled;
     private String host;

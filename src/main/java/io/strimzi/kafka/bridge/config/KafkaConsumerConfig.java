@@ -14,7 +14,7 @@ public class KafkaConsumerConfig {
 
     private static final String KAFKA_CONSUMER_AUTO_OFFSET_RESET = "KAFKA_CONSUMER_AUTO_OFFSET_RESET";
 
-    private static final String DEFAULT_AUTO_OFFSET_RESET = "earliest";
+    public static final String DEFAULT_AUTO_OFFSET_RESET = "earliest";
     private static final boolean DEFAULT_ENABLE_AUTO_COMMIT = false;
 
     private String autoOffsetReset;

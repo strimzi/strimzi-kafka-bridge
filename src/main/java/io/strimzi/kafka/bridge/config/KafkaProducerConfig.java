@@ -14,7 +14,7 @@ public class KafkaProducerConfig {
 
     private static final String KAFKA_PRODUCER_ACKS = "KAFKA_PRODUCER_ACKS";
 
-    private static final String DEFAULT_ACKS = "1";
+    public static final String DEFAULT_ACKS = "1";
 
     private String acks;
 

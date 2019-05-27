@@ -20,13 +20,13 @@ public class AmqpConfig {
     private static final String AMQP_MESSAGE_CONVERTER = "AMQP_MESSAGE_CONVERTER";
     private static final String AMQP_CERT_DIR = "AMQP_CERT_DIR";
 
-    private static final boolean DEFAULT_AMQP_ENABLED = false;
-    private static final String DEFAULT_AMQP_MODE = "SERVER";
-    private static final String DEFAULT_HOST = "0.0.0.0";
-    private static final int DEFAULT_PORT = 5672;
-    private static final int DEFAULT_FLOW_CREDIT = 1024;
-    private static final String DEFAULT_MESSAGE_CONVERTER = "io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter";
-    private static final String DEFAULT_CERT_DIR = null;
+    public static final boolean DEFAULT_AMQP_ENABLED = false;
+    public static final String DEFAULT_AMQP_MODE = "SERVER";
+    public static final String DEFAULT_HOST = "0.0.0.0";
+    public static final int DEFAULT_PORT = 5672;
+    public static final int DEFAULT_FLOW_CREDIT = 1024;
+    public static final String DEFAULT_MESSAGE_CONVERTER = "io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter";
+    public static final String DEFAULT_CERT_DIR = null;
 
     private boolean enabled;
     private AmqpMode mode;
