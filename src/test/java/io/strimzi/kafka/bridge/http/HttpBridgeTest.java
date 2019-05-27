@@ -848,12 +848,12 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         String sentBody1 = "Simple message-1";
         String sentBody2 = "Simple message-2";
 
-        Async send = context.async();
+        Async send = context.async(2);
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                send::complete, () -> new ProducerRecord<>(topic1, 0, null, sentBody1));
+                send::countDown, () -> new ProducerRecord<>(topic1, 0, null, sentBody1));
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                send::complete, () -> new ProducerRecord<>(topic2, 0, null, sentBody2));
-        send.await();
+                send::countDown, () -> new ProducerRecord<>(topic2, 0, null, sentBody2));
+        send.await(10000);
 
         Async creationAsync = context.async();
 
@@ -1068,7 +1068,6 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    @Ignore
     public void receiveSimpleMessageFromMultiplePartitions(TestContext context) {
         String topic = "receiveSimpleMessageFromMultiplePartitions";
         kafkaCluster.createTopic(topic, 2, 1);
@@ -1076,11 +1075,11 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
         String sentBody = "Simple message from partition";
 
         Async send = context.async(2);
-        kafkaCluster.useTo().produceStrings(1, send::countDown, () ->
-                new ProducerRecord<>(topic, 0, null, sentBody));
-        kafkaCluster.useTo().produceStrings(1, send::countDown, () ->
-                new ProducerRecord<>(topic, 1, null, sentBody));
-        send.await();
+        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
+                send::countDown, () -> new ProducerRecord<>(topic, 0, null, sentBody));
+        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
+                send::countDown, () -> new ProducerRecord<>(topic, 1, null, sentBody));
+        send.await(10000);
 
         Async creationAsync = context.async();
 

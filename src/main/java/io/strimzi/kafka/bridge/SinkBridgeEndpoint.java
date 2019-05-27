@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -291,55 +292,71 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                 }
             }
 
-            for (SinkTopicSubscription topicSubscription : this.topicSubscriptions) {
 
-                // check if a requested partition for a topic exists in the available partitions for that topic
-                Optional<PartitionInfo> requestedPartitionInfo =
-                        availablePartitions.stream()
-                                .filter(p -> p.getTopic().equals(topicSubscription.getTopic()) &&
-                                            p.getPartition() == topicSubscription.getPartition())
-                                .findFirst();
+            // get the topic partitions on which it's possible to ask assignment
+            Set<TopicPartition> topicPartitions = this.topicPartitionsToAssign(availablePartitions);
 
-                this.handlePartition(Future.succeededFuture(requestedPartitionInfo));
+            this.consumer.assign(topicPartitions, assignResult -> {
 
-                if (requestedPartitionInfo.isPresent()) {
-                    log.debug("Requested partition {} for topic {} does exist",
-                            topicSubscription.getPartition(), topicSubscription.getTopic());
-                    TopicPartition topicPartition = new TopicPartition(topicSubscription.getTopic(), topicSubscription.getPartition());
-
-                    this.consumer.assign(Collections.singleton(topicPartition), assignResult -> {
-
-                        this.handleAssign(assignResult);
-                        if (assignResult.failed()) {
-                            return;
-                        }
-
-                        log.debug("Assigned to {} partition on topic {}", topicSubscription.getPartition(), topicSubscription.getTopic());
-                        // start reading from specified offset inside partition
-                        if (topicSubscription.getOffset() != null) {
-
-                            log.debug("Seeking to offset {}", topicSubscription.getOffset());
-
-                            this.consumer.seek(topicPartition, topicSubscription.getOffset(), seekResult -> {
-
-                                this.handleSeek(seekResult);
-                                if (seekResult.failed()) {
-                                    return;
-                                }
-                                partitionsAssigned(Collections.singleton(topicPartition));
-                            });
-                        } else {
-                            partitionsAssigned(Collections.singleton(topicPartition));
-                        }
-                    });
-
-                } else {
-                    log.warn("Requested partition {} for topic {} doesn't exist",
-                            topicSubscription.getPartition(), topicSubscription.getTopic());
+                this.handleAssign(assignResult);
+                if (assignResult.failed()) {
+                    return;
                 }
-            }
+                log.debug("Assigned to topic partitions {}", topicPartitions);
 
+                for (SinkTopicSubscription topicSubscription : this.topicSubscriptions) {
+                    TopicPartition topicPartition = new TopicPartition(topicSubscription.getTopic(), topicSubscription.getPartition());
+                    // start reading from specified offset inside partition
+                    if (topicSubscription.getOffset() != null) {
+
+                        log.debug("Seeking to offset {}", topicSubscription.getOffset());
+                        this.consumer.seek(topicPartition, topicSubscription.getOffset(), seekResult -> {
+
+                            this.handleSeek(seekResult);
+                            if (seekResult.failed()) {
+                                return;
+                            }
+                            partitionsAssigned(Collections.singleton(topicPartition));
+                        });
+                    } else {
+                        partitionsAssigned(Collections.singleton(topicPartition));
+                    }
+                }
+            });
         });
+    }
+
+    /**
+     * Returns the topic partitions to which is possible to ask assignment related to which
+     * partitions are available for the topic subscriptions requested
+     *
+     * @param availablePartitions available topics partitions
+     * @return topic partitions to which is possible to ask assignment
+     */
+    private Set<TopicPartition> topicPartitionsToAssign(List<PartitionInfo> availablePartitions) {
+        Set<TopicPartition> topicPartitions = new HashSet<>();
+
+        for (SinkTopicSubscription topicSubscription : this.topicSubscriptions) {
+
+            // check if a requested partition for a topic exists in the available partitions for that topic
+            Optional<PartitionInfo> requestedPartitionInfo =
+                    availablePartitions.stream()
+                            .filter(p -> p.getTopic().equals(topicSubscription.getTopic()) &&
+                                    p.getPartition() == topicSubscription.getPartition())
+                            .findFirst();
+
+            this.handlePartition(Future.succeededFuture(requestedPartitionInfo));
+
+            if (requestedPartitionInfo.isPresent()) {
+                log.debug("Requested partition {} for topic {} does exist",
+                        topicSubscription.getPartition(), topicSubscription.getTopic());
+                topicPartitions.add(new TopicPartition(topicSubscription.getTopic(), topicSubscription.getPartition()));
+            } else {
+                log.warn("Requested partition {} for topic {} doesn't exist",
+                        topicSubscription.getPartition(), topicSubscription.getTopic());
+            }
+        }
+        return topicPartitions;
     }
 
     /**
