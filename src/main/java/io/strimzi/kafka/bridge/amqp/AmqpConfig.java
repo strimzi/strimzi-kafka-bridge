@@ -12,13 +12,13 @@ import java.util.Map;
  */
 public class AmqpConfig {
 
-    private static final String AMQP_ENABLED = "AMQP_ENABLED";
-    private static final String AMQP_MODE = "AMQP_MODE";
-    private static final String AMQP_HOST = "AMQP_HOST";
-    private static final String AMQP_PORT = "AMQP_PORT";
-    private static final String AMQP_FLOW_CREDIT = "AMQP_FLOW_CREDIT";
-    private static final String AMQP_MESSAGE_CONVERTER = "AMQP_MESSAGE_CONVERTER";
-    private static final String AMQP_CERT_DIR = "AMQP_CERT_DIR";
+    public static final String AMQP_ENABLED = "amqp.enabled";
+    public static final String AMQP_MODE = "amqp.mode";
+    public static final String AMQP_HOST = "amqp.host";
+    public static final String AMQP_PORT = "amqp.port";
+    public static final String AMQP_FLOW_CREDIT = "amqp.flowCredit";
+    public static final String AMQP_MESSAGE_CONVERTER = "amqp.messageConverter";
+    public static final String AMQP_CERT_DIR = "amqp.certDir";
 
     public static final boolean DEFAULT_AMQP_ENABLED = false;
     public static final String DEFAULT_AMQP_MODE = "SERVER";

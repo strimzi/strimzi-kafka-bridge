@@ -12,9 +12,9 @@ import java.util.Map;
  */
 public class HttpConfig {
 
-    private static final String HTTP_ENABLED = "HTTP_ENABLED";
-    private static final String HTTP_HOST = "HTTP_HOST";
-    private static final String HTTP_PORT = "HTTP_PORT";
+    public static final String HTTP_ENABLED = "http.enabled";
+    public static final String HTTP_HOST = "http.host";
+    public static final String HTTP_PORT = "http.port";
 
     public static final boolean DEFAULT_HTTP_ENABLED = true;
     public static final String DEFAULT_HOST = "0.0.0.0";

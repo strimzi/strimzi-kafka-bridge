@@ -12,7 +12,7 @@ import java.util.Map;
  */
 public class KafkaProducerConfig {
 
-    private static final String KAFKA_PRODUCER_ACKS = "KAFKA_PRODUCER_ACKS";
+    public static final String KAFKA_PRODUCER_ACKS = "kafka.producer.acks";
 
     public static final String DEFAULT_ACKS = "1";
 

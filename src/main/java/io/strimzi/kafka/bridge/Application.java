@@ -49,22 +49,22 @@ public class Application {
 
         ConfigRetriever retriever = ConfigRetriever.create(vertx, options);
         retriever.getConfig(ar -> {
-            AmqpConfig amqpConfig = new AmqpConfig(ar.result().getBoolean("amqp.enabled", AmqpConfig.DEFAULT_AMQP_ENABLED),
-                    AmqpMode.from(ar.result().getString("amqp.mode", AmqpConfig.DEFAULT_AMQP_MODE)),
-                    ar.result().getInteger("amqp.flowCredit", AmqpConfig.DEFAULT_FLOW_CREDIT),
-                    ar.result().getString("amqp.host", AmqpConfig.DEFAULT_HOST),
-                    ar.result().getInteger("amqp.port", AmqpConfig.DEFAULT_PORT),
-                    ar.result().getString("amqp.messageConverter", AmqpConfig.DEFAULT_MESSAGE_CONVERTER),
-                    ar.result().getString("amqp.certDir", AmqpConfig.DEFAULT_CERT_DIR));
+            AmqpConfig amqpConfig = new AmqpConfig(ar.result().getBoolean(AmqpConfig.AMQP_ENABLED, AmqpConfig.DEFAULT_AMQP_ENABLED),
+                    AmqpMode.from(ar.result().getString(AmqpConfig.DEFAULT_AMQP_MODE, AmqpConfig.DEFAULT_AMQP_MODE)),
+                    ar.result().getInteger(AmqpConfig.AMQP_FLOW_CREDIT, AmqpConfig.DEFAULT_FLOW_CREDIT),
+                    ar.result().getString(AmqpConfig.AMQP_HOST, AmqpConfig.DEFAULT_HOST),
+                    ar.result().getInteger(AmqpConfig.AMQP_PORT, AmqpConfig.DEFAULT_PORT),
+                    ar.result().getString(AmqpConfig.AMQP_MESSAGE_CONVERTER, AmqpConfig.DEFAULT_MESSAGE_CONVERTER),
+                    ar.result().getString(AmqpConfig.AMQP_CERT_DIR, AmqpConfig.DEFAULT_CERT_DIR));
 
-            HttpConfig httpConfig = new HttpConfig(ar.result().getBoolean("http.enabled", HttpConfig.DEFAULT_HTTP_ENABLED),
-                    ar.result().getString("http.host", HttpConfig.DEFAULT_HOST),
-                    ar.result().getInteger("http.port", HttpConfig.DEFAULT_PORT));
+            HttpConfig httpConfig = new HttpConfig(ar.result().getBoolean(HttpConfig.HTTP_ENABLED, HttpConfig.DEFAULT_HTTP_ENABLED),
+                    ar.result().getString(HttpConfig.HTTP_HOST, HttpConfig.DEFAULT_HOST),
+                    ar.result().getInteger(HttpConfig.HTTP_PORT, HttpConfig.DEFAULT_PORT));
 
-            KafkaConsumerConfig kafkaConsumerConfig = new KafkaConsumerConfig(ar.result().getString("kafka.consumer.autoOffsetReset", KafkaConsumerConfig.DEFAULT_AUTO_OFFSET_RESET));
-            KafkaProducerConfig kafkaProducerConfig = new KafkaProducerConfig(Integer.toString(ar.result().getInteger("kafka.producer.acks", Integer.parseInt(KafkaProducerConfig.DEFAULT_ACKS))));
+            KafkaConsumerConfig kafkaConsumerConfig = new KafkaConsumerConfig(ar.result().getString(KafkaConsumerConfig.KAFKA_CONSUMER_AUTO_OFFSET_RESET, KafkaConsumerConfig.DEFAULT_AUTO_OFFSET_RESET));
+            KafkaProducerConfig kafkaProducerConfig = new KafkaProducerConfig(Integer.toString(ar.result().getInteger(KafkaProducerConfig.KAFKA_PRODUCER_ACKS, Integer.parseInt(KafkaProducerConfig.DEFAULT_ACKS))));
 
-            KafkaConfig kafkaConfig = new KafkaConfig(ar.result().getString("kafka.bootstrapServers", KafkaConfig.DEFAULT_BOOTSTRAP_SERVERS),
+            KafkaConfig kafkaConfig = new KafkaConfig(ar.result().getString(KafkaConfig.KAFKA_BOOTSTRAP_SERVERS, KafkaConfig.DEFAULT_BOOTSTRAP_SERVERS),
                     kafkaProducerConfig, kafkaConsumerConfig);
 
             AmqpBridgeConfig amqpBridgeConfig = new AmqpBridgeConfig(kafkaConfig, amqpConfig);
