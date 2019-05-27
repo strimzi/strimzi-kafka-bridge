@@ -30,7 +30,7 @@
         "tags": [
           "Consumers"
         ],
-        "description": "Creates a consumer instance in the given consumer group. You can optionally specify a consumer name and supported configuration options.",
+        "description": "Creates a consumer instance in the given consumer group. You can optionally specify a consumer name and supported configuration options. It resturns a base URI used to construct URIs for subsequent requests against this consumer instance.",
         "operationId": "createConsumer",
         "consumes": [
           "application/vnd.kafka.v2+json"
@@ -652,7 +652,7 @@
             "description": "List of records to send to a given topic partition, including a value (required) and a key (optional).",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/RecordsWithoutPartitions"
+              "$ref": "#/definitions/ProducerRecordToPartitionList"
             }
           }
         ],
@@ -884,26 +884,6 @@
         }
       }
     },
-    "RecordsWithoutPartitions": {
-      "title": "Records",
-      "type": "object",
-      "properties": {
-        "records": {
-          "$ref": "#/definitions/ProducerRecordList"
-        }
-      },
-      "example": {
-        "records": [
-          {
-            "key": "1abcd",
-            "value": "msg1"
-          },
-          {
-            "value": "msg2"
-          }
-        ]
-      }
-    },
     "Topics": {
       "title": "Topics",
       "type": "object",
@@ -920,24 +900,6 @@
           "topic1",
           "topic2"
         ]
-      }
-    },
-    "CreatedConsumer": {
-      "title": "Consumer",
-      "type": "object",
-      "properties": {
-        "instance_id": {
-          "description": "Unique ID for the consumer instance in the group.",
-          "type": "string"
-        },
-        "base_uri": {
-          "description": "Base URI used to construct URIs for subsequent requests against this consumer instance.",
-          "type": "string"
-        }
-      },
-      "example": {
-        "instance_id": "my-consumer",
-        "base_uri": "http://localhost:8080/consumers/my-group/instances/my-consumer"
       }
     },
     "Partitions": {
@@ -960,48 +922,6 @@
           {
             "topic": "topic",
             "partition": 1
-          }
-        ]
-      }
-    },
-    "Error": {
-      "title": "Root Type for ErrorBody",
-      "description": "The root of the ErrorBody type's schema.",
-      "type": "object",
-      "properties": {
-        "error_code": {
-          "format": "int32",
-          "type": "integer"
-        },
-        "message": {
-          "type": "string"
-        }
-      },
-      "example": "{\n    \"error_code\": 404,\n    \"message\": \"resource not found\"\n}"
-    },
-    "ProducerRecordList": {
-      "title": "ProducerRecordList",
-      "type": "object",
-      "properties": {
-        "records": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ProducerRecord"
-          }
-        }
-      },
-      "example": {
-        "records": [
-          {
-            "key": "1abcd",
-            "value": "msg1"
-          },
-          {
-            "value": "msg2",
-            "partition": 1
-          },
-          {
-            "value": "msg3"
           }
         ]
       }
@@ -1048,65 +968,26 @@
         }
       ]
     },
-    "ProducerRecord": {
-      "title": "ProducerRecord",
-      "required": [
-        "value"
-      ],
+    "CreatedConsumer": {
+      "title": "CreatedConsumer",
       "type": "object",
       "properties": {
-        "partition": {
-          "format": "int32",
-          "type": "integer"
+        "instance_id": {
+          "description": "Unique ID for the consumer instance in the group.",
+          "type": "string"
         },
-        "value": {
-          "type": [
-            "object",
-            "string"
-          ]
-        },
-        "key": {
-          "type": [
-            "object",
-            "string"
-          ]
-        }
-      },
-      "example": {
-        "topic": "topic",
-        "value": {
-          "v": 128
-        },
-        "key": {
-          "k": "key_record"
-        }
-      }
-    },
-    "OffsetCommitSeek": {
-      "title": "Offset",
-      "required": [],
-      "type": "object",
-      "properties": {
-        "partition": {
-          "format": "int32",
-          "type": "integer"
-        },
-        "offset": {
-          "format": "int64",
-          "type": "integer"
-        },
-        "topic": {
+        "base_uri": {
+          "description": "Base URI used to construct URIs for subsequent requests against this consumer instance.",
           "type": "string"
         }
       },
       "example": {
-        "partition": 43,
-        "offset": 92,
-        "topic": "some_topic"
+        "instance_id": "my-consumer",
+        "base_uri": "http://localhost:8080/consumers/my-group/instances/my-consumer"
       }
     },
     "OffsetCommitSeekList": {
-      "title": "Offsets",
+      "title": "OffsetCommitSeekList",
       "type": "object",
       "properties": {
         "offsets": {
@@ -1131,7 +1012,31 @@
         ]
       }
     },
+    "OffsetCommitSeek": {
+      "title": "OffsetCommitSeek",
+      "required": [],
+      "type": "object",
+      "properties": {
+        "partition": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "offset": {
+          "format": "int64",
+          "type": "integer"
+        },
+        "topic": {
+          "type": "string"
+        }
+      },
+      "example": {
+        "partition": 43,
+        "offset": 92,
+        "topic": "topic"
+      }
+    },
     "OffsetRecordSent": {
+      "title": "OffsetRecordSent",
       "type": "object",
       "properties": {
         "partition": {
@@ -1149,7 +1054,7 @@
       }
     },
     "OffsetRecordSentList": {
-      "title": "Offsets",
+      "title": "OffsetRecordSentList",
       "type": "object",
       "properties": {
         "offsets": {
@@ -1168,6 +1073,125 @@
           {
             "partition": 65,
             "offset": 91
+          }
+        ]
+      }
+    },
+    "Error": {
+      "title": "Error",
+      "type": "object",
+      "properties": {
+        "error_code": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "example": "{\n    \"error_code\": 404,\n    \"message\": \"resource not found\"\n}"
+    },
+    "ProducerRecord": {
+      "title": "ProducerRecord",
+      "required": [
+        "value"
+      ],
+      "type": "object",
+      "properties": {
+        "partition": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "value": {
+          "type": [
+            "object",
+            "string"
+          ]
+        },
+        "key": {
+          "type": [
+            "object",
+            "string"
+          ]
+        }
+      },
+      "example": "{\n    \"key\": \"key\"\n    \"partition\": 23\n    \"value\": {\"foo\": \"bar\"}\n}"
+    },
+    "ProducerRecordList": {
+      "title": "ProducerRecordList",
+      "type": "object",
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProducerRecord"
+          }
+        }
+      },
+      "example": {
+        "records": [
+          {
+            "key": "key1",
+            "value": "value1"
+          },
+          {
+            "value": "value2",
+            "partition": 1
+          },
+          {
+            "value": "value3"
+          }
+        ]
+      }
+    },
+    "ProducerRecordToPartition": {
+      "title": "ProducerRecordToPartition",
+      "required": [
+        "value"
+      ],
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": [
+            "object",
+            "string"
+          ]
+        },
+        "key": {
+          "type": [
+            "object",
+            "string"
+          ]
+        }
+      },
+      "example": {
+        "value": {
+          "v": 128
+        },
+        "key": {
+          "k": "key"
+        }
+      }
+    },
+    "ProducerRecordToPartitionList": {
+      "title": "ProducerRecordToPartitionList",
+      "type": "object",
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProducerRecordToPartition"
+          }
+        }
+      },
+      "example": {
+        "records": [
+          {
+            "key": "key1",
+            "value": "value1"
+          },
+          {
+            "value": "value2"
           }
         ]
       }
