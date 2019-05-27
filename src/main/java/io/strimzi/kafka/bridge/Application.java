@@ -23,6 +23,8 @@ import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+
 /**
  * Apache Kafka bridge main application class
  */
@@ -33,11 +35,15 @@ public class Application {
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx();
 
+        String path = args[0];
+        if (args.length > 1) {
+            path = args[0] + "=" + args[1];
+        }
         ConfigStoreOptions fileStore = new ConfigStoreOptions()
                 .setType("file")
                 .setOptional(true)
                 .setFormat("properties")
-                .setConfig(new JsonObject().put("path", getFilePath(args[0])));
+                .setConfig(new JsonObject().put("path", getFilePath(path)));
 
         ConfigRetrieverOptions options = new ConfigRetrieverOptions().addStore(fileStore);
 
@@ -91,12 +97,12 @@ public class Application {
         String[] confFileArg = arg.split("=");
         String path = "";
         if (confFileArg[0].equals("--config-file")) {
-            if (confFileArg[1].startsWith("/")) {
+            if (confFileArg[1].startsWith(File.separator)) {
                 // absolute path
                 path = confFileArg[1];
             } else {
                 // relative path
-                path = System.getProperty("user.dir") + "/" + confFileArg[1];
+                path = System.getProperty("user.dir") + File.separator + confFileArg[1];
             }
             return path;
         }
