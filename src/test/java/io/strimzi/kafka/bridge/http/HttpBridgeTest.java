@@ -68,6 +68,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         vertx = Vertx.vertx();
 
+        envVars.put("HTTP_ENABLED", "true");
         this.bridgeConfigProperties = HttpBridgeConfig.fromMap(envVars);
         this.httpBridge = new HttpBridge(this.bridgeConfigProperties);
 

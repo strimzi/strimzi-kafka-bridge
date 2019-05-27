@@ -81,6 +81,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 
         this.vertx = Vertx.vertx();
 
+        envVars.put("AMQP_ENABLED", "true");
         this.bridgeConfigProperties = AmqpBridgeConfig.fromMap(envVars);
         this.bridge = new AmqpBridge(this.bridgeConfigProperties);
 

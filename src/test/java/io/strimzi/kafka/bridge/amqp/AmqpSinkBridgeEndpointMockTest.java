@@ -57,6 +57,10 @@ public class AmqpSinkBridgeEndpointMockTest {
 
     private static Map<String, String> envVars = new HashMap<>();
 
+    static {
+        envVars.put("AMQP_ENABLED", "true");
+    }
+
     class MockRecordProducer {
 
         private String topic;
