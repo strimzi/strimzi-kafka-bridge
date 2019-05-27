@@ -12,24 +12,36 @@ import java.util.Map;
  */
 public class HttpConfig {
 
+    private static final String HTTP_ENABLED = "HTTP_ENABLED";
     private static final String HTTP_HOST = "HTTP_HOST";
     private static final String HTTP_PORT = "HTTP_PORT";
 
+    private static final boolean DEFAULT_HTTP_ENABLED = true;
     private static final String DEFAULT_HOST = "0.0.0.0";
     private static final int DEFAULT_PORT = 8080;
 
+    private boolean enabled;
     private String host;
     private int port;
 
     /**
      * Constructor
      *
+     * @param enabled if the HTTP protocol is enabled
      * @param host the host for HTTP server (to bind)
      * @param port the port for HTTP server (to bind)
      */
-    public HttpConfig(String host, int port) {
+    public HttpConfig(boolean enabled, String host, int port) {
+        this.enabled = enabled;
         this.host = host;
         this.port = port;
+    }
+
+    /**
+     * @return if the HTTP protocol head is enabled
+     */
+    public boolean isEnabled() {
+        return this.enabled;
     }
 
     /**
@@ -54,6 +66,9 @@ public class HttpConfig {
      */
     public static HttpConfig fromMap(Map<String, String> map) {
 
+        String enabledEnvVar = map.get(HttpConfig.HTTP_ENABLED);
+        boolean enabled = enabledEnvVar != null ? Boolean.valueOf(enabledEnvVar) : HttpConfig.DEFAULT_HTTP_ENABLED;
+
         String host = map.getOrDefault(HttpConfig.HTTP_HOST, HttpConfig.DEFAULT_HOST);
 
         int port = HttpConfig.DEFAULT_PORT;
@@ -62,6 +77,15 @@ public class HttpConfig {
             port = Integer.parseInt(portEnvVar);
         }
 
-        return new HttpConfig(host, port);
+        return new HttpConfig(enabled, host, port);
+    }
+
+    @Override
+    public String toString() {
+        return "HttpConfig(" +
+                "enabled=" + this.enabled +
+                ",host=" + this.host +
+                ",port=" + this.port +
+                ")";
     }
 }

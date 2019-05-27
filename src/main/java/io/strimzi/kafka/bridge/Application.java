@@ -24,24 +24,27 @@ public class Application {
         Vertx vertx = Vertx.vertx();
 
         AmqpBridgeConfig amqpBridgeConfig = AmqpBridgeConfig.fromMap(System.getenv());
-        AmqpBridge amqpBridge = new AmqpBridge(amqpBridgeConfig);
+        if (amqpBridgeConfig.getEndpointConfig().isEnabled()) {
+            AmqpBridge amqpBridge = new AmqpBridge(amqpBridgeConfig);
+            vertx.deployVerticle(amqpBridge, done -> {
+                if (done.succeeded()) {
+                    log.debug("AMQP verticle instance deployed [{}]", done.result());
+                } else {
+                    log.debug("Failed to deploy AMQP verticle instance", done.cause());
+                }
+            });
+        }
+
         HttpBridgeConfig httpBridgeConfig = HttpBridgeConfig.fromMap(System.getenv());
-        HttpBridge httpBridge = new HttpBridge(httpBridgeConfig);
-
-        vertx.deployVerticle(amqpBridge, done -> {
-            if (done.succeeded()) {
-                log.debug("AMQP verticle instance deployed [{}]", done.result());
-            } else {
-                log.debug("Failed to deploy AMQP verticle instance", done.cause());
-            }
-        });
-
-        vertx.deployVerticle(httpBridge, done -> {
-            if (done.succeeded()) {
-                log.debug("HTTP verticle instance deployed [{}]", done.result());
-            } else {
-                log.debug("Failed to deploy HTTP verticle instance", done.cause());
-            }
-        });
+        if (httpBridgeConfig.getEndpointConfig().isEnabled()) {
+            HttpBridge httpBridge = new HttpBridge(httpBridgeConfig);
+            vertx.deployVerticle(httpBridge, done -> {
+                if (done.succeeded()) {
+                    log.debug("HTTP verticle instance deployed [{}]", done.result());
+                } else {
+                    log.debug("Failed to deploy HTTP verticle instance", done.cause());
+                }
+            });
+        }
     }
 }
