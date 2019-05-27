@@ -1,0 +1,1222 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Strimzi HTTP Bridge for Apache Kafka",
+    "description": "The Strimzi HTTP Bridge for Apache Kafka provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. ",
+    "termsOfService": "http://swagger.io/terms/",
+    "contact": {
+      "email": "strimzi@redhat.com"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "0.1.0"
+  },
+  "host": "bridge.swagger.io",
+  "basePath": "/v2",
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/consumers/{groupid}": {
+      "post": {
+        "tags": [
+          "Consumers"
+        ],
+        "description": "Creates a consumer instance in the given consumer group. You can optionally specify a consumer name and supported configuration options. It resturns a base URI used to construct URIs for subsequent requests against this consumer instance.",
+        "operationId": "createConsumer",
+        "consumes": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Name and configuration of the consumer. The name is unique within the scope of the consumer group. If a name is not specified, a randomly generated name is assigned. All parameters are optional. The supported configuration options are shown in the following example.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Consumer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Consumer created successfully.",
+            "schema": {
+              "$ref": "#/definitions/CreatedConsumer"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "instance_id": "consumer1",
+                "base_uri": "http://localhost:8080/consumers/my-group/instances/consumer1"
+              }
+            }
+          },
+          "409": {
+            "description": "A consumer instance with the specified name already exists in the Kafka Bridge.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 409,
+                "message": "A consumer instance with the specified name already exists in the Kafka Bridge."
+              }
+            }
+          },
+          "422": {
+            "description": "One or more consumer configuration options have invalid values.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 422,
+                "message": "One or more consumer configuration options have invalid values."
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "description": "ID of the consumer group in which to create the consumer.",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}/positions/beginning": {
+      "post": {
+        "tags": [
+          "Seek",
+          "Consumers"
+        ],
+        "description": "Configures a subscribed consumer to seek (and subsequently read from) the first offset in one or more given topic partitions.",
+        "operationId": "seekToBeginning",
+        "consumes": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek the first offset in the specified partitions.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Partitions"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Seek to the beginning performed successfully."
+          },
+          "404": {
+            "description": "The specified consumer instance was not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 404,
+                "message": "The specified consumer instance was not found."
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "description": "ID of the consumer group to which the subscribed consumer belongs.",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "description": "Name of the subscribed consumer.",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}/positions/end": {
+      "post": {
+        "tags": [
+          "Seek",
+          "Consumers"
+        ],
+        "description": "Configures a subscribed consumer to seek (and subsequently read from) the offset at the end of one or more of the given topic partitions.",
+        "operationId": "seekToEnd",
+        "consumes": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek the last offset in the specified partitions.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Partitions"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Seek to the end performed successfully."
+          },
+          "404": {
+            "description": "The specified consumer instance was not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 404,
+                "message": "The specified consumer instance was not found."
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "description": "ID of the consumer group to which the subscribed consumer belongs.",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "description": "Name of the subscribed consumer.",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}/subscription": {
+      "post": {
+        "tags": [
+          "Consumers"
+        ],
+        "description": "Subscribes a consumer to one or more topics. You can describe the topics to which the consumer will subscribe in a list (of `Topics` type) or as a `topic_pattern` field. Each call replaces the subscriptions for the subscriber.",
+        "operationId": "subscribe",
+        "consumes": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "List of topics to which the consumer will subscribe.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Topics"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Consumer subscribed successfully."
+          },
+          "404": {
+            "description": "The specified consumer instance was not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 404,
+                "message": "The specified consumer instance was not found."
+              }
+            }
+          },
+          "409": {
+            "description": "Subscription to topics, partitions, and patterns are mutually exclusive.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 409,
+                "message": "Subscription to topics, partitions, and patterns are mutually exclusive."
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Consumers"
+        ],
+        "description": "Unsubscribes a consumer from all topics.",
+        "operationId": "unsubscribe",
+        "responses": {
+          "204": {
+            "description": "Consumer unsubscribed successfully."
+          },
+          "404": {
+            "description": "The specified consumer instance was not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/json": {
+                "error_code": 404,
+                "message": "The specified consumer instance was not found."
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "description": "ID of the consumer group to which the subscribed consumer belongs.",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "description": "Name of the consumer that you want to unsubscribe from topics.",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}/positions": {
+      "post": {
+        "tags": [
+          "Seek",
+          "Consumers"
+        ],
+        "description": "Configures a subscribed consumer to fetch offsets from a particular offset the next time it fetches a set of records from a given topic partition. This overrides the default fetch behavior for consumers. You can specify one or more topic partitions.",
+        "operationId": "seek",
+        "consumes": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "List of partition offsets from which the subscribed consumer will next fetch records.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/OffsetCommitSeekList"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Seek performed successfully."
+          },
+          "404": {
+            "description": "The specified consumer instance was not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 404,
+                "message": "The specified consumer instance was not found."
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "description": "ID of the consumer group to which the consumer belongs.",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "description": "Name of the subscribed consumer.",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}/assignments": {
+      "post": {
+        "tags": [
+          "Consumers"
+        ],
+        "description": "Assigns one or more topic partitions to a consumer.",
+        "operationId": "assign",
+        "consumes": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "List of topic partitions to assign to the consumer.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Partitions"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Partitions assigned successfully."
+          },
+          "404": {
+            "description": "The specified consumer instance was not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 404,
+                "message": "The specified consumer instance was not found."
+              }
+            }
+          },
+          "409": {
+            "description": "Subscription to topics, partitions, and patterns are mutually exclusive.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 409,
+                "message": "Subscription to topics, partitions, and patterns are mutually exclusive."
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "description": "ID of the consumer group to which the consumer belongs.",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "description": "Name of the consumer to which you want to assign topic partitions.",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/topics/{topicname}": {
+      "post": {
+        "tags": [
+          "Topics",
+          "Producer"
+        ],
+        "description": "Sends one or more records to a given topic, optionally specifying a partition, key, or both.",
+        "operationId": "send",
+        "consumes": [
+          "application/vnd.kafka.json.v2+json",
+          "application/vnd.kafka.binary.v2+json"
+        ],
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ProducerRecordList"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Records sent successfully.",
+            "schema": {
+              "$ref": "#/definitions/OffsetRecordSentList"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "offsets": [
+                  {
+                    "partition": 2,
+                    "offset": 0
+                  },
+                  {
+                    "partition": 1,
+                    "offset": 1
+                  },
+                  {
+                    "partition": 2,
+                    "offset": 2
+                  }
+                ]
+              }
+            }
+          },
+          "404": {
+            "description": "The specified topic was not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 404,
+                "message": "The specified topic was not found."
+              }
+            }
+          },
+          "422": {
+            "description": "The record list is not valid.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 422,
+                "message": "The record list contains invalid records."
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "topicname",
+          "in": "path",
+          "description": "Name of the topic to which you want to send records.",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}/records": {
+      "get": {
+        "tags": [
+          "Consumers"
+        ],
+        "description": "Retrieves records for a subscribed consumer, including message values, topics, and partitions. The operation MUST be routed to the Kafka Bridge instance that contains the consumer.",
+        "operationId": "poll",
+        "produces": [
+          "application/vnd.kafka.json.v2+json",
+          "application/vnd.kafka.binary.v2+json",
+          "application/vnd.kafka.v2+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Poll request executed successfully.",
+            "schema": {
+              "$ref": "#/definitions/ConsumerRecordList"
+            },
+            "examples": {
+              "application/vnd.kafka.json.v2+json": [
+                {
+                  "topic": "topic",
+                  "key": "key1",
+                  "value": {
+                    "foo": "bar"
+                  },
+                  "partition": 0,
+                  "offset": 2
+                },
+                {
+                  "topic": "topic",
+                  "key": "key2",
+                  "value": [
+                    "foo2",
+                    "bar2"
+                  ],
+                  "partition": 1,
+                  "offset": 3
+                }
+              ],
+              "application/vnd.kafka.binary.v2+json": "[\n  {\n    \"topic\": \"test\",\n    \"key\": \"a2V5\",\n    \"value\": \"Y29uZmx1ZW50\",\n    \"partition\": 1,\n    \"offset\": 100,\n  },\n  {\n    \"topic\": \"test\",\n    \"key\": \"a2V5\",\n    \"value\": \"a2Fma2E=\",\n    \"partition\": 2,\n    \"offset\": 101,\n  }\n]"
+            }
+          },
+          "404": {
+            "description": "The specified consumer instance was not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 404,
+                "message": "The specified consumer instance was not found."
+              }
+            }
+          },
+          "406": {
+            "description": "The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 406,
+                "message": "The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request."
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "description": "ID of the consumer group to which the subscribed consumer belongs.",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "description": "Name of the subscribed consumer for which you want to retrieve records.",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "timeout",
+          "in": "query",
+          "description": "The maximum amount of time, in milliseconds, that the HTTP Bridge spends retrieving records before timing out the request.",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "name": "max_bytes",
+          "in": "query",
+          "description": "The maximum size, in bytes, of unencoded keys and values that can be included in the response. Otherwise, an error response with code 422 is returned.",
+          "required": false,
+          "type": "integer"
+        }
+      ]
+    },
+    "/topics/{topicname}/partitions/{partitionid}": {
+      "post": {
+        "tags": [
+          "Topics",
+          "Producer"
+        ],
+        "description": "Sends one or more records to a given topic partition, optionally specifying a key.",
+        "operationId": "sendToPartition",
+        "consumes": [
+          "application/vnd.kafka.json.v2+json",
+          "application/vnd.kafka.binary.v2+json"
+        ],
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "List of records to send to a given topic partition, including a value (required) and a key (optional).",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ProducerRecordToPartitionList"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Records sent successfully.",
+            "schema": {
+              "$ref": "#/definitions/OffsetRecordSentList"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "offsets": [
+                  {
+                    "partition": 2,
+                    "offset": 0
+                  },
+                  {
+                    "partition": 1,
+                    "offset": 1
+                  },
+                  {
+                    "partition": 2,
+                    "offset": 2
+                  }
+                ]
+              }
+            }
+          },
+          "404": {
+            "description": "The specified topic partition was not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 404,
+                "message": "The specified topic partition was not found."
+              }
+            }
+          },
+          "422": {
+            "description": "The record is not valid.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 422,
+                "message": "The record is not valid."
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "topicname",
+          "in": "path",
+          "description": "Name of the topic containing the partition to which you want to send records.",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "partitionid",
+          "in": "path",
+          "description": "ID of the partition to which you want to send records.",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}": {
+      "delete": {
+        "tags": [
+          "Consumers"
+        ],
+        "description": "Deletes a specified consumer instance. The operation MUST be routed to the Kafka Bridge instance that contains the consumer.",
+        "operationId": "deleteConsumer",
+        "consumes": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "responses": {
+          "204": {
+            "description": "Consumer removed successfully."
+          },
+          "404": {
+            "description": "The specified consumer instance was not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 404,
+                "message": "The specified consumer instance was not found."
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "description": "ID of the consumer group to which the consumer belongs.",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "description": "Name of the consumer that you want to delete.",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/consumers/{groupid}/instances/{name}/offsets": {
+      "post": {
+        "tags": [
+          "Consumers"
+        ],
+        "description": "Commits a list of consumer offsets. To commit offsets for all records fetched by the consumer, leave the request body empty.",
+        "operationId": "commit",
+        "consumes": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "List of consumer offsets to commit to the consumer offsets commit log. You can specify one or more topic partitions to commit offsets for.",
+            "required": false,
+            "schema": {
+              "$ref": "#/definitions/OffsetCommitSeekList"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Commit made successfully."
+          },
+          "404": {
+            "description": "The specified consumer instance was not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 404,
+                "message": "The specified consumer instance was not found."
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "groupid",
+          "in": "path",
+          "description": "ID of the consumer group to which the consumer belongs.",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "description": "Name of the consumer.",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "Consumer": {
+      "title": "Consumer",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The unique name for the consumer instance. The name is unique within the scope of the consumer group. The name is used in URLs. ",
+          "type": "string"
+        },
+        "format": {
+          "description": "The allowable message format for the consumer, which can be `binary` (default) or `json`. The messages are converted into a JSON format. ",
+          "type": "string"
+        },
+        "auto.offset.reset": {
+          "description": "Resets the offset position for the consumer. \nIf set to `earliest`, messages are read from the first offset. \nIf set to `latest`, messages are read from the latest offset.",
+          "type": "string"
+        },
+        "auto.commit.enable": {
+          "description": "If set to `true`, message offsets are committed automatically for the consumer. If set to `false`, message offsets must be committed manually.",
+          "type": "string"
+        },
+        "fetch.min.bytes": {
+          "description": "Sets the minimum ammount of data in bytes for the consumer to receive. The broker waits until the data to send exceeds this amount.",
+          "type": "string"
+        },
+        "consumer.request.timeout.ms": {
+          "description": "Sets the maximum amount of time, in milliseconds, for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned.",
+          "type": "string"
+        }
+      },
+      "example": {
+        "name": "consumer1",
+        "format": "binary",
+        "auto.offset.reset": "earliest",
+        "auto.commit.enable": "false",
+        "fetch.min.bytes": "512",
+        "consumer.request.timeout.ms": "30000"
+      }
+    },
+    "Partition": {
+      "title": "Partition",
+      "type": "object",
+      "properties": {
+        "partition": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "topic": {
+          "type": "string"
+        }
+      }
+    },
+    "Topics": {
+      "title": "Topics",
+      "type": "object",
+      "properties": {
+        "topics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "example": {
+        "topics": [
+          "topic1",
+          "topic2"
+        ]
+      }
+    },
+    "Partitions": {
+      "title": "Partitions",
+      "type": "object",
+      "properties": {
+        "partitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Partition"
+          }
+        }
+      },
+      "example": {
+        "partitions": [
+          {
+            "topic": "topic",
+            "partition": 0
+          },
+          {
+            "topic": "topic",
+            "partition": 1
+          }
+        ]
+      }
+    },
+    "ConsumerRecordList": {
+      "title": "ConsumerRecordList",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "partition": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "offset": {
+            "format": "int64",
+            "type": "long"
+          }
+        }
+      },
+      "example": [
+        {
+          "topic": "topic",
+          "key": "key1",
+          "value": "value1",
+          "partition": 0,
+          "offset": 2
+        },
+        {
+          "topic": "topic",
+          "key": "key2",
+          "value": "value2",
+          "partition": 1,
+          "offset": 3
+        }
+      ]
+    },
+    "CreatedConsumer": {
+      "title": "CreatedConsumer",
+      "type": "object",
+      "properties": {
+        "instance_id": {
+          "description": "Unique ID for the consumer instance in the group.",
+          "type": "string"
+        },
+        "base_uri": {
+          "description": "Base URI used to construct URIs for subsequent requests against this consumer instance.",
+          "type": "string"
+        }
+      },
+      "example": {
+        "instance_id": "my-consumer",
+        "base_uri": "http://localhost:8080/consumers/my-group/instances/my-consumer"
+      }
+    },
+    "OffsetCommitSeekList": {
+      "title": "OffsetCommitSeekList",
+      "type": "object",
+      "properties": {
+        "offsets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OffsetCommitSeek"
+          }
+        }
+      },
+      "example": {
+        "offsets": [
+          {
+            "topic": "topic",
+            "partition": 0,
+            "offset": 15
+          },
+          {
+            "topic": "topic",
+            "partition": 1,
+            "offset": 42
+          }
+        ]
+      }
+    },
+    "OffsetCommitSeek": {
+      "title": "OffsetCommitSeek",
+      "required": [],
+      "type": "object",
+      "properties": {
+        "partition": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "offset": {
+          "format": "int64",
+          "type": "integer"
+        },
+        "topic": {
+          "type": "string"
+        }
+      },
+      "example": {
+        "partition": 43,
+        "offset": 92,
+        "topic": "topic"
+      }
+    },
+    "OffsetRecordSent": {
+      "title": "OffsetRecordSent",
+      "type": "object",
+      "properties": {
+        "partition": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "offset": {
+          "format": "int64",
+          "type": "integer"
+        }
+      },
+      "example": {
+        "partition": 31,
+        "offset": 86
+      }
+    },
+    "OffsetRecordSentList": {
+      "title": "OffsetRecordSentList",
+      "type": "object",
+      "properties": {
+        "offsets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OffsetRecordSent"
+          }
+        }
+      },
+      "example": {
+        "offsets": [
+          {
+            "partition": 92,
+            "offset": 98
+          },
+          {
+            "partition": 65,
+            "offset": 91
+          }
+        ]
+      }
+    },
+    "Error": {
+      "title": "Error",
+      "type": "object",
+      "properties": {
+        "error_code": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "example": "{\n    \"error_code\": 404,\n    \"message\": \"resource not found\"\n}"
+    },
+    "ProducerRecord": {
+      "title": "ProducerRecord",
+      "required": [
+        "value"
+      ],
+      "type": "object",
+      "properties": {
+        "partition": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "value": {
+          "type": [
+            "object",
+            "string"
+          ]
+        },
+        "key": {
+          "type": [
+            "object",
+            "string"
+          ]
+        }
+      },
+      "example": "{\n    \"key\": \"key\"\n    \"partition\": 23\n    \"value\": {\"foo\": \"bar\"}\n}"
+    },
+    "ProducerRecordList": {
+      "title": "ProducerRecordList",
+      "type": "object",
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProducerRecord"
+          }
+        }
+      },
+      "example": {
+        "records": [
+          {
+            "key": "key1",
+            "value": "value1"
+          },
+          {
+            "value": "value2",
+            "partition": 1
+          },
+          {
+            "value": "value3"
+          }
+        ]
+      }
+    },
+    "ProducerRecordToPartition": {
+      "title": "ProducerRecordToPartition",
+      "required": [
+        "value"
+      ],
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": [
+            "object",
+            "string"
+          ]
+        },
+        "key": {
+          "type": [
+            "object",
+            "string"
+          ]
+        }
+      },
+      "example": {
+        "value": {
+          "v": 128
+        },
+        "key": {
+          "k": "key"
+        }
+      }
+    },
+    "ProducerRecordToPartitionList": {
+      "title": "ProducerRecordToPartitionList",
+      "type": "object",
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProducerRecordToPartition"
+          }
+        }
+      },
+      "example": {
+        "records": [
+          {
+            "key": "key1",
+            "value": "value1"
+          },
+          {
+            "value": "value2"
+          }
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Consumers",
+      "description": "Consumer operations to create consumers in your Kafka cluster and perform common actions, such as subscribing to topics, retrieving processed records, and committing offsets."
+    },
+    {
+      "name": "Topics",
+      "description": "Topic operations to send messages to a specified topic or topic partition. You can include message keys in requests."
+    },
+    {
+      "name": "Seek",
+      "description": "Seek operations that enable a consumer to begin receiving messages from a given offset position."
+    },
+    {
+      "name": "Producer",
+      "description": "Producer operations to send records to a specified topic or topic partition."
+    }
+  ],
+  "externalDocs": {
+    "description": "Find out more about the Strimzi HTTP Bridge",
+    "url": "https://strimzi.io/documentation/"
+  }
+}
