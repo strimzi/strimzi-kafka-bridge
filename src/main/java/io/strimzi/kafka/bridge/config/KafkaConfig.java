@@ -12,9 +12,9 @@ import java.util.Map;
  */
 public class KafkaConfig {
 
-    private static final String KAFKA_BOOTSTRAP_SERVERS = "KAFKA_BOOTSTRAP_SERVERS";
+    public static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrapServers";
 
-    private static final String DEFAULT_BOOTSTRAP_SERVERS = "localhost:9092";
+    public static final String DEFAULT_BOOTSTRAP_SERVERS = "localhost:9092";
 
     private String bootstrapServers;
     private KafkaProducerConfig producerConfig;
