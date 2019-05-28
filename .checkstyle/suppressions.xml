@@ -8,4 +8,7 @@
 
     <!-- Note that [/\\] must be used as the path separator for cross-platform support -->
 
+    <suppress checks="NPathComplexity"
+              files="io[/\\]strimzi[/\\]kafka[/\\]bridge[/\\]Application.java"/>
+
 </suppressions>
