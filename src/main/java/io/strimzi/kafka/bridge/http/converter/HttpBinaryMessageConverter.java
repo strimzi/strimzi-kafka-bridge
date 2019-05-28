@@ -40,7 +40,7 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
                 partitionFromBody = json.getInteger("partition");
             }
             if (partition != null && partitionFromBody != null) {
-                throw new IllegalStateException("Partition specified in body and in request path.");
+                throw new IllegalStateException("Partition specified in body and in request path");
             }
             if (partition != null) {
                 partitionFromBody = partition;

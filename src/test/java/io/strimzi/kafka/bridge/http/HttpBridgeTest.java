@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.KafkaClusterTestBase;
 import io.strimzi.kafka.bridge.KafkaJsonDeserializer;
@@ -12,6 +13,7 @@ import io.strimzi.kafka.bridge.KafkaJsonSerializer;
 import io.strimzi.kafka.bridge.amqp.AmqpConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
+import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
@@ -1480,7 +1482,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
                     context.assertEquals(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), ar.result().statusCode());
-                    context.assertEquals("Unprocessable request.", ar.result().statusMessage());
+                    context.assertEquals("Unprocessable Entity", ar.result().statusMessage());
                     async.complete();
                 });
     }
@@ -1537,11 +1539,10 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
                     JsonArray offsets = bridgeResponse.getJsonArray("offsets");
                     context.assertEquals(1, offsets.size());
-                    int code = offsets.getJsonObject(0).getInteger("error_code");
-                    String statusMessage = offsets.getJsonObject(0).getString("error");
 
-                    context.assertEquals(ErrorCodeEnum.PARTITION_NOT_FOUND.getValue(), code);
-                    context.assertEquals("Invalid partition given with record: 1000 is not in the range [0...3).", statusMessage);
+                    HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(0));
+                    context.assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                    context.assertEquals("Invalid partition given with record: 1000 is not in the range [0...3).", error.getMessage());
                     async.complete();
                 });
     }
@@ -1703,8 +1704,10 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals("Unprocessable request.", response.statusMessage());
-                    context.assertEquals(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), response.statusCode());
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    context.assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
+                    context.assertEquals("Specified partition is not a valid number", error.getMessage());
                     async.complete();
                 });
     }
@@ -1738,8 +1741,10 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals("Unprocessable request.", response.statusMessage());
-                    context.assertEquals(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), response.statusCode());
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    context.assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
+                    context.assertEquals("Partition specified in body and in request path", error.getMessage());
                     async.complete();
                 });
     }

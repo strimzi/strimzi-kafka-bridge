@@ -5,6 +5,9 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
@@ -62,14 +65,20 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             try {
                 partition = Integer.parseInt(routingContext.pathParam("partitionid"));
             } catch (NumberFormatException ne) {
-                sendUnprocessableResponse(routingContext.response());
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                        "Specified partition is not a valid number");
+                sendResponse(routingContext.response(), HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.toJson());
                 return;
             }
         }
         try {
             records = messageConverter.toKafkaRecords(topic, partition, routingContext.getBody());
         } catch (Exception e) {
-            sendUnprocessableResponse(routingContext.response());
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                    e.getMessage());
+            sendResponse(routingContext.response(), HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.toJson());
             return;
         }
         List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
@@ -99,7 +108,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                     results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                 }
             }
-            sendMetadataResponse(results, routingContext.response());
+            sendResponse(routingContext.response(), HttpResponseStatus.OK.code(), buildOffsets(results));
         });
     }
 
@@ -108,42 +117,43 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
     }
 
-    private void sendMetadataResponse(List<HttpBridgeResult<?>> results, HttpServerResponse response) {
+    private JsonObject buildOffsets(List<HttpBridgeResult<?>> results) {
         JsonObject jsonResponse = new JsonObject();
         JsonArray offsets = new JsonArray();
 
         for (HttpBridgeResult<?> result : results) {
-            JsonObject offset = new JsonObject();
+            JsonObject offset = null;
             if (result.getResult() instanceof RecordMetadata) {
                 RecordMetadata metadata = (RecordMetadata) result.getResult();
-                offset.put("partition", metadata.getPartition());
-                offset.put("offset", metadata.getOffset());
+                offset = new JsonObject()
+                        .put("partition", metadata.getPartition())
+                        .put("offset", metadata.getOffset());
             } else if (result.getResult() instanceof HttpBridgeError) {
                 HttpBridgeError error = (HttpBridgeError) result.getResult();
-                offset.put("error_code", error.getCode());
-                offset.put("error", error.getMessage());
+                offset = error.toJson();
             }
             offsets.add(offset);
         }
         jsonResponse.put("offsets", offsets);
-
-        response.putHeader("Content-length", String.valueOf(jsonResponse.toBuffer().length()));
-        response.write(jsonResponse.toBuffer());
-        response.end();
+        return jsonResponse;
     }
 
     private int getCodeFromMsg(String msg) {
         if (msg.contains("Invalid partition")) {
-            return ErrorCodeEnum.PARTITION_NOT_FOUND.getValue();
+            return HttpResponseStatus.NOT_FOUND.code();
         } else {
-            return ErrorCodeEnum.INTERNAL_SERVER_ERROR.getValue();
+            return HttpResponseStatus.INTERNAL_SERVER_ERROR.code();
         }
     }
 
-    private void sendUnprocessableResponse(HttpServerResponse response) {
-        response.setStatusMessage("Unprocessable request.")
-                .setStatusCode(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue())
-                .end();
+    private void sendResponse(HttpServerResponse response, int statusCode, JsonObject body) {
+        response.setStatusCode(statusCode);
+        if (body != null) {
+            response.putHeader(HttpHeaderNames.CONTENT_TYPE, BridgeContentType.KAFKA_JSON);
+            response.putHeader(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(body.toBuffer().length()));
+            response.write(body.toBuffer());
+        }
+        response.end();
     }
 
     private MessageConverter<K, V, Buffer, Buffer> buildMessageConverter() {

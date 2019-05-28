@@ -5,6 +5,8 @@
 
 package io.strimzi.kafka.bridge.http.model;
 
+import io.vertx.core.json.JsonObject;
+
 /**
  * Represents an error related to HTTP bridging
  */
@@ -36,5 +38,24 @@ public class HttpBridgeError {
      */
     public String getMessage() {
         return message;
+    }
+
+    /**
+     * @return a JSON representation of the error with code and message
+     */
+    public JsonObject toJson() {
+        JsonObject json = new JsonObject();
+        json.put("error_code", this.code);
+        json.put("message", this.message);
+        return json;
+    }
+
+    /**
+     * Create an error instance from a JSON representation
+     * @param json JSON representation of the error
+     * @return error instance
+     */
+    public static HttpBridgeError fromJson(JsonObject json) {
+        return new HttpBridgeError(json.getInteger("error_code"), json.getString("message"));
     }
 }
