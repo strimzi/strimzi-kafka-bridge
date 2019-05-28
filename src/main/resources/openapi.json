@@ -24,7 +24,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Creates a consumer instance in the given consumer group. You can optionally specify a consumer name and supported configuration options. It resturns a base URI used to construct URIs for subsequent requests against this consumer instance.",
+                "description": "Creates a consumer instance in the given consumer group. You can optionally specify a consumer name and supported configuration options. It returns a base URI used to construct URIs for subsequent requests against this consumer instance.",
                 "operationId": "createConsumer",
                 "requestBody": {
                     "description": "Name and configuration of the consumer. The name is unique within the scope of the consumer group. If a name is not specified, a randomly generated name is assigned. All parameters are optional. The supported configuration options are shown in the following example.",
@@ -275,7 +275,7 @@
                         }
                     },
                     "409": {
-                        "description": "Subscription to topics, partitions, and patterns are mutually exclusive.",
+                        "description": "Subscriptions to topics, partitions, and patterns are mutually exclusive.",
                         "content": {
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
@@ -285,7 +285,7 @@
                                     "response": {
                                         "value": {
                                             "error_code": 409,
-                                            "message": "Subscription to topics, partitions, and patterns are mutually exclusive."
+                                            "message": "Subscriptions to topics, partitions, and patterns are mutually exclusive."
                                         }
                                     }
                                 }
@@ -450,7 +450,7 @@
                         }
                     },
                     "409": {
-                        "description": "Subscription to topics, partitions, and patterns are mutually exclusive.",
+                        "description": "Subscriptions to topics, partitions, and patterns are mutually exclusive.",
                         "content": {
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
@@ -460,7 +460,7 @@
                                     "response": {
                                         "value": {
                                             "error_code": 409,
-                                            "message": "Subscription to topics, partitions, and patterns are mutually exclusive."
+                                            "message": "Subscriptions to topics, partitions, and patterns are mutually exclusive."
                                         }
                                     }
                                 }
@@ -599,7 +599,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Retrieves records for a subscribed consumer, including message values, topics, and partitions. The operation MUST be routed to the Kafka Bridge instance that contains the consumer.",
+                "description": "Retrieves records for a subscribed consumer, including message values, topics, and partitions. The operation MUST be routed through the base URI of the consumer to the Kafka Bridge instance that contains the consumer.",
                 "operationId": "poll",
                 "responses": {
                     "200": {
@@ -868,7 +868,7 @@
                 "tags": [
                     "Consumers"
                 ],
-                "description": "Deletes a specified consumer instance. The operation MUST be routed to the Kafka Bridge instance that contains the consumer.",
+                "description": "Deletes a specified consumer instance. The operation MUST be routed through the base URI of the consumer to the Kafka Bridge instance that contains the consumer.",
                 "operationId": "deleteConsumer",
                 "responses": {
                     "204": {
@@ -1001,7 +1001,7 @@
                         "type": "string"
                     },
                     "fetch.min.bytes": {
-                        "description": "Sets the minimum ammount of data in bytes for the consumer to receive. The broker waits until the data to send exceeds this amount.",
+                        "description": "Sets the minimum ammount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount.",
                         "type": "string"
                     },
                     "consumer.request.timeout.ms": {
