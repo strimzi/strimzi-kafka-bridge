@@ -30,7 +30,7 @@
         "tags": [
           "Consumers"
         ],
-        "description": "Creates a consumer instance in the given consumer group. You can optionally specify a consumer name and supported configuration options. It returns a base URI used to construct URIs for subsequent requests against this consumer instance.",
+        "description": "Creates a consumer instance in the given consumer group. You can optionally specify a consumer name and supported configuration options. It returns a base URI which must be used to construct URLs for subsequent requests against this consumer instance.",
         "operationId": "createConsumer",
         "consumes": [
           "application/vnd.kafka.v2+json"
@@ -535,7 +535,7 @@
         "tags": [
           "Consumers"
         ],
-        "description": "Retrieves records for a subscribed consumer, including message values, topics, and partitions. The operation MUST be routed through the base URI of the consumer to the Kafka Bridge instance that contains the consumer.",
+        "description": "Retrieves records for a subscribed consumer, including message values, topics, and partitions. The request for this operation MUST use the base URL (including the host and port) returned in the response from the `POST` request to `/consumers/{groupid}` that was used to create this consumer.",
         "operationId": "poll",
         "produces": [
           "application/vnd.kafka.json.v2+json",
@@ -729,7 +729,7 @@
         "tags": [
           "Consumers"
         ],
-        "description": "Deletes a specified consumer instance. The operation MUST be routed through the base URI of the consumer to the Kafka Bridge instance that contains the consumer.",
+        "description": "Deletes a specified consumer instance. The request for this operation MUST use the base URL (including the host and port) returned in the response from the `POST` request to `/consumers/{groupid}` that was used to create this consumer.",
         "operationId": "deleteConsumer",
         "consumes": [
           "application/vnd.kafka.v2+json"
