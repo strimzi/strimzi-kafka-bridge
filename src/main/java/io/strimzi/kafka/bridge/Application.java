@@ -35,6 +35,10 @@ public class Application {
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx();
 
+        if (args.length == 0) {
+            log.error("Configuration file not specified");
+            return;
+        }
         String path = args[0];
         if (args.length > 1) {
             path = args[0] + "=" + args[1];

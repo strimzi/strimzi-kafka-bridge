@@ -10,4 +10,4 @@ COPY scripts/ /
 
 EXPOSE 5672 5671 8080
 
-CMD ["/run_bridge.sh"]
+#CMD ["/run_bridge.sh"]
