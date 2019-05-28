@@ -9,6 +9,9 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.KafkaClusterTestBase;
 import io.strimzi.kafka.bridge.KafkaJsonDeserializer;
 import io.strimzi.kafka.bridge.KafkaJsonSerializer;
+import io.strimzi.kafka.bridge.amqp.AmqpConfig;
+import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
+import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
@@ -21,7 +24,9 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
@@ -47,7 +52,14 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
     private static final Logger log = LoggerFactory.getLogger(HttpBridgeTest.class);
 
-    private static Map<String, String> envVars = new HashMap<>();
+    private static Map<String, Object> config = new HashMap<>();
+
+    static {
+        config.put(AmqpConfig.AMQP_ENABLED, true);
+        config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+    }
 
     private static final String BRIDGE_HOST = "127.0.0.1";
     private static final int BRIDGE_PORT = 8080;
@@ -68,8 +80,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         vertx = Vertx.vertx();
 
-        envVars.put("HTTP_ENABLED", "true");
-        this.bridgeConfigProperties = HttpBridgeConfig.fromMap(envVars);
+        this.bridgeConfigProperties = HttpBridgeConfig.fromMap(config);
         this.httpBridge = new HttpBridge(this.bridgeConfigProperties);
 
         this.vertx.deployVerticle(this.httpBridge, context.asyncAssertSuccess());

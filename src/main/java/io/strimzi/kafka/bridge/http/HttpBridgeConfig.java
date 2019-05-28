@@ -6,7 +6,8 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.strimzi.kafka.bridge.config.KafkaConfig;
+import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
+import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 
 import java.util.Map;
 
@@ -15,15 +16,29 @@ import java.util.Map;
  */
 public class HttpBridgeConfig extends BridgeConfig<HttpConfig> {
 
-    public HttpBridgeConfig(KafkaConfig kafkaConfig, HttpConfig httpConfig) {
-        super(kafkaConfig);
+    /**
+     * Constructor
+     *
+     * @param kafkaConsumerConfig Kafka consumer related configuration
+     * @param kafkaProducerConfig Kafka producer related configuration
+     * @param httpConfig HTTP related configuration
+     */
+    public HttpBridgeConfig(KafkaConsumerConfig kafkaConsumerConfig, KafkaProducerConfig kafkaProducerConfig, HttpConfig httpConfig) {
+        super(kafkaConsumerConfig, kafkaProducerConfig);
         this.endpointConfig = httpConfig;
     }
 
-    public static HttpBridgeConfig fromMap(Map<String, String> map) {
-        KafkaConfig kafkaConfig = KafkaConfig.fromMap(map);
+    /**
+     * Loads all HTTP bridge configuration parameters from a related map
+     *
+     * @param map map from which loading configuration parameters
+     * @return HTTP bridge related configuration
+     */
+    public static HttpBridgeConfig fromMap(Map<String, Object> map) {
+        KafkaConsumerConfig kafkaConsumerConfig = KafkaConsumerConfig.fromMap(map);
+        KafkaProducerConfig kafkaProducerConfig = KafkaProducerConfig.fromMap(map);
         HttpConfig httpConfig = HttpConfig.fromMap(map);
 
-        return new HttpBridgeConfig(kafkaConfig, httpConfig);
+        return new HttpBridgeConfig(kafkaConsumerConfig, kafkaProducerConfig, httpConfig);
     }
 }

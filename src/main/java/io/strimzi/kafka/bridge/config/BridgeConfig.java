@@ -11,18 +11,33 @@ package io.strimzi.kafka.bridge.config;
  */
 public abstract class BridgeConfig<T> {
 
-    protected KafkaConfig kafkaConfig;
+    protected KafkaConsumerConfig kafkaConsumerConfig;
+    protected KafkaProducerConfig kafkaProducerConfig;
     protected T endpointConfig;
 
-    public BridgeConfig(KafkaConfig kafkaConfigProperties) {
-        this.kafkaConfig = kafkaConfigProperties;
+    /**
+     * Constructor
+     *
+     * @param kafkaConsumerConfig Kafka consumer related configuration
+     * @param kafkaProducerConfig Kafka producer related configuration
+     */
+    public BridgeConfig(KafkaConsumerConfig kafkaConsumerConfig, KafkaProducerConfig kafkaProducerConfig) {
+        this.kafkaConsumerConfig = kafkaConsumerConfig;
+        this.kafkaProducerConfig = kafkaProducerConfig;
     }
 
     /**
-     * @return the Kafka related configuration
+      * @return Kafka consumer related configuration
      */
-    public KafkaConfig getKafkaConfig() {
-        return this.kafkaConfig;
+    public KafkaConsumerConfig getKafkaConsumerConfig() {
+        return this.kafkaConsumerConfig;
+    }
+
+    /**
+     * @return Kafka producer related configuration
+     */
+    public KafkaProducerConfig getKafkaProducerConfig() {
+        return this.kafkaProducerConfig;
     }
 
     /**
@@ -35,7 +50,8 @@ public abstract class BridgeConfig<T> {
     @Override
     public String toString() {
         return "BridgeConfig(" +
-                "kafkaConfig=" + this.kafkaConfig +
+                "kafkaConsumerConfig=" + this.kafkaConsumerConfig +
+                ",kafkaProducerConfig=" + this.kafkaProducerConfig +
                 ",endpointConfig=" + this.endpointConfig +
                 ")";
     }

@@ -26,6 +26,7 @@ import io.vertx.proton.ProtonSender;
 import io.vertx.proton.ProtonServer;
 import io.vertx.proton.ProtonServerOptions;
 import io.vertx.proton.ProtonSession;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -113,8 +114,12 @@ public class AmqpBridge extends AbstractVerticle {
                     if (ar.succeeded()) {
 
                         log.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
-                        log.info("Kafka bootstrap servers {}",
-                                this.amqpBridgeConfig.getKafkaConfig().getBootstrapServers());
+                        log.info("Kafka: consumer bootstrap servers {}, producer bootstrap servers {}",
+                                this.amqpBridgeConfig.getKafkaConsumerConfig().getConfig()
+                                        .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG),
+                                this.amqpBridgeConfig.getKafkaProducerConfig().getConfig()
+                                        .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
+                        );
 
                         this.isReady = true;
                         this.startHealthServer();
@@ -155,8 +160,12 @@ public class AmqpBridge extends AbstractVerticle {
                 this.processConnection(connection);
 
                 log.info("AMQP-Kafka Bridge started and connected in client mode to {}:{}", host, port);
-                log.info("Kafka bootstrap servers {}",
-                        this.amqpBridgeConfig.getKafkaConfig().getBootstrapServers());
+                log.info("Kafka: consumer bootstrap servers {}, producer bootstrap servers {}",
+                        this.amqpBridgeConfig.getKafkaConsumerConfig().getConfig()
+                                .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG),
+                        this.amqpBridgeConfig.getKafkaProducerConfig().getConfig()
+                                .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
+                );
 
                 this.isReady = true;
 

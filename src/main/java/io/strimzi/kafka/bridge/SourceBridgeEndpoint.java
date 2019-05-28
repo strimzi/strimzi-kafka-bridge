@@ -6,6 +6,7 @@
 package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -100,16 +101,14 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
     @Override
     public void open() {
 
+        KafkaProducerConfig producerConfig = this.bridgeConfigProperties.getKafkaProducerConfig();
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getBootstrapServers());
-        props.put(ProducerConfig.ACKS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getProducerConfig().getAcks());
+        props.putAll(producerConfig.getConfig());
 
         this.producerUnsettledMode = KafkaProducer.create(this.vertx, props, this.keySerializer, this.valueSerializer);
 
-        props.clear();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getBootstrapServers());
+        // overrides for AMQP - Kafka settled producer mode
         props.put(ProducerConfig.ACKS_CONFIG, "0");
-
         this.producerSettledMode = KafkaProducer.create(this.vertx, props, this.keySerializer, this.valueSerializer);
     }
 

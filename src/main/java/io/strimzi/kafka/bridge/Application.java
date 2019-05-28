@@ -8,8 +8,6 @@ package io.strimzi.kafka.bridge;
 import io.strimzi.kafka.bridge.amqp.AmqpBridge;
 import io.strimzi.kafka.bridge.amqp.AmqpBridgeConfig;
 import io.strimzi.kafka.bridge.amqp.AmqpConfig;
-import io.strimzi.kafka.bridge.amqp.AmqpMode;
-import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 import io.strimzi.kafka.bridge.http.HttpBridge;
@@ -24,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.Map;
 
 /**
  * Apache Kafka bridge main application class
@@ -50,32 +49,14 @@ public class Application {
         ConfigRetriever retriever = ConfigRetriever.create(vertx, options);
         retriever.getConfig(ar -> {
 
-            JsonObject config = ar.result();
+            Map<String, Object> config = ar.result().getMap();
 
-            AmqpConfig amqpConfig = new AmqpConfig(Boolean.valueOf(config.getString(AmqpConfig.AMQP_ENABLED, String.valueOf(AmqpConfig.DEFAULT_AMQP_ENABLED))),
-                    AmqpMode.from(config.getString(AmqpConfig.DEFAULT_AMQP_MODE, AmqpConfig.DEFAULT_AMQP_MODE)),
-                    Integer.valueOf(config.getString(AmqpConfig.AMQP_FLOW_CREDIT, String.valueOf(AmqpConfig.DEFAULT_FLOW_CREDIT))),
-                    config.getString(AmqpConfig.AMQP_HOST, AmqpConfig.DEFAULT_HOST),
-                    Integer.valueOf(config.getString(AmqpConfig.AMQP_PORT, String.valueOf(AmqpConfig.DEFAULT_PORT))),
-                    config.getString(AmqpConfig.AMQP_MESSAGE_CONVERTER, AmqpConfig.DEFAULT_MESSAGE_CONVERTER),
-                    config.getString(AmqpConfig.AMQP_CERT_DIR, AmqpConfig.DEFAULT_CERT_DIR));
+            AmqpConfig amqpConfig = AmqpConfig.fromMap(config);
+            HttpConfig httpConfig = HttpConfig.fromMap(config);
+            KafkaConsumerConfig kafkaConsumerConfig = KafkaConsumerConfig.fromMap(config);
+            KafkaProducerConfig kafkaProducerConfig = KafkaProducerConfig.fromMap(config);
 
-            HttpConfig httpConfig = new HttpConfig(Boolean.valueOf(config.getString(HttpConfig.HTTP_ENABLED, String.valueOf(HttpConfig.DEFAULT_HTTP_ENABLED))),
-                    config.getString(HttpConfig.HTTP_HOST, HttpConfig.DEFAULT_HOST),
-                    Integer.valueOf(config.getString(HttpConfig.HTTP_PORT, String.valueOf(HttpConfig.DEFAULT_PORT))));
-
-            KafkaConsumerConfig kafkaConsumerConfig = new KafkaConsumerConfig(config.getString(KafkaConsumerConfig.KAFKA_CONSUMER_AUTO_OFFSET_RESET,
-                    KafkaConsumerConfig.DEFAULT_AUTO_OFFSET_RESET));
-            KafkaProducerConfig kafkaProducerConfig = new KafkaProducerConfig(config.getString(KafkaProducerConfig.KAFKA_PRODUCER_ACKS,
-                    KafkaProducerConfig.DEFAULT_ACKS));
-
-            KafkaConfig kafkaConfig = new KafkaConfig(config.getString(KafkaConfig.KAFKA_BOOTSTRAP_SERVERS, KafkaConfig.DEFAULT_BOOTSTRAP_SERVERS),
-                    Boolean.valueOf(config.getString(KafkaConfig.KAFKA_TLS_ENABLED, String.valueOf(KafkaConfig.DEFAULT_KAFKA_TLS_ENABLED))),
-                    config.getString(KafkaConfig.KAFKA_TLS_TRUSTSTORE_LOCATION, KafkaConfig.DEFAULT_KAFKA_TLS_TRUSTSTORE_LOCATION),
-                    config.getString(KafkaConfig.KAFKA_TLS_TRUSTSTORE_PASSWORD, KafkaConfig.DEFAULT_KAFKA_TLS_TRUSTSTORE_PASSWORD),
-                    kafkaProducerConfig, kafkaConsumerConfig);
-
-            AmqpBridgeConfig amqpBridgeConfig = new AmqpBridgeConfig(kafkaConfig, amqpConfig);
+            AmqpBridgeConfig amqpBridgeConfig = AmqpBridgeConfig.fromMap(config);
             if (amqpBridgeConfig.getEndpointConfig().isEnabled()) {
                 AmqpBridge amqpBridge = new AmqpBridge(amqpBridgeConfig);
                 vertx.deployVerticle(amqpBridge, done -> {
@@ -87,7 +68,7 @@ public class Application {
                 });
             }
 
-            HttpBridgeConfig httpBridgeConfig = new HttpBridgeConfig(kafkaConfig, httpConfig);
+            HttpBridgeConfig httpBridgeConfig = HttpBridgeConfig.fromMap(config);
             if (httpBridgeConfig.getEndpointConfig().isEnabled()) {
                 HttpBridge httpBridge = new HttpBridge(httpBridgeConfig);
                 vertx.deployVerticle(httpBridge, done -> {

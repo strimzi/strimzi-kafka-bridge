@@ -6,42 +6,22 @@
 package io.strimzi.kafka.bridge.config;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Apache Kafka consumer related configuration
  */
-public class KafkaConsumerConfig {
+public class KafkaConsumerConfig extends AbstractConfig {
 
-    public static final String KAFKA_CONSUMER_AUTO_OFFSET_RESET = "kafka.consumer.autoOffsetReset";
-
-    public static final String DEFAULT_AUTO_OFFSET_RESET = "earliest";
-    private static final boolean DEFAULT_ENABLE_AUTO_COMMIT = false;
-
-    private String autoOffsetReset;
-    private boolean isEnableAutoCommit;
+    public static final String KAFKA_CONSUMER_CONFIG_PREFIX = "kafka.consumer.";
 
     /**
      * Constructor
      *
-     * @param autoOffsetReset the initial offset behavior
+     * @param config configuration parameters map
      */
-    public KafkaConsumerConfig(String autoOffsetReset) {
-        this.autoOffsetReset = autoOffsetReset;
-        this.isEnableAutoCommit = DEFAULT_ENABLE_AUTO_COMMIT;
-    }
-
-    /**
-     * @return the initial offset behavior
-     */
-    public String getAutoOffsetReset() {
-        return this.autoOffsetReset;
-    }
-
-    /**
-     * @return if auto commit is enabled or not
-     */
-    public boolean isEnableAutoCommit() {
-        return this.isEnableAutoCommit;
+    private KafkaConsumerConfig(Map<String, Object> config) {
+        super(config);
     }
 
     /**
@@ -50,17 +30,17 @@ public class KafkaConsumerConfig {
      * @param map map from which loading configuration parameters
      * @return Kafka consumer related configuration
      */
-    public static KafkaConsumerConfig fromMap(Map<String, String> map) {
-        String autoOffsetReset = map.getOrDefault(KafkaConsumerConfig.KAFKA_CONSUMER_AUTO_OFFSET_RESET, KafkaConsumerConfig.DEFAULT_AUTO_OFFSET_RESET);
-
-        return new KafkaConsumerConfig(autoOffsetReset);
+    public static KafkaConsumerConfig fromMap(Map<String, Object> map) {
+        // filter the Kafka consumer related configuration parameters, stripping the prefix as well
+        return new KafkaConsumerConfig(map.entrySet().stream()
+                .filter(e -> e.getKey().startsWith(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX))
+                .collect(Collectors.toMap(e -> e.getKey().substring(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX.length()), Map.Entry::getValue)));
     }
 
     @Override
     public String toString() {
         return "KafkaConsumerConfig(" +
-                "autoOffsetReset=" + this.autoOffsetReset +
-                ",isEnableAutoCommit=" + this.isEnableAutoCommit +
+                "config=" + this.config +
                 ")";
     }
 }

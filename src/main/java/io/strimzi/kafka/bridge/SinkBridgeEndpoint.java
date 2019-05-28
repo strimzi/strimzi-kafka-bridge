@@ -6,7 +6,7 @@
 package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.strimzi.kafka.bridge.config.KafkaConfig;
+import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.tracker.OffsetTracker;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
@@ -18,10 +18,8 @@ import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
-import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,18 +149,10 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected void initConsumer(boolean shouldAttachBatchHandler, Properties config) {
 
         // create a consumer
-        KafkaConfig consumerConfig = this.bridgeConfigProperties.getKafkaConfig();
+        KafkaConsumerConfig consumerConfig = this.bridgeConfigProperties.getKafkaConsumerConfig();
         Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, consumerConfig.getBootstrapServers());
+        props.putAll(consumerConfig.getConfig());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
-        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, consumerConfig.getConsumerConfig().isEnableAutoCommit());
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, consumerConfig.getConsumerConfig().getAutoOffsetReset());
-
-        if (this.bridgeConfigProperties.getKafkaConfig().isTlsEnabled()) {
-            props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
-            props.put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getTlsTruststoreLocation());
-            props.put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, this.bridgeConfigProperties.getKafkaConfig().getTlsTruststorePassword());
-        }
 
         if (config != null)
             props.putAll(config);

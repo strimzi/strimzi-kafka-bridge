@@ -6,7 +6,8 @@
 package io.strimzi.kafka.bridge.amqp;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.strimzi.kafka.bridge.config.KafkaConfig;
+import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
+import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 
 import java.util.Map;
 
@@ -15,15 +16,29 @@ import java.util.Map;
  */
 public class AmqpBridgeConfig extends BridgeConfig<AmqpConfig> {
 
-    public AmqpBridgeConfig(KafkaConfig kafkaConfig, AmqpConfig amqpConfig) {
-        super(kafkaConfig);
+    /**
+     * Constructor
+     *
+     * @param kafkaConsumerConfig Kafka consumer related configuration
+     * @param kafkaProducerConfig Kafka producer related configuration
+     * @param amqpConfig AMQP related configuration
+     */
+    private AmqpBridgeConfig(KafkaConsumerConfig kafkaConsumerConfig, KafkaProducerConfig kafkaProducerConfig, AmqpConfig amqpConfig) {
+        super(kafkaConsumerConfig, kafkaProducerConfig);
         this.endpointConfig = amqpConfig;
     }
 
-    public static AmqpBridgeConfig fromMap(Map<String, String> map) {
-        KafkaConfig kafkaConfig = KafkaConfig.fromMap(map);
+    /**
+     * Loads all AMQP bridge configuration parameters from a related map
+     *
+     * @param map map from which loading configuration parameters
+     * @return AMQP bridge related configuration
+     */
+    public static AmqpBridgeConfig fromMap(Map<String, Object> map) {
+        KafkaConsumerConfig kafkaConsumerConfig = KafkaConsumerConfig.fromMap(map);
+        KafkaProducerConfig kafkaProducerConfig = KafkaProducerConfig.fromMap(map);
         AmqpConfig amqpConfig = AmqpConfig.fromMap(map);
 
-        return new AmqpBridgeConfig(kafkaConfig, amqpConfig);
+        return new AmqpBridgeConfig(kafkaConsumerConfig, kafkaProducerConfig, amqpConfig);
     }
 }

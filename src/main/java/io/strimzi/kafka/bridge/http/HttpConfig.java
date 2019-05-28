@@ -5,57 +5,54 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.strimzi.kafka.bridge.config.AbstractConfig;
+
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * HTTP related configuration
  */
-public class HttpConfig {
+public class HttpConfig extends AbstractConfig {
 
-    public static final String HTTP_ENABLED = "http.enabled";
-    public static final String HTTP_HOST = "http.host";
-    public static final String HTTP_PORT = "http.port";
+    public static final String HTTP_CONFIG_PREFIX = "http.";
+
+    public static final String HTTP_ENABLED = HTTP_CONFIG_PREFIX + "enabled";
+    public static final String HTTP_HOST = HTTP_CONFIG_PREFIX + "host";
+    public static final String HTTP_PORT = HTTP_CONFIG_PREFIX + "port";
 
     public static final boolean DEFAULT_HTTP_ENABLED = true;
     public static final String DEFAULT_HOST = "0.0.0.0";
     public static final int DEFAULT_PORT = 8080;
 
-    private boolean enabled;
-    private String host;
-    private int port;
-
     /**
      * Constructor
      *
-     * @param enabled if the HTTP protocol is enabled
-     * @param host the host for HTTP server (to bind)
-     * @param port the port for HTTP server (to bind)
+     * @param config configuration parameters map
      */
-    public HttpConfig(boolean enabled, String host, int port) {
-        this.enabled = enabled;
-        this.host = host;
-        this.port = port;
+    private HttpConfig(Map<String, Object> config) {
+        super(config);
     }
 
     /**
      * @return if the HTTP protocol head is enabled
      */
     public boolean isEnabled() {
-        return this.enabled;
+        return Boolean.valueOf(this.config.getOrDefault(HTTP_ENABLED, DEFAULT_HTTP_ENABLED).toString());
     }
 
     /**
      * @return the host for HTTP server (to bind)
      */
     public String getHost() {
-        return host;
+        return (String) this.config.getOrDefault(HTTP_HOST, DEFAULT_HOST);
     }
 
     /**
      * @return the port for HTTP server (to bind)
      */
     public int getPort() {
-        return port;
+        return (Integer) this.config.getOrDefault(HTTP_PORT, DEFAULT_PORT);
     }
 
     /**
@@ -64,28 +61,17 @@ public class HttpConfig {
      * @param map map from which loading configuration parameters
      * @return HTTP related configuration
      */
-    public static HttpConfig fromMap(Map<String, String> map) {
-
-        String enabledEnvVar = map.get(HttpConfig.HTTP_ENABLED);
-        boolean enabled = enabledEnvVar != null ? Boolean.valueOf(enabledEnvVar) : HttpConfig.DEFAULT_HTTP_ENABLED;
-
-        String host = map.getOrDefault(HttpConfig.HTTP_HOST, HttpConfig.DEFAULT_HOST);
-
-        int port = HttpConfig.DEFAULT_PORT;
-        String portEnvVar = map.get(HttpConfig.HTTP_PORT);
-        if (portEnvVar != null) {
-            port = Integer.parseInt(portEnvVar);
-        }
-
-        return new HttpConfig(enabled, host, port);
+    public static HttpConfig fromMap(Map<String, Object> map) {
+        // filter the HTTP related configuration parameters, stripping the prefix as well
+        return new HttpConfig(map.entrySet().stream()
+                .filter(e -> e.getKey().startsWith(HttpConfig.HTTP_CONFIG_PREFIX))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
     @Override
     public String toString() {
         return "HttpConfig(" +
-                "enabled=" + this.enabled +
-                ",host=" + this.host +
-                ",port=" + this.port +
+                "config=" + this.config +
                 ")";
     }
 }
