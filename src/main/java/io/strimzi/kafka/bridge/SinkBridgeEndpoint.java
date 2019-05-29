@@ -6,7 +6,7 @@
 package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
+import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.tracker.OffsetTracker;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
@@ -149,9 +149,10 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected void initConsumer(boolean shouldAttachBatchHandler, Properties config) {
 
         // create a consumer
-        KafkaConsumerConfig consumerConfig = this.bridgeConfigProperties.getKafkaConsumerConfig();
+        KafkaConfig kafkaConfig = this.bridgeConfigProperties.getKafkaConfig();
         Properties props = new Properties();
-        props.putAll(consumerConfig.getConfig());
+        props.putAll(kafkaConfig.getConfig());
+        props.putAll(kafkaConfig.getConsumerConfig().getConfig());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
 
         if (config != null)

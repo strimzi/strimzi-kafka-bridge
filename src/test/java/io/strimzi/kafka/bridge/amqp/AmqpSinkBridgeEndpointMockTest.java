@@ -6,8 +6,8 @@
 package io.strimzi.kafka.bridge.amqp;
 
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
+import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
-import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.vertx.core.AsyncResult;
@@ -26,7 +26,6 @@ import io.vertx.proton.ProtonQoS;
 import io.vertx.proton.ProtonSender;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.qpid.proton.amqp.Symbol;
@@ -63,9 +62,8 @@ public class AmqpSinkBridgeEndpointMockTest {
 
     static {
         config.put(AmqpConfig.AMQP_ENABLED, true);
-        config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
     }
 
     class MockRecordProducer {

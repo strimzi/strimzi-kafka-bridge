@@ -64,10 +64,8 @@ public class HttpBridge extends AbstractVerticle {
                 .listen(httpServerAsyncResult -> {
                     if (httpServerAsyncResult.succeeded()) {
                         log.info("HTTP-Kafka Bridge started and listening on port {}", httpServerAsyncResult.result().actualPort());
-                        log.info("Kafka: consumer bootstrap servers {}, producer bootstrap servers {}",
-                                this.httpBridgeConfig.getKafkaConsumerConfig().getConfig()
-                                        .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG),
-                                this.httpBridgeConfig.getKafkaProducerConfig().getConfig()
+                        log.info("HTTP-Kafka Bridge bootstrap servers {}",
+                                this.httpBridgeConfig.getKafkaConfig().getConfig()
                                         .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
                         );
 

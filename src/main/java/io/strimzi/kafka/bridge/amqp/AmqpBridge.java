@@ -114,10 +114,8 @@ public class AmqpBridge extends AbstractVerticle {
                     if (ar.succeeded()) {
 
                         log.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
-                        log.info("Kafka: consumer bootstrap servers {}, producer bootstrap servers {}",
-                                this.amqpBridgeConfig.getKafkaConsumerConfig().getConfig()
-                                        .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG),
-                                this.amqpBridgeConfig.getKafkaProducerConfig().getConfig()
+                        log.info("AMQP-Kafka Bridge bootstrap servers {}",
+                                this.amqpBridgeConfig.getKafkaConfig().getConfig()
                                         .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
                         );
 
@@ -160,10 +158,8 @@ public class AmqpBridge extends AbstractVerticle {
                 this.processConnection(connection);
 
                 log.info("AMQP-Kafka Bridge started and connected in client mode to {}:{}", host, port);
-                log.info("Kafka: consumer bootstrap servers {}, producer bootstrap servers {}",
-                        this.amqpBridgeConfig.getKafkaConsumerConfig().getConfig()
-                                .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG),
-                        this.amqpBridgeConfig.getKafkaProducerConfig().getConfig()
+                log.info("AMQP-Kafka Bridge bootstrap servers {}",
+                        this.amqpBridgeConfig.getKafkaConfig().getConfig()
                                 .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
                 );
 

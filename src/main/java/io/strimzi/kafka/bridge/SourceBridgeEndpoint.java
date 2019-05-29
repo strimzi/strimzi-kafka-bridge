@@ -6,7 +6,7 @@
 package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
+import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -101,9 +101,10 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
     @Override
     public void open() {
 
-        KafkaProducerConfig producerConfig = this.bridgeConfigProperties.getKafkaProducerConfig();
+        KafkaConfig kafkaConfig = this.bridgeConfigProperties.getKafkaConfig();
         Properties props = new Properties();
-        props.putAll(producerConfig.getConfig());
+        props.putAll(kafkaConfig.getConfig());
+        props.putAll(kafkaConfig.getProducerConfig().getConfig());
 
         this.producerUnsettledMode = KafkaProducer.create(this.vertx, props, this.keySerializer, this.valueSerializer);
 
