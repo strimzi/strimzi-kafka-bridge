@@ -8,8 +8,6 @@ package io.strimzi.kafka.bridge.http;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
-import io.strimzi.kafka.bridge.KafkaJsonDeserializer;
-import io.strimzi.kafka.bridge.KafkaJsonSerializer;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
@@ -187,7 +185,8 @@ public class HttpBridge extends AbstractVerticle {
         JsonObject body = routingContext.getBodyAsJson();
         EmbeddedFormat format = EmbeddedFormat.from(body.getString("format", "binary"));
 
-        final SinkBridgeEndpoint sink = this.getHttpSinkBridgeEndpoint(format);
+        final SinkBridgeEndpoint sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+                format, new ByteArrayDeserializer(), new ByteArrayDeserializer());
 
         sink.closeHandler(s -> {
             httpBridgeContext.getHttpSinkEndpoints().remove(sink.name());
@@ -295,7 +294,8 @@ public class HttpBridge extends AbstractVerticle {
         SourceBridgeEndpoint source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
 
         if (source == null) {
-            source = this.getHttpSourceBridgeEndpoint(contentType);
+            source = new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+                    contentTypeToFormat(contentType), new ByteArraySerializer(), new ByteArraySerializer());
 
             source.closeHandler(s -> {
                 this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
@@ -329,29 +329,13 @@ public class HttpBridge extends AbstractVerticle {
         }
     }
 
-    private HttpSinkBridgeEndpoint getHttpSinkBridgeEndpoint(EmbeddedFormat format) {
-        switch (format) {
-            case BINARY:
-                return new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
-                        EmbeddedFormat.BINARY, new ByteArrayDeserializer(), new ByteArrayDeserializer());
-            case JSON:
-                return new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
-                        EmbeddedFormat.JSON, new KafkaJsonDeserializer<>(Object.class), new KafkaJsonDeserializer<>(Object.class));
-            default:
-                return null;
-        }
-    }
-
-    private HttpSourceBridgeEndpoint getHttpSourceBridgeEndpoint(String contentType) {
+    private EmbeddedFormat contentTypeToFormat(String contentType) {
         switch (contentType) {
             case BridgeContentType.KAFKA_JSON_BINARY:
-                return new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
-                        EmbeddedFormat.BINARY, new ByteArraySerializer(), new ByteArraySerializer());
+                return EmbeddedFormat.BINARY;
             case BridgeContentType.KAFKA_JSON_JSON:
-                return new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
-                        EmbeddedFormat.JSON, new KafkaJsonSerializer(), new KafkaJsonSerializer());
+                return EmbeddedFormat.JSON;
         }
         throw new IllegalArgumentException(contentType);
     }
-
 }
