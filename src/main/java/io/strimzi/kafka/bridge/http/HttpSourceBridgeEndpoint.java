@@ -5,7 +5,6 @@
 
 package io.strimzi.kafka.bridge.http;
 
-import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
@@ -21,7 +20,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -68,7 +66,8 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                 HttpBridgeError error = new HttpBridgeError(
                         HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                         "Specified partition is not a valid number");
-                sendResponse(routingContext.response(), HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.toJson());
+                HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                 return;
             }
         }
@@ -78,7 +77,8 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     e.getMessage());
-            sendResponse(routingContext.response(), HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.toJson());
+            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             return;
         }
         List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
@@ -108,7 +108,8 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                     results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                 }
             }
-            sendResponse(routingContext.response(), HttpResponseStatus.OK.code(), buildOffsets(results));
+            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.OK.code(),
+                    BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
         });
     }
 
@@ -144,16 +145,6 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         } else {
             return HttpResponseStatus.INTERNAL_SERVER_ERROR.code();
         }
-    }
-
-    private void sendResponse(HttpServerResponse response, int statusCode, JsonObject body) {
-        response.setStatusCode(statusCode);
-        if (body != null) {
-            response.putHeader(HttpHeaderNames.CONTENT_TYPE, BridgeContentType.KAFKA_JSON);
-            response.putHeader(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(body.toBuffer().length()));
-            response.write(body.toBuffer());
-        }
-        response.end();
     }
 
     private MessageConverter<K, V, Buffer, Buffer> buildMessageConverter() {

@@ -5,12 +5,14 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.KafkaJsonDeserializer;
 import io.strimzi.kafka.bridge.KafkaJsonSerializer;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
+import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpConnection;
@@ -103,10 +105,12 @@ public class HttpBridge extends AbstractVerticle {
                 this.router = routerFactory.getRouter();
 
                 this.router.errorHandler(404, r -> {
-                    r.response()
-                            .setStatusCode(ErrorCodeEnum.BAD_REQUEST.getValue())
-                            .setStatusMessage("Invalid request")
-                            .end();
+                    HttpBridgeError error = new HttpBridgeError(
+                            HttpResponseStatus.BAD_REQUEST.code(),
+                            null
+                    );
+                    HttpUtils.sendResponse(r.response(), HttpResponseStatus.BAD_REQUEST.code(),
+                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                 });
 
                 log.info("Starting HTTP-Kafka bridge verticle...");
@@ -207,10 +211,12 @@ public class HttpBridge extends AbstractVerticle {
 
             this.httpBridgeContext.getHttpSinkEndpoints().remove(deleteInstanceID);
         } else {
-            routingContext.response()
-                    .setStatusCode(ErrorCodeEnum.NOT_FOUND.getValue())
-                    .setStatusMessage("Endpoint not found")
-                    .end();
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.NOT_FOUND.code(),
+                    "The specified consumer instance was not found."
+            );
+            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NOT_FOUND.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
         }
     }
 
@@ -267,10 +273,12 @@ public class HttpBridge extends AbstractVerticle {
         if (sinkEndpoint != null) {
             sinkEndpoint.handle(new HttpEndpoint(routingContext));
         } else {
-            routingContext.response()
-                    .setStatusCode(ErrorCodeEnum.CONSUMER_NOT_FOUND.getValue())
-                    .setStatusMessage("Consumer instance not found")
-                    .end();
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.NOT_FOUND.code(),
+                    "The specified consumer instance was not found."
+            );
+            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NOT_FOUND.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
         }
     }
 
