@@ -1022,6 +1022,17 @@
                     }
                 }
             ]
+        },
+        "/readiness": {
+            "get": {
+                "description": "This endpoint serves for readiness check.",
+                "operationId": "readinessCheck",
+                "responses": {
+                    "200": {
+                        "description": "Server is alive and responding."
+                    }
+                }
+            }
         }
     },
     "components": {

@@ -96,6 +96,7 @@ public class HttpBridge extends AbstractVerticle {
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK.toString(), this::seek);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString(), this::seekToBeginning);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this::seekToEnd);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.READINESS_CHECK.toString(), this::readinessCheck);
 
                 routerFactory.addFailureHandlerByOperationId(HttpOpenApiOperations.SEND.toString(), this::send);
                 routerFactory.addFailureHandlerByOperationId(HttpOpenApiOperations.SEND_TO_PARTITION.toString(), this::sendToPartition);
@@ -257,6 +258,10 @@ public class HttpBridge extends AbstractVerticle {
     private void seekToEnd(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SEEK_TO_END);
         processConsumer(routingContext);
+    }
+
+    private void readinessCheck(RoutingContext routingContext) {
+        routingContext.response().setStatusCode(200).end();
     }
 
     /**
