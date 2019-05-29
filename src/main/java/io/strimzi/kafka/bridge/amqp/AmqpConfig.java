@@ -5,20 +5,25 @@
 
 package io.strimzi.kafka.bridge.amqp;
 
+import io.strimzi.kafka.bridge.config.AbstractConfig;
+
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * AMQP related configuration
  */
-public class AmqpConfig {
+public class AmqpConfig extends AbstractConfig {
 
-    public static final String AMQP_ENABLED = "amqp.enabled";
-    public static final String AMQP_MODE = "amqp.mode";
-    public static final String AMQP_HOST = "amqp.host";
-    public static final String AMQP_PORT = "amqp.port";
-    public static final String AMQP_FLOW_CREDIT = "amqp.flowCredit";
-    public static final String AMQP_MESSAGE_CONVERTER = "amqp.messageConverter";
-    public static final String AMQP_CERT_DIR = "amqp.certDir";
+    public static final String AMQP_CONFIG_PREFIX = "amqp.";
+
+    public static final String AMQP_ENABLED = AMQP_CONFIG_PREFIX + "enabled";
+    public static final String AMQP_MODE = AMQP_CONFIG_PREFIX + "mode";
+    public static final String AMQP_HOST = AMQP_CONFIG_PREFIX + "host";
+    public static final String AMQP_PORT = AMQP_CONFIG_PREFIX + "port";
+    public static final String AMQP_FLOW_CREDIT = AMQP_CONFIG_PREFIX + "flowCredit";
+    public static final String AMQP_MESSAGE_CONVERTER = AMQP_CONFIG_PREFIX + "messageConverter";
+    public static final String AMQP_CERT_DIR = AMQP_CONFIG_PREFIX + "certDir";
 
     public static final boolean DEFAULT_AMQP_ENABLED = false;
     public static final String DEFAULT_AMQP_MODE = "SERVER";
@@ -28,75 +33,55 @@ public class AmqpConfig {
     public static final String DEFAULT_MESSAGE_CONVERTER = "io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter";
     public static final String DEFAULT_CERT_DIR = null;
 
-    private boolean enabled;
-    private AmqpMode mode;
-    private int flowCredit;
-    private String host;
-    private int port;
-    private String messageConverter;
-    private String certDir;
-
     /**
      * Constructor
      *
-     * @param enabled if the AMQP protocol is enabled
-     * @param mode the AMQP bridge working mode (client or server)
-     * @param flowCredit the AMQP receiver flow credit
-     * @param host the host for AMQP client (to connect) or server (to bind)
-     * @param port the port for AMQP client (to connect) or server (to bind)
-     * @param messageConverter the AMQP message converter
-     * @param certDir the directory with the TLS certificates files
+     * @param config configuration parameters map
      */
-    public AmqpConfig(boolean enabled, AmqpMode mode, int flowCredit, String host, int port, String messageConverter, String certDir) {
-        this.enabled = enabled;
-        this.mode = mode;
-        this.flowCredit = flowCredit;
-        this.host = host;
-        this.port = port;
-        this.messageConverter = messageConverter;
-        this.certDir = certDir;
+    private AmqpConfig(Map<String, Object> config) {
+        super(config);
     }
 
     /**
      * @return if the AMQP protocol head is enabled
      */
     public boolean isEnabled() {
-        return this.enabled;
+        return Boolean.valueOf(this.config.getOrDefault(AMQP_ENABLED, DEFAULT_AMQP_ENABLED).toString());
     }
 
     /**
      * @return the AMQP bridge working mode (client or server)
      */
     public AmqpMode getMode() {
-        return this.mode;
+        return AmqpMode.from(this.config.getOrDefault(AMQP_MODE, DEFAULT_AMQP_MODE).toString());
     }
 
     /**
      * @return the AMQP receiver flow credit
      */
     public int getFlowCredit() {
-        return this.flowCredit;
+        return Integer.valueOf(this.config.getOrDefault(AMQP_FLOW_CREDIT, DEFAULT_FLOW_CREDIT).toString());
     }
 
     /**
      * @return the host for AMQP client (to connect) or server (to bind)
      */
     public String getHost() {
-        return this.host;
+        return (String) this.config.getOrDefault(AMQP_HOST, DEFAULT_HOST);
     }
 
     /**
      * @return the port for AMQP client (to connect) or server (to bind)
      */
     public int getPort() {
-        return this.port;
+        return Integer.valueOf(this.config.getOrDefault(AMQP_PORT, DEFAULT_PORT).toString());
     }
 
     /**
      * @return the AMQP message converter
      */
     public String getMessageConverter() {
-        return this.messageConverter;
+        return (String) this.config.getOrDefault(AMQP_MESSAGE_CONVERTER, DEFAULT_MESSAGE_CONVERTER);
     }
 
     /**
@@ -106,7 +91,7 @@ public class AmqpConfig {
      * @return this instance for setter chaining
      */
     /* test */ AmqpConfig setMessageConverter(String messageConverter) {
-        this.messageConverter = messageConverter;
+        this.config.put(AMQP_MESSAGE_CONVERTER, messageConverter);
         return this;
     }
 
@@ -114,7 +99,7 @@ public class AmqpConfig {
      * @return the directory with the TLS certificates files
      */
     public String getCertDir() {
-        return this.certDir;
+        return (String) this.config.getOrDefault(AMQP_CERT_DIR, DEFAULT_CERT_DIR);
     }
 
     /**
@@ -123,43 +108,17 @@ public class AmqpConfig {
      * @param map map from which loading configuration parameters
      * @return AMQP related configuration
      */
-    public static AmqpConfig fromMap(Map<String, String> map) {
-
-        String enabledEnvVar = map.get(AmqpConfig.AMQP_ENABLED);
-        boolean enabled = enabledEnvVar != null ? Boolean.valueOf(enabledEnvVar) : AmqpConfig.DEFAULT_AMQP_ENABLED;
-
-        AmqpMode mode = AmqpMode.from(map.getOrDefault(AmqpConfig.AMQP_MODE, AmqpConfig.DEFAULT_AMQP_MODE));
-
-        int flowCredit = AmqpConfig.DEFAULT_FLOW_CREDIT;
-        String flowCreditEnvVar = map.get(AmqpConfig.AMQP_FLOW_CREDIT);
-        if (flowCreditEnvVar != null) {
-            flowCredit = Integer.parseInt(flowCreditEnvVar);
-        }
-
-        String host = map.getOrDefault(AmqpConfig.AMQP_HOST, AmqpConfig.DEFAULT_HOST);
-
-        int port = AmqpConfig.DEFAULT_PORT;
-        String portEnvVar = map.get(AmqpConfig.AMQP_PORT);
-        if (portEnvVar != null) {
-            port = Integer.parseInt(portEnvVar);
-        }
-
-        String messageConverter = map.getOrDefault(AmqpConfig.AMQP_MESSAGE_CONVERTER, AmqpConfig.DEFAULT_MESSAGE_CONVERTER);
-        String certDir = map.getOrDefault(AmqpConfig.AMQP_CERT_DIR, AmqpConfig.DEFAULT_CERT_DIR);
-
-        return new AmqpConfig(enabled, mode, flowCredit, host, port, messageConverter, certDir);
+    public static AmqpConfig fromMap(Map<String, Object> map) {
+        // filter the AMQP related configuration parameters, stripping the prefix as well
+        return new AmqpConfig(map.entrySet().stream()
+                .filter(e -> e.getKey().startsWith(AmqpConfig.AMQP_CONFIG_PREFIX))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
     @Override
     public String toString() {
         return "AmqpConfig(" +
-                "enabled=" + this.enabled +
-                ",mode=" + this.mode +
-                ",flowCredit=" + this.flowCredit +
-                ",host=" + this.host +
-                ",port=" + this.port +
-                ",messageConverter=" + this.messageConverter +
-                ",certDir=" + this.certDir +
+                "config=" + this.config +
                 ")";
     }
 }

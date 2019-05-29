@@ -9,6 +9,8 @@ import io.strimzi.kafka.bridge.KafkaClusterTestBase;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpJsonMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpRawMessageConverter;
+import io.strimzi.kafka.bridge.config.KafkaConfig;
+import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.converter.DefaultDeserializer;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.Vertx;
@@ -61,7 +63,13 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 
     private static final Logger log = LoggerFactory.getLogger(AmqpBridgeTest.class);
 
-    private static Map<String, String> envVars = new HashMap<>();
+    private static Map<String, Object> config = new HashMap<>();
+
+    static {
+        config.put(AmqpConfig.AMQP_ENABLED, true);
+        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    }
 
     private static final String BRIDGE_HOST = "localhost";
     private static final int BRIDGE_PORT = 5672;
@@ -81,8 +89,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 
         this.vertx = Vertx.vertx();
 
-        envVars.put("AMQP_ENABLED", "true");
-        this.bridgeConfigProperties = AmqpBridgeConfig.fromMap(envVars);
+        this.bridgeConfigProperties = AmqpBridgeConfig.fromMap(config);
         this.bridge = new AmqpBridge(this.bridgeConfigProperties);
 
         this.vertx.deployVerticle(this.bridge, context.asyncAssertSuccess());

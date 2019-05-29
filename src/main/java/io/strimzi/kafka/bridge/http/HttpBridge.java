@@ -21,6 +21,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
@@ -63,8 +64,10 @@ public class HttpBridge extends AbstractVerticle {
                 .listen(httpServerAsyncResult -> {
                     if (httpServerAsyncResult.succeeded()) {
                         log.info("HTTP-Kafka Bridge started and listening on port {}", httpServerAsyncResult.result().actualPort());
-                        log.info("Kafka bootstrap servers {}",
-                                this.httpBridgeConfig.getKafkaConfig().getBootstrapServers());
+                        log.info("HTTP-Kafka Bridge bootstrap servers {}",
+                                this.httpBridgeConfig.getKafkaConfig().getConfig()
+                                        .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
+                        );
 
                         this.isReady = true;
                         startFuture.complete();

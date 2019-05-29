@@ -10,6 +10,8 @@ import io.strimzi.kafka.bridge.amqp.AmqpBridgeConfig;
 import io.vertx.core.Vertx;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Class example on running the bridge server
@@ -20,7 +22,8 @@ public class AmqpBridgeServer {
 
         Vertx vertx = Vertx.vertx();
 
-        AmqpBridgeConfig bridgeConfigProperties = AmqpBridgeConfig.fromMap(System.getenv());
+        Map<String, Object> config = new HashMap<>();
+        AmqpBridgeConfig bridgeConfigProperties = AmqpBridgeConfig.fromMap(config);
 
         AmqpBridge bridge = new AmqpBridge(bridgeConfigProperties);
 

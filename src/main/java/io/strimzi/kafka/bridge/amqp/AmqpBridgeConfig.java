@@ -15,12 +15,24 @@ import java.util.Map;
  */
 public class AmqpBridgeConfig extends BridgeConfig<AmqpConfig> {
 
-    public AmqpBridgeConfig(KafkaConfig kafkaConfig, AmqpConfig amqpConfig) {
+    /**
+     * Constructor
+     *
+     * @param kafkaConfig Kafka related configuration
+     * @param amqpConfig AMQP related configuration
+     */
+    private AmqpBridgeConfig(KafkaConfig kafkaConfig, AmqpConfig amqpConfig) {
         super(kafkaConfig);
         this.endpointConfig = amqpConfig;
     }
 
-    public static AmqpBridgeConfig fromMap(Map<String, String> map) {
+    /**
+     * Loads all AMQP bridge configuration parameters from a related map
+     *
+     * @param map map from which loading configuration parameters
+     * @return AMQP bridge related configuration
+     */
+    public static AmqpBridgeConfig fromMap(Map<String, Object> map) {
         KafkaConfig kafkaConfig = KafkaConfig.fromMap(map);
         AmqpConfig amqpConfig = AmqpConfig.fromMap(map);
 

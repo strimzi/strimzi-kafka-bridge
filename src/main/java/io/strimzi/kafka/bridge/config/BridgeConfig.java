@@ -14,8 +14,13 @@ public abstract class BridgeConfig<T> {
     protected KafkaConfig kafkaConfig;
     protected T endpointConfig;
 
-    public BridgeConfig(KafkaConfig kafkaConfigProperties) {
-        this.kafkaConfig = kafkaConfigProperties;
+    /**
+     * Constructor
+     *
+     * @param kafkaConfig Kafka related configuration
+     */
+    public BridgeConfig(KafkaConfig kafkaConfig) {
+        this.kafkaConfig = kafkaConfig;
     }
 
     /**

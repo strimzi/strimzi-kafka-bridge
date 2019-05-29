@@ -6,79 +6,29 @@
 package io.strimzi.kafka.bridge.config;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Apache Kafka related configuration
  */
-public class KafkaConfig {
+public class KafkaConfig extends AbstractConfig {
 
-    public static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrapServers";
-    public static final String KAFKA_TLS_ENABLED = "kafka.tls.enabled";
-    public static final String KAFKA_TLS_TRUSTSTORE_LOCATION = "kafka.tls.truststore.location";
-    public static final String KAFKA_TLS_TRUSTSTORE_PASSWORD = "kafka.tls.truststore.password";
+    public static final String KAFKA_CONFIG_PREFIX = "kafka.";
 
-    public static final String DEFAULT_BOOTSTRAP_SERVERS = "localhost:9092";
-    public static final boolean DEFAULT_KAFKA_TLS_ENABLED = false;
-    public static final String DEFAULT_KAFKA_TLS_TRUSTSTORE_LOCATION = null;
-    public static final String DEFAULT_KAFKA_TLS_TRUSTSTORE_PASSWORD = null;
-
-    private String bootstrapServers;
-    private boolean tlsEnabled;
-    private String tlsTruststoreLocation;
-    private String tlsTruststorePassword;
     private KafkaProducerConfig producerConfig;
     private KafkaConsumerConfig consumerConfig;
 
     /**
      * Constructor
      *
-     * @param bootstrapServers the Kafka bootstrap servers
-     * @param tlsEnabled if the connection between the bridge and the Kafka cluster is TLS encrypted
-     * @param tlsTruststoreLocation the path of the truststore for TLS encryption with the Kafka cluster
-     * @param tlsTruststorePassword the password of the truststore for TLS encryption with the Kafka cluster
-     * @param producerConfig the Kafka producer configuration
-     * @param consumerConfig the Kafka consumer configuration
+     * @param config Kafka common configuration parameters map
+     * @param consumerConfig Kafka consumer related configuration
+     * @param producerConfig Kafka producer related configuration
      */
-    public KafkaConfig(String bootstrapServers,
-                       boolean tlsEnabled,
-                       String tlsTruststoreLocation,
-                       String tlsTruststorePassword,
-                       KafkaProducerConfig producerConfig,
-                       KafkaConsumerConfig consumerConfig) {
-        this.bootstrapServers = bootstrapServers;
-        this.tlsEnabled = tlsEnabled;
-        this.tlsTruststoreLocation = tlsTruststoreLocation;
-        this.tlsTruststorePassword = tlsTruststorePassword;
-        this.producerConfig = producerConfig;
+    private KafkaConfig(Map<String, Object> config, KafkaConsumerConfig consumerConfig, KafkaProducerConfig producerConfig) {
+        super(config);
         this.consumerConfig = consumerConfig;
-    }
-
-    /**
-     * @return the Kafka bootstrap servers
-     */
-    public String getBootstrapServers() {
-        return this.bootstrapServers;
-    }
-
-    /**
-     * @return if the connection between the bridge and the Kafka cluster is TLS encrypted
-     */
-    public boolean isTlsEnabled() {
-        return this.tlsEnabled;
-    }
-
-    /**
-     * @return the path of the truststore for TLS encryption with the Kafka cluster
-     */
-    public String getTlsTruststoreLocation() {
-        return this.tlsTruststoreLocation;
-    }
-
-    /**
-     * @return the password of the truststore for TLS encryption with the Kafka cluster
-     */
-    public String getTlsTruststorePassword() {
-        return tlsTruststorePassword;
+        this.producerConfig = producerConfig;
     }
 
     /**
@@ -101,35 +51,25 @@ public class KafkaConfig {
      * @param map map from which loading configuration parameters
      * @return Kafka related configuration
      */
-    public static KafkaConfig fromMap(Map<String, String> map) {
-
-        String bootstrapServers = map.getOrDefault(KafkaConfig.KAFKA_BOOTSTRAP_SERVERS, KafkaConfig.DEFAULT_BOOTSTRAP_SERVERS);
-
-        String tlsEnabledEnvVar = map.get(KafkaConfig.KAFKA_TLS_ENABLED);
-        boolean tlsEnabled = tlsEnabledEnvVar != null ? Boolean.valueOf(tlsEnabledEnvVar) : KafkaConfig.DEFAULT_KAFKA_TLS_ENABLED;
-
-        String tlsTruststoreLocation = map.getOrDefault(KafkaConfig.KAFKA_TLS_TRUSTSTORE_LOCATION,
-                KafkaConfig.DEFAULT_KAFKA_TLS_TRUSTSTORE_LOCATION);
-
-        String tlsTruststorePassword = map.getOrDefault(KafkaConfig.KAFKA_TLS_TRUSTSTORE_PASSWORD,
-                KafkaConfig.DEFAULT_KAFKA_TLS_TRUSTSTORE_PASSWORD);
-
+    public static KafkaConfig fromMap(Map<String, Object> map) {
         KafkaProducerConfig producerConfig = KafkaProducerConfig.fromMap(map);
         KafkaConsumerConfig consumerConfig = KafkaConsumerConfig.fromMap(map);
 
-        return new KafkaConfig(bootstrapServers, tlsEnabled, tlsTruststoreLocation, tlsTruststorePassword,
-                producerConfig, consumerConfig);
+        // filter the common Kafka related configuration parameters, stripping the prefix as well
+        return new KafkaConfig(map.entrySet().stream()
+                .filter(e -> e.getKey().startsWith(KafkaConfig.KAFKA_CONFIG_PREFIX) &&
+                        !e.getKey().startsWith(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX) &&
+                        !e.getKey().startsWith(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX))
+                .collect(Collectors.toMap(e -> e.getKey().substring(KafkaConfig.KAFKA_CONFIG_PREFIX.length()), Map.Entry::getValue)),
+                consumerConfig, producerConfig);
     }
 
     @Override
     public String toString() {
         return "KafkaConfig(" +
-                "bootstrapServers=" + this.bootstrapServers +
-                ",tlsEnabled=" + this.tlsEnabled +
-                ",tlsTruststoreLocation=" + this.tlsTruststoreLocation +
-                ",tlsTruststorePassword=" + this.tlsTruststorePassword +
-                ",producerConfig=" + this.producerConfig +
+                "config=" + this.config +
                 ",consumerConfig=" + this.consumerConfig +
+                ",producerConfig=" + this.producerConfig +
                 ")";
     }
 }
