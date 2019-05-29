@@ -9,12 +9,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-
 import io.debezium.kafka.KafkaCluster;
 import io.debezium.util.Testing;
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 /**
  * Base class for tests providing a Kafka cluster
@@ -46,14 +45,14 @@ public class KafkaClusterTestBase {
         return kafkaCluster;
     }
 
-    @BeforeClass
-    public static void setUp(TestContext context) throws IOException {
+    @BeforeAll
+    public static void setUp() throws IOException {
         kafkaCluster = kafkaCluster().deleteDataPriorToStartup(true).addBrokers(1).startup();
     }
 
 
-    @AfterClass
-    public static void tearDown(TestContext context) {
+    @AfterAll
+    public static void tearDown() {
 
         if (kafkaCluster != null) {
             kafkaCluster.shutdown();

@@ -16,7 +16,7 @@ import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.junit5.VertxExtension;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.impl.KafkaConsumerRecordImpl;
@@ -42,11 +42,11 @@ import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,8 +58,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@RunWith(VertxUnitRunner.class)
-public class AmqpBridgeTest extends KafkaClusterTestBase {
+@ExtendWith(VertxExtension.class)
+class AmqpBridgeTest extends KafkaClusterTestBase {
 
     private static final Logger log = LoggerFactory.getLogger(AmqpBridgeTest.class);
 
@@ -84,8 +84,8 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
 
     private AmqpBridgeConfig bridgeConfigProperties;
 
-    @Before
-    public void before(TestContext context) {
+    @BeforeEach
+    void before(TestContext context) {
 
         this.vertx = Vertx.vertx();
 
@@ -95,14 +95,14 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
         this.vertx.deployVerticle(this.bridge, context.asyncAssertSuccess());
     }
 
-    @After
-    public void after(TestContext context) {
+    @AfterEach
+    void after(TestContext context) {
 
         this.vertx.close(context.asyncAssertSuccess());
     }
 
     @Test
-    public void sendSimpleMessages(TestContext context) {
+    void sendSimpleMessages(TestContext context) {
         String topic = "sendSimpleMessages";
         kafkaCluster.createTopic(topic, 1, 1);
 
@@ -153,7 +153,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void sendSimpleMessageToPartition(TestContext context) {
+    void sendSimpleMessageToPartition(TestContext context) {
         String topic = "sendSimpleMessageToPartition";
         kafkaCluster.createTopic(topic, 2, 1);
 
@@ -218,7 +218,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void sendSimpleMessageWithKey(TestContext context) {
+    void sendSimpleMessageWithKey(TestContext context) {
         String topic = "sendSimpleMessageWithKey";
         kafkaCluster.createTopic(topic, 1, 1);
 
@@ -276,7 +276,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void sendBinaryMessage(TestContext context) {
+    void sendBinaryMessage(TestContext context) {
         String topic = "sendBinaryMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
@@ -328,7 +328,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void sendArrayMessage(TestContext context) {
+    void sendArrayMessage(TestContext context) {
         String topic = "sendArrayMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
@@ -380,7 +380,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void sendListMessage(TestContext context) {
+    void sendListMessage(TestContext context) {
         String topic = "sendListMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
@@ -434,7 +434,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void sendMapMessage(TestContext context) {
+    void sendMapMessage(TestContext context) {
         String topic = "sendMapMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
@@ -488,7 +488,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void sendPeriodicMessage(TestContext context) {
+    void sendPeriodicMessage(TestContext context) {
         String topic = "sendPeriodicMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
@@ -522,7 +522,8 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
                     consumer.close();
                     async.complete();
                 });
-                consumer.handler(record -> { });
+                consumer.handler(record -> {
+                });
 
                 this.count = 0;
 
@@ -570,7 +571,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void sendReceiveInMultiplexing(TestContext context) {
+    void sendReceiveInMultiplexing(TestContext context) {
         String topic = "sendReceiveInMultiplexing";
         kafkaCluster.createTopic(topic, 1, 1);
 
@@ -600,7 +601,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
                         async.complete();
                     }
                 })
-                .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
+                        .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
 
                 ProtonSender sender = connection.createSender(null);
                 sender.open();
@@ -617,7 +618,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void receiveSimpleMessage(TestContext context) {
+    void receiveSimpleMessage(TestContext context) {
         String topic = "receiveSimpleMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
@@ -667,7 +668,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
                         async.complete();
                     }
                 })
-                .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
+                        .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
             } else {
                 context.fail(ar.cause());
             }
@@ -675,7 +676,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void receiveSimpleMessageFromPartition(TestContext context) {
+    void receiveSimpleMessageFromPartition(TestContext context) {
         String topic = "receiveSimpleMessageFromPartition";
         kafkaCluster.createTopic(topic, 2, 1);
 
@@ -734,7 +735,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
                         async.complete();
                     }
                 })
-                .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
+                        .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
             } else {
                 context.fail(ar.cause());
             }
@@ -742,13 +743,13 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void receiveSimpleMessageFromPartitionAndOffset(TestContext context) {
+    void receiveSimpleMessageFromPartitionAndOffset(TestContext context) {
         String topic = "receiveSimpleMessageFromPartitionAndOffset";
         kafkaCluster.createTopic(topic, 1, 1);
 
         Async batch = context.async();
         AtomicInteger index = new AtomicInteger();
-        kafkaCluster.useTo().produceStrings(11, batch::complete,  () ->
+        kafkaCluster.useTo().produceStrings(11, batch::complete, () ->
                 new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
         batch.awaitSuccess(10000);
 
@@ -802,16 +803,16 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
                         async.complete();
                     }
                 })
-                .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
+                        .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
             } else {
                 context.fail(ar.cause());
             }
         });
     }
 
+    @Disabled
     @Test
-    @Ignore
-    public void noPartitionsAvailable(TestContext context) {
+    void noPartitionsAvailable(TestContext context) {
         String topic = "noPartitionsAvailable";
         kafkaCluster.createTopic(topic, 1, 1);
 
@@ -840,7 +841,7 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
                             async.complete();
                         }
                     })
-                    .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
+                            .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
                 });
 
 
@@ -851,20 +852,20 @@ public class AmqpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    public void defaultMessageConverterNullKeyTest(TestContext context) {
+    void defaultMessageConverterNullKeyTest(TestContext context) {
         MessageConverter defaultMessageConverter = new AmqpDefaultMessageConverter();
         context.assertNull(convertedMessageWithNullKey(defaultMessageConverter));
     }
 
     @Test
-    public void jsonMessageConverterNullKeyTest(TestContext context) {
+    void jsonMessageConverterNullKeyTest(TestContext context) {
         MessageConverter jsonMessageConverter = new AmqpJsonMessageConverter();
         context.assertNull(convertedMessageWithNullKey(jsonMessageConverter));
     }
 
-    @Ignore
+    @Disabled
     @Test
-    public void rawMessageConverterNullKeyTest(TestContext context) {
+    void rawMessageConverterNullKeyTest(TestContext context) {
         MessageConverter rawMessageConverter = new AmqpRawMessageConverter();
         context.assertNull(convertedMessageWithNullKey(rawMessageConverter));
     }
