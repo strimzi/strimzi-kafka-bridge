@@ -2783,7 +2783,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         JsonObject sentValue = new JsonObject()
                 .put("array", new JsonArray().add("v1").add("v2"))
-                .put("foo", "bar").put("number", 123);
+                .put("foo", "bar").put("number", 123)
+                .put("nested", new JsonObject().put("f", "v"));
 
         JsonArray records = new JsonArray();
         JsonObject json = new JsonObject();
@@ -2886,10 +2887,10 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     long offset = jsonResponse.getLong("offset");
 
                     context.assertEquals(topic, kafkaTopic);
-                    context.assertTrue(sentValue.equals(value));
+                    context.assertEquals(sentValue, value);
                     context.assertEquals(0L, offset);
                     context.assertNotNull(kafkaPartition);
-                    context.assertTrue(sentKey.equals(key));
+                    context.assertEquals(sentKey, key);
 
                     consumeAsync.complete();
                 });
