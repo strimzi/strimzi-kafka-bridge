@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.KafkaClusterTestBase;
 import io.strimzi.kafka.bridge.KafkaJsonDeserializer;
@@ -12,6 +13,7 @@ import io.strimzi.kafka.bridge.KafkaJsonSerializer;
 import io.strimzi.kafka.bridge.amqp.AmqpConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
+import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
@@ -563,7 +565,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -608,7 +610,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -674,7 +676,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -719,7 +721,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -791,7 +793,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -839,7 +841,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -907,7 +909,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicPattern, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -955,7 +957,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -1023,7 +1025,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(partitionsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -1068,7 +1070,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -1138,7 +1140,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(partitionsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -1187,7 +1189,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -1254,7 +1256,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -1311,7 +1313,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     HttpResponse<JsonObject> response = ar.result();
 
                     int code = response.statusCode();
-                    context.assertEquals(204, code);
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), code);
                     commitAsync.complete();
                 });
 
@@ -1327,7 +1329,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -1394,7 +1396,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -1438,7 +1440,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     HttpResponse<Buffer> response = ar.result();
 
                     int code = response.statusCode();
-                    context.assertEquals(204, code);
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), code);
                     commitAsync.complete();
                 });
 
@@ -1454,7 +1456,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -1479,8 +1481,12 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), ar.result().statusCode());
-                    context.assertEquals("Unprocessable request.", ar.result().statusMessage());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    context.assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
+
                     async.complete();
                 });
     }
@@ -1497,9 +1503,10 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    context.assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.BAD_REQUEST.code(), error.getCode());
 
-                    context.assertEquals(ErrorCodeEnum.BAD_REQUEST.getValue(), response.statusCode());
-                    context.assertEquals("Invalid request", response.statusMessage());
                     async.complete();
                 });
     }
@@ -1537,11 +1544,10 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
                     JsonArray offsets = bridgeResponse.getJsonArray("offsets");
                     context.assertEquals(1, offsets.size());
-                    int code = offsets.getJsonObject(0).getInteger("error_code");
-                    String statusMessage = offsets.getJsonObject(0).getString("error");
 
-                    context.assertEquals(ErrorCodeEnum.PARTITION_NOT_FOUND.getValue(), code);
-                    context.assertEquals("Invalid partition given with record: 1000 is not in the range [0...3).", statusMessage);
+                    HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(0));
+                    context.assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                    context.assertEquals("Invalid partition given with record: 1000 is not in the range [0...3).", error.getMessage());
                     async.complete();
                 });
     }
@@ -1582,7 +1588,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     int code = offsets.getJsonObject(0).getInteger("error_code");
                     String statusMessage = offsets.getJsonObject(0).getString("error");
 
-                    context.assertEquals(ErrorCodeEnum.TOPIC_NOT_FOUND.getValue(), code);
+                    context.assertEquals(HttpResponseStatus.NOT_FOUND.code(), code);
                     context.assertEquals("Topic " + kafkaTopic + " not found", statusMessage);
                     async.complete();
                 });
@@ -1624,11 +1630,11 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    context.assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                    context.assertEquals("The specified consumer instance was not found.", error.getMessage());
 
-                    int code = response.statusCode();
-                    String status = response.statusMessage();
-                    context.assertEquals(ErrorCodeEnum.CONSUMER_NOT_FOUND.getValue(), code);
-                    context.assertEquals("Consumer instance not found", status);
                     subscriberAsync.complete();
                 });
         subscriberAsync.await();
@@ -1703,8 +1709,10 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals("Unprocessable request.", response.statusMessage());
-                    context.assertEquals(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), response.statusCode());
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    context.assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
+                    context.assertEquals("Specified partition is not a valid number", error.getMessage());
                     async.complete();
                 });
     }
@@ -1738,8 +1746,10 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals("Unprocessable request.", response.statusMessage());
-                    context.assertEquals(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), response.statusCode());
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    context.assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
+                    context.assertEquals("Partition specified in body and in request path", error.getMessage());
                     async.complete();
                 });
     }
@@ -1797,8 +1807,10 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(response.statusCode(), ErrorCodeEnum.CONSUMER_ALREADY_EXISTS.getValue());
-                    context.assertEquals(response.statusMessage(), "Consumer instance with the specified name already exists.");
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    context.assertEquals(HttpResponseStatus.CONFLICT.code(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.CONFLICT.code(), error.getCode());
+                    context.assertEquals("A consumer instance with the specified name already exists in the Kafka Bridge.", error.getMessage());
 
                     creation2Async.complete();
                 });
@@ -1842,13 +1854,15 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
+                .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
 
-                    HttpResponse<JsonArray> response = ar.result();
-                    context.assertEquals("Consumer instance not found", response.statusMessage());
-                    context.assertEquals(ErrorCodeEnum.CONSUMER_NOT_FOUND.getValue(), response.statusCode());
+                    HttpResponse<JsonObject> response = ar.result();
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    context.assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                    context.assertEquals("The specified consumer instance was not found.", error.getMessage());
 
                     consumeAsync.complete();
                 });
@@ -1884,11 +1898,11 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    context.assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                    context.assertEquals("The specified consumer instance was not found.", error.getMessage());
 
-                    int code = response.statusCode();
-                    String status = response.statusMessage();
-                    context.assertEquals(ErrorCodeEnum.CONSUMER_NOT_FOUND.getValue(), code);
-                    context.assertEquals("Consumer instance not found", status);
                     commitAsync.complete();
                 });
     }
@@ -1950,7 +1964,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -1961,11 +1975,16 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?max_bytes=1")
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
-                .as(BodyCodec.jsonArray())
+                .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), ar.result().statusCode());
-                    context.assertEquals("Response is too large", ar.result().statusMessage());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    context.assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
+                    context.assertEquals("Response is too large", error.getMessage());
+
                     consumeAsync.complete();
                 });
 
@@ -1981,7 +2000,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -2045,7 +2064,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topics, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
         subscriberAsync.await();
@@ -2078,7 +2097,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     seekAsync.complete();
                 });
         seekAsync.await();
@@ -2134,7 +2153,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -2194,7 +2213,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topics, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -2231,7 +2250,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     seekAsync.complete();
                 });
 
@@ -2263,7 +2282,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -2318,7 +2337,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topics, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -2358,7 +2377,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     seekAsync.complete();
                 });
 
@@ -2390,7 +2409,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -2456,7 +2475,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -2498,7 +2517,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     unsubscribeAsync.complete();
                 });
 
@@ -2515,13 +2534,15 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
+                .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
 
-                    HttpResponse<JsonArray> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.INTERNAL_SERVER_ERROR.getValue(), response.statusCode());
-                    context.assertEquals("Internal server error", response.statusMessage());
+                    HttpResponse<JsonObject> response = ar.result();
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    context.assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), error.getCode());
+                    context.assertEquals("Consumer is not subscribed to any topics or assigned any partitions", error.getMessage());
 
                     consumeAsync2.complete();
                 });
@@ -2538,7 +2559,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -2604,7 +2625,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -2618,7 +2639,13 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(ErrorCodeEnum.CONSUMER_NOT_FOUND.getValue(), ar.result().statusCode());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    context.assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                    context.assertEquals("The specified consumer instance was not found.", error.getMessage());
+
                     unsubscribeAsync.complete();
                 });
 
@@ -2634,7 +2661,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });
@@ -2700,7 +2727,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(204, ar.result().statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
                     subscriberAsync.complete();
                 });
 
@@ -2711,10 +2738,16 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
-                .as(BodyCodec.jsonArray())
+                .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.assertTrue(ar.succeeded());
-                    context.assertEquals(ErrorCodeEnum.NOT_ACCEPTABLE.getValue(), ar.result().statusCode());
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    context.assertEquals(HttpResponseStatus.NOT_ACCEPTABLE.code(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NOT_ACCEPTABLE.code(), error.getCode());
+                    context.assertEquals("Consumer format does not match the embedded format requested by the Accept header.", error.getMessage());
+
                     consumeAsync.complete();
                 });
 
@@ -2730,7 +2763,7 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     context.assertTrue(ar.succeeded());
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(ErrorCodeEnum.NO_CONTENT.getValue(), response.statusCode());
+                    context.assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
 
                     deleteAsync.complete();
                 });

@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
@@ -13,13 +14,13 @@ import io.strimzi.kafka.bridge.SinkTopicSubscription;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
+import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -124,9 +125,14 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
         CompositeFuture.join(seekHandlers).setHandler(done -> {
             if (done.succeeded()) {
-                sendSeekResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
+                HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
-                sendSeekResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR);
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        done.cause().getMessage()
+                );
+                HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         });
     }
@@ -141,9 +147,14 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
         Handler<AsyncResult<Void>> seekHandler = done -> {
             if (done.succeeded()) {
-                sendSeekResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
+                HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
-                sendSeekResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR);
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        done.cause().getMessage()
+                );
+                HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         };
 
@@ -166,11 +177,29 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 offsetData.put(topicPartition, offsetAndMetadata);
             }
             this.commit(offsetData, status -> {
-                sendConsumerCommitOffsetResponse(routingContext.response(), status.succeeded());
+                if (status.succeeded()) {
+                    HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NO_CONTENT.code(), null, null);
+                } else {
+                    HttpBridgeError error = new HttpBridgeError(
+                            HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            status.cause().getMessage()
+                    );
+                    HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                }
             });
         } else {
             this.commit(status -> {
-                sendConsumerCommitOffsetResponse(routingContext.response(), status.succeeded());
+                if (status.succeeded()) {
+                    HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NO_CONTENT.code(), null, null);
+                } else {
+                    HttpBridgeError error = new HttpBridgeError(
+                            HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            status.cause().getMessage()
+                    );
+                    HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                }
             });
         }
     }
@@ -179,7 +208,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         this.close();
         this.handleClose();
         log.info("Deleted consumer {} from group {}", routingContext.pathParam("name"), routingContext.pathParam("groupid"));
-        sendConsumerDeletionResponse(routingContext.response());
+        HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NO_CONTENT.code(), null, null);
     }
 
     private void doPoll() {
@@ -200,17 +229,34 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 if (records.succeeded()) {
                     Buffer buffer = messageConverter.toMessages(records.result());
                     if (buffer.getBytes().length > this.maxBytes) {
-                        sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.UNPROCESSABLE_ENTITY.getValue(), "Response is too large");
+                        HttpBridgeError error = new HttpBridgeError(
+                                HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                                "Response is too large"
+                        );
+                        HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                     } else {
-                        sendConsumerRecordsResponse(routingContext.response(), buffer);
+                        HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.OK.code(),
+                                this.format == EmbeddedFormat.BINARY ? BridgeContentType.KAFKA_JSON_BINARY : BridgeContentType.KAFKA_JSON_JSON,
+                                buffer);
                     }
 
                 } else {
-                    sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.INTERNAL_SERVER_ERROR.getValue(), "Internal server error");
+                    HttpBridgeError error = new HttpBridgeError(
+                            HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            records.cause().getMessage()
+                    );
+                    HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                 }
             });
         } else {
-            sendConsumerRecordsFailedResponse(routingContext.response(), ErrorCodeEnum.NOT_ACCEPTABLE.getValue(), "Consumer format does not match the embedded format requested by the Accept header.");
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.NOT_ACCEPTABLE.code(),
+                    "Consumer format does not match the embedded format requested by the Accept header."
+            );
+            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NOT_ACCEPTABLE.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
         }
     }
 
@@ -225,7 +271,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
         this.setAssignHandler(assignResult -> {
             if (assignResult.succeeded()) {
-                sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
+                HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NO_CONTENT.code(), null, null);
             }
         });
 
@@ -235,19 +281,29 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     private void doSubscribe(JsonObject bodyAsJson) {
         // cannot specify both topics list and topic pattern
         if (bodyAsJson.containsKey("topics") && bodyAsJson.containsKey("topic_pattern")) {
-            sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.CONFLICT);
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.CONFLICT.code(),
+                    "Subscriptions to topics, partitions, and patterns are mutually exclusive."
+            );
+            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.CONFLICT.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             return;
         }
 
         // one of topics list or topic pattern has to be specified
         if (!bodyAsJson.containsKey("topics") && !bodyAsJson.containsKey("topic_pattern")) {
-            sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.BAD_REQUEST);
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                    "One of topics list or topic pattern has to be specified."
+            );
+            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             return;
         }
 
         this.setSubscribeHandler(subscribeResult -> {
             if (subscribeResult.succeeded()) {
-                sendConsumerSubscriptionResponse(routingContext.response(), ErrorCodeEnum.NO_CONTENT);
+                HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NO_CONTENT.code(), null, null);
             }
         });
 
@@ -269,9 +325,14 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     public void doUnsubscribe() {
         this.setUnsubscribeHandler(unsubscribeResult -> {
             if (unsubscribeResult.succeeded()) {
-                sendConsumerUnubscriptionResponse(routingContext.response());
+                HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
-                sendConsumerUnubscriptionFailedResponse(routingContext.response());
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        unsubscribeResult.cause().getMessage()
+                );
+                HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         });
         this.unsubscribe();
@@ -307,9 +368,12 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 this.name = json.getString("name", "kafka-bridge-consumer-" + UUID.randomUUID());
 
                 if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(this.name)) {
-                    routingContext.response().setStatusMessage("Consumer instance with the specified name already exists.")
-                            .setStatusCode(ErrorCodeEnum.CONSUMER_ALREADY_EXISTS.getValue())
-                            .end();
+                    HttpBridgeError error = new HttpBridgeError(
+                            HttpResponseStatus.CONFLICT.code(),
+                            "A consumer instance with the specified name already exists in the Kafka Bridge."
+                    );
+                    HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.CONFLICT.code(),
+                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                     return;
                 }
 
@@ -337,65 +401,13 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
                 log.info("Created consumer {} in group {}", this.name, groupId);
                 // send consumer instance id(name) and base URI as response
-                sendConsumerCreationResponse(routingContext.response(), this.name, consumerBaseUri);
+                JsonObject body = new JsonObject()
+                        .put("instance_id", this.name)
+                        .put("base_uri", consumerBaseUri);
+                HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.OK.code(),
+                        BridgeContentType.KAFKA_JSON, body.toBuffer());
                 break;
         }
-    }
-
-    private void sendConsumerCreationResponse(HttpServerResponse response, String instanceId, String uri) {
-        JsonObject jsonResponse = new JsonObject();
-        jsonResponse.put("instance_id", instanceId);
-        jsonResponse.put("base_uri", uri);
-
-        response.putHeader("Content-length", String.valueOf(jsonResponse.toBuffer().length()))
-                .write(jsonResponse.toBuffer())
-                .end();
-    }
-
-    private void sendConsumerSubscriptionResponse(HttpServerResponse response, ErrorCodeEnum errorCodeEnum) {
-        response.setStatusCode(errorCodeEnum.getValue())
-                .end();
-    }
-
-    private void sendConsumerUnubscriptionResponse(HttpServerResponse response) {
-        response.setStatusCode(204).setStatusMessage("Consumer unsubscribed from all topics")
-                .end();
-    }
-
-    private void sendConsumerUnubscriptionFailedResponse(HttpServerResponse response) {
-        response.setStatusCode(500).setStatusMessage("Internal server error")
-                .end();
-    }
-
-    private void sendConsumerRecordsResponse(HttpServerResponse response, Buffer buffer) {
-        response.putHeader("Content-length", String.valueOf(buffer.length()))
-                .write(buffer)
-                .end();
-    }
-
-    private void sendConsumerDeletionResponse(HttpServerResponse response) {
-        response.setStatusCode(204)
-                .end();
-    }
-
-    private void sendConsumerCommitOffsetResponse(HttpServerResponse response, boolean result) {
-        if (result) {
-            response.setStatusCode(204);
-        } else {
-            response.setStatusCode(500);
-        }
-        response.end();
-    }
-
-    private void sendConsumerRecordsFailedResponse(HttpServerResponse response, int errCode, String errMsg) {
-        response.setStatusCode(errCode);
-        response.setStatusMessage(errMsg);
-        response.end();
-    }
-
-    private void sendSeekResponse(HttpServerResponse response, ErrorCodeEnum errorCodeEnum) {
-        response.setStatusCode(errorCodeEnum.getValue())
-                .end();
     }
 
     private MessageConverter<K, V, Buffer, Buffer> buildMessageConverter() {
