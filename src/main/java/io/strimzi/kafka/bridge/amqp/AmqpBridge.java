@@ -11,7 +11,6 @@ import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -120,7 +119,6 @@ public class AmqpBridge extends AbstractVerticle {
                         );
 
                         this.isReady = true;
-                        this.startHealthServer();
 
                         startFuture.complete();
                     } else {
@@ -136,10 +134,6 @@ public class AmqpBridge extends AbstractVerticle {
      * @param startFuture
      */
     private void connectAmqpClient(Future<Void> startFuture) {
-
-        // the health server starts before connection is made to an AMQP server/router
-        // because the bridge is already alive but not ready yet
-        this.startHealthServer();
 
         this.client = ProtonClient.create(this.vertx);
 
@@ -224,26 +218,6 @@ public class AmqpBridge extends AbstractVerticle {
                 }
             });
         }
-    }
-
-    /**
-     * Start an HTTP health server
-     */
-    private void startHealthServer() {
-
-        this.vertx.createHttpServer()
-                .requestHandler(request -> {
-
-                    if (request.path().equals("/health")) {
-                        request.response().setStatusCode(HttpResponseStatus.OK.code()).end();
-                    } else if (request.path().equals("/ready")) {
-                        HttpResponseStatus httpResponseStatus = isReady ?
-                                HttpResponseStatus.OK :
-                                HttpResponseStatus.NOT_FOUND;
-                        request.response().setStatusCode(httpResponseStatus.code()).end();
-                    }
-                })
-                .listen(HEALTH_SERVER_PORT);
     }
 
     /**
