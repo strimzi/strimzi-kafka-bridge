@@ -1037,7 +1037,7 @@
         "/healthy": {
             "get": {
                 "description": "This endpoint serves for healthiness check.",
-                "operationId": "readinessCheck",
+                "operationId": "healthinessCheck",
                 "responses": {
                     "200": {
                         "description": "Server is healthy."
