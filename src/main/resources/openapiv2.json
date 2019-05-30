@@ -269,6 +269,18 @@
                 "message": "Subscriptions to topics, partitions, and patterns are mutually exclusive."
               }
             }
+          },
+          "422": {
+            "description": "A list (of `Topics` type) or a `topic_pattern` must be specified.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 422,
+                "message": "A list (of Topics type) or a topic_pattern must be specified."
+              }
+            }
           }
         }
       },

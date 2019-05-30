@@ -294,7 +294,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         if (!bodyAsJson.containsKey("topics") && !bodyAsJson.containsKey("topic_pattern")) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
-                    "One of topics list or topic pattern has to be specified."
+                    "A list (of Topics type) or a topic_pattern must be specified."
             );
             HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
