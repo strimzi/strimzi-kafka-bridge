@@ -33,4 +33,4 @@ release_maven:
 
 release_package: java_package
 
-findbugs: $(SUBDIRS)
+findbugs: java_compile

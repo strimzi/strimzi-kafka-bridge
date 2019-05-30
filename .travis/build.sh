@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-# Disabled for now
-# echo "Run Findbugs ..."
-# make findbugs
+echo "Run Findbugs ..."
+make findbugs
 
 echo "Packaging ..."
 make java_package
