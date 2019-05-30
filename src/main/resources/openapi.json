@@ -291,6 +291,24 @@
                                 }
                             }
                         }
+                    },
+                    "422": {
+                        "description": "A list (of `Topics` type) or a `topic_pattern` must be specified.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 422,
+                                            "message": "A list (of Topics type) or a topic_pattern must be specified."
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             },
