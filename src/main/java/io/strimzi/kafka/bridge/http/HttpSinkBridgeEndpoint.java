@@ -231,7 +231,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                     if (buffer.getBytes().length > this.maxBytes) {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
-                                "Response is too large"
+                                "Response exceeds the maximum number of bytes the consumer can receive"
                         );
                         HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                                 BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());

@@ -608,6 +608,18 @@
                 "message": "The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request."
               }
             }
+          },
+          "422": {
+            "description": "Response exceeds the maximum number of bytes the consumer can receive",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 422,
+                "message": "Response exceeds the maximum number of bytes the consumer can receive"
+              }
+            }
           }
         }
       },

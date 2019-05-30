@@ -725,6 +725,34 @@
                                 }
                             }
                         }
+                    },
+                    "422": {
+                        "description": "Response exceeds the maximum number of bytes the consumer can receive",
+                        "content": {
+                            "application/vnd.kafka.json.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/vnd.kafka.binary.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 422,
+                                            "message": "Response exceeds the maximum number of bytes the consumer can receive"
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             },
