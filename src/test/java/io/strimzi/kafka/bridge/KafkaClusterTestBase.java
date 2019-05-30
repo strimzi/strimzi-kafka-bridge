@@ -21,8 +21,6 @@ import io.vertx.ext.unit.TestContext;
  */
 public class KafkaClusterTestBase {
 
-    protected static final int ZOOKEEPER_PORT = 2181;
-    protected static final int KAFKA_PORT = 9092;
     protected static final String DATA_DIR = "cluster";
 
     private static File dataDir;
@@ -41,7 +39,7 @@ public class KafkaClusterTestBase {
         kafkaCluster =
                 new KafkaCluster()
                         .usingDirectory(dataDir)
-                        .withPorts(ZOOKEEPER_PORT, KAFKA_PORT)
+                        .withPorts(-1, -1)
                         .withKafkaConfiguration(props);
         return kafkaCluster;
     }
