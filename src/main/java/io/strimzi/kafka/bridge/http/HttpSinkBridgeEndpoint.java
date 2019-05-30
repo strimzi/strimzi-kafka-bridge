@@ -107,6 +107,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             case UNSUBSCRIBE:
                 doUnsubscribe();
                 break;
+
+            default:
+                throw new IllegalArgumentException("Unknown Operation: " + this.httpBridgeContext.getOpenApiOperation());
         }
 
     }
@@ -407,6 +410,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.OK.code(),
                         BridgeContentType.KAFKA_JSON, body.toBuffer());
                 break;
+
+            default:
+                throw new IllegalArgumentException("Unknown Operation: " + this.httpBridgeContext.getOpenApiOperation());
         }
     }
 

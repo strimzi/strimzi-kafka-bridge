@@ -35,12 +35,9 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
 
-    private HttpBridgeContext httpBridgeContext;
-
-    public HttpSourceBridgeEndpoint(Vertx vertx, HttpBridgeConfig bridgeConfigProperties, HttpBridgeContext httpBridgeContext,
+    public HttpSourceBridgeEndpoint(Vertx vertx, HttpBridgeConfig bridgeConfigProperties,
                                     EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
         super(vertx, bridgeConfigProperties, format, keySerializer, valueSerializer);
-        this.httpBridgeContext = httpBridgeContext;
     }
 
     @Override

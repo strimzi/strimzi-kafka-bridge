@@ -20,6 +20,7 @@ import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.message.Message;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +56,7 @@ public class AmqpDefaultMessageConverter implements MessageConverter<String, byt
                 // encoded as String
                 if (amqpValue instanceof String) {
                     String content = (String) ((AmqpValue) body).getValue();
-                    value = content.getBytes();
+                    value = content.getBytes(StandardCharsets.UTF_8);
                 // encoded as a List
                 } else if (amqpValue instanceof List) {
                     List<?> list = (List<?>) ((AmqpValue) body).getValue();

@@ -60,7 +60,7 @@ public class AmqpConfig extends AbstractConfig {
      * @return the AMQP receiver flow credit
      */
     public int getFlowCredit() {
-        return Integer.valueOf(this.config.getOrDefault(AMQP_FLOW_CREDIT, DEFAULT_FLOW_CREDIT).toString());
+        return Integer.parseInt(this.config.getOrDefault(AMQP_FLOW_CREDIT, DEFAULT_FLOW_CREDIT).toString());
     }
 
     /**
@@ -74,7 +74,7 @@ public class AmqpConfig extends AbstractConfig {
      * @return the port for AMQP client (to connect) or server (to bind)
      */
     public int getPort() {
-        return Integer.valueOf(this.config.getOrDefault(AMQP_PORT, DEFAULT_PORT).toString());
+        return Integer.parseInt(this.config.getOrDefault(AMQP_PORT, DEFAULT_PORT).toString());
     }
 
     /**
