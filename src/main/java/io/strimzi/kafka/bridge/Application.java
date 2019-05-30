@@ -32,7 +32,9 @@ public class Application {
 
     private static final Logger log = LoggerFactory.getLogger(Application.class);
 
-    private static final int HEALTH_SERVER_PORT = 8081;
+    private static final String HEALTH_SERVER_PORT = "HEALTH_SERVER_PORT";
+
+    private static final int DEFAULT_HEALTH_SERVER_PORT = 8081;
 
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx();
@@ -47,18 +49,34 @@ public class Application {
                 .setFormat("properties")
                 .setConfig(new JsonObject().put("path", getFilePath(path)).put("raw-data", true));
 
-        ConfigRetrieverOptions options = new ConfigRetrieverOptions().addStore(fileStore);
+        ConfigStoreOptions envStore = new ConfigStoreOptions()
+                .setType("env")
+                .setConfig(new JsonObject().put("raw-data", true));
+
+        ConfigRetrieverOptions options = new ConfigRetrieverOptions()
+                .addStore(fileStore)
+                .addStore(envStore);
 
         ConfigRetriever retriever = ConfigRetriever.create(vertx, options);
         retriever.getConfig(ar -> {
 
             Map<String, Object> config = ar.result().getMap();
+            AmqpBridgeConfig amqpBridgeConfig = AmqpBridgeConfig.fromMap(config);
+            HttpBridgeConfig httpBridgeConfig = HttpBridgeConfig.fromMap(config);
+
+            int healthServerPort = Integer.valueOf(config.getOrDefault(HEALTH_SERVER_PORT, DEFAULT_HEALTH_SERVER_PORT).toString());
+
+            if (amqpBridgeConfig.getEndpointConfig().getPort() == healthServerPort ||
+                    httpBridgeConfig.getEndpointConfig().getPort() == healthServerPort) {
+                log.error("Health server port {} conflicts with enabled protocols ports", healthServerPort);
+                System.exit(1);
+            }
 
             List<Future> futures = new ArrayList<>();
 
             Future<Void> amqpFuture = Future.future();
             futures.add(amqpFuture);
-            AmqpBridgeConfig amqpBridgeConfig = AmqpBridgeConfig.fromMap(config);
+
             if (amqpBridgeConfig.getEndpointConfig().isEnabled()) {
                 AmqpBridge amqpBridge = new AmqpBridge(amqpBridgeConfig);
 
@@ -77,7 +95,7 @@ public class Application {
 
             Future<Void> httpFuture = Future.future();
             futures.add(httpFuture);
-            HttpBridgeConfig httpBridgeConfig = HttpBridgeConfig.fromMap(config);
+
             if (httpBridgeConfig.getEndpointConfig().isEnabled()) {
                 HttpBridge httpBridge = new HttpBridge(httpBridgeConfig);
                 vertx.deployVerticle(httpBridge, done -> {
@@ -95,7 +113,7 @@ public class Application {
 
             CompositeFuture.join(futures).setHandler(done -> {
                 if (done.succeeded()) {
-                    startHealthServer(vertx);
+                    startHealthServer(vertx, healthServerPort);
                 }
             });
         });
@@ -104,7 +122,7 @@ public class Application {
     /**
      * Start an HTTP health server
      */
-    private static void startHealthServer(Vertx vertx) {
+    private static void startHealthServer(Vertx vertx, int port) {
 
         vertx.createHttpServer()
                 .requestHandler(request -> {
@@ -114,9 +132,9 @@ public class Application {
                         request.response().setStatusCode(HttpResponseStatus.OK.code()).end();
                     }
                 })
-                .listen(HEALTH_SERVER_PORT, done -> {
+                .listen(port, done -> {
                     if (done.succeeded()) {
-                        log.info("Health server started, listening on port {}", HEALTH_SERVER_PORT);
+                        log.info("Health server started, listening on port {}", port);
                     } else {
                         log.error("Failed to start Health server", done.cause());
                     }
