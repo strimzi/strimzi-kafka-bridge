@@ -18,8 +18,7 @@ ENV STRIMZI_HOME=/opt/strimzi
 RUN mkdir -p /opt/strimzi/bin && mkdir -p /opt/strimzi/lib
 WORKDIR /opt/strimzi
 
-COPY scripts/ bin/
-COPY target/kafka-bridge.jar lib/
+COPY target/kafka-bridge-${strimzi_kafka_bridge_version}/kafka-bridge-${strimzi_kafka_bridge_version} ./
 
 USER 1001
 
