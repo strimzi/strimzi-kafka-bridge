@@ -855,13 +855,24 @@
         }
       ]
     },
-    "/readiness": {
+    "/ready": {
       "get": {
         "description": "This endpoint serves for readiness check.",
         "operationId": "readinessCheck",
         "responses": {
           "200": {
-            "description": "Server is alive and responding."
+            "description": "Server is ready."
+          }
+        }
+      }
+    },
+    "/healthy": {
+      "get": {
+        "description": "This endpoint serves for healthiness check.",
+        "operationId": "healthinessCheck",
+        "responses": {
+          "200": {
+            "description": "Server is healthy."
           }
         }
       }

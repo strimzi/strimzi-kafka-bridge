@@ -22,7 +22,8 @@ public enum HttpOpenApiOperations {
     SEEK("seek"),
     SEEK_TO_BEGINNING("seekToBeginning"),
     SEEK_TO_END("seekToEnd"),
-    READINESS_CHECK("readinessCheck");
+    READINESS_CHECK("readinessCheck"),
+    HEALTHINESS_CHECK("healthinessCheck");
 
     private final String text;
 
