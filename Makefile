@@ -12,7 +12,7 @@ endif
 
 all: java_package docker_build docker_push
 clean: java_clean
-release: release_prepare release_version release_helm_version release_maven $(SUBDIRS) release_docu release_single_file release_pkg release_helm_repo docu_clean
+release: release_prepare release_maven release_package
 
 next_version:
 	echo $(shell echo $(NEXT_VERSION) | tr a-z A-Z) > release.version
@@ -20,19 +20,17 @@ next_version:
 	mvn versions:commit
 
 release_prepare:
+	echo "Update release.version to $(RELEASE_VERSION)"
 	echo $(shell echo $(RELEASE_VERSION) | tr a-z A-Z) > release.version
-	rm -rf ./strimzi-$(RELEASE_VERSION)
-	rm -f ./strimzi-$(RELEASE_VERSION).tar.gz
-	mkdir ./strimzi-$(RELEASE_VERSION)
+	echo "Update pom versions to $(RELEASE_VERSION)"
+	mvn versions:set -DnewVersion=$(shell echo $(RELEASE_VERSION) | tr a-z A-Z)
+	mvn versions:commit
 
 release_maven:
 	echo "Update pom versions to $(RELEASE_VERSION)"
 	mvn versions:set -DnewVersion=$(shell echo $(RELEASE_VERSION) | tr a-z A-Z)
 	mvn versions:commit
 
-release_pkg: helm_pkg	
-	tar -z -cf ./strimzi-$(RELEASE_VERSION).tar.gz strimzi-$(RELEASE_VERSION)/
-	zip -r ./strimzi-$(RELEASE_VERSION).zip strimzi-$(RELEASE_VERSION)/
-	rm -rf ./strimzi-$(RELEASE_VERSION)
+release_package: java_package
 
 findbugs: $(SUBDIRS)
