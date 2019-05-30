@@ -1982,7 +1982,8 @@ public class HttpBridgeTest extends KafkaClusterTestBase {
                     HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                     context.assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
                     context.assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
-                    context.assertEquals("Response is too large", error.getMessage());
+                    context.assertEquals("Response exceeds the maximum number of bytes the consumer can receive",
+                            error.getMessage());
 
                     consumeAsync.complete();
                 });
