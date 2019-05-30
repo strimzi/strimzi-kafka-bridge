@@ -22,6 +22,7 @@ import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.message.Message;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -153,7 +154,6 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
                 // encoded as a Map
                 } else if (amqpValue instanceof Map) {
                     Map<?, ?> map = (Map<?, ?>) ((AmqpValue) body).getValue();
-                    value = map.toString().getBytes();
                     JsonObject jsonMap = new JsonObject((Map<String, Object>) map);
                     jsonBody.put(AmqpJsonMessageConverter.SECTION, jsonMap);
                 }
@@ -174,7 +174,7 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
         }
 
         // build the record for the KafkaProducer and then send it
-        KafkaProducerRecord<String, byte[]> record = KafkaProducerRecord.create(topic, (String) key, json.toString().getBytes(), (Integer) partitionFromMessage);
+        KafkaProducerRecord<String, byte[]> record = KafkaProducerRecord.create(topic, (String) key, json.toString().getBytes(StandardCharsets.UTF_8), (Integer) partitionFromMessage);
         return record;
     }
 
@@ -185,7 +185,7 @@ public class AmqpJsonMessageConverter implements MessageConverter<String, byte[]
         message.setAddress(address);
 
         // get the root JSON
-        JsonObject json = new JsonObject(new String(record.value()));
+        JsonObject json = new JsonObject(new String(record.value(), StandardCharsets.UTF_8));
 
         // get AMQP properties from the JSON
         JsonObject jsonProperties = json.getJsonObject(AmqpJsonMessageConverter.PROPERTIES);

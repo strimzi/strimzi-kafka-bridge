@@ -294,7 +294,7 @@ public class HttpBridge extends AbstractVerticle {
         SourceBridgeEndpoint source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
 
         if (source == null) {
-            source = new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+            source = new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig,
                     contentTypeToFormat(contentType), new ByteArraySerializer(), new ByteArraySerializer());
 
             source.closeHandler(s -> {

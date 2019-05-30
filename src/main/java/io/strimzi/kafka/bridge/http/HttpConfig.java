@@ -52,7 +52,7 @@ public class HttpConfig extends AbstractConfig {
      * @return the port for HTTP server (to bind)
      */
     public int getPort() {
-        return Integer.valueOf(this.config.getOrDefault(HTTP_PORT, DEFAULT_PORT).toString());
+        return Integer.parseInt(this.config.getOrDefault(HTTP_PORT, DEFAULT_PORT).toString());
     }
 
     /**
