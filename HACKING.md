@@ -1,7 +1,7 @@
 # Building Strimzi Kafka Bridge
 
-Strimzi Kafka Bridge is using `make` as its main build system. 
-Our make build supports several different targets mainly for building the Java binaries and pushing Docker images.
+Strimzi Kafka Bridge uses `make` as its main build system. 
+Our `make` build supports several different targets, mainly for building the Java binaries and pushing Docker images.
 
 ## Build Pre-Requisites
 
@@ -15,10 +15,10 @@ In order to use `make` these all need to be available in your `$PATH`.
 
 ### Mac OS
 
-The `make` build is using GNU versions of `find` and `sed` utilities and is not compatible with the BSD versions available on Mac OS. 
+The `make` build is using the GNU versions of the `find` and `sed` utilities and is not compatible with the BSD versions available on Mac OS. 
 When using Mac OS, you have to install the GNU versions of `find` and `sed`.
 When using `brew`, you can do `brew install gnu-sed findutils grep coreutils`.
-This command will install the GNU versions as `gcp`, `ggrep`, `gsed` and `gfind` and our `make` build will automatically pick them up and use them.   
+This command will install the GNU versions as `gcp`, `ggrep`, `gsed` and `gfind` and our `make` build will automatically pick them up and use them.
 
 ## Docker image
 
@@ -27,12 +27,11 @@ This command will install the GNU versions as `gcp`, `ggrep`, `gsed` and `gfind`
 The `docker_build` target will build the Docker image provided by the Strimzi Kafka Bridge project.
 You can build all Strimzi Docker images by calling `make docker_build` from the root of the repository.
 The `docker_build` target will always build the images under the `strimzi` organization. 
-The `DOCKER_TAG` environment variable configures the Docker tag 
-to use (default is `latest`).
+The `DOCKER_TAG` environment variable configures the Docker tag to use (default is `latest`).
 
 ### Tagging and pushing Docker images
 
-Target `docker_tag` can be used to tag the Docker images built by the `docker_build` target. 
+The `docker_tag` target can be used to tag the Docker images built by the `docker_build` target. 
 This target is automatically called by the `docker_push` target and doesn't have to be called separately. 
 
 To configure the `docker_tag` and `docker_push` targets you can set following environment variables:
@@ -42,21 +41,21 @@ To configure the `docker_tag` and `docker_push` targets you can set following en
 
 ## Building everything
 
-`make all` command can be used to trigger all the tasks above - build the Java code, Docker image, tag it and push it to the configured repository.
+The `make all` command can be used to trigger all the tasks above - build the Java code, Docker image, tag it and push it to the configured repository.
 
-`make` invokes Maven for packaging Java based applications (that is, Cluster Operator, Topic Operator, ...). 
+`make` invokes Maven for packaging Java based applications. 
 The `mvn` command can be customized by setting the `MVN_ARGS` environment variable when launching `make all`. 
 For example, `MVN_ARGS=-DskipTests make all` can be used to avoid running the unit tests.
 
 ## Release
 
-`make release` target can be used to create a release. 
-Environment variable `RELEASE_VERSION` (default value `latest`) can be used to define the release version. 
+The `make release` target can be used to create a release. 
+The `RELEASE_VERSION` environment variable (default value `latest`) can be used to define the release version. 
 The `release` target will:
-* Update all tags of Docker images to `RELEASE_VERSION`
-* Update documentation version to `RELEASE_VERSION`
-* Set version of the main Maven project to `RELEASE_VERSION` 
-* Create ZIP and TAR.GT archives with the Strimzi Kafka Bridge which can be used outside of Kubernetes / OpenShift
+* Update all the tags of Docker images to `RELEASE_VERSION`
+* Update the documentation version to `RELEASE_VERSION`
+* Set the version of the main Maven project to `RELEASE_VERSION` 
+* Create ZIP and TAR.GZ archives with the Strimzi Kafka Bridge which can be used outside of Kubernetes / OpenShift
  
 The `release` target will not build the Docker images - they should be built and pushed automatically by Travis CI when the release is tagged in the GitHub repository. 
 It also doesn't deploy the Java artifacts anywhere. 
@@ -68,9 +67,9 @@ The release process should normally look like this:
 4. Commit the changes to the existing files (do not add the ZIP and TAR.GZ archives into Git)
 5. Push the changes to the release branch on GitHub
 6. Create the tag and push it to GitHub. 
-Tag name determines the tag of the resulting Docker images. 
-Therefore the Git tag name has to be the same as the `RELEASE_VERSION`,
-7. Once the CI build for the tag is finished and the Docker images are pushed to Docker Hub, Create a GitHub release based on the tag. 
+The tag name determines the tag of the resulting Docker images. 
+Therefore the git tag name has to be the same as the `RELEASE_VERSION`,
+7. Once the CI build for the tag is finished and the Docker images are pushed to Docker Hub, create a GitHub release based on the tag. 
 Attach the ZIP and TAR.GZ archives to the release.
 8. On the `master` git branch:
   * Update the versions to the next SNAPSHOT version using the `next_version` `make` target. 
