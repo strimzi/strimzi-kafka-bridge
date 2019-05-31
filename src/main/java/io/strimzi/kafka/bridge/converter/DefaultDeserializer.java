@@ -41,7 +41,7 @@ public class DefaultDeserializer<T> implements Deserializer<T> {
                     o.close();
                 }
             } catch (IOException ioEx) {
-
+                throw new RuntimeException("Failed to close streams", ioEx);
             }
         }
     }

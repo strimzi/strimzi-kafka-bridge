@@ -43,7 +43,7 @@ public class DefaultSerializer<T> implements Serializer<T> {
                     o.close();
                 }
             } catch (IOException ioEx) {
-
+                throw new RuntimeException("Failed to close streams", ioEx);
             }
         }
     }

@@ -39,6 +39,11 @@ public class Application {
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx();
 
+        if (args.length == 0)   {
+            log.error("Please specify a cofiguration file using the '--config-file` option. For example 'bin/run_bridge.sh --config-file config/application.properties'.");
+            System.exit(1);
+        }
+
         String path = args[0];
         if (args.length > 1) {
             path = args[0] + "=" + args[1];

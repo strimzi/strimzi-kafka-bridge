@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
-# packaging
+echo "Run Findbugs ..."
+make findbugs
+
 echo "Packaging ..."
-mvn package
+make java_package
 
 echo "PULL_REQUEST=$PULL_REQUEST"
 echo "TAG=$TAG"
@@ -17,8 +19,13 @@ elif [ "$TAG" = "latest" ] && [ "$BRANCH" != "master" ] ; then
 else
     echo "Login into Docker Hub ..."
     docker login -u $DOCKER_USER -p $DOCKER_PASS
-    echo "Building Docker image ..."
-    docker build -t strimzi/kafka-bridge:$TAG .
+
+    export DOCKER_ORG=strimzi
+    export DOCKER_TAG=$TAG
+
+    echo "Building Docker images ..."
+    make docker_build
+
     echo "Pushing to Docker Hub ..."
-    docker push strimzi/kafka-bridge:$TAG
+    make docker_push
 fi
