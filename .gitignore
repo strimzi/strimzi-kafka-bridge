@@ -27,3 +27,5 @@ hs_err_pid*
 
 # VSCode stuff
 .vscode/
+
+.DS_Store
