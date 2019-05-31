@@ -5,6 +5,7 @@
     <includeBaseDirectory>true</includeBaseDirectory>
 
     <formats>
+        <format>tar.gz</format>
         <format>zip</format>
         <format>dir</format>
     </formats>
@@ -12,10 +13,12 @@
         <fileSet>
             <directory>${project.basedir}/config</directory>
             <outputDirectory>/config</outputDirectory>
+            <fileMode>0644</fileMode>
         </fileSet>
         <fileSet>
             <directory>${project.basedir}/bin</directory>
             <outputDirectory>/bin</outputDirectory>
+            <fileMode>0755</fileMode>
         </fileSet>
         <fileSet>
             <directory>${project.basedir}</directory>
@@ -23,12 +26,14 @@
                 <include>README*</include>
                 <include>LICENSE*</include>
             </includes>
+            <fileMode>0644</fileMode>
         </fileSet>
     </fileSets>
     <dependencySets>
         <dependencySet>
             <scope>runtime</scope>
             <outputDirectory>/libs</outputDirectory>
+            <fileMode>0644</fileMode>
         </dependencySet>
     </dependencySets>
 </assembly>
