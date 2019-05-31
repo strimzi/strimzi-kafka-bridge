@@ -22,4 +22,4 @@ COPY target/kafka-bridge-${strimzi_kafka_bridge_version}/kafka-bridge-${strimzi_
 
 USER 1001
 
-CMD ["/opt/strimzi/bin/run_bridge.sh"]
+CMD ["/opt/strimzi/bin/kafka_bridge_run.sh"]

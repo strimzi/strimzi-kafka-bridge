@@ -24,4 +24,4 @@ echo "Kafka Bridge configuration:"
 echo ""
 
 # starting Kafka Bridge with final configuration
-exec java -Dvertx.cacheDirBase=/tmp -jar /kafka-bridge.jar --config-file=/tmp/kafka-bridge.properties
+exec java -Dvertx.cacheDirBase=/tmp -cp "libs/*" io.strimzi.kafka.bridge.Application "$@" --config-file=/tmp/kafka-bridge.properties

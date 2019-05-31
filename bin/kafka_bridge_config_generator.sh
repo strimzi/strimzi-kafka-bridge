@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# Write the config file
-
 SECURITY_PROTOCOL=PLAINTEXT
 
 if [ "$KAFKA_BRIDGE_TLS" = "true" ]; then
@@ -51,7 +49,7 @@ EOF
 )
 fi
 
-content="#Common properties\n"
+content="#Kafka common properties\n"
 content="${content}kafka.security.protocol=${SECURITY_PROTOCOL}"
 content="${content}${TLS_CONFIGURATION}"
 content="${content}${TLS_AUTH_CONFIGURATION}"
