@@ -36,7 +36,6 @@ public class Application {
 
     private static final int DEFAULT_HEALTH_SERVER_PORT = 8081;
 
-    @SuppressWarnings("checkstyle:NPathComplexity")
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx();
 
