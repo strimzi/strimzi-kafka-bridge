@@ -130,11 +130,15 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             if (done.succeeded()) {
                 HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
+                HttpResponseStatus statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR;
+                if (done.cause() instanceof IllegalStateException) {
+                    statusCode = HttpResponseStatus.NOT_FOUND;
+                }
                 HttpBridgeError error = new HttpBridgeError(
-                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        statusCode.code(),
                         done.cause().getMessage()
                 );
-                HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                HttpUtils.sendResponse(routingContext.response(), statusCode.code(),
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         });
@@ -152,11 +156,15 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             if (done.succeeded()) {
                 HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
+                HttpResponseStatus statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR;
+                if (done.cause() instanceof IllegalStateException) {
+                    statusCode = HttpResponseStatus.NOT_FOUND;
+                }
                 HttpBridgeError error = new HttpBridgeError(
-                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        statusCode.code(),
                         done.cause().getMessage()
                 );
-                HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                HttpUtils.sendResponse(routingContext.response(), statusCode.code(),
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         };
