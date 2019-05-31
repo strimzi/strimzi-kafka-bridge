@@ -213,21 +213,10 @@
 					</execution>
 				</executions>
 			</plugin>
-
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<inherited>true</inherited>
-				<configuration>
-					<environmentVariables>
-						<ENV_VAR_EXISTS>value</ENV_VAR_EXISTS>
-						<ENV_VAR_EXISTS_BOOLEAN>true</ENV_VAR_EXISTS_BOOLEAN>
-					</environmentVariables>
-					<systemPropertyVariables>
-						<vertx.logger-delegate-factory-class-name>io.vertx.core.logging.SLF4JLogDelegateFactory</vertx.logger-delegate-factory-class-name>
-					</systemPropertyVariables>
-				</configuration>
+				<version>${maven-surefire-plugin.version}</version>
 			</plugin>
 
 		</plugins>

@@ -69,6 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(VertxExtension.class)
+@SuppressWarnings({"checkstyle:ClassFanOutComplexity", "ClassDataAbstractionCoupling"})
 class AmqpBridgeTest extends KafkaClusterTestBase {
 
     private static final Logger log = LoggerFactory.getLogger(AmqpBridgeTest.class);

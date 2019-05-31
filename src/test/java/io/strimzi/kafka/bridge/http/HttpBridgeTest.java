@@ -57,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(VertxExtension.class)
-@SuppressWarnings("checkstyle:JavaNCSS")
+@SuppressWarnings({"checkstyle:JavaNCSS"})
 class HttpBridgeTest extends KafkaClusterTestBase {
 
     private static final Logger log = LoggerFactory.getLogger(HttpBridgeTest.class);
@@ -1956,6 +1956,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
+    @SuppressWarnings("checkstyle:MethodLength")
     void seekToOffsetAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToOffsetAndReceive";
         kafkaCluster.createTopic(topic, 2, 1);
