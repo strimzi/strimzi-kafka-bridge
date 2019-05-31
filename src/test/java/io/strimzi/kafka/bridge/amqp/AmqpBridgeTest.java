@@ -14,9 +14,9 @@ import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.converter.DefaultDeserializer;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.Vertx;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.impl.KafkaConsumerRecordImpl;
@@ -56,7 +56,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(VertxExtension.class)
 class AmqpBridgeTest extends KafkaClusterTestBase {
@@ -85,30 +95,29 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
     private AmqpBridgeConfig bridgeConfigProperties;
 
     @BeforeEach
-    void before(TestContext context) {
-
+    void before(VertxTestContext context) {
         this.vertx = Vertx.vertx();
 
         this.bridgeConfigProperties = AmqpBridgeConfig.fromMap(config);
         this.bridge = new AmqpBridge(this.bridgeConfigProperties);
 
-        this.vertx.deployVerticle(this.bridge, context.asyncAssertSuccess());
+        vertx.deployVerticle(this.bridge, context.succeeding(id -> context.completeNow()));
     }
 
     @AfterEach
-    void after(TestContext context) {
-
-        this.vertx.close(context.asyncAssertSuccess());
+    void after(VertxTestContext context) {
+        vertx.close(context.succeeding(arg -> context.completeNow()));
     }
 
     @Test
-    void sendSimpleMessages(TestContext context) {
+    void sendSimpleMessages(VertxTestContext context) throws InterruptedException {
         String topic = "sendSimpleMessages";
         kafkaCluster.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
-        Async async = context.async();
+        Checkpoint consume = context.checkpoint();
+
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
@@ -127,33 +136,35 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                 KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
                 consumer.handler(record -> {
-                    context.assertEquals(record.value(), body);
+                    context.verify(() -> assertEquals(record.value(), body));
                     log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                             record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     consumer.close();
-                    async.complete();
+                    consume.flag();
                 });
+
                 consumer.subscribe(topic, done -> {
                     if (!done.succeeded()) {
-                        context.fail(done.cause());
+                        context.failNow(ar.cause());
                     }
                 });
 
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
                     log.info("Message delivered {}", delivery.getRemoteState());
-                    context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+                    context.verify(() -> assertEquals(Accepted.getInstance(), delivery.getRemoteState()));
 
                     sender.close();
                     connection.close();
                 });
             } else {
-                context.fail(ar.cause());
+                context.failNow(ar.cause());
             }
         });
+        assertTrue(context.awaitCompletion(60, TimeUnit.SECONDS));
     }
 
     @Test
-    void sendSimpleMessageToPartition(TestContext context) {
+    void sendSimpleMessageToPartition(VertxTestContext context) throws InterruptedException {
         String topic = "sendSimpleMessageToPartition";
         kafkaCluster.createTopic(topic, 2, 1);
 
@@ -163,9 +174,10 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
             e.printStackTrace();
         }
 
+        Checkpoint consume = context.checkpoint();
+
         ProtonClient client = ProtonClient.create(this.vertx);
 
-        Async async = context.async();
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
@@ -184,17 +196,17 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                 KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
                 consumer.handler(record -> {
-                    context.assertEquals(record.value(), body);
+                    context.verify(() -> assertEquals(record.value(), body));
                     // checking the right partition which should not be just the first one (0)
-                    context.assertEquals(record.partition(), 1);
+                    context.verify(() -> assertEquals(record.partition(), 1));
                     log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                             record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     consumer.close();
-                    async.complete();
+                    consume.flag();
                 });
                 consumer.subscribe(topic, done -> {
                     if (!done.succeeded()) {
-                        context.fail(done.cause());
+                        context.failNow(done.cause());
                     }
                 });
 
@@ -206,25 +218,26 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
                     log.info("Message delivered {}", delivery.getRemoteState());
-                    context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+                    context.verify(() -> assertEquals(Accepted.getInstance(), delivery.getRemoteState()));
 
                     sender.close();
                     connection.close();
                 });
             } else {
-                context.fail(ar.cause());
+                context.failNow(ar.cause());
             }
         });
+        assertTrue(context.awaitCompletion(60, TimeUnit.SECONDS));
     }
 
     @Test
-    void sendSimpleMessageWithKey(TestContext context) {
+    void sendSimpleMessageWithKey(VertxTestContext context) throws InterruptedException {
         String topic = "sendSimpleMessageWithKey";
         kafkaCluster.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
-        Async async = context.async();
+        Checkpoint consume = context.checkpoint();
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
@@ -243,16 +256,16 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                 KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
                 consumer.handler(record -> {
-                    context.assertEquals(record.value(), body);
-                    context.assertEquals(record.key(), "my_key");
+                    context.verify(() -> assertEquals(record.value(), body));
+                    context.verify(() -> assertEquals(record.key(), "my_key"));
                     log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                             record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     consumer.close();
-                    async.complete();
+                    consume.flag();
                 });
                 consumer.subscribe(topic, done -> {
                     if (!done.succeeded()) {
-                        context.fail(done.cause());
+                        context.failNow(done.cause());
                     }
                 });
 
@@ -264,25 +277,26 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
                     log.info("Message delivered {}", delivery.getRemoteState());
-                    context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+                    context.verify(() -> assertEquals(Accepted.getInstance(), delivery.getRemoteState()));
 
                     sender.close();
                     connection.close();
                 });
             } else {
-                context.fail(ar.cause());
+                context.failNow(ar.cause());
             }
         });
+        assertTrue(context.awaitCompletion(60, TimeUnit.SECONDS));
     }
 
     @Test
-    void sendBinaryMessage(TestContext context) {
+    void sendBinaryMessage(VertxTestContext context) throws InterruptedException {
         String topic = "sendBinaryMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
-        Async async = context.async();
+        Checkpoint consume = context.checkpoint();
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
@@ -300,13 +314,13 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                 KafkaConsumer<String, byte[]> consumer = KafkaConsumer.create(this.vertx, config);
                 consumer.handler(record -> {
-                    context.assertTrue(Arrays.equals(record.value(), value.getBytes()));
+                    context.verify(() -> assertArrayEquals(record.value(), value.getBytes()));
                     consumer.close();
-                    async.complete();
+                    consume.flag();
                 });
                 consumer.subscribe(topic, done -> {
                     if (!done.succeeded()) {
-                        context.fail(done.cause());
+                        context.failNow(done.cause());
                     }
                 });
 
@@ -316,25 +330,26 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
                     log.info("Message delivered {}", delivery.getRemoteState());
-                    context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+                    context.verify(() -> assertEquals(Accepted.getInstance(), delivery.getRemoteState()));
 
                     sender.close();
                     connection.close();
                 });
             } else {
-                context.fail(ar.cause());
+                context.failNow(ar.cause());
             }
         });
+        assertTrue(context.awaitCompletion(60, TimeUnit.SECONDS));
     }
 
     @Test
-    void sendArrayMessage(TestContext context) {
+    void sendArrayMessage(VertxTestContext context) throws InterruptedException {
         String topic = "sendArrayMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
-        Async async = context.async();
+        Checkpoint consume = context.checkpoint();
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
@@ -355,13 +370,13 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                 consumer.handler(record -> {
                     log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                             record.topic(), record.partition(), record.offset(), record.key(), record.value());
-                    context.assertTrue(Arrays.equals(record.value(), array));
+                    context.verify(() -> assertTrue(Arrays.equals(record.value(), array)));
                     consumer.close();
-                    async.complete();
+                    consume.flag();
                 });
                 consumer.subscribe(topic, done -> {
                     if (!done.succeeded()) {
-                        context.fail(done.cause());
+                        context.failNow(done.cause());
                     }
                 });
 
@@ -371,22 +386,23 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
                     log.info("Message delivered {}", delivery.getRemoteState());
-                    context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+                    context.verify(() -> assertEquals(Accepted.getInstance(), delivery.getRemoteState()));
                 });
             } else {
-                context.fail(ar.cause());
+                context.failNow(ar.cause());
             }
         });
+        assertTrue(context.awaitCompletion(60, TimeUnit.SECONDS));
     }
 
     @Test
-    void sendListMessage(TestContext context) {
+    void sendListMessage(VertxTestContext context) throws InterruptedException {
         String topic = "sendListMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
-        Async async = context.async();
+        Checkpoint consume = context.checkpoint();
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
@@ -409,13 +425,13 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                 consumer.handler(record -> {
                     log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                             record.topic(), record.partition(), record.offset(), record.key(), record.value());
-                    context.assertTrue(record.value().equals(list));
+                    context.verify(() -> assertTrue(record.value().equals(list)));
                     consumer.close();
-                    async.complete();
+                    consume.flag();
                 });
                 consumer.subscribe(topic, done -> {
                     if (!done.succeeded()) {
-                        context.fail(done.cause());
+                        context.failNow(done.cause());
                     }
                 });
 
@@ -425,22 +441,23 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
                     log.info("Message delivered {}", delivery.getRemoteState());
-                    context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+                    context.verify(() -> assertEquals(Accepted.getInstance(), delivery.getRemoteState()));
                 });
             } else {
-                context.fail(ar.cause());
+                context.failNow(ar.cause());
             }
         });
+        assertTrue(context.awaitCompletion(60, TimeUnit.SECONDS));
     }
 
     @Test
-    void sendMapMessage(TestContext context) {
+    void sendMapMessage(VertxTestContext context) throws InterruptedException {
         String topic = "sendMapMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
-        Async async = context.async();
+        Checkpoint consume = context.checkpoint();
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
@@ -463,13 +480,13 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                 consumer.handler(record -> {
                     log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                             record.topic(), record.partition(), record.offset(), record.key(), record.value());
-                    context.assertTrue(record.value().equals(map));
+                    context.verify(() -> assertEquals(record.value(), map));
                     consumer.close();
-                    async.complete();
+                    consume.flag();
                 });
                 consumer.subscribe(topic, done -> {
                     if (!done.succeeded()) {
-                        context.fail(done.cause());
+                        context.failNow(done.cause());
                     }
                 });
 
@@ -479,22 +496,23 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
                     log.info("Message delivered {}", delivery.getRemoteState());
-                    context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+                    context.verify(() -> assertEquals(Accepted.getInstance(), delivery.getRemoteState()));
                 });
             } else {
-                context.fail(ar.cause());
+                context.failNow(ar.cause());
             }
         });
+        assertTrue(context.awaitCompletion(60, TimeUnit.SECONDS));
     }
 
     @Test
-    void sendPeriodicMessage(TestContext context) {
+    void sendPeriodicMessage(VertxTestContext context) throws InterruptedException {
         String topic = "sendPeriodicMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
-        Async async = context.async();
+        Checkpoint consume = context.checkpoint();
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
@@ -511,16 +529,17 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                 KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
                 consumer.batchHandler(records -> {
 
-                    context.assertEquals(this.count, records.size());
+                    context.verify(() -> assertEquals(this.count, records.size()));
                     for (int i = 0; i < records.size(); i++) {
                         KafkaConsumerRecord<String, String> record = records.recordAt(i);
                         log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                                 record.topic(), record.partition(), record.offset(), record.key(), record.value());
-                        context.assertEquals("key-" + i, record.key());
+                        int finalI = i;
+                        context.verify(() -> assertEquals("key-" + finalI, record.key()));
                     }
 
                     consumer.close();
-                    async.complete();
+                    consume.flag();
                 });
                 consumer.handler(record -> {
                 });
@@ -532,7 +551,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                     if (connection.isDisconnected()) {
                         this.vertx.cancelTimer(timerId);
                         // test failed
-                        context.assertTrue(false);
+                        context.verify(() -> assertTrue(false));
                     } else {
 
                         if (this.count < AmqpBridgeTest.PERIODIC_MAX_MESSAGE) {
@@ -545,9 +564,9 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                             Message message = ProtonHelper.message(topic, "Periodic message [" + this.count + "] from " + connection.getContainer());
                             message.setMessageAnnotations(messageAnnotations);
 
-                            sender.send(ProtonHelper.tag("my_tag_" + String.valueOf(this.count)), message, delivery -> {
+                            sender.send(ProtonHelper.tag("my_tag_" + this.count), message, delivery -> {
                                 log.info("Message delivered {}", delivery.getRemoteState());
-                                context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+                                context.verify(() -> assertEquals(Accepted.getInstance(), delivery.getRemoteState()));
                             });
 
                             this.count++;
@@ -558,26 +577,27 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                             // subscribe Kafka consumer for getting messages
                             consumer.subscribe(topic, done -> {
                                 if (!done.succeeded()) {
-                                    context.fail(done.cause());
+                                    context.failNow(done.cause());
                                 }
                             });
                         }
                     }
                 });
             } else {
-                context.fail(ar.cause());
+                context.failNow(ar.cause());
             }
         });
+        assertTrue(context.awaitCompletion(60, TimeUnit.SECONDS));
     }
 
     @Test
-    void sendReceiveInMultiplexing(TestContext context) {
+    void sendReceiveInMultiplexing(VertxTestContext context) throws InterruptedException {
         String topic = "sendReceiveInMultiplexing";
         kafkaCluster.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
-        Async async = context.async();
+        Checkpoint consume = context.checkpoint();
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
 
             if (ar.succeeded()) {
@@ -597,8 +617,8 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                         log.info("Message received {}", new String(value));
                         // default is AT_LEAST_ONCE QoS (unsettled) so we need to send disposition (settle) to sender
                         delivery.disposition(Accepted.getInstance(), true);
-                        context.assertEquals(sentBody, new String(value));
-                        async.complete();
+                        context.verify(() -> assertEquals(sentBody, new String(value)));
+                        consume.flag();
                     }
                 })
                         .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
@@ -608,29 +628,32 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                 sender.send(ProtonHelper.tag("my_tag"), sentMessage, delivery -> {
                     log.info("Message delivered {}", delivery.getRemoteState());
-                    context.assertEquals(Accepted.getInstance(), delivery.getRemoteState());
+                    context.verify(() -> assertEquals(Accepted.getInstance(), delivery.getRemoteState()));
                 });
 
             } else {
-                context.fail(ar.cause());
+                context.failNow(ar.cause());
             }
         });
+        assertTrue(context.awaitCompletion(60, TimeUnit.SECONDS));
     }
 
     @Test
-    void receiveSimpleMessage(TestContext context) {
+    void receiveSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveSimpleMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
 
-        Async send = context.async();
-        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
+        // Futures for wait
+        CompletableFuture<Boolean> produce = new CompletableFuture<>();
+        Checkpoint consume = context.checkpoint();
+
+        kafkaCluster.useTo().produceStrings(1, () -> produce.complete(true), () ->
                 new ProducerRecord<>(topic, 0, null, sentBody));
-        send.await();
+        produce.get(60, TimeUnit.SECONDS);
 
         ProtonClient client = ProtonClient.create(this.vertx);
-        Async async = context.async();
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
@@ -649,47 +672,50 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                         // get topic, partition, offset and key from AMQP annotations
                         MessageAnnotations annotations = message.getMessageAnnotations();
-                        context.assertNotNull(annotations);
+                        context.verify(() -> assertNotNull(annotations));
                         String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)));
-                        context.assertNotNull(topicAnnotation);
+                        context.verify(() -> assertNotNull(topicAnnotation));
                         Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION));
-                        context.assertNotNull(partitionAnnotation);
+                        context.verify(() -> assertNotNull(partitionAnnotation));
                         Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION));
-                        context.assertNotNull(offsetAnnotation);
+                        context.verify(() -> assertNotNull(offsetAnnotation));
                         Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
-                        context.assertNull(keyAnnotation);
+                        context.verify(() -> assertNull(keyAnnotation));
                         log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                                 topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
-                        context.assertEquals(topicAnnotation, topic);
-                        context.assertEquals(partitionAnnotation, 0);
-                        context.assertEquals(offsetAnnotation, 0L);
-                        context.assertEquals(sentBody, new String(value));
-                        async.complete();
+                        context.verify(() -> assertEquals(topicAnnotation, topic));
+                        context.verify(() -> assertEquals(partitionAnnotation, 0));
+                        context.verify(() -> assertEquals(offsetAnnotation, 0L));
+                        context.verify(() -> assertEquals(sentBody, new String(value)));
+                        consume.flag();
                     }
                 })
                         .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
             } else {
-                context.fail(ar.cause());
+                context.failNow(ar.cause());
             }
         });
+        assertTrue(context.awaitCompletion(60, TimeUnit.SECONDS));
     }
 
     @Test
-    void receiveSimpleMessageFromPartition(TestContext context) {
+    void receiveSimpleMessageFromPartition(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveSimpleMessageFromPartition";
         kafkaCluster.createTopic(topic, 2, 1);
 
         String sentBody = "Simple message";
 
-        Async send = context.async();
-        kafkaCluster.useTo().produceStrings(1, send::complete, () ->
+        // Futures for wait
+        CompletableFuture<Boolean> produce = new CompletableFuture<>();
+        Checkpoint consume = context.checkpoint();
+
+        kafkaCluster.useTo().produceStrings(1, () -> produce.complete(true), () ->
                 new ProducerRecord<>(topic, 1, null, sentBody));
-        send.await();
+        produce.get(60, TimeUnit.SECONDS);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
-        Async async = context.async();
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
@@ -716,46 +742,48 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                         // get topic, partition, offset and key from AMQP annotations
                         MessageAnnotations annotations = message.getMessageAnnotations();
-                        context.assertNotNull(annotations);
+                        context.verify(() -> assertNotNull(annotations));
                         String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)));
-                        context.assertNotNull(topicAnnotation);
+                        context.verify(() -> assertNotNull(topicAnnotation));
                         Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION));
-                        context.assertNotNull(partitionAnnotation);
+                        context.verify(() -> assertNotNull(partitionAnnotation));
                         Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION));
-                        context.assertNotNull(offsetAnnotation);
+                        context.verify(() -> assertNotNull(offsetAnnotation));
                         Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
-                        context.assertNull(keyAnnotation);
+                        context.verify(() -> assertNull(keyAnnotation));
                         log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                                 topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
-                        context.assertEquals(topicAnnotation, topic);
-                        context.assertEquals(partitionAnnotation, 1);
-                        context.assertEquals(offsetAnnotation, 0L);
-                        context.assertEquals(sentBody, new String(value));
-                        async.complete();
+                        context.verify(() -> assertEquals(topicAnnotation, topic));
+                        context.verify(() -> assertEquals(partitionAnnotation, 1));
+                        context.verify(() -> assertEquals(offsetAnnotation, 0L));
+                        context.verify(() -> assertEquals(sentBody, new String(value)));
+                        consume.flag();
                     }
                 })
                         .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
             } else {
-                context.fail(ar.cause());
+                context.failNow(ar.cause());
             }
         });
+        assertTrue(context.awaitCompletion(60, TimeUnit.SECONDS));
     }
 
     @Test
-    void receiveSimpleMessageFromPartitionAndOffset(TestContext context) {
+    void receiveSimpleMessageFromPartitionAndOffset(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveSimpleMessageFromPartitionAndOffset";
         kafkaCluster.createTopic(topic, 1, 1);
 
-        Async batch = context.async();
+        // Futures for wait
+        CompletableFuture<Boolean> batch = new CompletableFuture<>();
+        Checkpoint consume = context.checkpoint();
         AtomicInteger index = new AtomicInteger();
-        kafkaCluster.useTo().produceStrings(11, batch::complete, () ->
+        kafkaCluster.useTo().produceStrings(11, () -> batch.complete(true), () ->
                 new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
-        batch.awaitSuccess(10000);
+        batch.get(60, TimeUnit.SECONDS);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
-        Async async = context.async();
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
@@ -783,41 +811,42 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                         // get topic, partition, offset and key from AMQP annotations
                         MessageAnnotations annotations = message.getMessageAnnotations();
-                        context.assertNotNull(annotations);
+                        context.verify(() -> assertNotNull(annotations));
                         String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)));
-                        context.assertNotNull(topicAnnotation);
+                        context.verify(() -> assertNotNull(topicAnnotation));
                         Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION));
-                        context.assertNotNull(partitionAnnotation);
+                        context.verify(() -> assertNotNull(partitionAnnotation));
                         Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION));
-                        context.assertNotNull(offsetAnnotation);
+                        context.verify(() -> assertNotNull(offsetAnnotation));
                         Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
-                        context.assertNotNull(keyAnnotation);
+                        context.verify(() -> assertNotNull(keyAnnotation));
                         log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                                 topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
-                        context.assertEquals(topicAnnotation, topic);
-                        context.assertEquals(partitionAnnotation, 0);
-                        context.assertEquals(offsetAnnotation, 10L);
-                        context.assertEquals(keyAnnotation, "key-10");
-                        context.assertEquals("value-10", new String(value));
-                        async.complete();
+                        context.verify(() -> assertEquals(topicAnnotation, topic));
+                        context.verify(() -> assertEquals(partitionAnnotation, 0));
+                        context.verify(() -> assertEquals(offsetAnnotation, 10L));
+                        context.verify(() -> assertEquals(keyAnnotation, "key-10"));
+                        context.verify(() -> assertEquals("value-10", new String(value)));
+                        consume.flag();
                     }
                 })
                         .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
             } else {
-                context.fail(ar.cause());
+                context.failNow(ar.cause());
             }
         });
+        assertTrue(context.awaitCompletion(60, TimeUnit.SECONDS));
     }
 
     @Disabled
     @Test
-    void noPartitionsAvailable(TestContext context) {
+    void noPartitionsAvailable(VertxTestContext context) throws InterruptedException {
         String topic = "noPartitionsAvailable";
         kafkaCluster.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
-        Async async = context.async();
+        Checkpoint noPartition = context.checkpoint();
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
@@ -833,12 +862,12 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                     ProtonReceiver receiver1 = connection.createReceiver(topic + "/group.id/my_group");
                     receiver1.closeHandler(ar1 -> {
                         if (ar1.succeeded()) {
-                            context.fail(ar1.cause());
+                            context.failNow(ar1.cause());
                         } else {
                             ErrorCondition condition = receiver1.getRemoteCondition();
                             log.info(condition.getDescription());
-                            context.assertEquals(condition.getCondition(), Symbol.getSymbol(AmqpBridge.AMQP_ERROR_NO_PARTITIONS));
-                            async.complete();
+                            context.verify(() -> assertEquals(condition.getCondition(), Symbol.getSymbol(AmqpBridge.AMQP_ERROR_NO_PARTITIONS)));
+                            noPartition.flag();
                         }
                     })
                             .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
@@ -846,28 +875,32 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
 
             } else {
-                context.fail(ar.cause());
+                context.failNow(ar.cause());
             }
         });
+        assertTrue(context.awaitCompletion(60, TimeUnit.SECONDS));
     }
 
     @Test
-    void defaultMessageConverterNullKeyTest(TestContext context) {
+    void defaultMessageConverterNullKeyTest(VertxTestContext context) {
         MessageConverter defaultMessageConverter = new AmqpDefaultMessageConverter();
-        context.assertNull(convertedMessageWithNullKey(defaultMessageConverter));
+        context.verify(() -> assertNull(convertedMessageWithNullKey(defaultMessageConverter)));
+        context.completeNow();
     }
 
     @Test
-    void jsonMessageConverterNullKeyTest(TestContext context) {
+    void jsonMessageConverterNullKeyTest(VertxTestContext context) {
         MessageConverter jsonMessageConverter = new AmqpJsonMessageConverter();
-        context.assertNull(convertedMessageWithNullKey(jsonMessageConverter));
+        context.verify(() -> assertNull(convertedMessageWithNullKey(jsonMessageConverter)));
+        context.completeNow();
     }
 
     @Disabled
     @Test
-    void rawMessageConverterNullKeyTest(TestContext context) {
+    void rawMessageConverterNullKeyTest(VertxTestContext context) {
         MessageConverter rawMessageConverter = new AmqpRawMessageConverter();
-        context.assertNull(convertedMessageWithNullKey(rawMessageConverter));
+        context.verify(() -> assertNull(convertedMessageWithNullKey(rawMessageConverter)));
+        context.completeNow();
     }
 
     private Object convertedMessageWithNullKey(MessageConverter messageConverter) {

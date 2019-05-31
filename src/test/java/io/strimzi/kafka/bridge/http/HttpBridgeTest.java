@@ -16,12 +16,9 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.codec.BodyCodec;
-import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
@@ -516,7 +513,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
 
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
 
         produce.get(60, TimeUnit.SECONDS);
 
@@ -625,7 +622,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
 
         kafkaCluster.useTo().produce("", 1, new ByteArraySerializer(), new ByteArraySerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody.getBytes()));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody.getBytes()));
         produce.get(60, TimeUnit.SECONDS);
 
         WebClient client = WebClient.create(vertx);
@@ -736,9 +733,9 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
 
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic1, 0, null, sentBody1));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic1, 0, null, sentBody1));
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic2, 0, null, sentBody2));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic2, 0, null, sentBody2));
         produce.get(60, TimeUnit.SECONDS);
 
         WebClient client = WebClient.create(vertx);
@@ -852,9 +849,9 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
 
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic1, 0, null, sentBody1));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic1, 0, null, sentBody1));
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic2, 0, null, sentBody2));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic2, 0, null, sentBody2));
         produce.get(60, TimeUnit.SECONDS);
 
         WebClient client = WebClient.create(vertx);
@@ -963,7 +960,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
 
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, partition, null, sentBody));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, partition, null, sentBody));
         produce.get(60, TimeUnit.SECONDS);
 
         WebClient client = WebClient.create(vertx);
@@ -1072,9 +1069,9 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
 
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 1, null, sentBody));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 1, null, sentBody));
         produce.get(60, TimeUnit.SECONDS);
 
         WebClient client = WebClient.create(vertx);
@@ -1190,7 +1187,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         CompletableFuture<Boolean> commit = new CompletableFuture<>();
 
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(60, TimeUnit.SECONDS);
 
         WebClient client = WebClient.create(vertx);
@@ -1326,7 +1323,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         CompletableFuture<Boolean> commit = new CompletableFuture<>();
 
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(60, TimeUnit.SECONDS);
 
         WebClient client = WebClient.create(vertx);
@@ -1974,9 +1971,9 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         AtomicInteger index0 = new AtomicInteger();
         AtomicInteger index1 = new AtomicInteger();
         kafkaCluster.useTo().produce("", 10, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, "key-" + index0.get(), "value-" + index0.getAndIncrement()));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, "key-" + index0.get(), "value-" + index0.getAndIncrement()));
         kafkaCluster.useTo().produce("", 10, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 1, "key-" + index1.get(), "value-" + index1.getAndIncrement()));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 1, "key-" + index1.get(), "value-" + index1.getAndIncrement()));
         produce.get(60, TimeUnit.SECONDS);
 
         WebClient client = WebClient.create(vertx);
@@ -2126,7 +2123,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         AtomicInteger index = new AtomicInteger();
         kafkaCluster.useTo().produce("", 10, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
         produce.get(60, TimeUnit.SECONDS);
 
         WebClient client = WebClient.create(vertx);
@@ -2307,7 +2304,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         AtomicInteger index = new AtomicInteger();
         kafkaCluster.useTo().produceStrings(10, () -> produce.complete(true),
-                () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
+            () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
         produce.get(60, TimeUnit.SECONDS);
 
         // seek
@@ -2377,7 +2374,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         CompletableFuture<Boolean> unsubscribe = new CompletableFuture<>();
 
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(60, TimeUnit.SECONDS);
 
         WebClient client = WebClient.create(vertx);
@@ -2468,7 +2465,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         // Send new record
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce2.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
+            () -> produce2.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce2.get(60, TimeUnit.SECONDS);
 
         // Try to consume after unsubscription
@@ -2521,8 +2518,8 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         CompletableFuture<Boolean> unsubscribe = new CompletableFuture<>();
 
-        kafkaCluster.useTo().produceStrings( 1,
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
+        kafkaCluster.useTo().produceStrings(1,
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(60, TimeUnit.SECONDS);
 
         WebClient client = WebClient.create(vertx);
@@ -2623,7 +2620,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         CompletableFuture<Boolean> unsubscribe = new CompletableFuture<>();
 
         kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(60, TimeUnit.SECONDS);
 
         WebClient client = WebClient.create(vertx);
