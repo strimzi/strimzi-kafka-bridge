@@ -15,7 +15,7 @@ Thanks to the bridge, all clients which can speak different standard protocols c
 
 ### On Kubernetes and OpenShift
 
-You can use the [Strimzi Kafka operator](https://strimzi.io/) to deploy the HTTP Bridge on Kubernetes and OpenShift.
+You can use the [Strimzi Kafka operator](https://strimzi.io/) to deploy the Kafka Bridge with HTTP support on Kubernetes and OpenShift.
 
 ### On bare-metal / VM
 
