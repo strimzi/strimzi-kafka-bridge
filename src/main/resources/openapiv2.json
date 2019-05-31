@@ -128,7 +128,7 @@
             "description": "Seek to the beginning performed successfully."
           },
           "404": {
-            "description": "The specified consumer instance or the partition assignment was not found.",
+            "description": "The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.",
             "schema": {
               "$ref": "#/definitions/Error"
             },
@@ -188,7 +188,7 @@
             "description": "Seek to the end performed successfully."
           },
           "404": {
-            "description": "The specified consumer instance or the partition assignment was not found.",
+            "description": "The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.",
             "schema": {
               "$ref": "#/definitions/Error"
             },
@@ -355,7 +355,7 @@
             "description": "Seek performed successfully."
           },
           "404": {
-            "description": "The specified consumer instance or the partition assignment was not found.",
+            "description": "The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.",
             "schema": {
               "$ref": "#/definitions/Error"
             },

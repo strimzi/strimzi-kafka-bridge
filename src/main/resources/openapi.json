@@ -130,7 +130,7 @@
                         "description": "Seek to the beginning performed successfully."
                     },
                     "404": {
-                        "description": "The specified consumer instance or the partition assignment was not found.",
+                        "description": "The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.",
                         "content": {
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
@@ -194,7 +194,7 @@
                         "description": "Seek to the end performed successfully."
                     },
                     "404": {
-                        "description": "The specified consumer instance or the partition assignment was not found.",
+                        "description": "The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.",
                         "content": {
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
@@ -387,7 +387,7 @@
                         "description": "Seek performed successfully."
                     },
                     "404": {
-                        "description": "The specified consumer instance or the partition assignment was not found.",
+                        "description": "The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.",
                         "content": {
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
