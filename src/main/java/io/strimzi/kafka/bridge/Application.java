@@ -79,43 +79,8 @@ public class Application {
             }
 
             List<Future> futures = new ArrayList<>();
-
-            Future<Void> amqpFuture = Future.future();
-            futures.add(amqpFuture);
-
-            if (amqpBridgeConfig.getEndpointConfig().isEnabled()) {
-                AmqpBridge amqpBridge = new AmqpBridge(amqpBridgeConfig);
-
-                vertx.deployVerticle(amqpBridge, done -> {
-                    if (done.succeeded()) {
-                        log.info("AMQP verticle instance deployed [{}]", done.result());
-                        amqpFuture.complete();
-                    } else {
-                        log.error("Failed to deploy AMQP verticle instance", done.cause());
-                        amqpFuture.fail(done.cause());
-                    }
-                });
-            } else {
-                amqpFuture.complete();
-            }
-
-            Future<Void> httpFuture = Future.future();
-            futures.add(httpFuture);
-
-            if (httpBridgeConfig.getEndpointConfig().isEnabled()) {
-                HttpBridge httpBridge = new HttpBridge(httpBridgeConfig);
-                vertx.deployVerticle(httpBridge, done -> {
-                    if (done.succeeded()) {
-                        log.info("HTTP verticle instance deployed [{}]", done.result());
-                        httpFuture.complete();
-                    } else {
-                        log.error("Failed to deploy HTTP verticle instance", done.cause());
-                        httpFuture.fail(done.cause());
-                    }
-                });
-            } else {
-                httpFuture.complete();
-            }
+            futures.add(deployAmqpBridge(vertx, amqpBridgeConfig));
+            futures.add(deployHttpBridge(vertx, httpBridgeConfig));
 
             CompositeFuture.join(futures).setHandler(done -> {
                 if (done.succeeded()) {
@@ -123,6 +88,63 @@ public class Application {
                 }
             });
         });
+    }
+
+    /**
+     * Deploys the AMQP bridge into a new verticle
+     *
+     * @param vertx                 Vertx instance
+     * @param amqpBridgeConfig      AMQP Bridge configuration
+     * @return                      Future for the bridge startup
+     */
+    private static Future<Void> deployAmqpBridge(Vertx vertx, AmqpBridgeConfig amqpBridgeConfig)  {
+        Future<Void> amqpFuture = Future.future();
+
+        if (amqpBridgeConfig.getEndpointConfig().isEnabled()) {
+            AmqpBridge amqpBridge = new AmqpBridge(amqpBridgeConfig);
+
+            vertx.deployVerticle(amqpBridge, done -> {
+                if (done.succeeded()) {
+                    log.info("AMQP verticle instance deployed [{}]", done.result());
+                    amqpFuture.complete();
+                } else {
+                    log.error("Failed to deploy AMQP verticle instance", done.cause());
+                    amqpFuture.fail(done.cause());
+                }
+            });
+        } else {
+            amqpFuture.complete();
+        }
+
+        return amqpFuture;
+    }
+
+    /**
+     * Deploys the HTTP bridge into a new verticle
+     *
+     * @param vertx                 Vertx instance
+     * @param httpBridgeConfig      HTTP Bridge configuration
+     * @return                      Future for the bridge startup
+     */
+    private static Future<Void> deployHttpBridge(Vertx vertx, HttpBridgeConfig httpBridgeConfig)  {
+        Future<Void> httpFuture = Future.future();
+
+        if (httpBridgeConfig.getEndpointConfig().isEnabled()) {
+            HttpBridge httpBridge = new HttpBridge(httpBridgeConfig);
+            vertx.deployVerticle(httpBridge, done -> {
+                if (done.succeeded()) {
+                    log.info("HTTP verticle instance deployed [{}]", done.result());
+                    httpFuture.complete();
+                } else {
+                    log.error("Failed to deploy HTTP verticle instance", done.cause());
+                    httpFuture.fail(done.cause());
+                }
+            });
+        } else {
+            httpFuture.complete();
+        }
+
+        return httpFuture;
     }
 
     /**
