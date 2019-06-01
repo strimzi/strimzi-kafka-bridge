@@ -32,7 +32,7 @@ if [ -n "$KAFKA_BRIDGE_SASL_USERNAME" ] && [ -n "$KAFKA_BRIDGE_SASL_PASSWORD_FIL
         SECURITY_PROTOCOL="SASL_PLAINTEXT"
     fi
 
-    PASSWORD=$(cat /opt/bridge/bridge-password/$KAFKA_BRIDGE_SASL_PASSWORD_FILE)
+    PASSWORD=$(cat /opt/strimzi/bridge-password/$KAFKA_BRIDGE_SASL_PASSWORD_FILE)
 
     if [ "x$KAFKA_BRIDGE_SASL_MECHANISM" = "xplain" ]; then
         SASL_MECHANISM="PLAIN"
