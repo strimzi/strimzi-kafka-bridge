@@ -13,6 +13,7 @@ DOCKER_TAG         ?= latest
 BUILD_TAG          ?= latest
 RELEASE_VERSION    ?= $(shell cat $(TOPDIR)/release.version)
 
+.PHONY: docker_build
 docker_build:
 	# Build Docker image ...
 	docker build $(DOCKER_BUILD_ARGS) --build-arg strimzi_kafka_bridge_version=$(RELEASE_VERSION) -t strimzi/$(PROJECT_NAME):latest $(DOCKERFILE_DIR)
@@ -22,10 +23,12 @@ docker_build:
 	# Also tag with $(BUILD_TAG)
 	docker tag strimzi/$(PROJECT_NAME):latest strimzi/$(PROJECT_NAME):$(BUILD_TAG)
 
+.PHONY: docker_tag
 docker_tag:
 	# Tag the $(BUILD_TAG) image we built with the given $(DOCKER_TAG) tag
 	docker tag strimzi/$(PROJECT_NAME):$(BUILD_TAG) $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG)
 
+.PHONY: docker_push
 docker_push: docker_tag
 	# Push the $(DOCKER_TAG)-tagged image to the registry
 	docker push $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG)
