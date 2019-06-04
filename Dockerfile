@@ -15,8 +15,8 @@ RUN useradd -r -m -u 1001 -g 0 strimzi
 ARG strimzi_kafka_bridge_version=1.0-SNAPSHOT
 ENV STRIMZI_KAFKA_BRIDGE_VERSION ${strimzi_kafka_bridge_version}
 ENV STRIMZI_HOME=/opt/strimzi
-RUN mkdir -p /opt/strimzi/bin && mkdir -p /opt/strimzi/lib
-WORKDIR /opt/strimzi
+RUN mkdir -p ${STRIMZI_HOME}/bin && mkdir -p ${STRIMZI_HOME}/lib
+WORKDIR ${STRIMZI_HOME}
 
 COPY target/kafka-bridge-${strimzi_kafka_bridge_version}/kafka-bridge-${strimzi_kafka_bridge_version} ./
 
