@@ -1,6 +1,6 @@
-include ./Makefile.os
-include ./Makefile.docker
-include ./Makefile.maven
+include ./os.mk
+include ./docker.mk
+include ./maven.mk
 
 PROJECT_NAME ?= kafka-bridge
 GITHUB_VERSION ?= master
