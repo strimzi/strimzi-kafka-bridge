@@ -1,5 +1,9 @@
 *.class
 
+# files touched by make during build
+.docker_build
+.docker_tag
+
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 

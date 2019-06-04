@@ -11,10 +11,17 @@ java_verify:
 	echo "Building JAR file ..."
 	mvn $(MVN_ARGS) verify
 
-.PHONY: java_package
-java_package:
+src := $(shell find src/ | sort)
+#deps := $(shell mvn dependency:resolve -DoutputAbsoluteArtifactFilename=true | grep -F '[INFO]    ' | sed 's/.*://g')
+
+target/kafka-bridge-$(RELEASE_VERSION).zip: pom.xml $(src) $(deps)
+
+target/kafka-bridge-$(RELEASE_VERSION).zip:
 	echo "Packaging project ..."
 	mvn $(MVN_ARGS) package
+
+.PHONY: java_package
+java_package: target/kafka-bridge-$(RELEASE_VERSION).zip
 
 .PHONY: java_install
 java_install:

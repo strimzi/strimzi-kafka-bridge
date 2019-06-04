@@ -13,8 +13,11 @@ DOCKER_TAG         ?= latest
 BUILD_TAG          ?= latest
 RELEASE_VERSION    ?= $(shell cat $(TOPDIR)/release.version)
 
+
 .PHONY: docker_build
-docker_build:
+docker_build: .docker_build
+
+.docker_build: target/kafka-bridge-$(RELEASE_VERSION).zip
 	# Build Docker image ...
 	$(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg strimzi_kafka_bridge_version=$(RELEASE_VERSION) -t strimzi/$(PROJECT_NAME):latest $(DOCKERFILE_DIR)
 #   The Dockerfiles all use FROM ...:latest, so it is necessary to tag images with latest (-t above)
@@ -22,11 +25,15 @@ docker_build:
 #   including the kafka version number. This BUILD_TAG is used by the docker_tag target.
 	# Also tag with $(BUILD_TAG)
 	$(DOCKER) tag strimzi/$(PROJECT_NAME):latest strimzi/$(PROJECT_NAME):$(BUILD_TAG)
+	touch .docker_build
 
 .PHONY: docker_tag
-docker_tag:
+docker_tag: .docker_tag
+
+.docker_tag: .docker_build
 	# Tag the $(BUILD_TAG) image we built with the given $(DOCKER_TAG) tag
 	$(DOCKER) tag strimzi/$(PROJECT_NAME):$(BUILD_TAG) $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG)
+	touch .docker_tag
 
 .PHONY: docker_push
 docker_push: docker_tag
