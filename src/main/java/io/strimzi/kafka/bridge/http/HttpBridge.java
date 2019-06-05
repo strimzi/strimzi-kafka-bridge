@@ -11,21 +11,29 @@ import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.api.contract.RouterFactoryException;
 import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
+import io.vertx.ext.web.api.contract.openapi3.impl.OpenApi3Utils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
 
 /**
  * Main bridge class listening for connections
@@ -96,6 +104,7 @@ public class HttpBridge extends AbstractVerticle {
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK.toString(), this::seek);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString(), this::seekToBeginning);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this::seekToEnd);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.OPEN_API.toString(), this::responseOpenAPI);
 
                 routerFactory.addFailureHandlerByOperationId(HttpOpenApiOperations.SEND.toString(), this::send);
                 routerFactory.addFailureHandlerByOperationId(HttpOpenApiOperations.SEND_TO_PARTITION.toString(), this::sendToPartition);
@@ -257,6 +266,24 @@ public class HttpBridge extends AbstractVerticle {
     private void seekToEnd(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SEEK_TO_END);
         processConsumer(routingContext);
+    }
+
+    private void responseOpenAPI(RoutingContext routingContext) {
+        vertx.executeBlocking((Future<OpenAPI3RouterFactory> future) -> {
+            SwaggerParseResult swaggerParseResult = new OpenAPIV3Parser().readLocation("openapi.json", Collections.emptyList(), OpenApi3Utils.getParseOptions());
+            if (swaggerParseResult.getMessages().isEmpty()) {
+                JsonObject body = new JsonObject(Json.encodePrettily(swaggerParseResult.getOpenAPI())
+                        .replace("\"style\" : \"SIMPLE\"", "\"style\" : \"simple\"")
+                        .replace("\"style\" : \"FORM\"", "\"style\" : \"form\""));
+                HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, body.toBuffer());
+                future.complete();
+            } else {
+                if (swaggerParseResult.getMessages().size() == 1 && swaggerParseResult.getMessages().get(0).matches("unable to read location `?\\Q" + "openapi.json" + "\\E`?"))
+                    future.fail(RouterFactoryException.createSpecNotExistsException("openapi.json"));
+                else
+                    future.fail(RouterFactoryException.createSpecInvalidException(StringUtils.join(swaggerParseResult.getMessages(), ", ")));
+            }
+        }, a -> { });
     }
 
     /**

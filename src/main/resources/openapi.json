@@ -1022,6 +1022,24 @@
                     }
                 }
             ]
+        },
+        "/openapi": {
+            "get": {
+                "description": "This enpoint responses with OpenAPI secification of the HTTP Bridge.",
+                "operationId": "openApi",
+                "responses": {
+                    "200": {
+                        "description": "OpenAPI specification sent.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OpenAPI"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -1403,6 +1421,534 @@
                             "value": "value2"
                         }
                     ]
+                }
+            },
+            "OpenAPI": {
+                "title": "Root Type for OpenAPI",
+                "description": "The root of the OpenAPI type's schema.",
+                "type": "object",
+                "properties": {
+                    "openapi": {
+                        "type": "string"
+                    },
+                    "info": {
+                        "type": "object",
+                        "properties": {
+                            "version": {
+                                "type": "string"
+                            },
+                            "title": {
+                                "type": "string"
+                            },
+                            "license": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "servers": {
+                        "type": "array",
+                        "items": {}
+                    },
+                    "paths": {
+                        "type": "object",
+                        "properties": {
+                            "/pets": {
+                                "type": "object",
+                                "properties": {
+                                    "get": {
+                                        "type": "object",
+                                        "properties": {
+                                            "summary": {
+                                                "type": "string"
+                                            },
+                                            "operationId": {
+                                                "type": "string"
+                                            },
+                                            "tags": {
+                                                "type": "array",
+                                                "items": {}
+                                            },
+                                            "parameters": {
+                                                "type": "array",
+                                                "items": {}
+                                            },
+                                            "responses": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "200": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "description": {
+                                                                "type": "string"
+                                                            },
+                                                            "headers": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "x-next": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "description": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "schema": {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                    "type": {
+                                                                                        "type": "string"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            },
+                                                            "content": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "application/json": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "schema": {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                    "$ref": {
+                                                                                        "type": "string"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "default": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "description": {
+                                                                "type": "string"
+                                                            },
+                                                            "content": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "application/json": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "schema": {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                    "$ref": {
+                                                                                        "type": "string"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "post": {
+                                        "type": "object",
+                                        "properties": {
+                                            "summary": {
+                                                "type": "string"
+                                            },
+                                            "operationId": {
+                                                "type": "string"
+                                            },
+                                            "tags": {
+                                                "type": "array",
+                                                "items": {}
+                                            },
+                                            "responses": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "201": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "description": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    },
+                                                    "default": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "description": {
+                                                                "type": "string"
+                                                            },
+                                                            "content": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "application/json": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "schema": {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                    "$ref": {
+                                                                                        "type": "string"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "/pets/{petId}": {
+                                "type": "object",
+                                "properties": {
+                                    "get": {
+                                        "type": "object",
+                                        "properties": {
+                                            "summary": {
+                                                "type": "string"
+                                            },
+                                            "operationId": {
+                                                "type": "string"
+                                            },
+                                            "tags": {
+                                                "type": "array",
+                                                "items": {}
+                                            },
+                                            "parameters": {
+                                                "type": "array",
+                                                "items": {}
+                                            },
+                                            "responses": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "200": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "description": {
+                                                                "type": "string"
+                                                            },
+                                                            "content": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "application/json": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "schema": {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                    "$ref": {
+                                                                                        "type": "string"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "default": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "description": {
+                                                                "type": "string"
+                                                            },
+                                                            "content": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "application/json": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "schema": {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                    "$ref": {
+                                                                                        "type": "string"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "components": {
+                        "type": "object",
+                        "properties": {
+                            "schemas": {
+                                "type": "object",
+                                "properties": {
+                                    "Pet": {
+                                        "type": "object",
+                                        "properties": {
+                                            "required": {
+                                                "type": "array",
+                                                "items": {}
+                                            },
+                                            "properties": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "type": {
+                                                                "type": "string"
+                                                            },
+                                                            "format": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    },
+                                                    "name": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "type": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    },
+                                                    "tag": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "type": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "Pets": {
+                                        "type": "object",
+                                        "properties": {
+                                            "type": {
+                                                "type": "string"
+                                            },
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "$ref": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "Error": {
+                                        "type": "object",
+                                        "properties": {
+                                            "required": {
+                                                "type": "array",
+                                                "items": {}
+                                            },
+                                            "properties": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "code": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "type": {
+                                                                "type": "string"
+                                                            },
+                                                            "format": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    },
+                                                    "message": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "type": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "example": {
+                    "openapi": "3.0.0",
+                    "info": {
+                        "version": "1.0.0",
+                        "title": "Swagger Petstore",
+                        "license": {
+                            "name": "MIT"
+                        }
+                    },
+                    "servers": [
+                        {
+                            "url": "http://petstore.swagger.io/v1"
+                        }
+                    ],
+                    "paths": {
+                        "/pets": {
+                            "get": {
+                                "summary": "List all pets",
+                                "operationId": "listPets",
+                                "tags": [
+                                    "pets"
+                                ],
+                                "parameters": [
+                                    {
+                                        "name": "limit",
+                                        "in": "query",
+                                        "description": "How many items to return at one time (max 100)",
+                                        "required": false,
+                                        "schema": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        }
+                                    }
+                                ],
+                                "responses": {
+                                    "200": {
+                                        "description": "A paged array of pets",
+                                        "headers": {
+                                            "x-next": {
+                                                "description": "A link to the next page of responses",
+                                                "schema": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        "content": {
+                                            "application/json": {}
+                                        }
+                                    },
+                                    "default": {
+                                        "description": "unexpected error",
+                                        "content": {
+                                            "application/json": {}
+                                        }
+                                    }
+                                }
+                            },
+                            "post": {
+                                "summary": "Create a pet",
+                                "operationId": "createPets",
+                                "tags": [
+                                    "pets"
+                                ],
+                                "responses": {
+                                    "201": {
+                                        "description": "Null response"
+                                    },
+                                    "default": {
+                                        "description": "unexpected error",
+                                        "content": {
+                                            "application/json": {}
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "/pets/{petId}": {
+                            "get": {
+                                "summary": "Info for a specific pet",
+                                "operationId": "showPetById",
+                                "tags": [
+                                    "pets"
+                                ],
+                                "parameters": [
+                                    {
+                                        "name": "petId",
+                                        "in": "path",
+                                        "required": true,
+                                        "description": "The id of the pet to retrieve",
+                                        "schema": {
+                                            "type": "string"
+                                        }
+                                    }
+                                ],
+                                "responses": {
+                                    "200": {
+                                        "description": "Expected response to a valid request",
+                                        "content": {
+                                            "application/json": {}
+                                        }
+                                    },
+                                    "default": {
+                                        "description": "unexpected error",
+                                        "content": {
+                                            "application/json": {}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "components": {
+                        "schemas": {
+                            "Pet": {
+                                "required": [
+                                    "id",
+                                    "name"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "type": "integer",
+                                        "format": "int64"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "tag": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "Pets": {
+                                "type": "array",
+                                "items": {}
+                            },
+                            "Error": {
+                                "required": [
+                                    "code",
+                                    "message"
+                                ],
+                                "properties": {
+                                    "code": {
+                                        "type": "integer",
+                                        "format": "int32"
+                                    },
+                                    "message": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

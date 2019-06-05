@@ -21,7 +21,8 @@ public enum HttpOpenApiOperations {
     COMMIT("commit"),
     SEEK("seek"),
     SEEK_TO_BEGINNING("seekToBeginning"),
-    SEEK_TO_END("seekToEnd");
+    SEEK_TO_END("seekToEnd"),
+    OPEN_API("openApi");
 
     private final String text;
 
