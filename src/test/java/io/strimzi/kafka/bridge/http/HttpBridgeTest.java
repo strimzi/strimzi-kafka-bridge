@@ -99,7 +99,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         client = WebClient.create(vertx, new WebClientOptions()
                 .setDefaultHost(BRIDGE_HOST)
                 .setDefaultPort(BRIDGE_PORT)
-                .setIdleTimeout(5000)
         );
     }
 
@@ -380,6 +379,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
                 client.post("/topics/" + topic)
                         .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                        .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                         .sendJsonObject(root, ar -> { });
 
                 this.count++;
@@ -2250,6 +2250,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(uriWithNotExistIstance + "/positions/beginning")
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, ar -> {
                     context.assertTrue(ar.succeeded());
@@ -2275,6 +2276,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         client.post(baseUri + "/positions/beginning")
                 .putHeader("Content-length", String.valueOf(partitionsJSON.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(partitionsJSON, ar -> {
                     context.assertTrue(ar.succeeded());
