@@ -127,7 +127,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
-
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
