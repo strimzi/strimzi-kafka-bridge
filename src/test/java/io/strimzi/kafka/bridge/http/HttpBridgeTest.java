@@ -2166,6 +2166,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         context.completeNow();
     }
 
+    @SuppressWarnings("checkstyle:MethodLength")
     @Test
     void seekToBeginningAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToBeginningAndReceive";
