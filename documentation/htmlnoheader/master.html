@@ -1,0 +1,2553 @@
+<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel0">
+<li><a href="#api_reference-book">Strimzi HTTP Bridge for Apache Kafka</a>
+<ul class="sectlevel1">
+<li><a href="#_overview">1. Overview</a>
+<ul class="sectlevel2">
+<li><a href="#version_information">1.1. Version information</a></li>
+<li><a href="#contact_information">1.2. Contact information</a></li>
+<li><a href="#license_information">1.3. License information</a></li>
+<li><a href="#uri_scheme">1.4. URI scheme</a></li>
+<li><a href="#tags">1.5. Tags</a></li>
+<li><a href="#consumes">1.6. Consumes</a></li>
+<li><a href="#produces">1.7. Produces</a></li>
+</ul>
+</li>
+<li><a href="#_definitions">2. Definitions</a>
+<ul class="sectlevel2">
+<li><a href="#_consumer">2.1. Consumer</a></li>
+<li><a href="#_consumerrecordlist">2.2. ConsumerRecordList</a></li>
+<li><a href="#_createdconsumer">2.3. CreatedConsumer</a></li>
+<li><a href="#_error">2.4. Error</a></li>
+<li><a href="#_offsetcommitseek">2.5. OffsetCommitSeek</a></li>
+<li><a href="#_offsetcommitseeklist">2.6. OffsetCommitSeekList</a></li>
+<li><a href="#_offsetrecordsent">2.7. OffsetRecordSent</a></li>
+<li><a href="#_offsetrecordsentlist">2.8. OffsetRecordSentList</a></li>
+<li><a href="#_partition">2.9. Partition</a></li>
+<li><a href="#_partitions">2.10. Partitions</a></li>
+<li><a href="#_producerrecord">2.11. ProducerRecord</a></li>
+<li><a href="#_producerrecordlist">2.12. ProducerRecordList</a></li>
+<li><a href="#_producerrecordtopartition">2.13. ProducerRecordToPartition</a></li>
+<li><a href="#_producerrecordtopartitionlist">2.14. ProducerRecordToPartitionList</a></li>
+<li><a href="#_topics">2.15. Topics</a></li>
+</ul>
+</li>
+<li><a href="#_paths">3. Paths</a>
+<ul class="sectlevel2">
+<li><a href="#_createconsumer">3.1. POST /consumers/{groupid}</a>
+<ul class="sectlevel3">
+<li><a href="#description">3.1.1. Description</a></li>
+<li><a href="#parameters">3.1.2. Parameters</a></li>
+<li><a href="#responses">3.1.3. Responses</a></li>
+<li><a href="#consumes_2">3.1.4. Consumes</a></li>
+<li><a href="#produces_2">3.1.5. Produces</a></li>
+<li><a href="#tags_2">3.1.6. Tags</a></li>
+<li><a href="#example_http_request">3.1.7. Example HTTP request</a></li>
+<li><a href="#example_http_response">3.1.8. Example HTTP response</a></li>
+</ul>
+</li>
+<li><a href="#_deleteconsumer">3.2. DELETE /consumers/{groupid}/instances/{name}</a>
+<ul class="sectlevel3">
+<li><a href="#description_2">3.2.1. Description</a></li>
+<li><a href="#parameters_2">3.2.2. Parameters</a></li>
+<li><a href="#responses_2">3.2.3. Responses</a></li>
+<li><a href="#consumes_3">3.2.4. Consumes</a></li>
+<li><a href="#produces_3">3.2.5. Produces</a></li>
+<li><a href="#tags_3">3.2.6. Tags</a></li>
+<li><a href="#example_http_response_2">3.2.7. Example HTTP response</a></li>
+</ul>
+</li>
+<li><a href="#_assign">3.3. POST /consumers/{groupid}/instances/{name}/assignments</a>
+<ul class="sectlevel3">
+<li><a href="#description_3">3.3.1. Description</a></li>
+<li><a href="#parameters_3">3.3.2. Parameters</a></li>
+<li><a href="#responses_3">3.3.3. Responses</a></li>
+<li><a href="#consumes_4">3.3.4. Consumes</a></li>
+<li><a href="#produces_4">3.3.5. Produces</a></li>
+<li><a href="#tags_4">3.3.6. Tags</a></li>
+<li><a href="#example_http_request_2">3.3.7. Example HTTP request</a></li>
+<li><a href="#example_http_response_3">3.3.8. Example HTTP response</a></li>
+</ul>
+</li>
+<li><a href="#_commit">3.4. POST /consumers/{groupid}/instances/{name}/offsets</a>
+<ul class="sectlevel3">
+<li><a href="#description_4">3.4.1. Description</a></li>
+<li><a href="#parameters_4">3.4.2. Parameters</a></li>
+<li><a href="#responses_4">3.4.3. Responses</a></li>
+<li><a href="#consumes_5">3.4.4. Consumes</a></li>
+<li><a href="#produces_5">3.4.5. Produces</a></li>
+<li><a href="#tags_5">3.4.6. Tags</a></li>
+<li><a href="#example_http_request_3">3.4.7. Example HTTP request</a></li>
+<li><a href="#example_http_response_4">3.4.8. Example HTTP response</a></li>
+</ul>
+</li>
+<li><a href="#_seek">3.5. POST /consumers/{groupid}/instances/{name}/positions</a>
+<ul class="sectlevel3">
+<li><a href="#description_5">3.5.1. Description</a></li>
+<li><a href="#parameters_5">3.5.2. Parameters</a></li>
+<li><a href="#responses_5">3.5.3. Responses</a></li>
+<li><a href="#consumes_6">3.5.4. Consumes</a></li>
+<li><a href="#produces_6">3.5.5. Produces</a></li>
+<li><a href="#tags_6">3.5.6. Tags</a></li>
+<li><a href="#example_http_request_4">3.5.7. Example HTTP request</a></li>
+<li><a href="#example_http_response_5">3.5.8. Example HTTP response</a></li>
+</ul>
+</li>
+<li><a href="#_seektobeginning">3.6. POST /consumers/{groupid}/instances/{name}/positions/beginning</a>
+<ul class="sectlevel3">
+<li><a href="#description_6">3.6.1. Description</a></li>
+<li><a href="#parameters_6">3.6.2. Parameters</a></li>
+<li><a href="#responses_6">3.6.3. Responses</a></li>
+<li><a href="#consumes_7">3.6.4. Consumes</a></li>
+<li><a href="#produces_7">3.6.5. Produces</a></li>
+<li><a href="#tags_7">3.6.6. Tags</a></li>
+<li><a href="#example_http_request_5">3.6.7. Example HTTP request</a></li>
+<li><a href="#example_http_response_6">3.6.8. Example HTTP response</a></li>
+</ul>
+</li>
+<li><a href="#_seektoend">3.7. POST /consumers/{groupid}/instances/{name}/positions/end</a>
+<ul class="sectlevel3">
+<li><a href="#description_7">3.7.1. Description</a></li>
+<li><a href="#parameters_7">3.7.2. Parameters</a></li>
+<li><a href="#responses_7">3.7.3. Responses</a></li>
+<li><a href="#consumes_8">3.7.4. Consumes</a></li>
+<li><a href="#produces_8">3.7.5. Produces</a></li>
+<li><a href="#tags_8">3.7.6. Tags</a></li>
+<li><a href="#example_http_request_6">3.7.7. Example HTTP request</a></li>
+<li><a href="#example_http_response_7">3.7.8. Example HTTP response</a></li>
+</ul>
+</li>
+<li><a href="#_poll">3.8. GET /consumers/{groupid}/instances/{name}/records</a>
+<ul class="sectlevel3">
+<li><a href="#description_8">3.8.1. Description</a></li>
+<li><a href="#parameters_8">3.8.2. Parameters</a></li>
+<li><a href="#responses_8">3.8.3. Responses</a></li>
+<li><a href="#produces_9">3.8.4. Produces</a></li>
+<li><a href="#tags_9">3.8.5. Tags</a></li>
+<li><a href="#example_http_response_8">3.8.6. Example HTTP response</a></li>
+</ul>
+</li>
+<li><a href="#_subscribe">3.9. POST /consumers/{groupid}/instances/{name}/subscription</a>
+<ul class="sectlevel3">
+<li><a href="#description_9">3.9.1. Description</a></li>
+<li><a href="#parameters_9">3.9.2. Parameters</a></li>
+<li><a href="#responses_9">3.9.3. Responses</a></li>
+<li><a href="#consumes_9">3.9.4. Consumes</a></li>
+<li><a href="#produces_10">3.9.5. Produces</a></li>
+<li><a href="#tags_10">3.9.6. Tags</a></li>
+<li><a href="#example_http_request_7">3.9.7. Example HTTP request</a></li>
+<li><a href="#example_http_response_9">3.9.8. Example HTTP response</a></li>
+</ul>
+</li>
+<li><a href="#_unsubscribe">3.10. DELETE /consumers/{groupid}/instances/{name}/subscription</a>
+<ul class="sectlevel3">
+<li><a href="#description_10">3.10.1. Description</a></li>
+<li><a href="#parameters_10">3.10.2. Parameters</a></li>
+<li><a href="#responses_10">3.10.3. Responses</a></li>
+<li><a href="#tags_11">3.10.4. Tags</a></li>
+<li><a href="#example_http_response_10">3.10.5. Example HTTP response</a></li>
+</ul>
+</li>
+<li><a href="#_send">3.11. POST /topics/{topicname}</a>
+<ul class="sectlevel3">
+<li><a href="#description_11">3.11.1. Description</a></li>
+<li><a href="#parameters_11">3.11.2. Parameters</a></li>
+<li><a href="#responses_11">3.11.3. Responses</a></li>
+<li><a href="#consumes_10">3.11.4. Consumes</a></li>
+<li><a href="#produces_11">3.11.5. Produces</a></li>
+<li><a href="#tags_12">3.11.6. Tags</a></li>
+<li><a href="#example_http_request_8">3.11.7. Example HTTP request</a></li>
+<li><a href="#example_http_response_11">3.11.8. Example HTTP response</a></li>
+</ul>
+</li>
+<li><a href="#_sendtopartition">3.12. POST /topics/{topicname}/partitions/{partitionid}</a>
+<ul class="sectlevel3">
+<li><a href="#description_12">3.12.1. Description</a></li>
+<li><a href="#parameters_12">3.12.2. Parameters</a></li>
+<li><a href="#responses_12">3.12.3. Responses</a></li>
+<li><a href="#consumes_11">3.12.4. Consumes</a></li>
+<li><a href="#produces_12">3.12.5. Produces</a></li>
+<li><a href="#tags_13">3.12.6. Tags</a></li>
+<li><a href="#example_http_request_9">3.12.7. Example HTTP request</a></li>
+<li><a href="#example_http_response_12">3.12.8. Example HTTP response</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="api_reference-book" class="sect0"><a class="link" href="#api_reference-book">Strimzi HTTP Bridge for Apache Kafka</a></h1>
+<div class="sect1">
+<h2 id="_overview"><a class="link" href="#_overview">1. Overview</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Strimzi HTTP Bridge for Apache Kafka provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol.</p>
+</div>
+<div class="sect2">
+<h3 id="version_information"><a class="link" href="#version_information">1.1. Version information</a></h3>
+<div class="paragraph">
+<p><em>Version</em> : 0.1.0</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="contact_information"><a class="link" href="#contact_information">1.2. Contact information</a></h3>
+<div class="paragraph">
+<p><em>Contact Email</em> : <a href="mailto:strimzi@redhat.com">strimzi@redhat.com</a></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="license_information"><a class="link" href="#license_information">1.3. License information</a></h3>
+<div class="paragraph">
+<p><em>License</em> : Apache 2.0<br>
+<em>License URL</em> : <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="bare">http://www.apache.org/licenses/LICENSE-2.0.html</a><br>
+<em>Terms of service</em> : <a href="http://swagger.io/terms/" class="bare">http://swagger.io/terms/</a></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="uri_scheme"><a class="link" href="#uri_scheme">1.4. URI scheme</a></h3>
+<div class="paragraph">
+<p><em>Host</em> : bridge.swagger.io<br>
+<em>BasePath</em> : /v2<br>
+<em>Schemes</em> : HTTP</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="tags"><a class="link" href="#tags">1.5. Tags</a></h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Consumers : Consumer operations to create consumers in your Kafka cluster and perform common actions, such as subscribing to topics, retrieving processed records, and committing offsets.</p>
+</li>
+<li>
+<p>Producer : Producer operations to send records to a specified topic or topic partition.</p>
+</li>
+<li>
+<p>Seek : Seek operations that enable a consumer to begin receiving messages from a given offset position.</p>
+</li>
+<li>
+<p>Topics : Topic operations to send messages to a specified topic or topic partition. You can include message keys in requests.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="consumes"><a class="link" href="#consumes">1.6. Consumes</a></h3>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="produces"><a class="link" href="#produces">1.7. Produces</a></h3>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/json</code></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_definitions"><a class="link" href="#_definitions">2. Definitions</a></h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_consumer"><a class="link" href="#_consumer">2.1. Consumer</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 16.6666%;">
+<col style="width: 61.1111%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>auto.commit.enable</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">If set to <code>true</code>, message offsets are committed automatically for the consumer. If set to <code>false</code>, message offsets must be committed manually.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>auto.offset.reset</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Resets the offset position for the consumer.
+If set to <code>earliest</code>, messages are read from the first offset.
+If set to <code>latest</code>, messages are read from the latest offset.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>consumer.request.timeout.ms</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Sets the maximum amount of time, in milliseconds, for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>fetch.min.bytes</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Sets the minimum ammount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>format</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The allowable message format for the consumer, which can be <code>binary</code> (default) or <code>json</code>. The messages are converted into a JSON format.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>name</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The unique name for the consumer instance. The name is unique within the scope of the consumer group. The name is used in URLs.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_consumerrecordlist"><a class="link" href="#_consumerrecordlist">2.2. ConsumerRecordList</a></h3>
+<div class="paragraph">
+<p><em>Type</em> : &lt; <a href="#_consumerrecordlist_inline">ConsumerRecordList</a> &gt; array</p>
+</div>
+<div id="_consumerrecordlist_inline" class="paragraph">
+<p><strong>ConsumerRecordList</strong></p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>key</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>partition</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">integer (int32)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>topic</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>value</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_createdconsumer"><a class="link" href="#_createdconsumer">2.3. CreatedConsumer</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 16.6666%;">
+<col style="width: 61.1111%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>base_uri</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Base URI used to construct URIs for subsequent requests against this consumer instance.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>instance_id</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Unique ID for the consumer instance in the group.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_error"><a class="link" href="#_error">2.4. Error</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>error_code</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">integer (int32)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>message</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_offsetcommitseek"><a class="link" href="#_offsetcommitseek">2.5. OffsetCommitSeek</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>offset</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">integer (int64)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>partition</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">integer (int32)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>topic</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_offsetcommitseeklist"><a class="link" href="#_offsetcommitseeklist">2.6. OffsetCommitSeekList</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>offsets</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">&lt; <a href="#_offsetcommitseek">OffsetCommitSeek</a> &gt; array</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_offsetrecordsent"><a class="link" href="#_offsetrecordsent">2.7. OffsetRecordSent</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>offset</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">integer (int64)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>partition</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">integer (int32)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_offsetrecordsentlist"><a class="link" href="#_offsetrecordsentlist">2.8. OffsetRecordSentList</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>offsets</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">&lt; <a href="#_offsetrecordsent">OffsetRecordSent</a> &gt; array</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_partition"><a class="link" href="#_partition">2.9. Partition</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>partition</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">integer (int32)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>topic</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_partitions"><a class="link" href="#_partitions">2.10. Partitions</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>partitions</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">&lt; <a href="#_partition">Partition</a> &gt; array</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_producerrecord"><a class="link" href="#_producerrecord">2.11. ProducerRecord</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>partition</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">integer (int32)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_producerrecordlist"><a class="link" href="#_producerrecordlist">2.12. ProducerRecordList</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>records</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">&lt; <a href="#_producerrecord">ProducerRecord</a> &gt; array</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_producerrecordtopartition"><a class="link" href="#_producerrecordtopartition">2.13. ProducerRecordToPartition</a></h3>
+<div class="paragraph">
+<p><em>Type</em> : object</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_producerrecordtopartitionlist"><a class="link" href="#_producerrecordtopartitionlist">2.14. ProducerRecordToPartitionList</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>records</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">&lt; <a href="#_producerrecordtopartition">ProducerRecordToPartition</a> &gt; array</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_topics"><a class="link" href="#_topics">2.15. Topics</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>topics</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">&lt; string &gt; array</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_paths"><a class="link" href="#_paths">3. Paths</a></h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_createconsumer"><a class="link" href="#_createconsumer">3.1. POST /consumers/{groupid}</a></h3>
+<div class="sect3">
+<h4 id="description"><a class="link" href="#description">3.1.1. Description</a></h4>
+<div class="paragraph">
+<p>Creates a consumer instance in the given consumer group. You can optionally specify a consumer name and supported configuration options. It returns a base URI which must be used to construct URLs for subsequent requests against this consumer instance.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="parameters"><a class="link" href="#parameters">3.1.2. Parameters</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Type</th>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>groupid</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">ID of the consumer group in which to create the consumer.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Body</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>body</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Name and configuration of the consumer. The name is unique within the scope of the consumer group. If a name is not specified, a randomly generated name is assigned. All parameters are optional. The supported configuration options are shown in the following example.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_consumer">Consumer</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="responses"><a class="link" href="#responses">3.1.3. Responses</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 10%;">
+<col style="width: 70%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">HTTP Code</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>200</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Consumer created successfully.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_createdconsumer">CreatedConsumer</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>409</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">A consumer instance with the specified name already exists in the Kafka Bridge.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>422</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">One or more consumer configuration options have invalid values.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="consumes_2"><a class="link" href="#consumes_2">3.1.4. Consumes</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="produces_2"><a class="link" href="#produces_2">3.1.5. Produces</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tags_2"><a class="link" href="#tags_2">3.1.6. Tags</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Consumers</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_request"><a class="link" href="#example_http_request">3.1.7. Example HTTP request</a></h4>
+<div class="sect4">
+<h5 id="request_body"><a class="link" href="#request_body">Request body</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "name" : "consumer1",
+  "format" : "binary",
+  "auto.offset.reset" : "earliest",
+  "auto.commit.enable" : "false",
+  "fetch.min.bytes" : "512",
+  "consumer.request.timeout.ms" : "30000"
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_response"><a class="link" href="#example_http_response">3.1.8. Example HTTP response</a></h4>
+<div class="sect4">
+<h5 id="response_200"><a class="link" href="#response_200">Response 200</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "instance_id" : "consumer1",
+    "base_uri" : "http://localhost:8080/consumers/my-group/instances/consumer1"
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="response_409"><a class="link" href="#response_409">Response 409</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 409,
+    "message" : "A consumer instance with the specified name already exists in the Kafka Bridge."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="response_422"><a class="link" href="#response_422">Response 422</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 422,
+    "message" : "One or more consumer configuration options have invalid values."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_deleteconsumer"><a class="link" href="#_deleteconsumer">3.2. DELETE /consumers/{groupid}/instances/{name}</a></h3>
+<div class="sect3">
+<h4 id="description_2"><a class="link" href="#description_2">3.2.1. Description</a></h4>
+<div class="paragraph">
+<p>Deletes a specified consumer instance. The request for this operation MUST use the base URL (including the host and port) returned in the response from the <code>POST</code> request to <code>/consumers/{groupid}</code> that was used to create this consumer.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="parameters_2"><a class="link" href="#parameters_2">3.2.2. Parameters</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Type</th>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>groupid</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">ID of the consumer group to which the consumer belongs.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>name</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Name of the consumer that you want to delete.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="responses_2"><a class="link" href="#responses_2">3.2.3. Responses</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 10%;">
+<col style="width: 70%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">HTTP Code</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>204</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Consumer removed successfully.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>404</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The specified consumer instance was not found.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="consumes_3"><a class="link" href="#consumes_3">3.2.4. Consumes</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="produces_3"><a class="link" href="#produces_3">3.2.5. Produces</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tags_3"><a class="link" href="#tags_3">3.2.6. Tags</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Consumers</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_response_2"><a class="link" href="#example_http_response_2">3.2.7. Example HTTP response</a></h4>
+<div class="sect4">
+<h5 id="response_404"><a class="link" href="#response_404">Response 404</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_assign"><a class="link" href="#_assign">3.3. POST /consumers/{groupid}/instances/{name}/assignments</a></h3>
+<div class="sect3">
+<h4 id="description_3"><a class="link" href="#description_3">3.3.1. Description</a></h4>
+<div class="paragraph">
+<p>Assigns one or more topic partitions to a consumer.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="parameters_3"><a class="link" href="#parameters_3">3.3.2. Parameters</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Type</th>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>groupid</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">ID of the consumer group to which the consumer belongs.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>name</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Name of the consumer to which you want to assign topic partitions.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Body</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>body</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">List of topic partitions to assign to the consumer.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_partitions">Partitions</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="responses_3"><a class="link" href="#responses_3">3.3.3. Responses</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 10%;">
+<col style="width: 70%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">HTTP Code</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>204</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Partitions assigned successfully.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>404</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The specified consumer instance was not found.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>409</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Subscriptions to topics, partitions, and patterns are mutually exclusive.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="consumes_4"><a class="link" href="#consumes_4">3.3.4. Consumes</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="produces_4"><a class="link" href="#produces_4">3.3.5. Produces</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tags_4"><a class="link" href="#tags_4">3.3.6. Tags</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Consumers</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_request_2"><a class="link" href="#example_http_request_2">3.3.7. Example HTTP request</a></h4>
+<div class="sect4">
+<h5 id="request_body_2"><a class="link" href="#request_body_2">Request body</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "partitions" : [ {
+    "topic" : "topic",
+    "partition" : 0
+  }, {
+    "topic" : "topic",
+    "partition" : 1
+  } ]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_response_3"><a class="link" href="#example_http_response_3">3.3.8. Example HTTP response</a></h4>
+<div class="sect4">
+<h5 id="response_404_2"><a class="link" href="#response_404_2">Response 404</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="response_409_2"><a class="link" href="#response_409_2">Response 409</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 409,
+    "message" : "Subscriptions to topics, partitions, and patterns are mutually exclusive."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_commit"><a class="link" href="#_commit">3.4. POST /consumers/{groupid}/instances/{name}/offsets</a></h3>
+<div class="sect3">
+<h4 id="description_4"><a class="link" href="#description_4">3.4.1. Description</a></h4>
+<div class="paragraph">
+<p>Commits a list of consumer offsets. To commit offsets for all records fetched by the consumer, leave the request body empty.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="parameters_4"><a class="link" href="#parameters_4">3.4.2. Parameters</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Type</th>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>groupid</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">ID of the consumer group to which the consumer belongs.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>name</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Name of the consumer.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Body</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>body</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">List of consumer offsets to commit to the consumer offsets commit log. You can specify one or more topic partitions to commit offsets for.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_offsetcommitseeklist">OffsetCommitSeekList</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="responses_4"><a class="link" href="#responses_4">3.4.3. Responses</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 10%;">
+<col style="width: 70%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">HTTP Code</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>204</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Commit made successfully.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>404</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The specified consumer instance was not found.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="consumes_5"><a class="link" href="#consumes_5">3.4.4. Consumes</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="produces_5"><a class="link" href="#produces_5">3.4.5. Produces</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tags_5"><a class="link" href="#tags_5">3.4.6. Tags</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Consumers</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_request_3"><a class="link" href="#example_http_request_3">3.4.7. Example HTTP request</a></h4>
+<div class="sect4">
+<h5 id="request_body_3"><a class="link" href="#request_body_3">Request body</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "offsets" : [ {
+    "topic" : "topic",
+    "partition" : 0,
+    "offset" : 15
+  }, {
+    "topic" : "topic",
+    "partition" : 1,
+    "offset" : 42
+  } ]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_response_4"><a class="link" href="#example_http_response_4">3.4.8. Example HTTP response</a></h4>
+<div class="sect4">
+<h5 id="response_404_3"><a class="link" href="#response_404_3">Response 404</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_seek"><a class="link" href="#_seek">3.5. POST /consumers/{groupid}/instances/{name}/positions</a></h3>
+<div class="sect3">
+<h4 id="description_5"><a class="link" href="#description_5">3.5.1. Description</a></h4>
+<div class="paragraph">
+<p>Configures a subscribed consumer to fetch offsets from a particular offset the next time it fetches a set of records from a given topic partition. This overrides the default fetch behavior for consumers. You can specify one or more topic partitions.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="parameters_5"><a class="link" href="#parameters_5">3.5.2. Parameters</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Type</th>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>groupid</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">ID of the consumer group to which the consumer belongs.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>name</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Name of the subscribed consumer.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Body</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>body</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">List of partition offsets from which the subscribed consumer will next fetch records.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_offsetcommitseeklist">OffsetCommitSeekList</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="responses_5"><a class="link" href="#responses_5">3.5.3. Responses</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 10%;">
+<col style="width: 70%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">HTTP Code</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>204</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Seek performed successfully.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>404</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="consumes_6"><a class="link" href="#consumes_6">3.5.4. Consumes</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="produces_6"><a class="link" href="#produces_6">3.5.5. Produces</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tags_6"><a class="link" href="#tags_6">3.5.6. Tags</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Consumers</p>
+</li>
+<li>
+<p>Seek</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_request_4"><a class="link" href="#example_http_request_4">3.5.7. Example HTTP request</a></h4>
+<div class="sect4">
+<h5 id="request_body_4"><a class="link" href="#request_body_4">Request body</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "offsets" : [ {
+    "topic" : "topic",
+    "partition" : 0,
+    "offset" : 15
+  }, {
+    "topic" : "topic",
+    "partition" : 1,
+    "offset" : 42
+  } ]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_response_5"><a class="link" href="#example_http_response_5">3.5.8. Example HTTP response</a></h4>
+<div class="sect4">
+<h5 id="response_404_4"><a class="link" href="#response_404_4">Response 404</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_seektobeginning"><a class="link" href="#_seektobeginning">3.6. POST /consumers/{groupid}/instances/{name}/positions/beginning</a></h3>
+<div class="sect3">
+<h4 id="description_6"><a class="link" href="#description_6">3.6.1. Description</a></h4>
+<div class="paragraph">
+<p>Configures a subscribed consumer to seek (and subsequently read from) the first offset in one or more given topic partitions.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="parameters_6"><a class="link" href="#parameters_6">3.6.2. Parameters</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Type</th>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>groupid</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">ID of the consumer group to which the subscribed consumer belongs.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>name</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Name of the subscribed consumer.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Body</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>body</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">List of topic partitions to which the consumer is subscribed. The consumer will seek the first offset in the specified partitions.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_partitions">Partitions</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="responses_6"><a class="link" href="#responses_6">3.6.3. Responses</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 10%;">
+<col style="width: 70%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">HTTP Code</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>204</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Seek to the beginning performed successfully.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>404</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="consumes_7"><a class="link" href="#consumes_7">3.6.4. Consumes</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="produces_7"><a class="link" href="#produces_7">3.6.5. Produces</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tags_7"><a class="link" href="#tags_7">3.6.6. Tags</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Consumers</p>
+</li>
+<li>
+<p>Seek</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_request_5"><a class="link" href="#example_http_request_5">3.6.7. Example HTTP request</a></h4>
+<div class="sect4">
+<h5 id="request_body_5"><a class="link" href="#request_body_5">Request body</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "partitions" : [ {
+    "topic" : "topic",
+    "partition" : 0
+  }, {
+    "topic" : "topic",
+    "partition" : 1
+  } ]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_response_6"><a class="link" href="#example_http_response_6">3.6.8. Example HTTP response</a></h4>
+<div class="sect4">
+<h5 id="response_404_5"><a class="link" href="#response_404_5">Response 404</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_seektoend"><a class="link" href="#_seektoend">3.7. POST /consumers/{groupid}/instances/{name}/positions/end</a></h3>
+<div class="sect3">
+<h4 id="description_7"><a class="link" href="#description_7">3.7.1. Description</a></h4>
+<div class="paragraph">
+<p>Configures a subscribed consumer to seek (and subsequently read from) the offset at the end of one or more of the given topic partitions.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="parameters_7"><a class="link" href="#parameters_7">3.7.2. Parameters</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Type</th>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>groupid</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">ID of the consumer group to which the subscribed consumer belongs.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>name</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Name of the subscribed consumer.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Body</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>body</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">List of topic partitions to which the consumer is subscribed. The consumer will seek the last offset in the specified partitions.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_partitions">Partitions</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="responses_7"><a class="link" href="#responses_7">3.7.3. Responses</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 10%;">
+<col style="width: 70%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">HTTP Code</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>204</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Seek to the end performed successfully.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>404</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="consumes_8"><a class="link" href="#consumes_8">3.7.4. Consumes</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="produces_8"><a class="link" href="#produces_8">3.7.5. Produces</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tags_8"><a class="link" href="#tags_8">3.7.6. Tags</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Consumers</p>
+</li>
+<li>
+<p>Seek</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_request_6"><a class="link" href="#example_http_request_6">3.7.7. Example HTTP request</a></h4>
+<div class="sect4">
+<h5 id="request_body_6"><a class="link" href="#request_body_6">Request body</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "partitions" : [ {
+    "topic" : "topic",
+    "partition" : 0
+  }, {
+    "topic" : "topic",
+    "partition" : 1
+  } ]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_response_7"><a class="link" href="#example_http_response_7">3.7.8. Example HTTP response</a></h4>
+<div class="sect4">
+<h5 id="response_404_6"><a class="link" href="#response_404_6">Response 404</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_poll"><a class="link" href="#_poll">3.8. GET /consumers/{groupid}/instances/{name}/records</a></h3>
+<div class="sect3">
+<h4 id="description_8"><a class="link" href="#description_8">3.8.1. Description</a></h4>
+<div class="paragraph">
+<p>Retrieves records for a subscribed consumer, including message values, topics, and partitions. The request for this operation MUST use the base URL (including the host and port) returned in the response from the <code>POST</code> request to <code>/consumers/{groupid}</code> that was used to create this consumer.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="parameters_8"><a class="link" href="#parameters_8">3.8.2. Parameters</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Type</th>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>groupid</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">ID of the consumer group to which the subscribed consumer belongs.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>name</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Name of the subscribed consumer for which you want to retrieve records.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Query</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>max_bytes</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The maximum size, in bytes, of unencoded keys and values that can be included in the response. Otherwise, an error response with code 422 is returned.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">integer</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Query</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>timeout</strong><br>
+<em>optional</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The maximum amount of time, in milliseconds, that the HTTP Bridge spends retrieving records before timing out the request.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">integer</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="responses_8"><a class="link" href="#responses_8">3.8.3. Responses</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 10%;">
+<col style="width: 70%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">HTTP Code</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>200</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Poll request executed successfully.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_consumerrecordlist">ConsumerRecordList</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>404</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The specified consumer instance was not found.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>406</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The <code>format</code> used in the consumer creation request does not match the embedded format in the Accept header of this request.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>422</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Response exceeds the maximum number of bytes the consumer can receive</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="produces_9"><a class="link" href="#produces_9">3.8.4. Produces</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.json.v2+json</code></p>
+</li>
+<li>
+<p><code>application/vnd.kafka.binary.v2+json</code></p>
+</li>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tags_9"><a class="link" href="#tags_9">3.8.5. Tags</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Consumers</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_response_8"><a class="link" href="#example_http_response_8">3.8.6. Example HTTP response</a></h4>
+<div class="sect4">
+<h5 id="response_200_2"><a class="link" href="#response_200_2">Response 200</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.json.v2+json" : [ {
+    "topic" : "topic",
+    "key" : "key1",
+    "value" : {
+      "foo" : "bar"
+    },
+    "partition" : 0,
+    "offset" : 2
+  }, {
+    "topic" : "topic",
+    "key" : "key2",
+    "value" : [ "foo2", "bar2" ],
+    "partition" : 1,
+    "offset" : 3
+  } ],
+  "application/vnd.kafka.binary.v2+json" : "[\n  {\n    \"topic\": \"test\",\n    \"key\": \"a2V5\",\n    \"value\": \"Y29uZmx1ZW50\",\n    \"partition\": 1,\n    \"offset\": 100,\n  },\n  {\n    \"topic\": \"test\",\n    \"key\": \"a2V5\",\n    \"value\": \"a2Fma2E=\",\n    \"partition\": 2,\n    \"offset\": 101,\n  }\n]"
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="response_404_7"><a class="link" href="#response_404_7">Response 404</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="response_406"><a class="link" href="#response_406">Response 406</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 406,
+    "message" : "The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="response_422_2"><a class="link" href="#response_422_2">Response 422</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 422,
+    "message" : "Response exceeds the maximum number of bytes the consumer can receive"
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_subscribe"><a class="link" href="#_subscribe">3.9. POST /consumers/{groupid}/instances/{name}/subscription</a></h3>
+<div class="sect3">
+<h4 id="description_9"><a class="link" href="#description_9">3.9.1. Description</a></h4>
+<div class="paragraph">
+<p>Subscribes a consumer to one or more topics. You can describe the topics to which the consumer will subscribe in a list (of <code>Topics</code> type) or as a <code>topic_pattern</code> field. Each call replaces the subscriptions for the subscriber.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="parameters_9"><a class="link" href="#parameters_9">3.9.2. Parameters</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Type</th>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>groupid</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">ID of the consumer group to which the subscribed consumer belongs.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>name</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Name of the consumer that you want to unsubscribe from topics.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Body</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>body</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">List of topics to which the consumer will subscribe.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_topics">Topics</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="responses_9"><a class="link" href="#responses_9">3.9.3. Responses</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 10%;">
+<col style="width: 70%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">HTTP Code</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>204</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Consumer subscribed successfully.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>404</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The specified consumer instance was not found.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>409</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Subscriptions to topics, partitions, and patterns are mutually exclusive.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>422</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">A list (of <code>Topics</code> type) or a <code>topic_pattern</code> must be specified.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="consumes_9"><a class="link" href="#consumes_9">3.9.4. Consumes</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="produces_10"><a class="link" href="#produces_10">3.9.5. Produces</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tags_10"><a class="link" href="#tags_10">3.9.6. Tags</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Consumers</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_request_7"><a class="link" href="#example_http_request_7">3.9.7. Example HTTP request</a></h4>
+<div class="sect4">
+<h5 id="request_body_7"><a class="link" href="#request_body_7">Request body</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "topics" : [ "topic1", "topic2" ]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_response_9"><a class="link" href="#example_http_response_9">3.9.8. Example HTTP response</a></h4>
+<div class="sect4">
+<h5 id="response_404_8"><a class="link" href="#response_404_8">Response 404</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="response_409_3"><a class="link" href="#response_409_3">Response 409</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 409,
+    "message" : "Subscriptions to topics, partitions, and patterns are mutually exclusive."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="response_422_3"><a class="link" href="#response_422_3">Response 422</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 422,
+    "message" : "A list (of Topics type) or a topic_pattern must be specified."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_unsubscribe"><a class="link" href="#_unsubscribe">3.10. DELETE /consumers/{groupid}/instances/{name}/subscription</a></h3>
+<div class="sect3">
+<h4 id="description_10"><a class="link" href="#description_10">3.10.1. Description</a></h4>
+<div class="paragraph">
+<p>Unsubscribes a consumer from all topics.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="parameters_10"><a class="link" href="#parameters_10">3.10.2. Parameters</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Type</th>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>groupid</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">ID of the consumer group to which the subscribed consumer belongs.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>name</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Name of the consumer that you want to unsubscribe from topics.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="responses_10"><a class="link" href="#responses_10">3.10.3. Responses</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 10%;">
+<col style="width: 70%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">HTTP Code</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>204</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Consumer unsubscribed successfully.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>404</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The specified consumer instance was not found.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="tags_11"><a class="link" href="#tags_11">3.10.4. Tags</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Consumers</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_response_10"><a class="link" href="#example_http_response_10">3.10.5. Example HTTP response</a></h4>
+<div class="sect4">
+<h5 id="response_404_9"><a class="link" href="#response_404_9">Response 404</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "error_code" : 404,
+  "message" : "The specified consumer instance was not found."
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_send"><a class="link" href="#_send">3.11. POST /topics/{topicname}</a></h3>
+<div class="sect3">
+<h4 id="description_11"><a class="link" href="#description_11">3.11.1. Description</a></h4>
+<div class="paragraph">
+<p>Sends one or more records to a given topic, optionally specifying a partition, key, or both.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="parameters_11"><a class="link" href="#parameters_11">3.11.2. Parameters</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Type</th>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>topicname</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Name of the topic to which you want to send records.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Body</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>body</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_producerrecordlist">ProducerRecordList</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="responses_11"><a class="link" href="#responses_11">3.11.3. Responses</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 10%;">
+<col style="width: 70%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">HTTP Code</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>200</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Records sent successfully.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_offsetrecordsentlist">OffsetRecordSentList</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>404</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The specified topic was not found.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>422</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The record list is not valid.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="consumes_10"><a class="link" href="#consumes_10">3.11.4. Consumes</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.json.v2+json</code></p>
+</li>
+<li>
+<p><code>application/vnd.kafka.binary.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="produces_11"><a class="link" href="#produces_11">3.11.5. Produces</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tags_12"><a class="link" href="#tags_12">3.11.6. Tags</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Producer</p>
+</li>
+<li>
+<p>Topics</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_request_8"><a class="link" href="#example_http_request_8">3.11.7. Example HTTP request</a></h4>
+<div class="sect4">
+<h5 id="request_body_8"><a class="link" href="#request_body_8">Request body</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "records" : [ {
+    "key" : "key1",
+    "value" : "value1"
+  }, {
+    "value" : "value2",
+    "partition" : 1
+  }, {
+    "value" : "value3"
+  } ]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_response_11"><a class="link" href="#example_http_response_11">3.11.8. Example HTTP response</a></h4>
+<div class="sect4">
+<h5 id="response_200_3"><a class="link" href="#response_200_3">Response 200</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "offsets" : [ {
+      "partition" : 2,
+      "offset" : 0
+    }, {
+      "partition" : 1,
+      "offset" : 1
+    }, {
+      "partition" : 2,
+      "offset" : 2
+    } ]
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="response_404_10"><a class="link" href="#response_404_10">Response 404</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified topic was not found."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="response_422_4"><a class="link" href="#response_422_4">Response 422</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 422,
+    "message" : "The record list contains invalid records."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_sendtopartition"><a class="link" href="#_sendtopartition">3.12. POST /topics/{topicname}/partitions/{partitionid}</a></h3>
+<div class="sect3">
+<h4 id="description_12"><a class="link" href="#description_12">3.12.1. Description</a></h4>
+<div class="paragraph">
+<p>Sends one or more records to a given topic partition, optionally specifying a key.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="parameters_12"><a class="link" href="#parameters_12">3.12.2. Parameters</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">Type</th>
+<th class="tableblock halign-left valign-middle">Name</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>partitionid</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">ID of the partition to which you want to send records.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Path</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>topicname</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Name of the topic containing the partition to which you want to send records.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">string</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>Body</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>body</strong><br>
+<em>required</em></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">List of records to send to a given topic partition, including a value (required) and a key (optional).</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_producerrecordtopartitionlist">ProducerRecordToPartitionList</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="responses_12"><a class="link" href="#responses_12">3.12.3. Responses</a></h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 10%;">
+<col style="width: 70%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-middle">HTTP Code</th>
+<th class="tableblock halign-left valign-middle">Description</th>
+<th class="tableblock halign-left valign-middle">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>200</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">Records sent successfully.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_offsetrecordsentlist">OffsetRecordSentList</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>404</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The specified topic partition was not found.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><strong>422</strong></p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock">The record is not valid.</p></td>
+<td class="tableblock halign-left valign-middle"><p class="tableblock"><a href="#_error">Error</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="consumes_11"><a class="link" href="#consumes_11">3.12.4. Consumes</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.json.v2+json</code></p>
+</li>
+<li>
+<p><code>application/vnd.kafka.binary.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="produces_12"><a class="link" href="#produces_12">3.12.5. Produces</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>application/vnd.kafka.v2+json</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tags_13"><a class="link" href="#tags_13">3.12.6. Tags</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Producer</p>
+</li>
+<li>
+<p>Topics</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_request_9"><a class="link" href="#example_http_request_9">3.12.7. Example HTTP request</a></h4>
+<div class="sect4">
+<h5 id="request_body_9"><a class="link" href="#request_body_9">Request body</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "records" : [ {
+    "key" : "key1",
+    "value" : "value1"
+  }, {
+    "value" : "value2"
+  } ]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="example_http_response_12"><a class="link" href="#example_http_response_12">3.12.8. Example HTTP response</a></h4>
+<div class="sect4">
+<h5 id="response_200_4"><a class="link" href="#response_200_4">Response 200</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "offsets" : [ {
+      "partition" : 2,
+      "offset" : 0
+    }, {
+      "partition" : 1,
+      "offset" : 1
+    }, {
+      "partition" : 2,
+      "offset" : 2
+    } ]
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="response_404_11"><a class="link" href="#response_404_11">Response 404</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified topic partition was not found."
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="response_422_5"><a class="link" href="#response_422_5">Response 422</a></h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 422,
+    "message" : "The record is not valid."
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Revised on 2019-06-06 13:34:11 CEST</em></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
