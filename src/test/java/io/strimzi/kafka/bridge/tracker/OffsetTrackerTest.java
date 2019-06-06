@@ -8,8 +8,8 @@ package io.strimzi.kafka.bridge.tracker;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,15 +20,15 @@ import java.util.Map.Entry;
 
 import static org.junit.Assert.assertTrue;
 
-public class OffsetTrackerTest {
+class OffsetTrackerTest {
 
     private static final Logger log = LoggerFactory.getLogger(OffsetTrackerTest.class);
 
     private List<ConsumerRecord<String, byte[]>> records = new ArrayList<>();
     private Map<TopicPartition, OffsetAndMetadata> offsets;
 
-    @Before
-    public void before() {
+    @BeforeEach
+    void before() {
 
         this.records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 0, null, null));
         this.records.add(new ConsumerRecord<String, byte[]>("my_topic", 0, 1, null, null));
@@ -39,7 +39,7 @@ public class OffsetTrackerTest {
     }
 
     @Test
-    public void fullOffsetTrackerOutOfOrder() {
+    void fullOffsetTrackerOutOfOrder() {
 
         OffsetTracker offsetTracker  = new FullOffsetTracker("my_topic");
 
@@ -93,7 +93,7 @@ public class OffsetTrackerTest {
     }
 
     @Test
-    public void fullOffsetTracker() {
+    void fullOffsetTracker() {
 
         OffsetTracker offsetTracker  = new FullOffsetTracker("my_topic");
 
@@ -147,7 +147,7 @@ public class OffsetTrackerTest {
     }
 
     @Test
-    public void simpleOffsetTrackerOutOfOrder() {
+    void simpleOffsetTrackerOutOfOrder() {
 
         OffsetTracker offsetTracker  = new SimpleOffsetTracker("my_topic");
 
@@ -201,7 +201,7 @@ public class OffsetTrackerTest {
     }
 
     @Test
-    public void simpleOffsetTracker() {
+    void simpleOffsetTracker() {
 
         OffsetTracker offsetTracker  = new SimpleOffsetTracker("my_topic");
 
