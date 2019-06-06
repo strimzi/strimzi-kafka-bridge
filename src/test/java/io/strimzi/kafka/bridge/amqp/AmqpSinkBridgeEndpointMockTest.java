@@ -34,8 +34,8 @@ import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.lang.reflect.Field;
@@ -56,7 +56,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class AmqpSinkBridgeEndpointMockTest {
+class AmqpSinkBridgeEndpointMockTest {
 
     private static Map<String, Object> config = new HashMap<>();
 
@@ -151,7 +151,7 @@ public class AmqpSinkBridgeEndpointMockTest {
 
     // Test normal flow in AT_MOST_ONCE mode.
     @Test
-    @Ignore
+    @Disabled
     public <K, V> void normalFlow_AtMostOnce() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
@@ -572,7 +572,7 @@ public class AmqpSinkBridgeEndpointMockTest {
     // What happens if we can't get the partitions for the given topic?
     // @throws AmqpErrorConditionException
     @Test
-    @Ignore
+    @Disabled
     public <K, V> void partitionsForFails() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
