@@ -530,14 +530,16 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                 KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
                 consumer.batchHandler(records -> {
 
-                    context.verify(() -> assertEquals(this.count, records.size()));
-                    for (int i = 0; i < records.size(); i++) {
-                        KafkaConsumerRecord<String, String> record = records.recordAt(i);
-                        log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
-                                record.topic(), record.partition(), record.offset(), record.key(), record.value());
-                        int finalI = i;
-                        context.verify(() -> assertEquals("key-" + finalI, record.key()));
-                    }
+                    context.verify(() -> {
+                        assertEquals(this.count, records.size());
+                        for (int i = 0; i < records.size(); i++) {
+                            KafkaConsumerRecord<String, String> record = records.recordAt(i);
+                            log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                                    record.topic(), record.partition(), record.offset(), record.key(), record.value());
+                            int finalI = i;
+                            assertEquals("key-" + finalI, record.key());
+                        }
+                    });
 
                     consumer.close();
                     consume.flag();
@@ -673,22 +675,24 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                         // get topic, partition, offset and key from AMQP annotations
                         MessageAnnotations annotations = message.getMessageAnnotations();
-                        context.verify(() -> assertNotNull(annotations));
-                        String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)));
-                        context.verify(() -> assertNotNull(topicAnnotation));
-                        Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION));
-                        context.verify(() -> assertNotNull(partitionAnnotation));
-                        Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION));
-                        context.verify(() -> assertNotNull(offsetAnnotation));
-                        Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
-                        context.verify(() -> assertNull(keyAnnotation));
-                        log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
-                                topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
+                        context.verify(() -> {
+                            assertNotNull(annotations);
+                            String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)));
+                            assertNotNull(topicAnnotation);
+                            Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION));
+                            assertNotNull(partitionAnnotation);
+                            Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION));
+                            assertNotNull(offsetAnnotation);
+                            Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
+                            assertNull(keyAnnotation);
+                            log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                                    topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
-                        context.verify(() -> assertEquals(topicAnnotation, topic));
-                        context.verify(() -> assertEquals(partitionAnnotation, 0));
-                        context.verify(() -> assertEquals(offsetAnnotation, 0L));
-                        context.verify(() -> assertEquals(sentBody, new String(value)));
+                            assertEquals(topicAnnotation, topic);
+                            assertEquals(partitionAnnotation, 0);
+                            assertEquals(offsetAnnotation, 0L);
+                            assertEquals(sentBody, new String(value));
+                        });
                         consume.flag();
                     }
                 })
@@ -745,20 +749,20 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                         MessageAnnotations annotations = message.getMessageAnnotations();
                         context.verify(() -> assertNotNull(annotations));
                         String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)));
-                        context.verify(() -> assertNotNull(topicAnnotation));
+                        assertNotNull(topicAnnotation);
                         Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION));
-                        context.verify(() -> assertNotNull(partitionAnnotation));
+                        assertNotNull(partitionAnnotation);
                         Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION));
-                        context.verify(() -> assertNotNull(offsetAnnotation));
+                        assertNotNull(offsetAnnotation);
                         Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
-                        context.verify(() -> assertNull(keyAnnotation));
+                        assertNull(keyAnnotation);
                         log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                                 topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
-                        context.verify(() -> assertEquals(topicAnnotation, topic));
-                        context.verify(() -> assertEquals(partitionAnnotation, 1));
-                        context.verify(() -> assertEquals(offsetAnnotation, 0L));
-                        context.verify(() -> assertEquals(sentBody, new String(value)));
+                        assertEquals(topicAnnotation, topic);
+                        assertEquals(partitionAnnotation, 1);
+                        assertEquals(offsetAnnotation, 0L);
+                        assertEquals(sentBody, new String(value));
                         consume.flag();
                     }
                 })
@@ -814,21 +818,21 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                         MessageAnnotations annotations = message.getMessageAnnotations();
                         context.verify(() -> assertNotNull(annotations));
                         String topicAnnotation = String.valueOf(annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)));
-                        context.verify(() -> assertNotNull(topicAnnotation));
+                        assertNotNull(topicAnnotation);
                         Integer partitionAnnotation = (Integer) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION));
-                        context.verify(() -> assertNotNull(partitionAnnotation));
+                        assertNotNull(partitionAnnotation);
                         Long offsetAnnotation = (Long) annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION));
-                        context.verify(() -> assertNotNull(offsetAnnotation));
+                        assertNotNull(offsetAnnotation);
                         Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
-                        context.verify(() -> assertNotNull(keyAnnotation));
+                        assertNotNull(keyAnnotation);
                         log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                                 topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
-                        context.verify(() -> assertEquals(topicAnnotation, topic));
-                        context.verify(() -> assertEquals(partitionAnnotation, 0));
-                        context.verify(() -> assertEquals(offsetAnnotation, 10L));
-                        context.verify(() -> assertEquals(keyAnnotation, "key-10"));
-                        context.verify(() -> assertEquals("value-10", new String(value)));
+                        assertEquals(topicAnnotation, topic);
+                        assertEquals(partitionAnnotation, 0);
+                        assertEquals(offsetAnnotation, 10L);
+                        assertEquals(keyAnnotation, "key-10");
+                        assertEquals("value-10", new String(value));
                         consume.flag();
                     }
                 })
