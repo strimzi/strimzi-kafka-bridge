@@ -71,6 +71,7 @@ The tag name determines the tag of the resulting Docker images.
 Therefore the git tag name has to be the same as the `RELEASE_VERSION`,
 7. Once the CI build for the tag is finished and the Docker images are pushed to Docker Hub, create a GitHub release based on the tag. 
 Attach the ZIP and TAR.GZ archives to the release.
+8. Build the documentation using `make_docuhtml` and `make docu_htmlnoheader` and add it to the [Strimzi.io](https://strimzi.io) website.
 8. On the `master` git branch:
   * Update the versions to the next SNAPSHOT version using the `next_version` `make` target. 
   For example to update the next version to `0.6.0-SNAPSHOT` run: `make NEXT_VERSION=0.6.0-SNAPSHOT next_version`.

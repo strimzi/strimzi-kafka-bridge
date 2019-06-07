@@ -1,0 +1,22 @@
+// AsciiDoc settings
+:data-uri!:
+:doctype: book
+:experimental:
+:idprefix:
+:imagesdir: images
+:numbered:
+:sectanchors!:
+:sectnums:
+:source-highlighter: highlightjs
+:toc: left
+:linkattrs:
+:toclevels: 3
+:sectlinks:
+
+// Name and version placeholders
+:ProductLongName: Strimzi Kafka Bridge
+:ProductName: Kafka Bridge
+
+//Latest Strimzi version
+:ProductVersion: 0.12.0
+

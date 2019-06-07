@@ -1,0 +1,198 @@
+
+[[_definitions]]
+== Definitions
+
+[[_consumer]]
+=== Consumer
+
+[options="header", cols=".^3,.^11,.^4"]
+|===
+|Name|Description|Schema
+|**auto.commit.enable** +
+__optional__|If set to `true`, message offsets are committed automatically for the consumer. If set to `false`, message offsets must be committed manually.|string
+|**auto.offset.reset** +
+__optional__|Resets the offset position for the consumer.
+If set to `earliest`, messages are read from the first offset.
+If set to `latest`, messages are read from the latest offset.|string
+|**consumer.request.timeout.ms** +
+__optional__|Sets the maximum amount of time, in milliseconds, for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned.|string
+|**fetch.min.bytes** +
+__optional__|Sets the minimum ammount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount.|string
+|**format** +
+__optional__|The allowable message format for the consumer, which can be `binary` (default) or `json`. The messages are converted into a JSON format.|string
+|**name** +
+__optional__|The unique name for the consumer instance. The name is unique within the scope of the consumer group. The name is used in URLs.|string
+|===
+
+
+[[_consumerrecordlist]]
+=== ConsumerRecordList
+__Type__ : < <<_consumerrecordlist_inline,ConsumerRecordList>> > array
+
+[[_consumerrecordlist_inline]]
+**ConsumerRecordList**
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**key** +
+__optional__|string
+|**partition** +
+__optional__|integer (int32)
+|**topic** +
+__optional__|string
+|**value** +
+__optional__|string
+|===
+
+
+[[_createdconsumer]]
+=== CreatedConsumer
+
+[options="header", cols=".^3,.^11,.^4"]
+|===
+|Name|Description|Schema
+|**base_uri** +
+__optional__|Base URI used to construct URIs for subsequent requests against this consumer instance.|string
+|**instance_id** +
+__optional__|Unique ID for the consumer instance in the group.|string
+|===
+
+
+[[_error]]
+=== Error
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**error_code** +
+__optional__|integer (int32)
+|**message** +
+__optional__|string
+|===
+
+
+[[_offsetcommitseek]]
+=== OffsetCommitSeek
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**offset** +
+__optional__|integer (int64)
+|**partition** +
+__optional__|integer (int32)
+|**topic** +
+__optional__|string
+|===
+
+
+[[_offsetcommitseeklist]]
+=== OffsetCommitSeekList
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**offsets** +
+__optional__|< <<_offsetcommitseek,OffsetCommitSeek>> > array
+|===
+
+
+[[_offsetrecordsent]]
+=== OffsetRecordSent
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**offset** +
+__optional__|integer (int64)
+|**partition** +
+__optional__|integer (int32)
+|===
+
+
+[[_offsetrecordsentlist]]
+=== OffsetRecordSentList
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**offsets** +
+__optional__|< <<_offsetrecordsent,OffsetRecordSent>> > array
+|===
+
+
+[[_partition]]
+=== Partition
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**partition** +
+__optional__|integer (int32)
+|**topic** +
+__optional__|string
+|===
+
+
+[[_partitions]]
+=== Partitions
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**partitions** +
+__optional__|< <<_partition,Partition>> > array
+|===
+
+
+[[_producerrecord]]
+=== ProducerRecord
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**partition** +
+__optional__|integer (int32)
+|===
+
+
+[[_producerrecordlist]]
+=== ProducerRecordList
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**records** +
+__optional__|< <<_producerrecord,ProducerRecord>> > array
+|===
+
+
+[[_producerrecordtopartition]]
+=== ProducerRecordToPartition
+__Type__ : object
+
+
+[[_producerrecordtopartitionlist]]
+=== ProducerRecordToPartitionList
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**records** +
+__optional__|< <<_producerrecordtopartition,ProducerRecordToPartition>> > array
+|===
+
+
+[[_topics]]
+=== Topics
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**topics** +
+__optional__|< string > array
+|===
+
+
+

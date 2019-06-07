@@ -42,3 +42,37 @@ release_maven:
 .PHONY: release_package
 release_package: java_package
 
+##########
+# Documentation targets
+##########
+
+.PHONY: docu_html
+docu_html: docu_htmlclean docu_check
+	mkdir -p documentation/html
+	$(CP) -vrL documentation/book/images documentation/html/images
+	asciidoctor -v --failure-level WARN -t -dbook -a ProductVersion=$(RELEASE_VERSION) documentation/book/master.adoc -o documentation/html/index.html
+
+.PHONY: docu_htmlnoheader
+docu_htmlnoheader: docu_htmlnoheaderclean docu_check
+	mkdir -p documentation/htmlnoheader
+	$(CP) -vrL documentation/book/images documentation/htmlnoheader/images
+	asciidoctor -v --failure-level WARN -t -dbook -a ProductVersion=$(RELEASE_VERSION) -s documentation/book/master.adoc -o documentation/htmlnoheader/master.html
+
+.PHONY: docu_check
+docu_check:
+	./.travis/check_docs.sh
+
+.PHONY: docu_clean
+docu_clean: docu_htmlclean docu_htmlnoheaderclean
+
+.PHONY: docu_htmlclean
+docu_htmlclean:
+	rm -rf documentation/html
+
+.PHONY: docu_htmlnoheaderclean
+docu_htmlnoheaderclean:
+	rm -rf documentation/htmlnoheader
+
+.PHONY: docu_pushtowebsite
+docu_pushtowebsite: docu_htmlnoheader docu_html
+	./.travis/docu-push-to-website.sh
