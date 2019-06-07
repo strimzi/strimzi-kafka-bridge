@@ -1,0 +1,17 @@
+include::common/attributes.adoc[]
+
+:context: book
+
+= {ProductLongName} API reference
+
+[id='api_reference-{context}']
+
+include::api/overview.adoc[]
+
+include::api/definitions.adoc[]
+
+include::api/paths.adoc[]
+
+include::api/security.adoc[]
+
+include::common/revision-info.adoc[]

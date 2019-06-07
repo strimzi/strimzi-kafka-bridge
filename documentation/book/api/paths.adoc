@@ -1,0 +1,1042 @@
+
+[[_paths]]
+== Paths
+
+[[_createconsumer]]
+=== POST /consumers/{groupid}
+
+==== Description
+Creates a consumer instance in the given consumer group. You can optionally specify a consumer name and supported configuration options. It returns a base URI which must be used to construct URLs for subsequent requests against this consumer instance.
+
+
+==== Parameters
+
+[options="header", cols=".^2,.^3,.^9,.^4"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**groupid** +
+__required__|ID of the consumer group in which to create the consumer.|string
+|**Body**|**body** +
+__required__|Name and configuration of the consumer. The name is unique within the scope of the consumer group. If a name is not specified, a randomly generated name is assigned. All parameters are optional. The supported configuration options are shown in the following example.|<<_consumer,Consumer>>
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**200**|Consumer created successfully.|<<_createdconsumer,CreatedConsumer>>
+|**409**|A consumer instance with the specified name already exists in the Kafka Bridge.|<<_error,Error>>
+|**422**|One or more consumer configuration options have invalid values.|<<_error,Error>>
+|===
+
+
+==== Consumes
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Consumers
+
+
+==== Example HTTP request
+
+===== Request body
+[source,json]
+----
+{
+  "name" : "consumer1",
+  "format" : "binary",
+  "auto.offset.reset" : "earliest",
+  "auto.commit.enable" : "false",
+  "fetch.min.bytes" : "512",
+  "consumer.request.timeout.ms" : "30000"
+}
+----
+
+
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "instance_id" : "consumer1",
+    "base_uri" : "http://localhost:8080/consumers/my-group/instances/consumer1"
+  }
+}
+----
+
+
+===== Response 409
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 409,
+    "message" : "A consumer instance with the specified name already exists in the Kafka Bridge."
+  }
+}
+----
+
+
+===== Response 422
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 422,
+    "message" : "One or more consumer configuration options have invalid values."
+  }
+}
+----
+
+
+[[_deleteconsumer]]
+=== DELETE /consumers/{groupid}/instances/{name}
+
+==== Description
+Deletes a specified consumer instance. The request for this operation MUST use the base URL (including the host and port) returned in the response from the `POST` request to `/consumers/{groupid}` that was used to create this consumer.
+
+
+==== Parameters
+
+[options="header", cols=".^2,.^3,.^9,.^4"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**groupid** +
+__required__|ID of the consumer group to which the consumer belongs.|string
+|**Path**|**name** +
+__required__|Name of the consumer that you want to delete.|string
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**204**|Consumer removed successfully.|No Content
+|**404**|The specified consumer instance was not found.|<<_error,Error>>
+|===
+
+
+==== Consumes
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Consumers
+
+
+==== Example HTTP response
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}
+----
+
+
+[[_assign]]
+=== POST /consumers/{groupid}/instances/{name}/assignments
+
+==== Description
+Assigns one or more topic partitions to a consumer.
+
+
+==== Parameters
+
+[options="header", cols=".^2,.^3,.^9,.^4"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**groupid** +
+__required__|ID of the consumer group to which the consumer belongs.|string
+|**Path**|**name** +
+__required__|Name of the consumer to which you want to assign topic partitions.|string
+|**Body**|**body** +
+__required__|List of topic partitions to assign to the consumer.|<<_partitions,Partitions>>
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**204**|Partitions assigned successfully.|No Content
+|**404**|The specified consumer instance was not found.|<<_error,Error>>
+|**409**|Subscriptions to topics, partitions, and patterns are mutually exclusive.|<<_error,Error>>
+|===
+
+
+==== Consumes
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Consumers
+
+
+==== Example HTTP request
+
+===== Request body
+[source,json]
+----
+{
+  "partitions" : [ {
+    "topic" : "topic",
+    "partition" : 0
+  }, {
+    "topic" : "topic",
+    "partition" : 1
+  } ]
+}
+----
+
+
+==== Example HTTP response
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}
+----
+
+
+===== Response 409
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 409,
+    "message" : "Subscriptions to topics, partitions, and patterns are mutually exclusive."
+  }
+}
+----
+
+
+[[_commit]]
+=== POST /consumers/{groupid}/instances/{name}/offsets
+
+==== Description
+Commits a list of consumer offsets. To commit offsets for all records fetched by the consumer, leave the request body empty.
+
+
+==== Parameters
+
+[options="header", cols=".^2,.^3,.^9,.^4"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**groupid** +
+__required__|ID of the consumer group to which the consumer belongs.|string
+|**Path**|**name** +
+__required__|Name of the consumer.|string
+|**Body**|**body** +
+__optional__|List of consumer offsets to commit to the consumer offsets commit log. You can specify one or more topic partitions to commit offsets for.|<<_offsetcommitseeklist,OffsetCommitSeekList>>
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**204**|Commit made successfully.|No Content
+|**404**|The specified consumer instance was not found.|<<_error,Error>>
+|===
+
+
+==== Consumes
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Consumers
+
+
+==== Example HTTP request
+
+===== Request body
+[source,json]
+----
+{
+  "offsets" : [ {
+    "topic" : "topic",
+    "partition" : 0,
+    "offset" : 15
+  }, {
+    "topic" : "topic",
+    "partition" : 1,
+    "offset" : 42
+  } ]
+}
+----
+
+
+==== Example HTTP response
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}
+----
+
+
+[[_seek]]
+=== POST /consumers/{groupid}/instances/{name}/positions
+
+==== Description
+Configures a subscribed consumer to fetch offsets from a particular offset the next time it fetches a set of records from a given topic partition. This overrides the default fetch behavior for consumers. You can specify one or more topic partitions.
+
+
+==== Parameters
+
+[options="header", cols=".^2,.^3,.^9,.^4"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**groupid** +
+__required__|ID of the consumer group to which the consumer belongs.|string
+|**Path**|**name** +
+__required__|Name of the subscribed consumer.|string
+|**Body**|**body** +
+__required__|List of partition offsets from which the subscribed consumer will next fetch records.|<<_offsetcommitseeklist,OffsetCommitSeekList>>
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**204**|Seek performed successfully.|No Content
+|**404**|The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.|<<_error,Error>>
+|===
+
+
+==== Consumes
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Consumers
+* Seek
+
+
+==== Example HTTP request
+
+===== Request body
+[source,json]
+----
+{
+  "offsets" : [ {
+    "topic" : "topic",
+    "partition" : 0,
+    "offset" : 15
+  }, {
+    "topic" : "topic",
+    "partition" : 1,
+    "offset" : 42
+  } ]
+}
+----
+
+
+==== Example HTTP response
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}
+----
+
+
+[[_seektobeginning]]
+=== POST /consumers/{groupid}/instances/{name}/positions/beginning
+
+==== Description
+Configures a subscribed consumer to seek (and subsequently read from) the first offset in one or more given topic partitions.
+
+
+==== Parameters
+
+[options="header", cols=".^2,.^3,.^9,.^4"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**groupid** +
+__required__|ID of the consumer group to which the subscribed consumer belongs.|string
+|**Path**|**name** +
+__required__|Name of the subscribed consumer.|string
+|**Body**|**body** +
+__required__|List of topic partitions to which the consumer is subscribed. The consumer will seek the first offset in the specified partitions.|<<_partitions,Partitions>>
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**204**|Seek to the beginning performed successfully.|No Content
+|**404**|The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.|<<_error,Error>>
+|===
+
+
+==== Consumes
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Consumers
+* Seek
+
+
+==== Example HTTP request
+
+===== Request body
+[source,json]
+----
+{
+  "partitions" : [ {
+    "topic" : "topic",
+    "partition" : 0
+  }, {
+    "topic" : "topic",
+    "partition" : 1
+  } ]
+}
+----
+
+
+==== Example HTTP response
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}
+----
+
+
+[[_seektoend]]
+=== POST /consumers/{groupid}/instances/{name}/positions/end
+
+==== Description
+Configures a subscribed consumer to seek (and subsequently read from) the offset at the end of one or more of the given topic partitions.
+
+
+==== Parameters
+
+[options="header", cols=".^2,.^3,.^9,.^4"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**groupid** +
+__required__|ID of the consumer group to which the subscribed consumer belongs.|string
+|**Path**|**name** +
+__required__|Name of the subscribed consumer.|string
+|**Body**|**body** +
+__required__|List of topic partitions to which the consumer is subscribed. The consumer will seek the last offset in the specified partitions.|<<_partitions,Partitions>>
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**204**|Seek to the end performed successfully.|No Content
+|**404**|The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.|<<_error,Error>>
+|===
+
+
+==== Consumes
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Consumers
+* Seek
+
+
+==== Example HTTP request
+
+===== Request body
+[source,json]
+----
+{
+  "partitions" : [ {
+    "topic" : "topic",
+    "partition" : 0
+  }, {
+    "topic" : "topic",
+    "partition" : 1
+  } ]
+}
+----
+
+
+==== Example HTTP response
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}
+----
+
+
+[[_poll]]
+=== GET /consumers/{groupid}/instances/{name}/records
+
+==== Description
+Retrieves records for a subscribed consumer, including message values, topics, and partitions. The request for this operation MUST use the base URL (including the host and port) returned in the response from the `POST` request to `/consumers/{groupid}` that was used to create this consumer.
+
+
+==== Parameters
+
+[options="header", cols=".^2,.^3,.^9,.^4"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**groupid** +
+__required__|ID of the consumer group to which the subscribed consumer belongs.|string
+|**Path**|**name** +
+__required__|Name of the subscribed consumer for which you want to retrieve records.|string
+|**Query**|**max_bytes** +
+__optional__|The maximum size, in bytes, of unencoded keys and values that can be included in the response. Otherwise, an error response with code 422 is returned.|integer
+|**Query**|**timeout** +
+__optional__|The maximum amount of time, in milliseconds, that the HTTP Bridge spends retrieving records before timing out the request.|integer
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**200**|Poll request executed successfully.|<<_consumerrecordlist,ConsumerRecordList>>
+|**404**|The specified consumer instance was not found.|<<_error,Error>>
+|**406**|The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request.|<<_error,Error>>
+|**422**|Response exceeds the maximum number of bytes the consumer can receive|<<_error,Error>>
+|===
+
+
+==== Produces
+
+* `application/vnd.kafka.json.v2+json`
+* `application/vnd.kafka.binary.v2+json`
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Consumers
+
+
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "application/vnd.kafka.json.v2+json" : [ {
+    "topic" : "topic",
+    "key" : "key1",
+    "value" : {
+      "foo" : "bar"
+    },
+    "partition" : 0,
+    "offset" : 2
+  }, {
+    "topic" : "topic",
+    "key" : "key2",
+    "value" : [ "foo2", "bar2" ],
+    "partition" : 1,
+    "offset" : 3
+  } ],
+  "application/vnd.kafka.binary.v2+json" : "[\n  {\n    \"topic\": \"test\",\n    \"key\": \"a2V5\",\n    \"value\": \"Y29uZmx1ZW50\",\n    \"partition\": 1,\n    \"offset\": 100,\n  },\n  {\n    \"topic\": \"test\",\n    \"key\": \"a2V5\",\n    \"value\": \"a2Fma2E=\",\n    \"partition\": 2,\n    \"offset\": 101,\n  }\n]"
+}
+----
+
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}
+----
+
+
+===== Response 406
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 406,
+    "message" : "The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request."
+  }
+}
+----
+
+
+===== Response 422
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 422,
+    "message" : "Response exceeds the maximum number of bytes the consumer can receive"
+  }
+}
+----
+
+
+[[_subscribe]]
+=== POST /consumers/{groupid}/instances/{name}/subscription
+
+==== Description
+Subscribes a consumer to one or more topics. You can describe the topics to which the consumer will subscribe in a list (of `Topics` type) or as a `topic_pattern` field. Each call replaces the subscriptions for the subscriber.
+
+
+==== Parameters
+
+[options="header", cols=".^2,.^3,.^9,.^4"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**groupid** +
+__required__|ID of the consumer group to which the subscribed consumer belongs.|string
+|**Path**|**name** +
+__required__|Name of the consumer that you want to unsubscribe from topics.|string
+|**Body**|**body** +
+__required__|List of topics to which the consumer will subscribe.|<<_topics,Topics>>
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**204**|Consumer subscribed successfully.|No Content
+|**404**|The specified consumer instance was not found.|<<_error,Error>>
+|**409**|Subscriptions to topics, partitions, and patterns are mutually exclusive.|<<_error,Error>>
+|**422**|A list (of `Topics` type) or a `topic_pattern` must be specified.|<<_error,Error>>
+|===
+
+
+==== Consumes
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Consumers
+
+
+==== Example HTTP request
+
+===== Request body
+[source,json]
+----
+{
+  "topics" : [ "topic1", "topic2" ]
+}
+----
+
+
+==== Example HTTP response
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}
+----
+
+
+===== Response 409
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 409,
+    "message" : "Subscriptions to topics, partitions, and patterns are mutually exclusive."
+  }
+}
+----
+
+
+===== Response 422
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 422,
+    "message" : "A list (of Topics type) or a topic_pattern must be specified."
+  }
+}
+----
+
+
+[[_unsubscribe]]
+=== DELETE /consumers/{groupid}/instances/{name}/subscription
+
+==== Description
+Unsubscribes a consumer from all topics.
+
+
+==== Parameters
+
+[options="header", cols=".^2,.^3,.^9,.^4"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**groupid** +
+__required__|ID of the consumer group to which the subscribed consumer belongs.|string
+|**Path**|**name** +
+__required__|Name of the consumer that you want to unsubscribe from topics.|string
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**204**|Consumer unsubscribed successfully.|No Content
+|**404**|The specified consumer instance was not found.|<<_error,Error>>
+|===
+
+
+==== Tags
+
+* Consumers
+
+
+==== Example HTTP response
+
+===== Response 404
+[source,json]
+----
+{
+  "error_code" : 404,
+  "message" : "The specified consumer instance was not found."
+}
+----
+
+
+[[_send]]
+=== POST /topics/{topicname}
+
+==== Description
+Sends one or more records to a given topic, optionally specifying a partition, key, or both.
+
+
+==== Parameters
+
+[options="header", cols=".^2,.^3,.^9,.^4"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**topicname** +
+__required__|Name of the topic to which you want to send records.|string
+|**Body**|**body** +
+__required__||<<_producerrecordlist,ProducerRecordList>>
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**200**|Records sent successfully.|<<_offsetrecordsentlist,OffsetRecordSentList>>
+|**404**|The specified topic was not found.|<<_error,Error>>
+|**422**|The record list is not valid.|<<_error,Error>>
+|===
+
+
+==== Consumes
+
+* `application/vnd.kafka.json.v2+json`
+* `application/vnd.kafka.binary.v2+json`
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Producer
+* Topics
+
+
+==== Example HTTP request
+
+===== Request body
+[source,json]
+----
+{
+  "records" : [ {
+    "key" : "key1",
+    "value" : "value1"
+  }, {
+    "value" : "value2",
+    "partition" : 1
+  }, {
+    "value" : "value3"
+  } ]
+}
+----
+
+
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "offsets" : [ {
+      "partition" : 2,
+      "offset" : 0
+    }, {
+      "partition" : 1,
+      "offset" : 1
+    }, {
+      "partition" : 2,
+      "offset" : 2
+    } ]
+  }
+}
+----
+
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified topic was not found."
+  }
+}
+----
+
+
+===== Response 422
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 422,
+    "message" : "The record list contains invalid records."
+  }
+}
+----
+
+
+[[_sendtopartition]]
+=== POST /topics/{topicname}/partitions/{partitionid}
+
+==== Description
+Sends one or more records to a given topic partition, optionally specifying a key.
+
+
+==== Parameters
+
+[options="header", cols=".^2,.^3,.^9,.^4"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**partitionid** +
+__required__|ID of the partition to which you want to send records.|string
+|**Path**|**topicname** +
+__required__|Name of the topic containing the partition to which you want to send records.|string
+|**Body**|**body** +
+__required__|List of records to send to a given topic partition, including a value (required) and a key (optional).|<<_producerrecordtopartitionlist,ProducerRecordToPartitionList>>
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**200**|Records sent successfully.|<<_offsetrecordsentlist,OffsetRecordSentList>>
+|**404**|The specified topic partition was not found.|<<_error,Error>>
+|**422**|The record is not valid.|<<_error,Error>>
+|===
+
+
+==== Consumes
+
+* `application/vnd.kafka.json.v2+json`
+* `application/vnd.kafka.binary.v2+json`
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Producer
+* Topics
+
+
+==== Example HTTP request
+
+===== Request body
+[source,json]
+----
+{
+  "records" : [ {
+    "key" : "key1",
+    "value" : "value1"
+  }, {
+    "value" : "value2"
+  } ]
+}
+----
+
+
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "offsets" : [ {
+      "partition" : 2,
+      "offset" : 0
+    }, {
+      "partition" : 1,
+      "offset" : 1
+    }, {
+      "partition" : 2,
+      "offset" : 2
+    } ]
+  }
+}
+----
+
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified topic partition was not found."
+  }
+}
+----
+
+
+===== Response 422
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 422,
+    "message" : "The record is not valid."
+  }
+}
+----
+
+
+

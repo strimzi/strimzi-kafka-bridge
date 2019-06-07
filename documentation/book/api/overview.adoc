@@ -1,0 +1,51 @@
+= Strimzi HTTP Bridge for Apache Kafka
+
+
+[[_overview]]
+== Overview
+The Strimzi HTTP Bridge for Apache Kafka provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol.
+
+
+=== Version information
+[%hardbreaks]
+__Version__ : 0.1.0
+
+
+=== Contact information
+[%hardbreaks]
+__Contact Email__ : strimzi@redhat.com
+
+
+=== License information
+[%hardbreaks]
+__License__ : Apache 2.0
+__License URL__ : http://www.apache.org/licenses/LICENSE-2.0.html
+__Terms of service__ : http://swagger.io/terms/
+
+
+=== URI scheme
+[%hardbreaks]
+__Host__ : bridge.swagger.io
+__BasePath__ : /v2
+__Schemes__ : HTTP
+
+
+=== Tags
+
+* Consumers : Consumer operations to create consumers in your Kafka cluster and perform common actions, such as subscribing to topics, retrieving processed records, and committing offsets.
+* Producer : Producer operations to send records to a specified topic or topic partition.
+* Seek : Seek operations that enable a consumer to begin receiving messages from a given offset position.
+* Topics : Topic operations to send messages to a specified topic or topic partition. You can include message keys in requests.
+
+
+=== Consumes
+
+* `application/json`
+
+
+=== Produces
+
+* `application/json`
+
+
+
