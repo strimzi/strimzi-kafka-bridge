@@ -36,10 +36,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.HashMap;
@@ -462,7 +461,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> assertTrue(ar.succeeded()));
 
                     HttpResponse<JsonObject> response = ar.result();
-                    context.assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                     JsonObject bridgeResponse = response.body();
 
                     JsonArray offsets = bridgeResponse.getJsonArray("offsets");
@@ -607,7 +606,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        cgetRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -1524,7 +1523,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
     @Test
     void invalidRequestTest(VertxTestContext context) {
-        WebClient client = WebClient.create(vertx);
 
         postRequest("/not-existing-endpoint")
                 .as(BodyCodec.jsonObject())
