@@ -3,8 +3,6 @@
 set -e
 
 openssl aes-256-cbc -K $encrypted_92c411a5688b_key -iv $encrypted_92c411a5688b_iv -in .travis/github_deploy_key.enc -out github_deploy_key -d
-
-openssl aes-256-cbc -K $encrypted_c563b2a48eea_key -iv $encrypted_c563b2a48eea_iv -in .travis/github_deploy_key.enc -out github_deploy_key -d
 chmod 600 github_deploy_key
 eval `ssh-agent -s`
 ssh-add github_deploy_key
