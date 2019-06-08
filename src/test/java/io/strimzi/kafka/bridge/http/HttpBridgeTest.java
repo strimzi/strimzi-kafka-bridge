@@ -975,7 +975,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                             assertNull(key);
                         }
                     });
-
                     consume.complete(true);
                 });
 
@@ -2209,7 +2208,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         topics.put("topics", new JsonArray().add(topic));
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        postRequest(baseUri + "/subscription")
+        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topics.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2225,7 +2224,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -2248,7 +2247,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
 
         CompletableFuture<Boolean> seek = new CompletableFuture<>();
-        postRequest(baseUri + "/positions/beginning")
+        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/positions/beginning")
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2261,17 +2260,50 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                 });
 
         seek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
+        // consume records
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        JsonArray body = ar.result().body();
+                        assertEquals(10, body.size());
+                    });
+                    consumeSeek.complete(true);
+                });
+
+        consumeSeek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        CompletableFuture<Boolean> delete = new CompletableFuture<>();
+        // consumer deletion
+        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
+                    });
+                    delete.complete(true);
+                });
+
+        delete.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        context.completeNow();
     }
 
     @Test
-    void notFoundToBeginningAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void consumerOrPartitionNotFound(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "notFoundToBeginningAndReceive";
         kafkaCluster.createTopic(topic, 1, 1);
 
         CompletableFuture<Boolean> creation = new CompletableFuture<>();
         AtomicInteger index = new AtomicInteger();
         kafkaCluster.useTo().produceStrings(10, () -> creation.complete(true),
-                () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
+            () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
         creation.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         String name = "my-kafka-consumer";
