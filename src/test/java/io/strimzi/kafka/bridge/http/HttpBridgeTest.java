@@ -16,8 +16,10 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -33,10 +35,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.HashMap;
@@ -80,10 +81,30 @@ class HttpBridgeTest extends KafkaClusterTestBase {
     private static final int TEST_TIMEOUT = 60;
     private int count;
 
+    // for request configuration
+    private static final long RESPONSE_TIMEOUT = 2000L;
+
     private Vertx vertx;
     private HttpBridge httpBridge;
+    private WebClient client;
 
     private HttpBridgeConfig bridgeConfigProperties;
+
+    //HTTP methods with configured Response timeout
+    private HttpRequest<Buffer> postRequest(String requestURI) {
+        return client.post(requestURI)
+                .timeout(RESPONSE_TIMEOUT);
+    }
+
+    private HttpRequest<Buffer> getRequest(String requestURI) {
+        return client.get(requestURI)
+                .timeout(RESPONSE_TIMEOUT);
+    }
+
+    private HttpRequest<Buffer> deleteRequest(String requestURI) {
+        return client.delete(requestURI)
+                .timeout(RESPONSE_TIMEOUT);
+    }
 
     @BeforeEach
     void before(VertxTestContext context) {
@@ -92,6 +113,11 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         this.httpBridge = new HttpBridge(this.bridgeConfigProperties);
 
         vertx.deployVerticle(this.httpBridge, context.succeeding(id -> context.completeNow()));
+
+        client = WebClient.create(vertx, new WebClientOptions()
+                .setDefaultHost(BRIDGE_HOST)
+                .setDefaultPort(BRIDGE_PORT)
+        );
     }
 
     @AfterEach
@@ -114,9 +140,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
+        postRequest("/topics/" + topic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
@@ -124,6 +148,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
 
                         JsonArray offsets = bridgeResponse.getJsonArray("offsets");
@@ -177,9 +202,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
+        postRequest("/topics/" + topic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
@@ -188,6 +211,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                         assertTrue(ar.succeeded());
 
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
 
                         JsonArray offsets = bridgeResponse.getJsonArray("offsets");
@@ -240,9 +264,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
+        postRequest("/topics/" + topic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
@@ -250,6 +272,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
 
                         JsonArray offsets = bridgeResponse.getJsonArray("offsets");
@@ -302,9 +325,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
+        postRequest("/topics/" + topic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonObject())
@@ -312,6 +333,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
 
                         JsonArray offsets = bridgeResponse.getJsonArray("offsets");
@@ -353,8 +375,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         String topic = "sendPeriodicMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
-        WebClient client = WebClient.create(vertx);
-
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
@@ -375,7 +395,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                 JsonObject root = new JsonObject();
                 root.put("records", records);
 
-                client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
+                postRequest("/topics/" + topic)
                         .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                         .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                         .sendJsonObject(root, ar -> { });
@@ -432,9 +452,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
+        postRequest("/topics/" + topic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
@@ -442,6 +460,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> assertTrue(ar.succeeded()));
 
                     HttpResponse<JsonObject> response = ar.result();
+                    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                     JsonObject bridgeResponse = response.body();
 
                     JsonArray offsets = bridgeResponse.getJsonArray("offsets");
@@ -485,8 +504,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
     @Test
     void createConsumer(VertxTestContext context) throws InterruptedException {
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -498,7 +515,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("enable.auto.commit", "true");
         json.put("fetch.min.bytes", "100");
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -506,6 +523,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -532,8 +550,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -544,7 +560,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("format", "json");
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -552,6 +568,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -571,7 +588,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         topicsRoot.put("topics", topics);
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        postRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -588,13 +605,14 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonArray> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject jsonResponse = response.body().getJsonObject(0);
 
                         String kafkaTopic = jsonResponse.getString("topic");
@@ -616,7 +634,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -644,8 +662,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody.getBytes()));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -656,7 +672,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("format", "binary");
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -664,6 +680,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -683,7 +700,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         topicsRoot.put("topics", topics);
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        postRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -699,13 +716,14 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonArray> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject jsonResponse = response.body().getJsonObject(0);
 
                         String kafkaTopic = jsonResponse.getString("topic");
@@ -727,7 +745,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -761,8 +779,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
             () -> produce.complete(true), () -> new ProducerRecord<>(topic2, 0, null, sentBody2));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -773,7 +789,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("format", "json");
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -781,6 +797,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -801,7 +818,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         topicsRoot.put("topics", topics);
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        postRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -816,7 +833,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -827,6 +844,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
                         for (int i = 0; i < 2; i++) {
                             JsonObject jsonResponse = response.body().getJsonObject(i);
+                            assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
 
                             String kafkaTopic = jsonResponse.getString("topic");
                             int kafkaPartition = jsonResponse.getInteger("partition");
@@ -847,7 +865,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -882,8 +900,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         produce2.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -894,7 +910,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("format", "json");
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -902,6 +918,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -918,7 +935,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         topicPattern.put("topic_pattern", "receiveWithPattern-\\d");
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        postRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicPattern.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -933,13 +950,14 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonArray> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         assertEquals(2, response.body().size());
 
                         for (int i = 0; i < 2; i++) {
@@ -964,7 +982,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -993,8 +1011,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, partition, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -1006,7 +1022,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
         // create a consumer
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1014,6 +1030,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -1033,7 +1050,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject partitionsRoot = new JsonObject();
         partitionsRoot.put("partitions", partitions);
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/assignments")
+        postRequest(baseUri + "/assignments")
                 .putHeader("Content-length", String.valueOf(partitionsRoot.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1049,13 +1066,14 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonArray> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject jsonResponse = response.body().getJsonObject(0);
 
                         String kafkaTopic = jsonResponse.getString("topic");
@@ -1077,7 +1095,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -1106,8 +1124,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, 1, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -1119,7 +1135,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
         // create a consumer
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1127,6 +1143,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -1147,7 +1164,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject partitionsRoot = new JsonObject();
         partitionsRoot.put("partitions", partitions);
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/assignments")
+        postRequest(baseUri + "/assignments")
                 .putHeader("Content-length", String.valueOf(partitionsRoot.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1163,13 +1180,14 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonArray> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         assertEquals(2, response.body().size());
 
                         for (int i = 0; i < 2; i++) {
@@ -1196,7 +1214,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -1224,8 +1242,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -1237,7 +1253,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("enable.auto.commit", "false");
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1245,6 +1261,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -1264,7 +1281,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         topicsRoot.put("topics", topics);
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        postRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1280,13 +1297,14 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonArray> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject jsonResponse = response.body().getJsonObject(0);
 
                         String kafkaTopic = jsonResponse.getString("topic");
@@ -1317,7 +1335,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         root.put("offsets", offsets);
 
         CompletableFuture<Boolean> commit = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/offsets")
+        postRequest(baseUri + "/offsets")
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1336,7 +1354,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -1364,8 +1382,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -1377,7 +1393,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("enable.auto.commit", "false");
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1385,6 +1401,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -1404,7 +1421,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         topicsRoot.put("topics", topics);
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        postRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1419,13 +1436,14 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonArray> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject jsonResponse = response.body().getJsonObject(0);
 
                         String kafkaTopic = jsonResponse.getString("topic");
@@ -1446,7 +1464,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         CompletableFuture<Boolean> commit = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/offsets")
+        postRequest(baseUri + "/offsets")
                 .send(ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -1462,7 +1480,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -1485,9 +1503,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         JsonObject root = new JsonObject();
 
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
+        postRequest("/topics/" + topic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1505,9 +1521,8 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
     @Test
     void invalidRequestTest(VertxTestContext context) {
-        WebClient client = WebClient.create(vertx);
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/not-existing-endpoint")
+        postRequest("/not-existing-endpoint")
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(null, ar -> {
                     context.verify(() -> {
@@ -1538,9 +1553,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic)
+        postRequest("/topics/" + kafkaTopic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1578,9 +1591,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic)
+        postRequest("/topics/" + kafkaTopic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1614,8 +1625,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                 new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -1629,7 +1638,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         subJson.put("topic", topic);
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        postRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(subJson.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1665,9 +1674,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
+        postRequest("/topics/" + kafkaTopic + "/partitions/" + partition)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1675,6 +1682,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
 
                         JsonArray offsets = bridgeResponse.getJsonArray("offsets");
@@ -1704,9 +1712,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
+        postRequest("/topics/" + kafkaTopic + "/partitions/" + partition)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1740,9 +1746,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        WebClient client = WebClient.create(vertx);
-
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + kafkaTopic + "/partitions/" + partition)
+        postRequest("/topics/" + kafkaTopic + "/partitions/" + partition)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1771,8 +1775,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                 new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer4";
         String groupId = "my-group";
 
@@ -1782,7 +1784,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("name", name);
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1790,6 +1792,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -1803,7 +1806,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> create2Again = new CompletableFuture<>();
         // create the same consumer again
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1824,7 +1827,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         CompletableFuture<Boolean> create3Again = new CompletableFuture<>();
         // create another consumer
         json.put("name", name + "diff");
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1832,6 +1835,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -1847,7 +1851,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
     @Test
     void recordsConsumerDoesNotExist(VertxTestContext context) {
-        WebClient client = WebClient.create(vertx);
 
         String name = "my-kafka-consumer";
         String groupId = "my-group";
@@ -1855,7 +1858,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
 
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -1873,7 +1876,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
     @Test
     void offsetsConsumerDoesNotExist(VertxTestContext context) {
-        WebClient client = WebClient.create(vertx);
 
         String name = "my-kafka-consumer";
         String groupId = "my-group";
@@ -1891,7 +1893,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject root = new JsonObject();
         root.put("offsets", offsets);
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/offsets")
+        postRequest(baseUri + "/offsets")
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1920,8 +1922,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                 new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -1931,7 +1931,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("name", name);
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1939,6 +1939,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -1958,7 +1959,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         topicsRoot.put("topics", topics);
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        postRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -1974,7 +1975,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?max_bytes=1")
+        getRequest(baseUri + "/records" + "?max_bytes=1")
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -1994,7 +1995,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -2025,8 +2026,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, 1, "key-" + index1.get(), "value-" + index1.getAndIncrement()));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -2037,7 +2036,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("format", "json");
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2045,6 +2044,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -2060,7 +2060,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         topics.put("topics", new JsonArray().add(topic));
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        postRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topics.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2075,7 +2075,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -2093,7 +2093,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject root = new JsonObject();
         root.put("offsets", offsets);
 
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/positions")
+        postRequest(baseUri + "/positions")
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2108,7 +2108,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -2148,7 +2148,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -2174,8 +2174,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -2185,7 +2183,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("name", name);
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2193,6 +2191,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -2225,7 +2224,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -2297,11 +2296,100 @@ class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
+    void consumerOrPartitionNotFound(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "notFoundToBeginningAndReceive";
+        kafkaCluster.createTopic(topic, 1, 1);
+
+        CompletableFuture<Boolean> creation = new CompletableFuture<>();
+        AtomicInteger index = new AtomicInteger();
+        kafkaCluster.useTo().produceStrings(10, () -> creation.complete(true),
+            () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
+        creation.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+
+        postRequest("/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+                        String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        String consumerBaseUri = bridgeResponse.getString("base_uri");
+                        assertEquals(name, consumerInstanceId);
+                        assertEquals(baseUri, consumerBaseUri);
+                    });
+                    creation.complete(true);
+                });
+
+        // Consumer instance not found
+        CompletableFuture<Boolean> instanceNotFound = new CompletableFuture<>();
+        String uriWithNotExistIstance = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + "not-exist-instance";
+
+        JsonArray partitions = new JsonArray();
+        partitions.add(new JsonObject().put("topic", topic).put("partition", 0));
+
+        JsonObject root = new JsonObject();
+        root.put("partitions", partitions);
+
+        postRequest(uriWithNotExistIstance + "/positions/beginning")
+                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(root, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                        assertEquals("The specified consumer instance was not found.", error.getMessage());
+                    });
+                    instanceNotFound.complete(true);
+                });
+
+        // Specified consumer instance did not have one of the specified partitions assigned.
+        CompletableFuture<Boolean> consumerInstanceDontHavePartition = new CompletableFuture<>();
+
+        int nonExistenPartition = Integer.MAX_VALUE;
+        JsonArray nonExistentPartitionJSON = new JsonArray();
+        nonExistentPartitionJSON.add(new JsonObject().put("topic", topic).put("partition", nonExistenPartition));
+
+        JsonObject partitionsJSON = new JsonObject();
+        partitionsJSON.put("partitions", nonExistentPartitionJSON);
+
+        postRequest(baseUri + "/positions/beginning")
+                .putHeader("Content-length", String.valueOf(partitionsJSON.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(partitionsJSON, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                        assertEquals("No current assignment for partition " + topic + "-" + nonExistenPartition, error.getMessage());
+                    });
+                    consumerInstanceDontHavePartition.complete(true);
+                });
+        context.completeNow();
+    }
+
+    @Test
     void seekToEndAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToEndAndReceive";
         kafkaCluster.createTopic(topic, 1, 1);
-
-        WebClient client = WebClient.create(vertx);
 
         String name = "my-kafka-consumer";
         String groupId = "my-group";
@@ -2312,7 +2400,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("name", name);
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2320,6 +2408,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -2336,7 +2425,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         topics.put("topics", new JsonArray().add(topic));
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        postRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topics.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2351,7 +2440,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -2375,7 +2464,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         root.put("partitions", partitions);
 
         CompletableFuture<Boolean> seek = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/positions/end")
+        postRequest(baseUri + "/positions/end")
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2391,7 +2480,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records")
+        getRequest(baseUri + "/records")
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -2406,7 +2495,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -2434,8 +2523,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -2446,7 +2533,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("format", "json");
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2454,6 +2541,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -2473,7 +2561,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         topicsRoot.put("topics", topics);
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        postRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2489,13 +2577,14 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonArray> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject jsonResponse = response.body().getJsonObject(0);
 
                         String kafkaTopic = jsonResponse.getString("topic");
@@ -2516,7 +2605,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         CompletableFuture<Boolean> unsubscribe = new CompletableFuture<>();
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        deleteRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
@@ -2537,7 +2626,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         // Try to consume after unsubscription
         CompletableFuture<Boolean> consume2 = new CompletableFuture<>();
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -2556,7 +2645,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -2585,8 +2674,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -2596,7 +2683,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("name", name);
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2604,6 +2691,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -2623,7 +2711,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         topicsRoot.put("topics", topics);
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        postRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2638,7 +2726,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         CompletableFuture<Boolean> unsubscribe = new CompletableFuture<>();
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri + "consumer-invalidation" + "/subscription")
+        deleteRequest(baseUri + "consumer-invalidation" + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
@@ -2657,7 +2745,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -2685,8 +2773,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        WebClient client = WebClient.create(vertx);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -2697,7 +2783,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("format", "json");
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2705,6 +2791,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -2724,7 +2811,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         topicsRoot.put("topics", topics);
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        postRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2740,7 +2827,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -2759,7 +2846,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -2798,10 +2885,8 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        WebClient client = WebClient.create(vertx);
-
         CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/topics/" + topic)
+        postRequest("/topics/" + topic)
                 .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2809,6 +2894,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
 
                         JsonArray offsets = bridgeResponse.getJsonArray("offsets");
@@ -2833,7 +2919,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         consumerConfig.put("format", "json");
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, "/consumers/" + groupId)
+        postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(consumerConfig.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2841,6 +2927,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
@@ -2860,7 +2947,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         topicsRoot.put("topics", topics);
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        client.post(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/subscription")
+        postRequest(baseUri + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -2876,13 +2963,14 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonArray> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject jsonResponse = response.body().getJsonObject(0);
 
                         String kafkaTopic = jsonResponse.getString("topic");
@@ -2904,7 +2992,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        client.delete(BRIDGE_PORT, BRIDGE_HOST, baseUri)
+        deleteRequest(baseUri)
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
