@@ -1529,8 +1529,8 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.BAD_REQUEST.code(), error.getCode());
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
                     });
                     context.completeNow();
                 });
@@ -3006,5 +3006,37 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         delete.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         context.completeNow();
+    }
+
+    @Test
+    void sendMessageWithNoRequiredProperty(VertxTestContext context) throws Throwable {
+        String topic = "sendMessageWithNoRequiredProperty";
+        kafkaCluster.createTopic(topic, 1, 1);
+
+        String key = "my-key";
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("key", key);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        postRequest("/topics/" + topic)
+                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(root, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
+                        assertEquals(HttpResponseStatus.BAD_REQUEST.code(), error.getCode());
+                        assertEquals("$.records[0].value: is missing but it is required", error.getMessage());
+                        context.completeNow();
+                    });
+                });
     }
 }
