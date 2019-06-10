@@ -3113,13 +3113,13 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        // subscribe to both topic and topic_pattern
+        // subscribe setting both topics list and topic_pattern
         JsonArray topics = new JsonArray();
         topics.add(topic);
 
         JsonObject topicsRoot = new JsonObject();
         topicsRoot.put("topics", topics);
-        topicsRoot.put("topic_pattern", "topic-pattern");
+        topicsRoot.put("topic_pattern", "my-topic-pattern");
 
         CompletableFuture<Boolean> subscribeConflict = new CompletableFuture<>();
         postRequest(baseUri + "/subscription")
