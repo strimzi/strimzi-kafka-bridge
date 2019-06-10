@@ -605,7 +605,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -716,7 +716,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -833,7 +833,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -950,7 +950,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -1066,7 +1066,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -1180,7 +1180,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -1297,7 +1297,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -1436,7 +1436,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -1858,7 +1858,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
 
         // consume records
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -2075,7 +2075,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -2108,7 +2108,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -2224,7 +2224,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        client.get(BRIDGE_PORT, BRIDGE_HOST, baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -2440,7 +2440,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -2577,7 +2577,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -2626,7 +2626,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         // Try to consume after unsubscription
         CompletableFuture<Boolean> consume2 = new CompletableFuture<>();
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -2827,7 +2827,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -2963,7 +2963,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records" + "?timeout=" + String.valueOf(1000))
+        getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
