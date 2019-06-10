@@ -1520,7 +1520,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    void invalidRequestTest(VertxTestContext context) {
+    void postToNonexistentEndpoint(VertxTestContext context) {
 
         postRequest("/not-existing-endpoint")
                 .as(BodyCodec.jsonObject())
@@ -3009,7 +3009,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    void sendMessageWithNoRequiredProperty(VertxTestContext context) throws Throwable {
+    void sendMessageLackingRequiredProperty(VertxTestContext context) throws Throwable {
         String topic = "sendMessageWithNoRequiredProperty";
         kafkaCluster.createTopic(topic, 1, 1);
 
