@@ -97,19 +97,16 @@ public class HttpBridge extends AbstractVerticle {
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString(), this::seekToBeginning);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this::seekToEnd);
 
-                routerFactory.addFailureHandlerByOperationId(HttpOpenApiOperations.SEND.toString(), this::send);
-                routerFactory.addFailureHandlerByOperationId(HttpOpenApiOperations.SEND_TO_PARTITION.toString(), this::sendToPartition);
-
                 this.router = routerFactory.getRouter();
 
-                this.router.errorHandler(404, r -> {
-                    HttpBridgeError error = new HttpBridgeError(
-                            HttpResponseStatus.BAD_REQUEST.code(),
-                            null
-                    );
-                    HttpUtils.sendResponse(r.response(), HttpResponseStatus.BAD_REQUEST.code(),
-                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
-                });
+                // handling validation errors and not existing endpoints
+                // note: not using the errorHandler method directly and the routingContext.statusCode()
+                //       due to following issue I opened on Vert.x Web component.
+                //       https://github.com/vert-x3/vertx-web/issues/1295
+                this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(),
+                    r -> this.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), r));
+                this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(),
+                    r -> this.errorHandler(HttpResponseStatus.NOT_FOUND.code(), r));
 
                 log.info("Starting HTTP-Kafka bridge verticle...");
                 this.httpBridgeContext = new HttpBridgeContext();
@@ -304,6 +301,15 @@ public class HttpBridge extends AbstractVerticle {
             this.httpBridgeContext.getHttpSourceEndpoints().put(httpServerRequest.connection(), source);
         }
         source.handle(new HttpEndpoint(routingContext));
+    }
+
+    private void errorHandler(int statusCode, RoutingContext routingContext) {
+        HttpBridgeError error = new HttpBridgeError(
+                statusCode,
+                routingContext.failure() != null ? routingContext.failure().getMessage() : null
+        );
+        HttpUtils.sendResponse(routingContext.response(), statusCode,
+                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
     }
 
     private void processConnection(HttpConnection httpConnection) {
