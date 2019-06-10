@@ -59,7 +59,7 @@ if [ -n "$CHANGED_DERIVED" ] ; then
   echo "ERROR: Uncommitted changes in documentation:"
   echo "$CHANGED_DERIVED"
   echo "Run the following to add up-to-date resources:"
-  echo "  make docu_versions \\"
+  echo "  mvn generate-sources \\"
   echo "    && git add documentation/book/ \\"
   echo "    && git commit -m 'Update generated documentation'"
   exit 1
