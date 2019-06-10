@@ -1634,15 +1634,18 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         json.put("name", name);
 
         // subscribe to a topic
-        JsonObject subJson = new JsonObject();
-        subJson.put("topic", topic);
+        JsonArray topics = new JsonArray();
+        topics.add(topic);
+
+        JsonObject topicsRoot = new JsonObject();
+        topicsRoot.put("topics", topics);
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
         postRequest(baseUri + "/subscription")
-                .putHeader("Content-length", String.valueOf(subJson.toBuffer().length()))
+                .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(subJson, ar -> {
+                .sendJsonObject(topicsRoot, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
@@ -1720,10 +1723,10 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
-                        assertEquals("Specified partition is not a valid number", error.getMessage());
+                        assertEquals(HttpResponseStatus.BAD_REQUEST.code(), error.getCode());
+                        assertEquals("Value is not a valid number", error.getMessage());
                     });
                     context.completeNow();
                 });
@@ -1754,10 +1757,11 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
-                        assertEquals("Partition specified in body and in request path", error.getMessage());
+                        assertEquals(HttpResponseStatus.BAD_REQUEST.code(), error.getCode());
+                        assertEquals("$.records[0].partition: is not defined in the schema and the schema does not allow additional properties",
+                                error.getMessage());
                     });
                     context.completeNow();
                 });
@@ -3010,7 +3014,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
     @Test
     void sendMessageLackingRequiredProperty(VertxTestContext context) throws Throwable {
-        String topic = "sendMessageWithNoRequiredProperty";
+        String topic = "sendMessageLackingRequiredProperty";
         kafkaCluster.createTopic(topic, 1, 1);
 
         String key = "my-key";
@@ -3035,8 +3039,133 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                         assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
                         assertEquals(HttpResponseStatus.BAD_REQUEST.code(), error.getCode());
                         assertEquals("$.records[0].value: is missing but it is required", error.getMessage());
-                        context.completeNow();
                     });
+                    context.completeNow();
                 });
+    }
+
+    @Test
+    void sendMessageWithUnknownProperty(VertxTestContext context) throws Throwable {
+        String topic = "sendMessageWithUnknownProperty";
+        kafkaCluster.createTopic(topic, 1, 1);
+
+        String value = "message-value";
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        json.put("foo", "unknown property");
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        postRequest("/topics/" + topic)
+                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(root, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.BAD_REQUEST.code(), error.getCode());
+                        assertEquals("$.records[0].foo: is not defined in the schema and the schema does not allow additional properties",
+                                error.getMessage());
+                    });
+                    context.completeNow();
+                });
+    }
+
+    @Test
+    void subscribeExclusiveTopicAndPattern(VertxTestContext context) throws Throwable {
+        String topic = "singleTopic";
+
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("format", "json");
+
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
+        postRequest("/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+                        String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        String consumerBaseUri = bridgeResponse.getString("base_uri");
+                        assertEquals(name, consumerInstanceId);
+                        assertEquals(baseUri, consumerBaseUri);
+                    });
+
+                    create.complete(true);
+                });
+
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        // subscribe to both topic and topic_pattern
+        JsonArray topics = new JsonArray();
+        topics.add(topic);
+
+        JsonObject topicsRoot = new JsonObject();
+        topicsRoot.put("topics", topics);
+        topicsRoot.put("topic_pattern", "topic-pattern");
+
+        CompletableFuture<Boolean> subscribeConflict = new CompletableFuture<>();
+        postRequest(baseUri + "/subscription")
+                .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(topicsRoot, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.CONFLICT.code(), response.statusCode());
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.CONFLICT.code(), error.getCode());
+                        assertEquals("Subscriptions to topics, partitions, and patterns are mutually exclusive.",
+                                error.getMessage());
+                    });
+
+                    subscribeConflict.complete(true);
+                });
+
+        subscribeConflict.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        // empty topics subscription
+        topicsRoot = new JsonObject();
+        CompletableFuture<Boolean> subscribeEmpty = new CompletableFuture<>();
+        postRequest(baseUri + "/subscription")
+                .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(topicsRoot, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
+                        assertEquals("A list (of Topics type) or a topic_pattern must be specified.",
+                                error.getMessage());
+                    });
+
+                    subscribeEmpty.complete(true);
+                });
+
+        subscribeEmpty.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 }
