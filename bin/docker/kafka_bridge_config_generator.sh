@@ -8,7 +8,7 @@ if [ "$KAFKA_BRIDGE_TLS" = "true" ]; then
     if [ -n "$KAFKA_BRIDGE_TRUSTED_CERTS" ]; then
         TLS_CONFIGURATION=$(cat <<EOF
 #TLS/SSL
-kafka.ssl.truststore.location=/tmp/kafka/bridge.truststore.p12
+kafka.ssl.truststore.location=/tmp/strimzi/bridge.truststore.p12
 kafka.ssl.truststore.password=${CERTS_STORE_PASSWORD}
 kafka.ssl.truststore.type=PKCS12
 EOF
@@ -17,7 +17,7 @@ EOF
 
     if [ -n "$KAFKA_BRIDGE_TLS_AUTH_CERT" ] && [ -n "$KAFKA_BRIDGE_TLS_AUTH_KEY" ]; then
         TLS_AUTH_CONFIGURATION=$(cat <<EOF
-kafka.ssl.keystore.location=/tmp/kafka/bridge.keystore.p12
+kafka.ssl.keystore.location=/tmp/strimzi/bridge.keystore.p12
 kafka.ssl.keystore.password=${CERTS_STORE_PASSWORD}
 kafka.ssl.keystore.type=PKCS12
 EOF
