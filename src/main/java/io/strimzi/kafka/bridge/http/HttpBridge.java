@@ -21,6 +21,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
+import io.vertx.ext.web.api.validation.ValidationException;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
@@ -304,10 +305,19 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void errorHandler(int statusCode, RoutingContext routingContext) {
-        HttpBridgeError error = new HttpBridgeError(
-                statusCode,
-                routingContext.failure() != null ? routingContext.failure().getMessage() : null
-        );
+        String message = null;
+        // in case of validation exception, building a meaningful error message
+        if (routingContext.failure() != null && routingContext.failure() instanceof ValidationException) {
+            ValidationException validationException = (ValidationException) routingContext.failure();
+            StringBuilder sb = new StringBuilder();
+            if (validationException.parameterName() != null) {
+                sb.append("Validation error on: " + validationException.parameterName() + " - ");
+            }
+            sb.append(validationException.getMessage());
+            message = sb.toString();
+        }
+
+        HttpBridgeError error = new HttpBridgeError(statusCode, message);
         HttpUtils.sendResponse(routingContext.response(), statusCode,
                 BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
     }

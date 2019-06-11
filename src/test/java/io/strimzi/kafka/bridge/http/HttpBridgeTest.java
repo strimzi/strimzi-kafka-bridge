@@ -1726,7 +1726,8 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                         assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertEquals(HttpResponseStatus.BAD_REQUEST.code(), error.getCode());
-                        assertEquals("Value is not a valid number", error.getMessage());
+                        assertEquals("Validation error on: partitionid - Value is not a valid number",
+                                error.getMessage());
                     });
                     context.completeNow();
                 });
@@ -1760,7 +1761,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                         assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertEquals(HttpResponseStatus.BAD_REQUEST.code(), error.getCode());
-                        assertEquals("$.records[0].partition: is not defined in the schema and the schema does not allow additional properties",
+                        assertEquals("Validation error on: body.records[0] - $.records[0].partition: is not defined in the schema and the schema does not allow additional properties",
                                 error.getMessage());
                     });
                     context.completeNow();
@@ -3038,7 +3039,8 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
                         assertEquals(HttpResponseStatus.BAD_REQUEST.code(), error.getCode());
-                        assertEquals("$.records[0].value: is missing but it is required", error.getMessage());
+                        assertEquals("Validation error on: body.records[0] - $.records[0].value: is missing but it is required",
+                                error.getMessage());
                     });
                     context.completeNow();
                 });
@@ -3071,7 +3073,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                         assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertEquals(HttpResponseStatus.BAD_REQUEST.code(), error.getCode());
-                        assertEquals("$.records[0].foo: is not defined in the schema and the schema does not allow additional properties",
+                        assertEquals("Validation error on: body.records[0] - $.records[0].foo: is not defined in the schema and the schema does not allow additional properties",
                                 error.getMessage());
                     });
                     context.completeNow();
@@ -3113,7 +3115,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        // subscribe setting both topics list and topic_pattern
+        // cannot subscribe setting both topics list and topic_pattern
         JsonArray topics = new JsonArray();
         topics.add(topic);
 
@@ -3142,7 +3144,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         subscribeConflict.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        // empty topics subscription
+        // cannot subscribe without topics or topic_pattern
         topicsRoot = new JsonObject();
         CompletableFuture<Boolean> subscribeEmpty = new CompletableFuture<>();
         postRequest(baseUri + "/subscription")
