@@ -31,4 +31,6 @@ hs_err_pid*
 .DS_Store
 
 # Auto generated doc
-**/html*/*
+documentation/html/**
+documentation/htmlnoheader/**
+documentation/book/build/**
