@@ -7,7 +7,7 @@ if [ -n "$KAFKA_BRIDGE_TRUSTED_CERTS" ]; then
     # Generate temporary keystore password
     export CERTS_STORE_PASSWORD=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c32)
 
-    mkdir -p /tmp/kafka
+    mkdir -p /tmp/strimzi
 
     # Import certificates into keystore and truststore
     # $1 = trusted certs, $2 = TLS auth cert, $3 = TLS auth key, $4 = truststore path, $5 = keystore path, $6 = certs and key path
@@ -15,9 +15,9 @@ if [ -n "$KAFKA_BRIDGE_TRUSTED_CERTS" ]; then
         "$KAFKA_BRIDGE_TRUSTED_CERTS" \
         "$KAFKA_BRIDGE_TLS_AUTH_CERT" \
         "$KAFKA_BRIDGE_TLS_AUTH_KEY" \
-        "/tmp/kafka/bridge.truststore.p12" \
-        "/tmp/kafka/bridge.keystore.p12" \
-        "/opt/kafka/bridge-certs"
+        "/tmp/strimzi/bridge.truststore.p12" \
+        "/tmp/strimzi/bridge.keystore.p12" \
+        "${STRIMZI_HOME}/bridge-certs"
 fi
 
 # Generate and print the consumer config file
