@@ -29,3 +29,8 @@ hs_err_pid*
 .vscode/
 
 .DS_Store
+
+# Auto generated doc
+documentation/html/**
+documentation/htmlnoheader/**
+documentation/book/build/**

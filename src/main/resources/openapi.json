@@ -904,7 +904,7 @@
                     "description": "ID of the partition to which you want to send records.",
                     "required": true,
                     "schema": {
-                        "type": "string"
+                        "type": "integer"
                     }
                 }
             ]
@@ -1026,99 +1026,6 @@
     },
     "components": {
         "schemas": {
-            "Consumer": {
-                "title": "Consumer",
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "description": "The unique name for the consumer instance. The name is unique within the scope of the consumer group. The name is used in URLs. ",
-                        "type": "string"
-                    },
-                    "format": {
-                        "description": "The allowable message format for the consumer, which can be `binary` (default) or `json`. The messages are converted into a JSON format. ",
-                        "type": "string"
-                    },
-                    "auto.offset.reset": {
-                        "description": "Resets the offset position for the consumer. \nIf set to `earliest`, messages are read from the first offset. \nIf set to `latest`, messages are read from the latest offset.",
-                        "type": "string"
-                    },
-                    "auto.commit.enable": {
-                        "description": "If set to `true`, message offsets are committed automatically for the consumer. If set to `false`, message offsets must be committed manually.",
-                        "type": "string"
-                    },
-                    "fetch.min.bytes": {
-                        "description": "Sets the minimum ammount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount.",
-                        "type": "string"
-                    },
-                    "consumer.request.timeout.ms": {
-                        "description": "Sets the maximum amount of time, in milliseconds, for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned.",
-                        "type": "string"
-                    }
-                },
-                "example": {
-                    "name": "consumer1",
-                    "format": "binary",
-                    "auto.offset.reset": "earliest",
-                    "auto.commit.enable": "false",
-                    "fetch.min.bytes": "512",
-                    "consumer.request.timeout.ms": "30000"
-                }
-            },
-            "Partition": {
-                "title": "Partition",
-                "type": "object",
-                "properties": {
-                    "partition": {
-                        "format": "int32",
-                        "type": "integer"
-                    },
-                    "topic": {
-                        "type": "string"
-                    }
-                }
-            },
-            "Topics": {
-                "title": "Topics",
-                "type": "object",
-                "properties": {
-                    "topics": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "example": {
-                    "topics": [
-                        "topic1",
-                        "topic2"
-                    ]
-                }
-            },
-            "Partitions": {
-                "title": "Partitions",
-                "type": "object",
-                "properties": {
-                    "partitions": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/Partition"
-                        }
-                    }
-                },
-                "example": {
-                    "partitions": [
-                        {
-                            "topic": "topic",
-                            "partition": 0
-                        },
-                        {
-                            "topic": "topic",
-                            "partition": 1
-                        }
-                    ]
-                }
-            },
             "ConsumerRecordList": {
                 "title": "ConsumerRecordList",
                 "type": "array",
@@ -1179,55 +1086,6 @@
                     "base_uri": "http://localhost:8080/consumers/my-group/instances/my-consumer"
                 }
             },
-            "OffsetCommitSeekList": {
-                "title": "OffsetCommitSeekList",
-                "type": "object",
-                "properties": {
-                    "offsets": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/OffsetCommitSeek"
-                        }
-                    }
-                },
-                "example": {
-                    "offsets": [
-                        {
-                            "topic": "topic",
-                            "partition": 0,
-                            "offset": 15
-                        },
-                        {
-                            "topic": "topic",
-                            "partition": 1,
-                            "offset": 42
-                        }
-                    ]
-                }
-            },
-            "OffsetCommitSeek": {
-                "title": "OffsetCommitSeek",
-                "required": [],
-                "type": "object",
-                "properties": {
-                    "partition": {
-                        "format": "int32",
-                        "type": "integer"
-                    },
-                    "offset": {
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "topic": {
-                        "type": "string"
-                    }
-                },
-                "example": {
-                    "partition": 43,
-                    "offset": 92,
-                    "topic": "topic"
-                }
-            },
             "OffsetRecordSent": {
                 "title": "OffsetRecordSent",
                 "type": "object",
@@ -1284,6 +1142,135 @@
                 },
                 "example": "{\n    \"error_code\": 404,\n    \"message\": \"resource not found\"\n}"
             },
+            "Consumer": {
+                "title": "Consumer",
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "The unique name for the consumer instance. The name is unique within the scope of the consumer group. The name is used in URLs. ",
+                        "type": "string"
+                    },
+                    "format": {
+                        "description": "The allowable message format for the consumer, which can be `binary` (default) or `json`. The messages are converted into a JSON format. ",
+                        "type": "string"
+                    },
+                    "auto.offset.reset": {
+                        "description": "Resets the offset position for the consumer. \nIf set to `earliest`, messages are read from the first offset. \nIf set to `latest`, messages are read from the latest offset.",
+                        "type": "string"
+                    },
+                    "fetch.min.bytes": {
+                        "description": "Sets the minimum ammount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount.",
+                        "type": "string"
+                    },
+                    "consumer.request.timeout.ms": {
+                        "description": "Sets the maximum amount of time, in milliseconds, for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned.",
+                        "type": "string"
+                    },
+                    "enable.auto.commit": {
+                        "description": "If set to `true`, message offsets are committed automatically for the consumer. If set to `false`, message offsets must be committed manually.",
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false,
+                "example": {
+                    "name": "consumer1",
+                    "format": "binary",
+                    "auto.offset.reset": "earliest",
+                    "enable.auto.commit": "false",
+                    "fetch.min.bytes": "512",
+                    "consumer.request.timeout.ms": "30000"
+                }
+            },
+            "OffsetCommitSeek": {
+                "title": "OffsetCommitSeek",
+                "required": [],
+                "type": "object",
+                "properties": {
+                    "partition": {
+                        "format": "int32",
+                        "type": "integer"
+                    },
+                    "offset": {
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "topic": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false,
+                "example": {
+                    "partition": 43,
+                    "offset": 92,
+                    "topic": "topic"
+                }
+            },
+            "OffsetCommitSeekList": {
+                "title": "OffsetCommitSeekList",
+                "type": "object",
+                "properties": {
+                    "offsets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OffsetCommitSeek"
+                        }
+                    }
+                },
+                "additionalProperties": false,
+                "example": {
+                    "offsets": [
+                        {
+                            "topic": "topic",
+                            "partition": 0,
+                            "offset": 15
+                        },
+                        {
+                            "topic": "topic",
+                            "partition": 1,
+                            "offset": 42
+                        }
+                    ]
+                }
+            },
+            "Partition": {
+                "title": "Partition",
+                "type": "object",
+                "properties": {
+                    "partition": {
+                        "format": "int32",
+                        "type": "integer"
+                    },
+                    "topic": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "Partitions": {
+                "title": "Partitions",
+                "type": "object",
+                "properties": {
+                    "partitions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Partition"
+                        }
+                    }
+                },
+                "additionalProperties": false,
+                "example": {
+                    "partitions": [
+                        {
+                            "topic": "topic",
+                            "partition": 0
+                        },
+                        {
+                            "topic": "topic",
+                            "partition": 1
+                        }
+                    ]
+                }
+            },
             "ProducerRecord": {
                 "title": "ProducerRecord",
                 "required": [
@@ -1316,6 +1303,7 @@
                         ]
                     }
                 },
+                "additionalProperties": false,
                 "example": "{\n    \"key\": \"key\"\n    \"partition\": 23\n    \"value\": {\"foo\": \"bar\"}\n}"
             },
             "ProducerRecordList": {
@@ -1329,6 +1317,7 @@
                         }
                     }
                 },
+                "additionalProperties": false,
                 "example": {
                     "records": [
                         {
@@ -1373,6 +1362,7 @@
                         ]
                     }
                 },
+                "additionalProperties": false,
                 "example": {
                     "value": {
                         "v": 128
@@ -1393,6 +1383,7 @@
                         }
                     }
                 },
+                "additionalProperties": false,
                 "example": {
                     "records": [
                         {
@@ -1402,6 +1393,29 @@
                         {
                             "value": "value2"
                         }
+                    ]
+                }
+            },
+            "Topics": {
+                "title": "Topics",
+                "type": "object",
+                "properties": {
+                    "topics": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "topic_pattern": {
+                        "description": "A regex topic pattern for matching multiple topics",
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false,
+                "example": {
+                    "topics": [
+                        "topic1",
+                        "topic2"
                     ]
                 }
             }

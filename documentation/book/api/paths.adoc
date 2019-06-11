@@ -56,7 +56,7 @@ __required__|Name and configuration of the consumer. The name is unique within t
   "name" : "consumer1",
   "format" : "binary",
   "auto.offset.reset" : "earliest",
-  "auto.commit.enable" : "false",
+  "enable.auto.commit" : "false",
   "fetch.min.bytes" : "512",
   "consumer.request.timeout.ms" : "30000"
 }
@@ -941,7 +941,7 @@ Sends one or more records to a given topic partition, optionally specifying a ke
 |===
 |Type|Name|Description|Schema
 |**Path**|**partitionid** +
-__required__|ID of the partition to which you want to send records.|string
+__required__|ID of the partition to which you want to send records.|integer
 |**Path**|**topicname** +
 __required__|Name of the topic containing the partition to which you want to send records.|string
 |**Body**|**body** +
