@@ -58,8 +58,12 @@ docu_htmlnoheader: docu_htmlnoheaderclean docu_check
 	$(CP) -vrL documentation/book/images documentation/htmlnoheader/images
 	asciidoctor -v --failure-level WARN -t -dbook -a ProductVersion=$(RELEASE_VERSION) -s documentation/book/master.adoc -o documentation/htmlnoheader/master.html
 
+.PHONY: docu_api
+docu_api: 
+	mvn -P apidoc io.github.swagger2markup:swagger2markup-maven-plugin:convertSwagger2markup@generate-apidoc
+
 .PHONY: docu_check
-docu_check:
+docu_check: docu_api
 	./.travis/check_docs.sh
 
 .PHONY: docu_clean
