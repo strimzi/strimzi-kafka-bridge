@@ -203,29 +203,39 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>${maven-surefire-plugin.version}</version>
-			</plugin>
-			<plugin>
-				<groupId>io.github.swagger2markup</groupId>
-				<artifactId>swagger2markup-maven-plugin</artifactId>
-				<version>${swagger2markup.version}</version>
-				<configuration>
-					<swaggerInput>${project.basedir}/src/main/resources/openapiv2.json</swaggerInput>
-					<outputDir>${project.basedir}/documentation/book/api/</outputDir>
-					<config>
-						<swagger2markup.markupLanguage>ASCIIDOC</swagger2markup.markupLanguage>
-					</config>
-				</configuration>
-				<executions>
-					<execution>
-						<phase>generate-sources</phase>
-						<goals>
-							<goal>convertSwagger2markup</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
+			</plugin>        
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>apidoc</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>io.github.swagger2markup</groupId>
+						<artifactId>swagger2markup-maven-plugin</artifactId>
+						<version>${swagger2markup.version}</version>
+						<configuration>
+							<swaggerInput>${project.basedir}/src/main/resources/openapiv2.json</swaggerInput>
+							<outputDir>${project.basedir}/documentation/book/api/</outputDir>
+							<config>
+								<swagger2markup.markupLanguage>ASCIIDOC</swagger2markup.markupLanguage>
+							</config>
+						</configuration>
+						<executions>
+							<execution>
+								<id>generate-apidoc</id>
+								<goals>
+									<goal>convertSwagger2markup</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 	<licenses>
 		<license>
