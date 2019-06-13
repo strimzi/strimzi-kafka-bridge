@@ -8,7 +8,6 @@ package io.strimzi.kafka.bridge;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.producer.KafkaProducer;
@@ -90,11 +89,9 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         log.debug("Sending record {}", krecord);
         if (handler == null) {
-            this.producerSettledMode.write(krecord);
+            this.producerSettledMode.send(krecord);
         } else {
-            this.producerUnsettledMode.exceptionHandler(e -> {
-                handler.handle(Future.failedFuture(e));
-            }).send(krecord, handler);
+            this.producerUnsettledMode.send(krecord, handler);
         }
     }
 
