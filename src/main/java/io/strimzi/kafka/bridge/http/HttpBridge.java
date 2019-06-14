@@ -99,7 +99,7 @@ public class HttpBridge extends AbstractVerticle {
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this::seekToEnd);
 
                 routerFactory.addGlobalHandler(rc -> {
-                    HttpLogging.logRequest(rc.request());
+                    HttpUtils.logRequest(rc.request());
                     rc.next();
                 });
 
@@ -184,7 +184,6 @@ public class HttpBridge extends AbstractVerticle {
 
     private void createConsumer(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
-        log.info("OpenAPI operation = {}", this.httpBridgeContext.getOpenApiOperation());
 
         JsonObject body = routingContext.getBodyAsJson();
         EmbeddedFormat format = EmbeddedFormat.from(body.getString("format", "binary"));
@@ -215,7 +214,6 @@ public class HttpBridge extends AbstractVerticle {
 
     private void deleteConsumer(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.DELETE_CONSUMER);
-        log.info("OpenAPI operation = {}", this.httpBridgeContext.getOpenApiOperation());
         String deleteInstanceID = routingContext.pathParam("name");
 
         final SinkBridgeEndpoint deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(deleteInstanceID);
@@ -280,7 +278,6 @@ public class HttpBridge extends AbstractVerticle {
      * @param routingContext RoutingContext instance
      */
     private void processConsumer(RoutingContext routingContext) {
-        log.info("OpenAPI operation = {}", this.httpBridgeContext.getOpenApiOperation());
         String instanceId = routingContext.pathParam("name");
 
         final SinkBridgeEndpoint sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(instanceId);
@@ -303,7 +300,6 @@ public class HttpBridge extends AbstractVerticle {
      * @param routingContext RoutingContext instance
      */
     private void processProducer(RoutingContext routingContext) {
-        log.info("OpenAPI operation = {}", this.httpBridgeContext.getOpenApiOperation());
         HttpServerRequest httpServerRequest = routingContext.request();
         String contentType = httpServerRequest.getHeader("Content-Type") != null ?
                 httpServerRequest.getHeader("Content-Type") : BridgeContentType.KAFKA_JSON_BINARY;

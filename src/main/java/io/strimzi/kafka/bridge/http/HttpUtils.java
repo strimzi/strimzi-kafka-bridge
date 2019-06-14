@@ -7,6 +7,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import org.slf4j.Logger;
@@ -25,6 +26,15 @@ public class HttpUtils {
             response.write(body);
         }
         response.end();
-        HttpLogging.logResponse(response);
+        logResponse(response);
+    }
+
+    public static void logRequest(HttpServerRequest request) {
+        log.info("Request: method = {}, path = {}", request.method(), request.path());
+        log.debug("Request: headers = {}", request.headers());
+    }
+
+    public static void logResponse(HttpServerResponse response) {
+        log.info("Response: statusCode = {}, message = {}", response.getStatusCode(), response.getStatusMessage());
     }
 }
