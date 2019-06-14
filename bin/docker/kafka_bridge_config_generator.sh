@@ -44,9 +44,7 @@ if [ -n "$KAFKA_BRIDGE_SASL_USERNAME" ] && [ -n "$KAFKA_BRIDGE_SASL_PASSWORD_FIL
 
     SASL_AUTH_CONFIGURATION=$(cat <<EOF
 kafka.sasl.mechanism=${SASL_MECHANISM}
-kafka.sasl.jaas.config=org.apache.kafka.common.security.${JAAS_SECURITY_MODULE}
- required username="${KAFKA_BRIDGE_SASL_USERNAME}"
-  password="${PASSWORD}";
+kafka.sasl.jaas.config=org.apache.kafka.common.security.${JAAS_SECURITY_MODULE} required username="${KAFKA_BRIDGE_SASL_USERNAME}" password="${PASSWORD}";
 EOF
 )
 fi
