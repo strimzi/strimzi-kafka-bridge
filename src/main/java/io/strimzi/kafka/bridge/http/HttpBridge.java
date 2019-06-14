@@ -197,6 +197,7 @@ public class HttpBridge extends AbstractVerticle {
                 httpBridgeContext.getHttpSinkEndpoints().put(consumerId.toString(), sink);
             });
         } catch (Exception ex) {
+            sink.close();
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     ex.getMessage()
@@ -314,6 +315,7 @@ public class HttpBridge extends AbstractVerticle {
             source.handle(new HttpEndpoint(routingContext));
 
         } catch (Exception ex) {
+            source.close();
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     ex.getMessage()

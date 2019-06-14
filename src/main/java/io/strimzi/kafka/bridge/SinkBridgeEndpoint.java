@@ -131,6 +131,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         if (this.consumer != null) {
             this.consumer.close();
         }
+        this.handleClose();
     }
 
     /**
