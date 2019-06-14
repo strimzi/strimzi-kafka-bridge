@@ -99,7 +99,8 @@ public class HttpBridge extends AbstractVerticle {
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this::seekToEnd);
 
                 routerFactory.addGlobalHandler(rc -> {
-                    HttpUtils.logRequest(rc.request());
+                    rc.put("request-id", System.identityHashCode(rc.request()));
+                    HttpUtils.logRequest(rc);
                     rc.next();
                 });
 
@@ -227,7 +228,7 @@ public class HttpBridge extends AbstractVerticle {
                     HttpResponseStatus.NOT_FOUND.code(),
                     "The specified consumer instance was not found."
             );
-            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NOT_FOUND.code(),
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
         }
     }
@@ -289,7 +290,7 @@ public class HttpBridge extends AbstractVerticle {
                     HttpResponseStatus.NOT_FOUND.code(),
                     "The specified consumer instance was not found."
             );
-            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NOT_FOUND.code(),
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
         }
     }
@@ -346,7 +347,7 @@ public class HttpBridge extends AbstractVerticle {
         }
 
         HttpBridgeError error = new HttpBridgeError(statusCode, message);
-        HttpUtils.sendResponse(routingContext.response(), statusCode,
+        HttpUtils.sendResponse(routingContext, statusCode,
                 BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
     }
 
