@@ -49,13 +49,15 @@ public class AmqpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
     @Override
     public void close() {
 
+        if (this.receivers != null) {
+            this.receivers.forEach((name, receiver) -> {
+                receiver.close();
+            });
+            this.receivers.clear();
+        }
+
         // close Kafka related stuff
         super.close();
-
-        this.receivers.forEach((name, receiver) -> {
-            receiver.close();
-        });
-        this.receivers.clear();
     }
 
     @Override
@@ -203,7 +205,6 @@ public class AmqpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         // if the source endpoint has no receiver links, it can be closed
         if (this.receivers.isEmpty()) {
             this.close();
-            this.handleClose();
         }
     }
 }
