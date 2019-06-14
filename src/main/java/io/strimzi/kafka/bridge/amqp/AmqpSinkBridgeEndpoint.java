@@ -63,15 +63,15 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     @Override
     public void close() {
 
-        // close Kafka related stuff
-        super.close();
-
         if (this.offsetTracker != null)
             this.offsetTracker.clear();
 
-        if (this.sender.isOpen()) {
+        if (this.sender != null && this.sender.isOpen()) {
             this.sender.close();
         }
+
+        // close Kafka related stuff
+        super.close();
     }
 
     @Override
@@ -180,7 +180,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             }
         } catch (AmqpErrorConditionException e) {
             AmqpBridge.detachWithError(link, e.toCondition());
-            this.handleClose();
+            this.close();
             return;
         }
     }
@@ -210,7 +210,6 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     private void sendAmqpError(ErrorCondition condition) {
         AmqpBridge.detachWithError(this.sender, condition);
         this.close();
-        this.handleClose();
     }
 
     /**
@@ -271,7 +270,6 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     private void processCloseSender(ProtonSender sender) {
         log.info("Remote AMQP receiver detached");
         this.close();
-        this.handleClose();
     }
 
     /**

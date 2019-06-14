@@ -538,6 +538,36 @@ class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
+    void createConsumerWithWrongParameter(VertxTestContext context) throws InterruptedException {
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("auto.offset.reset", "foo");
+
+        postRequest("/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), response.statusCode());
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), error.getCode());
+                        assertEquals("Invalid value foo for configuration auto.offset.reset: String must be one of: latest, earliest, none",
+                                error.getMessage());
+                    });
+
+                    context.completeNow();
+                });
+
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
     void receiveSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveSimpleMessage";
         kafkaCluster.createTopic(topic, 1, 1);

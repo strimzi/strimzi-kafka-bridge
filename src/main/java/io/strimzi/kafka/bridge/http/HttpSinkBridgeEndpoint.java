@@ -217,7 +217,6 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     private void doDeleteConsumer() {
         this.close();
-        this.handleClose();
         log.info("Deleted consumer {} from group {}", routingContext.pathParam("name"), routingContext.pathParam("groupid"));
         HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NO_CONTENT.code(), null, null);
     }

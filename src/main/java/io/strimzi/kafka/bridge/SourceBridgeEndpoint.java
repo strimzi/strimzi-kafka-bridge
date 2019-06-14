@@ -121,5 +121,7 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         if (this.producerUnsettledMode != null)
             this.producerUnsettledMode.close();
+
+        this.handleClose();
     }
 }
