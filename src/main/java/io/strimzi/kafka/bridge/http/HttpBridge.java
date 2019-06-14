@@ -208,7 +208,7 @@ public class HttpBridge extends AbstractVerticle {
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     ex.getMessage()
             );
-            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
         }
     }
@@ -328,7 +328,7 @@ public class HttpBridge extends AbstractVerticle {
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     ex.getMessage()
             );
-            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
         }
     }
