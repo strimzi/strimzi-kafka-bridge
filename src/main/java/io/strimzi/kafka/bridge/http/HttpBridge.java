@@ -315,7 +315,9 @@ public class HttpBridge extends AbstractVerticle {
             source.handle(new HttpEndpoint(routingContext));
 
         } catch (Exception ex) {
-            source.close();
+            if (source != null) {
+                source.close();
+            }
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     ex.getMessage()
