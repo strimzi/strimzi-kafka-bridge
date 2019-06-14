@@ -36,5 +36,6 @@ public class HttpUtils {
 
     public static void logResponse(HttpServerResponse response) {
         log.info("Response: statusCode = {}, message = {}", response.getStatusCode(), response.getStatusMessage());
+        log.debug("Request: headers = {}", response.headers());
     }
 }
