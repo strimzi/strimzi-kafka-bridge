@@ -98,6 +98,12 @@ public class HttpBridge extends AbstractVerticle {
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString(), this::seekToBeginning);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this::seekToEnd);
 
+                routerFactory.addGlobalHandler(rc -> {
+                    rc.put("request-id", System.identityHashCode(rc.request()));
+                    HttpUtils.logRequest(rc);
+                    rc.next();
+                });
+
                 this.router = routerFactory.getRouter();
 
                 // handling validation errors and not existing endpoints
@@ -202,7 +208,7 @@ public class HttpBridge extends AbstractVerticle {
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     ex.getMessage()
             );
-            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
         }
     }
@@ -222,7 +228,7 @@ public class HttpBridge extends AbstractVerticle {
                     HttpResponseStatus.NOT_FOUND.code(),
                     "The specified consumer instance was not found."
             );
-            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NOT_FOUND.code(),
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
         }
     }
@@ -284,7 +290,7 @@ public class HttpBridge extends AbstractVerticle {
                     HttpResponseStatus.NOT_FOUND.code(),
                     "The specified consumer instance was not found."
             );
-            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.NOT_FOUND.code(),
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
         }
     }
@@ -322,7 +328,7 @@ public class HttpBridge extends AbstractVerticle {
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     ex.getMessage()
             );
-            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
         }
     }
@@ -341,7 +347,7 @@ public class HttpBridge extends AbstractVerticle {
         }
 
         HttpBridgeError error = new HttpBridgeError(statusCode, message);
-        HttpUtils.sendResponse(routingContext.response(), statusCode,
+        HttpUtils.sendResponse(routingContext, statusCode,
                 BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
     }
 
