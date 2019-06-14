@@ -7,17 +7,34 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.Json;
+import io.vertx.ext.web.RoutingContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpUtils {
 
-    public static void sendResponse(HttpServerResponse response, int statusCode, String contentType, Buffer body) {
-        response.setStatusCode(statusCode);
+    private static final Logger log = LoggerFactory.getLogger(HttpUtils.class);
+
+    public static void sendResponse(RoutingContext routingContext, int statusCode, String contentType, Buffer body) {
+        routingContext.response().setStatusCode(statusCode);
         if (body != null) {
-            response.putHeader(HttpHeaderNames.CONTENT_TYPE, contentType);
-            response.putHeader(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(body.length()));
-            response.write(body);
+            log.debug("[{}] Response: body = {}", routingContext.get("request-id"), Json.decodeValue(body));
+            routingContext.response().putHeader(HttpHeaderNames.CONTENT_TYPE, contentType);
+            routingContext.response().putHeader(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(body.length()));
+            routingContext.response().write(body);
         }
-        response.end();
+        routingContext.response().end();
+        logResponse(routingContext);
+    }
+
+    public static void logRequest(RoutingContext routingContext) {
+        log.info("[{}] Request: method = {}, path = {}", routingContext.get("request-id"), routingContext.request().method(), routingContext.request().path());
+        log.debug("[{}] Request: headers = {}", routingContext.get("request-id"), routingContext.request().headers());
+    }
+
+    public static void logResponse(RoutingContext routingContext) {
+        log.info("[{}] Response: statusCode = {}, message = {}", routingContext.get("request-id"), routingContext.response().getStatusCode(), routingContext.response().getStatusMessage());
+        log.debug("[{}] Response: headers = {}", routingContext.get("request-id"), routingContext.response().headers());
     }
 }
