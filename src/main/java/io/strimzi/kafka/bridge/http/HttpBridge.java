@@ -98,6 +98,11 @@ public class HttpBridge extends AbstractVerticle {
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString(), this::seekToBeginning);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this::seekToEnd);
 
+                routerFactory.addGlobalHandler(rc -> {
+                    HttpLogging.logRequest(rc.request());
+                    rc.next();
+                });
+
                 this.router = routerFactory.getRouter();
 
                 // handling validation errors and not existing endpoints

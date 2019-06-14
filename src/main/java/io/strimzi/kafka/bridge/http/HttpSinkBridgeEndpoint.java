@@ -67,6 +67,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         // TODO: it seems that getBodyAsJson raises an exception when the body is empty and not null
         try {
             bodyAsJson = routingContext.getBodyAsJson();
+            log.debug("Request: body = {}", bodyAsJson);
         } catch (Exception ex) {
 
         }
@@ -365,6 +366,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     public void handle(Endpoint<?> endpoint, Handler<?> handler) {
         routingContext = (RoutingContext) endpoint.get();
         JsonObject bodyAsJson = routingContext.getBodyAsJson();
+        log.debug("Request: body = {}", bodyAsJson);
 
         switch (this.httpBridgeContext.getOpenApiOperation()) {
 
