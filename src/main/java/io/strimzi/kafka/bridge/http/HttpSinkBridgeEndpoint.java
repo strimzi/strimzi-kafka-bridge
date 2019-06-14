@@ -67,10 +67,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         // TODO: it seems that getBodyAsJson raises an exception when the body is empty and not null
         try {
             bodyAsJson = routingContext.getBodyAsJson();
-            log.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
         } catch (Exception ex) {
 
         }
+        log.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
 
         messageConverter = this.buildMessageConverter();
 
