@@ -190,11 +190,20 @@ public class HttpBridge extends AbstractVerticle {
             httpBridgeContext.getHttpSinkEndpoints().remove(sink.name());
         });
 
-        sink.open();
+        try {
+            sink.open();
 
-        sink.handle(new HttpEndpoint(routingContext), consumerId -> {
-            httpBridgeContext.getHttpSinkEndpoints().put(consumerId.toString(), sink);
-        });
+            sink.handle(new HttpEndpoint(routingContext), consumerId -> {
+                httpBridgeContext.getHttpSinkEndpoints().put(consumerId.toString(), sink);
+            });
+        } catch (Exception ex) {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    ex.getMessage()
+            );
+            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+        }
     }
 
     private void deleteConsumer(RoutingContext routingContext) {
@@ -291,17 +300,27 @@ public class HttpBridge extends AbstractVerticle {
 
         SourceBridgeEndpoint source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
 
-        if (source == null) {
-            source = new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig,
-                    contentTypeToFormat(contentType), new ByteArraySerializer(), new ByteArraySerializer());
+        try {
+            if (source == null) {
+                source = new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig,
+                        contentTypeToFormat(contentType), new ByteArraySerializer(), new ByteArraySerializer());
 
-            source.closeHandler(s -> {
-                this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
-            });
-            source.open();
-            this.httpBridgeContext.getHttpSourceEndpoints().put(httpServerRequest.connection(), source);
+                source.closeHandler(s -> {
+                    this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
+                });
+                source.open();
+                this.httpBridgeContext.getHttpSourceEndpoints().put(httpServerRequest.connection(), source);
+            }
+            source.handle(new HttpEndpoint(routingContext));
+
+        } catch (Exception ex) {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    ex.getMessage()
+            );
+            HttpUtils.sendResponse(routingContext.response(), HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
         }
-        source.handle(new HttpEndpoint(routingContext));
     }
 
     private void errorHandler(int statusCode, RoutingContext routingContext) {
