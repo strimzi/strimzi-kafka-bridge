@@ -17,7 +17,7 @@ public class HttpUtils {
     private static final Logger log = LoggerFactory.getLogger(HttpUtils.class);
 
     public static void sendResponse(RoutingContext routingContext, int statusCode, String contentType, Buffer body) {
-        if (!routingContext.response().closed()) {
+        if (!routingContext.response().closed() && !routingContext.response().ended()) {
             routingContext.response().setStatusCode(statusCode);
             if (body != null) {
                 log.debug("[{}] Response: body = {}", routingContext.get("request-id"), Json.decodeValue(body));
@@ -28,7 +28,7 @@ public class HttpUtils {
             routingContext.response().end();
             logResponse(routingContext);
         } else {
-            log.warn("[{}] Response: already closed!");
+            log.warn("[{}] Response: already closed/ended!");
         }
     }
 
