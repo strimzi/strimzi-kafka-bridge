@@ -88,6 +88,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             this.send(record, fut.completer());
         }
 
+        final RoutingContext rc = routingContext;
         // wait for ALL futures completed
         List<KafkaProducerRecord<K, V>> finalRecords = records;
         CompositeFuture.join(sendHandlers).setHandler(done -> {
@@ -105,7 +106,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                     results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                 }
             }
-            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
+            HttpUtils.sendResponse(rc, HttpResponseStatus.OK.code(),
                     BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
         });
     }

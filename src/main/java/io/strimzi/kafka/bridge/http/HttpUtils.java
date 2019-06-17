@@ -28,7 +28,7 @@ public class HttpUtils {
             routingContext.response().end();
             logResponse(routingContext);
         } else {
-            log.warn("[{}] Response: already closed/ended!");
+            log.debug("[{}] Response: already closed/ended!", routingContext.get("request-id").toString());
         }
     }
 

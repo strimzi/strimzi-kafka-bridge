@@ -127,9 +127,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             this.seek(topicPartition, offset, fut.completer());
         }
 
+        final RoutingContext rc = routingContext;
         CompositeFuture.join(seekHandlers).setHandler(done -> {
             if (done.succeeded()) {
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+                HttpUtils.sendResponse(rc, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
                 HttpResponseStatus statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR;
                 if (done.cause() instanceof IllegalStateException) {
@@ -139,7 +140,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                         statusCode.code(),
                         done.cause().getMessage()
                 );
-                HttpUtils.sendResponse(routingContext, statusCode.code(),
+                HttpUtils.sendResponse(rc, statusCode.code(),
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         });
@@ -153,9 +154,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 .map(json -> new TopicPartition(json.getString("topic"), json.getInteger("partition")))
                 .collect(Collectors.toSet());
 
+        final RoutingContext rc = routingContext;
         Handler<AsyncResult<Void>> seekHandler = done -> {
             if (done.succeeded()) {
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+                HttpUtils.sendResponse(rc, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
                 HttpResponseStatus statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR;
                 if (done.cause() instanceof IllegalStateException) {
@@ -165,7 +167,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                         statusCode.code(),
                         done.cause().getMessage()
                 );
-                HttpUtils.sendResponse(routingContext, statusCode.code(),
+                HttpUtils.sendResponse(rc, statusCode.code(),
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         };
@@ -179,6 +181,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     private void doCommit(JsonObject bodyAsJson) {
 
+        final RoutingContext rc = routingContext;
         if (bodyAsJson != null) {
             JsonArray offsetsList = bodyAsJson.getJsonArray("offsets");
             Map<TopicPartition, OffsetAndMetadata> offsetData = new HashMap<>();
@@ -190,26 +193,26 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             }
             this.commit(offsetData, status -> {
                 if (status.succeeded()) {
-                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+                    HttpUtils.sendResponse(rc, HttpResponseStatus.NO_CONTENT.code(), null, null);
                 } else {
                     HttpBridgeError error = new HttpBridgeError(
                             HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                             status.cause().getMessage()
                     );
-                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    HttpUtils.sendResponse(rc, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                             BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                 }
             });
         } else {
             this.commit(status -> {
                 if (status.succeeded()) {
-                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+                    HttpUtils.sendResponse(rc, HttpResponseStatus.NO_CONTENT.code(), null, null);
                 } else {
                     HttpBridgeError error = new HttpBridgeError(
                             HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                             status.cause().getMessage()
                     );
-                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    HttpUtils.sendResponse(rc, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                             BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                 }
             });
@@ -236,6 +239,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 this.maxBytes = Long.parseLong(routingContext.request().getParam("max_bytes"));
             }
 
+            final RoutingContext rc = routingContext;
             this.consume(records -> {
                 if (records.succeeded()) {
                     Buffer buffer = messageConverter.toMessages(records.result());
@@ -244,10 +248,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                                 HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                                 "Response exceeds the maximum number of bytes the consumer can receive"
                         );
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                        HttpUtils.sendResponse(rc, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                                 BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                     } else {
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
+                        HttpUtils.sendResponse(rc, HttpResponseStatus.OK.code(),
                                 this.format == EmbeddedFormat.BINARY ? BridgeContentType.KAFKA_JSON_BINARY : BridgeContentType.KAFKA_JSON_JSON,
                                 buffer);
                     }
@@ -257,7 +261,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                             HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                             records.cause().getMessage()
                     );
-                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    HttpUtils.sendResponse(rc, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                             BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                 }
             });
@@ -280,9 +284,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                         .collect(Collectors.toList())
         );
 
+        final RoutingContext rc = routingContext;
         this.setAssignHandler(assignResult -> {
             if (assignResult.succeeded()) {
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+                HttpUtils.sendResponse(rc, HttpResponseStatus.NO_CONTENT.code(), null, null);
             }
         });
 
@@ -312,9 +317,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             return;
         }
 
+        final RoutingContext rc = routingContext;
         this.setSubscribeHandler(subscribeResult -> {
             if (subscribeResult.succeeded()) {
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+                HttpUtils.sendResponse(rc, HttpResponseStatus.NO_CONTENT.code(), null, null);
             }
         });
 
@@ -334,15 +340,16 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     }
 
     public void doUnsubscribe() {
+        final RoutingContext rc = routingContext;
         this.setUnsubscribeHandler(unsubscribeResult -> {
             if (unsubscribeResult.succeeded()) {
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+                HttpUtils.sendResponse(rc, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
                 HttpBridgeError error = new HttpBridgeError(
                         HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                         unsubscribeResult.cause().getMessage()
                 );
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                HttpUtils.sendResponse(rc, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         });
