@@ -41,8 +41,6 @@ import java.util.stream.Collectors;
 
 public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
-    private RoutingContext routingContext;
-
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
 
     private HttpBridgeContext httpBridgeContext;
@@ -62,7 +60,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     @SuppressWarnings({"checkstyle:CyclomaticComplexity", "checkstyle:NPathComplexity"})
     public void handle(Endpoint<?> endpoint) {
 
-        routingContext = (RoutingContext) endpoint.get();
+        RoutingContext routingContext = (RoutingContext) endpoint.get();
         JsonObject bodyAsJson = null;
         // TODO: it seems that getBodyAsJson raises an exception when the body is empty and not null
         try {
@@ -77,36 +75,36 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         switch (this.httpBridgeContext.getOpenApiOperation()) {
 
             case SUBSCRIBE:
-                doSubscribe(bodyAsJson);
+                doSubscribe(routingContext, bodyAsJson);
                 break;
 
             case ASSIGN:
-                doAssign(bodyAsJson);
+                doAssign(routingContext, bodyAsJson);
                 break;
 
             case POLL:
-                doPoll();
+                doPoll(routingContext);
                 break;
 
             case DELETE_CONSUMER:
-                doDeleteConsumer();
+                doDeleteConsumer(routingContext);
                 break;
 
             case COMMIT:
-                doCommit(bodyAsJson);
+                doCommit(routingContext, bodyAsJson);
                 break;
 
             case SEEK:
-                doSeek(bodyAsJson);
+                doSeek(routingContext, bodyAsJson);
                 break;
 
             case SEEK_TO_BEGINNING:
             case SEEK_TO_END:
-                doSeekTo(bodyAsJson, this.httpBridgeContext.getOpenApiOperation());
+                doSeekTo(routingContext, bodyAsJson, this.httpBridgeContext.getOpenApiOperation());
                 break;
 
             case UNSUBSCRIBE:
-                doUnsubscribe();
+                doUnsubscribe(routingContext);
                 break;
 
             default:
@@ -115,7 +113,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     }
 
-    private void doSeek(JsonObject bodyAsJson) {
+    private void doSeek(RoutingContext routingContext, JsonObject bodyAsJson) {
         JsonArray seekOffsetsList = bodyAsJson.getJsonArray("offsets");
 
         List<Future> seekHandlers = new ArrayList<>(seekOffsetsList.size());
@@ -145,7 +143,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         });
     }
 
-    private void doSeekTo(JsonObject bodyAsJson, HttpOpenApiOperations seekToType) {
+    private void doSeekTo(RoutingContext routingContext, JsonObject bodyAsJson, HttpOpenApiOperations seekToType) {
         JsonArray seekPartitionsList = bodyAsJson.getJsonArray("partitions");
 
         Set<TopicPartition> set = seekPartitionsList.stream()
@@ -177,7 +175,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         }
     }
 
-    private void doCommit(JsonObject bodyAsJson) {
+    private void doCommit(RoutingContext routingContext, JsonObject bodyAsJson) {
 
         if (bodyAsJson != null) {
             JsonArray offsetsList = bodyAsJson.getJsonArray("offsets");
@@ -216,13 +214,13 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         }
     }
 
-    private void doDeleteConsumer() {
+    private void doDeleteConsumer(RoutingContext routingContext) {
         this.close();
         log.info("Deleted consumer {} from group {}", routingContext.pathParam("name"), routingContext.pathParam("groupid"));
         HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
     }
 
-    private void doPoll() {
+    private void doPoll(RoutingContext routingContext) {
         String accept = routingContext.request().getHeader("Accept");
 
         // check that the accepted body by the client is the same as the format on creation
@@ -271,7 +269,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         }
     }
 
-    private void doAssign(JsonObject bodyAsJson) {
+    private void doAssign(RoutingContext routingContext, JsonObject bodyAsJson) {
         JsonArray partitionsList = bodyAsJson.getJsonArray("partitions");
         this.topicSubscriptions.addAll(
                 partitionsList.stream()
@@ -289,7 +287,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         this.assign(false);
     }
 
-    private void doSubscribe(JsonObject bodyAsJson) {
+    private void doSubscribe(RoutingContext routingContext, JsonObject bodyAsJson) {
         // cannot specify both topics list and topic pattern
         if (bodyAsJson.containsKey("topics") && bodyAsJson.containsKey("topic_pattern")) {
             HttpBridgeError error = new HttpBridgeError(
@@ -333,7 +331,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         }
     }
 
-    public void doUnsubscribe() {
+    public void doUnsubscribe(RoutingContext routingContext) {
         this.setUnsubscribeHandler(unsubscribeResult -> {
             if (unsubscribeResult.succeeded()) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
@@ -364,7 +362,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     @Override
     public void handle(Endpoint<?> endpoint, Handler<?> handler) {
-        routingContext = (RoutingContext) endpoint.get();
+        RoutingContext routingContext = (RoutingContext) endpoint.get();
         JsonObject bodyAsJson = routingContext.getBodyAsJson();
         log.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
 

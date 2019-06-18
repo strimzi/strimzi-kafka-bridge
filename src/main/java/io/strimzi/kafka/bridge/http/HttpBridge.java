@@ -99,7 +99,9 @@ public class HttpBridge extends AbstractVerticle {
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this::seekToEnd);
 
                 routerFactory.addGlobalHandler(rc -> {
-                    rc.put("request-id", System.identityHashCode(rc.request()));
+                    int requestId = System.identityHashCode(rc.request());
+                    log.debug("[{}] Request from {}", requestId, rc.request().remoteAddress());
+                    rc.put("request-id", requestId);
                     HttpUtils.logRequest(rc);
                     rc.next();
                 });

@@ -17,15 +17,19 @@ public class HttpUtils {
     private static final Logger log = LoggerFactory.getLogger(HttpUtils.class);
 
     public static void sendResponse(RoutingContext routingContext, int statusCode, String contentType, Buffer body) {
-        routingContext.response().setStatusCode(statusCode);
-        if (body != null) {
-            log.debug("[{}] Response: body = {}", routingContext.get("request-id"), Json.decodeValue(body));
-            routingContext.response().putHeader(HttpHeaderNames.CONTENT_TYPE, contentType);
-            routingContext.response().putHeader(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(body.length()));
-            routingContext.response().write(body);
+        if (!routingContext.response().closed() && !routingContext.response().ended()) {
+            routingContext.response().setStatusCode(statusCode);
+            if (body != null) {
+                log.debug("[{}] Response: body = {}", routingContext.get("request-id"), Json.decodeValue(body));
+                routingContext.response().putHeader(HttpHeaderNames.CONTENT_TYPE, contentType);
+                routingContext.response().putHeader(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(body.length()));
+                routingContext.response().write(body);
+            }
+            routingContext.response().end();
+            logResponse(routingContext);
+        } else if (routingContext.response().ended()) {
+            log.warn("[{}] Response: already ended!", routingContext.get("request-id").toString());
         }
-        routingContext.response().end();
-        logResponse(routingContext);
     }
 
     public static void logRequest(RoutingContext routingContext) {
