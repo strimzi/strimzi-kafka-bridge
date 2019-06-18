@@ -92,10 +92,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     // handler called after a commit request
     private Handler<AsyncResult<Void>> commitHandler;
 
-    private Handler<AsyncResult<KafkaConsumerRecords<K, V>>> manualRecordBatchHandler;
-
-    private Handler<AsyncResult<Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata>>> commitOffsetsHandler;
-
     /**
      * Constructor
      *
@@ -677,52 +673,17 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         }
     }
 
-    private void handleManualRecords(AsyncResult<KafkaConsumerRecords<K, V>> recordResult) {
-        if (this.manualRecordBatchHandler != null) {
-            if (recordResult.succeeded()) {
-                this.manualRecordBatchHandler.handle(Future.succeededFuture(recordResult.result()));
-            } else {
-                this.manualRecordBatchHandler.handle(Future.failedFuture(recordResult.cause()));
-            }
-        }
+    protected void consume(Handler<AsyncResult<KafkaConsumerRecords<K, V>>> consumeHandler) {
+        this.consumer.poll(this.pollTimeOut, consumeHandler);
     }
 
-    private void handleCommittedOffsets(AsyncResult<Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata>> offsetsData) {
-        if (this.commitOffsetsHandler != null) {
-            if (offsetsData.succeeded()) {
-                this.commitOffsetsHandler.handle(Future.succeededFuture(offsetsData.result()));
-            } else {
-                this.commitOffsetsHandler.handle(Future.failedFuture(offsetsData.cause()));
-            }
-        }
-    }
-
-    protected void consume(Handler<AsyncResult<KafkaConsumerRecords<K, V>>> manualRecordBatchHandler) {
-        this.manualRecordBatchHandler = manualRecordBatchHandler;
-
-        this.consumer.poll(this.pollTimeOut, pollResult -> {
-            if (this.manualRecordBatchHandler != null) {
-                this.handleManualRecords(pollResult);
-            }
-        });
-    }
-
-    protected void commit(Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata> offsetsData, Handler<AsyncResult<Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata>>> commitOffsetsHandler) {
-        this.commitOffsetsHandler = commitOffsetsHandler;
-        this.consumer.commit(offsetsData, result -> {
-            if (this.commitOffsetsHandler != null) {
-                this.handleCommittedOffsets(result);
-            }
-        });
+    protected void commit(Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata> offsetsData, 
+        Handler<AsyncResult<Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata>>> commitOffsetsHandler) {
+        this.consumer.commit(offsetsData, commitOffsetsHandler);
     }
 
     protected void commit(Handler<AsyncResult<Void>> commitHandler) {
-        this.commitHandler = commitHandler;
-        this.consumer.commit(result -> {
-            if (this.commitHandler != null) {
-                this.handleCommit(result);
-            }
-        });
+        this.consumer.commit(commitHandler);
     }
 
     protected void seek(TopicPartition topicPartition, long offset, Handler<AsyncResult<Void>> seekHandler) {
