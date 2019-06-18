@@ -674,39 +674,16 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     protected void consume(Handler<AsyncResult<KafkaConsumerRecords<K, V>>> consumeHandler) {
-        this.consumer.poll(this.pollTimeOut, pollResult -> {
-            if (consumeHandler != null) {
-                if (pollResult.succeeded()) {
-                    consumeHandler.handle(Future.succeededFuture(pollResult.result()));
-                } else {
-                    consumeHandler.handle(Future.failedFuture(pollResult.cause()));
-                }
-            }
-        });
+        this.consumer.poll(this.pollTimeOut, consumeHandler);
     }
 
-    protected void commit(Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata> offsetsData, Handler<AsyncResult<Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata>>> commitOffsetsHandler) {
-        this.consumer.commit(offsetsData, result -> {
-            if (commitOffsetsHandler != null) {
-                if (result.succeeded()) {
-                    commitOffsetsHandler.handle(Future.succeededFuture(result.result()));
-                } else {
-                    commitOffsetsHandler.handle(Future.failedFuture(result.cause()));
-                }
-            }
-        });
+    protected void commit(Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata> offsetsData, 
+        Handler<AsyncResult<Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata>>> commitOffsetsHandler) {
+        this.consumer.commit(offsetsData, commitOffsetsHandler);
     }
 
     protected void commit(Handler<AsyncResult<Void>> commitHandler) {
-        this.consumer.commit(result -> {
-            if (commitHandler != null) {
-                if (result.succeeded()) {
-                    commitHandler.handle(Future.succeededFuture());
-                } else {
-                    commitHandler.handle(Future.failedFuture(result.cause()));
-                }
-            }
-        });
+        this.consumer.commit(commitHandler);
     }
 
     protected void seek(TopicPartition topicPartition, long offset, Handler<AsyncResult<Void>> seekHandler) {
