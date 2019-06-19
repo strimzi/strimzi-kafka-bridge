@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -129,7 +130,7 @@ class AmqpSinkBridgeEndpointMockTest {
         when(mockRecords.size()).thenReturn(1);
         // recordAt should not be called by the endpoint
         // but just to be sure...
-        when(mockRecords.recordAt(anyInt())).thenThrow(Exception.class);
+        when(mockRecords.recordAt(anyInt())).thenThrow(UncheckedIOException.class);
         return mockRecords;
     }
 
