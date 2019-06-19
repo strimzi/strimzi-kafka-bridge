@@ -8,7 +8,7 @@ if [ ${JAVA_MAJOR_VERSION} -gt 1 ] ; then
 fi
 
 if [ ${JAVA_MAJOR_VERSION} -eq 1 ] ; then
-  # sme parts of the workflow should be done only one on the main build which is currently Java 8
+  # some parts of the workflow should be done only on the main build which is currently Java 8
   export MAIN_BUILD="TRUE"
 fi
 
