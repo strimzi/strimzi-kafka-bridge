@@ -26,7 +26,7 @@ ${MYPATH}/kafka_bridge_config_generator.sh | tee /tmp/kafka-bridge.properties
 echo ""
 
 # Configure logging for Kubernetes deployments
-KAFKA_BRIDGE_LOG4J_OPTS="-Dlog4j.configuration=file:$STRIMZI_HOME/custom-config/log4j.properties"
+export KAFKA_BRIDGE_LOG4J_OPTS="-Dlog4j.configuration=file:$STRIMZI_HOME/custom-config/log4j.properties"
 
 # Configure Memory
 . ${MYPATH}/dynamic_resources.sh
