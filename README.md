@@ -33,7 +33,7 @@ Documentation to the current _master_ branch as well as all releases can be foun
 
 ## Getting help
 
-If you encounter any issues while using Strimzi, you can get help using:
+If you encounter any issues while using Strimzi Kafka Bridge, you can get help using:
 
 - [Strimzi mailing list](https://www.redhat.com/mailman/listinfo/strimzi)
 - [Strimzi Slack workspace](https://join.slack.com/t/strimzi/shared_invite/enQtMzU2Mjk3NTgxMzE5LTYyMTUwMGNlMDQwMzBhOGI4YmY4MjhiMDgyNjA5OTk2MTFiYjc4M2Q3NGU1YTFjOWRiMzM2NGMwNDUwMjBlNDY)
@@ -49,7 +49,7 @@ You can contribute by:
 All bugs, tasks or enhancements are tracked as [GitHub issues](https://github.com/strimzi/strimzi-kafka-bridge/issues). Issues which 
 might be a good start for new contributors are marked with ["good-start"](https://github.com/strimzi/strimzi-kafka-bridge/labels/good-start) label.
 
-The [Hacking guide](https://github.com/strimzi/strimzi-kafka-bridge/blob/master/HACKING.md) describes how to build Strimzi and how to test your changes before submitting a patch or opening a PR.
+The [Hacking guide](https://github.com/strimzi/strimzi-kafka-bridge/blob/master/HACKING.md) describes how to build Strimzi Kafka Bridge and how to test your changes before submitting a patch or opening a PR.
 
 The [Documentation Contributor Guide](http://strimzi.io/contributing/guide/) describes how to contribute to Strimzi documentation.
 
@@ -61,4 +61,4 @@ If you want to get in touch with us first before contributing, you can use:
 
 ## License
 
-Strimzi is licensed under the [Apache License](./LICENSE), Version 2.0
+Strimzi Kafka Bridge is licensed under the [Apache License](./LICENSE), Version 2.0
