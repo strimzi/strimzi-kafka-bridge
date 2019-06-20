@@ -27,6 +27,38 @@ Once your configuration is ready, start the bridge using:
 bin/kafka-bridge-run.sh --config-file config/application.properties
 ```
 
-## Internals
+## Documentation
 
-You can find more documentation on "internals" and how the bridge works at following [doc](doc/README.md) folder.
+Documentation to the current _master_ branch as well as all releases can be found on our [website](https://strimzi.io).
+
+## Getting help
+
+If you encounter any issues while using Strimzi Kafka Bridge, you can get help using:
+
+- [Strimzi mailing list](https://www.redhat.com/mailman/listinfo/strimzi)
+- [Strimzi Slack workspace](https://join.slack.com/t/strimzi/shared_invite/enQtMzU2Mjk3NTgxMzE5LTYyMTUwMGNlMDQwMzBhOGI4YmY4MjhiMDgyNjA5OTk2MTFiYjc4M2Q3NGU1YTFjOWRiMzM2NGMwNDUwMjBlNDY)
+
+## Contributing
+
+You can contribute by:
+- Raising any issues you find using Strimzi Kafka Bridge
+- Fixing issues by opening Pull Requests
+- Improving documentation
+- Talking about Strimzi Kafka Bridge
+
+All bugs, tasks or enhancements are tracked as [GitHub issues](https://github.com/strimzi/strimzi-kafka-bridge/issues). Issues which 
+might be a good start for new contributors are marked with ["good-start"](https://github.com/strimzi/strimzi-kafka-bridge/labels/good-start) label.
+
+The [Hacking guide](https://github.com/strimzi/strimzi-kafka-bridge/blob/master/HACKING.md) describes how to build Strimzi Kafka Bridge and how to test your changes before submitting a patch or opening a PR.
+
+The [Documentation Contributor Guide](http://strimzi.io/contributing/guide/) describes how to contribute to Strimzi documentation.
+
+If you want to get in touch with us first before contributing, you can use:
+
+- [Strimzi mailing list](https://www.redhat.com/mailman/listinfo/strimzi)
+- [Strimzi Slack workspace](https://join.slack.com/t/strimzi/shared_invite/enQtMzU2Mjk3NTgxMzE5LTYyMTUwMGNlMDQwMzBhOGI4YmY4MjhiMDgyNjA5OTk2MTFiYjc4M2Q3NGU1YTFjOWRiMzM2NGMwNDUwMjBlNDY)
+
+
+## License
+
+Strimzi Kafka Bridge is licensed under the [Apache License](./LICENSE), Version 2.0
