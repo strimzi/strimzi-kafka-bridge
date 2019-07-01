@@ -36,10 +36,14 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
+
+    Pattern hostPattern = Pattern.compile("host=([^;]+)");
+    Pattern protoPattern = Pattern.compile("proto=([^;]+)");
 
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
 
@@ -453,15 +457,40 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     private String buildRequestUri(RoutingContext routingContext) {
         String baseUri = routingContext.request().absoluteURI();
 
-        String xForwardedHost = routingContext.request().getHeader("x-forwarded-host");
-        String xForwardedProto = routingContext.request().getHeader("x-forwarded-proto");
-        String xForwardedPort = routingContext.request().getHeader("x-forwarded-port");
-        if (xForwardedHost != null && !xForwardedHost.isEmpty() &&
-            xForwardedProto != null && !xForwardedProto.isEmpty() &&
-            xForwardedPort != null && !xForwardedPort.isEmpty()) {
-            baseUri = String.format("%s://%s:%s", xForwardedProto, xForwardedHost, xForwardedPort) +
-                    routingContext.request().path();
+        String xForwarded = routingContext.request().getHeader("x-forwarded");
+        if (xForwarded != null && !xForwarded.isEmpty()) {
+            Matcher hostMatcher = hostPattern.matcher(xForwarded);
+            Matcher protoMatcher = protoPattern.matcher(xForwarded);
+            if (hostMatcher.find() && !hostMatcher.group(1).isEmpty() &&
+                protoMatcher.find() && !protoMatcher.group(1).isEmpty()) {
+
+                baseUri = this.buildBaseUri(routingContext, hostMatcher.group(1), protoMatcher.group(1));
+            }
+        } else {
+            String xForwardedHost = routingContext.request().getHeader("x-forwarded-host");
+            String xForwardedProto = routingContext.request().getHeader("x-forwarded-proto");
+            if (xForwardedHost != null && !xForwardedHost.isEmpty() &&
+                xForwardedProto != null && !xForwardedProto.isEmpty()) {
+
+                baseUri = this.buildBaseUri(routingContext, xForwardedHost, xForwardedProto);
+            }
         }
         return baseUri;
+    }
+
+    private String buildBaseUri(RoutingContext routingContext, String host, String proto) {
+        String[] hostSplit = host.split(":");
+        if (hostSplit.length == 1) {
+            int port;
+            if (proto.equals("http")) {
+                port = 80;
+            } else if (proto.equals("https")) {
+                port = 443;
+            } else {
+                throw new IllegalArgumentException(proto + " is not a valid schema/proto");
+            }
+            return String.format("%s://%s", proto, host + ":" + port) + routingContext.request().path();
+        }
+        return String.format("%s://%s", proto, host) + routingContext.request().path();
     }
 }
