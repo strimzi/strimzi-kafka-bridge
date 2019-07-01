@@ -388,7 +388,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 }
 
                 // construct base URI for consumer
-                String requestUri = routingContext.request().absoluteURI();
+                String requestUri = this.buildRequestUri(routingContext);
                 if (!routingContext.request().path().endsWith("/")) {
                     requestUri += "/";
                 }
@@ -441,5 +441,27 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 return format == EmbeddedFormat.BINARY;
         }
         return false;
+    }
+
+    /**
+     * Build the request URI for the future consumer requests
+     *
+     * @param routingContext context of the current HTTP request
+     * @return the request URI for the future consumer requests
+     */
+    @SuppressWarnings({"checkstyle:BooleanExpressionComplexity"})
+    private String buildRequestUri(RoutingContext routingContext) {
+        String baseUri = routingContext.request().absoluteURI();
+
+        String xForwardedHost = routingContext.request().getHeader("x-forwarded-host");
+        String xForwardedProto = routingContext.request().getHeader("x-forwarded-proto");
+        String xForwardedPort = routingContext.request().getHeader("x-forwarded-port");
+        if (xForwardedHost != null && !xForwardedHost.isEmpty() &&
+            xForwardedProto != null && !xForwardedProto.isEmpty() &&
+            xForwardedPort != null && !xForwardedPort.isEmpty()) {
+            baseUri = String.format("%s://%s:%s", xForwardedProto, xForwardedHost, xForwardedPort) +
+                    routingContext.request().path();
+        }
+        return baseUri;
     }
 }
