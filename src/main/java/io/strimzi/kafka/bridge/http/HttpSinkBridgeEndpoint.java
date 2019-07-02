@@ -462,15 +462,17 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             Matcher hostMatcher = forwardedHostPattern.matcher(forwarded);
             Matcher protoMatcher = forwardedProtoPattern.matcher(forwarded);
             if (hostMatcher.find() && protoMatcher.find()) {
-                log.debug("Getting base URI from forwarded: {} HTTP header", forwarded);
+                log.debug("Getting base URI from HTTP header: Forwarded '{}'", forwarded);
                 baseUri = this.buildBaseUri(routingContext, hostMatcher.group(1), protoMatcher.group(1));
+            } else {
+                log.debug("Forwarded HTTP header '{}' lacked 'host' and/or 'proto' pair; ignoring header", forwarded);
             }
         } else {
             String xForwardedHost = routingContext.request().getHeader("x-forwarded-host");
             String xForwardedProto = routingContext.request().getHeader("x-forwarded-proto");
             if (xForwardedHost != null && !xForwardedHost.isEmpty() &&
                 xForwardedProto != null && !xForwardedProto.isEmpty()) {
-                log.debug("Getting base URI from x-forwarded-host: {} and x-forwarded-proto: {} HTTP headers",
+                log.debug("Getting base URI from HTTP headers: X-Forwarded-Host '{}' and X-Forwarded-Proto '{}'",
                         xForwardedHost, xForwardedProto);
                 baseUri = this.buildBaseUri(routingContext, xForwardedHost, xForwardedProto);
             }
@@ -478,7 +480,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
         // no forwarded headers specified, just use the host one
         if (baseUri == null) {
-            log.debug("Getting base URI from host: {} HTTP header", routingContext.request().host());
+            log.debug("Getting base URI from  HTTP header: Host '{}'", routingContext.request().host());
             baseUri = routingContext.request().absoluteURI();
         }
         return baseUri;
