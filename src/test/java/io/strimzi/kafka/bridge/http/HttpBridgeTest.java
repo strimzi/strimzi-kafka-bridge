@@ -584,7 +584,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         String groupId = "my-group";
 
         // this test emulates a create consumer request coming from an API gateway/proxy
-        String xForwarded = "host=my-api-gateway-host:443;proto=https";
+        String forwarded = "host=my-api-gateway-host:443;proto=https";
 
         String baseUri = "https://my-api-gateway-host:443/consumers/" + groupId + "/instances/" + name;
 
@@ -597,7 +597,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
-                .putHeader("X-Forwarded", xForwarded)
+                .putHeader("Forwarded", forwarded)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
@@ -623,7 +623,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         String groupId = "my-group";
 
         // this test emulates a create consumer request coming from an API gateway/proxy
-        String xForwarded = "host=my-api-gateway-host;proto=http";
+        String forwarded = "host=my-api-gateway-host;proto=http";
 
         String baseUri = "http://my-api-gateway-host:80/consumers/" + groupId + "/instances/" + name;
 
@@ -636,7 +636,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
-                .putHeader("X-Forwarded", xForwarded)
+                .putHeader("Forwarded", forwarded)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
@@ -662,7 +662,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         String groupId = "my-group";
 
         // this test emulates a create consumer request coming from an API gateway/proxy
-        String xForwarded = "host=my-api-gateway-host;proto=mqtt";
+        String forwarded = "host=my-api-gateway-host;proto=mqtt";
 
         JsonObject json = new JsonObject();
         json.put("name", name);
@@ -673,7 +673,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
                 .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
-                .putHeader("X-Forwarded", xForwarded)
+                .putHeader("Forwarded", forwarded)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {

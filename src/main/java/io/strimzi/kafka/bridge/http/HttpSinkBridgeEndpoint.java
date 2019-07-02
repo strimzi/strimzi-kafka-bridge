@@ -42,8 +42,9 @@ import java.util.stream.Collectors;
 
 public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
-    Pattern hostPattern = Pattern.compile("host=([^;]+)");
-    Pattern protoPattern = Pattern.compile("proto=([^;]+)");
+    Pattern forwardedHostPattern = Pattern.compile("host=([^;]+)", Pattern.CASE_INSENSITIVE);
+    Pattern forwardedProtoPattern = Pattern.compile("proto=([^;]+)", Pattern.CASE_INSENSITIVE);
+    Pattern hostPortPattern = Pattern.compile("^.*:[0-9]+$");
 
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
 
@@ -454,15 +455,14 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
      * @return the request URI for the future consumer requests
      */
     private String buildRequestUri(RoutingContext routingContext) {
-        String baseUri = routingContext.request().absoluteURI();
+        String baseUri = null;
 
-        String xForwarded = routingContext.request().getHeader("x-forwarded");
-        if (xForwarded != null && !xForwarded.isEmpty()) {
-            Matcher hostMatcher = hostPattern.matcher(xForwarded);
-            Matcher protoMatcher = protoPattern.matcher(xForwarded);
-            if (hostMatcher.find() && !hostMatcher.group(1).isEmpty() &&
-                protoMatcher.find() && !protoMatcher.group(1).isEmpty()) {
-
+        String forwarded = routingContext.request().getHeader("forwarded");
+        if (forwarded != null && !forwarded.isEmpty()) {
+            Matcher hostMatcher = forwardedHostPattern.matcher(forwarded);
+            Matcher protoMatcher = forwardedProtoPattern.matcher(forwarded);
+            if (hostMatcher.find() && protoMatcher.find()) {
+                log.debug("Getting base URI from forwarded: {} HTTP header", forwarded);
                 baseUri = this.buildBaseUri(routingContext, hostMatcher.group(1), protoMatcher.group(1));
             }
         } else {
@@ -470,16 +470,22 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             String xForwardedProto = routingContext.request().getHeader("x-forwarded-proto");
             if (xForwardedHost != null && !xForwardedHost.isEmpty() &&
                 xForwardedProto != null && !xForwardedProto.isEmpty()) {
-
+                log.debug("Getting base URI from x-forwarded-host: {} and x-forwarded-proto: {} HTTP headers",
+                        xForwardedHost, xForwardedProto);
                 baseUri = this.buildBaseUri(routingContext, xForwardedHost, xForwardedProto);
             }
+        }
+
+        // no forwarded headers specified, just use the host one
+        if (baseUri == null) {
+            log.debug("Getting base URI from host: {} HTTP header", routingContext.request().host());
+            baseUri = routingContext.request().absoluteURI();
         }
         return baseUri;
     }
 
     private String buildBaseUri(RoutingContext routingContext, String host, String proto) {
-        String[] hostSplit = host.split(":");
-        if (hostSplit.length == 1) {
+        if (!host.matches(hostPortPattern.pattern())) {
             int port;
             if (proto.equals("http")) {
                 port = 80;
