@@ -51,7 +51,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
@@ -605,6 +609,80 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
                         assertEquals(name, consumerInstanceId);
                         assertEquals(baseUri, consumerBaseUri);
+                    });
+
+                    context.completeNow();
+                });
+
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void createConsumerWithForwardedHeaderDefaultPort(VertxTestContext context) throws InterruptedException {
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        // this test emulates a create consumer request coming from an API gateway/proxy
+        String xForwarded = "host=my-api-gateway-host;proto=http";
+
+        String baseUri = "http://my-api-gateway-host:80/consumers/" + groupId + "/instances/" + name;
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("auto.offset.reset", "earliest");
+        json.put("enable.auto.commit", "true");
+        json.put("fetch.min.bytes", "100");
+
+        postRequest("/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                .putHeader("X-Forwarded", xForwarded)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+                        String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        String consumerBaseUri = bridgeResponse.getString("base_uri");
+                        assertEquals(name, consumerInstanceId);
+                        assertEquals(baseUri, consumerBaseUri);
+                    });
+
+                    context.completeNow();
+                });
+
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException {
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        // this test emulates a create consumer request coming from an API gateway/proxy
+        String xForwarded = "host=my-api-gateway-host;proto=mqtt";
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("auto.offset.reset", "earliest");
+        json.put("enable.auto.commit", "true");
+        json.put("fetch.min.bytes", "100");
+
+        postRequest("/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                .putHeader("X-Forwarded", xForwarded)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), response.statusCode());
+                        assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), error.getCode());
+                        assertEquals("mqtt is not a valid schema/proto.", error.getMessage());
                     });
 
                     context.completeNow();

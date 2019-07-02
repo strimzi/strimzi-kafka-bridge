@@ -453,7 +453,6 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
      * @param routingContext context of the current HTTP request
      * @return the request URI for the future consumer requests
      */
-    @SuppressWarnings({"checkstyle:BooleanExpressionComplexity"})
     private String buildRequestUri(RoutingContext routingContext) {
         String baseUri = routingContext.request().absoluteURI();
 
@@ -487,7 +486,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             } else if (proto.equals("https")) {
                 port = 443;
             } else {
-                throw new IllegalArgumentException(proto + " is not a valid schema/proto");
+                throw new IllegalArgumentException(proto + " is not a valid schema/proto.");
             }
             return String.format("%s://%s", proto, host + ":" + port) + routingContext.request().path();
         }
