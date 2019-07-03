@@ -37,6 +37,8 @@ __Type__ : < <<_consumerrecordlist_inline,ConsumerRecordList>> > array
 |Name|Schema
 |**key** +
 __optional__|string
+|**offset** +
+__optional__|integer (int64)
 |**partition** +
 __optional__|integer (int32)
 |**topic** +
@@ -79,11 +81,11 @@ __optional__|string
 |===
 |Name|Schema
 |**offset** +
-__optional__|integer (int64)
+__required__|integer (int64)
 |**partition** +
-__optional__|integer (int32)
+__required__|integer (int32)
 |**topic** +
-__optional__|string
+__required__|string
 |===
 
 
