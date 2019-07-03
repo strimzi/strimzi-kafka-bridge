@@ -878,7 +878,7 @@
           },
           "offset": {
             "format": "int64",
-            "type": "long"
+            "type": "integer"
           }
         }
       },
@@ -1014,7 +1014,11 @@
     },
     "OffsetCommitSeek": {
       "title": "OffsetCommitSeek",
-      "required": [],
+      "required": [
+        "partition",
+        "offset",
+        "topic"
+      ],
       "type": "object",
       "properties": {
         "partition": {
