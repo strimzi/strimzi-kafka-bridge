@@ -455,15 +455,22 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
      * @return the request URI for the future consumer requests
      */
     private String buildRequestUri(RoutingContext routingContext) {
-        String baseUri = null;
-
+        // by default schema/proto and host comes from the base request information (i.e. "Host" header)
+        String scheme = routingContext.request().scheme();
+        String host = routingContext.request().host();
+        // eventually get the request path from "X-Forwarded-Path" if set by a gateway/proxy
+        String xForwardedPath = routingContext.request().getHeader("x-forwarded-path");
+        String path = (xForwardedPath != null && !xForwardedPath.isEmpty()) ? xForwardedPath : routingContext.request().path();
+        
+        // if a gateway/proxy has set "Forwarded" related headers to use to get scheme/proto and host
         String forwarded = routingContext.request().getHeader("forwarded");
         if (forwarded != null && !forwarded.isEmpty()) {
             Matcher hostMatcher = forwardedHostPattern.matcher(forwarded);
             Matcher protoMatcher = forwardedProtoPattern.matcher(forwarded);
             if (hostMatcher.find() && protoMatcher.find()) {
                 log.debug("Getting base URI from HTTP header: Forwarded '{}'", forwarded);
-                baseUri = this.buildBaseUri(routingContext, hostMatcher.group(1), protoMatcher.group(1));
+                scheme = protoMatcher.group(1);
+                host = hostMatcher.group(1);
             } else {
                 log.debug("Forwarded HTTP header '{}' lacked 'host' and/or 'proto' pair; ignoring header", forwarded);
             }
@@ -474,30 +481,35 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 xForwardedProto != null && !xForwardedProto.isEmpty()) {
                 log.debug("Getting base URI from HTTP headers: X-Forwarded-Host '{}' and X-Forwarded-Proto '{}'",
                         xForwardedHost, xForwardedProto);
-                baseUri = this.buildBaseUri(routingContext, xForwardedHost, xForwardedProto);
+                scheme = xForwardedProto;
+                host = xForwardedHost;
             }
         }
 
-        // no forwarded headers specified, just use the host one
-        if (baseUri == null) {
-            log.debug("Getting base URI from  HTTP header: Host '{}'", routingContext.request().host());
-            baseUri = routingContext.request().absoluteURI();
-        }
-        return baseUri;
+        log.debug("Request URI build upon scheme: {}, host: {}, path: {}", scheme, host, path);
+        return this.formatRequestUri(scheme, host, path);
     }
 
-    private String buildBaseUri(RoutingContext routingContext, String host, String proto) {
+    /**
+     * Format the request URI based on provided scheme, host and path
+     * 
+     * @param scheme request scheme/proto (HTTP or HTTPS)
+     * @param host request host
+     * @param path request path
+     * @return formatted request URI
+     */
+    private String formatRequestUri(String scheme, String host, String path) {
         if (!host.matches(hostPortPattern.pattern())) {
             int port;
-            if (proto.equals("http")) {
+            if (scheme.equals("http")) {
                 port = 80;
-            } else if (proto.equals("https")) {
+            } else if (scheme.equals("https")) {
                 port = 443;
             } else {
-                throw new IllegalArgumentException(proto + " is not a valid schema/proto.");
+                throw new IllegalArgumentException(scheme + " is not a valid schema/proto.");
             }
-            return String.format("%s://%s", proto, host + ":" + port) + routingContext.request().path();
+            return String.format("%s://%s%s", scheme, host + ":" + port, path);
         }
-        return String.format("%s://%s", proto, host) + routingContext.request().path();
+        return String.format("%s://%s%s", scheme, host, path);
     }
 }

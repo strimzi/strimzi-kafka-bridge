@@ -618,6 +618,47 @@ class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
+    void createConsumerWithForwardedPathHeader(VertxTestContext context) throws InterruptedException {
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        // this test emulates a create consumer request coming from an API gateway/proxy
+        String forwarded = "host=my-api-gateway-host:443;proto=https";
+        String xForwardedPath = "/my-bridge/consumers/" + groupId;
+
+        String baseUri = "https://my-api-gateway-host:443/my-bridge/consumers/" + groupId + "/instances/" + name;
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("auto.offset.reset", "earliest");
+        json.put("enable.auto.commit", "true");
+        json.put("fetch.min.bytes", "100");
+
+        postRequest("/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                .putHeader("Forwarded", forwarded)
+                .putHeader("X-Forwarded-Path", xForwardedPath)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+                        String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        String consumerBaseUri = bridgeResponse.getString("base_uri");
+                        assertEquals(name, consumerInstanceId);
+                        assertEquals(baseUri, consumerBaseUri);
+                    });
+
+                    context.completeNow();
+                });
+
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
     void createConsumerWithForwardedHeaderDefaultPort(VertxTestContext context) throws InterruptedException {
         String name = "my-kafka-consumer";
         String groupId = "my-group";
