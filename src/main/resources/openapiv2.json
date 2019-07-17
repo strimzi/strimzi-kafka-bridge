@@ -14,7 +14,7 @@
     "version": "0.1.0"
   },
   "host": "bridge.swagger.io",
-  "basePath": "/v2",
+  "basePath": "/",
   "schemes": [
     "http"
   ],
