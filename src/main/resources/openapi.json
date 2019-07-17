@@ -15,7 +15,7 @@
     },
     "servers": [
         {
-            "url": "http://bridge.swagger.io/v2"
+            "url": "http://bridge.swagger.io/"
         }
     ],
     "paths": {
