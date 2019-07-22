@@ -77,10 +77,10 @@ public class HealthChecker {
                 .requestHandler(request -> {
                     HttpResponseStatus httpResponseStatus = HttpResponseStatus.OK;
                     if (request.path().equals("/healthy")) {
-                        httpResponseStatus = this.isAlive() ? HttpResponseStatus.OK : HttpResponseStatus.INTERNAL_SERVER_ERROR;
+                        httpResponseStatus = this.isAlive() ? HttpResponseStatus.OK : HttpResponseStatus.NOT_FOUND;
                         request.response().setStatusCode(httpResponseStatus.code()).end();
                     } else if (request.path().equals("/ready")) {
-                        httpResponseStatus = this.isReady() ? HttpResponseStatus.OK : HttpResponseStatus.INTERNAL_SERVER_ERROR;
+                        httpResponseStatus = this.isReady() ? HttpResponseStatus.OK : HttpResponseStatus.NOT_FOUND;
                         request.response().setStatusCode(httpResponseStatus.code()).end();
                     } else {
                         request.response().setStatusCode(HttpResponseStatus.NOT_FOUND.code()).end();

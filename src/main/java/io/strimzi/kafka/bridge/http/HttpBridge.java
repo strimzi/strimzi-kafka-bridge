@@ -341,12 +341,12 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     }
 
     private void healthy(RoutingContext routingContext) {
-        HttpResponseStatus httpResponseStatus = this.healthChecker.isAlive() ? HttpResponseStatus.OK : HttpResponseStatus.INTERNAL_SERVER_ERROR;
+        HttpResponseStatus httpResponseStatus = this.healthChecker.isAlive() ? HttpResponseStatus.OK : HttpResponseStatus.NOT_FOUND;
         HttpUtils.sendResponse(routingContext, httpResponseStatus.code(), null, null);
     }
 
     private void ready(RoutingContext routingContext) {
-        HttpResponseStatus httpResponseStatus = this.healthChecker.isReady() ? HttpResponseStatus.OK : HttpResponseStatus.INTERNAL_SERVER_ERROR;
+        HttpResponseStatus httpResponseStatus = this.healthChecker.isReady() ? HttpResponseStatus.OK : HttpResponseStatus.NOT_FOUND;
         HttpUtils.sendResponse(routingContext, httpResponseStatus.code(), null, null);
     }
 
