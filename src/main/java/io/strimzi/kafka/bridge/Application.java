@@ -34,7 +34,7 @@ public class Application {
 
     private static final String HEALTH_SERVER_PORT = "HEALTH_SERVER_PORT";
 
-    private static final int DEFAULT_HEALTH_SERVER_PORT = 8081;
+    private static final int DEFAULT_HEALTH_SERVER_PORT = 8080;
 
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx();
@@ -71,8 +71,7 @@ public class Application {
 
             int healthServerPort = Integer.valueOf(config.getOrDefault(HEALTH_SERVER_PORT, DEFAULT_HEALTH_SERVER_PORT).toString());
 
-            if (amqpBridgeConfig.getEndpointConfig().getPort() == healthServerPort ||
-                    httpBridgeConfig.getEndpointConfig().getPort() == healthServerPort) {
+            if (amqpBridgeConfig.getEndpointConfig().isEnabled() && amqpBridgeConfig.getEndpointConfig().getPort() == healthServerPort) {
                 log.error("Health server port {} conflicts with enabled protocols ports", healthServerPort);
                 System.exit(1);
             }
@@ -83,7 +82,23 @@ public class Application {
 
             CompositeFuture.join(futures).setHandler(done -> {
                 if (done.succeeded()) {
-                    startHealthServer(vertx, healthServerPort);
+                    HealthChecker healthChecker = new HealthChecker();
+                    for (int i = 0; i < futures.size(); i++) {
+                        if (done.result().succeeded(i) && done.result().resultAt(i) != null) {
+                            healthChecker.addHealthCheckable(done.result().resultAt(i));
+                            // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
+                            // so it needs the checker for asking other protocols bridges status
+                            if (done.result().resultAt(i) instanceof HttpBridge) {
+                                ((HttpBridge) done.result().resultAt(i)).setHealthChecker(healthChecker);
+                            }
+                        }
+                    }                    
+                    
+                    // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
+                    // so no need for a standalone HTTP health server
+                    if (!httpBridgeConfig.getEndpointConfig().isEnabled()) {
+                        healthChecker.startHealthServer(vertx, healthServerPort);
+                    }
                 }
             });
         });
@@ -96,8 +111,8 @@ public class Application {
      * @param amqpBridgeConfig      AMQP Bridge configuration
      * @return                      Future for the bridge startup
      */
-    private static Future<Void> deployAmqpBridge(Vertx vertx, AmqpBridgeConfig amqpBridgeConfig)  {
-        Future<Void> amqpFuture = Future.future();
+    private static Future<AmqpBridge> deployAmqpBridge(Vertx vertx, AmqpBridgeConfig amqpBridgeConfig)  {
+        Future<AmqpBridge> amqpFuture = Future.future();
 
         if (amqpBridgeConfig.getEndpointConfig().isEnabled()) {
             AmqpBridge amqpBridge = new AmqpBridge(amqpBridgeConfig);
@@ -105,7 +120,7 @@ public class Application {
             vertx.deployVerticle(amqpBridge, done -> {
                 if (done.succeeded()) {
                     log.info("AMQP verticle instance deployed [{}]", done.result());
-                    amqpFuture.complete();
+                    amqpFuture.complete(amqpBridge);
                 } else {
                     log.error("Failed to deploy AMQP verticle instance", done.cause());
                     amqpFuture.fail(done.cause());
@@ -125,15 +140,16 @@ public class Application {
      * @param httpBridgeConfig      HTTP Bridge configuration
      * @return                      Future for the bridge startup
      */
-    private static Future<Void> deployHttpBridge(Vertx vertx, HttpBridgeConfig httpBridgeConfig)  {
-        Future<Void> httpFuture = Future.future();
+    private static Future<HttpBridge> deployHttpBridge(Vertx vertx, HttpBridgeConfig httpBridgeConfig)  {
+        Future<HttpBridge> httpFuture = Future.future();
 
         if (httpBridgeConfig.getEndpointConfig().isEnabled()) {
             HttpBridge httpBridge = new HttpBridge(httpBridgeConfig);
+            
             vertx.deployVerticle(httpBridge, done -> {
                 if (done.succeeded()) {
                     log.info("HTTP verticle instance deployed [{}]", done.result());
-                    httpFuture.complete();
+                    httpFuture.complete(httpBridge);
                 } else {
                     log.error("Failed to deploy HTTP verticle instance", done.cause());
                     httpFuture.fail(done.cause());
@@ -144,28 +160,6 @@ public class Application {
         }
 
         return httpFuture;
-    }
-
-    /**
-     * Start an HTTP health server
-     */
-    private static void startHealthServer(Vertx vertx, int port) {
-
-        vertx.createHttpServer()
-                .requestHandler(request -> {
-                    if (request.path().equals("/healthy")) {
-                        request.response().setStatusCode(HttpResponseStatus.OK.code()).end();
-                    } else if (request.path().equals("/ready")) {
-                        request.response().setStatusCode(HttpResponseStatus.OK.code()).end();
-                    }
-                })
-                .listen(port, done -> {
-                    if (done.succeeded()) {
-                        log.info("Health server started, listening on port {}", port);
-                    } else {
-                        log.error("Failed to start Health server", done.cause());
-                    }
-                });
     }
 
     private static String getFilePath(String arg) {

@@ -854,6 +854,28 @@
           "type": "string"
         }
       ]
+    },
+    "/healthy": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The bridge is healthy"
+          }
+        },
+        "operationId": "healthy",
+        "description": "Check if the bridge is healthy and can accept requests."
+      }
+    },
+    "/ready": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The bridge is ready"
+          }
+        },
+        "operationId": "ready",
+        "description": "Check if the bridge is ready and can accept requests."
+      }
     }
   },
   "definitions": {
