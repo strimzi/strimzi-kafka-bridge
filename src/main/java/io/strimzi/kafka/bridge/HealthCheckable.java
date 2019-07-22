@@ -13,7 +13,7 @@ public interface HealthCheckable {
     /**
      * @return if it's healthy answering to requests
      */
-    boolean isHealthy();
+    boolean isAlive();
 
     /**
      * @return if it's ready to start answering to requests

@@ -497,7 +497,7 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
     }
 
     @Override
-    public boolean isHealthy() {
+    public boolean isAlive() {
         return this.isReady;
     }
 

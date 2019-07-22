@@ -19,7 +19,7 @@ import io.vertx.core.Vertx;
  */
 public class HealthChecker {
 
-    private static final Logger log = LoggerFactory.getLogger(Application.class);
+    private static final Logger log = LoggerFactory.getLogger(HealthChecker.class);
 
     private final List<HealthCheckable> healthCheckableList;
     
@@ -36,17 +36,27 @@ public class HealthChecker {
         this.healthCheckableList.add(healthCheckable);
     }
 
-    public boolean isHealthy() {
-        boolean isHealthy = true;
+    /**
+     * Check if all the added services are alive and able to answer requests
+     * 
+     * @return if all the added services are alive and able to answer requests
+     */
+    public boolean isAlive() {
+        boolean isAlive = true;
         for (HealthCheckable healthCheckable : this.healthCheckableList) {
-            isHealthy &= healthCheckable.isHealthy();
-            if (!isHealthy) {
+            isAlive &= healthCheckable.isAlive();
+            if (!isAlive) {
                 break;
             }
         }
-        return isHealthy;
+        return isAlive;
     }
 
+    /**
+     * Check if all the added services are ready to answer requests
+     * 
+     * @return if all the added services are ready to answer requests
+     */
     public boolean isReady() {
         boolean isReady = true;
         for (HealthCheckable healthCheckable : this.healthCheckableList) {
@@ -67,7 +77,7 @@ public class HealthChecker {
                 .requestHandler(request -> {
                     HttpResponseStatus httpResponseStatus = HttpResponseStatus.OK;
                     if (request.path().equals("/healthy")) {
-                        httpResponseStatus = this.isHealthy() ? HttpResponseStatus.OK : HttpResponseStatus.INTERNAL_SERVER_ERROR;
+                        httpResponseStatus = this.isAlive() ? HttpResponseStatus.OK : HttpResponseStatus.INTERNAL_SERVER_ERROR;
                         request.response().setStatusCode(httpResponseStatus.code()).end();
                     } else if (request.path().equals("/ready")) {
                         httpResponseStatus = this.isReady() ? HttpResponseStatus.OK : HttpResponseStatus.INTERNAL_SERVER_ERROR;

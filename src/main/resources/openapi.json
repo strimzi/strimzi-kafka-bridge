@@ -1031,7 +1031,7 @@
                     }
                 },
                 "operationId": "healthy",
-                "description": "Check if the bridge is healthy and can accept requests."
+                "description": "Check if the bridge is running. This does not necessarily imply that it is ready to accept requests."
             }
         },
         "/ready": {

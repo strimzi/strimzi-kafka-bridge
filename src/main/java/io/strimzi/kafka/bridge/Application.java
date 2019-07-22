@@ -71,7 +71,7 @@ public class Application {
             int healthServerPort = Integer.valueOf(config.getOrDefault(HEALTH_SERVER_PORT, DEFAULT_HEALTH_SERVER_PORT).toString());
 
             if (amqpBridgeConfig.getEndpointConfig().isEnabled() && amqpBridgeConfig.getEndpointConfig().getPort() == healthServerPort) {
-                log.error("Health server port {} conflicts with enabled protocols ports", healthServerPort);
+                log.error("Health server port {} conflicts with configured AMQP port", healthServerPort);
                 System.exit(1);
             }
 
