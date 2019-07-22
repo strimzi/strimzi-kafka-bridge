@@ -820,7 +820,7 @@ __required__|Name of the consumer that you want to unsubscribe from topics.|stri
 === GET /healthy
 
 ==== Description
-Check if the bridge is healthy and can accept requests.
+Check if the bridge is running. This does not necessarily imply that it is ready to accept requests.
 
 
 ==== Responses
