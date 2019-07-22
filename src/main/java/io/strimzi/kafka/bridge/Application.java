@@ -5,7 +5,6 @@
 
 package io.strimzi.kafka.bridge;
 
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.amqp.AmqpBridge;
 import io.strimzi.kafka.bridge.amqp.AmqpBridgeConfig;
 import io.strimzi.kafka.bridge.http.HttpBridge;
