@@ -23,7 +23,8 @@ public enum HttpOpenApiOperations {
     SEEK_TO_BEGINNING("seekToBeginning"),
     SEEK_TO_END("seekToEnd"),
     HEALTHY("healthy"),
-    READY("ready");
+    READY("ready"),
+    OPENAPI("openapi");
 
     private final String text;
 

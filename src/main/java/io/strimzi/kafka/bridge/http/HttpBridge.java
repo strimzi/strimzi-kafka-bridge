@@ -15,6 +15,7 @@ import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
+import io.vertx.core.file.FileSystem;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
@@ -24,6 +25,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
 import io.vertx.ext.web.api.validation.ValidationException;
+
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
@@ -102,6 +104,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this::seekToEnd);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.HEALTHY.toString(), this::healthy);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.READY.toString(), this::ready);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.OPENAPI.toString(), this::openapi);
 
                 routerFactory.addGlobalHandler(rc -> {
                     int requestId = System.identityHashCode(rc.request());
@@ -348,6 +351,21 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     private void ready(RoutingContext routingContext) {
         HttpResponseStatus httpResponseStatus = this.healthChecker.isReady() ? HttpResponseStatus.OK : HttpResponseStatus.NOT_FOUND;
         HttpUtils.sendResponse(routingContext, httpResponseStatus.code(), null, null);
+    }
+
+    private void openapi(RoutingContext routingContext) {
+        FileSystem fileSystem = vertx.fileSystem();
+        fileSystem.readFile("openapiv2.json", readFile -> {
+            if (readFile.succeeded()) {
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, readFile.result());
+            } else {
+                HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    readFile.cause().getMessage());
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        BridgeContentType.JSON, error.toJson().toBuffer());
+            }
+        });
     }
 
     private void errorHandler(int statusCode, RoutingContext routingContext) {
