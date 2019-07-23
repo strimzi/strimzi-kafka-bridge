@@ -832,6 +832,27 @@ Check if the bridge is running. This does not necessarily imply that it is ready
 |===
 
 
+[[_openapi]]
+=== GET /openapi
+
+==== Description
+Retrieves the OpenAPI v2 specification in JSON format.
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**200**|OpenAPI v2 specification in JSON format retrieved successfully.|string
+|===
+
+
+==== Produces
+
+* `application/json`
+
+
 [[_ready]]
 === GET /ready
 
