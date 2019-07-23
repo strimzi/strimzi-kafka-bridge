@@ -32,6 +32,16 @@ public class HttpUtils {
         }
     }
 
+    public static void sendFile(RoutingContext routingContext, int statusCode, String contentType, String filename) {
+        if (!routingContext.response().closed() && !routingContext.response().ended()) {
+            routingContext.response().setStatusCode(statusCode);
+            log.debug("[{}] Response: filename = {}", routingContext.get("request-id"), filename);
+            routingContext.response().putHeader(HttpHeaderNames.CONTENT_TYPE, contentType).sendFile(filename);
+        } else if (routingContext.response().ended()) {
+            log.warn("[{}] Response: already ended!", routingContext.get("request-id").toString());
+        } 
+    }
+
     public static void logRequest(RoutingContext routingContext) {
         log.info("[{}] Request: method = {}, path = {}", routingContext.get("request-id"), routingContext.request().method(), routingContext.request().path());
         log.debug("[{}] Request: headers = {}", routingContext.get("request-id"), routingContext.request().headers());

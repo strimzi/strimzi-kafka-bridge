@@ -357,7 +357,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         FileSystem fileSystem = vertx.fileSystem();
         fileSystem.readFile("openapiv2.json", readFile -> {
             if (readFile.succeeded()) {
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, readFile.result());
+                HttpUtils.sendFile(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, "openapiv2.json");
             } else {
                 HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
