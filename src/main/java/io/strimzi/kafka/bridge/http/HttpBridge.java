@@ -8,6 +8,8 @@ package io.strimzi.kafka.bridge.http;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
+import io.strimzi.kafka.bridge.HealthCheckable;
+import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
@@ -29,10 +31,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Main bridge class listening for connections
- * and handling HTTP requests.
+ * Main bridge class listening for connections and handling HTTP requests.
  */
-public class HttpBridge extends AbstractVerticle {
+public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private static final Logger log = LoggerFactory.getLogger(HttpBridge.class);
 
@@ -46,6 +47,8 @@ public class HttpBridge extends AbstractVerticle {
     private boolean isReady = false;
 
     private Router router;
+
+    private HealthChecker healthChecker;
 
     /**
      * Constructor
@@ -97,6 +100,8 @@ public class HttpBridge extends AbstractVerticle {
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK.toString(), this::seek);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString(), this::seekToBeginning);
                 routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this::seekToEnd);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.HEALTHY.toString(), this::healthy);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.READY.toString(), this::ready);
 
                 routerFactory.addGlobalHandler(rc -> {
                     int requestId = System.identityHashCode(rc.request());
@@ -335,6 +340,16 @@ public class HttpBridge extends AbstractVerticle {
         }
     }
 
+    private void healthy(RoutingContext routingContext) {
+        HttpResponseStatus httpResponseStatus = this.healthChecker.isAlive() ? HttpResponseStatus.OK : HttpResponseStatus.NOT_FOUND;
+        HttpUtils.sendResponse(routingContext, httpResponseStatus.code(), null, null);
+    }
+
+    private void ready(RoutingContext routingContext) {
+        HttpResponseStatus httpResponseStatus = this.healthChecker.isReady() ? HttpResponseStatus.OK : HttpResponseStatus.NOT_FOUND;
+        HttpUtils.sendResponse(routingContext, httpResponseStatus.code(), null, null);
+    }
+
     private void errorHandler(int statusCode, RoutingContext routingContext) {
         String message = null;
         // in case of validation exception, building a meaningful error message
@@ -384,5 +399,19 @@ public class HttpBridge extends AbstractVerticle {
                 return EmbeddedFormat.JSON;
         }
         throw new IllegalArgumentException(contentType);
+    }
+
+    @Override
+    public boolean isAlive() {
+        return this.isReady;
+    }
+
+    @Override
+    public boolean isReady() {
+        return this.isReady;
+    }
+
+    public void setHealthChecker(HealthChecker healthChecker) {
+        this.healthChecker = healthChecker;
     }
 }

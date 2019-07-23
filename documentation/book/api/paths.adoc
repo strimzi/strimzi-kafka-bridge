@@ -816,6 +816,38 @@ __required__|Name of the consumer that you want to unsubscribe from topics.|stri
 ----
 
 
+[[_healthy]]
+=== GET /healthy
+
+==== Description
+Check if the bridge is running. This does not necessarily imply that it is ready to accept requests.
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**200**|The bridge is healthy|No Content
+|===
+
+
+[[_ready]]
+=== GET /ready
+
+==== Description
+Check if the bridge is ready and can accept requests.
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**200**|The bridge is ready|No Content
+|===
+
+
 [[_send]]
 === POST /topics/{topicname}
 

@@ -7,6 +7,7 @@ package io.strimzi.kafka.bridge.amqp;
 
 import io.strimzi.kafka.bridge.ConnectionEndpoint;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
+import io.strimzi.kafka.bridge.HealthCheckable;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
@@ -44,7 +45,7 @@ import java.util.Map;
  * and handling AMQP senders and receivers
  */
 @SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
-public class AmqpBridge extends AbstractVerticle {
+public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
 
     private static final Logger log = LoggerFactory.getLogger(AmqpBridge.class);
 
@@ -495,4 +496,13 @@ public class AmqpBridge extends AbstractVerticle {
         }
     }
 
+    @Override
+    public boolean isAlive() {
+        return this.isReady;
+    }
+
+    @Override
+    public boolean isReady() {
+        return this.isReady;
+    }
 }
