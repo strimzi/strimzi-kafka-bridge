@@ -1044,6 +1044,24 @@
                 "operationId": "ready",
                 "description": "Check if the bridge is ready and can accept requests."
             }
+        },
+        "/openapi": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "OpenAPI v2 specification in JSON format retrieved successfully."
+                    }
+                },
+                "operationId": "openapi",
+                "description": "Retrieves the OpenAPI v2 specification in JSON format."
+            }
         }
     },
     "components": {
