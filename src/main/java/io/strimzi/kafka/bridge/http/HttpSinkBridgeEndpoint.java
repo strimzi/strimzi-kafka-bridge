@@ -62,60 +62,56 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     }
 
     @Override
-    @SuppressWarnings({"checkstyle:CyclomaticComplexity", "checkstyle:NPathComplexity"})
     public void handle(Endpoint<?> endpoint) {
+        this.handle(endpoint, null);
+    }
 
-        RoutingContext routingContext = (RoutingContext) endpoint.get();
-        JsonObject bodyAsJson = null;
-        // TODO: it seems that getBodyAsJson raises an exception when the body is empty and not null
-        try {
-            bodyAsJson = routingContext.getBodyAsJson();
-        } catch (Exception ex) {
+    public void doCreateConsumer(RoutingContext routingContext, JsonObject bodyAsJson, Handler<String> handler) {
+        // get the consumer group-id
+        groupId = routingContext.pathParam("groupid");
 
-        }
-        log.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
+        // if no name, a random one is assigned
+        this.name = bodyAsJson.getString("name", "kafka-bridge-consumer-" + UUID.randomUUID());
 
-        messageConverter = this.buildMessageConverter();
-
-        switch (this.httpBridgeContext.getOpenApiOperation()) {
-
-            case SUBSCRIBE:
-                doSubscribe(routingContext, bodyAsJson);
-                break;
-
-            case ASSIGN:
-                doAssign(routingContext, bodyAsJson);
-                break;
-
-            case POLL:
-                doPoll(routingContext);
-                break;
-
-            case DELETE_CONSUMER:
-                doDeleteConsumer(routingContext);
-                break;
-
-            case COMMIT:
-                doCommit(routingContext, bodyAsJson);
-                break;
-
-            case SEEK:
-                doSeek(routingContext, bodyAsJson);
-                break;
-
-            case SEEK_TO_BEGINNING:
-            case SEEK_TO_END:
-                doSeekTo(routingContext, bodyAsJson, this.httpBridgeContext.getOpenApiOperation());
-                break;
-
-            case UNSUBSCRIBE:
-                doUnsubscribe(routingContext);
-                break;
-
-            default:
-                throw new IllegalArgumentException("Unknown Operation: " + this.httpBridgeContext.getOpenApiOperation());
+        if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(this.name)) {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.CONFLICT.code(),
+                    "A consumer instance with the specified name already exists in the Kafka Bridge."
+            );
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.CONFLICT.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            return;
         }
 
+        // construct base URI for consumer
+        String requestUri = this.buildRequestUri(routingContext);
+        if (!routingContext.request().path().endsWith("/")) {
+            requestUri += "/";
+        }
+        String consumerBaseUri = requestUri + "instances/" + this.name;
+
+        // get supported consumer configuration parameters
+        Properties config = new Properties();
+        addConfigParameter(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
+            bodyAsJson.getString(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, null), config);
+        addConfigParameter(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,
+            bodyAsJson.getString(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, null), config);
+        addConfigParameter(ConsumerConfig.FETCH_MIN_BYTES_CONFIG,
+            bodyAsJson.getString(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, null), config);
+        addConfigParameter(ConsumerConfig.CLIENT_ID_CONFIG, this.name, config);
+
+        // create the consumer
+        this.initConsumer(false, config);
+
+        handler.handle(this.name);
+
+        log.info("Created consumer {} in group {}", this.name, groupId);
+        // send consumer instance id(name) and base URI as response
+        JsonObject body = new JsonObject()
+                .put("instance_id", this.name)
+                .put("base_uri", consumerBaseUri);
+        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
+                BridgeContentType.KAFKA_JSON, body.toBuffer());
     }
 
     private void doSeek(RoutingContext routingContext, JsonObject bodyAsJson) {
@@ -368,59 +364,54 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     @Override
     public void handle(Endpoint<?> endpoint, Handler<?> handler) {
         RoutingContext routingContext = (RoutingContext) endpoint.get();
-        JsonObject bodyAsJson = routingContext.getBodyAsJson();
+        JsonObject bodyAsJson = null;
+        // TODO: it seems that getBodyAsJson raises an exception when the body is empty and not null
+        try {
+            bodyAsJson = routingContext.getBodyAsJson();
+        } catch (Exception ex) {
+
+        }
         log.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
+
+        messageConverter = this.buildMessageConverter();
 
         switch (this.httpBridgeContext.getOpenApiOperation()) {
 
             case CREATE_CONSUMER:
+                doCreateConsumer(routingContext, bodyAsJson, (Handler<String>) handler);
+                break;
 
-                // get the consumer group-id
-                groupId = routingContext.pathParam("groupid");
+            case SUBSCRIBE:
+                doSubscribe(routingContext, bodyAsJson);
+                break;
 
-                JsonObject json = bodyAsJson;
-                // if no name, a random one is assigned
-                this.name = json.getString("name", "kafka-bridge-consumer-" + UUID.randomUUID());
+            case ASSIGN:
+                doAssign(routingContext, bodyAsJson);
+                break;
 
-                if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(this.name)) {
-                    HttpBridgeError error = new HttpBridgeError(
-                            HttpResponseStatus.CONFLICT.code(),
-                            "A consumer instance with the specified name already exists in the Kafka Bridge."
-                    );
-                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.CONFLICT.code(),
-                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
-                    return;
-                }
+            case POLL:
+                doPoll(routingContext);
+                break;
 
-                // construct base URI for consumer
-                String requestUri = this.buildRequestUri(routingContext);
-                if (!routingContext.request().path().endsWith("/")) {
-                    requestUri += "/";
-                }
-                String consumerBaseUri = requestUri + "instances/" + this.name;
+            case DELETE_CONSUMER:
+                doDeleteConsumer(routingContext);
+                break;
 
-                // get supported consumer configuration parameters
-                Properties config = new Properties();
-                addConfigParameter(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
-                        json.getString(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, null), config);
-                addConfigParameter(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,
-                        json.getString(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, null), config);
-                addConfigParameter(ConsumerConfig.FETCH_MIN_BYTES_CONFIG,
-                        json.getString(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, null), config);
-                addConfigParameter(ConsumerConfig.CLIENT_ID_CONFIG, this.name, config);
+            case COMMIT:
+                doCommit(routingContext, bodyAsJson);
+                break;
 
-                // create the consumer
-                this.initConsumer(false, config);
+            case SEEK:
+                doSeek(routingContext, bodyAsJson);
+                break;
 
-                ((Handler<String>) handler).handle(this.name);
+            case SEEK_TO_BEGINNING:
+            case SEEK_TO_END:
+                doSeekTo(routingContext, bodyAsJson, this.httpBridgeContext.getOpenApiOperation());
+                break;
 
-                log.info("Created consumer {} in group {}", this.name, groupId);
-                // send consumer instance id(name) and base URI as response
-                JsonObject body = new JsonObject()
-                        .put("instance_id", this.name)
-                        .put("base_uri", consumerBaseUri);
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
-                        BridgeContentType.KAFKA_JSON, body.toBuffer());
+            case UNSUBSCRIBE:
+                doUnsubscribe(routingContext);
                 break;
 
             default:
