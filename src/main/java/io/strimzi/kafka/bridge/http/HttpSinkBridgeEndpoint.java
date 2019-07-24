@@ -21,6 +21,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -368,8 +369,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         // TODO: it seems that getBodyAsJson raises an exception when the body is empty and not null
         try {
             bodyAsJson = routingContext.getBodyAsJson();
-        } catch (Exception ex) {
-
+        } catch (DecodeException ex) {
+            
         }
         log.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
 
