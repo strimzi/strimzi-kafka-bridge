@@ -117,13 +117,8 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 this.router = routerFactory.getRouter();
 
                 // handling validation errors and not existing endpoints
-                // note: not using the errorHandler method directly and the routingContext.statusCode()
-                //       due to following issue I opened on Vert.x Web component.
-                //       https://github.com/vert-x3/vertx-web/issues/1295
-                this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(),
-                    r -> this.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), r));
-                this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(),
-                    r -> this.errorHandler(HttpResponseStatus.NOT_FOUND.code(), r));
+                this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
+                this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
 
                 log.info("Starting HTTP-Kafka bridge verticle...");
                 this.httpBridgeContext = new HttpBridgeContext();
@@ -368,7 +363,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         });
     }
 
-    private void errorHandler(int statusCode, RoutingContext routingContext) {
+    private void errorHandler(RoutingContext routingContext) {
         String message = null;
         // in case of validation exception, building a meaningful error message
         if (routingContext.failure() != null && routingContext.failure() instanceof ValidationException) {
@@ -381,8 +376,8 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             message = sb.toString();
         }
 
-        HttpBridgeError error = new HttpBridgeError(statusCode, message);
-        HttpUtils.sendResponse(routingContext, statusCode,
+        HttpBridgeError error = new HttpBridgeError(routingContext.statusCode(), message);
+        HttpUtils.sendResponse(routingContext, routingContext.statusCode(),
                 BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
     }
 
