@@ -43,7 +43,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
     @Override
     public void open() {
-        this.name = "kafka-bridge-producer-" + UUID.randomUUID();
+        this.name = this.bridgeConfigProperties.getBridgeID() == null ? "kafka-bridge-producer-" + UUID.randomUUID() : this.bridgeConfigProperties.getBridgeID() + "-" + UUID.randomUUID();
         super.open();
     }
 

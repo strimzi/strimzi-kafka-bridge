@@ -24,7 +24,7 @@ public class BridgeConfig extends AbstractConfig {
 
     /**
      * Constructor
-     * 
+     *
      * @param config bridge common configuration parameters map
      * @param kafkaConfig Kafka related configuration
      * @param amqpConfig AMQP endpoint related configuration
@@ -71,7 +71,7 @@ public class BridgeConfig extends AbstractConfig {
 
         return new BridgeConfig(map.entrySet().stream()
                 .filter(e -> e.getKey().startsWith(BridgeConfig.BRIDGE_CONFIG_PREFIX))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)), 
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
                 kafkaConfig, amqpConfig, httpConfig);
     }
 
