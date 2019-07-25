@@ -92,21 +92,21 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         OpenAPI3RouterFactory.create(vertx, "openapi.json", ar -> {
             if (ar.succeeded()) {
                 OpenAPI3RouterFactory routerFactory = ar.result();
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEND.toString(), this.SEND);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEND_TO_PARTITION.toString(), this.SEND_TO_PARTITION);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.CREATE_CONSUMER.toString(), this.CREATE_CONSUMER);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.DELETE_CONSUMER.toString(), this.DELETE_CONSUMER);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SUBSCRIBE.toString(), this.SUBSCRIBE);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.UNSUBSCRIBE.toString(), this.UNSUBSCRIBE);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.ASSIGN.toString(), this.ASSIGN);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.POLL.toString(), this.POLL);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.COMMIT.toString(), this.COMMIT);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK.toString(), this.SEEK);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString(), this.SEEK_TO_BEGINNING);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this.SEEK_TO_END);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.HEALTHY.toString(), this.HEALTHY);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.READY.toString(), this.READY);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.OPENAPI.toString(), this.OPENAPI);
+                routerFactory.addHandlerByOperationId(this.SEND.getOperationId().toString(), this.SEND);
+                routerFactory.addHandlerByOperationId(this.SEND_TO_PARTITION.getOperationId().toString(), this.SEND_TO_PARTITION);
+                routerFactory.addHandlerByOperationId(this.CREATE_CONSUMER.getOperationId().toString(), this.CREATE_CONSUMER);
+                routerFactory.addHandlerByOperationId(this.DELETE_CONSUMER.getOperationId().toString(), this.DELETE_CONSUMER);
+                routerFactory.addHandlerByOperationId(this.SUBSCRIBE.getOperationId().toString(), this.SUBSCRIBE);
+                routerFactory.addHandlerByOperationId(this.UNSUBSCRIBE.getOperationId().toString(), this.UNSUBSCRIBE);
+                routerFactory.addHandlerByOperationId(this.ASSIGN.getOperationId().toString(), this.ASSIGN);
+                routerFactory.addHandlerByOperationId(this.POLL.getOperationId().toString(), this.POLL);
+                routerFactory.addHandlerByOperationId(this.COMMIT.getOperationId().toString(), this.COMMIT);
+                routerFactory.addHandlerByOperationId(this.SEEK.getOperationId().toString(), this.SEEK);
+                routerFactory.addHandlerByOperationId(this.SEEK_TO_BEGINNING.getOperationId().toString(), this.SEEK_TO_BEGINNING);
+                routerFactory.addHandlerByOperationId(this.SEEK_TO_END.getOperationId().toString(), this.SEEK_TO_END);
+                routerFactory.addHandlerByOperationId(this.HEALTHY.getOperationId().toString(), this.HEALTHY);
+                routerFactory.addHandlerByOperationId(this.READY.getOperationId().toString(), this.READY);
+                routerFactory.addHandlerByOperationId(this.OPENAPI.getOperationId().toString(), this.OPENAPI);
 
                 this.router = routerFactory.getRouter();
 

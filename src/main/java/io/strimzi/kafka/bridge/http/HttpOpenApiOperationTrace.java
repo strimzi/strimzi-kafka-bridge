@@ -20,30 +20,34 @@ public abstract class HttpOpenApiOperationTrace extends HttpOpenApiOperation {
 
     @Override
     protected String logRequestMessage(RoutingContext routingContext) {
-        int requestId = System.identityHashCode(routingContext.request());
-        StringBuilder sb = new StringBuilder();
         if (log.isTraceEnabled()) {
-            sb.append("[").append(requestId).append("] ").append(openApiOperation.name())
+            int requestId = System.identityHashCode(routingContext.request());
+            StringBuilder sb = new StringBuilder();
+        
+            sb.append("[").append(requestId).append("] ").append(operationId.name())
                 .append(" Request: from ")
                 .append(routingContext.request().remoteAddress())
                 .append(", method = ").append(routingContext.request().method())
                 .append(", path = ").append(routingContext.request().path())
                 .append(", headers = ").append(routingContext.request().headers());
+            return sb.toString();
         }
-        return sb.toString();
+        return null;
     }
 
     @Override
     protected String logResponseMessage(RoutingContext routingContext) {
-        int requestId = routingContext.get("request-id");
-        StringBuilder sb = new StringBuilder();
         if (log.isTraceEnabled()) {
-            sb.append("[").append(requestId).append("] ").append(openApiOperation.name())
+            int requestId = routingContext.get("request-id");
+            StringBuilder sb = new StringBuilder();
+        
+            sb.append("[").append(requestId).append("] ").append(operationId.name())
                 .append(" Response: ")
                 .append(", statusCode = ").append(routingContext.response().getStatusCode())
                 .append(", message = ").append(routingContext.response().getStatusMessage())
                 .append(", headers = ").append(routingContext.response().headers());
+            return sb.toString();
         }
-        return sb.toString();
+        return null;
     }
 }

@@ -19,11 +19,11 @@ public abstract class HttpOpenApiOperation implements Handler<RoutingContext> {
 
     protected static final Logger log = LoggerFactory.getLogger(HttpOpenApiOperation.class);
 
-    protected final HttpOpenApiOperations openApiOperation;
+    protected final HttpOpenApiOperations operationId;
     protected final Level logLevel;
 
-    public HttpOpenApiOperation(HttpOpenApiOperations openApiOperation, Level logLevel) {
-        this.openApiOperation = openApiOperation;
+    public HttpOpenApiOperation(HttpOpenApiOperations operationId, Level logLevel) {
+        this.operationId = operationId;
         this.logLevel = logLevel;
     }
 
@@ -52,7 +52,7 @@ public abstract class HttpOpenApiOperation implements Handler<RoutingContext> {
         int requestId = System.identityHashCode(routingContext.request());
         StringBuilder sb = new StringBuilder();
         if (log.isInfoEnabled()) {
-            sb.append("[").append(requestId).append("] ").append(openApiOperation.name())
+            sb.append("[").append(requestId).append("] ").append(operationId.name())
                 .append(" Request: from ")
                 .append(routingContext.request().remoteAddress())
                 .append(", method = ").append(routingContext.request().method())
@@ -69,7 +69,7 @@ public abstract class HttpOpenApiOperation implements Handler<RoutingContext> {
         int requestId = routingContext.get("request-id");
         StringBuilder sb = new StringBuilder();
         if (log.isInfoEnabled()) {
-            sb.append("[").append(requestId).append("] ").append(openApiOperation.name())
+            sb.append("[").append(requestId).append("] ").append(operationId.name())
                 .append(" Response: ")
                 .append(" statusCode = ").append(routingContext.response().getStatusCode())
                 .append(", message = ").append(routingContext.response().getStatusMessage());
@@ -82,27 +82,36 @@ public abstract class HttpOpenApiOperation implements Handler<RoutingContext> {
     }
 
     private void log(String msg) {
-        switch (this.logLevel) {
-            case INFO:
-                log.info(msg);
-                break;
-
-            case DEBUG:
-                log.debug(msg);
-                break;
-
-            case TRACE:
-                log.trace(msg);
-                break;
-            
-            case WARN:
-                log.warn(msg);
-                break;
-            
-            case ERROR:
-                log.error(msg);
-                break;
+        if (msg != null && !msg.isEmpty()) {
+            switch (this.logLevel) {
+                case INFO:
+                    log.info(msg);
+                    break;
+    
+                case DEBUG:
+                    log.debug(msg);
+                    break;
+    
+                case TRACE:
+                    log.trace(msg);
+                    break;
+                
+                case WARN:
+                    log.warn(msg);
+                    break;
+                
+                case ERROR:
+                    log.error(msg);
+                    break;
+            }
         }
+    }
+
+    /**
+     * @return the OpenAPI operation invoked
+     */
+    public HttpOpenApiOperations getOperationId() {
+        return this.operationId;
     }
 }
  
