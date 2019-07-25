@@ -12,17 +12,12 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * Represents an OpenApi operation with related logging more restricted to Trace level
  */
-public class HttpOpenApiOperationTrace extends HttpOpenApiOperation {
+public abstract class HttpOpenApiOperationTrace extends HttpOpenApiOperation {
 
     public HttpOpenApiOperationTrace(HttpOpenApiOperations openApiOperation, Level logLevel) {
         super(openApiOperation, logLevel);
     }
 
-    @Override
-    public void process(RoutingContext routingContext) {
-        this.process(routingContext);
-    }
-    
     @Override
     protected String logRequestMessage(RoutingContext routingContext) {
         int requestId = System.identityHashCode(routingContext.request());
