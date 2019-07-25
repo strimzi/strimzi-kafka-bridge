@@ -31,10 +31,12 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 /**
  * Main bridge class listening for connections and handling HTTP requests.
  */
+@SuppressWarnings("checkstyle:MemberName")
 public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private static final Logger log = LoggerFactory.getLogger(HttpBridge.class);
@@ -90,29 +92,21 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         OpenAPI3RouterFactory.create(vertx, "openapi.json", ar -> {
             if (ar.succeeded()) {
                 OpenAPI3RouterFactory routerFactory = ar.result();
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEND.toString(), this::send);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEND_TO_PARTITION.toString(), this::sendToPartition);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.CREATE_CONSUMER.toString(), this::createConsumer);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.DELETE_CONSUMER.toString(), this::deleteConsumer);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SUBSCRIBE.toString(), this::subscribe);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.UNSUBSCRIBE.toString(), this::unsubscribe);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.ASSIGN.toString(), this::assign);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.POLL.toString(), this::poll);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.COMMIT.toString(), this::commit);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK.toString(), this::seek);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString(), this::seekToBeginning);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this::seekToEnd);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.HEALTHY.toString(), this::healthy);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.READY.toString(), this::ready);
-                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.OPENAPI.toString(), this::openapi);
-
-                routerFactory.addGlobalHandler(rc -> {
-                    int requestId = System.identityHashCode(rc.request());
-                    log.debug("[{}] Request from {}", requestId, rc.request().remoteAddress());
-                    rc.put("request-id", requestId);
-                    HttpUtils.logRequest(rc);
-                    rc.next();
-                });
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEND.toString(), this.SEND);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEND_TO_PARTITION.toString(), this.SEND_TO_PARTITION);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.CREATE_CONSUMER.toString(), this.CREATE_CONSUMER);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.DELETE_CONSUMER.toString(), this.DELETE_CONSUMER);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SUBSCRIBE.toString(), this.SUBSCRIBE);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.UNSUBSCRIBE.toString(), this.UNSUBSCRIBE);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.ASSIGN.toString(), this.ASSIGN);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.POLL.toString(), this.POLL);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.COMMIT.toString(), this.COMMIT);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK.toString(), this.SEEK);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString(), this.SEEK_TO_BEGINNING);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.SEEK_TO_END.toString(), this.SEEK_TO_END);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.HEALTHY.toString(), this.HEALTHY);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.READY.toString(), this.READY);
+                routerFactory.addHandlerByOperationId(HttpOpenApiOperations.OPENAPI.toString(), this.OPENAPI);
 
                 this.router = routerFactory.getRouter();
 
@@ -364,6 +358,15 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     }
 
     private void errorHandler(RoutingContext routingContext) {
+        int requestId = System.identityHashCode(routingContext.request());
+        routingContext.put("request-id", requestId);
+        
+        log.error("[{}] Request: from {}, method = {}, path = {}",
+            requestId,
+            routingContext.request().remoteAddress(), 
+            routingContext.request().method(),
+            routingContext.request().path());
+
         String message = null;
         // in case of validation exception, building a meaningful error message
         if (routingContext.failure() != null && routingContext.failure() instanceof ValidationException) {
@@ -379,6 +382,11 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         HttpBridgeError error = new HttpBridgeError(routingContext.statusCode(), message);
         HttpUtils.sendResponse(routingContext, routingContext.statusCode(),
                 BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+
+        log.error("[{}] Response: statusCode = {}, message = {} ", 
+            requestId, 
+            routingContext.response().getStatusCode(),
+            routingContext.response().getStatusMessage());
     }
 
     private void processConnection(HttpConnection httpConnection) {
@@ -427,4 +435,124 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     public void setHealthChecker(HealthChecker healthChecker) {
         this.healthChecker = healthChecker;
     }
+
+    HttpOpenApiOperation SEND = new HttpOpenApiOperation(HttpOpenApiOperations.SEND, Level.INFO) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            send(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation SEND_TO_PARTITION = new HttpOpenApiOperation(HttpOpenApiOperations.SEND_TO_PARTITION, Level.INFO) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            sendToPartition(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation CREATE_CONSUMER = new HttpOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER, Level.INFO) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            createConsumer(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation DELETE_CONSUMER = new HttpOpenApiOperation(HttpOpenApiOperations.DELETE_CONSUMER, Level.INFO) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            deleteConsumer(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation SUBSCRIBE = new HttpOpenApiOperation(HttpOpenApiOperations.SUBSCRIBE, Level.INFO) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            subscribe(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation UNSUBSCRIBE = new HttpOpenApiOperation(HttpOpenApiOperations.UNSUBSCRIBE, Level.INFO) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            unsubscribe(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation ASSIGN = new HttpOpenApiOperation(HttpOpenApiOperations.ASSIGN, Level.INFO) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            assign(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation POLL = new HttpOpenApiOperation(HttpOpenApiOperations.POLL, Level.INFO) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            poll(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation COMMIT = new HttpOpenApiOperation(HttpOpenApiOperations.COMMIT, Level.INFO) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            commit(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation SEEK = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK, Level.INFO) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            seek(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation SEEK_TO_BEGINNING = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK_TO_BEGINNING, Level.INFO) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            seekToBeginning(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation SEEK_TO_END = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK_TO_END, Level.INFO) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            seekToEnd(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation HEALTHY = new HttpOpenApiOperationTrace(HttpOpenApiOperations.HEALTHY, Level.TRACE) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            healthy(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation READY = new HttpOpenApiOperationTrace(HttpOpenApiOperations.READY, Level.TRACE) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            ready(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation OPENAPI = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPI, Level.INFO) {
+    
+        @Override
+        public void process(RoutingContext routingContext) {
+            openapi(routingContext);
+        }
+    };
 }
