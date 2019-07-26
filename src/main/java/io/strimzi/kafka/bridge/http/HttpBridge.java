@@ -33,6 +33,10 @@ import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 /**
  * Main bridge class listening for connections and handling HTTP requests.
  */
@@ -53,6 +57,8 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     private Router router;
 
     private HealthChecker healthChecker;
+
+    private Map<String, Long> timestampMap = new HashMap<>();
 
     /**
      * Constructor
@@ -84,6 +90,25 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                         startFuture.fail(httpServerAsyncResult.cause());
                     }
                 });
+
+        long timeout = 5000;
+        vertx.setPeriodic(1000, a -> {
+            log.debug("Checking for stale customers {}", timestampMap.size());
+            Iterator it = timestampMap.entrySet().iterator();
+            while (it.hasNext())
+            {
+                Map.Entry<String, Long> item = (Map.Entry) it.next();
+                if (item.getValue() + timeout < System.currentTimeMillis()) {
+                    final SinkBridgeEndpoint deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(item.getKey());
+                    if (deleteSinkEndpoint != null) {
+                        this.httpBridgeContext.getHttpSinkEndpoints().remove(item.getKey());
+                        deleteSinkEndpoint.close();
+                        log.warn("User {} deleted after timeout {} ms", item.getKey(), timeout);
+                        timestampMap.remove(item.getKey());
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -200,6 +225,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
             sink.handle(new HttpEndpoint(routingContext), consumerId -> {
                 httpBridgeContext.getHttpSinkEndpoints().put(consumerId.toString(), sink);
+                timestampMap.put(consumerId.toString(), System.currentTimeMillis());
             });
         } catch (Exception ex) {
             sink.close();
@@ -222,6 +248,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             deleteSinkEndpoint.handle(new HttpEndpoint(routingContext));
 
             this.httpBridgeContext.getHttpSinkEndpoints().remove(deleteInstanceID);
+            timestampMap.remove(deleteInstanceID);
         } else {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.NOT_FOUND.code(),
@@ -284,6 +311,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
         if (sinkEndpoint != null) {
             sinkEndpoint.handle(new HttpEndpoint(routingContext));
+            timestampMap.replace(instanceId, System.currentTimeMillis());
         } else {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.NOT_FOUND.code(),
