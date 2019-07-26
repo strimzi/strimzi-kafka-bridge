@@ -15,3 +15,5 @@ include::api/paths.adoc[]
 include::api/security.adoc[]
 
 include::common/revision-info.adoc[]
+
+include::logging.adoc[]

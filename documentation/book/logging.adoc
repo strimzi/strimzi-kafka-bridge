@@ -1,0 +1,42 @@
+= Logging
+
+This section provides information on loggers and how to configure log levels.
+
+The bridge allows to set a different log level for each of the operations defined by the related OpenAPI specification.
+Each operation matches a corresponding API endpoint on which the bridge gets requests from the HTTP clients.
+Changing the log level on each of them allows to have a more or less fine grained logging information about the incoming HTTP requests and the outgoing HTTP responses.
+
+The loggers are defined inside the `log4j.properties` file which by default has the following configuration for `healthy` and `ready` endpoints.
+
+```
+log4j.logger.http.openapi.operation.healthy=WARN, out
+log4j.additivity.http.openapi.operation.healthy=false
+log4j.logger.http.openapi.operation.ready=WARN, out
+log4j.additivity.http.openapi.operation.ready=false
+```
+
+All the other operations are by default at logging `INFO` level.
+The format for each logger is the following.
+
+```
+log4j.logger.http.openapi.operation.<operation-id>
+```
+
+Where `<operation-id>` is the identifier of the specific operation.
+Following the list of the operations defined by the OpenAPI specification.
+
+* `createConsumer`
+* `deleteConsumer`
+* `subscribe`
+* `unsubscribe`
+* `poll`
+* `assign`
+* `commit`
+* `send`
+* `sendToPartition`
+* `seelToBeginning`
+* `seekToEnd`
+* `seek`
+* `healthy`
+* `ready`
+* `openapi`
