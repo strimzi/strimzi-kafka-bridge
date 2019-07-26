@@ -26,7 +26,6 @@ public class HttpUtils {
                 routingContext.response().write(body);
             }
             routingContext.response().end();
-            logResponse(routingContext);
         } else if (routingContext.response().ended()) {
             log.warn("[{}] Response: already ended!", routingContext.get("request-id").toString());
         }
@@ -40,15 +39,5 @@ public class HttpUtils {
         } else if (routingContext.response().ended()) {
             log.warn("[{}] Response: already ended!", routingContext.get("request-id").toString());
         } 
-    }
-
-    public static void logRequest(RoutingContext routingContext) {
-        log.info("[{}] Request: method = {}, path = {}", routingContext.get("request-id"), routingContext.request().method(), routingContext.request().path());
-        log.debug("[{}] Request: headers = {}", routingContext.get("request-id"), routingContext.request().headers());
-    }
-
-    public static void logResponse(RoutingContext routingContext) {
-        log.info("[{}] Response: statusCode = {}, message = {}", routingContext.get("request-id"), routingContext.response().getStatusCode(), routingContext.response().getStatusMessage());
-        log.debug("[{}] Response: headers = {}", routingContext.get("request-id"), routingContext.response().headers());
     }
 }
