@@ -531,7 +531,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation HEALTHY = new HttpOpenApiOperationTrace(HttpOpenApiOperations.HEALTHY) {
+    HttpOpenApiOperation HEALTHY = new HttpOpenApiOperation(HttpOpenApiOperations.HEALTHY) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -539,7 +539,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation READY = new HttpOpenApiOperationTrace(HttpOpenApiOperations.READY) {
+    HttpOpenApiOperation READY = new HttpOpenApiOperation(HttpOpenApiOperations.READY) {
     
         @Override
         public void process(RoutingContext routingContext) {

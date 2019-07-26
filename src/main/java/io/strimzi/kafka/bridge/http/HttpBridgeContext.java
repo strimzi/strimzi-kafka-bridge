@@ -47,7 +47,6 @@ public class HttpBridgeContext {
      * @param openApiOperation OpenAPI operation
      */
     public void setOpenApiOperation(HttpOpenApiOperations openApiOperation) {
-        log.info("OpenAPI operation = {}", openApiOperation);
         this.openApiOperation = openApiOperation;
     }
 
