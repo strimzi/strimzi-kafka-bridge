@@ -7,7 +7,6 @@ package io.strimzi.kafka.bridge.http;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -17,14 +16,14 @@ import io.vertx.ext.web.RoutingContext;
  */
 public abstract class HttpOpenApiOperation implements Handler<RoutingContext> {
 
-    protected static final Logger log = LoggerFactory.getLogger(HttpOpenApiOperation.class);
+    protected final static String LOGGER_NAME_PREFIX = "http.openapi.operation.";
 
+    protected Logger log;
     protected final HttpOpenApiOperations operationId;
-    protected final Level logLevel;
-
-    public HttpOpenApiOperation(HttpOpenApiOperations operationId, Level logLevel) {
+    
+    public HttpOpenApiOperation(HttpOpenApiOperations operationId) {
         this.operationId = operationId;
-        this.logLevel = logLevel;
+        this.log = LoggerFactory.getLogger(LOGGER_NAME_PREFIX + operationId.toString());
     }
 
     public abstract void process(RoutingContext routingContext);
@@ -83,27 +82,7 @@ public abstract class HttpOpenApiOperation implements Handler<RoutingContext> {
 
     private void log(String msg) {
         if (msg != null && !msg.isEmpty()) {
-            switch (this.logLevel) {
-                case INFO:
-                    log.info(msg);
-                    break;
-    
-                case DEBUG:
-                    log.debug(msg);
-                    break;
-    
-                case TRACE:
-                    log.trace(msg);
-                    break;
-                
-                case WARN:
-                    log.warn(msg);
-                    break;
-                
-                case ERROR:
-                    log.error(msg);
-                    break;
-            }
+            log.info(msg);
         }
     }
 

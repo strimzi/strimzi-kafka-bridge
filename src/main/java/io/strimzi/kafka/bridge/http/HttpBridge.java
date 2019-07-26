@@ -31,7 +31,6 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 
 /**
  * Main bridge class listening for connections and handling HTTP requests.
@@ -436,7 +435,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         this.healthChecker = healthChecker;
     }
 
-    HttpOpenApiOperation SEND = new HttpOpenApiOperation(HttpOpenApiOperations.SEND, Level.INFO) {
+    HttpOpenApiOperation SEND = new HttpOpenApiOperation(HttpOpenApiOperations.SEND) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -444,7 +443,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation SEND_TO_PARTITION = new HttpOpenApiOperation(HttpOpenApiOperations.SEND_TO_PARTITION, Level.INFO) {
+    HttpOpenApiOperation SEND_TO_PARTITION = new HttpOpenApiOperation(HttpOpenApiOperations.SEND_TO_PARTITION) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -452,7 +451,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation CREATE_CONSUMER = new HttpOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER, Level.INFO) {
+    HttpOpenApiOperation CREATE_CONSUMER = new HttpOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -460,7 +459,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation DELETE_CONSUMER = new HttpOpenApiOperation(HttpOpenApiOperations.DELETE_CONSUMER, Level.INFO) {
+    HttpOpenApiOperation DELETE_CONSUMER = new HttpOpenApiOperation(HttpOpenApiOperations.DELETE_CONSUMER) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -468,7 +467,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation SUBSCRIBE = new HttpOpenApiOperation(HttpOpenApiOperations.SUBSCRIBE, Level.INFO) {
+    HttpOpenApiOperation SUBSCRIBE = new HttpOpenApiOperation(HttpOpenApiOperations.SUBSCRIBE) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -476,7 +475,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation UNSUBSCRIBE = new HttpOpenApiOperation(HttpOpenApiOperations.UNSUBSCRIBE, Level.INFO) {
+    HttpOpenApiOperation UNSUBSCRIBE = new HttpOpenApiOperation(HttpOpenApiOperations.UNSUBSCRIBE) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -484,7 +483,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation ASSIGN = new HttpOpenApiOperation(HttpOpenApiOperations.ASSIGN, Level.INFO) {
+    HttpOpenApiOperation ASSIGN = new HttpOpenApiOperation(HttpOpenApiOperations.ASSIGN) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -492,7 +491,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation POLL = new HttpOpenApiOperation(HttpOpenApiOperations.POLL, Level.INFO) {
+    HttpOpenApiOperation POLL = new HttpOpenApiOperation(HttpOpenApiOperations.POLL) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -500,7 +499,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation COMMIT = new HttpOpenApiOperation(HttpOpenApiOperations.COMMIT, Level.INFO) {
+    HttpOpenApiOperation COMMIT = new HttpOpenApiOperation(HttpOpenApiOperations.COMMIT) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -508,7 +507,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation SEEK = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK, Level.INFO) {
+    HttpOpenApiOperation SEEK = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -516,7 +515,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation SEEK_TO_BEGINNING = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK_TO_BEGINNING, Level.INFO) {
+    HttpOpenApiOperation SEEK_TO_BEGINNING = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK_TO_BEGINNING) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -524,7 +523,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation SEEK_TO_END = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK_TO_END, Level.INFO) {
+    HttpOpenApiOperation SEEK_TO_END = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK_TO_END) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -532,7 +531,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation HEALTHY = new HttpOpenApiOperationTrace(HttpOpenApiOperations.HEALTHY, Level.TRACE) {
+    HttpOpenApiOperation HEALTHY = new HttpOpenApiOperationTrace(HttpOpenApiOperations.HEALTHY) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -540,7 +539,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation READY = new HttpOpenApiOperationTrace(HttpOpenApiOperations.READY, Level.TRACE) {
+    HttpOpenApiOperation READY = new HttpOpenApiOperationTrace(HttpOpenApiOperations.READY) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -548,7 +547,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation OPENAPI = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPI, Level.INFO) {
+    HttpOpenApiOperation OPENAPI = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPI) {
     
         @Override
         public void process(RoutingContext routingContext) {

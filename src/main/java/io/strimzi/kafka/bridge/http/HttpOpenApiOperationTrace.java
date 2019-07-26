@@ -5,8 +5,6 @@
 
 package io.strimzi.kafka.bridge.http;
 
-import org.slf4j.event.Level;
-
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -14,8 +12,8 @@ import io.vertx.ext.web.RoutingContext;
  */
 public abstract class HttpOpenApiOperationTrace extends HttpOpenApiOperation {
 
-    public HttpOpenApiOperationTrace(HttpOpenApiOperations openApiOperation, Level logLevel) {
-        super(openApiOperation, logLevel);
+    public HttpOpenApiOperationTrace(HttpOpenApiOperations openApiOperation) {
+        super(openApiOperation);
     }
 
     @Override
