@@ -5,22 +5,36 @@
 
 package io.strimzi.kafka.bridge.config;
 
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import io.strimzi.kafka.bridge.amqp.AmqpConfig;
+import io.strimzi.kafka.bridge.http.HttpConfig;
+
 /**
  * Bridge configuration properties
- * @param <T>   type for configuring specific properties on the endpoint side
  */
-public abstract class BridgeConfig<T> {
+public class BridgeConfig extends AbstractConfig {
 
-    protected KafkaConfig kafkaConfig;
-    protected T endpointConfig;
+    public static final String BRIDGE_CONFIG_PREFIX = "bridge.";
+
+    private KafkaConfig kafkaConfig;
+    private AmqpConfig amqpConfig;
+    private HttpConfig httpConfig;
 
     /**
      * Constructor
-     *
+     * 
+     * @param config bridge common configuration parameters map
      * @param kafkaConfig Kafka related configuration
+     * @param amqpConfig AMQP endpoint related configuration
+     * @param httpConfig HTTP endpoint related configuration
      */
-    public BridgeConfig(KafkaConfig kafkaConfig) {
+    private BridgeConfig(Map<String, Object> config, KafkaConfig kafkaConfig, AmqpConfig amqpConfig, HttpConfig httpConfig) {
+        super(config);
         this.kafkaConfig = kafkaConfig;
+        this.amqpConfig = amqpConfig;
+        this.httpConfig = httpConfig;
     }
 
     /**
@@ -31,17 +45,43 @@ public abstract class BridgeConfig<T> {
     }
 
     /**
-     * @return the endpoint configuration
+     * @return the AMQP endpoint related configuration
      */
-    public T getEndpointConfig() {
-        return this.endpointConfig;
+    public AmqpConfig getAmqpConfig() {
+        return this.amqpConfig;
+    }
+
+    /**
+     * @return the HTTP endpoint related configuration
+     */
+    public HttpConfig getHttpConfig() {
+        return this.httpConfig;
+    }
+
+    /**
+     * Loads the entire bridge configuration parameters from a related map
+     *
+     * @param map map from which loading configuration parameters
+     * @return overall bridge configuration
+     */
+    public static BridgeConfig fromMap(Map<String, Object> map) {
+        KafkaConfig kafkaConfig = KafkaConfig.fromMap(map);
+        AmqpConfig amqpConfig = AmqpConfig.fromMap(map);
+        HttpConfig httpConfig = HttpConfig.fromMap(map);
+
+        return new BridgeConfig(map.entrySet().stream()
+                .filter(e -> e.getKey().startsWith(BridgeConfig.BRIDGE_CONFIG_PREFIX))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)), 
+                kafkaConfig, amqpConfig, httpConfig);
     }
 
     @Override
     public String toString() {
         return "BridgeConfig(" +
-                "kafkaConfig=" + this.kafkaConfig +
-                ",endpointConfig=" + this.endpointConfig +
+                "config=" + this.config +
+                ",kafkaConfig=" + this.kafkaConfig +
+                ",amqpConfig=" + this.amqpConfig +
+                ",httpConfig=" + this.httpConfig +
                 ")";
     }
 }

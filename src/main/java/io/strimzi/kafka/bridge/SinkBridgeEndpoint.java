@@ -52,7 +52,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected final Deserializer<V> valueDeserializer;
     protected final Vertx vertx;
 
-    protected final BridgeConfig bridgeConfigProperties;
+    protected final BridgeConfig bridgeConfig;
 
     private Handler<BridgeEndpoint> closeHandler;
 
@@ -96,15 +96,15 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
      * Constructor
      *
      * @param vertx Vert.x instance
-     * @param bridgeConfigProperties Bridge configuration
+     * @param bridgeConfig Bridge configuration
      * @param format embedded format for the key/value in the Kafka message
      * @param keyDeserializer Kafka deserializer for the message key
      * @param valueDeserializer Kafka deserializer for the message value
      */
-    public SinkBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfigProperties,
+    public SinkBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
                               EmbeddedFormat format, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
         this.vertx = vertx;
-        this.bridgeConfigProperties = bridgeConfigProperties;
+        this.bridgeConfig = bridgeConfig;
         this.topicSubscriptions = new ArrayList<>();
         this.format = format;
         this.keyDeserializer = keyDeserializer;
@@ -146,7 +146,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected void initConsumer(boolean shouldAttachBatchHandler, Properties config) {
 
         // create a consumer
-        KafkaConfig kafkaConfig = this.bridgeConfigProperties.getKafkaConfig();
+        KafkaConfig kafkaConfig = this.bridgeConfig.getKafkaConfig();
         Properties props = new Properties();
         props.putAll(kafkaConfig.getConfig());
         props.putAll(kafkaConfig.getConsumerConfig().getConfig());

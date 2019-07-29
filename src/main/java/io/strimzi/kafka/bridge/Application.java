@@ -6,9 +6,8 @@
 package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.amqp.AmqpBridge;
-import io.strimzi.kafka.bridge.amqp.AmqpBridgeConfig;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.HttpBridge;
-import io.strimzi.kafka.bridge.http.HttpBridgeConfig;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
@@ -65,19 +64,18 @@ public class Application {
         retriever.getConfig(ar -> {
 
             Map<String, Object> config = ar.result().getMap();
-            AmqpBridgeConfig amqpBridgeConfig = AmqpBridgeConfig.fromMap(config);
-            HttpBridgeConfig httpBridgeConfig = HttpBridgeConfig.fromMap(config);
+            BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
 
             int healthServerPort = Integer.valueOf(config.getOrDefault(HEALTH_SERVER_PORT, DEFAULT_HEALTH_SERVER_PORT).toString());
 
-            if (amqpBridgeConfig.getEndpointConfig().isEnabled() && amqpBridgeConfig.getEndpointConfig().getPort() == healthServerPort) {
+            if (bridgeConfig.getAmqpConfig().isEnabled() && bridgeConfig.getAmqpConfig().getPort() == healthServerPort) {
                 log.error("Health server port {} conflicts with configured AMQP port", healthServerPort);
                 System.exit(1);
             }
 
             List<Future> futures = new ArrayList<>();
-            futures.add(deployAmqpBridge(vertx, amqpBridgeConfig));
-            futures.add(deployHttpBridge(vertx, httpBridgeConfig));
+            futures.add(deployAmqpBridge(vertx, bridgeConfig));
+            futures.add(deployHttpBridge(vertx, bridgeConfig));
 
             CompositeFuture.join(futures).setHandler(done -> {
                 if (done.succeeded()) {
@@ -95,7 +93,7 @@ public class Application {
                     
                     // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
                     // so no need for a standalone HTTP health server
-                    if (!httpBridgeConfig.getEndpointConfig().isEnabled()) {
+                    if (!bridgeConfig.getHttpConfig().isEnabled()) {
                         healthChecker.startHealthServer(vertx, healthServerPort);
                     }
                 }
@@ -107,14 +105,14 @@ public class Application {
      * Deploys the AMQP bridge into a new verticle
      *
      * @param vertx                 Vertx instance
-     * @param amqpBridgeConfig      AMQP Bridge configuration
+     * @param bridgeConfig          Bridge configuration
      * @return                      Future for the bridge startup
      */
-    private static Future<AmqpBridge> deployAmqpBridge(Vertx vertx, AmqpBridgeConfig amqpBridgeConfig)  {
+    private static Future<AmqpBridge> deployAmqpBridge(Vertx vertx, BridgeConfig bridgeConfig)  {
         Future<AmqpBridge> amqpFuture = Future.future();
 
-        if (amqpBridgeConfig.getEndpointConfig().isEnabled()) {
-            AmqpBridge amqpBridge = new AmqpBridge(amqpBridgeConfig);
+        if (bridgeConfig.getAmqpConfig().isEnabled()) {
+            AmqpBridge amqpBridge = new AmqpBridge(bridgeConfig);
 
             vertx.deployVerticle(amqpBridge, done -> {
                 if (done.succeeded()) {
@@ -136,14 +134,14 @@ public class Application {
      * Deploys the HTTP bridge into a new verticle
      *
      * @param vertx                 Vertx instance
-     * @param httpBridgeConfig      HTTP Bridge configuration
+     * @param bridgeConfig          Bridge configuration
      * @return                      Future for the bridge startup
      */
-    private static Future<HttpBridge> deployHttpBridge(Vertx vertx, HttpBridgeConfig httpBridgeConfig)  {
+    private static Future<HttpBridge> deployHttpBridge(Vertx vertx, BridgeConfig bridgeConfig)  {
         Future<HttpBridge> httpFuture = Future.future();
 
-        if (httpBridgeConfig.getEndpointConfig().isEnabled()) {
-            HttpBridge httpBridge = new HttpBridge(httpBridgeConfig);
+        if (bridgeConfig.getHttpConfig().isEnabled()) {
+            HttpBridge httpBridge = new HttpBridge(bridgeConfig);
             
             vertx.deployVerticle(httpBridge, done -> {
                 if (done.succeeded()) {

@@ -9,6 +9,7 @@ import io.strimzi.kafka.bridge.KafkaClusterTestBase;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpJsonMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpRawMessageConverter;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.converter.DefaultDeserializer;
@@ -93,14 +94,14 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
     private Vertx vertx;
     private AmqpBridge bridge;
 
-    private AmqpBridgeConfig bridgeConfigProperties;
+    private BridgeConfig bridgeConfig;
 
     @BeforeEach
     void before(VertxTestContext context) {
         this.vertx = Vertx.vertx();
 
-        this.bridgeConfigProperties = AmqpBridgeConfig.fromMap(config);
-        this.bridge = new AmqpBridge(this.bridgeConfigProperties);
+        this.bridgeConfig = BridgeConfig.fromMap(config);
+        this.bridge = new AmqpBridge(this.bridgeConfig);
 
         vertx.deployVerticle(this.bridge, context.succeeding(id -> context.completeNow()));
     }
@@ -624,7 +625,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                         consume.flag();
                     }
                 })
-                        .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
+                        .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
 
                 ProtonSender sender = connection.createSender(null);
                 sender.open();
@@ -696,7 +697,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                         consume.flag();
                     }
                 })
-                        .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
+                        .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
             } else {
                 context.failNow(ar.cause());
             }
@@ -766,7 +767,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                         consume.flag();
                     }
                 })
-                        .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
+                        .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
             } else {
                 context.failNow(ar.cause());
             }
@@ -836,7 +837,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                         consume.flag();
                     }
                 })
-                        .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
+                        .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
             } else {
                 context.failNow(ar.cause());
             }
@@ -859,7 +860,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                 connection.open();
 
                 ProtonReceiver receiver = connection.createReceiver(topic + "/group.id/my_group");
-                receiver.setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit())
+                receiver.setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit())
                         .open();
 
                 this.vertx.setTimer(2000, t -> {
@@ -875,7 +876,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                             noPartition.flag();
                         }
                     })
-                            .setPrefetch(this.bridgeConfigProperties.getEndpointConfig().getFlowCredit()).open();
+                            .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
                 });
 
 

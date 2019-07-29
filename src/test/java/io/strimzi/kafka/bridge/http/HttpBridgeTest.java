@@ -9,6 +9,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.KafkaClusterTestBase;
 import io.strimzi.kafka.bridge.amqp.AmqpConfig;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
@@ -88,7 +89,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
     private HttpBridge httpBridge;
     private WebClient client;
 
-    private HttpBridgeConfig bridgeConfigProperties;
+    private BridgeConfig bridgeConfig;
 
     //HTTP methods with configured Response timeout
     private HttpRequest<Buffer> postRequest(String requestURI) {
@@ -109,8 +110,8 @@ class HttpBridgeTest extends KafkaClusterTestBase {
     @BeforeEach
     void before(VertxTestContext context) {
         this.vertx = Vertx.vertx();
-        this.bridgeConfigProperties = HttpBridgeConfig.fromMap(config);
-        this.httpBridge = new HttpBridge(this.bridgeConfigProperties);
+        this.bridgeConfig = BridgeConfig.fromMap(config);
+        this.httpBridge = new HttpBridge(this.bridgeConfig);
 
         vertx.deployVerticle(this.httpBridge, context.succeeding(id -> context.completeNow()));
 
