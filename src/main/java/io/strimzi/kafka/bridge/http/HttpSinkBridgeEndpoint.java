@@ -73,9 +73,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         groupId = routingContext.pathParam("groupid");
 
         // if no name, a random one is assigned
-        this.name = bodyAsJson.getString("name", bridgeConfigProperties.getBridgeID() == null
+        this.name = bodyAsJson.getString("name", bridgeConfig.getBridgeID() == null
                 ? "kafka-bridge-consumer-" + UUID.randomUUID()
-                : bridgeConfigProperties.getBridgeID() + "-" + UUID.randomUUID());
+                : bridgeConfig.getBridgeID() + "-" + UUID.randomUUID());
 
         if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(this.name)) {
             HttpBridgeError error = new HttpBridgeError(

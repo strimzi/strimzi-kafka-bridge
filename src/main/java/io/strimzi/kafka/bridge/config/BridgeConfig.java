@@ -18,6 +18,8 @@ public class BridgeConfig extends AbstractConfig {
 
     public static final String BRIDGE_CONFIG_PREFIX = "bridge.";
 
+    public static final String BRIDGE_ID = BRIDGE_CONFIG_PREFIX + "id";
+
     private KafkaConfig kafkaConfig;
     private AmqpConfig amqpConfig;
     private HttpConfig httpConfig;
@@ -83,5 +85,9 @@ public class BridgeConfig extends AbstractConfig {
                 ",amqpConfig=" + this.amqpConfig +
                 ",httpConfig=" + this.httpConfig +
                 ")";
+    }
+
+    public String getBridgeID() {
+        return config.get(BridgeConfig.BRIDGE_ID) == null ? null : config.get(BridgeConfig.BRIDGE_ID).toString();
     }
 }
