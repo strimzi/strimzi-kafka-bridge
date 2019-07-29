@@ -91,19 +91,17 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                     }
                 });
 
-        long timeout = 5000;
         vertx.setPeriodic(1000, a -> {
             log.debug("Checking for stale customers {}", timestampMap.size());
             Iterator it = timestampMap.entrySet().iterator();
-            while (it.hasNext())
-            {
+            while (it.hasNext()) {
                 Map.Entry<String, Long> item = (Map.Entry) it.next();
-                if (item.getValue() + timeout < System.currentTimeMillis()) {
+                if (item.getValue() + this.bridgeConfig.getHttpConfig().getConsumerTimeout() < System.currentTimeMillis()) {
                     final SinkBridgeEndpoint deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(item.getKey());
                     if (deleteSinkEndpoint != null) {
                         this.httpBridgeContext.getHttpSinkEndpoints().remove(item.getKey());
                         deleteSinkEndpoint.close();
-                        log.warn("User {} deleted after timeout {} ms", item.getKey(), timeout);
+                        log.warn("User {} deleted after timeout {} ms", item.getKey(), this.bridgeConfig.getHttpConfig().getConsumerTimeout());
                         timestampMap.remove(item.getKey());
                     }
                 }
