@@ -8,6 +8,7 @@ package io.strimzi.kafka.bridge.amqp;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -40,9 +41,9 @@ public class AmqpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
     // receiver link for handling incoming message
     private Map<String, ProtonReceiver> receivers;
 
-    public AmqpSourceBridgeEndpoint(Vertx vertx, AmqpBridgeConfig bridgeConfigProperties,
+    public AmqpSourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
                                     EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
-        super(vertx, bridgeConfigProperties, format, keySerializer, valueSerializer);
+        super(vertx, bridgeConfig, format, keySerializer, valueSerializer);
         this.receivers = new HashMap<>();
     }
 
@@ -64,8 +65,7 @@ public class AmqpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
     public void handle(Endpoint<?> endpoint) {
 
         ProtonLink<?> link = (ProtonLink<?>) endpoint.get();
-        AmqpConfig amqpConfigProperties =
-                (AmqpConfig) this.bridgeConfigProperties.getEndpointConfig();
+        AmqpConfig amqpConfig = (AmqpConfig) this.bridgeConfig.getAmqpConfig();
 
         if (!(link instanceof ProtonReceiver)) {
             throw new IllegalArgumentException("This Proton link must be a receiver");
@@ -73,7 +73,7 @@ public class AmqpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
         if (this.converter == null) {
             try {
-                this.converter = (MessageConverter<K, V, Message, Collection<Message>>) AmqpBridge.instantiateConverter(amqpConfigProperties.getMessageConverter());
+                this.converter = (MessageConverter<K, V, Message, Collection<Message>>) AmqpBridge.instantiateConverter(amqpConfig.getMessageConverter());
             } catch (AmqpErrorConditionException e) {
                 AmqpBridge.detachWithError(link, e.toCondition());
                 return;
@@ -101,12 +101,12 @@ public class AmqpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         if (receiver.getRemoteQoS() == ProtonQoS.AT_MOST_ONCE) {
             // sender settle mode is SETTLED (so AT_MOST_ONCE QoS), we assume Apache Kafka
             // no problem in throughput terms so use prefetch due to no ack from Kafka server
-            receiver.setPrefetch(amqpConfigProperties.getFlowCredit());
+            receiver.setPrefetch(amqpConfig.getFlowCredit());
         } else {
             // sender settle mode is UNSETTLED (or MIXED) (so AT_LEAST_ONCE QoS).
             // Thanks to the ack from Kafka server we can modulate flow control
             receiver.setPrefetch(0)
-                    .flow(amqpConfigProperties.getFlowCredit());
+                    .flow(amqpConfig.getFlowCredit());
         }
 
         receiver.open();

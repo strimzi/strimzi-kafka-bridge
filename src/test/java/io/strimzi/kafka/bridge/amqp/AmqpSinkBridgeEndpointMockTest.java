@@ -6,6 +6,7 @@
 package io.strimzi.kafka.bridge.amqp;
 
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
@@ -157,7 +158,7 @@ class AmqpSinkBridgeEndpointMockTest {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
         MockRecordProducer recordProducer = new MockRecordProducer(topic, 0, 0L);
-        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(config),
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, BridgeConfig.fromMap(config),
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
 
@@ -224,7 +225,7 @@ class AmqpSinkBridgeEndpointMockTest {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
         MockRecordProducer recordProducer = new MockRecordProducer(topic, 0, 0L);
-        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(config),
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, BridgeConfig.fromMap(config),
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
 
@@ -289,7 +290,7 @@ class AmqpSinkBridgeEndpointMockTest {
     @Test
     public <K, V> void address_badAddressNoGroupId() throws Exception {
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(config),
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, BridgeConfig.fromMap(config),
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "missing group id delimiter");
@@ -305,7 +306,7 @@ class AmqpSinkBridgeEndpointMockTest {
     @Test
     public <K, V> void address_badAddressEmptyTopic() throws Exception {
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(config),
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, BridgeConfig.fromMap(config),
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, "/group.id/blah");
@@ -322,7 +323,7 @@ class AmqpSinkBridgeEndpointMockTest {
     public <K, V> void address_badAddressEmptyGroup() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(config),
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, BridgeConfig.fromMap(config),
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic + "/group.id/");
@@ -339,7 +340,7 @@ class AmqpSinkBridgeEndpointMockTest {
     public <K, V> void filters_nonIntegerPartitionFilter() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(config),
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, BridgeConfig.fromMap(config),
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic + "/group.id/blah");
@@ -360,7 +361,7 @@ class AmqpSinkBridgeEndpointMockTest {
     public <K, V> void filters_nonLongOffsetFilter() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(config),
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, BridgeConfig.fromMap(config),
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic + "/group.id/blah");
@@ -382,7 +383,7 @@ class AmqpSinkBridgeEndpointMockTest {
     public <K, V> void filters_negativeIntegerPartitionFilter() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(config),
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, BridgeConfig.fromMap(config),
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic + "/group.id/blah");
@@ -407,7 +408,7 @@ class AmqpSinkBridgeEndpointMockTest {
     public <K, V> void filters_negativeLongOffsetFilter() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(config),
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, BridgeConfig.fromMap(config),
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic + "/group.id/blah");
@@ -428,7 +429,7 @@ class AmqpSinkBridgeEndpointMockTest {
     public <K, V> void filters_offsetFilterButNoPartitionFilter() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(config),
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, BridgeConfig.fromMap(config),
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
         ProtonSender mockSender = mockSender(ProtonQoS.AT_MOST_ONCE, topic + "/group.id/blah");
@@ -447,8 +448,8 @@ class AmqpSinkBridgeEndpointMockTest {
     @Test
     public <K, V> void config_NoSuchConverterClass() throws AmqpErrorConditionException {
         Vertx vertx = Vertx.vertx();
-        AmqpBridgeConfig config = AmqpBridgeConfig.fromMap(AmqpSinkBridgeEndpointMockTest.config);
-        config.getEndpointConfig().setMessageConverter("foo.bar.Baz");
+        BridgeConfig config = BridgeConfig.fromMap(AmqpSinkBridgeEndpointMockTest.config);
+        config.getAmqpConfig().setMessageConverter("foo.bar.Baz");
         AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, config,
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
 
@@ -465,8 +466,8 @@ class AmqpSinkBridgeEndpointMockTest {
     @Test
     public <K, V> void config_ConverterWrongType() throws AmqpErrorConditionException {
         Vertx vertx = Vertx.vertx();
-        AmqpBridgeConfig config = AmqpBridgeConfig.fromMap(AmqpSinkBridgeEndpointMockTest.config);
-        config.getEndpointConfig().setMessageConverter("java.util.HashSet");
+        BridgeConfig config = BridgeConfig.fromMap(AmqpSinkBridgeEndpointMockTest.config);
+        config.getAmqpConfig().setMessageConverter("java.util.HashSet");
         AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, config,
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
@@ -508,8 +509,8 @@ class AmqpSinkBridgeEndpointMockTest {
     @Test
     public <K, V> void config_ConverterNoDefaultConstructor() throws AmqpErrorConditionException {
         Vertx vertx = Vertx.vertx();
-        AmqpBridgeConfig config = AmqpBridgeConfig.fromMap(AmqpSinkBridgeEndpointMockTest.config);
-        config.getEndpointConfig().setMessageConverter(NoNullaryCtor.class.getName());
+        BridgeConfig config = BridgeConfig.fromMap(AmqpSinkBridgeEndpointMockTest.config);
+        config.getAmqpConfig().setMessageConverter(NoNullaryCtor.class.getName());
         AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, config,
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
@@ -552,8 +553,8 @@ class AmqpSinkBridgeEndpointMockTest {
     @Test
     public <K, V> void config_ConverterDefaultConstructorThrows() throws AmqpErrorConditionException {
         Vertx vertx = Vertx.vertx();
-        AmqpBridgeConfig config = AmqpBridgeConfig.fromMap(AmqpSinkBridgeEndpointMockTest.config);
-        config.getEndpointConfig().setMessageConverter(CtorThrows.class.getName());
+        BridgeConfig config = BridgeConfig.fromMap(AmqpSinkBridgeEndpointMockTest.config);
+        config.getAmqpConfig().setMessageConverter(CtorThrows.class.getName());
         AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, config,
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
@@ -577,7 +578,7 @@ class AmqpSinkBridgeEndpointMockTest {
     public <K, V> void partitionsForFails() throws Exception {
         String topic = "my_topic";
         Vertx vertx = Vertx.vertx();
-        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, AmqpBridgeConfig.fromMap(config),
+        AmqpSinkBridgeEndpoint<K, V> endpoint = (AmqpSinkBridgeEndpoint) new AmqpSinkBridgeEndpoint<>(vertx, BridgeConfig.fromMap(config),
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
         endpoint.open();
 

@@ -10,6 +10,7 @@ import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.QoSEndpoint;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.tracker.SimpleOffsetTracker;
 import io.vertx.core.AsyncResult;
@@ -50,9 +51,9 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     // sender link for handling outgoing message
     private ProtonSender sender;
 
-    public AmqpSinkBridgeEndpoint(Vertx vertx, AmqpBridgeConfig bridgeConfigProperties,
+    public AmqpSinkBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
                                   EmbeddedFormat format, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
-        super(vertx, bridgeConfigProperties, format, keyDeserializer, valueDeserializer);
+        super(vertx, bridgeConfig, format, keyDeserializer, valueDeserializer);
     }
 
     @Override
@@ -78,8 +79,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     public void handle(Endpoint<?> endpoint) {
 
         ProtonLink<?> link = (ProtonLink<?>) endpoint.get();
-        AmqpConfig amqpConfigProperties =
-                (AmqpConfig) this.bridgeConfigProperties.getEndpointConfig();
+        AmqpConfig amqpConfig = (AmqpConfig) this.bridgeConfig.getAmqpConfig();
 
         // Note: This is only called once for each instance
         if (!(link instanceof ProtonSender)) {
@@ -88,7 +88,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         try {
 
             if (this.converter == null) {
-                this.converter = (MessageConverter<K, V, Message, Collection<Message>>) AmqpBridge.instantiateConverter(amqpConfigProperties.getMessageConverter());
+                this.converter = (MessageConverter<K, V, Message, Collection<Message>>) AmqpBridge.instantiateConverter(amqpConfig.getMessageConverter());
             }
 
             this.sender = (ProtonSender) link;

@@ -10,6 +10,7 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
@@ -35,9 +36,9 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
 
-    public HttpSourceBridgeEndpoint(Vertx vertx, HttpBridgeConfig bridgeConfigProperties,
+    public HttpSourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
                                     EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
-        super(vertx, bridgeConfigProperties, format, keySerializer, valueSerializer);
+        super(vertx, bridgeConfig, format, keySerializer, valueSerializer);
     }
 
     @Override

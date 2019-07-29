@@ -11,6 +11,7 @@ import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
@@ -51,9 +52,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     private HttpBridgeContext httpBridgeContext;
 
-    HttpSinkBridgeEndpoint(Vertx vertx, HttpBridgeConfig httpBridgeConfigProperties, HttpBridgeContext context,
+    HttpSinkBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig, HttpBridgeContext context,
                            EmbeddedFormat format, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
-        super(vertx, httpBridgeConfigProperties, format, keyDeserializer, valueDeserializer);
+        super(vertx, bridgeConfig, format, keyDeserializer, valueDeserializer);
         this.httpBridgeContext = context;
     }
 

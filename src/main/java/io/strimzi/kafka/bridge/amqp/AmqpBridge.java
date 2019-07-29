@@ -11,6 +11,7 @@ import io.strimzi.kafka.bridge.HealthCheckable;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
@@ -72,7 +73,7 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
     public static final String AMQP_PARTITION_FILTER = "io.strimzi:partition-filter:int";
     public static final String AMQP_OFFSET_FILTER = "io.strimzi:offset-filter:long";
 
-    private final AmqpBridgeConfig amqpBridgeConfig;
+    private final BridgeConfig bridgeConfig;
 
     // container-id needed for working in "client" mode
     private static final String CONTAINER_ID = "kafka-bridge-service";
@@ -92,10 +93,10 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
     /**
      * Constructor
      *
-     * @param amqpBridgeConfig bridge configuration for AMQP support
+     * @param bridgeConfig bridge configuration
      */
-    public AmqpBridge(AmqpBridgeConfig amqpBridgeConfig) {
-        this.amqpBridgeConfig = amqpBridgeConfig;
+    public AmqpBridge(BridgeConfig bridgeConfig) {
+        this.bridgeConfig = bridgeConfig;
     }
 
     /**
@@ -115,7 +116,7 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
 
                         log.info("AMQP-Kafka Bridge started and listening on port {}", ar.result().actualPort());
                         log.info("AMQP-Kafka Bridge bootstrap servers {}",
-                                this.amqpBridgeConfig.getKafkaConfig().getConfig()
+                                this.bridgeConfig.getKafkaConfig().getConfig()
                                         .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
                         );
 
@@ -138,8 +139,8 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
 
         this.client = ProtonClient.create(this.vertx);
 
-        String host = this.amqpBridgeConfig.getEndpointConfig().getHost();
-        int port = this.amqpBridgeConfig.getEndpointConfig().getPort();
+        String host = this.bridgeConfig.getAmqpConfig().getHost();
+        int port = this.bridgeConfig.getAmqpConfig().getPort();
 
         ProtonClientOptions options = this.createClientOptions();
 
@@ -154,7 +155,7 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
 
                 log.info("AMQP-Kafka Bridge started and connected in client mode to {}:{}", host, port);
                 log.info("AMQP-Kafka Bridge bootstrap servers {}",
-                        this.amqpBridgeConfig.getKafkaConfig().getConfig()
+                        this.bridgeConfig.getKafkaConfig().getConfig()
                                 .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
                 );
 
@@ -176,7 +177,7 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
 
         this.endpoints = new HashMap<>();
 
-        AmqpMode mode = this.amqpBridgeConfig.getEndpointConfig().getMode();
+        AmqpMode mode = this.bridgeConfig.getAmqpConfig().getMode();
         log.info("AMQP-Kafka Bridge configured in {} mode", mode);
         if (mode == AmqpMode.SERVER) {
             this.bindAmqpServer(startFuture);
@@ -230,11 +231,11 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
     private ProtonServerOptions createServerOptions() {
 
         ProtonServerOptions options = new ProtonServerOptions();
-        options.setHost(this.amqpBridgeConfig.getEndpointConfig().getHost());
-        options.setPort(this.amqpBridgeConfig.getEndpointConfig().getPort());
+        options.setHost(this.bridgeConfig.getAmqpConfig().getHost());
+        options.setPort(this.bridgeConfig.getAmqpConfig().getPort());
 
-        if (this.amqpBridgeConfig.getEndpointConfig().getCertDir() != null && this.amqpBridgeConfig.getEndpointConfig().getCertDir().length() > 0) {
-            String certDir = this.amqpBridgeConfig.getEndpointConfig().getCertDir();
+        if (this.bridgeConfig.getAmqpConfig().getCertDir() != null && this.bridgeConfig.getAmqpConfig().getCertDir().length() > 0) {
+            String certDir = this.bridgeConfig.getAmqpConfig().getCertDir();
             log.info("Enabling SSL configuration for AMQP with TLS certificates from {}", certDir);
             options.setSsl(true)
                     .setPemTrustOptions(new PemTrustOptions()
@@ -258,8 +259,8 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
         options.setConnectTimeout(1000);
         options.setReconnectAttempts(-1).setReconnectInterval(1000); // reconnect forever, every 1000 millisecs
 
-        if (this.amqpBridgeConfig.getEndpointConfig().getCertDir() != null && this.amqpBridgeConfig.getEndpointConfig().getCertDir().length() > 0) {
-            String certDir = this.amqpBridgeConfig.getEndpointConfig().getCertDir();
+        if (this.bridgeConfig.getAmqpConfig().getCertDir() != null && this.bridgeConfig.getAmqpConfig().getCertDir().length() > 0) {
+            String certDir = this.bridgeConfig.getAmqpConfig().getCertDir();
             log.info("Enabling SSL configuration for AMQP with TLS certificates from {}", certDir);
             options.setSsl(true)
                     .addEnabledSaslMechanism("EXTERNAL")
@@ -294,7 +295,7 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
                     this.processOpenSender(connection, sender);
                 });
 
-        if (this.amqpBridgeConfig.getEndpointConfig().getMode() == AmqpMode.CLIENT) {
+        if (this.bridgeConfig.getAmqpConfig().getMode() == AmqpMode.CLIENT) {
             connection.open();
         }
     }
@@ -397,7 +398,7 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
         // the source endpoint is only one, handling more AMQP receiver links internally
         if (source == null) {
             // TODO: the AMQP client should be able to specify the format during link attachment
-            source = new AmqpSourceBridgeEndpoint<>(this.vertx, this.amqpBridgeConfig,
+            source = new AmqpSourceBridgeEndpoint<>(this.vertx, this.bridgeConfig,
                     EmbeddedFormat.JSON, new StringSerializer(), new ByteArraySerializer());
 
             source.closeHandler(s -> {
@@ -422,7 +423,7 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
 
         // create and add a new sink to the map
         // TODO: the AMQP client should be able to specify the format during link attachment
-        SinkBridgeEndpoint<?, ?> sink = new AmqpSinkBridgeEndpoint<>(this.vertx, this.amqpBridgeConfig,
+        SinkBridgeEndpoint<?, ?> sink = new AmqpSinkBridgeEndpoint<>(this.vertx, this.bridgeConfig,
                 EmbeddedFormat.JSON, new StringDeserializer(), new ByteArrayDeserializer());
 
         sink.closeHandler(s -> {

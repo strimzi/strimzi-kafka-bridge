@@ -12,6 +12,7 @@ import io.strimzi.kafka.bridge.HealthCheckable;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -40,7 +41,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private static final Logger log = LoggerFactory.getLogger(HttpBridge.class);
 
-    private final HttpBridgeConfig httpBridgeConfig;
+    private final BridgeConfig bridgeConfig;
 
     private HttpServer httpServer;
 
@@ -56,10 +57,10 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     /**
      * Constructor
      *
-     * @param httpBridgeConfig bridge configuration for HTTP support
+     * @param bridgeConfig bridge configuration
      */
-    public HttpBridge(HttpBridgeConfig httpBridgeConfig) {
-        this.httpBridgeConfig = httpBridgeConfig;
+    public HttpBridge(BridgeConfig bridgeConfig) {
+        this.bridgeConfig = bridgeConfig;
     }
 
     private void bindHttpServer(Future<Void> startFuture) {
@@ -72,7 +73,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                     if (httpServerAsyncResult.succeeded()) {
                         log.info("HTTP-Kafka Bridge started and listening on port {}", httpServerAsyncResult.result().actualPort());
                         log.info("HTTP-Kafka Bridge bootstrap servers {}",
-                                this.httpBridgeConfig.getKafkaConfig().getConfig()
+                                this.bridgeConfig.getKafkaConfig().getConfig()
                                         .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
                         );
 
@@ -166,8 +167,8 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private HttpServerOptions httpServerOptions() {
         HttpServerOptions httpServerOptions = new HttpServerOptions();
-        httpServerOptions.setHost(this.httpBridgeConfig.getEndpointConfig().getHost());
-        httpServerOptions.setPort(this.httpBridgeConfig.getEndpointConfig().getPort());
+        httpServerOptions.setHost(this.bridgeConfig.getHttpConfig().getHost());
+        httpServerOptions.setPort(this.bridgeConfig.getHttpConfig().getPort());
         return httpServerOptions;
     }
 
@@ -187,7 +188,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         JsonObject body = routingContext.getBodyAsJson();
         EmbeddedFormat format = EmbeddedFormat.from(body.getString("format", "binary"));
 
-        final SinkBridgeEndpoint sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.httpBridgeConfig, this.httpBridgeContext,
+        final SinkBridgeEndpoint sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.bridgeConfig, this.httpBridgeContext,
                 format, new ByteArrayDeserializer(), new ByteArrayDeserializer());
 
         sink.closeHandler(s -> {
@@ -307,7 +308,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
         try {
             if (source == null) {
-                source = new HttpSourceBridgeEndpoint<>(this.vertx, this.httpBridgeConfig,
+                source = new HttpSourceBridgeEndpoint<>(this.vertx, this.bridgeConfig,
                         contentTypeToFormat(contentType), new ByteArraySerializer(), new ByteArraySerializer());
 
                 source.closeHandler(s -> {

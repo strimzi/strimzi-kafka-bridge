@@ -33,7 +33,7 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected final Serializer<V> valueSerializer;
     protected final Vertx vertx;
 
-    protected final BridgeConfig bridgeConfigProperties;
+    protected final BridgeConfig bridgeConfig;
 
     private Handler<BridgeEndpoint> closeHandler;
 
@@ -44,15 +44,15 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
      * Constructor
      *
      * @param vertx Vert.x instance
-     * @param bridgeConfigProperties Bridge configuration
+     * @param bridgeConfig Bridge configuration
      * @param format embedded format for the key/value in the Kafka message
      * @param keySerializer Kafka serializer for the message key
      * @param valueSerializer Kafka serializer for the message value
      */
-    public SourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfigProperties,
+    public SourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
                                 EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
         this.vertx = vertx;
-        this.bridgeConfigProperties = bridgeConfigProperties;
+        this.bridgeConfig = bridgeConfig;
         this.format = format;
         this.keySerializer = keySerializer;
         this.valueSerializer = valueSerializer;
@@ -98,7 +98,7 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
     @Override
     public void open() {
 
-        KafkaConfig kafkaConfig = this.bridgeConfigProperties.getKafkaConfig();
+        KafkaConfig kafkaConfig = this.bridgeConfig.getKafkaConfig();
         Properties props = new Properties();
         props.putAll(kafkaConfig.getConfig());
         props.putAll(kafkaConfig.getProducerConfig().getConfig());
