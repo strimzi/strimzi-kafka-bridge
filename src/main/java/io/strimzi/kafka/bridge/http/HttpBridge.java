@@ -92,7 +92,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 });
 
         vertx.setPeriodic(1000, a -> {
-            log.debug("Checking for stale customers {}", timestampMap.size());
+            log.debug("Looking for stale consumers in {} entries", timestampMap.size());
             Iterator it = timestampMap.entrySet().iterator();
             while (it.hasNext()) {
                 Map.Entry<String, Long> item = (Map.Entry) it.next();
@@ -101,7 +101,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                     if (deleteSinkEndpoint != null) {
                         this.httpBridgeContext.getHttpSinkEndpoints().remove(item.getKey());
                         deleteSinkEndpoint.close();
-                        log.warn("User {} deleted after timeout {} ms", item.getKey(), this.bridgeConfig.getHttpConfig().getConsumerTimeout());
+                        log.warn("Consumer {} deleted after inactivity timeout ({} ms).", item.getKey(), this.bridgeConfig.getHttpConfig().getConsumerTimeout());
                         timestampMap.remove(item.getKey());
                     }
                 }
@@ -162,7 +162,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         });
         this.httpBridgeContext.getHttpSinkEndpoints().clear();
 
-        //prducer cleanup
+        //producer cleanup
         // for each connection, we have to close the connection itself but before that
         // all the sink/source endpoints (so the related links inside each of them)
         this.httpBridgeContext.getHttpSourceEndpoints().forEach((connection, endpoint) -> {

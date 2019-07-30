@@ -67,10 +67,13 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
     private static Map<String, Object> config = new HashMap<>();
 
+    private static long timeout = 5000;
+
     static {
         config.put(AmqpConfig.AMQP_ENABLED, true);
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
     }
 
     private static final String BRIDGE_HOST = "127.0.0.1";
@@ -3485,5 +3488,111 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                 });
                 context.completeNow();
             });
+    }
+
+    @Test
+    void consumerDeletedAfterInactivity(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "consumerDeletedAfterInactivity";
+        kafkaCluster.createTopic(topic, 1, 1);
+
+        String sentBody = "Simple message";
+
+        CompletableFuture<Boolean> produce = new CompletableFuture<>();
+        kafkaCluster.useTo().produceStrings(1, () -> produce.complete(true), () ->
+                new ProducerRecord<>(topic, 0, null, sentBody));
+        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
+
+        JsonObject consumerJson = new JsonObject();
+        consumerJson.put("name", name);
+        consumerJson.put("format", "json");
+
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
+        postRequest("/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(consumerJson.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(consumerJson, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+                        String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        String consumerBaseUri = bridgeResponse.getString("base_uri");
+                        assertEquals(name, consumerInstanceId);
+                        assertEquals(baseUri, consumerBaseUri);
+                    });
+
+                    create.complete(true);
+                });
+
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        // After
+        Thread.sleep(timeout - 1000);
+
+        //////////////////
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+
+        // subscribe to a topic
+        JsonArray topics = new JsonArray();
+        topics.add(topic);
+
+        JsonObject topicsRoot = new JsonObject();
+        topicsRoot.put("topics", topics);
+
+
+
+        CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
+        postRequest(baseUri + "/subscription")
+                .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(topicsRoot, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
+                    });
+                    subscribe.complete(true);
+                });
+
+        subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        Thread.sleep(timeout + 2000);
+
+
+        //////////////////
+
+
+
+
+
+        CompletableFuture<Boolean> subscribeAfterTimeout = new CompletableFuture<>();
+        postRequest(baseUri + "/subscription")
+                .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(topicsRoot, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                        assertEquals("The specified consumer instance was not found.", error.getMessage());
+                    });
+                    subscribeAfterTimeout.complete(true);
+                });
+        subscribeAfterTimeout.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        context.completeNow();
+
+        this.bridgeConfig.getConfig().remove(HttpConfig.HTTP_CONSUMER_TIMEOUT);
     }
 }
