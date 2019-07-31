@@ -3436,4 +3436,54 @@ class HttpBridgeTest extends KafkaClusterTestBase {
             Thread.sleep(1000);
         }
     }
+
+    @Test
+    void openapiTest(VertxTestContext context) {
+        getRequest("/openapi")
+            .as(BodyCodec.jsonObject())
+            .send(ar -> {
+                context.verify(() -> {
+                    assertTrue(ar.succeeded());
+                    HttpResponse<JsonObject> response = ar.result();
+                    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                    JsonObject bridgeResponse = response.body();
+
+                    Map<String, Object> paths = bridgeResponse.getJsonObject("paths").getMap();
+                    // subscribe and unsubscribe are using the same endpoint but different methods
+                    int pathsSize = HttpOpenApiOperations.values().length - 1;
+                    assertEquals(pathsSize, paths.size());
+                    assertTrue(paths.containsKey("/consumers/{groupid}"));
+                    assertEquals(HttpOpenApiOperations.CREATE_CONSUMER.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}").getJsonObject("post").getString("operationId"));
+                    assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/positions"));
+                    assertEquals(HttpOpenApiOperations.SEEK.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/positions").getJsonObject("post").getString("operationId"));
+                    assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/positions/beginning"));
+                    assertEquals(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/positions/beginning").getJsonObject("post").getString("operationId"));
+                    assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/positions/end"));
+                    assertEquals(HttpOpenApiOperations.SEEK_TO_END.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/positions/end").getJsonObject("post").getString("operationId"));
+                    assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/subscription"));
+                    assertEquals(HttpOpenApiOperations.SUBSCRIBE.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/subscription").getJsonObject("post").getString("operationId"));
+                    assertEquals(HttpOpenApiOperations.UNSUBSCRIBE.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/subscription").getJsonObject("delete").getString("operationId"));
+                    assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/assignments"));
+                    assertEquals(HttpOpenApiOperations.ASSIGN.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/assignments").getJsonObject("post").getString("operationId"));
+                    assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/records"));
+                    assertEquals(HttpOpenApiOperations.POLL.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/records").getJsonObject("get").getString("operationId"));
+                    assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/offsets"));
+                    assertEquals(HttpOpenApiOperations.COMMIT.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/offsets").getJsonObject("post").getString("operationId"));
+                    assertTrue(paths.containsKey("/topics/{topicname}"));
+                    assertEquals(HttpOpenApiOperations.SEND.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/topics/{topicname}").getJsonObject("post").getString("operationId"));
+                    assertTrue(paths.containsKey("/topics/{topicname}/partitions/{partitionid}"));
+                    assertEquals(HttpOpenApiOperations.SEND_TO_PARTITION.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/topics/{topicname}/partitions/{partitionid}").getJsonObject("post").getString("operationId"));
+                    assertTrue(paths.containsKey("/healthy"));
+                    assertEquals(HttpOpenApiOperations.HEALTHY.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/healthy").getJsonObject("get").getString("operationId"));
+                    assertTrue(paths.containsKey("/ready"));
+                    assertEquals(HttpOpenApiOperations.READY.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/ready").getJsonObject("get").getString("operationId"));
+                    assertTrue(paths.containsKey("/openapi"));
+                    assertEquals(HttpOpenApiOperations.OPENAPI.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/openapi").getJsonObject("get").getString("operationId"));
+                    assertFalse(paths.containsKey("/karel"));
+                    assertEquals(15, bridgeResponse.getJsonObject("definitions").getMap().size());
+                    assertEquals(4, bridgeResponse.getJsonArray("tags").size());
+                });
+                context.completeNow();
+            });
+    }
 }
