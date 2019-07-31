@@ -7,6 +7,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
+import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.KafkaClusterTestBase;
 import io.strimzi.kafka.bridge.amqp.AmqpConfig;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
@@ -59,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(VertxExtension.class)
-@SuppressWarnings({"checkstyle:JavaNCSS"})
+@SuppressWarnings({"checkstyle:JavaNCSS", "checkstyle:ClassDataAbstractionCoupling"})
 class HttpBridgeTest extends KafkaClusterTestBase {
 
     private static final Logger log = LoggerFactory.getLogger(HttpBridgeTest.class);
@@ -112,6 +113,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         this.vertx = Vertx.vertx();
         this.bridgeConfig = BridgeConfig.fromMap(config);
         this.httpBridge = new HttpBridge(this.bridgeConfig);
+        this.httpBridge.setHealthChecker(new HealthChecker());
 
         vertx.deployVerticle(this.httpBridge, context.succeeding(id -> context.completeNow()));
 
@@ -3395,5 +3397,41 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void readyTest(VertxTestContext context) throws InterruptedException {
+        int iterations = 5;
+        for (int i = 1; i <= iterations; i++) {
+            getRequest("/ready")
+                    .send(ar -> {
+                        context.verify(() -> {
+                            assertTrue(ar.succeeded());
+                            assertEquals(HttpResponseStatus.OK.code(), ar.result().statusCode());
+                        });
+                    });
+            Thread.sleep(1000);
+            if (i == iterations) {
+                context.completeNow();
+            }
+        }
+    }
+
+    @Test
+    void healthyTest(VertxTestContext context) throws InterruptedException {
+        int iterations = 5;
+        for (int i = 1; i <= iterations; i++) {
+            getRequest("/healthy")
+                    .send(ar -> {
+                        context.verify(() -> {
+                            assertTrue(ar.succeeded());
+                            assertEquals(HttpResponseStatus.OK.code(), ar.result().statusCode());
+                        });
+                    });
+            Thread.sleep(1000);
+            if (i == iterations) {
+                context.completeNow();
+            }
+        }
     }
 }
