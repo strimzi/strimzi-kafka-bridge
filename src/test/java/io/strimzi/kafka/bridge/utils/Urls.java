@@ -1,3 +1,8 @@
+/*
+ * Copyright 2018, Strimzi authors.
+ * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
+ */
+
 package io.strimzi.kafka.bridge.utils;
 
 public class Urls {
@@ -50,11 +55,11 @@ public class Urls {
         return consumerInstances(groupId, name) + OFFSETS_PATH;
     }
 
-    public static String consumerInstancesRecords(String groupId, String name, Integer timeout, Integer max_bytes) {
+    public static String consumerInstancesRecords(String groupId, String name, Integer timeout, Integer maxBytes) {
         return consumerInstances(groupId, name) + RECORDS_PATH
                 + "?"
                 + (timeout != null ? "timeout=" + timeout : "")
-                + (max_bytes != null  ? "max_bytes=" + max_bytes : "");
+                + (maxBytes != null  ? "max_bytes=" + maxBytes : "");
     }
 
     public static String consumerInstancesRecords(String groupId, String name) {

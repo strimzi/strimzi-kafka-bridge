@@ -1,3 +1,7 @@
+/*
+ * Copyright 2018, Strimzi authors.
+ * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
+ */
 package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -30,7 +34,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> produce = new CompletableFuture<>();
         kafkaCluster.useTo().produceStrings(1,
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         String name = "my-kafka-consumer";

@@ -1,13 +1,20 @@
+/*
+ * Copyright 2018, Strimzi authors.
+ * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
+ */
 package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.KafkaJsonDeserializer;
+import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
@@ -22,6 +29,8 @@ import org.slf4j.LoggerFactory;
 import javax.xml.bind.DatatypeConverter;
 import java.util.Properties;
 
+import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -182,8 +191,11 @@ public class ProducerTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        producerService()
-            .sendRecordsRequest(topic, root)
+        baseService()
+            .postRequest(Urls.producerTopics(topic))
+                .putHeader(CONTENT_LENGTH, String.valueOf(root.toBuffer().length()))
+                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON_BINARY)
+                .as(BodyCodec.jsonObject())
                 .sendJsonObject(root, verifyOK(context));
 
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);

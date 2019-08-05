@@ -62,19 +62,19 @@ class HttpBridgeTestBase extends KafkaClusterTestBase {
 
     private BridgeConfig bridgeConfig;
 
-    BaseService baseService(){
+    BaseService baseService() {
         return new BaseService(client);
     }
 
-    ConsumerService consumerService(){
+    ConsumerService consumerService() {
         return new ConsumerService(client);
     }
 
-    SeekService seekService(){
+    SeekService seekService() {
         return new SeekService(client);
     }
 
-    ProducerService producerService(){
+    ProducerService producerService() {
         return new ProducerService(client);
     }
 

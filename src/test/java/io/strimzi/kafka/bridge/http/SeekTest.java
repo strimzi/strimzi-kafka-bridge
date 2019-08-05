@@ -1,3 +1,7 @@
+/*
+ * Copyright 2018, Strimzi authors.
+ * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
+ */
 package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -42,7 +46,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> creation = new CompletableFuture<>();
         AtomicInteger index = new AtomicInteger();
         kafkaCluster.useTo().produceStrings(10, () -> creation.complete(true),
-                () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
+            () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
         creation.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // create consumer
@@ -105,7 +109,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> produce = new CompletableFuture<>();
         AtomicInteger index = new AtomicInteger();
         kafkaCluster.useTo().produce("", 10, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         JsonObject topics = new JsonObject();
@@ -155,18 +159,18 @@ public class SeekTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
         // consume records
-            consumerService()
-                .getRequest(Urls.consumerInstancesRecords(groupId, name))
-                    .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
-                    .as(BodyCodec.jsonArray())
-                    .send(ar -> {
-                        context.verify(() -> {
-                            assertTrue(ar.succeeded());
-                            JsonArray body = ar.result().body();
-                            assertEquals(10, body.size());
-                        });
-                        consumeSeek.complete(true);
+        consumerService()
+            .getRequest(Urls.consumerInstancesRecords(groupId, name))
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        JsonArray body = ar.result().body();
+                        assertEquals(10, body.size());
                     });
+                    consumeSeek.complete(true);
+                });
 
         consumeSeek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
@@ -192,9 +196,9 @@ public class SeekTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
-        consumerService()
+        baseService()
             .getRequest(Urls.consumerInstancesRecords(groupId, name, 1000, null))
-                .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
+                .putHeader(ACCEPT, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> assertTrue(ar.succeeded()));
@@ -206,7 +210,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> produce = new CompletableFuture<>();
         AtomicInteger index = new AtomicInteger();
         kafkaCluster.useTo().produceStrings(10, () -> produce.complete(true),
-                () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
+            () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // seek
@@ -217,7 +221,8 @@ public class SeekTest extends HttpBridgeTestBase {
         root.put("partitions", partitions);
 
         CompletableFuture<Boolean> seek = new CompletableFuture<>();
-        seekService().positionsBeginningEnd(groupId, name, root)
+        seekService()
+            .positionsBeginningEnd(groupId, name, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -273,9 +278,9 @@ public class SeekTest extends HttpBridgeTestBase {
         AtomicInteger index0 = new AtomicInteger();
         AtomicInteger index1 = new AtomicInteger();
         kafkaCluster.useTo().produce("", 10, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, "key-" + index0.get(), "value-" + index0.getAndIncrement()));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, "key-" + index0.get(), "value-" + index0.getAndIncrement()));
         kafkaCluster.useTo().produce("", 10, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-                () -> produce.complete(true), () -> new ProducerRecord<>(topic, 1, "key-" + index1.get(), "value-" + index1.getAndIncrement()));
+            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 1, "key-" + index1.get(), "value-" + index1.getAndIncrement()));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         JsonObject topics = new JsonObject();

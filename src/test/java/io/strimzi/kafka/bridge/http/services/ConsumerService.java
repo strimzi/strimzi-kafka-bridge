@@ -1,3 +1,7 @@
+/*
+ * Copyright 2018, Strimzi authors.
+ * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
+ */
 package io.strimzi.kafka.bridge.http.services;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -65,7 +69,7 @@ public class ConsumerService extends BaseService {
 
     public ConsumerService deleteConsumerSubscription(VertxTestContext context, String groupId, String name, String... topicNames) throws InterruptedException, ExecutionException, TimeoutException {
         JsonArray topics = new JsonArray();
-        for(String topicName : topicNames) {
+        for (String topicName : topicNames) {
             topics.add(topicName);
         }
 
@@ -93,7 +97,7 @@ public class ConsumerService extends BaseService {
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
         // subscribe to a topic
         JsonArray partitions = new JsonArray();
-        for(JsonObject p : partition) {
+        for (JsonObject p : partition) {
             partitions.add(p);
         }
 
@@ -138,9 +142,9 @@ public class ConsumerService extends BaseService {
         return this;
     }
 
-    public ConsumerService subscribeConsumer(VertxTestContext context, String groupId, String name, String ... topicNames) throws InterruptedException, ExecutionException, TimeoutException {
+    public ConsumerService subscribeConsumer(VertxTestContext context, String groupId, String name, String... topicNames) throws InterruptedException, ExecutionException, TimeoutException {
         JsonArray topics = new JsonArray();
-        for(String topicName : topicNames) {
+        for (String topicName : topicNames) {
             topics.add(topicName);
         }
 
