@@ -43,9 +43,8 @@ public class ConsumerService extends BaseService {
                 .as(BodyCodec.jsonObject());
     }
 
-    public HttpRequest<Buffer> consumeRecordsRequest(String baseUri) {
-        //TODO move URL to constants
-        return getRequest(baseUri + "/records?timeout=" + 1000)
+    public HttpRequest<Buffer> consumeRecordsRequest(String groupId, String name) {
+        return getRequest(Urls.consumerInstancesRecords(groupId, name, 1000, null))
                 .putHeader(ACCEPT, BridgeContentType.KAFKA_JSON_JSON);
     }
 
@@ -55,9 +54,8 @@ public class ConsumerService extends BaseService {
                 .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON);
     }
 
-    public HttpRequest<JsonObject> offsetsRequest(String baseUri, JsonObject json) {
-        //TODO move URL to constants
-        return postRequest(baseUri + "/offsets")
+    public HttpRequest<JsonObject> offsetsRequest(String groupId, String name, JsonObject json) {
+        return postRequest(Urls.consumerInstancesOffsets(groupId, name))
                 .putHeader(CONTENT_LENGTH, String.valueOf(json.toBuffer().length()))
                 .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject());
@@ -91,7 +89,7 @@ public class ConsumerService extends BaseService {
         return this;
     }
 
-    public ConsumerService subscribeTopic(VertxTestContext context, String baseUri, JsonObject... partition) throws InterruptedException, ExecutionException, TimeoutException {
+    public ConsumerService subscribeTopic(VertxTestContext context, String groupId, String name, JsonObject... partition) throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
         // subscribe to a topic
         JsonArray partitions = new JsonArray();
@@ -102,7 +100,7 @@ public class ConsumerService extends BaseService {
         JsonObject partitionsRoot = new JsonObject();
         partitionsRoot.put("partitions", partitions);
 
-        postRequest(baseUri + "/assignments")
+        postRequest(Urls.consumerInstancesAssignments(groupId, name))
                 .putHeader(CONTENT_LENGTH, String.valueOf(partitionsRoot.toBuffer().length()))
                 .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())

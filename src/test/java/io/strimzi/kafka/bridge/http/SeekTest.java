@@ -4,6 +4,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.KafkaJsonSerializer;
+import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
@@ -106,8 +107,6 @@ public class SeekTest extends HttpBridgeTestBase {
                 () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
-
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));
         //create consumer
@@ -119,7 +118,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
         consumerService()
-            .getRequest(baseUri + "/records?timeout=" + 1000)
+            .getRequest(Urls.consumerInstancesRecords(groupId, name, 1000, null))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -156,7 +155,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
         // consume records
             consumerService()
-                .getRequest(baseUri + "/records")
+                .getRequest(Urls.consumerInstancesRecords(groupId, name, null, null))
                     .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                     .as(BodyCodec.jsonArray())
                     .send(ar -> {
@@ -182,8 +181,6 @@ public class SeekTest extends HttpBridgeTestBase {
         String topic = "seekToEndAndReceive";
         kafkaCluster.createTopic(topic, 1, 1);
 
-        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
-
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));
         // create consumer
@@ -195,7 +192,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
         consumerService()
-            .getRequest(baseUri + "/records?timeout=" + 1000)
+            .getRequest(Urls.consumerInstancesRecords(groupId, name, 1000, null))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -233,7 +230,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
         // consume records
         consumerService()
-            .getRequest(baseUri + "/records")
+            .getRequest(Urls.consumerInstancesRecords(groupId, name, null, null))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -249,7 +246,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
         consumerService()
-            .deleteRequest(baseUri)
+            .deleteRequest(Urls.consumerInstances(groupId, name))
             .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
             .as(BodyCodec.jsonObject())
             .send(ar -> {
@@ -280,8 +277,6 @@ public class SeekTest extends HttpBridgeTestBase {
                 () -> produce.complete(true), () -> new ProducerRecord<>(topic, 1, "key-" + index1.get(), "value-" + index1.getAndIncrement()));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
-
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));
         // create consumer
@@ -293,7 +288,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
         consumerService()
-            .getRequest(baseUri + "/records?timeout=" + 1000)
+            .getRequest(Urls.consumerInstancesRecords(groupId, name, 1000, null))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -325,7 +320,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
         consumerService()
-            .getRequest(baseUri + "/records?timeout=" + 1000)
+            .getRequest(Urls.consumerInstancesRecords(groupId, name, 1000, null))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {

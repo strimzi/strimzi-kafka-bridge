@@ -14,6 +14,9 @@ public class Urls {
     private static final String SUBSCRIPTION_PATH =  "/subscription";
     private static final String TOPICS_PATH = "/topics/";
     private static final String PARTITIONS_PATH = "/partitions/";
+    private static final String ASSIGMENTS_PATH = "/assignments";
+    private static final String OFFSETS_PATH = "/offsets";
+    private static final String RECORDS_PATH = "/records";
 
     public static String consumer(String groupId) {
         return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + CONSUMERS_PATH + groupId;
@@ -37,6 +40,21 @@ public class Urls {
 
     public static String consumerInstancesSubscription(String groupId, String name) {
         return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + consumerInstances(groupId, name) + SUBSCRIPTION_PATH;
+    }
+
+    public static String consumerInstancesAssignments(String groupId, String name) {
+        return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + consumerInstances(groupId, name) + ASSIGMENTS_PATH;
+    }
+
+    public static String consumerInstancesOffsets(String groupId, String name) {
+        return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + consumerInstances(groupId, name) + OFFSETS_PATH;
+    }
+
+    public static String consumerInstancesRecords(String groupId, String name, Integer timeout, Integer max_bytes) {
+        return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + consumerInstances(groupId, name) + RECORDS_PATH
+                + "?"
+                + (timeout != null ? "timeout=" + timeout : "")
+                + (max_bytes != null  ? "max_bytes=" + max_bytes : "");
     }
 
     public static String producerTopics(String topic) {

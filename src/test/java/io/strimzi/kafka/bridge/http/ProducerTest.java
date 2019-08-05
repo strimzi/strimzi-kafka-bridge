@@ -31,11 +31,6 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProducerTest.class);
 
-    private static final String TOPICS_URL_PATH = "/topics/";
-    private static final String PARTITIONS_URL_PATH = "/partitions/";
-
-
-
     @Test
     void sendSimpleMessage(VertxTestContext context) throws Throwable {
         String topic = "sendSimpleMessage";

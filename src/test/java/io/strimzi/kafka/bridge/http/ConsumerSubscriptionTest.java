@@ -2,6 +2,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
@@ -35,8 +36,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
-        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
-
         JsonObject json = new JsonObject();
         json.put("name", name);
 
@@ -53,7 +52,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> unsubscribe = new CompletableFuture<>();
         consumerService()
-            .deleteRequest(baseUri + "consumer-invalidation" + "/subscription")
+            .deleteRequest(Urls.consumerInstancesSubscription(groupId, name + "consumer-invalidation"))
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
