@@ -39,7 +39,7 @@ public class Urls {
     }
 
     public static String consumerInstancesSubscription(String groupId, String name) {
-        return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + consumerInstances(groupId, name) + SUBSCRIPTION_PATH;
+        return consumerInstances(groupId, name) + SUBSCRIPTION_PATH;
     }
 
     public static String consumerInstancesAssignments(String groupId, String name) {
@@ -47,14 +47,18 @@ public class Urls {
     }
 
     public static String consumerInstancesOffsets(String groupId, String name) {
-        return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + consumerInstances(groupId, name) + OFFSETS_PATH;
+        return consumerInstances(groupId, name) + OFFSETS_PATH;
     }
 
     public static String consumerInstancesRecords(String groupId, String name, Integer timeout, Integer max_bytes) {
-        return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + consumerInstances(groupId, name) + RECORDS_PATH
+        return consumerInstances(groupId, name) + RECORDS_PATH
                 + "?"
                 + (timeout != null ? "timeout=" + timeout : "")
                 + (max_bytes != null  ? "max_bytes=" + max_bytes : "");
+    }
+
+    public static String consumerInstancesRecords(String groupId, String name) {
+        return consumerInstances(groupId, name) + RECORDS_PATH;
     }
 
     public static String producerTopics(String topic) {

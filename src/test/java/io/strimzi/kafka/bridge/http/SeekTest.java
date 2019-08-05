@@ -21,6 +21,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import static com.google.common.net.HttpHeaders.ACCEPT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -155,7 +156,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
         // consume records
             consumerService()
-                .getRequest(Urls.consumerInstancesRecords(groupId, name, null, null))
+                .getRequest(Urls.consumerInstancesRecords(groupId, name))
                     .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                     .as(BodyCodec.jsonArray())
                     .send(ar -> {
@@ -229,9 +230,9 @@ public class SeekTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
         // consume records
-        consumerService()
-            .getRequest(Urls.consumerInstancesRecords(groupId, name, null, null))
-                .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
+        baseService()
+            .getRequest(Urls.consumerInstancesRecords(groupId, name))
+                .putHeader(ACCEPT, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> assertTrue(ar.succeeded()));
