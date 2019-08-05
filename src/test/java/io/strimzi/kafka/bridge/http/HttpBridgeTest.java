@@ -3403,17 +3403,18 @@ class HttpBridgeTest extends KafkaClusterTestBase {
     void readyTest(VertxTestContext context) throws InterruptedException {
         int iterations = 5;
         for (int i = 1; i <= iterations; i++) {
+            int l = i;
             getRequest("/ready")
                     .send(ar -> {
                         context.verify(() -> {
                             assertTrue(ar.succeeded());
                             assertEquals(HttpResponseStatus.OK.code(), ar.result().statusCode());
                         });
+                        if (l == iterations) {
+                            context.completeNow();
+                        }
                     });
             Thread.sleep(1000);
-            if (i == iterations) {
-                context.completeNow();
-            }
         }
     }
 
@@ -3421,17 +3422,18 @@ class HttpBridgeTest extends KafkaClusterTestBase {
     void healthyTest(VertxTestContext context) throws InterruptedException {
         int iterations = 5;
         for (int i = 1; i <= iterations; i++) {
+            int l = i;
             getRequest("/healthy")
                     .send(ar -> {
                         context.verify(() -> {
                             assertTrue(ar.succeeded());
                             assertEquals(HttpResponseStatus.OK.code(), ar.result().statusCode());
                         });
+                        if (l == iterations) {
+                            context.completeNow();
+                        }
                     });
             Thread.sleep(1000);
-            if (i == iterations) {
-                context.completeNow();
-            }
         }
     }
 }
