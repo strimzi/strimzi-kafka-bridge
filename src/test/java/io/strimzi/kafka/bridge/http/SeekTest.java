@@ -43,14 +43,12 @@ public class SeekTest extends HttpBridgeTestBase {
                 () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
         creation.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
-
         // create consumer
-        createConsumer(context, groupId, jsonConsumer);
+        consumerService()
+                .createConsumer(context, groupId, jsonConsumer);
 
         // Consumer instance not found
         CompletableFuture<Boolean> instanceNotFound = new CompletableFuture<>();
-        String uriWithNotExistIstance = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + "not-exist-instance";
 
         JsonArray partitions = new JsonArray();
         partitions.add(new JsonObject().put("topic", topic).put("partition", 0));
@@ -58,10 +56,8 @@ public class SeekTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("partitions", partitions);
 
-        postRequest(uriWithNotExistIstance + "/positions/beginning")
-                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
-                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
+        seekService()
+            .positionsBeginningRequest(groupId, "not-exist-instance", root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -84,10 +80,7 @@ public class SeekTest extends HttpBridgeTestBase {
         JsonObject partitionsJSON = new JsonObject();
         partitionsJSON.put("partitions", nonExistentPartitionJSON);
 
-        postRequest(baseUri + "/positions/beginning")
-                .putHeader("Content-length", String.valueOf(partitionsJSON.toBuffer().length()))
-                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
+        seekService().positionsBeginningRequest(groupId, name, partitionsJSON)
                 .sendJsonObject(partitionsJSON, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -115,18 +108,18 @@ public class SeekTest extends HttpBridgeTestBase {
 
         String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
 
-        //create consumer
-        createConsumer(context, groupId, jsonConsumer);
-
-        // subscribe to a topic
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));
-
-        subscribeConsumer(context, groupId, topic);
+        //create consumer
+        // subscribe to a topic
+        consumerService()
+            .createConsumer(context, groupId, jsonConsumer)
+            .subscribeConsumer(context, groupId, name, topic);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records?timeout=" + 1000)
+        consumerService()
+            .getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -149,10 +142,7 @@ public class SeekTest extends HttpBridgeTestBase {
 
 
         CompletableFuture<Boolean> seek = new CompletableFuture<>();
-        postRequest(baseUri + "/positions/beginning")
-                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
-                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
+        seekService().positionsBeginningRequest(groupId, name, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -165,24 +155,26 @@ public class SeekTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records")
-                .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
-                .as(BodyCodec.jsonArray())
-                .send(ar -> {
-                    context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        JsonArray body = ar.result().body();
-                        assertEquals(10, body.size());
+            consumerService()
+                .getRequest(baseUri + "/records")
+                    .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
+                    .as(BodyCodec.jsonArray())
+                    .send(ar -> {
+                        context.verify(() -> {
+                            assertTrue(ar.succeeded());
+                            JsonArray body = ar.result().body();
+                            assertEquals(10, body.size());
+                        });
+                        consumeSeek.complete(true);
                     });
-                    consumeSeek.complete(true);
-                });
 
         consumeSeek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
 
         // consumer deletion
-        deleteConsumer(context, groupId, name);
+        consumerService()
+            .deleteConsumer(context, groupId, name);
     }
 
     @Test
@@ -192,18 +184,18 @@ public class SeekTest extends HttpBridgeTestBase {
 
         String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
 
-        // create consumer
-        createConsumer(context, groupId, jsonConsumer);
-
-        // subscribe to a topic
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));
-
-        subscribeConsumer(context, groupId, topic);
+        // create consumer
+        // subscribe to a topic
+        consumerService()
+            .createConsumer(context, groupId, jsonConsumer)
+            .subscribeConsumer(context, groupId, name, topic);
 
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
-        getRequest(baseUri + "/records?timeout=" + 1000)
+        consumerService()
+            .getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -227,10 +219,7 @@ public class SeekTest extends HttpBridgeTestBase {
         root.put("partitions", partitions);
 
         CompletableFuture<Boolean> seek = new CompletableFuture<>();
-        postRequest(baseUri + "/positions/end")
-                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
-                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
+        seekService().positionsBeginningEnd(groupId, name, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -243,7 +232,8 @@ public class SeekTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records")
+        consumerService()
+            .getRequest(baseUri + "/records")
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -258,17 +248,18 @@ public class SeekTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        deleteRequest(baseUri)
-                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
-                .send(ar -> {
-                    context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
-                    });
-                    delete.complete(true);
+        consumerService()
+            .deleteRequest(baseUri)
+            .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
+            .as(BodyCodec.jsonObject())
+            .send(ar -> {
+                context.verify(() -> {
+                    assertTrue(ar.succeeded());
+                    HttpResponse<JsonObject> response = ar.result();
+                    assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
                 });
+                delete.complete(true);
+            });
 
         delete.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         context.completeNow();
@@ -291,18 +282,18 @@ public class SeekTest extends HttpBridgeTestBase {
 
         String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
 
-        // create consumer
-        createConsumer(context, groupId, jsonConsumer);
-
-        // subscribe to a topic
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));
-
-        subscribeConsumer(context, baseUri, topics);
+        // create consumer
+        // subscribe to a topic
+        consumerService()
+            .createConsumer(context, groupId, jsonConsumer)
+            .subscribeConsumer(context, groupId, name, topics);
 
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
-        getRequest(baseUri + "/records?timeout=" + 1000)
+        consumerService()
+            .getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -320,10 +311,8 @@ public class SeekTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("offsets", offsets);
 
-        postRequest(baseUri + "/positions")
-                .putHeader("Content-length", String.valueOf(root.toBuffer().length()))
-                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
+        seekService()
+            .positionsRequest(groupId, name, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -335,7 +324,8 @@ public class SeekTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records?timeout=" + 1000)
+        consumerService()
+            .getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -374,7 +364,8 @@ public class SeekTest extends HttpBridgeTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // consumer deletion
-        deleteConsumer(context, groupId, name);
+        consumerService()
+            .deleteConsumer(context, groupId, name);
     }
 
 }

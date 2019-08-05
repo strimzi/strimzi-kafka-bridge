@@ -4,11 +4,9 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.KafkaJsonSerializer;
-import io.strimzi.kafka.bridge.utils.UriConsts;
-import io.vertx.core.buffer.Buffer;
+import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
@@ -22,20 +20,16 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static com.google.common.net.HttpHeaders.ACCEPT;
-import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.FORWARDED;
 import static com.google.common.net.HttpHeaders.X_FORWARDED_HOST;
 import static com.google.common.net.HttpHeaders.X_FORWARDED_PROTO;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConsumerTest extends HttpBridgeTestBase {
-
-
 
     private String name = "my-kafka-consumer";
     private String groupId = "my-group";
@@ -50,71 +44,10 @@ public class ConsumerTest extends HttpBridgeTestBase {
         .put("name", name)
         .put("format", "json");
 
-
-
-
-
-    HttpRequest<Buffer> consumeRecordsRequest(String baseUri) {
-        return getRequest(baseUri + "/records?timeout=" + 1000)
-            .putHeader(ACCEPT, BridgeContentType.KAFKA_JSON_JSON);
-    }
-
-
-
-    void deleteConsumerSubscription(VertxTestContext context, String baseUri, String ... topicNames) throws InterruptedException, ExecutionException, TimeoutException {
-        JsonArray topics = new JsonArray();
-        for(String topicName : topicNames) {
-            topics.add(topicName);
-        }
-
-        JsonObject topicsRoot = new JsonObject();
-        topicsRoot.put("topics", topics);
-
-        CompletableFuture<Boolean> unsubscribe = new CompletableFuture<>();
-        deleteRequest(baseUri + "/subscription")
-                .putHeader(CONTENT_LENGTH, String.valueOf(topicsRoot.toBuffer().length()))
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(topicsRoot, ar -> {
-                    context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
-                    });
-                    unsubscribe.complete(true);
-                });
-
-        unsubscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-    }
-
-    void subscribeTopic(VertxTestContext context, String baseUri, JsonObject ... partition) throws InterruptedException, ExecutionException, TimeoutException {
-        CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        // subscribe to a topic
-        JsonArray partitions = new JsonArray();
-        for(JsonObject p : partition) {
-            partitions.add(p);
-        }
-
-        JsonObject partitionsRoot = new JsonObject();
-        partitionsRoot.put("partitions", partitions);
-
-        postRequest(baseUri + "/assignments")
-            .putHeader(CONTENT_LENGTH, String.valueOf(partitionsRoot.toBuffer().length()))
-            .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
-            .as(BodyCodec.jsonObject())
-            .sendJsonObject(partitionsRoot, ar -> {
-                context.verify(() -> {
-                    assertTrue(ar.succeeded());
-                    assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
-                });
-                subscribe.complete(true);
-            });
-        subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-    }
-
-
     @Test
     void createConsumer(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // create consumer
-        createConsumer(context, groupId, consumerWithEarliestReset);
+        consumerService().createConsumer(context, groupId, consumerWithEarliestReset);
 
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
@@ -128,7 +61,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         String baseUri = xForwardedProto + "://" + xForwardedHost + "/consumers/" + groupId + "/instances/" + name;
 
-        createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
                 .putHeader(X_FORWARDED_HOST, xForwardedHost)
                 .putHeader(X_FORWARDED_PROTO, xForwardedProto)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
@@ -156,7 +89,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         String baseUri = "https://my-api-gateway-host:443/consumers/" + groupId + "/instances/" + name;
 
-        createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
                 .putHeader(FORWARDED, forwarded)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
                     context.verify(() -> {
@@ -184,7 +117,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         String baseUri = "https://my-api-gateway-host:443/my-bridge/consumers/" + groupId + "/instances/" + name;
 
-        createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
                 .putHeader(FORWARDED, forwarded)
                 .putHeader("X-Forwarded-Path", xForwardedPath)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
@@ -212,7 +145,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         String baseUri = "http://my-api-gateway-host:80/consumers/" + groupId + "/instances/" + name;
 
-        createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
                 .putHeader(FORWARDED, forwarded)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
                     context.verify(() -> {
@@ -237,7 +170,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=mqtt";
 
-        createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
                 .putHeader(FORWARDED, forwarded)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
                     context.verify(() -> {
@@ -261,7 +194,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         json.put("name", name);
         json.put("auto.offset.reset", "foo");
 
-        createConsumerRequest(groupId, json)
+        consumerService().createConsumerRequest(groupId, json)
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -292,17 +225,17 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        String baseUri = UriConsts.consumerInstanceURI(groupId, name);
+        String baseUri = Urls.consumerInstances(groupId, name);
 
         // create consumer
-        createConsumer(context, groupId, consumerJson);
-
         // subscribe to a topic
-        subscribeConsumer(context, baseUri, topic);
+        consumerService()
+                .createConsumer(context, groupId, consumerJson)
+                .subscribeConsumer(context, groupId, name, topic);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumeRecordsRequest(baseUri)
+        consumerService().consumeRecordsRequest(baseUri)
             .as(BodyCodec.jsonArray())
             .send(ar -> {
                 context.verify(() -> {
@@ -329,8 +262,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // consumer deletion
-        deleteConsumer(context, groupId, name);
-        context.completeNow();
+        consumerService()
+            .deleteConsumer(context, groupId, name);
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -346,21 +279,22 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody.getBytes()));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        String baseUri = UriConsts.consumerInstanceURI(groupId, name);
+        String baseUri = Urls.consumerInstances(groupId, name);
 
         JsonObject json = new JsonObject();
         json.put("name", name);
         json.put("format", "binary");
 
         // create consumer
-        createConsumer(context, groupId, json);
-
         // subscribe to a topic
-        subscribeConsumer(context, baseUri, topic);
+        consumerService()
+            .createConsumer(context, groupId, json)
+            .subscribeConsumer(context, groupId, name, topic);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records?timeout=" + 1000)
+        consumerService()
+            .getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -388,8 +322,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // consumer deletion
-        deleteConsumer(context, groupId, name);
-        context.completeNow();
+        consumerService()
+            .deleteConsumer(context, groupId, name);
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -410,17 +344,17 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 () -> produce.complete(true), () -> new ProducerRecord<>(topic2, 0, null, sentBody2));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        String baseUri = UriConsts.consumerInstanceURI(groupId, name);
+        String baseUri = Urls.consumerInstances(groupId, name);
 
         // create consumer
-        createConsumer(context, groupId, consumerJson);
-
         // subscribe to a topic
-        subscribeConsumer(context, baseUri, topic1, topic1);
+        consumerService()
+            .createConsumer(context, groupId, consumerJson)
+            .subscribeConsumer(context, groupId, name, topic1, topic1);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumeRecordsRequest(baseUri)
+        consumerService().consumeRecordsRequest(baseUri)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
@@ -450,8 +384,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // consumer deletion
-        deleteConsumer(context, groupId, name);
-        context.completeNow();
+        consumerService()
+            .deleteConsumer(context, groupId, name);
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -474,20 +408,19 @@ public class ConsumerTest extends HttpBridgeTestBase {
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         produce2.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        String baseUri = UriConsts.consumerInstanceURI(groupId, name);
+        String baseUri = Urls.consumerInstances(groupId, name);
 
-        // create consumer
-        createConsumer(context, groupId, consumerJson);
-
-        // subscribe to a topic
         JsonObject topicPattern = new JsonObject();
         topicPattern.put("topic_pattern", "receiveWithPattern-\\d");
-
-        subscribeConsumer(context, baseUri, topicPattern);
+        // create consumer
+        // subscribe to a topic
+        consumerService()
+            .createConsumer(context, groupId, consumerJson)
+            .subscribeConsumer(context, groupId, name, topicPattern);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumeRecordsRequest(baseUri)
+        consumerService().consumeRecordsRequest(baseUri)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
@@ -518,8 +451,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // consumer deletion
-        deleteConsumer(context, groupId, name);
-        context.completeNow();
+        consumerService()
+            .deleteConsumer(context, groupId, name);
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -536,17 +469,17 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 () -> produce.complete(true), () -> new ProducerRecord<>(topic, partition, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        String baseUri = UriConsts.consumerInstanceURI(groupId, name);
+        String baseUri = Urls.consumerInstances(groupId, name);
 
         // create a consumer
-        createConsumer(context, groupId, consumerJson);
-
         // subscribe to a topic
-        subscribeTopic(context, baseUri, new JsonObject().put("topic", topic).put("partition", partition));
+        consumerService()
+            .createConsumer(context, groupId, consumerJson)
+            .subscribeTopic(context, baseUri, new JsonObject().put("topic", topic).put("partition", partition));
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumeRecordsRequest(baseUri)
+        consumerService().consumeRecordsRequest(baseUri)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
@@ -573,8 +506,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // consumer deletion
-        deleteConsumer(context, groupId, name);
-        context.completeNow();
+        consumerService()
+            .deleteConsumer(context, groupId, name);
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -592,18 +525,18 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 () -> produce.complete(true), () -> new ProducerRecord<>(topic, 1, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        String baseUri = UriConsts.consumerInstanceURI(groupId, name);
+        String baseUri = Urls.consumerInstances(groupId, name);
 
         // create a consumer
-        createConsumer(context, groupId, consumerJson);
-
         // subscribe to a topic
-        subscribeTopic(context, baseUri, new JsonObject().put("topic", topic).put("partition", 0),
+        consumerService()
+            .createConsumer(context, groupId, consumerJson)
+            .subscribeTopic(context, baseUri, new JsonObject().put("topic", topic).put("partition", 0),
                 new JsonObject().put("topic", topic).put("partition", 1));
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumeRecordsRequest(baseUri)
+        consumerService().consumeRecordsRequest(baseUri)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
@@ -635,8 +568,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // consumer deletion
-        deleteConsumer(context, groupId, name);
-        context.completeNow();
+        consumerService()
+            .deleteConsumer(context, groupId, name);
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -652,20 +585,20 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        String baseUri = UriConsts.consumerInstanceURI(groupId, name);
+        String baseUri = Urls.consumerInstances(groupId, name);
 
         JsonObject json = consumerJson
             .put("enable.auto.commit", "false");
 
         // create consumer
-        createConsumer(context, groupId, json);
-
         // subscribe to a topic
-        subscribeConsumer(context, baseUri, topic);
+        consumerService()
+            .createConsumer(context, groupId, json)
+            .subscribeConsumer(context, groupId, name, topic);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumeRecordsRequest(baseUri)
+        consumerService().consumeRecordsRequest(baseUri)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
@@ -702,10 +635,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         root.put("offsets", offsets);
 
         CompletableFuture<Boolean> commit = new CompletableFuture<>();
-        postRequest(baseUri + "/offsets")
-                .putHeader(CONTENT_LENGTH, String.valueOf(root.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
+        consumerService()
+            .offsetsRequest(baseUri, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -720,8 +651,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         commit.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // consumer deletion
-        deleteConsumer(context, groupId, name);
-        context.completeNow();
+        consumerService()
+            .deleteConsumer(context, groupId, name);
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -737,20 +668,20 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        String baseUri = UriConsts.consumerInstanceURI(groupId, name);
+        String baseUri = Urls.consumerInstances(groupId, name);
 
         JsonObject json = consumerJson
             .put("enable.auto.commit", "false");
 
         // create consumer
-        createConsumer(context, groupId, json);
-
         // subscribe to a topic
-        subscribeConsumer(context, baseUri, topic);
+        consumerService()
+            .createConsumer(context, groupId, json)
+            .subscribeConsumer(context, groupId, name, topic);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumeRecordsRequest(baseUri)
+        consumerService().consumeRecordsRequest(baseUri)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
@@ -777,7 +708,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         CompletableFuture<Boolean> commit = new CompletableFuture<>();
-        postRequest(baseUri + "/offsets")
+        baseService()
+            .postRequest(baseUri + "/offsets")
                 .send(ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -792,16 +724,16 @@ public class ConsumerTest extends HttpBridgeTestBase {
         commit.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // consumer deletion
-        deleteConsumer(context, groupId, name);
-        context.completeNow();
+        consumerService()
+            .deleteConsumer(context, groupId, name);
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
 
     @Test
     void postToNonexistentEndpoint(VertxTestContext context) {
-
-        postRequest("/not-existing-endpoint")
+        baseService()
+            .postRequest("/not-existing-endpoint")
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(null, ar -> {
                     context.verify(() -> {
@@ -833,14 +765,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
         json.put("name", name);
 
         // create consumer
-        createConsumer(context, groupId, json);
+        consumerService()
+                .createConsumer(context, groupId, json);
 
         CompletableFuture<Boolean> create2Again = new CompletableFuture<>();
         // create the same consumer again
-        postRequest("/consumers/" + groupId)
-                .putHeader(CONTENT_LENGTH, String.valueOf(json.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
+        consumerService()
+            .createConsumerRequest(groupId, json)
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -849,6 +780,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertEquals(HttpResponseStatus.CONFLICT.code(), response.statusCode());
                         assertEquals(HttpResponseStatus.CONFLICT.code(), error.getCode());
                         assertEquals("A consumer instance with the specified name already exists in the Kafka Bridge.", error.getMessage());
+                        context.completeNow();
                     });
                     create2Again.complete(true);
                 });
@@ -858,10 +790,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> create3Again = new CompletableFuture<>();
         // create another consumer
         json.put("name", name + "diff");
-        postRequest("/consumers/" + groupId)
-                .putHeader(CONTENT_LENGTH, String.valueOf(json.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
+        consumerService()
+            .createConsumerRequest(groupId, json)
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -871,7 +801,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
                         assertEquals(name + "diff", consumerInstanceId);
-                        assertEquals(UriConsts.consumerInstanceURI(groupId, name) + "diff", consumerBaseUri);
+                        assertEquals(Urls.consumerInstances(groupId, name) + "diff", consumerBaseUri);
                     });
                     create3Again.complete(true);
                 });
@@ -885,19 +815,20 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
 
         // consume records
-        consumeRecordsRequest(baseUri)
-                .as(BodyCodec.jsonObject())
-                .send(ar -> {
-                    context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                        assertEquals("The specified consumer instance was not found.", error.getMessage());
-                    });
-                    context.completeNow();
+        consumerService()
+            .consumeRecordsRequest(baseUri)
+            .as(BodyCodec.jsonObject())
+            .send(ar -> {
+                context.verify(() -> {
+                    assertTrue(ar.succeeded());
+                    HttpResponse<JsonObject> response = ar.result();
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                    assertEquals("The specified consumer instance was not found.", error.getMessage());
                 });
+                context.completeNow();
+            });
     }
 
     @Test
@@ -915,10 +846,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("offsets", offsets);
 
-        postRequest(baseUri + "/offsets")
-                .putHeader(CONTENT_LENGTH, String.valueOf(root.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
+        consumerService()
+            .offsetsRequest(baseUri, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -950,14 +879,15 @@ public class ConsumerTest extends HttpBridgeTestBase {
         json.put("name", name);
 
         // create consumer
-        createConsumer(context, groupId, json);
-
         // subscribe to a topic
-        subscribeConsumer(context, baseUri, topic);
+        consumerService()
+            .createConsumer(context, groupId, json)
+            .subscribeConsumer(context, groupId, name, topic);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records" + "?max_bytes=1")
+        consumerService()
+            .getRequest(baseUri + "/records" + "?max_bytes=1")
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -976,8 +906,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // consumer deletion
-        deleteConsumer(context, groupId, name);
-        context.completeNow();
+        consumerService()
+            .deleteConsumer(context, groupId, name);
     }
 
 
@@ -996,14 +926,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
 
         // create consumer
-        createConsumer(context, groupId, consumerJson);
-
         // subscribe to a topic
-        subscribeConsumer(context, baseUri, topic);
+        consumerService()
+            .createConsumer(context, groupId, consumerJson)
+            .subscribeConsumer(context, groupId, name, topic);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumeRecordsRequest(baseUri)
+        consumerService().consumeRecordsRequest(baseUri)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
@@ -1030,7 +960,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // unsubscribe consumer
-        deleteConsumerSubscription(context, baseUri, topic);
+        consumerService().deleteConsumerSubscription(context, groupId, name, topic);
 
         // Send new record
         CompletableFuture<Boolean> produce2 = new CompletableFuture<>();
@@ -1040,7 +970,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         // Try to consume after unsubscription
         CompletableFuture<Boolean> consume2 = new CompletableFuture<>();
-        consumeRecordsRequest(baseUri)
+        consumerService().consumeRecordsRequest(baseUri)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.verify(() -> {
@@ -1057,8 +987,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consume2.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // consumer deletion
-        deleteConsumer(context, groupId, name);
-        context.completeNow();
+        consumerService()
+            .deleteConsumer(context, groupId, name);
     }
 
     @Test
@@ -1076,14 +1006,15 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
 
         // create consumer
-        createConsumer(context, groupId, consumerJson);
-
         // subscribe to a topic
-        subscribeConsumer(context, baseUri, topic);
+        consumerService()
+            .createConsumer(context, groupId, consumerJson)
+            .subscribeConsumer(context, groupId, name, topic);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        getRequest(baseUri + "/records?timeout=" + 1000)
+        consumerService()
+            .getRequest(baseUri + "/records?timeout=" + 1000)
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -1101,8 +1032,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // consumer deletion
-        deleteConsumer(context, groupId, name);
-        context.completeNow();
+        consumerService()
+            .deleteConsumer(context, groupId, name);
     }
 
     @Test
@@ -1129,10 +1060,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         root.put("records", records);
 
         CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        postRequest("/topics/" + topic)
-                .putHeader(CONTENT_LENGTH, String.valueOf(root.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonObject())
+        producerService()
+            .sendRecordsRequest(topic, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -1158,14 +1087,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerConfig.put("format", "json");
 
         // create consumer
-        createConsumer(context, groupId, consumerConfig);
-
         // subscribe to a topic
-        subscribeConsumer(context, baseUri, topic);
+        consumerService()
+            .createConsumer(context, groupId, consumerConfig)
+            .subscribeConsumer(context, groupId, name, topic);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumeRecordsRequest(baseUri)
+        consumerService().consumeRecordsRequest(baseUri)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
@@ -1192,7 +1121,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // consumer deletion
-        deleteConsumer(context, groupId, name);
-        context.completeNow();
+        consumerService()
+            .deleteConsumer(context, groupId, name);
     }
 }

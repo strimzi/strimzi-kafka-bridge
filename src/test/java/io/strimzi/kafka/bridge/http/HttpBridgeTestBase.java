@@ -5,23 +5,18 @@
 
 package io.strimzi.kafka.bridge.http;
 
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.KafkaClusterTestBase;
 import io.strimzi.kafka.bridge.amqp.AmqpConfig;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
-import io.strimzi.kafka.bridge.utils.UriConsts;
+import io.strimzi.kafka.bridge.http.services.BaseService;
+import io.strimzi.kafka.bridge.http.services.ConsumerService;
+import io.strimzi.kafka.bridge.http.services.ProducerService;
+import io.strimzi.kafka.bridge.http.services.SeekService;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.HttpRequest;
-import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
-import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -33,15 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
@@ -76,100 +62,20 @@ class HttpBridgeTestBase extends KafkaClusterTestBase {
 
     private BridgeConfig bridgeConfig;
 
-    //HTTP methods with configured Response timeout
-    HttpRequest<JsonObject> postRequest(String requestURI) {
-        return client.post(requestURI)
-                .timeout(RESPONSE_TIMEOUT)
-                .as(BodyCodec.jsonObject());
+    BaseService baseService(){
+        return new BaseService(client);
     }
 
-    HttpRequest<Buffer> getRequest(String requestURI) {
-        return client.get(requestURI)
-                .timeout(RESPONSE_TIMEOUT);
+    ConsumerService consumerService(){
+        return new ConsumerService(client);
     }
 
-    HttpRequest<Buffer> deleteRequest(String requestURI) {
-        return client.delete(requestURI)
-                .timeout(RESPONSE_TIMEOUT);
+    SeekService seekService(){
+        return new SeekService(client);
     }
 
-    static final String CONSUMERS_URL_PATH = "/consumers/";
-
-    HttpRequest<JsonObject> createConsumerRequest(String groupId, JsonObject json) {
-        return postRequest(CONSUMERS_URL_PATH + groupId)
-                .putHeader(CONTENT_LENGTH, String.valueOf(json.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON);
-    }
-
-    void createConsumer(VertxTestContext context, String groupId, JsonObject json) throws InterruptedException, ExecutionException, TimeoutException {
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-        createConsumerRequest(groupId, json)
-            .sendJsonObject(json, ar -> {
-                context.verify(() -> {
-                    assertTrue(ar.succeeded());
-                    HttpResponse<JsonObject> response = ar.result();
-                    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
-                    JsonObject bridgeResponse = response.body();
-                    String consumerInstanceId = bridgeResponse.getString("instance_id");
-                    String consumerBaseUri = bridgeResponse.getString("base_uri");
-                    assertEquals(json.getString("name"), consumerInstanceId);
-                    assertEquals(UriConsts.consumerInstanceURI(groupId, json.getString("name")), consumerBaseUri);
-                    context.completeNow();
-                });
-                create.complete(true);
-            });
-
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-    }
-
-    void subscribeConsumer(VertxTestContext context, String baseUri, String ... topicNames) throws InterruptedException, ExecutionException, TimeoutException {
-        JsonArray topics = new JsonArray();
-        for(String topicName : topicNames) {
-            topics.add(topicName);
-        }
-
-        JsonObject topicsRoot = new JsonObject();
-        topicsRoot.put("topics", topics);
-
-        subscribeConsumer(context, baseUri, topicsRoot);
-    }
-
-    void subscribeConsumer(VertxTestContext context, String baseUri, JsonObject jsonObject) throws InterruptedException, ExecutionException, TimeoutException {
-        CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        postRequest(baseUri + "/subscription")
-                .putHeader(CONTENT_LENGTH, String.valueOf(jsonObject.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(jsonObject, ar -> {
-                    context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
-                    });
-                    subscribe.complete(true);
-                });
-        subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-    }
-
-    HttpRequest<JsonObject> deleteConsumerRequest(String url) {
-        return deleteRequest(url)
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject());
-    }
-
-    void deleteConsumer(VertxTestContext context, String groupId, String name) throws InterruptedException, ExecutionException, TimeoutException {
-        CompletableFuture<Boolean> delete = new CompletableFuture<>();
-        // consumer deletion
-        deleteConsumerRequest(UriConsts.consumerInstanceURI(groupId, name))
-                .send(ar -> {
-                    context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
-                        context.completeNow();
-                    });
-                    delete.complete(true);
-                });
-        delete.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+    ProducerService producerService(){
+        return new ProducerService(client);
     }
 
     @BeforeEach

@@ -1,7 +1,6 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -41,20 +40,20 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         JsonObject json = new JsonObject();
         json.put("name", name);
 
-        // create consumer
-        createConsumer(context, groupId, json);
-
-        // subscribe to a topic
         JsonArray topics = new JsonArray();
         topics.add(topic);
 
         JsonObject topicsRoot = new JsonObject();
         topicsRoot.put("topics", topics);
-
-        subscribeConsumer(context, groupId, topicsRoot);
+        // create consumer
+        // subscribe to a topic
+        consumerService()
+            .createConsumer(context, groupId, json)
+            .subscribeConsumer(context, groupId, name, topicsRoot);
 
         CompletableFuture<Boolean> unsubscribe = new CompletableFuture<>();
-        deleteRequest(baseUri + "consumer-invalidation" + "/subscription")
+        consumerService()
+            .deleteRequest(baseUri + "consumer-invalidation" + "/subscription")
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
@@ -73,7 +72,8 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        deleteConsumer(context, groupId, name);
+        consumerService()
+            .deleteConsumer(context, groupId, name);
     }
 
     @Test
@@ -83,14 +83,13 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
-        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
-
         JsonObject json = new JsonObject();
         json.put("name", name);
         json.put("format", "json");
 
         // create consumer
-        createConsumer(context, groupId, json);
+        consumerService()
+            .createConsumer(context, groupId, json);
 
         // cannot subscribe setting both topics list and topic_pattern
         JsonArray topics = new JsonArray();
@@ -101,10 +100,8 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         topicsRoot.put("topic_pattern", "my-topic-pattern");
 
         CompletableFuture<Boolean> subscribeConflict = new CompletableFuture<>();
-        postRequest(baseUri + "/subscription")
-                .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
-                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
+        consumerService()
+            .subscribeConsumerRequest(groupId, name, topicsRoot)
                 .sendJsonObject(topicsRoot, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -124,10 +121,8 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         // cannot subscribe without topics or topic_pattern
         topicsRoot = new JsonObject();
         CompletableFuture<Boolean> subscribeEmpty = new CompletableFuture<>();
-        postRequest(baseUri + "/subscription")
-                .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
-                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
+        consumerService()
+            .subscribeConsumerRequest(groupId, name, topicsRoot)
                 .sendJsonObject(topicsRoot, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -163,8 +158,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
-        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
-
         JsonObject json = new JsonObject();
         json.put("name", name);
 
@@ -176,10 +169,8 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         topicsRoot.put("topics", topics);
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        postRequest(baseUri + "/subscription")
-                .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
-                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
+        consumerService()
+            .subscribeConsumerRequest(groupId, name, topicsRoot)
                 .sendJsonObject(topicsRoot, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -194,5 +185,4 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         context.completeNow();
     }
-
 }
