@@ -83,6 +83,10 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                                         .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
                         );
 
+                        if (this.bridgeConfig.getHttpConfig().getConsumerTimeout() > -1) {
+                            startInactiveConsumerDeletionTimer(this.bridgeConfig.getHttpConfig().getConsumerTimeout());
+                        }
+
                         this.isReady = true;
                         startFuture.complete();
                     } else {
@@ -90,18 +94,20 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                         startFuture.fail(httpServerAsyncResult.cause());
                     }
                 });
+    }
 
-        vertx.setPeriodic(1000, a -> {
+    private void startInactiveConsumerDeletionTimer(Long timeout) {
+        vertx.setPeriodic(1000, ignore -> {
             log.debug("Looking for stale consumers in {} entries", timestampMap.size());
             Iterator it = timestampMap.entrySet().iterator();
             while (it.hasNext()) {
                 Map.Entry<String, Long> item = (Map.Entry) it.next();
-                if (item.getValue() + this.bridgeConfig.getHttpConfig().getConsumerTimeout() < System.currentTimeMillis()) {
+                if (item.getValue() + timeout < System.currentTimeMillis()) {
                     final SinkBridgeEndpoint deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(item.getKey());
                     if (deleteSinkEndpoint != null) {
-                        this.httpBridgeContext.getHttpSinkEndpoints().remove(item.getKey());
                         deleteSinkEndpoint.close();
-                        log.warn("Consumer {} deleted after inactivity timeout ({} ms).", item.getKey(), this.bridgeConfig.getHttpConfig().getConsumerTimeout());
+                        this.httpBridgeContext.getHttpSinkEndpoints().remove(item.getKey());
+                        log.warn("Consumer {} deleted after inactivity timeout ({} ms).", item.getKey(), timeout);
                         timestampMap.remove(item.getKey());
                     }
                 }
@@ -308,8 +314,8 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         final SinkBridgeEndpoint sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(instanceId);
 
         if (sinkEndpoint != null) {
-            sinkEndpoint.handle(new HttpEndpoint(routingContext));
             timestampMap.replace(instanceId, System.currentTimeMillis());
+            sinkEndpoint.handle(new HttpEndpoint(routingContext));
         } else {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.NOT_FOUND.code(),

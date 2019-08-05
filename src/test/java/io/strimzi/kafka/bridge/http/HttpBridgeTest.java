@@ -3492,16 +3492,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
     @Test
     void consumerDeletedAfterInactivity(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "consumerDeletedAfterInactivity";
-        kafkaCluster.createTopic(topic, 1, 1);
-
-        String sentBody = "Simple message";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        kafkaCluster.useTo().produceStrings(1, () -> produce.complete(true), () ->
-                new ProducerRecord<>(topic, 0, null, sentBody));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -3526,73 +3516,27 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
                         assertEquals(name, consumerInstanceId);
                         assertEquals(baseUri, consumerBaseUri);
+
+                        vertx.setTimer(timeout + 1000, timeouted -> {
+                            CompletableFuture<Boolean> delete = new CompletableFuture<>();
+                            // consumer deletion
+                            deleteRequest(baseUri)
+                                    .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                                    .as(BodyCodec.jsonObject())
+                                    .send(consumerDeletedResponse -> {
+                                        context.verify(() -> assertTrue(ar.succeeded()));
+
+                                        HttpResponse<JsonObject> deletionResponse = consumerDeletedResponse.result();
+                                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), deletionResponse.statusCode());
+                                        assertEquals("The specified consumer instance was not found.", deletionResponse.body().getString("message"));
+
+                                        delete.complete(true);
+                                        context.completeNow();
+                                    });
+                        });
                     });
 
                     create.complete(true);
                 });
-
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        // After
-        Thread.sleep(timeout - 1000);
-
-        //////////////////
-
-        JsonObject json = new JsonObject();
-        json.put("name", name);
-
-        // subscribe to a topic
-        JsonArray topics = new JsonArray();
-        topics.add(topic);
-
-        JsonObject topicsRoot = new JsonObject();
-        topicsRoot.put("topics", topics);
-
-
-
-        CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        postRequest(baseUri + "/subscription")
-                .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
-                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(topicsRoot, ar -> {
-                    context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
-                    });
-                    subscribe.complete(true);
-                });
-
-        subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        Thread.sleep(timeout + 2000);
-
-
-        //////////////////
-
-
-
-
-
-        CompletableFuture<Boolean> subscribeAfterTimeout = new CompletableFuture<>();
-        postRequest(baseUri + "/subscription")
-                .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
-                .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(topicsRoot, ar -> {
-                    context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                        assertEquals("The specified consumer instance was not found.", error.getMessage());
-                    });
-                    subscribeAfterTimeout.complete(true);
-                });
-        subscribeAfterTimeout.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        context.completeNow();
-
-        this.bridgeConfig.getConfig().remove(HttpConfig.HTTP_CONSUMER_TIMEOUT);
     }
 }
