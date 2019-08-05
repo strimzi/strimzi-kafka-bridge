@@ -111,7 +111,7 @@ EOF
 
 # if http/amqp is disabled, do not print its configuration
 PROPERTIES=$(cat <<EOF
-BRIDGE_PROPERTIES
+$BRIDGE_PROPERTIES
 
 $KAFKA_PROPERTIES
 

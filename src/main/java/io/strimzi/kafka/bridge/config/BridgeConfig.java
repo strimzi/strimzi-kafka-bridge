@@ -88,6 +88,10 @@ public class BridgeConfig extends AbstractConfig {
     }
 
     public String getBridgeID() {
-        return config.get(BridgeConfig.BRIDGE_ID) == null ? null : config.get(BridgeConfig.BRIDGE_ID).toString();
+        if (config.get(BridgeConfig.BRIDGE_ID) == null) {
+            return null;
+        } else {
+            return config.get(BridgeConfig.BRIDGE_ID).toString();
+        }
     }
 }
