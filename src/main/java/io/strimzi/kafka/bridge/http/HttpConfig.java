@@ -20,12 +20,12 @@ public class HttpConfig extends AbstractConfig {
     public static final String HTTP_ENABLED = HTTP_CONFIG_PREFIX + "enabled";
     public static final String HTTP_HOST = HTTP_CONFIG_PREFIX + "host";
     public static final String HTTP_PORT = HTTP_CONFIG_PREFIX + "port";
-    public static final String HTTP_CONSUMER_TIMEOUT = HTTP_CONFIG_PREFIX + "timeout";
+    public static final String HTTP_CONSUMER_TIMEOUT = HTTP_CONFIG_PREFIX + "timeoutSeconds";
 
     public static final boolean DEFAULT_HTTP_ENABLED = true;
     public static final String DEFAULT_HOST = "0.0.0.0";
     public static final int DEFAULT_PORT = 8080;
-    public static final long DEFAULT_CONSUMER_TIMEOUT = -1L;
+    public static final long DEFAULT_CONSUMER_TIMEOUT = 0L;
 
     /**
      * Constructor

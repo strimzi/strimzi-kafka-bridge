@@ -67,7 +67,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
     private static Map<String, Object> config = new HashMap<>();
 
-    private static long timeout = 5000;
+    private static long timeout = 5;
 
     static {
         config.put(AmqpConfig.AMQP_ENABLED, true);
@@ -3491,7 +3491,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
-    void consumerDeletedAfterInactivity(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void consumerDeletedAfterInactivity(VertxTestContext context) {
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
@@ -3517,7 +3517,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                         assertEquals(name, consumerInstanceId);
                         assertEquals(baseUri, consumerBaseUri);
 
-                        vertx.setTimer(timeout + 1000, timeouted -> {
+                        vertx.setTimer(timeout * 1000 + 1000, timeouted -> {
                             CompletableFuture<Boolean> delete = new CompletableFuture<>();
                             // consumer deletion
                             deleteRequest(baseUri)
@@ -3535,7 +3535,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                                     });
                         });
                     });
-
                     create.complete(true);
                 });
     }

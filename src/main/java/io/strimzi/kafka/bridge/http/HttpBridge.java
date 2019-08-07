@@ -83,7 +83,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                                         .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
                         );
 
-                        if (this.bridgeConfig.getHttpConfig().getConsumerTimeout() > -1) {
+                        if (this.bridgeConfig.getHttpConfig().getConsumerTimeout() > 0) {
                             startInactiveConsumerDeletionTimer(this.bridgeConfig.getHttpConfig().getConsumerTimeout());
                         }
 
@@ -97,17 +97,18 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     }
 
     private void startInactiveConsumerDeletionTimer(Long timeout) {
+        Long timeoutInMs = timeout * 1000L;
         vertx.setPeriodic(1000, ignore -> {
             log.debug("Looking for stale consumers in {} entries", timestampMap.size());
             Iterator it = timestampMap.entrySet().iterator();
             while (it.hasNext()) {
                 Map.Entry<String, Long> item = (Map.Entry) it.next();
-                if (item.getValue() + timeout < System.currentTimeMillis()) {
+                if (item.getValue() + timeoutInMs < System.currentTimeMillis()) {
                     final SinkBridgeEndpoint deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(item.getKey());
                     if (deleteSinkEndpoint != null) {
                         deleteSinkEndpoint.close();
                         this.httpBridgeContext.getHttpSinkEndpoints().remove(item.getKey());
-                        log.warn("Consumer {} deleted after inactivity timeout ({} ms).", item.getKey(), timeout);
+                        log.warn("Consumer {} deleted after inactivity timeout ({}s).", item.getKey(), timeout);
                         timestampMap.remove(item.getKey());
                     }
                 }
