@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+BRIDGE_PROPERTIES=$(cat <<-EOF
+#Bridge configuration
+bridge.id=${KAFKA_BRIDGE_ID}
+EOF
+)
+
 SECURITY_PROTOCOL=PLAINTEXT
 
 if [ "$KAFKA_BRIDGE_TLS" = "true" ]; then
@@ -105,6 +111,8 @@ EOF
 
 # if http/amqp is disabled, do not print its configuration
 PROPERTIES=$(cat <<EOF
+$BRIDGE_PROPERTIES
+
 $KAFKA_PROPERTIES
 
 $PRODUCER_PROPERTIES

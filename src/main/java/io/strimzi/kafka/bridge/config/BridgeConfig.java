@@ -18,13 +18,15 @@ public class BridgeConfig extends AbstractConfig {
 
     public static final String BRIDGE_CONFIG_PREFIX = "bridge.";
 
+    public static final String BRIDGE_ID = BRIDGE_CONFIG_PREFIX + "id";
+
     private KafkaConfig kafkaConfig;
     private AmqpConfig amqpConfig;
     private HttpConfig httpConfig;
 
     /**
      * Constructor
-     * 
+     *
      * @param config bridge common configuration parameters map
      * @param kafkaConfig Kafka related configuration
      * @param amqpConfig AMQP endpoint related configuration
@@ -71,7 +73,7 @@ public class BridgeConfig extends AbstractConfig {
 
         return new BridgeConfig(map.entrySet().stream()
                 .filter(e -> e.getKey().startsWith(BridgeConfig.BRIDGE_CONFIG_PREFIX))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)), 
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
                 kafkaConfig, amqpConfig, httpConfig);
     }
 
@@ -83,5 +85,13 @@ public class BridgeConfig extends AbstractConfig {
                 ",amqpConfig=" + this.amqpConfig +
                 ",httpConfig=" + this.httpConfig +
                 ")";
+    }
+
+    public String getBridgeID() {
+        if (config.get(BridgeConfig.BRIDGE_ID) == null) {
+            return null;
+        } else {
+            return config.get(BridgeConfig.BRIDGE_ID).toString();
+        }
     }
 }
