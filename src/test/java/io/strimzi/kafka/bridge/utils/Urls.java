@@ -7,9 +7,10 @@ package io.strimzi.kafka.bridge.utils;
 
 public class Urls {
 
-    private static final String TRANSFER_PROTOCOL = "http://";
-    static final String BRIDGE_HOST = "127.0.0.1";
-    static final int BRIDGE_PORT = 8080;
+    private static final String SCHEME = "http://";
+    public static final String BRIDGE_HOST = "127.0.0.1";
+    public static final int BRIDGE_PORT = 8080;
+    private static final String BRIDGE_ADDRESS = SCHEME + BRIDGE_HOST + ":" + BRIDGE_PORT;
 
     private static final String CONSUMERS_PATH = "/consumers/";
     private static final String INSTANCES_PATH =  "/instances/";
@@ -24,23 +25,23 @@ public class Urls {
     private static final String RECORDS_PATH = "/records";
 
     public static String consumer(String groupId) {
-        return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + CONSUMERS_PATH + groupId;
+        return BRIDGE_ADDRESS + CONSUMERS_PATH + groupId;
     }
 
     public static String consumerInstances(String groupId, String name) {
-        return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + CONSUMERS_PATH + groupId + INSTANCES_PATH + name;
+        return BRIDGE_ADDRESS + CONSUMERS_PATH + groupId + INSTANCES_PATH + name;
     }
 
     public static String consumerInstancesPositionsBeginning(String groupId, String name) {
-        return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + consumerInstances(groupId, name) + POSITIONS_BEGGINING_PATH;
+        return BRIDGE_ADDRESS + consumerInstances(groupId, name) + POSITIONS_BEGGINING_PATH;
     }
 
     public static String consumerInstancesPositionsEnd(String groupId, String name) {
-        return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + consumerInstances(groupId, name) + POSITIONS_END_PATH;
+        return BRIDGE_ADDRESS + consumerInstances(groupId, name) + POSITIONS_END_PATH;
     }
 
     public static String consumerInstancesPositions(String groupId, String name) {
-        return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + consumerInstances(groupId, name) + POSITIONS_PATH;
+        return BRIDGE_ADDRESS + consumerInstances(groupId, name) + POSITIONS_PATH;
     }
 
     public static String consumerInstancesSubscription(String groupId, String name) {
@@ -48,7 +49,7 @@ public class Urls {
     }
 
     public static String consumerInstancesAssignments(String groupId, String name) {
-        return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + consumerInstances(groupId, name) + ASSIGMENTS_PATH;
+        return BRIDGE_ADDRESS + consumerInstances(groupId, name) + ASSIGMENTS_PATH;
     }
 
     public static String consumerInstancesOffsets(String groupId, String name) {
@@ -67,11 +68,11 @@ public class Urls {
     }
 
     public static String producerTopics(String topic) {
-        return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + TOPICS_PATH + topic;
+        return BRIDGE_ADDRESS + TOPICS_PATH + topic;
     }
 
     public static String producerTopicsPartitions(String topic, Object partitions) {
-        return TRANSFER_PROTOCOL + BRIDGE_HOST + ":" + BRIDGE_PORT + TOPICS_PATH + topic + PARTITIONS_PATH + partitions;
+        return BRIDGE_ADDRESS + TOPICS_PATH + topic + PARTITIONS_PATH + partitions;
     }
 
 }

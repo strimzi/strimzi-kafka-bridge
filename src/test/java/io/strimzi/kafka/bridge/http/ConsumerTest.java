@@ -943,7 +943,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // unsubscribe consumer
-        consumerService().deleteConsumerSubscription(context, groupId, name, topic);
+        consumerService().unsubscribeConsumer(context, groupId, name, topic);
 
         // Send new record
         CompletableFuture<Boolean> produce2 = new CompletableFuture<>();

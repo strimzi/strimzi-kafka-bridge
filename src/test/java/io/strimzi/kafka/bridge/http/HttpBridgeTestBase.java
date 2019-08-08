@@ -14,6 +14,7 @@ import io.strimzi.kafka.bridge.http.services.BaseService;
 import io.strimzi.kafka.bridge.http.services.ConsumerService;
 import io.strimzi.kafka.bridge.http.services.ProducerService;
 import io.strimzi.kafka.bridge.http.services.SeekService;
+import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
@@ -42,9 +43,6 @@ class HttpBridgeTestBase extends KafkaClusterTestBase {
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
     }
-
-    static final String BRIDGE_HOST = "127.0.0.1";
-    static final int BRIDGE_PORT = 8080;
 
     // for periodic/multiple messages test
     static final int PERIODIC_MAX_MESSAGE = 10;
@@ -87,8 +85,8 @@ class HttpBridgeTestBase extends KafkaClusterTestBase {
         vertx.deployVerticle(this.httpBridge, context.succeeding(id -> context.completeNow()));
 
         client = WebClient.create(vertx, new WebClientOptions()
-                .setDefaultHost(BRIDGE_HOST)
-                .setDefaultPort(BRIDGE_PORT)
+                .setDefaultHost(Urls.BRIDGE_HOST)
+                .setDefaultPort(Urls.BRIDGE_PORT)
         );
     }
 

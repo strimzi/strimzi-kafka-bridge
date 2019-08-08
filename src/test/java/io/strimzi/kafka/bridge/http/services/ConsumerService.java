@@ -67,7 +67,7 @@ public class ConsumerService extends BaseService {
 
     // Consumer actions
 
-    public ConsumerService deleteConsumerSubscription(VertxTestContext context, String groupId, String name, String... topicNames) throws InterruptedException, ExecutionException, TimeoutException {
+    public ConsumerService unsubscribeConsumer(VertxTestContext context, String groupId, String name, String... topicNames) throws InterruptedException, ExecutionException, TimeoutException {
         JsonArray topics = new JsonArray();
         for (String topicName : topicNames) {
             topics.add(topicName);

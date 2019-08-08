@@ -23,21 +23,19 @@ public class SeekService extends BaseService {
     // Seek basic requests
 
     public HttpRequest<JsonObject> positionsRequest(String groupId, String name, JsonObject json) {
-        return postRequest(Urls.consumerInstancesPositions(groupId, name))
-                .putHeader(CONTENT_LENGTH, String.valueOf(json.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject());
+        return positionsBaseRequest(Urls.consumerInstancesPositions(groupId, name), json);
     }
 
     public HttpRequest<JsonObject> positionsBeginningRequest(String groupId, String name, JsonObject json) {
-        return postRequest(Urls.consumerInstancesPositionsBeginning(groupId, name))
-                .putHeader(CONTENT_LENGTH, String.valueOf(json.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject());
+        return positionsBaseRequest(Urls.consumerInstancesPositionsBeginning(groupId, name), json);
     }
 
     public HttpRequest<JsonObject> positionsBeginningEnd(String groupId, String name, JsonObject json) {
-        return postRequest(Urls.consumerInstancesPositionsEnd(groupId, name))
+        return positionsBaseRequest(Urls.consumerInstancesPositionsEnd(groupId, name), json);
+    }
+
+    private HttpRequest<JsonObject> positionsBaseRequest(String url, JsonObject json) {
+        return postRequest(url)
                 .putHeader(CONTENT_LENGTH, String.valueOf(json.toBuffer().length()))
                 .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject());
