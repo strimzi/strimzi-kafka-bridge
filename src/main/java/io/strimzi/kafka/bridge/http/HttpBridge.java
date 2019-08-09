@@ -161,15 +161,17 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
         this.isReady = false;
 
-        //Consumers cleanup
-        this.httpBridgeContext.getHttpSinkEndpoints().forEach((consumerId, httpEndpoint) -> {
-            if (httpEndpoint != null) {
-                httpEndpoint.close();
-            }
-        });
+        // Consumers cleanup
+        Map<String, SinkBridgeEndpoint> consumers = this.httpBridgeContext.getHttpSinkEndpoints();
+
+        for (Map.Entry<String, SinkBridgeEndpoint> consumer: consumers.entrySet()) {
+            if (consumer.getValue() != null)
+                consumer.getValue().close();
+        }
+
         this.httpBridgeContext.getHttpSinkEndpoints().clear();
 
-        //producer cleanup
+        // producer cleanup
         // for each connection, we have to close the connection itself but before that
         // all the sink/source endpoints (so the related links inside each of them)
         this.httpBridgeContext.getHttpSourceEndpoints().forEach((connection, endpoint) -> {
