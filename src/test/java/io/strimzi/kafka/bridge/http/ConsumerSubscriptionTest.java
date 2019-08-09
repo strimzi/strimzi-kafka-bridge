@@ -73,10 +73,10 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
         unsubscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
     }
 
     @Test

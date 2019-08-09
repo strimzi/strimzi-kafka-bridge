@@ -84,7 +84,6 @@ public class ConsumerService extends BaseService {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
-                        context.completeNow();
                     });
                     unsubscribe.complete(true);
                 });
@@ -112,7 +111,6 @@ public class ConsumerService extends BaseService {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
-                        context.completeNow();
                     });
                     subscribe.complete(true);
                 });
@@ -133,7 +131,6 @@ public class ConsumerService extends BaseService {
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
                         assertEquals(json.getString("name"), consumerInstanceId);
                         assertEquals(Urls.consumerInstances(groupId, json.getString("name")), consumerBaseUri);
-                        context.completeNow();
                     });
                     create.complete(true);
                 });
@@ -165,7 +162,6 @@ public class ConsumerService extends BaseService {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
-                        context.completeNow();
                     });
                     subscribe.complete(true);
                 });
@@ -182,7 +178,6 @@ public class ConsumerService extends BaseService {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
                         assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
-                        context.completeNow();
                     });
                     delete.complete(true);
                 });

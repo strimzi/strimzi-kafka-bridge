@@ -460,7 +460,6 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         producerService().sendRecordsToPartitionRequest(kafkaTopic, partition, root)
             .sendJsonObject(root, verifyOK(context));
-        context.completeNow();
     }
 
     @Test
@@ -571,6 +570,7 @@ public class ProducerTest extends HttpBridgeTestBase {
                 JsonObject metadata = offsets.getJsonObject(0);
                 assertNotNull(metadata.getInteger("partition"));
                 assertEquals(0L, metadata.getLong("offset"));
+                assertTrue(false);
                 context.completeNow();
             });
     }

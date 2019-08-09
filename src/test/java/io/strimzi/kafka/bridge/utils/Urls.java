@@ -60,6 +60,7 @@ public class Urls {
         return consumerInstances(groupId, name) + RECORDS_PATH
                 + "?"
                 + (timeout != null ? "timeout=" + timeout : "")
+                + (timeout != null && maxBytes != null ? "&" : "")
                 + (maxBytes != null  ? "max_bytes=" + maxBytes : "");
     }
 

@@ -87,18 +87,18 @@ public class SeekTest extends HttpBridgeTestBase {
         partitionsJSON.put("partitions", nonExistentPartitionJSON);
 
         seekService().positionsBeginningRequest(groupId, name, partitionsJSON)
-                .sendJsonObject(partitionsJSON, ar -> {
-                    context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                        assertEquals("No current assignment for partition " + topic + "-" + nonExistenPartition, error.getMessage());
-                        context.completeNow();
-                    });
-                    consumerInstanceDontHavePartition.complete(true);
+            .sendJsonObject(partitionsJSON, ar -> {
+                context.verify(() -> {
+                    assertTrue(ar.succeeded());
+                    HttpResponse<JsonObject> response = ar.result();
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                    assertEquals("No current assignment for partition " + topic + "-" + nonExistenPartition, error.getMessage());
+                    context.completeNow();
                 });
+                consumerInstanceDontHavePartition.complete(true);
+            });
     }
 
     @Test
@@ -174,11 +174,11 @@ public class SeekTest extends HttpBridgeTestBase {
 
         consumeSeek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        CompletableFuture<Boolean> delete = new CompletableFuture<>();
-
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
     @Test
@@ -367,6 +367,8 @@ public class SeekTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
 }

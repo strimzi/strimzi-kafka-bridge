@@ -78,7 +78,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertEquals(name, consumerInstanceId);
                         assertEquals(baseUri, consumerBaseUri);
                     });
-
                     context.completeNow();
                 });
 
@@ -105,7 +104,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertEquals(name, consumerInstanceId);
                         assertEquals(baseUri, consumerBaseUri);
                     });
-
                     context.completeNow();
                 });
 
@@ -134,7 +132,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertEquals(name, consumerInstanceId);
                         assertEquals(baseUri, consumerBaseUri);
                     });
-
                     context.completeNow();
                 });
 
@@ -161,7 +158,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertEquals(name, consumerInstanceId);
                         assertEquals(baseUri, consumerBaseUri);
                     });
-
                     context.completeNow();
                 });
 
@@ -184,7 +180,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), error.getCode());
                         assertEquals("mqtt is not a valid schema/proto.", error.getMessage());
                     });
-
                     context.completeNow();
                 });
 
@@ -208,7 +203,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertEquals("Invalid value foo for configuration auto.offset.reset: String must be one of: latest, earliest, none",
                                 error.getMessage());
                     });
-
                     context.completeNow();
                 });
 
@@ -265,6 +259,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -325,6 +320,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -385,6 +381,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -450,6 +447,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -503,6 +501,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -563,6 +562,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -644,6 +644,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -717,6 +718,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -797,8 +799,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     create3Again.complete(true);
                 });
 
-        create3Again.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         context.completeNow();
+        create3Again.get(TEST_TIMEOUT, TimeUnit.SECONDS);
     }
 
     @Test
@@ -893,6 +895,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
 
@@ -972,6 +976,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
     @Test
@@ -1015,6 +1021,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
     @Test
@@ -1102,5 +1110,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 }
