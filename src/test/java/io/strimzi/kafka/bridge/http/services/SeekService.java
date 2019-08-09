@@ -23,15 +23,15 @@ public class SeekService extends BaseService {
     // Seek basic requests
 
     public HttpRequest<JsonObject> positionsRequest(String groupId, String name, JsonObject json) {
-        return positionsBaseRequest(Urls.consumerInstancesPositions(groupId, name), json);
+        return positionsBaseRequest(Urls.consumerInstancePosition(groupId, name), json);
     }
 
     public HttpRequest<JsonObject> positionsBeginningRequest(String groupId, String name, JsonObject json) {
-        return positionsBaseRequest(Urls.consumerInstancesPositionsBeginning(groupId, name), json);
+        return positionsBaseRequest(Urls.consumerInstancePositionBeginning(groupId, name), json);
     }
 
     public HttpRequest<JsonObject> positionsBeginningEnd(String groupId, String name, JsonObject json) {
-        return positionsBaseRequest(Urls.consumerInstancesPositionsEnd(groupId, name), json);
+        return positionsBaseRequest(Urls.consumerInstancePositionEnd(groupId, name), json);
     }
 
     private HttpRequest<JsonObject> positionsBaseRequest(String url, JsonObject json) {

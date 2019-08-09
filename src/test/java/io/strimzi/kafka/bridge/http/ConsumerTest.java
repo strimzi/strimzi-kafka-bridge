@@ -275,7 +275,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody.getBytes()));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        String baseUri = Urls.consumerInstances(groupId, name);
+        String baseUri = Urls.consumerInstance(groupId, name);
 
         JsonObject json = new JsonObject();
         json.put("name", name);
@@ -290,7 +290,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
         consumerService()
-            .getRequest(Urls.consumerInstancesRecords(groupId, name, 1000, null))
+            .getRequest(Urls.consumerInstanceRecords(groupId, name, 1000, null))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -660,7 +660,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        String baseUri = Urls.consumerInstances(groupId, name);
+        String baseUri = Urls.consumerInstance(groupId, name);
 
         JsonObject json = consumerJson
             .put("enable.auto.commit", "false");
@@ -794,7 +794,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
                         assertEquals(name + "diff", consumerInstanceId);
-                        assertEquals(Urls.consumerInstances(groupId, name) + "diff", consumerBaseUri);
+                        assertEquals(Urls.consumerInstance(groupId, name) + "diff", consumerBaseUri);
                     });
                     create3Again.complete(true);
                 });
@@ -874,7 +874,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
         consumerService()
-            .getRequest(Urls.consumerInstancesRecords(groupId, name, null, 1))
+            .getRequest(Urls.consumerInstanceRecords(groupId, name, null, 1))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
@@ -1001,7 +1001,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
         consumerService()
-            .getRequest(Urls.consumerInstancesRecords(groupId, name, 1000, null))
+            .getRequest(Urls.consumerInstanceRecords(groupId, name, 1000, null))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {

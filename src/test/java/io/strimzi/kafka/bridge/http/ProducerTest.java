@@ -192,7 +192,7 @@ public class ProducerTest extends HttpBridgeTestBase {
         root.put("records", records);
 
         baseService()
-            .postRequest(Urls.producerTopics(topic))
+            .postRequest(Urls.producerTopic(topic))
                 .putHeader(CONTENT_LENGTH, String.valueOf(root.toBuffer().length()))
                 .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonObject())

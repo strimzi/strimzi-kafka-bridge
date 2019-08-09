@@ -28,51 +28,51 @@ public class Urls {
         return BRIDGE_ADDRESS + CONSUMERS_PATH + groupId;
     }
 
-    public static String consumerInstances(String groupId, String name) {
+    public static String consumerInstance(String groupId, String name) {
         return BRIDGE_ADDRESS + CONSUMERS_PATH + groupId + INSTANCES_PATH + name;
     }
 
-    public static String consumerInstancesPositionsBeginning(String groupId, String name) {
-        return BRIDGE_ADDRESS + consumerInstances(groupId, name) + POSITIONS_BEGGINING_PATH;
+    public static String consumerInstancePositionBeginning(String groupId, String name) {
+        return BRIDGE_ADDRESS + consumerInstance(groupId, name) + POSITIONS_BEGGINING_PATH;
     }
 
-    public static String consumerInstancesPositionsEnd(String groupId, String name) {
-        return BRIDGE_ADDRESS + consumerInstances(groupId, name) + POSITIONS_END_PATH;
+    public static String consumerInstancePositionEnd(String groupId, String name) {
+        return BRIDGE_ADDRESS + consumerInstance(groupId, name) + POSITIONS_END_PATH;
     }
 
-    public static String consumerInstancesPositions(String groupId, String name) {
-        return BRIDGE_ADDRESS + consumerInstances(groupId, name) + POSITIONS_PATH;
+    public static String consumerInstancePosition(String groupId, String name) {
+        return BRIDGE_ADDRESS + consumerInstance(groupId, name) + POSITIONS_PATH;
     }
 
-    public static String consumerInstancesSubscription(String groupId, String name) {
-        return consumerInstances(groupId, name) + SUBSCRIPTION_PATH;
+    public static String consumerInstanceSubscription(String groupId, String name) {
+        return consumerInstance(groupId, name) + SUBSCRIPTION_PATH;
     }
 
-    public static String consumerInstancesAssignments(String groupId, String name) {
-        return BRIDGE_ADDRESS + consumerInstances(groupId, name) + ASSIGMENTS_PATH;
+    public static String consumerInstanceAssignments(String groupId, String name) {
+        return BRIDGE_ADDRESS + consumerInstance(groupId, name) + ASSIGMENTS_PATH;
     }
 
-    public static String consumerInstancesOffsets(String groupId, String name) {
-        return consumerInstances(groupId, name) + OFFSETS_PATH;
+    public static String consumerInstanceOffsets(String groupId, String name) {
+        return consumerInstance(groupId, name) + OFFSETS_PATH;
     }
 
-    public static String consumerInstancesRecords(String groupId, String name, Integer timeout, Integer maxBytes) {
-        return consumerInstances(groupId, name) + RECORDS_PATH
+    public static String consumerInstanceRecords(String groupId, String name, Integer timeout, Integer maxBytes) {
+        return consumerInstance(groupId, name) + RECORDS_PATH
                 + "?"
                 + (timeout != null ? "timeout=" + timeout : "")
                 + (timeout != null && maxBytes != null ? "&" : "")
                 + (maxBytes != null  ? "max_bytes=" + maxBytes : "");
     }
 
-    public static String consumerInstancesRecords(String groupId, String name) {
-        return consumerInstances(groupId, name) + RECORDS_PATH;
+    public static String consumerInstanceRecords(String groupId, String name) {
+        return consumerInstance(groupId, name) + RECORDS_PATH;
     }
 
-    public static String producerTopics(String topic) {
+    public static String producerTopic(String topic) {
         return BRIDGE_ADDRESS + TOPICS_PATH + topic;
     }
 
-    public static String producerTopicsPartitions(String topic, Object partitions) {
+    public static String producerTopicPartition(String topic, Object partitions) {
         return BRIDGE_ADDRESS + TOPICS_PATH + topic + PARTITIONS_PATH + partitions;
     }
 

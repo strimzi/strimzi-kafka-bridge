@@ -48,18 +48,18 @@ public class ConsumerService extends BaseService {
     }
 
     public HttpRequest<Buffer> consumeRecordsRequest(String groupId, String name) {
-        return getRequest(Urls.consumerInstancesRecords(groupId, name, 1000, null))
+        return getRequest(Urls.consumerInstanceRecords(groupId, name, 1000, null))
                 .putHeader(ACCEPT, BridgeContentType.KAFKA_JSON_JSON);
     }
 
     public HttpRequest<JsonObject> subscribeConsumerRequest(String groupId, String name, JsonObject json) {
-        return postRequest(Urls.consumerInstancesSubscription(groupId, name))
+        return postRequest(Urls.consumerInstanceSubscription(groupId, name))
                 .putHeader(CONTENT_LENGTH, String.valueOf(json.toBuffer().length()))
                 .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON);
     }
 
     public HttpRequest<JsonObject> offsetsRequest(String groupId, String name, JsonObject json) {
-        return postRequest(Urls.consumerInstancesOffsets(groupId, name))
+        return postRequest(Urls.consumerInstanceOffsets(groupId, name))
                 .putHeader(CONTENT_LENGTH, String.valueOf(json.toBuffer().length()))
                 .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject());
@@ -77,7 +77,7 @@ public class ConsumerService extends BaseService {
         topicsRoot.put("topics", topics);
 
         CompletableFuture<Boolean> unsubscribe = new CompletableFuture<>();
-        deleteRequest(Urls.consumerInstancesSubscription(groupId, name))
+        deleteRequest(Urls.consumerInstanceSubscription(groupId, name))
                 .putHeader(CONTENT_LENGTH, String.valueOf(topicsRoot.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
@@ -103,7 +103,7 @@ public class ConsumerService extends BaseService {
         JsonObject partitionsRoot = new JsonObject();
         partitionsRoot.put("partitions", partitions);
 
-        postRequest(Urls.consumerInstancesAssignments(groupId, name))
+        postRequest(Urls.consumerInstanceAssignments(groupId, name))
                 .putHeader(CONTENT_LENGTH, String.valueOf(partitionsRoot.toBuffer().length()))
                 .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -130,7 +130,7 @@ public class ConsumerService extends BaseService {
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
                         assertEquals(json.getString("name"), consumerInstanceId);
-                        assertEquals(Urls.consumerInstances(groupId, json.getString("name")), consumerBaseUri);
+                        assertEquals(Urls.consumerInstance(groupId, json.getString("name")), consumerBaseUri);
                     });
                     create.complete(true);
                 });
@@ -154,7 +154,7 @@ public class ConsumerService extends BaseService {
 
     public ConsumerService subscribeConsumer(VertxTestContext context, String groupId, String name, JsonObject jsonObject) throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
-        postRequest(Urls.consumerInstancesSubscription(groupId, name))
+        postRequest(Urls.consumerInstanceSubscription(groupId, name))
                 .putHeader(CONTENT_LENGTH, String.valueOf(jsonObject.toBuffer().length()))
                 .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
@@ -172,7 +172,7 @@ public class ConsumerService extends BaseService {
     public ConsumerService deleteConsumer(VertxTestContext context, String groupId, String name) throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        deleteConsumerRequest(Urls.consumerInstances(groupId, name))
+        deleteConsumerRequest(Urls.consumerInstance(groupId, name))
                 .send(ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());

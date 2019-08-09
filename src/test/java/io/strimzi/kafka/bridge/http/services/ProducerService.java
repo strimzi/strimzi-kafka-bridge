@@ -21,14 +21,14 @@ public class ProducerService extends BaseService {
     }
 
     public HttpRequest<JsonObject> sendRecordsRequest(String topic, JsonObject jsonObject) {
-        return postRequest(Urls.producerTopics(topic))
+        return postRequest(Urls.producerTopic(topic))
                 .putHeader(CONTENT_LENGTH, String.valueOf(jsonObject.toBuffer().length()))
                 .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject());
     }
 
     public HttpRequest<JsonObject> sendRecordsToPartitionRequest(String topic, Object partition, JsonObject jsonObject) {
-        return postRequest(Urls.producerTopicsPartitions(topic, partition))
+        return postRequest(Urls.producerTopicPartition(topic, partition))
                 .putHeader(CONTENT_LENGTH, String.valueOf(jsonObject.toBuffer().length()))
                 .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject());

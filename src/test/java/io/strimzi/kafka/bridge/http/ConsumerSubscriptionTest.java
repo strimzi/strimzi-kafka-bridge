@@ -56,7 +56,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> unsubscribe = new CompletableFuture<>();
         consumerService()
-            .deleteRequest(Urls.consumerInstancesSubscription(groupId, name + "consumer-invalidation"))
+            .deleteRequest(Urls.consumerInstanceSubscription(groupId, name + "consumer-invalidation"))
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {

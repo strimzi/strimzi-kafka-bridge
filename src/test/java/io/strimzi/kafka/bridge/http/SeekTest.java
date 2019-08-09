@@ -123,7 +123,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
         consumerService()
-            .getRequest(Urls.consumerInstancesRecords(groupId, name, 1000, null))
+            .getRequest(Urls.consumerInstanceRecords(groupId, name, 1000, null))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -160,7 +160,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
         // consume records
         consumerService()
-            .getRequest(Urls.consumerInstancesRecords(groupId, name))
+            .getRequest(Urls.consumerInstanceRecords(groupId, name))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -197,7 +197,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
         baseService()
-            .getRequest(Urls.consumerInstancesRecords(groupId, name, 1000, null))
+            .getRequest(Urls.consumerInstanceRecords(groupId, name, 1000, null))
                 .putHeader(ACCEPT, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -236,7 +236,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
         // consume records
         baseService()
-            .getRequest(Urls.consumerInstancesRecords(groupId, name))
+            .getRequest(Urls.consumerInstanceRecords(groupId, name))
                 .putHeader(ACCEPT, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -252,7 +252,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
         consumerService()
-            .deleteRequest(Urls.consumerInstances(groupId, name))
+            .deleteRequest(Urls.consumerInstance(groupId, name))
             .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
             .as(BodyCodec.jsonObject())
             .send(ar -> {
@@ -294,7 +294,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
         consumerService()
-            .getRequest(Urls.consumerInstancesRecords(groupId, name, 1000, null))
+            .getRequest(Urls.consumerInstanceRecords(groupId, name, 1000, null))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
@@ -326,7 +326,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
         consumerService()
-            .getRequest(Urls.consumerInstancesRecords(groupId, name, 1000, null))
+            .getRequest(Urls.consumerInstanceRecords(groupId, name, 1000, null))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
