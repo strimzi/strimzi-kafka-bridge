@@ -33,7 +33,7 @@ public class Urls {
     }
 
     public static String consumerInstancePositionBeginning(String groupId, String name) {
-        return BRIDGE_ADDRESS + consumerInstance(groupId, name) + POSITIONS_BEGGINING_PATH;
+        return consumerInstance(groupId, name) + POSITIONS_BEGGINING_PATH;
     }
 
     public static String consumerInstancePositionEnd(String groupId, String name) {
@@ -49,7 +49,7 @@ public class Urls {
     }
 
     public static String consumerInstanceAssignments(String groupId, String name) {
-        return BRIDGE_ADDRESS + consumerInstance(groupId, name) + ASSIGMENTS_PATH;
+        return consumerInstance(groupId, name) + ASSIGMENTS_PATH;
     }
 
     public static String consumerInstanceOffsets(String groupId, String name) {

@@ -345,7 +345,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // subscribe to a topic
         consumerService()
             .createConsumer(context, groupId, consumerJson)
-            .subscribeConsumer(context, groupId, name, topic1, topic1);
+            .subscribeConsumer(context, groupId, name, topic1, topic2);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
