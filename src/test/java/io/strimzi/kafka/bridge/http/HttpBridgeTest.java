@@ -68,14 +68,13 @@ class HttpBridgeTest extends KafkaClusterTestBase {
     private static Map<String, Object> config = new HashMap<>();
 
     private static long timeout = 5L;
-    private static String bridgeID = "franta";
 
     static {
         config.put(AmqpConfig.AMQP_ENABLED, true);
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
-        config.put(BridgeConfig.BRIDGE_ID, bridgeID);
+        config.put(BridgeConfig.BRIDGE_ID, "GoldenGateBridge");
     }
 
     private static final String BRIDGE_HOST = "127.0.0.1";
@@ -3648,9 +3647,6 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         String groupId = "my-group";
 
         JsonObject json = new JsonObject();
-        json.put("auto.offset.reset", "earliest");
-        json.put("enable.auto.commit", "true");
-        json.put("fetch.min.bytes", "100");
 
         postRequest("/consumers/" + groupId)
                 .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
@@ -3663,7 +3659,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                         assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        assertTrue(consumerInstanceId.startsWith(bridgeID));
+                        assertTrue(consumerInstanceId.startsWith(config.get(BridgeConfig.BRIDGE_ID).toString()));
                     });
                     context.completeNow();
                 });
