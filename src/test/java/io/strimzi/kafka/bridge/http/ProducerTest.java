@@ -459,7 +459,22 @@ public class ProducerTest extends HttpBridgeTestBase {
         root.put("records", records);
 
         producerService().sendRecordsToPartitionRequest(kafkaTopic, partition, root)
-            .sendJsonObject(root, verifyOK(context));
+            .sendJsonObject(root, ar -> {
+                context.verify(() -> {
+                    assertTrue(ar.succeeded());
+                    HttpResponse<JsonObject> response = ar.result();
+                    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                    JsonObject bridgeResponse = response.body();
+
+                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                    assertEquals(1, offsets.size());
+                    JsonObject metadata = offsets.getJsonObject(0);
+                    assertNotNull(metadata.getInteger("partition"));
+                    assertEquals(partition, metadata.getInteger("partition"));
+                    assertEquals(0L, metadata.getLong("offset"));
+                });
+                context.completeNow();
+            });
     }
 
     @Test
@@ -570,7 +585,6 @@ public class ProducerTest extends HttpBridgeTestBase {
                 JsonObject metadata = offsets.getJsonObject(0);
                 assertNotNull(metadata.getInteger("partition"));
                 assertEquals(0L, metadata.getLong("offset"));
-                context.completeNow();
             });
     }
 }

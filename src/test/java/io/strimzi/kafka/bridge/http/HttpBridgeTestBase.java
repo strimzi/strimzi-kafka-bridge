@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.KafkaClusterTestBase;
 import io.strimzi.kafka.bridge.amqp.AmqpConfig;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
@@ -81,6 +82,7 @@ class HttpBridgeTestBase extends KafkaClusterTestBase {
         this.vertx = Vertx.vertx();
         this.bridgeConfig = BridgeConfig.fromMap(config);
         this.httpBridge = new HttpBridge(this.bridgeConfig);
+        this.httpBridge.setHealthChecker(new HealthChecker());
 
         vertx.deployVerticle(this.httpBridge, context.succeeding(id -> context.completeNow()));
 
