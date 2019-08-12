@@ -36,7 +36,7 @@ class HttpBridgeTestBase extends KafkaClusterTestBase {
 
     private static final Logger log = LoggerFactory.getLogger(HttpBridgeTestBase.class);
 
-    private static Map<String, Object> config = new HashMap<>();
+    static Map<String, Object> config = new HashMap<>();
 
     static {
         config.put(AmqpConfig.AMQP_ENABLED, true);
@@ -55,10 +55,10 @@ class HttpBridgeTestBase extends KafkaClusterTestBase {
     private static final long RESPONSE_TIMEOUT = 2000L;
 
     Vertx vertx;
-    private HttpBridge httpBridge;
-    private WebClient client;
+    HttpBridge httpBridge;
+    WebClient client;
 
-    private BridgeConfig bridgeConfig;
+    BridgeConfig bridgeConfig;
 
     BaseService baseService() {
         return new BaseService(client);
