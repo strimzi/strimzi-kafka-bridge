@@ -594,7 +594,7 @@ __optional__|The maximum amount of time, in milliseconds, that the HTTP Bridge s
 |HTTP Code|Description|Schema
 |**200**|Poll request executed successfully.|<<_consumerrecordlist,ConsumerRecordList>>
 |**404**|The specified consumer instance was not found.|<<_error,Error>>
-|**406**|The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request.|<<_error,Error>>
+|**406**|The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request or the bridge got a message from the topic which is not JSON encoded.|<<_error,Error>>
 |**422**|Response exceeds the maximum number of bytes the consumer can receive|<<_error,Error>>
 |===
 

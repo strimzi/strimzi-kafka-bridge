@@ -241,20 +241,29 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
             this.consume(records -> {
                 if (records.succeeded()) {
-                    Buffer buffer = messageConverter.toMessages(records.result());
-                    if (buffer.getBytes().length > this.maxBytes) {
+                    try {
+                        Buffer buffer = messageConverter.toMessages(records.result());
+                        if (buffer.getBytes().length > this.maxBytes) {
+                            HttpBridgeError error = new HttpBridgeError(
+                                    HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                                    "Response exceeds the maximum number of bytes the consumer can receive"
+                            );
+                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                        } else {
+                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
+                                    this.format == EmbeddedFormat.BINARY ? BridgeContentType.KAFKA_JSON_BINARY : BridgeContentType.KAFKA_JSON_JSON,
+                                    buffer);
+                        }    
+                    } catch (DecodeException e) {
+                        log.error("Error decoding records as JSON", e);
                         HttpBridgeError error = new HttpBridgeError(
-                                HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
-                                "Response exceeds the maximum number of bytes the consumer can receive"
+                            HttpResponseStatus.NOT_ACCEPTABLE.code(),
+                            e.getMessage()
                         );
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
-                                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
-                    } else {
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
-                                this.format == EmbeddedFormat.BINARY ? BridgeContentType.KAFKA_JSON_BINARY : BridgeContentType.KAFKA_JSON_JSON,
-                                buffer);
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_ACCEPTABLE.code(),
+                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                     }
-
                 } else {
                     HttpBridgeError error = new HttpBridgeError(
                             HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),

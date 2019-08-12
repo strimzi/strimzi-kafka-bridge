@@ -879,6 +879,108 @@ class HttpBridgeTest extends KafkaClusterTestBase {
     }
 
     @Test
+    void tryReceiveNotValidJsonMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "tryReceiveNotValidJsonMessage";
+        kafkaCluster.createTopic(topic, 1, 1);
+
+        String sentBody = "Simple message";
+        // send a simple String which is not JSON encoded
+        CompletableFuture<Boolean> produce = new CompletableFuture<>();
+        kafkaCluster.useTo().produceStrings(1, () -> produce.complete(true), () ->
+                new ProducerRecord<>(topic, 0, null, sentBody));
+        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("format", "json");
+
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
+        postRequest("/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+                        String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        String consumerBaseUri = bridgeResponse.getString("base_uri");
+                        assertEquals(name, consumerInstanceId);
+                        assertEquals(baseUri, consumerBaseUri);
+                    });
+
+                    create.complete(true);
+                });
+
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        // subscribe to a topic
+        JsonArray topics = new JsonArray();
+        topics.add(topic);
+
+        JsonObject topicsRoot = new JsonObject();
+        topicsRoot.put("topics", topics);
+
+        CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
+        postRequest(baseUri + "/subscription")
+                .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(topicsRoot, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
+                    });
+
+                    subscribe.complete(true);
+                });
+
+        subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+        // consume records
+        getRequest(baseUri + "/records?timeout=" + 1000)
+                .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.NOT_ACCEPTABLE.code(), response.statusCode());
+                        assertEquals(HttpResponseStatus.NOT_ACCEPTABLE.code(), error.getCode());
+                        assertTrue(error.getMessage().startsWith("Failed to decode"));
+                    });
+                    consume.complete(true);
+                });
+
+        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        CompletableFuture<Boolean> delete = new CompletableFuture<>();
+        // consumer deletion
+        deleteRequest(baseUri)
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> assertTrue(ar.succeeded()));
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
+
+                    delete.complete(true);
+                });
+        delete.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
     void receiveBinaryMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveBinaryMessage";
         kafkaCluster.createTopic(topic, 1, 1);
