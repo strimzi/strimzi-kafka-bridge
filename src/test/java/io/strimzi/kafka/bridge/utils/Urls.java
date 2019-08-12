@@ -37,11 +37,11 @@ public class Urls {
     }
 
     public static String consumerInstancePositionEnd(String groupId, String name) {
-        return BRIDGE_ADDRESS + consumerInstance(groupId, name) + POSITIONS_END_PATH;
+        return consumerInstance(groupId, name) + POSITIONS_END_PATH;
     }
 
     public static String consumerInstancePosition(String groupId, String name) {
-        return BRIDGE_ADDRESS + consumerInstance(groupId, name) + POSITIONS_PATH;
+        return consumerInstance(groupId, name) + POSITIONS_PATH;
     }
 
     public static String consumerInstanceSubscription(String groupId, String name) {

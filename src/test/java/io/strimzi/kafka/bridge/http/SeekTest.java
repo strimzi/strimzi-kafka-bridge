@@ -112,17 +112,20 @@ public class SeekTest extends HttpBridgeTestBase {
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
         produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
+        JsonObject jsonConsumer = new JsonObject();
+        jsonConsumer.put("name", name);
+
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));
         //create consumer
         // subscribe to a topic
         consumerService()
             .createConsumer(context, groupId, jsonConsumer)
-            .subscribeConsumer(context, groupId, name, topic);
+            .subscribeConsumer(context, groupId, name, topics);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumerService()
+        baseService()
             .getRequest(Urls.consumerInstanceRecords(groupId, name, 1000, null))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
@@ -159,7 +162,7 @@ public class SeekTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
         // consume records
-        consumerService()
+        baseService()
             .getRequest(Urls.consumerInstanceRecords(groupId, name))
                 .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
@@ -188,6 +191,9 @@ public class SeekTest extends HttpBridgeTestBase {
 
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));
+
+        JsonObject jsonConsumer = new JsonObject();
+        jsonConsumer.put("name", name);
         // create consumer
         // subscribe to a topic
         consumerService()
