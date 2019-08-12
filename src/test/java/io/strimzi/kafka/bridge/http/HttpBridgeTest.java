@@ -67,7 +67,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
     private static Map<String, Object> config = new HashMap<>();
 
-    private static long timeout = 5;
+    private static long timeout = 5L;
 
     static {
         config.put(AmqpConfig.AMQP_ENABLED, true);
@@ -3517,7 +3517,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                         assertEquals(name, consumerInstanceId);
                         assertEquals(baseUri, consumerBaseUri);
 
-                        vertx.setTimer(timeout * 1000 + 1000, timeouted -> {
+                        vertx.setTimer(timeout * 1000L + 1000, timeouted -> {
                             CompletableFuture<Boolean> delete = new CompletableFuture<>();
                             // consumer deletion
                             deleteRequest(baseUri)

@@ -83,7 +83,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                                         .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
                         );
 
-                        if (this.bridgeConfig.getHttpConfig().getConsumerTimeout() > 0) {
+                        if (this.bridgeConfig.getHttpConfig().getConsumerTimeout() > -1) {
                             startInactiveConsumerDeletionTimer(this.bridgeConfig.getHttpConfig().getConsumerTimeout());
                         }
 

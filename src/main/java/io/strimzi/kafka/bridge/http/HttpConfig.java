@@ -25,7 +25,7 @@ public class HttpConfig extends AbstractConfig {
     public static final boolean DEFAULT_HTTP_ENABLED = true;
     public static final String DEFAULT_HOST = "0.0.0.0";
     public static final int DEFAULT_PORT = 8080;
-    public static final long DEFAULT_CONSUMER_TIMEOUT = 0L;
+    public static final long DEFAULT_CONSUMER_TIMEOUT = -1L;
 
     /**
      * Constructor
