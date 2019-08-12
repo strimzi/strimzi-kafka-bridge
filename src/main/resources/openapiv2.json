@@ -598,7 +598,7 @@
             }
           },
           "406": {
-            "description": "The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request.",
+            "description": "The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request or the bridge got a message from the topic which is not JSON encoded.",
             "schema": {
               "$ref": "#/definitions/Error"
             },
