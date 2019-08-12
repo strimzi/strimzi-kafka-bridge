@@ -74,7 +74,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
-        config.put(BridgeConfig.BRIDGE_ID, "GoldenGateBridge");
+        config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
     }
 
     private static final String BRIDGE_HOST = "127.0.0.1";
