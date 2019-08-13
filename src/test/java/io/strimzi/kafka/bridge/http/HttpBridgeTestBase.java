@@ -37,7 +37,6 @@ class HttpBridgeTestBase extends KafkaClusterTestBase {
     static Map<String, Object> config = new HashMap<>();
 
     static {
-        config.put(AmqpConfig.AMQP_ENABLED, true);
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
     }
