@@ -7,14 +7,12 @@ package io.strimzi.kafka.bridge.http;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
-import io.strimzi.kafka.bridge.utils.KafkaJsonSerializer;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -22,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static com.google.common.net.HttpHeaders.ACCEPT;
@@ -42,12 +39,7 @@ public class SeekTest extends HttpBridgeTestBase {
     void consumerOrPartitionNotFound(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "notFoundToBeginningAndReceive";
         kafkaCluster.createTopic(topic, 1, 1);
-
-        CompletableFuture<Boolean> creation = new CompletableFuture<>();
-        AtomicInteger index = new AtomicInteger();
-        kafkaCluster.useTo().produceStrings(10, () -> creation.complete(true),
-            () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
-        creation.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produceStrings(topic, 10, 0);
 
         // create consumer
         consumerService()
@@ -106,11 +98,7 @@ public class SeekTest extends HttpBridgeTestBase {
         String topic = "seekToBeginningAndReceive";
         kafkaCluster.createTopic(topic, 1, 1);
 
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        AtomicInteger index = new AtomicInteger();
-        kafkaCluster.useTo().produce("", 10, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produce(topic, 10, 0);
 
         JsonObject jsonConsumer = new JsonObject();
         jsonConsumer.put("name", name);
@@ -211,11 +199,7 @@ public class SeekTest extends HttpBridgeTestBase {
 
         dummy.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        AtomicInteger index = new AtomicInteger();
-        kafkaCluster.useTo().produceStrings(10, () -> produce.complete(true),
-            () -> new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produceStrings(topic, 10, 0);
 
         // seek
         JsonArray partitions = new JsonArray();
@@ -277,15 +261,8 @@ public class SeekTest extends HttpBridgeTestBase {
     void seekToOffsetAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToOffsetAndReceive";
         kafkaCluster.createTopic(topic, 2, 1);
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        AtomicInteger index0 = new AtomicInteger();
-        AtomicInteger index1 = new AtomicInteger();
-        kafkaCluster.useTo().produce("", 10, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, "key-" + index0.get(), "value-" + index0.getAndIncrement()));
-        kafkaCluster.useTo().produce("", 10, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 1, "key-" + index1.get(), "value-" + index1.getAndIncrement()));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produce(topic, 10, 0);
+        kafkaCluster.produce(topic, 10, 1);
 
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));

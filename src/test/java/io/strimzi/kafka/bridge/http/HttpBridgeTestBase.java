@@ -6,11 +6,10 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.strimzi.kafka.bridge.HealthChecker;
-import io.strimzi.kafka.bridge.KafkaClusterTestBase;
-import io.strimzi.kafka.bridge.amqp.AmqpConfig;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
+import io.strimzi.kafka.bridge.facades.KafkaFacade;
 import io.strimzi.kafka.bridge.http.services.BaseService;
 import io.strimzi.kafka.bridge.http.services.ConsumerService;
 import io.strimzi.kafka.bridge.http.services.ProducerService;
@@ -32,7 +31,7 @@ import java.util.Map;
 
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
-class HttpBridgeTestBase extends KafkaClusterTestBase {
+class HttpBridgeTestBase {
 
     static Map<String, Object> config = new HashMap<>();
 
@@ -53,6 +52,8 @@ class HttpBridgeTestBase extends KafkaClusterTestBase {
     static WebClient client;
 
     static BridgeConfig bridgeConfig;
+    static KafkaFacade kafkaCluster = new KafkaFacade();
+
 
     BaseService baseService() {
         return BaseService.getInstance(client);
@@ -72,6 +73,7 @@ class HttpBridgeTestBase extends KafkaClusterTestBase {
 
     @BeforeAll
     static void beforeAll() {
+        kafkaCluster.start();
         vertx = Vertx.vertx();
 
         bridgeConfig = BridgeConfig.fromMap(config);
@@ -86,6 +88,7 @@ class HttpBridgeTestBase extends KafkaClusterTestBase {
 
     @AfterAll
     static void afterAll(VertxTestContext context) {
+        kafkaCluster.stop();
         vertx.close(context.succeeding(arg -> context.completeNow()));
     }
 

@@ -7,15 +7,12 @@ package io.strimzi.kafka.bridge.http;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
-import io.strimzi.kafka.bridge.utils.KafkaJsonSerializer;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.junit.jupiter.api.Test;
 
 import javax.xml.bind.DatatypeConverter;
@@ -216,12 +213,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         kafkaCluster.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
-
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produce(topic, sentBody, 1, 0);
 
         // create consumer
         // subscribe to a topic
@@ -271,13 +263,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         kafkaCluster.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        kafkaCluster.useTo().produce("", 1, new ByteArraySerializer(), new ByteArraySerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody.getBytes()));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        String baseUri = Urls.consumerInstance(groupId, name);
+        kafkaCluster.produce(topic, sentBody.getBytes(), 1, 0);
 
         JsonObject json = new JsonObject();
         json.put("name", name);
@@ -334,13 +320,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         String sentBody1 = "Simple message-1";
         String sentBody2 = "Simple message-2";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic1, 0, null, sentBody1));
-        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic2, 0, null, sentBody2));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produce(topic1, sentBody1, 1, 0);
+        kafkaCluster.produce(topic2, sentBody2, 1, 0);
 
         // create consumer
         // subscribe to a topic
@@ -396,15 +377,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         String sentBody1 = "Simple message-1";
         String sentBody2 = "Simple message-2";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        CompletableFuture<Boolean> produce2 = new CompletableFuture<>();
-        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic1, 0, null, sentBody1));
-        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce2.complete(true), () -> new ProducerRecord<>(topic2, 0, null, sentBody2));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        produce2.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produce(topic1, sentBody1, 1, 0);
+        kafkaCluster.produce(topic2, sentBody2, 1, 0);
 
         JsonObject topicPattern = new JsonObject();
         topicPattern.put("topic_pattern", "receiveWithPattern-\\d");
@@ -461,11 +435,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         kafkaCluster.createTopic(topic, 2, 1);
 
         String sentBody = "Simple message from partition";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic, partition, null, sentBody));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produce(topic, sentBody, 1, partition);
 
         // create a consumer
         // subscribe to a topic
@@ -515,13 +485,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         kafkaCluster.createTopic(topic, 2, 1);
 
         String sentBody = "Simple message from partition";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
-        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 1, null, sentBody));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produce(topic, sentBody, 1, 0);
+        kafkaCluster.produce(topic, sentBody, 1, 1);
 
         // create a consumer
         // subscribe to a topic
@@ -577,11 +542,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         kafkaCluster.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produce(topic, sentBody, 1, 0);
 
         JsonObject json = consumerJson
             .put("enable.auto.commit", "false");
@@ -660,11 +621,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         kafkaCluster.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produce(topic, sentBody, 1, 0);
 
         String baseUri = Urls.consumerInstance(groupId, name);
 
@@ -753,11 +710,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         kafkaCluster.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        kafkaCluster.useTo().produceStrings(1, () -> produce.complete(true), () ->
-                new ProducerRecord<>(topic, 0, null, sentBody));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produceStrings(topic, sentBody, 1, 0);
 
         String name = "my-kafka-consumer4";
 
@@ -863,11 +816,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         kafkaCluster.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        kafkaCluster.useTo().produceStrings(1, () -> produce.complete(true), () ->
-                new ProducerRecord<>(topic, 0, null, sentBody));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produceStrings(topic, sentBody, 1, 0);
 
         JsonObject json = new JsonObject();
         json.put("name", name);
@@ -913,11 +862,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         kafkaCluster.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produce(topic, sentBody, 1, 0);
 
         // create consumer
         // subscribe to a topic
@@ -958,10 +903,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService().unsubscribeConsumer(context, groupId, name, topic);
 
         // Send new record
-        CompletableFuture<Boolean> produce2 = new CompletableFuture<>();
-        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce2.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
-        produce2.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produce(topic, sentBody, 1, 0);
 
         // Try to consume after unsubscription
         CompletableFuture<Boolean> consume2 = new CompletableFuture<>();
@@ -995,11 +937,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         kafkaCluster.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        kafkaCluster.useTo().produce("", 1, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produce(topic, sentBody, 1, 0);
 
         // create consumer
         // subscribe to a topic

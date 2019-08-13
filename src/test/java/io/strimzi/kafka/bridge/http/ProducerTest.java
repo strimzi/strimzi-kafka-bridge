@@ -8,17 +8,14 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.KafkaJsonDeserializer;
-import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
-import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
-import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.Disabled;
@@ -29,8 +26,6 @@ import org.slf4j.LoggerFactory;
 import javax.xml.bind.DatatypeConverter;
 import java.util.Properties;
 
-import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -59,7 +54,7 @@ public class ProducerTest extends HttpBridgeTestBase {
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, verifyOK(context));
 
-        Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+        Properties config = kafkaCluster.getConsumerProperties();
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
                 new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
@@ -106,7 +101,7 @@ public class ProducerTest extends HttpBridgeTestBase {
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, verifyOK(context));
 
-        Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+        Properties config = kafkaCluster.getConsumerProperties();
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
                 new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
@@ -152,7 +147,7 @@ public class ProducerTest extends HttpBridgeTestBase {
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, verifyOK(context));
 
-        Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+        Properties config = kafkaCluster.getConsumerProperties();
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
                 new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
@@ -198,7 +193,7 @@ public class ProducerTest extends HttpBridgeTestBase {
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_BINARY)
                 .sendJsonObject(root, verifyOK(context));
 
-        Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+        Properties config = kafkaCluster.getConsumerProperties();
 
         KafkaConsumer<byte[], byte[]> consumer = KafkaConsumer.create(this.vertx, config,
                 new ByteArrayDeserializer(), new ByteArrayDeserializer());
@@ -229,7 +224,7 @@ public class ProducerTest extends HttpBridgeTestBase {
         String topic = "sendPeriodicMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
-        Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+        Properties config = kafkaCluster.getConsumerProperties();
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
                 new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
@@ -323,7 +318,7 @@ public class ProducerTest extends HttpBridgeTestBase {
                 }
             });
 
-        Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+        Properties config = kafkaCluster.getConsumerProperties();
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
                 new StringDeserializer(), new KafkaJsonDeserializer<String>(String.class));

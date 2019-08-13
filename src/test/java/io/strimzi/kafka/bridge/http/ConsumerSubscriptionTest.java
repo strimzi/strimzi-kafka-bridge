@@ -12,7 +12,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
@@ -31,11 +30,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         kafkaCluster.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        kafkaCluster.useTo().produceStrings(1,
-            () -> produce.complete(true), () -> new ProducerRecord<>(topic, 0, null, sentBody));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produceStrings(topic, sentBody, 1, 0);
 
         String name = "my-kafka-consumer";
         String groupId = "my-group";
@@ -152,11 +147,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         kafkaCluster.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        kafkaCluster.useTo().produceStrings(1, () -> produce.complete(true), () ->
-                new ProducerRecord<>(topic, 0, null, sentBody));
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        kafkaCluster.produceStrings(topic, sentBody, 1, 0);
 
         String name = "my-kafka-consumer";
         String groupId = "my-group";

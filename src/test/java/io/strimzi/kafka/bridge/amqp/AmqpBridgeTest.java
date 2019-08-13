@@ -5,7 +5,6 @@
 
 package io.strimzi.kafka.bridge.amqp;
 
-import io.strimzi.kafka.bridge.KafkaClusterTestBase;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpJsonMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpRawMessageConverter;
@@ -14,6 +13,7 @@ import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.converter.DefaultDeserializer;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
+import io.strimzi.kafka.bridge.facades.KafkaFacade;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxExtension;
@@ -28,8 +28,6 @@ import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.OffsetResetStrategy;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.qpid.proton.Proton;
@@ -43,7 +41,9 @@ import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -57,11 +57,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,7 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:ClassFanOutComplexity", "ClassDataAbstractionCoupling"})
-class AmqpBridgeTest extends KafkaClusterTestBase {
+class AmqpBridgeTest {
 
     private static final Logger log = LoggerFactory.getLogger(AmqpBridgeTest.class);
 
@@ -95,6 +93,19 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
     private AmqpBridge bridge;
 
     private BridgeConfig bridgeConfig;
+    static KafkaFacade kafkaCluster = new KafkaFacade();
+
+
+    @BeforeAll
+    public static void setUp() {
+        kafkaCluster.start();
+    }
+
+
+    @AfterAll
+    public static void tearDown() {
+        kafkaCluster.stop();
+    }
 
     @BeforeEach
     void before(VertxTestContext context) {
@@ -132,7 +143,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                 String body = "Simple message from " + connection.getContainer();
                 Message message = ProtonHelper.message(topic, body);
 
-                Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = kafkaCluster.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
@@ -192,7 +203,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                 String body = "Simple message from " + connection.getContainer();
                 Message message = ProtonHelper.message(topic, body);
 
-                Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = kafkaCluster.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
@@ -252,7 +263,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                 String body = "Simple message from " + connection.getContainer();
                 Message message = ProtonHelper.message(topic, body);
 
-                Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = kafkaCluster.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
@@ -310,7 +321,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
 
                 String value = "Binary message from " + connection.getContainer();
 
-                Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = kafkaCluster.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class);
 
@@ -364,7 +375,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                 // send an array (i.e. integer values)
                 int[] array = {1, 2};
 
-                Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = kafkaCluster.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
 
@@ -419,7 +430,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                 list.add("item1");
                 list.add(2);
 
-                Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = kafkaCluster.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
 
@@ -474,7 +485,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                 map.put("1", 10);
                 map.put(2, "Hello");
 
-                Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = kafkaCluster.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
 
@@ -524,7 +535,7 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
                 ProtonSender sender = connection.createSender(null);
                 sender.open();
 
-                Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = kafkaCluster.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
@@ -650,12 +661,8 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
         String sentBody = "Simple message";
 
         // Futures for wait
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
         Checkpoint consume = context.checkpoint();
-
-        kafkaCluster.useTo().produceStrings(1, () -> produce.complete(true), () ->
-                new ProducerRecord<>(topic, 0, null, sentBody));
-        produce.get(60, TimeUnit.SECONDS);
+        kafkaCluster.produceStrings(topic, sentBody, 1, 0);
 
         ProtonClient client = ProtonClient.create(this.vertx);
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
@@ -713,12 +720,8 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
         String sentBody = "Simple message";
 
         // Futures for wait
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
         Checkpoint consume = context.checkpoint();
-
-        kafkaCluster.useTo().produceStrings(1, () -> produce.complete(true), () ->
-                new ProducerRecord<>(topic, 1, null, sentBody));
-        produce.get(60, TimeUnit.SECONDS);
+        kafkaCluster.produceStrings(topic, sentBody, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
@@ -781,12 +784,8 @@ class AmqpBridgeTest extends KafkaClusterTestBase {
         kafkaCluster.createTopic(topic, 1, 1);
 
         // Futures for wait
-        CompletableFuture<Boolean> batch = new CompletableFuture<>();
         Checkpoint consume = context.checkpoint();
-        AtomicInteger index = new AtomicInteger();
-        kafkaCluster.useTo().produceStrings(11, () -> batch.complete(true), () ->
-                new ProducerRecord<>(topic, 0, "key-" + index.get(), "value-" + index.getAndIncrement()));
-        batch.get(60, TimeUnit.SECONDS);
+        kafkaCluster.produceStrings(topic, 11, 0);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
