@@ -4,7 +4,6 @@
  */
 package io.strimzi.kafka.bridge.http.services;
 
-import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpRequest;
@@ -29,17 +28,17 @@ public class ProducerService extends BaseService {
         return producerService;
     }
 
-    public HttpRequest<JsonObject> sendRecordsRequest(String topic, JsonObject jsonObject) {
+    public HttpRequest<JsonObject> sendRecordsRequest(String topic, JsonObject jsonObject, String bridgeContentType) {
         return postRequest(Urls.producerTopic(topic))
                 .putHeader(CONTENT_LENGTH, String.valueOf(jsonObject.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON_JSON)
+                .putHeader(CONTENT_TYPE, bridgeContentType)
                 .as(BodyCodec.jsonObject());
     }
 
-    public HttpRequest<JsonObject> sendRecordsToPartitionRequest(String topic, Object partition, JsonObject jsonObject) {
+    public HttpRequest<JsonObject> sendRecordsToPartitionRequest(String topic, Object partition, JsonObject jsonObject, String bridgeContentType) {
         return postRequest(Urls.producerTopicPartition(topic, partition))
                 .putHeader(CONTENT_LENGTH, String.valueOf(jsonObject.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON_JSON)
+                .putHeader(CONTENT_TYPE, bridgeContentType)
                 .as(BodyCodec.jsonObject());
     }
 }

@@ -56,9 +56,9 @@ public class ConsumerService extends BaseService {
                 .as(BodyCodec.jsonObject());
     }
 
-    public HttpRequest<Buffer> consumeRecordsRequest(String groupId, String name) {
+    public HttpRequest<Buffer> consumeRecordsRequest(String groupId, String name, String bridgeContentType) {
         return getRequest(Urls.consumerInstanceRecords(groupId, name, 1000, null))
-                .putHeader(ACCEPT, BridgeContentType.KAFKA_JSON_JSON);
+                .putHeader(ACCEPT, bridgeContentType);
     }
 
     public HttpRequest<JsonObject> subscribeConsumerRequest(String groupId, String name, JsonObject json) {

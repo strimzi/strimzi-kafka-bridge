@@ -55,7 +55,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        producerService().sendRecordsRequest(topic, root)
+        producerService()
+            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, verifyOK(context));
 
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
@@ -101,7 +102,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        producerService().sendRecordsRequest(topic, root)
+        producerService()
+            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, verifyOK(context));
 
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
@@ -146,7 +148,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        producerService().sendRecordsRequest(topic, root)
+        producerService()
+            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, verifyOK(context));
 
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
@@ -191,11 +194,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        baseService()
-            .postRequest(Urls.producerTopic(topic))
-                .putHeader(CONTENT_LENGTH, String.valueOf(root.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON_BINARY)
-                .as(BodyCodec.jsonObject())
+        producerService()
+            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_BINARY)
                 .sendJsonObject(root, verifyOK(context));
 
         Properties config = kafkaCluster.useTo().getConsumerProperties("groupId", null, OffsetResetStrategy.EARLIEST);
@@ -249,7 +249,8 @@ public class ProducerTest extends HttpBridgeTestBase {
                 JsonObject root = new JsonObject();
                 root.put("records", records);
 
-                producerService().sendRecordsRequest(topic, root)
+                producerService()
+                    .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
                     .sendJsonObject(root, ar -> { });
 
                 this.count++;
@@ -304,7 +305,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        producerService().sendRecordsRequest(topic, root)
+        producerService()
+            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
                 context.verify(() -> assertTrue(ar.succeeded()));
 
@@ -358,7 +360,8 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         JsonObject root = new JsonObject();
 
-        producerService().sendRecordsRequest(topic, root)
+        producerService()
+            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
                 context.verify(() -> {
                     assertTrue(ar.succeeded());
@@ -388,7 +391,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        producerService().sendRecordsRequest(kafkaTopic, root)
+        producerService()
+            .sendRecordsRequest(kafkaTopic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
                 context.verify(() -> {
                     assertTrue(ar.succeeded());
@@ -423,7 +427,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        producerService().sendRecordsRequest(kafkaTopic, root)
+        producerService()
+            .sendRecordsRequest(kafkaTopic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
                 context.verify(() -> {
                     assertTrue(ar.succeeded());
@@ -458,7 +463,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        producerService().sendRecordsToPartitionRequest(kafkaTopic, partition, root)
+        producerService()
+            .sendRecordsToPartitionRequest(kafkaTopic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
                 context.verify(() -> {
                     assertTrue(ar.succeeded());
@@ -493,7 +499,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        producerService().sendRecordsToPartitionRequest(kafkaTopic, partition, root)
+        producerService()
+            .sendRecordsToPartitionRequest(kafkaTopic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, verifyBadRequest(context, "Validation error on: partitionid - Value is not a valid number"));
     }
 
@@ -514,7 +521,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        producerService().sendRecordsToPartitionRequest(kafkaTopic, partition, root)
+        producerService()
+            .sendRecordsToPartitionRequest(kafkaTopic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, verifyBadRequest(context, "Validation error on: body.records[0] - " +
                     "$.records[0].partition: is not defined in the schema and the schema does not allow additional properties"));
     }
@@ -534,7 +542,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        producerService().sendRecordsRequest(topic, root)
+        producerService()
+            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, verifyBadRequest(context, "Validation error on: body.records[0] - $.records[0].value: is missing but it is required"));
     }
 
@@ -554,7 +563,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
-        producerService().sendRecordsRequest(topic, root)
+        producerService()
+            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, verifyBadRequest(context, "Validation error on: body.records[0] - " +
                 "$.records[0].foo: is not defined in the schema and the schema does not allow additional properties"));
     }

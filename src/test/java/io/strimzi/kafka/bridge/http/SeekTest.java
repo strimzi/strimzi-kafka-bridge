@@ -125,9 +125,8 @@ public class SeekTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        baseService()
-            .getRequest(Urls.consumerInstanceRecords(groupId, name, 1000, null))
-                .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
+        consumerService()
+            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
@@ -164,7 +163,7 @@ public class SeekTest extends HttpBridgeTestBase {
         // consume records
         baseService()
             .getRequest(Urls.consumerInstanceRecords(groupId, name))
-                .putHeader("Accept", BridgeContentType.KAFKA_JSON_BINARY)
+                .putHeader(ACCEPT, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
@@ -202,9 +201,8 @@ public class SeekTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
-        baseService()
-            .getRequest(Urls.consumerInstanceRecords(groupId, name, 1000, null))
-                .putHeader(ACCEPT, BridgeContentType.KAFKA_JSON_BINARY)
+        consumerService()
+            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> assertTrue(ar.succeeded()));
@@ -300,8 +298,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
         consumerService()
-            .getRequest(Urls.consumerInstanceRecords(groupId, name, 1000, null))
-                .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
+            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     assertTrue(ar.succeeded());
@@ -332,8 +329,7 @@ public class SeekTest extends HttpBridgeTestBase {
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
         consumerService()
-            .getRequest(Urls.consumerInstanceRecords(groupId, name, 1000, null))
-                .putHeader("Accept", BridgeContentType.KAFKA_JSON_JSON)
+            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
