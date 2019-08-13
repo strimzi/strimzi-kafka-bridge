@@ -29,8 +29,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConsumerService extends BaseService {
 
-    public ConsumerService(WebClient webClient) {
+    private static ConsumerService consumerService;
+
+    private ConsumerService(WebClient webClient) {
         super(webClient);
+    }
+
+    public static synchronized ConsumerService getInstance(WebClient webClient) {
+        if (consumerService == null || webClient != consumerService.webClient) {
+            consumerService = new ConsumerService(webClient);
+        }
+        return consumerService;
     }
 
     // Consumer basic requests

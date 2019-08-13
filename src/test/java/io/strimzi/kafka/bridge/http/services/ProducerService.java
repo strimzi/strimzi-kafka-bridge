@@ -16,8 +16,17 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 
 public class ProducerService extends BaseService {
 
-    public ProducerService(WebClient webClient) {
+    private static ProducerService producerService;
+
+    private ProducerService(WebClient webClient) {
         super(webClient);
+    }
+
+    public static synchronized ProducerService getInstance(WebClient webClient) {
+        if (producerService == null || webClient != producerService.webClient) {
+            producerService = new ProducerService(webClient);
+        }
+        return producerService;
     }
 
     public HttpRequest<JsonObject> sendRecordsRequest(String topic, JsonObject jsonObject) {

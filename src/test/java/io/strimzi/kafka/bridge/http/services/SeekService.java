@@ -16,8 +16,17 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 
 public class SeekService extends BaseService {
 
-    public SeekService(WebClient webClient) {
+    private static SeekService seekService;
+
+    private SeekService(WebClient webClient) {
         super(webClient);
+    }
+
+    public static synchronized SeekService getInstance(WebClient webClient) {
+        if (seekService == null || webClient != seekService.webClient) {
+            seekService = new SeekService(webClient);
+        }
+        return seekService;
     }
 
     // Seek basic requests

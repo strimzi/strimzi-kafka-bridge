@@ -5,17 +5,10 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.strimzi.kafka.bridge.HealthChecker;
-import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.strimzi.kafka.bridge.utils.Urls;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
-import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -25,22 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DefaultTest extends HttpBridgeTestBase {
-
-    @BeforeEach
-    @Override
-    void before(VertxTestContext context) {
-        this.vertx = Vertx.vertx();
-        this.bridgeConfig = BridgeConfig.fromMap(config);
-        this.httpBridge = new HttpBridge(this.bridgeConfig);
-        this.httpBridge.setHealthChecker(new HealthChecker());
-
-        vertx.deployVerticle(this.httpBridge, context.succeeding(id -> context.completeNow()));
-
-        client = WebClient.create(vertx, new WebClientOptions()
-                .setDefaultHost(Urls.BRIDGE_HOST)
-                .setDefaultPort(Urls.BRIDGE_PORT)
-        );
-    }
 
     @Test
     void readyTest(VertxTestContext context) throws InterruptedException {

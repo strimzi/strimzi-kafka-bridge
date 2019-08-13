@@ -22,11 +22,10 @@ import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,8 +33,6 @@ import java.util.Map;
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
 class HttpBridgeTestBase extends KafkaClusterTestBase {
-
-    private static final Logger log = LoggerFactory.getLogger(HttpBridgeTestBase.class);
 
     static Map<String, Object> config = new HashMap<>();
 
@@ -52,48 +49,49 @@ class HttpBridgeTestBase extends KafkaClusterTestBase {
     static final int TEST_TIMEOUT = 60;
     int count;
 
-    // for request configuration
-    private static final long RESPONSE_TIMEOUT = 2000L;
+    static Vertx vertx;
+    static HttpBridge httpBridge;
+    static WebClient client;
 
-    Vertx vertx;
-    HttpBridge httpBridge;
-    WebClient client;
-
-    BridgeConfig bridgeConfig;
+    static BridgeConfig bridgeConfig;
 
     BaseService baseService() {
-        return new BaseService(client);
+        return BaseService.getInstance(client);
     }
 
     ConsumerService consumerService() {
-        return new ConsumerService(client);
+        return ConsumerService.getInstance(client);
     }
 
     SeekService seekService() {
-        return new SeekService(client);
+        return SeekService.getInstance(client);
     }
 
     ProducerService producerService() {
-        return new ProducerService(client);
+        return ProducerService.getInstance(client);
+    }
+
+    @BeforeAll
+    static void beforeAll() {
+        vertx = Vertx.vertx();
+
+        bridgeConfig = BridgeConfig.fromMap(config);
+        httpBridge = new HttpBridge(bridgeConfig);
+        httpBridge.setHealthChecker(new HealthChecker());
+
+        client = WebClient.create(vertx, new WebClientOptions()
+            .setDefaultHost(Urls.BRIDGE_HOST)
+            .setDefaultPort(Urls.BRIDGE_PORT)
+        );
+    }
+
+    @AfterAll
+    static void afterAll(VertxTestContext context) {
+        vertx.close(context.succeeding(arg -> context.completeNow()));
     }
 
     @BeforeEach
     void before(VertxTestContext context) {
-        this.vertx = Vertx.vertx();
-        this.bridgeConfig = BridgeConfig.fromMap(config);
-        this.httpBridge = new HttpBridge(this.bridgeConfig);
-        this.httpBridge.setHealthChecker(new HealthChecker());
-
-        vertx.deployVerticle(this.httpBridge, context.succeeding(id -> context.completeNow()));
-
-        client = WebClient.create(vertx, new WebClientOptions()
-                .setDefaultHost(Urls.BRIDGE_HOST)
-                .setDefaultPort(Urls.BRIDGE_PORT)
-        );
-    }
-
-    @AfterEach
-    void after(VertxTestContext context) {
-        vertx.close(context.succeeding(arg -> context.completeNow()));
+        vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
     }
 }

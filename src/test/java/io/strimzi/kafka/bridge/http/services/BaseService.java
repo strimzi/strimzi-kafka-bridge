@@ -13,14 +13,22 @@ import io.vertx.ext.web.codec.BodyCodec;
 public class BaseService {
 
     WebClient webClient;
-    static final int HTTP_REQUEST_TIMEOUT = 60;
+    private static BaseService baseService;
 
+    static final int HTTP_REQUEST_TIMEOUT = 60;
 
     // for request configuration
     private static final long RESPONSE_TIMEOUT = 2000L;
 
-    public BaseService(WebClient webClient) {
+    BaseService(WebClient webClient) {
         this.webClient = webClient;
+    }
+
+    public static synchronized BaseService getInstance(WebClient webClient) {
+        if (baseService == null || webClient != baseService.webClient) {
+            baseService = new BaseService(webClient);
+        }
+        return baseService;
     }
 
     //HTTP methods with configured Response timeout
