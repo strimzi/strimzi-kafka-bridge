@@ -50,8 +50,8 @@ public class ConsumerService extends BaseService {
                 .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON);
     }
 
-    HttpRequest<JsonObject> deleteConsumerRequest(String url) {
-        return deleteRequest(url)
+    public HttpRequest<JsonObject> deleteConsumerRequest(String groupId, String name) {
+        return deleteRequest(Urls.consumerInstance(groupId, name))
                 .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject());
     }
@@ -188,7 +188,7 @@ public class ConsumerService extends BaseService {
     public ConsumerService deleteConsumer(VertxTestContext context, String groupId, String name) throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
-        deleteConsumerRequest(Urls.consumerInstance(groupId, name))
+        deleteConsumerRequest(groupId, name)
                 .send(ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());

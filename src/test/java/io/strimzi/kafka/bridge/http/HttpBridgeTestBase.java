@@ -34,10 +34,13 @@ import java.util.Map;
 class HttpBridgeTestBase {
 
     static Map<String, Object> config = new HashMap<>();
+    private static long timeout = 5L;
 
     static {
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
+        config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
     }
 
     // for periodic/multiple messages test

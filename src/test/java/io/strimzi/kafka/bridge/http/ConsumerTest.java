@@ -6,6 +6,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonArray;
@@ -31,6 +32,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     private static final String FORWARDED = "Forwarded";
     private static final String X_FORWARDED_HOST = "X-Forwarded-Host";
     private static final String X_FORWARDED_PROTO = "X-Forwarded-Proto";
+    private static long timeout = 5L;
     private String name = "my-kafka-consumer";
     private String groupId = "my-group";
 
@@ -1084,5 +1086,64 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void createConsumerWithGeneratedName(VertxTestContext context) {
+        JsonObject json = new JsonObject();
+
+        consumerService()
+            .createConsumerRequest(groupId, json)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+                        String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        assertTrue(consumerInstanceId.startsWith(config.get(BridgeConfig.BRIDGE_ID).toString()));
+                    });
+                    context.completeNow();
+                });
+    }
+
+    @Test
+    void consumerDeletedAfterInactivity(VertxTestContext context) {
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
+
+        consumerService()
+            .createConsumerRequest(groupId, consumerJson)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(consumerJson, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+                        String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        String consumerBaseUri = bridgeResponse.getString("base_uri");
+                        assertEquals(name, consumerInstanceId);
+                        assertEquals(Urls.consumerInstance(groupId, name), consumerBaseUri);
+
+                        vertx.setTimer(timeout * 2 * 1000L, timeouted -> {
+                            CompletableFuture<Boolean> delete = new CompletableFuture<>();
+                            // consumer deletion
+                            consumerService()
+                                .deleteConsumerRequest(groupId, name)
+                                    .send(consumerDeletedResponse -> {
+                                        context.verify(() -> assertTrue(ar.succeeded()));
+
+                                        HttpResponse<JsonObject> deletionResponse = consumerDeletedResponse.result();
+                                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), deletionResponse.statusCode());
+                                        assertEquals("The specified consumer instance was not found.", deletionResponse.body().getString("message"));
+
+                                        delete.complete(true);
+                                        context.completeNow();
+                                    });
+                        });
+                    });
+                    create.complete(true);
+                });
     }
 }
