@@ -1037,4 +1037,52 @@ public class ConsumerTest extends HttpBridgeTestBase {
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
+
+    @Test
+    void tryReceiveNotValidJsonMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "tryReceiveNotValidJsonMessage";
+        kafkaCluster.createTopic(topic, 1, 1);
+
+        String sentBody = "Simple message";
+        // send a simple String which is not JSON encoded
+        kafkaCluster.produceStrings(topic, sentBody, 1, 0);
+
+        JsonArray topics = new JsonArray();
+        topics.add(topic);
+
+        JsonObject topicsRoot = new JsonObject();
+        topicsRoot.put("topics", topics);
+
+        // create topic
+        // subscribe to a topic
+        consumerService()
+            .createConsumer(context, groupId, consumerJson)
+            .subscribeConsumer(context, groupId, name, topicsRoot);
+
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+        // consume records
+        consumerService()
+            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.NOT_ACCEPTABLE.code(), response.statusCode());
+                        assertEquals(HttpResponseStatus.NOT_ACCEPTABLE.code(), error.getCode());
+                        assertTrue(error.getMessage().startsWith("Failed to decode"));
+                    });
+                    consume.complete(true);
+                });
+
+        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        // consumer deletion
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
 }
