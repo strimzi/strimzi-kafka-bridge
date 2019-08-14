@@ -163,13 +163,11 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
         // Consumers cleanup
         this.httpBridgeContext.closeAllSinkBridgeEndpoints();
-        this.httpBridgeContext.getHttpSinkEndpoints().clear();
 
         // producer cleanup
         // for each connection, we have to close the connection itself but before that
         // all the sink/source endpoints (so the related links inside each of them)
         this.httpBridgeContext.closeAllSourceBridgeEndpoints();
-        this.httpBridgeContext.getHttpSourceEndpoints().clear();
 
         if (this.httpServer != null) {
 

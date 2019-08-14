@@ -62,6 +62,7 @@ public class HttpBridgeContext {
             if (sink.getValue() != null)
                 sink.getValue().close();
         }
+        getHttpSinkEndpoints().clear();
     }
 
     public void closeAllSourceBridgeEndpoints() {
@@ -69,5 +70,6 @@ public class HttpBridgeContext {
             if (source.getValue() != null)
                 source.getValue().close();
         }
+        getHttpSourceEndpoints().clear();
     }
 }
