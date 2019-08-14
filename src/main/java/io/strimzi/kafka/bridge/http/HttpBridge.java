@@ -98,7 +98,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private void startInactiveConsumerDeletionTimer(Long timeout) {
         Long timeoutInMs = timeout * 1000L;
-        vertx.setPeriodic(1000, ignore -> {
+        vertx.setPeriodic(timeoutInMs / 2, ignore -> {
             log.debug("Looking for stale consumers in {} entries", timestampMap.size());
             Iterator it = timestampMap.entrySet().iterator();
             while (it.hasNext()) {
