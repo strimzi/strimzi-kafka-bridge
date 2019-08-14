@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, Strimzi authors.
+ * Copyright 2019, Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
 package io.strimzi.kafka.bridge.http.services;
@@ -11,8 +11,8 @@ import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.codec.BodyCodec;
 
-import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 
 public class SeekService extends BaseService {
 
@@ -45,8 +45,8 @@ public class SeekService extends BaseService {
 
     private HttpRequest<JsonObject> positionsBaseRequest(String url, JsonObject json) {
         return postRequest(url)
-                .putHeader(CONTENT_LENGTH, String.valueOf(json.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
+                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(json.toBuffer().length()))
+                .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject());
     }
 }

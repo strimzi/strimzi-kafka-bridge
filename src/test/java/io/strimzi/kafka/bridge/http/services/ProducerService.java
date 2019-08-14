@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, Strimzi authors.
+ * Copyright 2019, Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
 package io.strimzi.kafka.bridge.http.services;
@@ -10,8 +10,8 @@ import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.codec.BodyCodec;
 
-import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 
 public class ProducerService extends BaseService {
 
@@ -30,15 +30,15 @@ public class ProducerService extends BaseService {
 
     public HttpRequest<JsonObject> sendRecordsRequest(String topic, JsonObject jsonObject, String bridgeContentType) {
         return postRequest(Urls.producerTopic(topic))
-                .putHeader(CONTENT_LENGTH, String.valueOf(jsonObject.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, bridgeContentType)
+                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(jsonObject.toBuffer().length()))
+                .putHeader(CONTENT_TYPE.toString(), bridgeContentType)
                 .as(BodyCodec.jsonObject());
     }
 
     public HttpRequest<JsonObject> sendRecordsToPartitionRequest(String topic, Object partition, JsonObject jsonObject, String bridgeContentType) {
         return postRequest(Urls.producerTopicPartition(topic, partition))
-                .putHeader(CONTENT_LENGTH, String.valueOf(jsonObject.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, bridgeContentType)
+                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(jsonObject.toBuffer().length()))
+                .putHeader(CONTENT_TYPE.toString(), bridgeContentType)
                 .as(BodyCodec.jsonObject());
     }
 }

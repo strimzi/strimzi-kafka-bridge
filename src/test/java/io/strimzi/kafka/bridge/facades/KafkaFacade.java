@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, Strimzi authors.
+ * Copyright 2019, Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
 package io.strimzi.kafka.bridge.facades;
@@ -9,6 +9,7 @@ import io.debezium.util.Testing;
 import io.strimzi.kafka.bridge.utils.KafkaJsonSerializer;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 
 import java.io.File;
 import java.io.IOException;
@@ -67,7 +68,7 @@ public class KafkaFacade {
     public void produce(String topic, byte[] bytes, int messageCount, int partition) throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<Boolean> produce = new CompletableFuture<>();
 
-        kafkaCluster.useTo().produce("", messageCount, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
+        kafkaCluster.useTo().produce("", messageCount, new ByteArraySerializer(), new ByteArraySerializer(),
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, partition, null, bytes));
 
         produce.get(OPERATION_TIMEOUT, TimeUnit.SECONDS);

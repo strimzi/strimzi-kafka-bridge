@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, Strimzi authors.
+ * Copyright 2019, Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
 package io.strimzi.kafka.bridge.http;
@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import static com.google.common.net.HttpHeaders.ACCEPT;
+import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,8 +36,8 @@ public class SeekTest extends HttpBridgeTestBase {
         .put("format", "json");
 
     @Test
-    void consumerOrPartitionNotFound(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "notFoundToBeginningAndReceive";
+    void seekToBeginningConsumerOrPartitionNotFound(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "seekToBeginningConsumerOrPartitionNotFound";
         kafkaCluster.createTopic(topic, 1, 1);
         kafkaCluster.produceStrings(topic, 10, 0);
 
@@ -151,7 +151,7 @@ public class SeekTest extends HttpBridgeTestBase {
         // consume records
         baseService()
             .getRequest(Urls.consumerInstanceRecords(groupId, name))
-                .putHeader(ACCEPT, BridgeContentType.KAFKA_JSON_BINARY)
+                .putHeader(ACCEPT.toString(), BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
@@ -225,7 +225,7 @@ public class SeekTest extends HttpBridgeTestBase {
         // consume records
         baseService()
             .getRequest(Urls.consumerInstanceRecords(groupId, name))
-                .putHeader(ACCEPT, BridgeContentType.KAFKA_JSON_BINARY)
+                .putHeader(ACCEPT.toString(), BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> assertTrue(ar.succeeded()));
@@ -237,22 +237,9 @@ public class SeekTest extends HttpBridgeTestBase {
 
         consumeSeek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
         consumerService()
-            .deleteRequest(Urls.consumerInstance(groupId, name))
-            .putHeader("Content-Type", BridgeContentType.KAFKA_JSON)
-            .as(BodyCodec.jsonObject())
-            .send(ar -> {
-                context.verify(() -> {
-                    assertTrue(ar.succeeded());
-                    HttpResponse<JsonObject> response = ar.result();
-                    assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
-                });
-                delete.complete(true);
-            });
-
-        delete.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+                .deleteConsumer(context, groupId, name);
         context.completeNow();
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, Strimzi authors.
+ * Copyright 2019, Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
 package io.strimzi.kafka.bridge.http;
@@ -29,25 +29,14 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         String topic = "unsubscribeConsumerNotFound";
         kafkaCluster.createTopic(topic, 1, 1);
 
-        String sentBody = "Simple message";
-        kafkaCluster.produceStrings(topic, sentBody, 1, 0);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
-
-        JsonObject json = new JsonObject();
-        json.put("name", name);
 
         JsonArray topics = new JsonArray();
         topics.add(topic);
 
         JsonObject topicsRoot = new JsonObject();
         topicsRoot.put("topics", topics);
-        // create consumer
-        // subscribe to a topic
-        consumerService()
-            .createConsumer(context, groupId, json)
-            .subscribeConsumer(context, groupId, name, topicsRoot);
 
         CompletableFuture<Boolean> unsubscribe = new CompletableFuture<>();
         consumerService()
@@ -67,10 +56,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
                 });
 
         unsubscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
         context.completeNow();
     }
 
@@ -145,17 +130,9 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
     void subscriptionConsumerDoesNotExist(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "subscriptionConsumerDoesNotExist";
         kafkaCluster.createTopic(topic, 1, 1);
-
-        String sentBody = "Simple message";
-        kafkaCluster.produceStrings(topic, sentBody, 1, 0);
-
         String name = "my-kafka-consumer";
         String groupId = "my-group";
 
-        JsonObject json = new JsonObject();
-        json.put("name", name);
-
-        // subscribe to a topic
         JsonArray topics = new JsonArray();
         topics.add(topic);
 

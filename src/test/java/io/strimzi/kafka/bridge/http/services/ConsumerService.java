@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, Strimzi authors.
+ * Copyright 2019, Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
 package io.strimzi.kafka.bridge.http.services;
@@ -21,9 +21,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static com.google.common.net.HttpHeaders.ACCEPT;
-import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -46,32 +46,40 @@ public class ConsumerService extends BaseService {
 
     public HttpRequest<JsonObject> createConsumerRequest(String groupId, JsonObject json) {
         return postRequest(Urls.consumer(groupId))
-                .putHeader(CONTENT_LENGTH, String.valueOf(json.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON);
+                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(json.toBuffer().length()))
+                .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON);
     }
 
     HttpRequest<JsonObject> deleteConsumerRequest(String url) {
         return deleteRequest(url)
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
+                .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject());
     }
 
     public HttpRequest<Buffer> consumeRecordsRequest(String groupId, String name, String bridgeContentType) {
-        return getRequest(Urls.consumerInstanceRecords(groupId, name, 1000, null))
-                .putHeader(ACCEPT, bridgeContentType);
+        return consumeRecordsRequest(groupId, name, 1000, null, bridgeContentType);
+    }
+
+    public HttpRequest<Buffer> consumeRecordsRequest(String groupId, String name, Integer timeout, Integer maxBytes, String bridgeContentType) {
+        return getRequest(Urls.consumerInstanceRecords(groupId, name, timeout, maxBytes))
+                .putHeader(ACCEPT.toString(), bridgeContentType);
     }
 
     public HttpRequest<JsonObject> subscribeConsumerRequest(String groupId, String name, JsonObject json) {
         return postRequest(Urls.consumerInstanceSubscription(groupId, name))
-                .putHeader(CONTENT_LENGTH, String.valueOf(json.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON);
+                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(json.toBuffer().length()))
+                .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON);
     }
 
     public HttpRequest<JsonObject> offsetsRequest(String groupId, String name, JsonObject json) {
         return postRequest(Urls.consumerInstanceOffsets(groupId, name))
-                .putHeader(CONTENT_LENGTH, String.valueOf(json.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
+                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(json.toBuffer().length()))
+                .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject());
+    }
+
+    public HttpRequest<JsonObject> offsetsRequest(String groupId, String name) {
+        return postRequest(Urls.consumerInstanceOffsets(groupId, name));
     }
 
     // Consumer actions
@@ -87,7 +95,7 @@ public class ConsumerService extends BaseService {
 
         CompletableFuture<Boolean> unsubscribe = new CompletableFuture<>();
         deleteRequest(Urls.consumerInstanceSubscription(groupId, name))
-                .putHeader(CONTENT_LENGTH, String.valueOf(topicsRoot.toBuffer().length()))
+                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(topicsRoot.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.verify(() -> {
@@ -113,8 +121,8 @@ public class ConsumerService extends BaseService {
         partitionsRoot.put("partitions", partitions);
 
         postRequest(Urls.consumerInstanceAssignments(groupId, name))
-                .putHeader(CONTENT_LENGTH, String.valueOf(partitionsRoot.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
+                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(partitionsRoot.toBuffer().length()))
+                .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(partitionsRoot, ar -> {
                     context.verify(() -> {
@@ -164,8 +172,8 @@ public class ConsumerService extends BaseService {
     public ConsumerService subscribeConsumer(VertxTestContext context, String groupId, String name, JsonObject jsonObject) throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
         postRequest(Urls.consumerInstanceSubscription(groupId, name))
-                .putHeader(CONTENT_LENGTH, String.valueOf(jsonObject.toBuffer().length()))
-                .putHeader(CONTENT_TYPE, BridgeContentType.KAFKA_JSON)
+                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(jsonObject.toBuffer().length()))
+                .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(jsonObject, ar -> {
                     context.verify(() -> {

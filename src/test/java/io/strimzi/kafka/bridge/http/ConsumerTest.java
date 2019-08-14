@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, Strimzi authors.
+ * Copyright 2019, Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
 package io.strimzi.kafka.bridge.http;
@@ -21,10 +21,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static com.google.common.net.HttpHeaders.ACCEPT;
-import static com.google.common.net.HttpHeaders.FORWARDED;
-import static com.google.common.net.HttpHeaders.X_FORWARDED_HOST;
-import static com.google.common.net.HttpHeaders.X_FORWARDED_PROTO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -32,6 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConsumerTest extends HttpBridgeTestBase {
 
+    private static final String FORWARDED = "Forwarded";
+    private static final String X_FORWARDED_HOST = "X-Forwarded-Host";
+    private static final String X_FORWARDED_PROTO = "X-Forwarded-Proto";
     private String name = "my-kafka-consumer";
     private String groupId = "my-group";
 
@@ -623,8 +622,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String sentBody = "Simple message";
         kafkaCluster.produce(topic, sentBody, 1, 0);
 
-        String baseUri = Urls.consumerInstance(groupId, name);
-
         JsonObject json = consumerJson
             .put("enable.auto.commit", "false");
 
@@ -664,8 +661,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         CompletableFuture<Boolean> commit = new CompletableFuture<>();
-        baseService()
-            .postRequest(baseUri + "/offsets")
+
+        consumerService()
+            .offsetsRequest(groupId, name)
                 .send(ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -709,11 +707,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String topic = "consumerAlreadyExistsTest";
         kafkaCluster.createTopic(topic, 1, 1);
 
-        String sentBody = "Simple message";
-        kafkaCluster.produceStrings(topic, sentBody, 1, 0);
-
         String name = "my-kafka-consumer4";
-
         JsonObject json = new JsonObject();
         json.put("name", name);
 
@@ -828,10 +822,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .subscribeConsumer(context, groupId, name, topic);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
+
+
         // consume records
-        baseService()
-            .getRequest(Urls.consumerInstanceRecords(groupId, name, null, 1))
-                .putHeader(ACCEPT, BridgeContentType.KAFKA_JSON_BINARY)
+        consumerService()
+            .consumeRecordsRequest(groupId, name, null, 1, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.verify(() -> {
