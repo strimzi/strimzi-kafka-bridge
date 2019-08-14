@@ -684,24 +684,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
-
-    @Test
-    void postToNonexistentEndpoint(VertxTestContext context) {
-        baseService()
-            .postRequest("/not-existing-endpoint")
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(null, ar -> {
-                    context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                    });
-                    context.completeNow();
-                });
-    }
-
     @Test
     void consumerAlreadyExistsTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "consumerAlreadyExistsTest";

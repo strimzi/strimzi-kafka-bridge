@@ -67,6 +67,7 @@ public class SeekTest extends HttpBridgeTestBase {
                     });
                     instanceNotFound.complete(true);
                 });
+        instanceNotFound.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         // Specified consumer instance did not have one of the specified partitions assigned.
         CompletableFuture<Boolean> consumerInstanceDontHavePartition = new CompletableFuture<>();
@@ -91,6 +92,7 @@ public class SeekTest extends HttpBridgeTestBase {
                 });
                 consumerInstanceDontHavePartition.complete(true);
             });
+        consumerInstanceDontHavePartition.get(TEST_TIMEOUT, TimeUnit.SECONDS);
     }
 
     @Test

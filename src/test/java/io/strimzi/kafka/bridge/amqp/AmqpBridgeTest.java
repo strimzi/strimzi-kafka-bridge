@@ -660,7 +660,6 @@ class AmqpBridgeTest {
 
         String sentBody = "Simple message";
 
-        // Futures for wait
         Checkpoint consume = context.checkpoint();
         kafkaCluster.produceStrings(topic, sentBody, 1, 0);
 

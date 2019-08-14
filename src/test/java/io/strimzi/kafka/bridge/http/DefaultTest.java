@@ -5,6 +5,7 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
@@ -108,5 +109,22 @@ public class DefaultTest extends HttpBridgeTestBase {
                     });
                     context.completeNow();
                 });
+    }
+
+    @Test
+    void postToNonexistentEndpoint(VertxTestContext context) {
+        baseService()
+            .postRequest("/not-existing-endpoint")
+            .as(BodyCodec.jsonObject())
+            .sendJsonObject(null, ar -> {
+                context.verify(() -> {
+                    assertTrue(ar.succeeded());
+                    HttpResponse<JsonObject> response = ar.result();
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                });
+                context.completeNow();
+            });
     }
 }
