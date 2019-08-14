@@ -3517,7 +3517,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                         assertEquals(name, consumerInstanceId);
                         assertEquals(baseUri, consumerBaseUri);
 
-                        vertx.setTimer(timeout * 1000L + 1000, timeouted -> {
+                        vertx.setTimer(timeout * 2 * 1000L, timeouted -> {
                             CompletableFuture<Boolean> delete = new CompletableFuture<>();
                             // consumer deletion
                             deleteRequest(baseUri)
