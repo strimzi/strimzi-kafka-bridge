@@ -67,10 +67,13 @@ class HttpBridgeTest extends KafkaClusterTestBase {
 
     private static Map<String, Object> config = new HashMap<>();
 
+    private static long timeout = 5L;
+
     static {
         config.put(AmqpConfig.AMQP_ENABLED, true);
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
     }
 
     private static final String BRIDGE_HOST = "127.0.0.1";
@@ -3587,5 +3590,54 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                 });
                 context.completeNow();
             });
+    }
+
+    @Test
+    void consumerDeletedAfterInactivity(VertxTestContext context) {
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        String baseUri = "http://" + BRIDGE_HOST + ":" + BRIDGE_PORT + "/consumers/" + groupId + "/instances/" + name;
+
+        JsonObject consumerJson = new JsonObject();
+        consumerJson.put("name", name);
+        consumerJson.put("format", "json");
+
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
+        postRequest("/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(consumerJson.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(consumerJson, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+                        String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        String consumerBaseUri = bridgeResponse.getString("base_uri");
+                        assertEquals(name, consumerInstanceId);
+                        assertEquals(baseUri, consumerBaseUri);
+
+                        vertx.setTimer(timeout * 2 * 1000L, timeouted -> {
+                            CompletableFuture<Boolean> delete = new CompletableFuture<>();
+                            // consumer deletion
+                            deleteRequest(baseUri)
+                                    .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                                    .as(BodyCodec.jsonObject())
+                                    .send(consumerDeletedResponse -> {
+                                        context.verify(() -> assertTrue(ar.succeeded()));
+
+                                        HttpResponse<JsonObject> deletionResponse = consumerDeletedResponse.result();
+                                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), deletionResponse.statusCode());
+                                        assertEquals("The specified consumer instance was not found.", deletionResponse.body().getString("message"));
+
+                                        delete.complete(true);
+                                        context.completeNow();
+                                    });
+                        });
+                    });
+                    create.complete(true);
+                });
     }
 }

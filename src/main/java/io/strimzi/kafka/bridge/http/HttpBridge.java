@@ -33,6 +33,10 @@ import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 /**
  * Main bridge class listening for connections and handling HTTP requests.
  */
@@ -53,6 +57,8 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     private Router router;
 
     private HealthChecker healthChecker;
+
+    private Map<String, Long> timestampMap = new HashMap<>();
 
     /**
      * Constructor
@@ -77,6 +83,10 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                                         .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
                         );
 
+                        if (this.bridgeConfig.getHttpConfig().getConsumerTimeout() > -1) {
+                            startInactiveConsumerDeletionTimer(this.bridgeConfig.getHttpConfig().getConsumerTimeout());
+                        }
+
                         this.isReady = true;
                         startFuture.complete();
                     } else {
@@ -84,6 +94,26 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                         startFuture.fail(httpServerAsyncResult.cause());
                     }
                 });
+    }
+
+    private void startInactiveConsumerDeletionTimer(Long timeout) {
+        Long timeoutInMs = timeout * 1000L;
+        vertx.setPeriodic(timeoutInMs / 2, ignore -> {
+            log.debug("Looking for stale consumers in {} entries", timestampMap.size());
+            Iterator it = timestampMap.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<String, Long> item = (Map.Entry) it.next();
+                if (item.getValue() + timeoutInMs < System.currentTimeMillis()) {
+                    final SinkBridgeEndpoint deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(item.getKey());
+                    if (deleteSinkEndpoint != null) {
+                        deleteSinkEndpoint.close();
+                        this.httpBridgeContext.getHttpSinkEndpoints().remove(item.getKey());
+                        log.warn("Consumer {} deleted after inactivity timeout ({}s).", item.getKey(), timeout);
+                        timestampMap.remove(item.getKey());
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -139,7 +169,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         });
         this.httpBridgeContext.getHttpSinkEndpoints().clear();
 
-        //prducer cleanup
+        //producer cleanup
         // for each connection, we have to close the connection itself but before that
         // all the sink/source endpoints (so the related links inside each of them)
         this.httpBridgeContext.getHttpSourceEndpoints().forEach((connection, endpoint) -> {
@@ -200,6 +230,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
             sink.handle(new HttpEndpoint(routingContext), consumerId -> {
                 httpBridgeContext.getHttpSinkEndpoints().put(consumerId.toString(), sink);
+                timestampMap.put(consumerId.toString(), System.currentTimeMillis());
             });
         } catch (Exception ex) {
             sink.close();
@@ -222,6 +253,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             deleteSinkEndpoint.handle(new HttpEndpoint(routingContext));
 
             this.httpBridgeContext.getHttpSinkEndpoints().remove(deleteInstanceID);
+            timestampMap.remove(deleteInstanceID);
         } else {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.NOT_FOUND.code(),
@@ -283,6 +315,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         final SinkBridgeEndpoint sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(instanceId);
 
         if (sinkEndpoint != null) {
+            timestampMap.replace(instanceId, System.currentTimeMillis());
             sinkEndpoint.handle(new HttpEndpoint(routingContext));
         } else {
             HttpBridgeError error = new HttpBridgeError(
