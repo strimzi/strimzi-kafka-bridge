@@ -74,6 +74,7 @@ class HttpBridgeTest extends KafkaClusterTestBase {
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
+        config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
     }
 
     private static final String BRIDGE_HOST = "127.0.0.1";
@@ -3638,6 +3639,29 @@ class HttpBridgeTest extends KafkaClusterTestBase {
                         });
                     });
                     create.complete(true);
+                });
+    }
+
+    @Test
+    void createConsumerWithGeneratedName(VertxTestContext context) {
+        String groupId = "my-group";
+
+        JsonObject json = new JsonObject();
+
+        postRequest("/consumers/" + groupId)
+                .putHeader("Content-length", String.valueOf(json.toBuffer().length()))
+                .putHeader("Content-type", BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+                        String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        assertTrue(consumerInstanceId.startsWith(config.get(BridgeConfig.BRIDGE_ID).toString()));
+                    });
+                    context.completeNow();
                 });
     }
 }

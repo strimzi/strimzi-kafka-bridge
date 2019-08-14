@@ -56,4 +56,20 @@ public class HttpBridgeContext {
     public HttpOpenApiOperations getOpenApiOperation() {
         return this.openApiOperation;
     }
+
+    public void closeAllSinkBridgeEndpoints() {
+        for (Map.Entry<String, SinkBridgeEndpoint> sink: getHttpSinkEndpoints().entrySet()) {
+            if (sink.getValue() != null)
+                sink.getValue().close();
+        }
+        getHttpSinkEndpoints().clear();
+    }
+
+    public void closeAllSourceBridgeEndpoints() {
+        for (Map.Entry<HttpConnection, SourceBridgeEndpoint> source: getHttpSourceEndpoints().entrySet()) {
+            if (source.getValue() != null)
+                source.getValue().close();
+        }
+        getHttpSourceEndpoints().clear();
+    }
 }
