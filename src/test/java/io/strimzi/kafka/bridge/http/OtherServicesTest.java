@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DefaultTest extends HttpBridgeTestBase {
+public class OtherServicesTest extends HttpBridgeTestBase {
 
     @Test
     void readyTest(VertxTestContext context) throws InterruptedException {

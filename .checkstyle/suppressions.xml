@@ -8,5 +8,5 @@
 
     <!-- Note that [/\\] must be used as the path separator for cross-platform support -->
     <suppress checks="JavaNCSS"
-              files="io[/\\]strimzi[/\\]kafka[/\\]bridge[/\\]http[/\\]DefaultTest.java"/>
+              files="io[/\\]strimzi[/\\]kafka[/\\]bridge[/\\]http[/\\]OtherServicesTest.java"/>
 </suppressions>

@@ -32,7 +32,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
     private static final String FORWARDED = "Forwarded";
     private static final String X_FORWARDED_HOST = "X-Forwarded-Host";
     private static final String X_FORWARDED_PROTO = "X-Forwarded-Proto";
-    private static long timeout = 5L;
     private String name = "my-kafka-consumer";
     private String groupId = "my-group";
 

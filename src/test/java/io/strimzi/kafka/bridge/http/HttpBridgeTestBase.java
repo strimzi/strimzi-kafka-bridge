@@ -34,7 +34,7 @@ import java.util.Map;
 class HttpBridgeTestBase {
 
     static Map<String, Object> config = new HashMap<>();
-    private static long timeout = 5L;
+    static long timeout = 5L;
 
     static {
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
