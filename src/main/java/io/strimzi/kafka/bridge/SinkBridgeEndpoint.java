@@ -81,6 +81,8 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     private Handler<AsyncResult<Void>> subscribeHandler;
     // handler called after an unsubscription request
     private Handler<AsyncResult<Void>> unsubscribeHandler;
+    // handler called after an get subscriptions request
+    private Handler<AsyncResult<Set<TopicPartition>>> listSubscriptionsHandler;
     // handler called after a request for a specific partition
     private Handler<AsyncResult<Optional<PartitionInfo>>> partitionHandler;
     // handler called after a topic partition assign request
@@ -195,6 +197,14 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
+     * Returns all the topics which the consumer currently subscribes
+     */
+    protected void listSubscriptions() {
+        log.info("Listing subscribed topics {}", this.topicSubscriptions);
+        this.consumer.assignment(this::listSubscriptionsHandler);
+    }
+
+    /**
      * Subscribe to topics via the provided pattern represented by a Java regex
      *
      * @param pattern Java regex for topics subscription
@@ -236,6 +246,19 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.handleUnsubscribe(unsubscribeResult);
 
         if (unsubscribeResult.failed()) {
+            return;
+        }
+    }
+
+    /**
+     * Handler of the get subscriptions request
+     *
+     * @param listSubscriptionsResult result of get subscriptions request
+     */
+    private void listSubscriptionsHandler(AsyncResult<Set<TopicPartition>> listSubscriptionsResult) {
+        this.handleListSubscriptions(listSubscriptionsResult);
+
+        if (listSubscriptionsResult.failed()) {
             return;
         }
     }
@@ -573,6 +596,14 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.unsubscribeHandler = handler;
     }
 
+    /**
+     * Set the handler called when an get subscription request is executed
+     *
+     * @param handler   the handler
+     */
+    protected void setListSubscriptionsHandler(Handler<AsyncResult<Set<TopicPartition>>> handler) {
+        this.listSubscriptionsHandler = handler;
+    }
 
     /**
      * Set the handler called after a request for a specific partition is executed
@@ -640,6 +671,12 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     private void handleUnsubscribe(AsyncResult<Void> unsubscribeResult) {
         if (this.unsubscribeHandler != null) {
             this.unsubscribeHandler.handle(unsubscribeResult);
+        }
+    }
+
+    private void handleListSubscriptions(AsyncResult<Set<TopicPartition>> listSubscriptionsResult) {
+        if (this.listSubscriptionsHandler != null) {
+            this.listSubscriptionsHandler.handle(listSubscriptionsResult);
         }
     }
 

@@ -5,6 +5,7 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonArray;
@@ -155,5 +156,63 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
                 });
         subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         context.completeNow();
+    }
+
+    @Test
+    void listConsumerSubscriptions(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "listConsumerSubscriptions";
+        String topic2 = "listConsumerSubscriptions2";
+        kafkaCluster.createTopic(topic, 1, 1);
+        kafkaCluster.createTopic(topic2, 4, 1);
+
+        String name = "my-kafka-consumer";
+        String groupId = "my-group";
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("format", "json");
+
+        JsonArray topics = new JsonArray();
+        topics.add(topic);
+        topics.add(topic2);
+
+        JsonObject topicsRoot = new JsonObject();
+        topicsRoot.put("topics", topics);
+
+        consumerService()
+                .createConsumer(context, groupId, json)
+                .subscribeConsumer(context, groupId, name, topic)
+                .subscribeConsumer(context, groupId, name, topic2);
+
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+
+        // hack to subscribe immediately
+        consumerService()
+                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> consume.complete(true));
+
+        CompletableFuture<Boolean> listSubscriptions = new CompletableFuture<>();
+        consumerService()
+                .listSubscriptionsConsumerRequest(groupId, name)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertEquals(response.body().getJsonArray("topics").size(), 2);
+                        assertTrue(response.body().getJsonArray("topics").contains(topic));
+                        assertTrue(response.body().getJsonArray("topics").contains(topic2));
+                        assertEquals(response.body().getJsonArray("partitions").size(), 2);
+                        assertEquals(response.body().getJsonArray("partitions").getJsonObject(0).getJsonArray(topic2).size(), 4);
+                        assertEquals(response.body().getJsonArray("partitions").getJsonObject(1).getJsonArray(topic).size(), 1);
+                        listSubscriptions.complete(true);
+                        context.completeNow();
+                    });
+                });
+
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 }

@@ -345,6 +345,45 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         }
     }
 
+    public void doListSubscriptions(RoutingContext routingContext) {
+        this.setListSubscriptionsHandler(listSubscriptions -> {
+
+            if (listSubscriptions.succeeded()) {
+                JsonObject root = new JsonObject();
+                JsonArray topicsArray = new JsonArray();
+                JsonArray partitionsArray = new JsonArray();
+
+                HashMap<String, JsonArray> partitions = new HashMap<>();
+                for (TopicPartition topicPartition: listSubscriptions.result()) {
+                    if (!topicsArray.contains(topicPartition.getTopic())) {
+                        topicsArray.add(topicPartition.getTopic());
+                    }
+                    if (partitions.get(topicPartition.getTopic()) == null) {
+                        partitions.put(topicPartition.getTopic(), new JsonArray());
+                    }
+                    partitions.put(topicPartition.getTopic(), partitions.get(topicPartition.getTopic()).add(topicPartition.getPartition()));
+                }
+                for (Map.Entry<String, JsonArray> part: partitions.entrySet()) {
+                    JsonObject topic = new JsonObject();
+                    topic.put(part.getKey(), part.getValue());
+                    partitionsArray.add(topic);
+                }
+                root.put("topics", topicsArray);
+                root.put("partitions", partitionsArray);
+
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
+            } else {
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        listSubscriptions.cause().getMessage()
+                );
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            }
+        });
+        this.listSubscriptions();
+    }
+
     public void doUnsubscribe(RoutingContext routingContext) {
         this.setUnsubscribeHandler(unsubscribeResult -> {
             if (unsubscribeResult.succeeded()) {
@@ -425,6 +464,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
             case UNSUBSCRIBE:
                 doUnsubscribe(routingContext);
+                break;
+            case LIST_SUBSCRIPTIONS:
+                doListSubscriptions(routingContext);
                 break;
 
             default:

@@ -187,6 +187,29 @@ __optional__|< <<_producerrecordtopartition,ProducerRecordToPartition>> > array
 |===
 
 
+[[_subscribedtopics]]
+=== SubscribedTopics
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**partitions** +
+__optional__|< <<_subscribedtopics_partitions,partitions>> > array
+|**topics** +
+__optional__|< string > array
+|===
+
+[[_subscribedtopics_partitions]]
+**partitions**
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**my-topic1** +
+__optional__|< string > array
+|===
+
+
 [[_topics]]
 === Topics
 
