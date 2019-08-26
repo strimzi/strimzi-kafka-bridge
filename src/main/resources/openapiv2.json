@@ -896,45 +896,56 @@
     }
   },
   "definitions": {
+    "ConsumerRecord": {
+      "example": {
+        "key": "key1",
+        "offset": 2,
+        "partition": 0,
+        "topic": "topic",
+        "value": "value1"
+      },
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "offset": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "partition": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "topic": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "title": "ConsumerRecord",
+      "type": "object"
+    },
     "ConsumerRecordList": {
       "title": "ConsumerRecordList",
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "topic": {
-            "type": "string"
-          },
-          "key": {
-            "type": "string"
-          },
-          "value": {
-            "type": "string"
-          },
-          "partition": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "offset": {
-            "format": "int64",
-            "type": "integer"
-          }
-        }
+        "$ref": "#/definitions/ConsumerRecord"
       },
       "example": [
         {
-          "topic": "topic",
           "key": "key1",
-          "value": "value1",
+          "offset": 2,
           "partition": 0,
-          "offset": 2
+          "topic": "topic",
+          "value": "value1"
         },
         {
-          "topic": "topic",
           "key": "key2",
-          "value": "value2",
+          "offset": 3,
           "partition": 1,
-          "offset": 3
+          "topic": "topic",
+          "value": "value2"
         }
       ]
     },

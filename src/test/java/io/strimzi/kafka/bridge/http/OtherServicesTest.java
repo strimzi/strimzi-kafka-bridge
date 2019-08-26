@@ -104,7 +104,7 @@ public class OtherServicesTest extends HttpBridgeTestBase {
                         assertTrue(paths.containsKey("/openapi"));
                         assertEquals(HttpOpenApiOperations.OPENAPI.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/openapi").getJsonObject("get").getString("operationId"));
                         assertFalse(paths.containsKey("/karel"));
-                        assertEquals(15, bridgeResponse.getJsonObject("definitions").getMap().size());
+                        assertEquals(16, bridgeResponse.getJsonObject("definitions").getMap().size());
                         assertEquals(4, bridgeResponse.getJsonArray("tags").size());
                     });
                     context.completeNow();
