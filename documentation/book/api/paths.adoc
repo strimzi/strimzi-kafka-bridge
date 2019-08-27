@@ -774,7 +774,7 @@ __required__|List of topics to which the consumer will subscribe.|<<_topics,Topi
 === GET /consumers/{groupid}/instances/{name}/subscription
 
 ==== Description
-Retrieves a list of the topics to which is the consumer subscribed.
+Retrieves a list of the topics to which the consumer is subscribed.
 
 
 ==== Parameters

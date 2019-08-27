@@ -247,7 +247,7 @@
           }
         },
         "operationId": "listSubscriptions",
-        "description": "Retrieves a list of the topics to which is the consumer subscribed."
+        "description": "Retrieves a list of the topics to which the consumer is subscribed."
       },
       "post": {
         "tags": [
