@@ -220,9 +220,6 @@
     },
     "/consumers/{groupid}/instances/{name}/subscription": {
       "get": {
-        "consumes": [
-          "application/vnd.kafka.v2+json"
-        ],
         "produces": [
           "application/vnd.kafka.v2+json"
         ],
@@ -233,7 +230,7 @@
           "200": {
             "description": "List of subscribed topics and partitions.",
             "schema": {
-              "$ref": "#/definitions/SubscribedTopics"
+              "$ref": "#/definitions/SubscribedTopicList"
             }
           },
           "404": {
@@ -1321,29 +1318,37 @@
         ]
       }
     },
-    "SubscribedTopics": {
-      "title": "Root Type for SubscribedTopics",
-      "description": "",
+    "AssignedTopicPartitions": {
+      "title": "AssignedTopicPartitions",
+      "type": "object",
+      "properties": {
+        "topic": {
+          "type": "array",
+          "items": {
+            "format": "int32",
+            "type": "integer"
+          }
+        }
+      },
+      "example": {
+        "my-topic1": [
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    "SubscribedTopicList": {
+      "title": "SubscribedTopicList",
       "type": "object",
       "properties": {
         "topics": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+          "$ref": "#/definitions/Topics"
         },
         "partitions": {
           "type": "array",
           "items": {
-            "type": "object",
-            "properties": {
-              "my-topic1": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            }
+            "$ref": "#/definitions/AssignedTopicPartitions"
           }
         }
       },
@@ -1355,14 +1360,14 @@
         "partitions": [
           {
             "my-topic1": [
-              "1",
-              "2",
-              "3"
+              1,
+              2,
+              3
             ]
           },
           {
             "my-topic2": [
-              "1"
+              1
             ]
           }
         ]

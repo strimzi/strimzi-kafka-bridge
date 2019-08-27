@@ -186,7 +186,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
 
-        // hack to subscribe immediately
+        // poll to subscribe
         consumerService()
                 .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())

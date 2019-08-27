@@ -794,14 +794,9 @@ __required__|Name of the consumer that you want to unsubscribe from topics.|stri
 [options="header", cols=".^2,.^14,.^4"]
 |===
 |HTTP Code|Description|Schema
-|**200**|List of subscribed topics and partitions.|<<_subscribedtopics,SubscribedTopics>>
+|**200**|List of subscribed topics and partitions.|<<_subscribedtopiclist,SubscribedTopicList>>
 |**404**|The specified consumer instance was not found.|<<_error,Error>>
 |===
-
-
-==== Consumes
-
-* `application/vnd.kafka.v2+json`
 
 
 ==== Produces
@@ -822,9 +817,9 @@ __required__|Name of the consumer that you want to unsubscribe from topics.|stri
 {
   "topics" : [ "my-topic1", "my-topic2" ],
   "partitions" : [ {
-    "my-topic1" : [ "1", "2", "3" ]
+    "my-topic1" : [ 1, 2, 3 ]
   }, {
-    "my-topic2" : [ "1" ]
+    "my-topic2" : [ 1 ]
   } ]
 }
 ----

@@ -346,7 +346,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     }
 
     public void doListSubscriptions(RoutingContext routingContext) {
-        this.setListSubscriptionsHandler(listSubscriptions -> {
+        this.listSubscriptions(listSubscriptions -> {
 
             if (listSubscriptions.succeeded()) {
                 JsonObject root = new JsonObject();
@@ -381,7 +381,6 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         });
-        this.listSubscriptions();
     }
 
     public void doUnsubscribe(RoutingContext routingContext) {
