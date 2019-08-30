@@ -599,4 +599,49 @@ public class ProducerTest extends HttpBridgeTestBase {
                 assertEquals(0L, metadata.getLong("offset"));
             });
     }
+
+    @Test
+    void sendMultipleRecordsWithOneInvalidPartitionTest(VertxTestContext context) {
+        String kafkaTopic = "sendMultipleRecordsWithOneInvalidPartitionTest";
+        kafkaCluster.createTopic(kafkaTopic, 3, 1);
+
+        String value = "Hi, This is kafka bridge";
+        int partition = 1;
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        json.put("partition", partition);
+        records.add(json);
+
+        JsonObject json2 = new JsonObject();
+        json2.put("value", value + "invalid");
+        json2.put("partition", 500);
+        records.add(json2);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        producerService()
+                .sendRecordsRequest(kafkaTopic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+
+                        JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                        assertEquals(2, offsets.size());
+                        JsonObject metadata = offsets.getJsonObject(0);
+                        assertNotNull(metadata.getInteger("partition"));
+                        assertEquals(partition, metadata.getInteger("partition"));
+                        assertEquals(0L, metadata.getLong("offset"));
+                        JsonObject metadata2 = offsets.getJsonObject(1);
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), metadata2.getInteger("error_code"));
+                        assertEquals("Invalid partition given with record: 500 is not in the range [0...3).", metadata2.getString("message"));
+                    });
+                    context.completeNow();
+                });
+    }
 }

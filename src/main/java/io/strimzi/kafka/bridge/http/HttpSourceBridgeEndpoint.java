@@ -21,6 +21,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.impl.CompositeFutureImpl;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -96,8 +97,8 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
             for (int i = 0; i < sendHandlers.size(); i++) {
                 // check if, for each future, the sending operation is completed successfully or failed
-                if (done.result() != null && done.result().succeeded(i)) {
-                    RecordMetadata metadata = done.result().resultAt(i);
+                if (((CompositeFutureImpl) done).resultAt(i) != null) {
+                    RecordMetadata metadata = ((CompositeFutureImpl) done).resultAt(i);
                     log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", finalRecords.get(i), metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
                     results.add(new HttpBridgeResult<>(metadata));
                 } else {
