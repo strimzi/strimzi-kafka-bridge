@@ -1108,6 +1108,28 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
+    void createConsumerBridgeIdAndNameSpecified(VertxTestContext context) {
+        JsonObject json = new JsonObject()
+                .put("name", "consumer-1")
+                .put("format", "json");
+
+        consumerService()
+                .createConsumerRequest(groupId, json)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+                        String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        assertTrue(consumerInstanceId.equals("consumer-1"));
+                    });
+                    context.completeNow();
+                });
+    }
+
+    @Test
     void consumerDeletedAfterInactivity(VertxTestContext context) {
         CompletableFuture<Boolean> create = new CompletableFuture<>();
 
