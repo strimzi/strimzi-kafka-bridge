@@ -637,9 +637,9 @@ public class ProducerTest extends HttpBridgeTestBase {
                         assertNotNull(metadata.getInteger("partition"));
                         assertEquals(partition, metadata.getInteger("partition"));
                         assertEquals(0L, metadata.getLong("offset"));
-                        JsonObject metadata2 = offsets.getJsonObject(1);
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), metadata2.getInteger("error_code"));
-                        assertEquals("Invalid partition given with record: 500 is not in the range [0...3).", metadata2.getString("message"));
+                        HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(1));
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                        assertEquals("Invalid partition given with record: 500 is not in the range [0...3).", error.getMessage());
                     });
                     context.completeNow();
                 });
