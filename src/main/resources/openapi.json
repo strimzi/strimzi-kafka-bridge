@@ -1079,7 +1079,7 @@
                         "type": "string"
                     },
                     "offset": {
-                        "format": "int32",
+                        "format": "int64",
                         "type": "integer"
                     },
                     "partition": {

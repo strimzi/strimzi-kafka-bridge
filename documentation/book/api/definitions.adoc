@@ -34,7 +34,7 @@ __optional__|The unique name for the consumer instance. The name is unique withi
 |**key** +
 __optional__|string
 |**offset** +
-__optional__|integer (int32)
+__optional__|integer (int64)
 |**partition** +
 __optional__|integer (int32)
 |**topic** +
