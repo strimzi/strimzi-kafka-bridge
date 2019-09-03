@@ -138,7 +138,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
     }
 
     private int getCodeFromMsg(String msg) {
-        if (msg.contains("Invalid partition")) {
+        if (msg.contains("not present in metadata")) {
             return HttpResponseStatus.NOT_FOUND.code();
         } else {
             return HttpResponseStatus.INTERNAL_SERVER_ERROR.code();

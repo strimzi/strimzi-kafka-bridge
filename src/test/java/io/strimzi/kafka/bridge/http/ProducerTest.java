@@ -400,7 +400,7 @@ public class ProducerTest extends HttpBridgeTestBase {
                     assertEquals(1, offsets.size());
 
                     HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(0));
-                    assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), error.getCode());
+                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
                     // the message got from the Kafka producer (starting from 2.3) is misleading
                     // this JIRA (https://issues.apache.org/jira/browse/KAFKA-8862) raises the issue
                     assertEquals(
