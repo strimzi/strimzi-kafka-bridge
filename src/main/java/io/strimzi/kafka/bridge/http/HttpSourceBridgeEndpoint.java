@@ -26,6 +26,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import io.vertx.kafka.client.producer.RecordMetadata;
+import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.kafka.common.serialization.Serializer;
 
 import java.util.ArrayList;
@@ -101,7 +102,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                     results.add(new HttpBridgeResult<>(metadata));
                 } else {
                     String msg = done.cause().getMessage();
-                    int code = getCodeFromMsg(msg);
+                    int code = getErrorCode(done.cause());
                     log.error("Failed to deliver record {}", finalRecords.get(i), done.cause());
                     results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                 }
@@ -137,8 +138,9 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         return jsonResponse;
     }
 
-    private int getCodeFromMsg(String msg) {
-        if (msg.contains("Invalid partition")) {
+    private int getErrorCode(Throwable ex) {
+        if (ex instanceof TimeoutException && ex.getMessage() != null &&
+            ex.getMessage().contains("not present in metadata")) {
             return HttpResponseStatus.NOT_FOUND.code();
         } else {
             return HttpResponseStatus.INTERNAL_SERVER_ERROR.code();

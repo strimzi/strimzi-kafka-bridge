@@ -6,6 +6,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
+import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.KafkaJsonDeserializer;
 import io.vertx.core.AsyncResult;
@@ -16,6 +17,7 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.Disabled;
@@ -399,7 +401,12 @@ public class ProducerTest extends HttpBridgeTestBase {
 
                     HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(0));
                     assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                    assertEquals("Invalid partition given with record: 1000 is not in the range [0...3).", error.getMessage());
+                    // the message got from the Kafka producer (starting from 2.3) is misleading
+                    // this JIRA (https://issues.apache.org/jira/browse/KAFKA-8862) raises the issue
+                    assertEquals(
+                            "Topic " + kafkaTopic + " not present in metadata after " +
+                                    config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms.",
+                            error.getMessage());
                 });
                 context.completeNow();
             });
