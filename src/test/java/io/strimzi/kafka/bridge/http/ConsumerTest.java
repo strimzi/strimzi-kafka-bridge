@@ -15,6 +15,8 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvFileSource;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.concurrent.CompletableFuture;
@@ -184,25 +186,25 @@ public class ConsumerTest extends HttpBridgeTestBase {
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
-    @Test
-    void createConsumerWithWrongParameter(VertxTestContext context) throws InterruptedException {
+    @ParameterizedTest
+    @CsvFileSource(resources = "/ConsumerWithWrongParameter.csv")
+    void createConsumerWithWrongParameter(String key, String value, String message, int httpCode, VertxTestContext context) throws InterruptedException {
         JsonObject json = new JsonObject();
         json.put("name", name);
-        json.put("auto.offset.reset", "foo");
+        json.put(key, value);
 
         consumerService().createConsumerRequest(groupId, json)
-                .sendJsonObject(json, ar -> {
-                    context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), response.statusCode());
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), error.getCode());
-                        assertEquals("Invalid value foo for configuration auto.offset.reset: String must be one of: latest, earliest, none",
-                                error.getMessage());
-                    });
-                    context.completeNow();
+            .sendJsonObject(json, ar -> {
+                context.verify(() -> {
+                    assertTrue(ar.succeeded());
+                    HttpResponse<JsonObject> response = ar.result();
+                    assertEquals(httpCode, response.statusCode());
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    assertEquals(httpCode, error.getCode());
+                    assertEquals(message, error.getMessage());
                 });
+                context.completeNow();
+            });
 
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }

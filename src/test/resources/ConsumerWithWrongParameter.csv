@@ -1,0 +1,4 @@
+auto.offset.reset, foo, "Invalid value foo for configuration auto.offset.reset: String must be one of: latest, earliest, none", 500
+enable.auto.commit, foo, Invalid value foo for configuration enable.auto.commit: Expected value to be either true or false, 500
+fetch.min.bytes, foo, Invalid value foo for configuration fetch.min.bytes: Not a number of type INT, 500
+request.timeout.ms, 30000, Validation error on: body - $.request.timeout.ms: is not defined in the schema and the schema does not allow additional properties, 400
