@@ -346,19 +346,19 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     }
 
     public void doListSubscriptions(RoutingContext routingContext) {
-        this.listSubscriptions(listSubscriptions -> {
+        this.listSubscriptions(listSubscriptionsResult -> {
 
-            if (listSubscriptions.succeeded()) {
+            if (listSubscriptionsResult.succeeded()) {
                 JsonObject root = new JsonObject();
                 JsonArray topicsArray = new JsonArray();
                 JsonArray partitionsArray = new JsonArray();
 
                 HashMap<String, JsonArray> partitions = new HashMap<>();
-                for (TopicPartition topicPartition: listSubscriptions.result()) {
+                for (TopicPartition topicPartition: listSubscriptionsResult.result()) {
                     if (!topicsArray.contains(topicPartition.getTopic())) {
                         topicsArray.add(topicPartition.getTopic());
                     }
-                    if (partitions.get(topicPartition.getTopic()) == null) {
+                    if (!partitions.containsKey(topicPartition.getTopic())) {
                         partitions.put(topicPartition.getTopic(), new JsonArray());
                     }
                     partitions.put(topicPartition.getTopic(), partitions.get(topicPartition.getTopic()).add(topicPartition.getPartition()));
@@ -375,7 +375,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             } else {
                 HttpBridgeError error = new HttpBridgeError(
                         HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        listSubscriptions.cause().getMessage()
+                        listSubscriptionsResult.cause().getMessage()
                 );
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
