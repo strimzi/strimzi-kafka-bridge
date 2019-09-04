@@ -96,13 +96,13 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
             for (int i = 0; i < sendHandlers.size(); i++) {
                 // check if, for each future, the sending operation is completed successfully or failed
-                if (((CompositeFutureImpl) done).resultAt(i) != null) {
-                    RecordMetadata metadata = ((CompositeFutureImpl) done).resultAt(i);
+                if (sendHandlers.get(i).succeeded() && sendHandlers.get(i).result() != null) {
+                    RecordMetadata metadata = (RecordMetadata) sendHandlers.get(i).result();
                     log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", finalRecords.get(i), metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
                     results.add(new HttpBridgeResult<>(metadata));
                 } else {
-                    String msg = done.cause().getMessage();
-                    int code = getErrorCode(done.cause());
+                    String msg = sendHandlers.get(i).cause().getMessage();
+                    int code = getErrorCode(sendHandlers.get(i).cause());
                     log.error("Failed to deliver record {}", finalRecords.get(i), done.cause());
                     results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                 }

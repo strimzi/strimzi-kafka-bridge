@@ -639,7 +639,7 @@ public class ProducerTest extends HttpBridgeTestBase {
                         assertEquals(0L, metadata.getLong("offset"));
                         HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(1));
                         assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                        assertEquals("Invalid partition given with record: 500 is not in the range [0...3).", error.getMessage());
+                        assertEquals("Topic " + kafkaTopic + " not present in metadata after 10000 ms.", error.getMessage());
                     });
                     context.completeNow();
                 });
