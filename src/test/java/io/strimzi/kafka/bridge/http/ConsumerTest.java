@@ -15,8 +15,6 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvFileSource;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.concurrent.CompletableFuture;
@@ -186,26 +184,39 @@ public class ConsumerTest extends HttpBridgeTestBase {
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @CsvFileSource(resources = "/ConsumerWithWrongParameter.csv")
-    void createConsumerWithWrongParameter(String key, String value, String message, int httpCode, VertxTestContext context) throws InterruptedException {
-        JsonObject json = new JsonObject();
-        json.put("name", name);
-        json.put(key, value);
+    @Test
+    void createConsumerWithWrongAutoOffsetReset(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        checkCreatingConsumer("auto.offset.reset", "foo", HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                "Invalid value foo for configuration auto.offset.reset: String must be one of: latest, earliest, none", context);
 
-        consumerService().createConsumerRequest(groupId, json)
-            .sendJsonObject(json, ar -> {
-                context.verify(() -> {
-                    assertTrue(ar.succeeded());
-                    HttpResponse<JsonObject> response = ar.result();
-                    assertEquals(httpCode, response.statusCode());
-                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertEquals(httpCode, error.getCode());
-                    assertEquals(message, error.getMessage());
-                });
-                context.completeNow();
-            });
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
 
+    @Test
+    void createConsumerWithWrongEnableAutoCommit(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        checkCreatingConsumer("enable.auto.commit", "foo", HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                "Invalid value foo for configuration enable.auto.commit: Expected value to be either true or false", context);
+
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void createConsumerWithWrongFetchMinBytes(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        checkCreatingConsumer("fetch.min.bytes", "foo", HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                "Invalid value foo for configuration fetch.min.bytes: Not a number of type INT", context);
+
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void createConsumerWithWrongRequestTimeoutMs(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        checkCreatingConsumer("request.timeout.ms", "30000", HttpResponseStatus.BAD_REQUEST,
+                "Validation error on: body - $.request.timeout.ms: is not defined in the schema and the schema does not allow additional properties", context);
+
+        context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -1168,5 +1179,26 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     });
                     create.complete(true);
                 });
+    }
+
+    private void checkCreatingConsumer(String key, String value, HttpResponseStatus status, String message, VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put(key, value);
+
+        CompletableFuture<Boolean> consumer = new CompletableFuture<>();
+        consumerService().createConsumerRequest(groupId, json)
+            .sendJsonObject(json, ar -> {
+                context.verify(() -> {
+                    assertTrue(ar.succeeded());
+                    HttpResponse<JsonObject> response = ar.result();
+                    assertEquals(status.code(), response.statusCode());
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    assertEquals(status.code(), error.getCode());
+                    assertEquals(message, error.getMessage());
+                });
+                consumer.complete(true);
+            });
+        consumer.get(TEST_TIMEOUT, TimeUnit.SECONDS);
     }
 }
