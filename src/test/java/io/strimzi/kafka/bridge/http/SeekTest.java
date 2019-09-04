@@ -88,11 +88,35 @@ public class SeekTest extends HttpBridgeTestBase {
                     assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
                     assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
                     assertEquals("No current assignment for partition " + topic + "-" + nonExistenPartition, error.getMessage());
-                    context.completeNow();
                 });
                 consumerInstanceDontHavePartition.complete(true);
             });
         consumerInstanceDontHavePartition.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        // Specified consumer instance did not have one of the specified topics.
+        CompletableFuture<Boolean> consumerInstanceDontHaveTopic = new CompletableFuture<>();
+
+        String nonExistentTopic = "NotExistentTopic";
+        JsonArray nonExistentTopicJSON = new JsonArray();
+        nonExistentTopicJSON.add(new JsonObject().put("topic", nonExistentTopic).put("partition", 0));
+
+        JsonObject partitionsWithWrongTopic = new JsonObject();
+        partitionsWithWrongTopic.put("partitions", nonExistentTopicJSON);
+
+        seekService().positionsBeginningRequest(groupId, name, partitionsWithWrongTopic)
+            .sendJsonObject(partitionsWithWrongTopic, ar -> {
+                context.verify(() -> {
+                    assertTrue(ar.succeeded());
+                    HttpResponse<JsonObject> response = ar.result();
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                    assertEquals("No current assignment for partition " + nonExistentTopic + "-" + 0, error.getMessage());
+                    context.completeNow();
+                });
+                consumerInstanceDontHaveTopic.complete(true);
+            });
+        consumerInstanceDontHaveTopic.get(TEST_TIMEOUT, TimeUnit.SECONDS);
     }
 
     @Test
