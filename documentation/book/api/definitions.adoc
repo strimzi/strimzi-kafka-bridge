@@ -25,12 +25,8 @@ __optional__|The unique name for the consumer instance. The name is unique withi
 |===
 
 
-[[_consumerrecordlist]]
-=== ConsumerRecordList
-__Type__ : < <<_consumerrecordlist_inline,ConsumerRecordList>> > array
-
-[[_consumerrecordlist_inline]]
-**ConsumerRecordList**
+[[_consumerrecord]]
+=== ConsumerRecord
 
 [options="header", cols=".^3,.^4"]
 |===
@@ -46,6 +42,11 @@ __optional__|string
 |**value** +
 __optional__|string
 |===
+
+
+[[_consumerrecordlist]]
+=== ConsumerRecordList
+__Type__ : < <<_consumerrecord,ConsumerRecord>> > array
 
 
 [[_createdconsumer]]

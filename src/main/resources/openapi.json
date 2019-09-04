@@ -1066,30 +1066,41 @@
     },
     "components": {
         "schemas": {
+            "ConsumerRecord": {
+                "example": {
+                    "key": "key1",
+                    "offset": 2,
+                    "partition": 0,
+                    "topic": "topic",
+                    "value": "value1"
+                },
+                "properties": {
+                    "key": {
+                        "type": "string"
+                    },
+                    "offset": {
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "partition": {
+                        "format": "int32",
+                        "type": "integer"
+                    },
+                    "topic": {
+                        "type": "string"
+                    },
+                    "value": {
+                        "type": "string"
+                    }
+                },
+                "title": "ConsumerRecord",
+                "type": "object"
+            },
             "ConsumerRecordList": {
                 "title": "ConsumerRecordList",
                 "type": "array",
                 "items": {
-                    "type": "object",
-                    "properties": {
-                        "topic": {
-                            "type": "string"
-                        },
-                        "key": {
-                            "type": "string"
-                        },
-                        "value": {
-                            "type": "string"
-                        },
-                        "partition": {
-                            "format": "int32",
-                            "type": "integer"
-                        },
-                        "offset": {
-                            "format": "int64",
-                            "type": "integer"
-                        }
-                    }
+                    "$ref": "#/components/schemas//ConsumerRecord"
                 },
                 "example": [
                     {
