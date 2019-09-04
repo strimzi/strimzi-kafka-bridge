@@ -934,18 +934,18 @@
       },
       "example": [
         {
-          "key": "key1",
-          "offset": 2,
-          "partition": 0,
           "topic": "topic",
-          "value": "value1"
+          "key": "key1",
+          "value": "value1",
+          "partition": 0,
+          "offset": 2
         },
         {
-          "key": "key2",
-          "offset": 3,
-          "partition": 1,
           "topic": "topic",
-          "value": "value2"
+          "key": "key2",
+          "value": "value2",
+          "partition": 1,
+          "offset": 3
         }
       ]
     },
