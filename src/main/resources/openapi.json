@@ -1514,13 +1514,11 @@
             "AssignedTopicPartitions": {
                 "title": "AssignedTopicPartitions",
                 "type": "object",
-                "properties": {
-                    "topic": {
-                        "type": "array",
-                        "items": {
-                            "format": "int32",
-                            "type": "integer"
-                        }
+                "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                        "format": "int32",
+                        "type": "integer"
                     }
                 },
                 "example": {

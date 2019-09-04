@@ -4,13 +4,7 @@
 
 [[_assignedtopicpartitions]]
 === AssignedTopicPartitions
-
-[options="header", cols=".^3,.^4"]
-|===
-|Name|Schema
-|**topic** +
-__optional__|< integer (int32) > array
-|===
+__Type__ : < string, < integer (int32) > array > map
 
 
 [[_consumer]]
