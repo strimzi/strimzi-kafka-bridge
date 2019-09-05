@@ -212,7 +212,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerWithWrongRequestTimeoutMs(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithWrongKeyConsumerRequestTimeoutMs(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         checkCreatingConsumer("request.timeout.ms", "30000", HttpResponseStatus.BAD_REQUEST,
                 "Validation error on: body - $.request.timeout.ms: is not defined in the schema and the schema does not allow additional properties", context);
 
