@@ -770,6 +770,73 @@ __required__|List of topics to which the consumer will subscribe.|<<_topics,Topi
 ----
 
 
+[[_listsubscriptions]]
+=== GET /consumers/{groupid}/instances/{name}/subscription
+
+==== Description
+Retrieves a list of the topics to which the consumer is subscribed.
+
+
+==== Parameters
+
+[options="header", cols=".^2,.^3,.^9,.^4"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**groupid** +
+__required__|ID of the consumer group to which the subscribed consumer belongs.|string
+|**Path**|**name** +
+__required__|Name of the consumer that you want to unsubscribe from topics.|string
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2,.^14,.^4"]
+|===
+|HTTP Code|Description|Schema
+|**200**|List of subscribed topics and partitions.|<<_subscribedtopiclist,SubscribedTopicList>>
+|**404**|The specified consumer instance was not found.|<<_error,Error>>
+|===
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Consumers
+
+
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "topics" : [ "my-topic1", "my-topic2" ],
+  "partitions" : [ {
+    "my-topic1" : [ 1, 2, 3 ]
+  }, {
+    "my-topic2" : [ 1 ]
+  } ]
+}
+----
+
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified consumer instance was not found."
+  }
+}
+----
+
+
 [[_unsubscribe]]
 === DELETE /consumers/{groupid}/instances/{name}/subscription
 

@@ -71,6 +71,11 @@ public class ConsumerService extends BaseService {
                 .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON);
     }
 
+    public HttpRequest<Buffer> listSubscriptionsConsumerRequest(String groupId, String name) {
+        return getRequest(Urls.consumerInstanceSubscription(groupId, name))
+                .putHeader(ACCEPT.toString(), BridgeContentType.KAFKA_JSON);
+    }
+
     public HttpRequest<JsonObject> offsetsRequest(String groupId, String name, JsonObject json) {
         return postRequest(Urls.consumerInstanceOffsets(groupId, name))
                 .putHeader(CONTENT_LENGTH.toString(), String.valueOf(json.toBuffer().length()))

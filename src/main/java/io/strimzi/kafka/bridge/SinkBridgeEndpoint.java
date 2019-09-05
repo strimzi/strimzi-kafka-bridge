@@ -195,6 +195,14 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
+     * Returns all the topics which the consumer currently subscribes
+     */
+    protected void listSubscriptions(Handler<AsyncResult<Set<TopicPartition>>> handler) {
+        log.info("Listing subscribed topics {}", this.topicSubscriptions);
+        this.consumer.assignment(handler);
+    }
+
+    /**
      * Subscribe to topics via the provided pattern represented by a Java regex
      *
      * @param pattern Java regex for topics subscription
@@ -572,7 +580,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected void setUnsubscribeHandler(Handler<AsyncResult<Void>> handler) {
         this.unsubscribeHandler = handler;
     }
-
 
     /**
      * Set the handler called after a request for a specific partition is executed

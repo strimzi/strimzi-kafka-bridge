@@ -2,6 +2,11 @@
 [[_definitions]]
 == Definitions
 
+[[_assignedtopicpartitions]]
+=== AssignedTopicPartitions
+__Type__ : < string, < integer (int32) > array > map
+
+
 [[_consumer]]
 === Consumer
 
@@ -184,6 +189,19 @@ __Type__ : object
 |Name|Schema
 |**records** +
 __optional__|< <<_producerrecordtopartition,ProducerRecordToPartition>> > array
+|===
+
+
+[[_subscribedtopiclist]]
+=== SubscribedTopicList
+
+[options="header", cols=".^3,.^4"]
+|===
+|Name|Schema
+|**partitions** +
+__optional__|< <<_assignedtopicpartitions,AssignedTopicPartitions>> > array
+|**topics** +
+__optional__|<<_topics,Topics>>
 |===
 
 

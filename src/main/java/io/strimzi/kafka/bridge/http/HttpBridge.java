@@ -128,6 +128,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 routerFactory.addHandlerByOperationId(this.DELETE_CONSUMER.getOperationId().toString(), this.DELETE_CONSUMER);
                 routerFactory.addHandlerByOperationId(this.SUBSCRIBE.getOperationId().toString(), this.SUBSCRIBE);
                 routerFactory.addHandlerByOperationId(this.UNSUBSCRIBE.getOperationId().toString(), this.UNSUBSCRIBE);
+                routerFactory.addHandlerByOperationId(this.LIST_SUBSCRIPTIONS.getOperationId().toString(), this.LIST_SUBSCRIPTIONS);
                 routerFactory.addHandlerByOperationId(this.ASSIGN.getOperationId().toString(), this.ASSIGN);
                 routerFactory.addHandlerByOperationId(this.POLL.getOperationId().toString(), this.POLL);
                 routerFactory.addHandlerByOperationId(this.COMMIT.getOperationId().toString(), this.COMMIT);
@@ -260,6 +261,11 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private void unsubscribe(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.UNSUBSCRIBE);
+        processConsumer(routingContext);
+    }
+
+    private void listSubscriptions(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.LIST_SUBSCRIPTIONS);
         processConsumer(routingContext);
     }
 
@@ -503,6 +509,14 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         @Override
         public void process(RoutingContext routingContext) {
             unsubscribe(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation LIST_SUBSCRIPTIONS = new HttpOpenApiOperation(HttpOpenApiOperations.LIST_SUBSCRIPTIONS) {
+
+        @Override
+        public void process(RoutingContext routingContext) {
+            listSubscriptions(routingContext);
         }
     };
 
