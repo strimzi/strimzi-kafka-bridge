@@ -1248,15 +1248,15 @@
                     },
                     "fetch.min.bytes": {
                         "description": "Sets the minimum ammount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount.",
-                        "type": "string"
+                        "type": "integer"
                     },
                     "consumer.request.timeout.ms": {
                         "description": "Sets the maximum amount of time, in milliseconds, for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned.",
-                        "type": "string"
+                        "type": "integer"
                     },
                     "enable.auto.commit": {
                         "description": "If set to `true`, message offsets are committed automatically for the consumer. If set to `false`, message offsets must be committed manually.",
-                        "type": "string"
+                        "type": "boolean"
                     }
                 },
                 "additionalProperties": false,
@@ -1264,9 +1264,9 @@
                     "name": "consumer1",
                     "format": "binary",
                     "auto.offset.reset": "earliest",
-                    "enable.auto.commit": "false",
-                    "fetch.min.bytes": "512",
-                    "consumer.request.timeout.ms": "30000"
+                    "enable.auto.commit": false,
+                    "fetch.min.bytes": 512,
+                    "consumer.request.timeout.ms": 30000
                 }
             },
             "OffsetCommitSeek": {

@@ -98,10 +98,17 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         Properties config = new Properties();
         addConfigParameter(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
             bodyAsJson.getString(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, null), config);
-        addConfigParameter(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,
-            bodyAsJson.getString(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, null), config);
-        addConfigParameter(ConsumerConfig.FETCH_MIN_BYTES_CONFIG,
-            bodyAsJson.getString(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, null), config);
+        // OpenAPI validation handles boolean and integer, quoted or not as string, in the same way
+        // instead of raising a validation error due to this: https://github.com/vert-x3/vertx-web/issues/1375
+        Object enableAutoCommit = bodyAsJson.getValue(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG);
+        addConfigParameter(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, 
+            enableAutoCommit != null ? String.valueOf(enableAutoCommit) : null, config);
+        Object fetchMinBytes = bodyAsJson.getValue(ConsumerConfig.FETCH_MIN_BYTES_CONFIG);
+        addConfigParameter(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, 
+            fetchMinBytes != null ? String.valueOf(fetchMinBytes) : null, config);
+        Object requestTimeoutMs = bodyAsJson.getValue("consumer." + ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG);
+        addConfigParameter(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG,
+            requestTimeoutMs != null ? String.valueOf(requestTimeoutMs) : null, config);
         addConfigParameter(ConsumerConfig.CLIENT_ID_CONFIG, this.name, config);
 
         // create the consumer
