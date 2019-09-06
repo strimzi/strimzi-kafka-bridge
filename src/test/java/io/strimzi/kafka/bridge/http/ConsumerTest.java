@@ -212,9 +212,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerWithWrongKeyConsumerRequestTimeoutMs(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        checkCreatingConsumer("request.timeout.ms", "30000", HttpResponseStatus.BAD_REQUEST,
-                "Validation error on: body - $.request.timeout.ms: is not defined in the schema and the schema does not allow additional properties", context);
+    void createConsumerWithNotExistingParameter(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        checkCreatingConsumer("foo", "bar", HttpResponseStatus.BAD_REQUEST,
+                "Validation error on: body - $.foo: is not defined in the schema and the schema does not allow additional properties", context);
 
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
