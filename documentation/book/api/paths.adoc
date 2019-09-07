@@ -56,9 +56,9 @@ __required__|Name and configuration of the consumer. The name is unique within t
   "name" : "consumer1",
   "format" : "binary",
   "auto.offset.reset" : "earliest",
-  "enable.auto.commit" : "false",
-  "fetch.min.bytes" : "512",
-  "consumer.request.timeout.ms" : "30000"
+  "enable.auto.commit" : false,
+  "fetch.min.bytes" : 512,
+  "consumer.request.timeout.ms" : 30000
 }
 ----
 

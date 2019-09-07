@@ -18,11 +18,11 @@ __optional__|Resets the offset position for the consumer.
 If set to `earliest`, messages are read from the first offset.
 If set to `latest`, messages are read from the latest offset.|string
 |**consumer.request.timeout.ms** +
-__optional__|Sets the maximum amount of time, in milliseconds, for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned.|string
+__optional__|Sets the maximum amount of time, in milliseconds, for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned.|integer
 |**enable.auto.commit** +
-__optional__|If set to `true`, message offsets are committed automatically for the consumer. If set to `false`, message offsets must be committed manually.|string
+__optional__|If set to `true`, message offsets are committed automatically for the consumer. If set to `false`, message offsets must be committed manually.|boolean
 |**fetch.min.bytes** +
-__optional__|Sets the minimum ammount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount.|string
+__optional__|Sets the minimum ammount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount.|integer
 |**format** +
 __optional__|The allowable message format for the consumer, which can be `binary` (default) or `json`. The messages are converted into a JSON format.|string
 |**name** +
