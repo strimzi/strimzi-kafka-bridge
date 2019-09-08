@@ -58,7 +58,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         Properties config = kafkaCluster.getConsumerProperties();
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, config,
                 new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
         consumer.handler(record -> {
             context.verify(() -> {
@@ -105,7 +105,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         Properties config = kafkaCluster.getConsumerProperties();
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, config,
                 new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
         consumer.handler(record -> {
             context.verify(() -> {
@@ -151,7 +151,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         Properties config = kafkaCluster.getConsumerProperties();
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, config,
                 new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
         consumer.handler(record -> {
             context.verify(() -> {
@@ -197,7 +197,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         Properties config = kafkaCluster.getConsumerProperties();
 
-        KafkaConsumer<byte[], byte[]> consumer = KafkaConsumer.create(this.vertx, config,
+        KafkaConsumer<byte[], byte[]> consumer = KafkaConsumer.create(vertx, config,
                 new ByteArrayDeserializer(), new ByteArrayDeserializer());
         consumer.handler(record -> {
             context.verify(() -> {
@@ -228,12 +228,12 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         Properties config = kafkaCluster.getConsumerProperties();
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, config,
                 new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
 
         this.count = 0;
 
-        this.vertx.setPeriodic(HttpBridgeTestBase.PERIODIC_DELAY, timerId -> {
+        vertx.setPeriodic(HttpBridgeTestBase.PERIODIC_DELAY, timerId -> {
 
             if (this.count < HttpBridgeTestBase.PERIODIC_MAX_MESSAGE) {
 
@@ -252,7 +252,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
                 this.count++;
             } else {
-                this.vertx.cancelTimer(timerId);
+                vertx.cancelTimer(timerId);
 
                 consumer.subscribe(topic, done -> {
                     if (!done.succeeded()) {
@@ -322,7 +322,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         Properties config = kafkaCluster.getConsumerProperties();
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, config,
                 new StringDeserializer(), new KafkaJsonDeserializer<String>(String.class));
         this.count = 0;
         consumer.handler(record -> {
