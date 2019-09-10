@@ -36,6 +36,7 @@ import java.util.UUID;
 public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
+    private boolean closing;
 
     public HttpSourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
                                     EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
@@ -45,10 +46,12 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
     @Override
     public void open() {
         this.name = this.bridgeConfig.getBridgeID() == null ? "kafka-bridge-producer-" + UUID.randomUUID() : this.bridgeConfig.getBridgeID() + "-" + UUID.randomUUID();
+        this.closing = false;
         super.open();
     }
 
     @Override
+    @SuppressWarnings("checkstyle:NPathComplexity")
     public void handle(Endpoint<?> endpoint) {
         RoutingContext routingContext = (RoutingContext) endpoint.get();
 
@@ -102,13 +105,17 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                     results.add(new HttpBridgeResult<>(metadata));
                 } else {
                     String msg = sendHandlers.get(i).cause().getMessage();
-                    int code = getErrorCode(sendHandlers.get(i).cause());
+                    int code = handleError(sendHandlers.get(i).cause());
                     log.error("Failed to deliver record {}", finalRecords.get(i), done.cause());
                     results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                 }
             }
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
                     BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
+            
+            if (this.closing) {
+                this.close();
+            }
         });
     }
 
@@ -138,9 +145,10 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         return jsonResponse;
     }
 
-    private int getErrorCode(Throwable ex) {
+    private int handleError(Throwable ex) {
         if (ex instanceof TimeoutException && ex.getMessage() != null &&
             ex.getMessage().contains("not present in metadata")) {
+            this.closing = true;
             return HttpResponseStatus.NOT_FOUND.code();
         } else {
             return HttpResponseStatus.INTERNAL_SERVER_ERROR.code();
