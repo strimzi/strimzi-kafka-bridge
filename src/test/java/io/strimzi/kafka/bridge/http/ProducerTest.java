@@ -20,7 +20,6 @@ import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -412,7 +411,6 @@ public class ProducerTest extends HttpBridgeTestBase {
             });
     }
 
-    @Disabled
     @Test
     void sendToNonExistingTopicTest(VertxTestContext context) {
         String kafkaTopic = "sendToNonExistingTopicTest";
@@ -440,10 +438,12 @@ public class ProducerTest extends HttpBridgeTestBase {
                     JsonArray offsets = bridgeResponse.getJsonArray("offsets");
                     assertEquals(1, offsets.size());
                     int code = offsets.getJsonObject(0).getInteger("error_code");
-                    String statusMessage = offsets.getJsonObject(0).getString("error");
+                    String statusMessage = offsets.getJsonObject(0).getString("message");
 
                     assertEquals(HttpResponseStatus.NOT_FOUND.code(), code);
-                    assertEquals("Topic " + kafkaTopic + " not found", statusMessage);
+                    assertEquals("Topic " + kafkaTopic + " not present in metadata after " + 
+                                config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms.", 
+                                statusMessage);
                 });
                 context.completeNow();
             });
