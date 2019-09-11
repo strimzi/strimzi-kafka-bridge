@@ -49,7 +49,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private HttpServer httpServer;
 
-    private HttpBridgeContext httpBridgeContext;
+    private HttpBridgeContext<byte[], byte[]> httpBridgeContext;
 
     // if the bridge is ready to handle requests
     private boolean isReady = false;
@@ -104,7 +104,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             while (it.hasNext()) {
                 Map.Entry<String, Long> item = (Map.Entry) it.next();
                 if (item.getValue() + timeoutInMs < System.currentTimeMillis()) {
-                    final SinkBridgeEndpoint deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(item.getKey());
+                    SinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(item.getKey());
                     if (deleteSinkEndpoint != null) {
                         deleteSinkEndpoint.close();
                         this.httpBridgeContext.getHttpSinkEndpoints().remove(item.getKey());
@@ -146,7 +146,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
 
                 log.info("Starting HTTP-Kafka bridge verticle...");
-                this.httpBridgeContext = new HttpBridgeContext();
+                this.httpBridgeContext = new HttpBridgeContext<>();
                 this.bindHttpServer(startFuture);
             } else {
                 log.error("Failed to create OpenAPI router factory");
