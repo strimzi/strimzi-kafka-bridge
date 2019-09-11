@@ -37,7 +37,7 @@ public class SeekTest extends HttpBridgeTestBase {
         .put("format", "json");
 
     @Test
-    void seekToNotExistentConsumer(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void seekToNotExistingConsumer(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         JsonObject root = new JsonObject();
 
         seekService()
@@ -58,8 +58,8 @@ public class SeekTest extends HttpBridgeTestBase {
 
     @Test
     @Disabled // This test was disabled because of known issue described in https://github.com/strimzi/strimzi-kafka-bridge/issues/320
-    void seekToNotExistentPartitionInSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "seekToNotExistentPartitionInSubscribedTopic";
+    void seekToNotExistingPartitionInSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "seekToNotExistingPartitionInSubscribedTopic";
         kafkaCluster.createTopic(topic, 1, 1);
 
         // create consumer
@@ -67,12 +67,12 @@ public class SeekTest extends HttpBridgeTestBase {
             .createConsumer(context, groupId, jsonConsumer)
             .subscribeTopic(context, groupId, name, new JsonObject().put("topic", topic).put("partition", 0));
 
-        int nonExistenPartition = 2;
-        JsonArray nonExistentPartitionJSON = new JsonArray();
-        nonExistentPartitionJSON.add(new JsonObject().put("topic", topic).put("partition", nonExistenPartition));
+        int notExistingPartition = 2;
+        JsonArray notExistingPartitionJSON = new JsonArray();
+        notExistingPartitionJSON.add(new JsonObject().put("topic", topic).put("partition", notExistingPartition));
 
         JsonObject partitionsJSON = new JsonObject();
-        partitionsJSON.put("partitions", nonExistentPartitionJSON);
+        partitionsJSON.put("partitions", notExistingPartitionJSON);
 
         seekService().positionsBeginningRequest(groupId, name, partitionsJSON)
             .sendJsonObject(partitionsJSON, ar -> {
@@ -82,7 +82,7 @@ public class SeekTest extends HttpBridgeTestBase {
                     HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                     assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
                     assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                    assertEquals("No current assignment for partition " + topic + "-" + nonExistenPartition, error.getMessage());
+                    assertEquals("No current assignment for partition " + topic + "-" + notExistingPartition, error.getMessage());
                     context.completeNow();
                 });
             });
@@ -90,7 +90,7 @@ public class SeekTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void seekToNotExistentTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void seekToNotExistingTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         // create consumer
         consumerService()
                 .createConsumer(context, groupId, jsonConsumer);
@@ -98,12 +98,12 @@ public class SeekTest extends HttpBridgeTestBase {
         // Specified consumer instance did not have one of the specified topics.
         CompletableFuture<Boolean> consumerInstanceDontHaveTopic = new CompletableFuture<>();
 
-        String nonExistentTopic = "NotExistentTopic";
-        JsonArray nonExistentTopicJSON = new JsonArray();
-        nonExistentTopicJSON.add(new JsonObject().put("topic", nonExistentTopic).put("partition", 0));
+        String notExistingTopic = "notExistingTopic";
+        JsonArray notExistingTopicJSON = new JsonArray();
+        notExistingTopicJSON.add(new JsonObject().put("topic", notExistingTopic).put("partition", 0));
 
         JsonObject partitionsWithWrongTopic = new JsonObject();
-        partitionsWithWrongTopic.put("partitions", nonExistentTopicJSON);
+        partitionsWithWrongTopic.put("partitions", notExistingTopicJSON);
 
         seekService().positionsBeginningRequest(groupId, name, partitionsWithWrongTopic)
                 .sendJsonObject(partitionsWithWrongTopic, ar -> {
@@ -113,7 +113,7 @@ public class SeekTest extends HttpBridgeTestBase {
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
                         assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                        assertEquals("No current assignment for partition " + nonExistentTopic + "-" + 0, error.getMessage());
+                        assertEquals("No current assignment for partition " + notExistingTopic + "-" + 0, error.getMessage());
                         context.completeNow();
                     });
                     consumerInstanceDontHaveTopic.complete(true);
