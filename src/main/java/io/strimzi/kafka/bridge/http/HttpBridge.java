@@ -206,29 +206,37 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
 
         JsonObject body = routingContext.getBodyAsJson();
-        EmbeddedFormat format = EmbeddedFormat.from(body.getString("format", "binary"));
-
-        final SinkBridgeEndpoint sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.bridgeConfig, this.httpBridgeContext,
-                format, new ByteArrayDeserializer(), new ByteArrayDeserializer());
-
-        sink.closeHandler(s -> {
-            httpBridgeContext.getHttpSinkEndpoints().remove(sink.name());
-        });
+        SinkBridgeEndpoint<byte[], byte[]> sink = null;
 
         try {
+            EmbeddedFormat format = EmbeddedFormat.from(body.getString("format", "binary"));
+
+            sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.bridgeConfig, this.httpBridgeContext,
+                    format, new ByteArrayDeserializer(), new ByteArrayDeserializer());
+
+            sink.closeHandler(endpoint -> {
+                httpBridgeContext.getHttpSinkEndpoints().remove(endpoint.name());
+            });        
             sink.open();
 
-            sink.handle(new HttpEndpoint(routingContext), consumerId -> {
-                httpBridgeContext.getHttpSinkEndpoints().put(consumerId.toString(), sink);
-                timestampMap.put(consumerId.toString(), System.currentTimeMillis());
+            sink.handle(new HttpEndpoint(routingContext), s -> {
+                SinkBridgeEndpoint<byte[], byte[]> endpoint = (SinkBridgeEndpoint<byte[], byte[]>) s;
+                httpBridgeContext.getHttpSinkEndpoints().put(endpoint.name(), endpoint);
+                timestampMap.put(endpoint.name(), System.currentTimeMillis());
             });
         } catch (Exception ex) {
-            sink.close();
+            if (sink != null) {
+                sink.close();
+            }
+            HttpResponseStatus responseStatus = (ex instanceof IllegalArgumentException) ? 
+                                                HttpResponseStatus.UNPROCESSABLE_ENTITY : 
+                                                HttpResponseStatus.INTERNAL_SERVER_ERROR;
+            
             HttpBridgeError error = new HttpBridgeError(
-                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                    ex.getMessage()
+                responseStatus.code(),
+                ex.getMessage()
             );
-            HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+            HttpUtils.sendResponse(routingContext, error.getCode(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
         }
     }
@@ -237,7 +245,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.DELETE_CONSUMER);
         String deleteInstanceID = routingContext.pathParam("name");
 
-        final SinkBridgeEndpoint deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(deleteInstanceID);
+        SinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(deleteInstanceID);
 
         if (deleteSinkEndpoint != null) {
             deleteSinkEndpoint.handle(new HttpEndpoint(routingContext));
@@ -307,7 +315,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     private void processConsumer(RoutingContext routingContext) {
         String instanceId = routingContext.pathParam("name");
 
-        final SinkBridgeEndpoint sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(instanceId);
+        SinkBridgeEndpoint<byte[], byte[]> sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(instanceId);
 
         if (sinkEndpoint != null) {
             timestampMap.replace(instanceId, System.currentTimeMillis());
@@ -332,7 +340,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         String contentType = httpServerRequest.getHeader("Content-Type") != null ?
                 httpServerRequest.getHeader("Content-Type") : BridgeContentType.KAFKA_JSON_BINARY;
 
-        SourceBridgeEndpoint source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
+        SourceBridgeEndpoint<byte[], byte[]> source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
 
         try {
             if (source == null) {
@@ -432,7 +440,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
         // closing connection, but before closing all sink/source endpoints
         if (this.httpBridgeContext.getHttpSourceEndpoints().containsKey(connection)) {
-            SourceBridgeEndpoint sourceEndpoint = this.httpBridgeContext.getHttpSourceEndpoints().get(connection);
+            SourceBridgeEndpoint<byte[], byte[]> sourceEndpoint = this.httpBridgeContext.getHttpSourceEndpoints().get(connection);
             if (sourceEndpoint != null) {
                 sourceEndpoint.close();
             }

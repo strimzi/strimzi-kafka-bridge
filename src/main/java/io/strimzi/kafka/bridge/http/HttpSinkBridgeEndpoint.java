@@ -68,7 +68,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         this.handle(endpoint, null);
     }
 
-    public void doCreateConsumer(RoutingContext routingContext, JsonObject bodyAsJson, Handler<String> handler) {
+    public void doCreateConsumer(RoutingContext routingContext, JsonObject bodyAsJson, Handler<SinkBridgeEndpoint> handler) {
         // get the consumer group-id
         groupId = routingContext.pathParam("groupid");
 
@@ -114,7 +114,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         // create the consumer
         this.initConsumer(false, config);
 
-        handler.handle(this.name);
+        handler.handle(this);
 
         log.info("Created consumer {} in group {}", this.name, groupId);
         // send consumer instance id(name) and base URI as response
@@ -436,7 +436,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         switch (this.httpBridgeContext.getOpenApiOperation()) {
 
             case CREATE_CONSUMER:
-                doCreateConsumer(routingContext, bodyAsJson, (Handler<String>) handler);
+                doCreateConsumer(routingContext, bodyAsJson, (Handler<SinkBridgeEndpoint>) handler);
                 break;
 
             case SUBSCRIBE:

@@ -16,6 +16,6 @@ public enum EmbeddedFormat {
             case "binary":
                 return BINARY;
         }
-        throw new IllegalArgumentException(value);
+        throw new IllegalArgumentException("Invalid format type.");
     }
 }
