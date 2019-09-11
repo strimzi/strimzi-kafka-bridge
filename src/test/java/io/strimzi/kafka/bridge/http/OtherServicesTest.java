@@ -73,8 +73,8 @@ public class OtherServicesTest extends HttpBridgeTestBase {
                         JsonObject bridgeResponse = response.body();
 
                         Map<String, Object> paths = bridgeResponse.getJsonObject("paths").getMap();
-                        // subscribe and unsubscribe are using the same endpoint but different methods
-                        int pathsSize = HttpOpenApiOperations.values().length - 1;
+                        // subscribe, list subscribtions and unsubscribe are using the same endpoint but different methods
+                        int pathsSize = HttpOpenApiOperations.values().length - 2;
                         assertEquals(pathsSize, paths.size());
                         assertTrue(paths.containsKey("/consumers/{groupid}"));
                         assertEquals(HttpOpenApiOperations.CREATE_CONSUMER.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}").getJsonObject("post").getString("operationId"));
@@ -87,6 +87,7 @@ public class OtherServicesTest extends HttpBridgeTestBase {
                         assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/subscription"));
                         assertEquals(HttpOpenApiOperations.SUBSCRIBE.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/subscription").getJsonObject("post").getString("operationId"));
                         assertEquals(HttpOpenApiOperations.UNSUBSCRIBE.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/subscription").getJsonObject("delete").getString("operationId"));
+                        assertEquals(HttpOpenApiOperations.LIST_SUBSCRIPTIONS.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/subscription").getJsonObject("get").getString("operationId"));
                         assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/assignments"));
                         assertEquals(HttpOpenApiOperations.ASSIGN.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/assignments").getJsonObject("post").getString("operationId"));
                         assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/records"));
@@ -104,7 +105,7 @@ public class OtherServicesTest extends HttpBridgeTestBase {
                         assertTrue(paths.containsKey("/openapi"));
                         assertEquals(HttpOpenApiOperations.OPENAPI.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/openapi").getJsonObject("get").getString("operationId"));
                         assertFalse(paths.containsKey("/karel"));
-                        assertEquals(15, bridgeResponse.getJsonObject("definitions").getMap().size());
+                        assertEquals(18, bridgeResponse.getJsonObject("definitions").getMap().size());
                         assertEquals(4, bridgeResponse.getJsonArray("tags").size());
                     });
                     context.completeNow();

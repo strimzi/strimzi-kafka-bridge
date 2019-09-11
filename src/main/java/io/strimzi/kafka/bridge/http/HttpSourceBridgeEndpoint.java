@@ -26,6 +26,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import io.vertx.kafka.client.producer.RecordMetadata;
+import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.kafka.common.serialization.Serializer;
 
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ import java.util.UUID;
 public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
+    private boolean closing;
 
     public HttpSourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
                                     EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
@@ -44,10 +46,12 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
     @Override
     public void open() {
         this.name = this.bridgeConfig.getBridgeID() == null ? "kafka-bridge-producer-" + UUID.randomUUID() : this.bridgeConfig.getBridgeID() + "-" + UUID.randomUUID();
+        this.closing = false;
         super.open();
     }
 
     @Override
+    @SuppressWarnings("checkstyle:NPathComplexity")
     public void handle(Endpoint<?> endpoint) {
         RoutingContext routingContext = (RoutingContext) endpoint.get();
 
@@ -95,19 +99,23 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
             for (int i = 0; i < sendHandlers.size(); i++) {
                 // check if, for each future, the sending operation is completed successfully or failed
-                if (done.result() != null && done.result().succeeded(i)) {
-                    RecordMetadata metadata = done.result().resultAt(i);
+                if (sendHandlers.get(i).succeeded() && sendHandlers.get(i).result() != null) {
+                    RecordMetadata metadata = (RecordMetadata) sendHandlers.get(i).result();
                     log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", finalRecords.get(i), metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
                     results.add(new HttpBridgeResult<>(metadata));
                 } else {
-                    String msg = done.cause().getMessage();
-                    int code = getCodeFromMsg(msg);
+                    String msg = sendHandlers.get(i).cause().getMessage();
+                    int code = handleError(sendHandlers.get(i).cause());
                     log.error("Failed to deliver record {}", finalRecords.get(i), done.cause());
                     results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                 }
             }
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
                     BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
+            
+            if (this.closing) {
+                this.close();
+            }
         });
     }
 
@@ -137,8 +145,10 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         return jsonResponse;
     }
 
-    private int getCodeFromMsg(String msg) {
-        if (msg.contains("Invalid partition")) {
+    private int handleError(Throwable ex) {
+        if (ex instanceof TimeoutException && ex.getMessage() != null &&
+            ex.getMessage().contains("not present in metadata")) {
+            this.closing = true;
             return HttpResponseStatus.NOT_FOUND.code();
         } else {
             return HttpResponseStatus.INTERNAL_SERVER_ERROR.code();

@@ -18,7 +18,7 @@ public class BaseService {
     static final int HTTP_REQUEST_TIMEOUT = 60;
 
     // for request configuration
-    private static final long RESPONSE_TIMEOUT = 2000L;
+    private static final long RESPONSE_TIMEOUT = 60000L;
 
     BaseService(WebClient webClient) {
         this.webClient = webClient;

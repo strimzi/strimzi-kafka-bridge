@@ -235,6 +235,43 @@
             ]
         },
         "/consumers/{groupid}/instances/{name}/subscription": {
+            "get": {
+                "tags": [
+                    "Consumers"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of subscribed topics and partitions.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SubscribedTopicList"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The specified consumer instance was not found.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 404,
+                                            "message": "The specified consumer instance was not found."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "operationId": "listSubscriptions",
+                "description": "Retrieves a list of the topics to which the consumer is subscribed."
+            },
             "post": {
                 "tags": [
                     "Consumers"
@@ -1066,30 +1103,41 @@
     },
     "components": {
         "schemas": {
+            "ConsumerRecord": {
+                "example": {
+                    "key": "key1",
+                    "offset": 2,
+                    "partition": 0,
+                    "topic": "topic",
+                    "value": "value1"
+                },
+                "properties": {
+                    "key": {
+                        "type": "string"
+                    },
+                    "offset": {
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "partition": {
+                        "format": "int32",
+                        "type": "integer"
+                    },
+                    "topic": {
+                        "type": "string"
+                    },
+                    "value": {
+                        "type": "string"
+                    }
+                },
+                "title": "ConsumerRecord",
+                "type": "object"
+            },
             "ConsumerRecordList": {
                 "title": "ConsumerRecordList",
                 "type": "array",
                 "items": {
-                    "type": "object",
-                    "properties": {
-                        "topic": {
-                            "type": "string"
-                        },
-                        "key": {
-                            "type": "string"
-                        },
-                        "value": {
-                            "type": "string"
-                        },
-                        "partition": {
-                            "format": "int32",
-                            "type": "integer"
-                        },
-                        "offset": {
-                            "format": "int64",
-                            "type": "integer"
-                        }
-                    }
+                    "$ref": "#/components/schemas//ConsumerRecord"
                 },
                 "example": [
                     {
@@ -1200,15 +1248,15 @@
                     },
                     "fetch.min.bytes": {
                         "description": "Sets the minimum ammount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount.",
-                        "type": "string"
+                        "type": "integer"
                     },
                     "consumer.request.timeout.ms": {
                         "description": "Sets the maximum amount of time, in milliseconds, for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned.",
-                        "type": "string"
+                        "type": "integer"
                     },
                     "enable.auto.commit": {
                         "description": "If set to `true`, message offsets are committed automatically for the consumer. If set to `false`, message offsets must be committed manually.",
-                        "type": "string"
+                        "type": "boolean"
                     }
                 },
                 "additionalProperties": false,
@@ -1216,9 +1264,9 @@
                     "name": "consumer1",
                     "format": "binary",
                     "auto.offset.reset": "earliest",
-                    "enable.auto.commit": "false",
-                    "fetch.min.bytes": "512",
-                    "consumer.request.timeout.ms": "30000"
+                    "enable.auto.commit": false,
+                    "fetch.min.bytes": 512,
+                    "consumer.request.timeout.ms": 30000
                 }
             },
             "OffsetCommitSeek": {
@@ -1460,6 +1508,59 @@
                     "topics": [
                         "topic1",
                         "topic2"
+                    ]
+                }
+            },
+            "AssignedTopicPartitions": {
+                "title": "AssignedTopicPartitions",
+                "type": "object",
+                "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                        "format": "int32",
+                        "type": "integer"
+                    }
+                },
+                "example": {
+                    "my-topic1": [
+                        1,
+                        2,
+                        3
+                    ]
+                }
+            },
+            "SubscribedTopicList": {
+                "title": "SubscribedTopicList",
+                "type": "object",
+                "properties": {
+                    "topics": {
+                        "$ref": "#/components/schemas/Topics"
+                    },
+                    "partitions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AssignedTopicPartitions"
+                        }
+                    }
+                },
+                "example": {
+                    "topics": [
+                        "my-topic1",
+                        "my-topic2"
+                    ],
+                    "partitions": [
+                        {
+                            "my-topic1": [
+                                1,
+                                2,
+                                3
+                            ]
+                        },
+                        {
+                            "my-topic2": [
+                                1
+                            ]
+                        }
                     ]
                 }
             }

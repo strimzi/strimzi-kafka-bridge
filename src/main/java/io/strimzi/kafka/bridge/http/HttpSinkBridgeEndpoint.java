@@ -50,9 +50,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
 
-    private HttpBridgeContext httpBridgeContext;
+    private HttpBridgeContext<K, V> httpBridgeContext;
 
-    HttpSinkBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig, HttpBridgeContext context,
+    HttpSinkBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig, HttpBridgeContext<K, V> context,
                            EmbeddedFormat format, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
         super(vertx, bridgeConfig, format, keyDeserializer, valueDeserializer);
         this.httpBridgeContext = context;
@@ -68,7 +68,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         this.handle(endpoint, null);
     }
 
-    public void doCreateConsumer(RoutingContext routingContext, JsonObject bodyAsJson, Handler<String> handler) {
+    public void doCreateConsumer(RoutingContext routingContext, JsonObject bodyAsJson, Handler<SinkBridgeEndpoint<K, V>> handler) {
         // get the consumer group-id
         groupId = routingContext.pathParam("groupid");
 
@@ -98,16 +98,23 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         Properties config = new Properties();
         addConfigParameter(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
             bodyAsJson.getString(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, null), config);
-        addConfigParameter(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,
-            bodyAsJson.getString(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, null), config);
-        addConfigParameter(ConsumerConfig.FETCH_MIN_BYTES_CONFIG,
-            bodyAsJson.getString(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, null), config);
+        // OpenAPI validation handles boolean and integer, quoted or not as string, in the same way
+        // instead of raising a validation error due to this: https://github.com/vert-x3/vertx-web/issues/1375
+        Object enableAutoCommit = bodyAsJson.getValue(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG);
+        addConfigParameter(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, 
+            enableAutoCommit != null ? String.valueOf(enableAutoCommit) : null, config);
+        Object fetchMinBytes = bodyAsJson.getValue(ConsumerConfig.FETCH_MIN_BYTES_CONFIG);
+        addConfigParameter(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, 
+            fetchMinBytes != null ? String.valueOf(fetchMinBytes) : null, config);
+        Object requestTimeoutMs = bodyAsJson.getValue("consumer." + ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG);
+        addConfigParameter(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG,
+            requestTimeoutMs != null ? String.valueOf(requestTimeoutMs) : null, config);
         addConfigParameter(ConsumerConfig.CLIENT_ID_CONFIG, this.name, config);
 
         // create the consumer
         this.initConsumer(false, config);
 
-        handler.handle(this.name);
+        handler.handle(this);
 
         log.info("Created consumer {} in group {}", this.name, groupId);
         // send consumer instance id(name) and base URI as response
@@ -345,6 +352,44 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         }
     }
 
+    public void doListSubscriptions(RoutingContext routingContext) {
+        this.listSubscriptions(listSubscriptionsResult -> {
+
+            if (listSubscriptionsResult.succeeded()) {
+                JsonObject root = new JsonObject();
+                JsonArray topicsArray = new JsonArray();
+                JsonArray partitionsArray = new JsonArray();
+
+                HashMap<String, JsonArray> partitions = new HashMap<>();
+                for (TopicPartition topicPartition: listSubscriptionsResult.result()) {
+                    if (!topicsArray.contains(topicPartition.getTopic())) {
+                        topicsArray.add(topicPartition.getTopic());
+                    }
+                    if (!partitions.containsKey(topicPartition.getTopic())) {
+                        partitions.put(topicPartition.getTopic(), new JsonArray());
+                    }
+                    partitions.put(topicPartition.getTopic(), partitions.get(topicPartition.getTopic()).add(topicPartition.getPartition()));
+                }
+                for (Map.Entry<String, JsonArray> part: partitions.entrySet()) {
+                    JsonObject topic = new JsonObject();
+                    topic.put(part.getKey(), part.getValue());
+                    partitionsArray.add(topic);
+                }
+                root.put("topics", topicsArray);
+                root.put("partitions", partitionsArray);
+
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
+            } else {
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        listSubscriptionsResult.cause().getMessage()
+                );
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            }
+        });
+    }
+
     public void doUnsubscribe(RoutingContext routingContext) {
         this.setUnsubscribeHandler(unsubscribeResult -> {
             if (unsubscribeResult.succeeded()) {
@@ -391,7 +436,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         switch (this.httpBridgeContext.getOpenApiOperation()) {
 
             case CREATE_CONSUMER:
-                doCreateConsumer(routingContext, bodyAsJson, (Handler<String>) handler);
+                doCreateConsumer(routingContext, bodyAsJson, (Handler<SinkBridgeEndpoint<K, V>>) handler);
                 break;
 
             case SUBSCRIBE:
@@ -425,6 +470,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
             case UNSUBSCRIBE:
                 doUnsubscribe(routingContext);
+                break;
+            case LIST_SUBSCRIPTIONS:
+                doListSubscriptions(routingContext);
                 break;
 
             default:

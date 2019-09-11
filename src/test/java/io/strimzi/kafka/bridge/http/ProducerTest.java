@@ -6,6 +6,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
+import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.KafkaJsonDeserializer;
 import io.vertx.core.AsyncResult;
@@ -16,9 +17,9 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         Properties config = kafkaCluster.getConsumerProperties();
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, config,
                 new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
         consumer.handler(record -> {
             context.verify(() -> {
@@ -103,7 +104,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         Properties config = kafkaCluster.getConsumerProperties();
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, config,
                 new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
         consumer.handler(record -> {
             context.verify(() -> {
@@ -149,7 +150,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         Properties config = kafkaCluster.getConsumerProperties();
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, config,
                 new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
         consumer.handler(record -> {
             context.verify(() -> {
@@ -195,7 +196,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         Properties config = kafkaCluster.getConsumerProperties();
 
-        KafkaConsumer<byte[], byte[]> consumer = KafkaConsumer.create(this.vertx, config,
+        KafkaConsumer<byte[], byte[]> consumer = KafkaConsumer.create(vertx, config,
                 new ByteArrayDeserializer(), new ByteArrayDeserializer());
         consumer.handler(record -> {
             context.verify(() -> {
@@ -226,12 +227,12 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         Properties config = kafkaCluster.getConsumerProperties();
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, config,
                 new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
 
         this.count = 0;
 
-        this.vertx.setPeriodic(HttpBridgeTestBase.PERIODIC_DELAY, timerId -> {
+        vertx.setPeriodic(HttpBridgeTestBase.PERIODIC_DELAY, timerId -> {
 
             if (this.count < HttpBridgeTestBase.PERIODIC_MAX_MESSAGE) {
 
@@ -250,7 +251,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
                 this.count++;
             } else {
-                this.vertx.cancelTimer(timerId);
+                vertx.cancelTimer(timerId);
 
                 consumer.subscribe(topic, done -> {
                     if (!done.succeeded()) {
@@ -320,7 +321,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         Properties config = kafkaCluster.getConsumerProperties();
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config,
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, config,
                 new StringDeserializer(), new KafkaJsonDeserializer<String>(String.class));
         this.count = 0;
         consumer.handler(record -> {
@@ -399,13 +400,17 @@ public class ProducerTest extends HttpBridgeTestBase {
 
                     HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(0));
                     assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                    assertEquals("Invalid partition given with record: 1000 is not in the range [0...3).", error.getMessage());
+                    // the message got from the Kafka producer (starting from 2.3) is misleading
+                    // this JIRA (https://issues.apache.org/jira/browse/KAFKA-8862) raises the issue
+                    assertEquals(
+                            "Topic " + kafkaTopic + " not present in metadata after " +
+                                    config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms.",
+                            error.getMessage());
                 });
                 context.completeNow();
             });
     }
 
-    @Disabled
     @Test
     void sendToNonExistingTopicTest(VertxTestContext context) {
         String kafkaTopic = "sendToNonExistingTopicTest";
@@ -433,10 +438,12 @@ public class ProducerTest extends HttpBridgeTestBase {
                     JsonArray offsets = bridgeResponse.getJsonArray("offsets");
                     assertEquals(1, offsets.size());
                     int code = offsets.getJsonObject(0).getInteger("error_code");
-                    String statusMessage = offsets.getJsonObject(0).getString("error");
+                    String statusMessage = offsets.getJsonObject(0).getString("message");
 
                     assertEquals(HttpResponseStatus.NOT_FOUND.code(), code);
-                    assertEquals("Topic " + kafkaTopic + " not found", statusMessage);
+                    assertEquals("Topic " + kafkaTopic + " not present in metadata after " + 
+                                config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms.", 
+                                statusMessage);
                 });
                 context.completeNow();
             });
@@ -591,5 +598,50 @@ public class ProducerTest extends HttpBridgeTestBase {
                 assertNotNull(metadata.getInteger("partition"));
                 assertEquals(0L, metadata.getLong("offset"));
             });
+    }
+
+    @Test
+    void sendMultipleRecordsWithOneInvalidPartitionTest(VertxTestContext context) {
+        String kafkaTopic = "sendMultipleRecordsWithOneInvalidPartitionTest";
+        kafkaCluster.createTopic(kafkaTopic, 3, 1);
+
+        String value = "Hi, This is kafka bridge";
+        int partition = 1;
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        json.put("partition", partition);
+        records.add(json);
+
+        JsonObject json2 = new JsonObject();
+        json2.put("value", value + "invalid");
+        json2.put("partition", 500);
+        records.add(json2);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        producerService()
+                .sendRecordsRequest(kafkaTopic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+
+                        JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                        assertEquals(2, offsets.size());
+                        JsonObject metadata = offsets.getJsonObject(0);
+                        assertNotNull(metadata.getInteger("partition"));
+                        assertEquals(partition, metadata.getInteger("partition"));
+                        assertEquals(0L, metadata.getLong("offset"));
+                        HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(1));
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                        assertEquals("Topic " + kafkaTopic + " not present in metadata after 10000 ms.", error.getMessage());
+                    });
+                    context.completeNow();
+                });
     }
 }
