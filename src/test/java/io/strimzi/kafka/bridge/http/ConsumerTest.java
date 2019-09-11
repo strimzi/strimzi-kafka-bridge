@@ -284,25 +284,38 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerWithWrongParameter(VertxTestContext context) throws InterruptedException {
-        JsonObject json = new JsonObject();
-        json.put("name", name);
-        json.put("auto.offset.reset", "foo");
+    void createConsumerWithWrongAutoOffsetReset(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        checkCreatingConsumer("auto.offset.reset", "foo", HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                "Invalid value foo for configuration auto.offset.reset: String must be one of: latest, earliest, none", context);
 
-        consumerService().createConsumerRequest(groupId, json)
-                .sendJsonObject(json, ar -> {
-                    context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), response.statusCode());
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), error.getCode());
-                        assertEquals("Invalid value foo for configuration auto.offset.reset: String must be one of: latest, earliest, none",
-                                error.getMessage());
-                    });
-                    context.completeNow();
-                });
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
 
+    @Test
+    void createConsumerWithWrongEnableAutoCommit(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        checkCreatingConsumer("enable.auto.commit", "foo", HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                "Invalid value foo for configuration enable.auto.commit: Expected value to be either true or false", context);
+
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void createConsumerWithWrongFetchMinBytes(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        checkCreatingConsumer("fetch.min.bytes", "foo", HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                "Invalid value foo for configuration fetch.min.bytes: Not a number of type INT", context);
+
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void createConsumerWithNotExistingParameter(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        checkCreatingConsumer("foo", "bar", HttpResponseStatus.BAD_REQUEST,
+                "Validation error on: body - $.foo: is not defined in the schema and the schema does not allow additional properties", context);
+
+        context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -1265,5 +1278,26 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     });
                     create.complete(true);
                 });
+    }
+
+    private void checkCreatingConsumer(String key, String value, HttpResponseStatus status, String message, VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put(key, value);
+
+        CompletableFuture<Boolean> consumer = new CompletableFuture<>();
+        consumerService().createConsumerRequest(groupId, json)
+            .sendJsonObject(json, ar -> {
+                context.verify(() -> {
+                    assertTrue(ar.succeeded());
+                    HttpResponse<JsonObject> response = ar.result();
+                    assertEquals(status.code(), response.statusCode());
+                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                    assertEquals(status.code(), error.getCode());
+                    assertEquals(message, error.getMessage());
+                });
+                consumer.complete(true);
+            });
+        consumer.get(TEST_TIMEOUT, TimeUnit.SECONDS);
     }
 }
