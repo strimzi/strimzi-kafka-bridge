@@ -365,4 +365,126 @@ public class SeekTest extends HttpBridgeTestBase {
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
+    @Test
+    void seekToBeginningMultipleTopicsWithNotSuscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String subscribedTopic = "seekToBeginningSubscribedTopic";
+        String notSubscribedTopic = "seekToBeginningNotSubscribedTopic";
+        kafkaCluster.createTopic(subscribedTopic, 1, 1);
+        kafkaCluster.createTopic(notSubscribedTopic, 1, 1);
+
+        JsonObject jsonConsumer = new JsonObject()
+                                    .put("name", name)
+                                    .put("format", "json");
+        
+        JsonObject topics = new JsonObject()
+                                    .put("topics", new JsonArray().add(subscribedTopic));
+        
+        // create consumer
+        // subscribe to a topic
+        consumerService()
+            .createConsumer(context, groupId, jsonConsumer)
+            .subscribeConsumer(context, groupId, name, topics);
+        
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+
+        // poll to subscribe
+        consumerService()
+            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+            .as(BodyCodec.jsonObject())
+            .send(ar -> consume.complete(true));
+
+        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        // seek
+        JsonArray partitions = new JsonArray();
+        partitions.add(new JsonObject().put("topic", subscribedTopic).put("partition", 0));
+        partitions.add(new JsonObject().put("topic", notSubscribedTopic).put("partition", 0));
+
+        JsonObject root = new JsonObject();
+        root.put("partitions", partitions);
+
+        CompletableFuture<Boolean> seek = new CompletableFuture<>();
+        seekService().positionsBeginningRequest(groupId, name, root)
+                .sendJsonObject(root, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                        assertEquals("No current assignment for partition " + notSubscribedTopic + "-0", error.getMessage());
+                    });
+                    seek.complete(true);
+                });
+        seek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        // consumer deletion
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+        
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void seekToOffsetMultipleTopicsWithNotSuscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String subscribedTopic = "seekToOffseSubscribedTopic";
+        String notSubscribedTopic = "seekToOffsetNotSubscribedTopic";
+        kafkaCluster.createTopic(subscribedTopic, 1, 1);
+        kafkaCluster.createTopic(notSubscribedTopic, 1, 1);
+
+        JsonObject jsonConsumer = new JsonObject()
+                                    .put("name", name)
+                                    .put("format", "json");
+        
+        JsonObject topics = new JsonObject()
+                                    .put("topics", new JsonArray().add(subscribedTopic));
+        
+        // create consumer
+        // subscribe to a topic
+        consumerService()
+            .createConsumer(context, groupId, jsonConsumer)
+            .subscribeConsumer(context, groupId, name, topics);
+        
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+
+        // poll to subscribe
+        consumerService()
+            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+            .as(BodyCodec.jsonObject())
+            .send(ar -> consume.complete(true));
+
+        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        CompletableFuture<Boolean> seek = new CompletableFuture<>();
+        // seek
+        JsonArray offsets = new JsonArray();
+        offsets.add(new JsonObject().put("topic", subscribedTopic).put("partition", 0).put("offset", 0));
+        offsets.add(new JsonObject().put("topic", notSubscribedTopic).put("partition", 0).put("offset", 0));
+
+        JsonObject root = new JsonObject();
+        root.put("offsets", offsets);
+
+        seekService()
+            .positionsRequest(groupId, name, root)
+                .sendJsonObject(root, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                        assertEquals("No current assignment for partition " + notSubscribedTopic + "-0", error.getMessage());
+                    });
+                    seek.complete(true);
+                });
+        seek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        // consumer deletion
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+        
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
 }
