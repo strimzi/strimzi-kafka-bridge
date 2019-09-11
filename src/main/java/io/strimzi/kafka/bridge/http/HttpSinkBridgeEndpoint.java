@@ -141,15 +141,12 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             if (done.succeeded()) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
-                HttpResponseStatus statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR;
-                if (done.cause() instanceof IllegalStateException) {
-                    statusCode = HttpResponseStatus.NOT_FOUND;
-                }
+                int code = handleError(done.cause());
                 HttpBridgeError error = new HttpBridgeError(
-                        statusCode.code(),
-                        done.cause().getMessage()
+                    code,
+                    done.cause().getMessage()
                 );
-                HttpUtils.sendResponse(routingContext, statusCode.code(),
+                HttpUtils.sendResponse(routingContext, code,
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         });
@@ -167,15 +164,12 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             if (done.succeeded()) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
-                HttpResponseStatus statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR;
-                if (done.cause() instanceof IllegalStateException) {
-                    statusCode = HttpResponseStatus.NOT_FOUND;
-                }
+                int code = handleError(done.cause());
                 HttpBridgeError error = new HttpBridgeError(
-                        statusCode.code(),
-                        done.cause().getMessage()
+                    code,
+                    done.cause().getMessage()
                 );
-                HttpUtils.sendResponse(routingContext, statusCode.code(),
+                HttpUtils.sendResponse(routingContext, code,
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         };
@@ -563,5 +557,14 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             return String.format("%s://%s%s", scheme, host + ":" + port, path);
         }
         return String.format("%s://%s%s", scheme, host, path);
+    }
+
+    private int handleError(Throwable ex) {
+        if (ex instanceof IllegalStateException && ex.getMessage() != null &&
+            ex.getMessage().contains("No current assignment for partition")) {
+            return HttpResponseStatus.NOT_FOUND.code();
+        } else {
+            return HttpResponseStatus.INTERNAL_SERVER_ERROR.code();
+        }
     }
 }
