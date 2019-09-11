@@ -69,10 +69,20 @@ public class SeekTest extends HttpBridgeTestBase {
                 });
         instanceNotFound.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        // Specified consumer instance did not have one of the specified partitions assigned.
-        CompletableFuture<Boolean> consumerInstanceDontHavePartition = new CompletableFuture<>();
 
-        int nonExistenPartition = Integer.MAX_VALUE;
+    }
+
+    @Test
+    void seekToNotExistentPartitionInSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "seekToNotExistentPartitionInSubscribedTopic";
+        kafkaCluster.createTopic(topic, 1, 1);
+
+        // create consumer
+        consumerService()
+            .createConsumer(context, groupId, jsonConsumer)
+            .subscribeTopic(context, groupId, name, new JsonObject().put("topic", topic).put("partition", 0));
+
+        int nonExistenPartition = 2;
         JsonArray nonExistentPartitionJSON = new JsonArray();
         nonExistentPartitionJSON.add(new JsonObject().put("topic", topic).put("partition", nonExistenPartition));
 
@@ -88,10 +98,17 @@ public class SeekTest extends HttpBridgeTestBase {
                     assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
                     assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
                     assertEquals("No current assignment for partition " + topic + "-" + nonExistenPartition, error.getMessage());
+                    context.completeNow();
                 });
-                consumerInstanceDontHavePartition.complete(true);
             });
-        consumerInstanceDontHavePartition.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void seekToNotExistentTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        // create consumer
+        consumerService()
+                .createConsumer(context, groupId, jsonConsumer);
 
         // Specified consumer instance did not have one of the specified topics.
         CompletableFuture<Boolean> consumerInstanceDontHaveTopic = new CompletableFuture<>();
@@ -104,18 +121,18 @@ public class SeekTest extends HttpBridgeTestBase {
         partitionsWithWrongTopic.put("partitions", nonExistentTopicJSON);
 
         seekService().positionsBeginningRequest(groupId, name, partitionsWithWrongTopic)
-            .sendJsonObject(partitionsWithWrongTopic, ar -> {
-                context.verify(() -> {
-                    assertTrue(ar.succeeded());
-                    HttpResponse<JsonObject> response = ar.result();
-                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                    assertEquals("No current assignment for partition " + nonExistentTopic + "-" + 0, error.getMessage());
-                    context.completeNow();
+                .sendJsonObject(partitionsWithWrongTopic, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
+                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                        assertEquals("No current assignment for partition " + nonExistentTopic + "-" + 0, error.getMessage());
+                        context.completeNow();
+                    });
+                    consumerInstanceDontHaveTopic.complete(true);
                 });
-                consumerInstanceDontHaveTopic.complete(true);
-            });
         consumerInstanceDontHaveTopic.get(TEST_TIMEOUT, TimeUnit.SECONDS);
     }
 
