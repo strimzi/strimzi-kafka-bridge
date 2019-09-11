@@ -35,8 +35,8 @@ Documentation to the current _master_ branch as well as all releases can be foun
 
 If you encounter any issues while using Strimzi Kafka Bridge, you can get help using:
 
-- [Strimzi mailing list](https://www.redhat.com/mailman/listinfo/strimzi)
-- [Strimzi Slack workspace](https://join.slack.com/t/strimzi/shared_invite/enQtMzU2Mjk3NTgxMzE5LTYyMTUwMGNlMDQwMzBhOGI4YmY4MjhiMDgyNjA5OTk2MTFiYjc4M2Q3NGU1YTFjOWRiMzM2NGMwNDUwMjBlNDY)
+- [Strimzi Users mailing list](https://lists.cncf.io/g/cncf-strimzi-users/topics)
+- [#strimzi channel on CNCF Slack](https://slack.cncf.io/)
 
 ## Contributing
 
@@ -55,9 +55,8 @@ The [Documentation Contributor Guide](http://strimzi.io/contributing/guide/) des
 
 If you want to get in touch with us first before contributing, you can use:
 
-- [Strimzi mailing list](https://www.redhat.com/mailman/listinfo/strimzi)
-- [Strimzi Slack workspace](https://join.slack.com/t/strimzi/shared_invite/enQtMzU2Mjk3NTgxMzE5LTYyMTUwMGNlMDQwMzBhOGI4YmY4MjhiMDgyNjA5OTk2MTFiYjc4M2Q3NGU1YTFjOWRiMzM2NGMwNDUwMjBlNDY)
-
+- [Strimzi Dev mailing list](https://lists.cncf.io/g/cncf-strimzi-dev/topics)
+- [#strimzi channel on CNCF Slack](https://slack.cncf.io/)
 
 ## License
 
