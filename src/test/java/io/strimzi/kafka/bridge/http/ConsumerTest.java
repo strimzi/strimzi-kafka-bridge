@@ -14,6 +14,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+
 import org.junit.jupiter.api.Test;
 
 import javax.xml.bind.DatatypeConverter;
@@ -49,6 +50,33 @@ public class ConsumerTest extends HttpBridgeTestBase {
     void createConsumer(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // create consumer
         consumerService().createConsumer(context, groupId, consumerWithEarliestReset);
+
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void createConsumerWrongFormat(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        JsonObject consumerJson = new JsonObject()
+            .put("name", name)
+            .put("format", "foo");
+
+        // create consumer
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
+        consumerService().createConsumerRequest(groupId, consumerJson)
+                .sendJsonObject(consumerJson, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
+                        assertEquals("Invalid format type.", error.getMessage());
+                    });
+                    create.complete(true);
+                });
+
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
@@ -285,7 +313,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     @Test
     void createConsumerWithWrongAutoOffsetReset(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        checkCreatingConsumer("auto.offset.reset", "foo", HttpResponseStatus.INTERNAL_SERVER_ERROR,
+        checkCreatingConsumer("auto.offset.reset", "foo", HttpResponseStatus.UNPROCESSABLE_ENTITY,
                 "Invalid value foo for configuration auto.offset.reset: String must be one of: latest, earliest, none", context);
 
         context.completeNow();
@@ -294,8 +322,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     @Test
     void createConsumerWithWrongEnableAutoCommit(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        checkCreatingConsumer("enable.auto.commit", "foo", HttpResponseStatus.INTERNAL_SERVER_ERROR,
-                "Invalid value foo for configuration enable.auto.commit: Expected value to be either true or false", context);
+        checkCreatingConsumer("enable.auto.commit", "foo", HttpResponseStatus.BAD_REQUEST,
+                "Validation error on: body.enable.auto.commit - $.enable.auto.commit: string found, boolean expected", context);
 
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
@@ -303,8 +331,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     @Test
     void createConsumerWithWrongFetchMinBytes(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        checkCreatingConsumer("fetch.min.bytes", "foo", HttpResponseStatus.INTERNAL_SERVER_ERROR,
-                "Invalid value foo for configuration fetch.min.bytes: Not a number of type INT", context);
+        checkCreatingConsumer("fetch.min.bytes", "foo", HttpResponseStatus.BAD_REQUEST,
+                "Validation error on: body.fetch.min.bytes - $.fetch.min.bytes: string found, integer expected", context);
 
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
