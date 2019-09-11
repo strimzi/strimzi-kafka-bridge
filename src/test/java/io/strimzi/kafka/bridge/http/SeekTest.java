@@ -13,6 +13,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -36,26 +37,11 @@ public class SeekTest extends HttpBridgeTestBase {
         .put("format", "json");
 
     @Test
-    void seekToBeginningConsumerOrPartitionNotFound(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "seekToBeginningConsumerOrPartitionNotFound";
-        kafkaCluster.createTopic(topic, 1, 1);
-        kafkaCluster.produceStrings(topic, 10, 0);
-
-        // create consumer
-        consumerService()
-                .createConsumer(context, groupId, jsonConsumer);
-
-        // Consumer instance not found
-        CompletableFuture<Boolean> instanceNotFound = new CompletableFuture<>();
-
-        JsonArray partitions = new JsonArray();
-        partitions.add(new JsonObject().put("topic", topic).put("partition", 0));
-
+    void seekToNotExistentConsumer(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         JsonObject root = new JsonObject();
-        root.put("partitions", partitions);
 
         seekService()
-            .positionsBeginningRequest(groupId, "not-exist-instance", root)
+            .positionsBeginningRequest(groupId, name, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
@@ -64,15 +50,14 @@ public class SeekTest extends HttpBridgeTestBase {
                         assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
                         assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
                         assertEquals("The specified consumer instance was not found.", error.getMessage());
+                        context.completeNow();
                     });
-                    instanceNotFound.complete(true);
                 });
-        instanceNotFound.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
     @Test
+    @Disabled // This test was disabled because of known issue described in https://github.com/strimzi/strimzi-kafka-bridge/issues/320
     void seekToNotExistentPartitionInSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToNotExistentPartitionInSubscribedTopic";
         kafkaCluster.createTopic(topic, 1, 1);
