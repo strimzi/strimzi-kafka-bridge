@@ -313,7 +313,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     @Test
     void createConsumerWithWrongAutoOffsetReset(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        checkCreatingConsumer("auto.offset.reset", "foo", HttpResponseStatus.INTERNAL_SERVER_ERROR,
+        checkCreatingConsumer("auto.offset.reset", "foo", HttpResponseStatus.UNPROCESSABLE_ENTITY,
                 "Invalid value foo for configuration auto.offset.reset: String must be one of: latest, earliest, none", context);
 
         context.completeNow();
@@ -322,8 +322,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     @Test
     void createConsumerWithWrongEnableAutoCommit(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        checkCreatingConsumer("enable.auto.commit", "foo", HttpResponseStatus.INTERNAL_SERVER_ERROR,
-                "Invalid value foo for configuration enable.auto.commit: Expected value to be either true or false", context);
+        checkCreatingConsumer("enable.auto.commit", "foo", HttpResponseStatus.BAD_REQUEST,
+                "Validation error on: body.enable.auto.commit - $.enable.auto.commit: string found, boolean expected", context);
 
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
@@ -331,8 +331,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     @Test
     void createConsumerWithWrongFetchMinBytes(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        checkCreatingConsumer("fetch.min.bytes", "foo", HttpResponseStatus.INTERNAL_SERVER_ERROR,
-                "Invalid value foo for configuration fetch.min.bytes: Not a number of type INT", context);
+        checkCreatingConsumer("fetch.min.bytes", "foo", HttpResponseStatus.BAD_REQUEST,
+                "Validation error on: body.fetch.min.bytes - $.fetch.min.bytes: string found, integer expected", context);
 
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));

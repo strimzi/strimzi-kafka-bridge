@@ -28,6 +28,7 @@ import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
 import io.vertx.ext.web.api.validation.ValidationException;
 
 import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
@@ -228,7 +229,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             if (sink != null) {
                 sink.close();
             }
-            HttpResponseStatus responseStatus = (ex instanceof IllegalArgumentException) ? 
+            HttpResponseStatus responseStatus = (ex instanceof IllegalArgumentException) || (ex instanceof ConfigException) ?
                                                 HttpResponseStatus.UNPROCESSABLE_ENTITY : 
                                                 HttpResponseStatus.INTERNAL_SERVER_ERROR;
             
