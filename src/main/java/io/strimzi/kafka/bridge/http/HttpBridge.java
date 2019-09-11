@@ -10,6 +10,7 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.HealthCheckable;
 import io.strimzi.kafka.bridge.HealthChecker;
+import io.strimzi.kafka.bridge.IllegalEmbeddedFormatException;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
@@ -229,7 +230,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             if (sink != null) {
                 sink.close();
             }
-            HttpResponseStatus responseStatus = (ex instanceof IllegalArgumentException) || (ex instanceof ConfigException) ?
+            HttpResponseStatus responseStatus = (ex instanceof IllegalEmbeddedFormatException) || (ex instanceof ConfigException) ?
                                                 HttpResponseStatus.UNPROCESSABLE_ENTITY : 
                                                 HttpResponseStatus.INTERNAL_SERVER_ERROR;
             

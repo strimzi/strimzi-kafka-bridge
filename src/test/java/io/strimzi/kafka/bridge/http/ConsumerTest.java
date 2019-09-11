@@ -301,8 +301,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
+                        assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), response.statusCode());
+                        assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), error.getCode());
                         assertEquals("mqtt is not a valid schema/proto.", error.getMessage());
                     });
                     context.completeNow();
