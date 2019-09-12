@@ -236,6 +236,34 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
+    void createConsumerWithMultipleForwardedHeader(VertxTestContext context) throws InterruptedException {
+        String forwarded = "host=my-api-gateway-host:443;proto=https";
+        String forwarded2 = "host=my-api-another-gateway-host:886;proto=http";
+
+        String baseUri = "https://my-api-gateway-host:443/consumers/" + groupId + "/instances/" + name;
+
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
+                .putHeader(FORWARDED, forwarded)
+                .putHeader(FORWARDED, forwarded2)
+                .sendJsonObject(consumerWithEarliestReset, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+                        String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        String consumerBaseUri = bridgeResponse.getString("base_uri");
+                        assertEquals(name, consumerInstanceId);
+                        assertEquals(baseUri, consumerBaseUri);
+                    });
+                    context.completeNow();
+                });
+
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+
+    @Test
     void createConsumerWithForwardedPathHeader(VertxTestContext context) throws InterruptedException {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host:443;proto=https";
