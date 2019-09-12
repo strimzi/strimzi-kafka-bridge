@@ -9,6 +9,8 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Urls;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.CaseInsensitiveHeaders;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
@@ -234,6 +236,38 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
+
+    @Test
+    void createConsumerWithMultipleForwardedHeaders(VertxTestContext context) throws InterruptedException {
+        String forwarded = "host=my-api-gateway-host:443;proto=https";
+        String forwarded2 = "host=my-api-another-gateway-host:886;proto=http";
+
+        String baseUri = "https://my-api-gateway-host:443/consumers/" + groupId + "/instances/" + name;
+
+        // we have to use MultiMap because of https://github.com/vert-x3/vertx-web/issues/1383
+        MultiMap headers = new CaseInsensitiveHeaders();
+        headers.add(FORWARDED, forwarded);
+        headers.add(FORWARDED, forwarded2);
+
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
+                .putHeaders(headers)
+                .sendJsonObject(consumerWithEarliestReset, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+                        String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        String consumerBaseUri = bridgeResponse.getString("base_uri");
+                        assertEquals(name, consumerInstanceId);
+                        assertEquals(baseUri, consumerBaseUri);
+                    });
+                    context.completeNow();
+                });
+
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
 
     @Test
     void createConsumerWithForwardedPathHeader(VertxTestContext context) throws InterruptedException {
