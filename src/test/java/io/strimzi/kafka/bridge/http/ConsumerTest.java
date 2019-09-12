@@ -9,6 +9,8 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Urls;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.CaseInsensitiveHeaders;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
@@ -236,15 +238,19 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerWithMultipleForwardedHeader(VertxTestContext context) throws InterruptedException {
+    void createConsumerWithMultipleForwardedHeaders(VertxTestContext context) throws InterruptedException {
         String forwarded = "host=my-api-gateway-host:443;proto=https";
         String forwarded2 = "host=my-api-another-gateway-host:886;proto=http";
 
         String baseUri = "https://my-api-gateway-host:443/consumers/" + groupId + "/instances/" + name;
 
+        // we have to use MultiMap because of https://github.com/vert-x3/vertx-web/issues/1383
+        MultiMap headers = new CaseInsensitiveHeaders();
+        headers.add(FORWARDED, forwarded);
+        headers.add(FORWARDED, forwarded2);
+
         consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
-                .putHeader(FORWARDED, forwarded)
-                .putHeader(FORWARDED, forwarded2)
+                .putHeaders(headers)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
