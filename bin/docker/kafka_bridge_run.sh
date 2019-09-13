@@ -22,7 +22,7 @@ fi
 
 # Generate and print the consumer config file
 echo "Kafka Bridge configuration:"
-${MYPATH}/kafka_bridge_config_generator.sh | tee /tmp/kafka-bridge.properties
+${MYPATH}/kafka_bridge_config_generator.sh | tee /tmp/kafka-bridge.properties | sed 's/sasl.jaas.config=.*/sasl.jaas.config=[hidden]/g'
 echo ""
 
 # Configure logging for Kubernetes deployments
