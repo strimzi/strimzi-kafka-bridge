@@ -14,6 +14,12 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -37,9 +43,11 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerNameNotSet(VertxTestContext context) {
+    void createConsumerNameNotSet(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         JsonObject json = new JsonObject();
+        AtomicReference<String> name = new AtomicReference<>();
 
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService()
             .createConsumerRequest(groupId, json)
                 .as(BodyCodec.jsonObject())
@@ -50,18 +58,23 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
                         assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        name.set(consumerInstanceId);
                         assertTrue(consumerInstanceId.startsWith("kafka-bridge-consumer-"));
+                        create.complete(true);
                     });
-                    context.completeNow();
                 });
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService().deleteConsumer(context, groupId, name.get());
+        context.completeNow();
     }
 
     @Test
-    void createConsumerNameSet(VertxTestContext context) {
+    void createConsumerNameSet(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         JsonObject json = new JsonObject()
                 .put("name", "consumer-1")
                 .put("format", "json");
 
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService()
                 .createConsumerRequest(groupId, json)
                 .as(BodyCodec.jsonObject())
@@ -73,8 +86,11 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         assertTrue(consumerInstanceId.equals("consumer-1"));
+                        create.complete(true);
                     });
-                    context.completeNow();
                 });
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService().deleteConsumer(context, groupId, "consumer-1");
+        context.completeNow();
     }
 }

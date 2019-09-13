@@ -8,6 +8,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.strimzi.kafka.bridge.http.services.ConsumerService;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.CaseInsensitiveHeaders;
@@ -24,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -51,10 +53,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void createConsumer(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // create consumer
-        consumerService().createConsumer(context, groupId, consumerWithEarliestReset);
+        ConsumerService consumer = consumerService().createConsumer(context, groupId, consumerWithEarliestReset);
 
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        consumer.deleteConsumer(context, groupId, name);
     }
 
     @Test
@@ -184,7 +187,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerWithForwardedHeaders(VertxTestContext context) throws InterruptedException {
+    void createConsumerWithForwardedHeaders(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String xForwardedHost = "my-api-gateway-host:443";
         String xForwardedProto = "https";
@@ -208,11 +211,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     context.completeNow();
                 });
 
+        consumerService().deleteConsumer(context, groupId, name);
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
     @Test
-    void createConsumerWithForwardedHeader(VertxTestContext context) throws InterruptedException {
+    void createConsumerWithForwardedHeader(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host:443;proto=https";
 
@@ -234,11 +238,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     context.completeNow();
                 });
 
+        consumerService().deleteConsumer(context, groupId, name);
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
     @Test
-    void createConsumerWithMultipleForwardedHeaders(VertxTestContext context) throws InterruptedException {
+    void createConsumerWithMultipleForwardedHeaders(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         String forwarded = "host=my-api-gateway-host:443;proto=https";
         String forwarded2 = "host=my-api-another-gateway-host:886;proto=http";
 
@@ -265,12 +270,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     context.completeNow();
                 });
 
+        consumerService().deleteConsumer(context, groupId, name);
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
 
     @Test
-    void createConsumerWithForwardedPathHeader(VertxTestContext context) throws InterruptedException {
+    void createConsumerWithForwardedPathHeader(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host:443;proto=https";
         String xForwardedPath = "/my-bridge/consumers/" + groupId;
@@ -294,11 +300,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     context.completeNow();
                 });
 
+        consumerService().deleteConsumer(context, groupId, name);
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
     @Test
-    void createConsumerWithForwardedHeaderDefaultPort(VertxTestContext context) throws InterruptedException {
+    void createConsumerWithForwardedHeaderDefaultPort(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=http";
 
@@ -320,11 +327,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     context.completeNow();
                 });
 
+        consumerService().deleteConsumer(context, groupId, name);
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
     @Test
-    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException {
+    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=mqtt";
 
@@ -910,6 +918,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     create3Again.complete(true);
                 });
 
+        consumerService().deleteConsumer(context, groupId, name);
+        consumerService().deleteConsumer(context, groupId, name + "diff");
         context.completeNow();
         create3Again.get(TEST_TIMEOUT, TimeUnit.SECONDS);
     }
@@ -1262,9 +1272,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerWithGeneratedName(VertxTestContext context) {
+    void createConsumerWithGeneratedName(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         JsonObject json = new JsonObject();
+        AtomicReference<String> name = new AtomicReference<>();
 
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService()
             .createConsumerRequest(groupId, json)
                 .as(BodyCodec.jsonObject())
@@ -1275,14 +1287,18 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        name.set(consumerInstanceId);
                         assertTrue(consumerInstanceId.startsWith(config.get(BridgeConfig.BRIDGE_ID).toString()));
+                        create.complete(true);
                     });
-                    context.completeNow();
                 });
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService().deleteConsumer(context, groupId, name.get());
+        context.completeNow();
     }
 
     @Test
-    void createConsumerBridgeIdAndNameSpecified(VertxTestContext context) {
+    void createConsumerBridgeIdAndNameSpecified(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         JsonObject json = new JsonObject()
                 .put("name", "consumer-1")
                 .put("format", "json");
@@ -1301,6 +1317,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     });
                     context.completeNow();
                 });
+        consumerService().deleteConsumer(context, groupId, "consumer-1");
     }
 
     @Test
