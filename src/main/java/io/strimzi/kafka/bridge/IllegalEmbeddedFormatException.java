@@ -10,6 +10,8 @@ package io.strimzi.kafka.bridge;
  */
 public class IllegalEmbeddedFormatException extends RuntimeException {
 
+    private static final long serialVersionUID = 1L;
+
     public IllegalEmbeddedFormatException(String message) {
         super(message);
     }
