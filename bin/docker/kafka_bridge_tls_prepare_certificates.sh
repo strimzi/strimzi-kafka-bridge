@@ -54,5 +54,5 @@ if [ -d /opt/strimzi/oauth-certs ]; then
     create_truststore "$STORE" "$CERTS_STORE_PASSWORD" "$CRT" "$ALIAS"
     INDEX+=1
   done
-  echo "Preparing truststore for OAuth"
+  echo "Preparing truststore for OAuth is complete"
 fi
