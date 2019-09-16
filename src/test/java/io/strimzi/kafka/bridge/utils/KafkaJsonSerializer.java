@@ -13,7 +13,7 @@ import java.util.Map;
 public class KafkaJsonSerializer<T> implements Serializer<T> {
 
     @Override
-    public void configure(Map configs, boolean isKey) {
+    public void configure(Map<String, ?> configs, boolean isKey) {
 
     }
 
