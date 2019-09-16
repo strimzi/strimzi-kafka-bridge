@@ -74,8 +74,8 @@
 			<version>${log4j.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>io.strimzi.oauth</groupId>
-			<artifactId>strimzi-kafka-oauth-client</artifactId>
+			<groupId>io.strimzi</groupId>
+			<artifactId>kafka-oauth-client</artifactId>
 			<version>${strimzi-oauth-callback.version}</version>
 		</dependency>
 
