@@ -8,7 +8,6 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
-import io.strimzi.kafka.bridge.http.services.ConsumerService;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.CaseInsensitiveHeaders;
@@ -53,11 +52,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void createConsumer(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // create consumer
-        ConsumerService consumer = consumerService().createConsumer(context, groupId, consumerWithEarliestReset);
+        consumerService().createConsumer(context, groupId, consumerWithEarliestReset);
 
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
-        consumer.deleteConsumer(context, groupId, name);
+        consumerService()
+            .deleteConsumer(context, groupId, name);
     }
 
     @Test
@@ -82,7 +82,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 });
 
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
@@ -127,7 +126,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 });
 
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
+        consumerService()
+            .deleteConsumer(context, groupId, name);
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
@@ -181,7 +181,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 });
 
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
+        consumerService()
+            .deleteConsumer(context, groupId, name);
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
@@ -194,6 +195,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         String baseUri = xForwardedProto + "://" + xForwardedHost + "/consumers/" + groupId + "/instances/" + name;
 
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
                 .putHeader(X_FORWARDED_HOST, xForwardedHost)
                 .putHeader(X_FORWARDED_PROTO, xForwardedProto)
@@ -208,10 +210,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertEquals(name, consumerInstanceId);
                         assertEquals(baseUri, consumerBaseUri);
                     });
-                    context.completeNow();
+                    create.complete(true);
                 });
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+                .deleteConsumer(context, groupId, name);
+        context.completeNow();
 
-        consumerService().deleteConsumer(context, groupId, name);
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -222,6 +227,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         String baseUri = "https://my-api-gateway-host:443/consumers/" + groupId + "/instances/" + name;
 
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
                 .putHeader(FORWARDED, forwarded)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
@@ -235,10 +241,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertEquals(name, consumerInstanceId);
                         assertEquals(baseUri, consumerBaseUri);
                     });
-                    context.completeNow();
+                    create.complete(true);
                 });
 
-        consumerService().deleteConsumer(context, groupId, name);
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+        context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -254,6 +263,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         headers.add(FORWARDED, forwarded);
         headers.add(FORWARDED, forwarded2);
 
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
                 .putHeaders(headers)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
@@ -267,10 +277,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertEquals(name, consumerInstanceId);
                         assertEquals(baseUri, consumerBaseUri);
                     });
-                    context.completeNow();
+                    create.complete(true);
                 });
 
-        consumerService().deleteConsumer(context, groupId, name);
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+        context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -283,6 +296,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         String baseUri = "https://my-api-gateway-host:443/my-bridge/consumers/" + groupId + "/instances/" + name;
 
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
                 .putHeader(FORWARDED, forwarded)
                 .putHeader("X-Forwarded-Path", xForwardedPath)
@@ -297,10 +311,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertEquals(name, consumerInstanceId);
                         assertEquals(baseUri, consumerBaseUri);
                     });
-                    context.completeNow();
+                    create.complete(true);
                 });
 
-        consumerService().deleteConsumer(context, groupId, name);
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+        context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -311,6 +328,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         String baseUri = "http://my-api-gateway-host:80/consumers/" + groupId + "/instances/" + name;
 
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
                 .putHeader(FORWARDED, forwarded)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
@@ -324,10 +342,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertEquals(name, consumerInstanceId);
                         assertEquals(baseUri, consumerBaseUri);
                     });
-                    context.completeNow();
+                    create.complete(true);
                 });
 
-        consumerService().deleteConsumer(context, groupId, name);
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+        context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -918,10 +939,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     create3Again.complete(true);
                 });
 
-        consumerService().deleteConsumer(context, groupId, name);
-        consumerService().deleteConsumer(context, groupId, name + "diff");
-        context.completeNow();
         create3Again.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+        consumerService()
+            .deleteConsumer(context, groupId, name + "diff");
+        context.completeNow();
     }
 
     @Test
@@ -1293,7 +1316,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     });
                 });
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService().deleteConsumer(context, groupId, name.get());
+        consumerService()
+            .deleteConsumer(context, groupId, name.get());
         context.completeNow();
     }
 
@@ -1303,6 +1327,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .put("name", "consumer-1")
                 .put("format", "json");
 
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService()
                 .createConsumerRequest(groupId, json)
                 .as(BodyCodec.jsonObject())
@@ -1315,9 +1340,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         assertTrue(consumerInstanceId.equals("consumer-1"));
                     });
-                    context.completeNow();
+                    create.complete(true);
                 });
-        consumerService().deleteConsumer(context, groupId, "consumer-1");
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+            .deleteConsumer(context, groupId, "consumer-1");
+        context.completeNow();
     }
 
     @Test

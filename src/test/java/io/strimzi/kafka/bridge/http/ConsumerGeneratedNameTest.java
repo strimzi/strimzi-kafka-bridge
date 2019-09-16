@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,6 +26,7 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
 
     private String groupId = "my-group";
     private static String bridgeID = "";
+    private String name = "";
 
     @BeforeAll
     static void unsetBridgeID() {
@@ -45,7 +45,6 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
     @Test
     void createConsumerNameNotSet(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         JsonObject json = new JsonObject();
-        AtomicReference<String> name = new AtomicReference<>();
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService()
@@ -58,13 +57,14 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
                         assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        name.set(consumerInstanceId);
+                        name = consumerInstanceId;
                         assertTrue(consumerInstanceId.startsWith("kafka-bridge-consumer-"));
                         create.complete(true);
                     });
                 });
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService().deleteConsumer(context, groupId, name.get());
+        consumerService()
+            .deleteConsumer(context, groupId, name);
         context.completeNow();
     }
 
@@ -90,7 +90,8 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
                     });
                 });
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService().deleteConsumer(context, groupId, "consumer-1");
+        consumerService()
+            .deleteConsumer(context, groupId, "consumer-1");
         context.completeNow();
     }
 }
