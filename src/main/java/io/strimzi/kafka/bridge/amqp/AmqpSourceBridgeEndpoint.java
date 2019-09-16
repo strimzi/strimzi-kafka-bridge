@@ -45,6 +45,12 @@ public class AmqpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                                     EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
         super(vertx, bridgeConfig, format, keySerializer, valueSerializer);
         this.receivers = new HashMap<>();
+        AmqpConfig amqpConfig = (AmqpConfig) this.bridgeConfig.getAmqpConfig();
+        try {
+            this.converter = (MessageConverter<K, V, Message, Collection<Message>>) AmqpBridge.instantiateConverter(amqpConfig.getMessageConverter());
+        } catch (AmqpErrorConditionException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

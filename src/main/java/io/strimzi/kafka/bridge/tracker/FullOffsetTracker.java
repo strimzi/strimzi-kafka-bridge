@@ -108,23 +108,13 @@ public class FullOffsetTracker implements OffsetTracker {
                 state.settlements.keySet().removeAll(offsetToRemove);
 
             } else {
-
                 // no other UNSETTLED offset, so the one just arrived is for commit
-
                 long offsetToCommit = offset;
                 state.offset = offsetToCommit;
                 state.flag = true;
                 // all offset SETTLED, clear list
                 state.settlements.clear();
             }
-
-        } else if (offset > state.firstUnsettled) {
-
-            // do nothing
-
-        } else {
-
-            // impossible ?
         }
     }
 

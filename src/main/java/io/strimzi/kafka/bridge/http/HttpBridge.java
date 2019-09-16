@@ -408,7 +408,12 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         String message = null;
         // in case of validation exception, building a meaningful error message
         if (routingContext.failure() != null && routingContext.failure() instanceof ValidationException) {
-            ValidationException validationException = (ValidationException) routingContext.failure();
+            ValidationException validationException = new ValidationException("null");
+            try {
+                validationException = (ValidationException) routingContext.failure();
+            } catch (ClassCastException e) {
+                e.printStackTrace();
+            }
             StringBuilder sb = new StringBuilder();
             if (validationException.parameterName() != null) {
                 sb.append("Validation error on: " + validationException.parameterName() + " - ");

@@ -494,7 +494,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                     new io.vertx.kafka.client.consumer.OffsetAndMetadata(offsetAndMetadata.offset() + 1, offsetAndMetadata.metadata()));
         });
 
-        if (offsets != null && !offsets.isEmpty()) {
+        if (!offsets.isEmpty()) {
             this.consumer.commit(kafkaOffsets, ar -> {
                 if (ar.succeeded()) {
                     this.offsetTracker.commit(offsets);

@@ -29,6 +29,7 @@ import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -54,6 +55,13 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     public AmqpSinkBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
                                   EmbeddedFormat format, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
         super(vertx, bridgeConfig, format, keyDeserializer, valueDeserializer);
+        AmqpConfig amqpConfig = (AmqpConfig) this.bridgeConfig.getAmqpConfig();
+        try {
+            this.converter = (MessageConverter<K, V, Message, Collection<Message>>) AmqpBridge.instantiateConverter(amqpConfig.getMessageConverter());
+        } catch (AmqpErrorConditionException e) {
+            e.printStackTrace();
+        }
+
     }
 
     @Override
@@ -240,7 +248,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             this.sender.send(ProtonHelper.tag(deliveryTag), message, delivery -> {
 
                 // a record (converted in AMQP message) is delivered ... communicate it to the tracker
-                String tag = new String(delivery.getTag());
+                String tag = new String(delivery.getTag(), StandardCharsets.UTF_8);
                 this.offsetTracker.delivered(partition, offset);
 
                 log.debug("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), this.sender.getSource().getAddress());

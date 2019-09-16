@@ -24,7 +24,7 @@ public class DefaultSerializer<T> implements Serializer<T> {
     public byte[] serialize(String topic, T data) {
 
         if (data == null)
-            return null;
+            return new byte[0];
 
         ByteArrayOutputStream b = new ByteArrayOutputStream();
         ObjectOutputStream o = null;

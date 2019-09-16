@@ -66,7 +66,7 @@ public class Application {
             Map<String, Object> config = ar.result().getMap();
             BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
 
-            int healthServerPort = Integer.valueOf(config.getOrDefault(HEALTH_SERVER_PORT, DEFAULT_HEALTH_SERVER_PORT).toString());
+            int healthServerPort = Integer.parseInt(config.getOrDefault(HEALTH_SERVER_PORT, DEFAULT_HEALTH_SERVER_PORT).toString());
 
             if (bridgeConfig.getAmqpConfig().isEnabled() && bridgeConfig.getAmqpConfig().getPort() == healthServerPort) {
                 log.error("Health server port {} conflicts with configured AMQP port", healthServerPort);
