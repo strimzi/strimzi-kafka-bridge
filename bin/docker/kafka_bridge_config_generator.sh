@@ -66,13 +66,13 @@ if [ -n "$KAFKA_BRIDGE_SASL_MECHANISM" ]; then
         fi
 
         JAAS_CONFIG="org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required ${KAFKA_BRIDGE_OAUTH_CONFIG} ${OAUTH_CLIENT_SECRET} ${OAUTH_REFRESH_TOKEN} ${OAUTH_ACCESS_TOKEN} ${OAUTH_TRUSTSTORE};"
-        OAUTH_CALLBACK_CLASS="io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler"
+        OAUTH_CALLBACK_CLASS="kafka.sasl.login.callback.handler.class=io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler"
     fi
 
     SASL_AUTH_CONFIGURATION=$(cat <<EOF
 kafka.sasl.mechanism=${SASL_MECHANISM}
 kafka.sasl.jaas.config=${JAAS_CONFIG}
-kafka.sasl.login.callback.handler.class=${OAUTH_CALLBACK_CLASS}
+${OAUTH_CALLBACK_CLASS}
 EOF
 )
 fi
