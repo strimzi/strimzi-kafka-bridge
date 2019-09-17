@@ -47,7 +47,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     private static final String GROUP_ID_MATCH = "/group.id/";
 
     // converter from ConsumerRecord to AMQP message
-    private MessageConverter<K, V, Message, Collection<Message>> converter;
+    private MessageConverter<K, V, Message, Collection<Message>> converter = null;
 
     // sender link for handling outgoing message
     private ProtonSender sender;
@@ -55,13 +55,6 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     public AmqpSinkBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
                                   EmbeddedFormat format, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
         super(vertx, bridgeConfig, format, keyDeserializer, valueDeserializer);
-        AmqpConfig amqpConfig = (AmqpConfig) this.bridgeConfig.getAmqpConfig();
-        try {
-            this.converter = (MessageConverter<K, V, Message, Collection<Message>>) AmqpBridge.instantiateConverter(amqpConfig.getMessageConverter());
-        } catch (AmqpErrorConditionException e) {
-            e.printStackTrace();
-        }
-
     }
 
     @Override
