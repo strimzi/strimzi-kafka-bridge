@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
@@ -395,6 +396,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         });
     }
 
+    @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
     private void errorHandler(RoutingContext routingContext) {
         int requestId = System.identityHashCode(routingContext.request());
         routingContext.put("request-id", requestId);

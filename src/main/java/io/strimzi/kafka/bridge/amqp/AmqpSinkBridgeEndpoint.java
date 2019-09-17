@@ -29,6 +29,7 @@ import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -46,7 +47,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     private static final String GROUP_ID_MATCH = "/group.id/";
 
     // converter from ConsumerRecord to AMQP message
-    private MessageConverter<K, V, Message, Collection<Message>> converter;
+    private MessageConverter<K, V, Message, Collection<Message>> converter = null;
 
     // sender link for handling outgoing message
     private ProtonSender sender;
@@ -240,7 +241,7 @@ public class AmqpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             this.sender.send(ProtonHelper.tag(deliveryTag), message, delivery -> {
 
                 // a record (converted in AMQP message) is delivered ... communicate it to the tracker
-                String tag = new String(delivery.getTag());
+                String tag = new String(delivery.getTag(), StandardCharsets.UTF_8);
                 this.offsetTracker.delivered(partition, offset);
 
                 log.debug("Message tag {} delivered {} to {}", tag, delivery.getRemoteState(), this.sender.getSource().getAddress());

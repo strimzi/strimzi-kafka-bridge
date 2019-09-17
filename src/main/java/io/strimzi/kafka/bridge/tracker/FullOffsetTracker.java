@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.tracker;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -76,6 +77,7 @@ public class FullOffsetTracker implements OffsetTracker {
         }
     }
 
+    @SuppressFBWarnings("UCF_USELESS_CONTROL_FLOW")
     @Override
     public void delivered(int partition, long offset) {
 
@@ -108,22 +110,16 @@ public class FullOffsetTracker implements OffsetTracker {
                 state.settlements.keySet().removeAll(offsetToRemove);
 
             } else {
-
                 // no other UNSETTLED offset, so the one just arrived is for commit
-
                 long offsetToCommit = offset;
                 state.offset = offsetToCommit;
                 state.flag = true;
                 // all offset SETTLED, clear list
                 state.settlements.clear();
             }
-
         } else if (offset > state.firstUnsettled) {
-
             // do nothing
-
         } else {
-
             // impossible ?
         }
     }
