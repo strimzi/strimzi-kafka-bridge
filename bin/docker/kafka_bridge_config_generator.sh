@@ -47,6 +47,8 @@ if [ -n "$KAFKA_BRIDGE_SASL_MECHANISM" ]; then
         SASL_MECHANISM="SCRAM-SHA-512"
         JAAS_CONFIG="org.apache.kafka.common.security.scram.ScramLoginModule required username=\"${KAFKA_BRIDGE_SASL_USERNAME}\" password=\"${PASSWORD}\";"
     elif [ "x$KAFKA_BRIDGE_SASL_MECHANISM" = "xoauth" ]; then
+        SASL_MECHANISM="OAUTHBEARER"
+
         if [ ! -z "$KAFKA_BRIDGE_OAUTH_ACCESS_TOKEN" ]; then
             OAUTH_ACCESS_TOKEN="oauth.access.token=\"$KAFKA_BRIDGE_OAUTH_ACCESS_TOKEN\""
         fi
@@ -63,7 +65,6 @@ if [ -n "$KAFKA_BRIDGE_SASL_MECHANISM" ]; then
             OAUTH_TRUSTSTORE="oauth.ssl.truststore.location=\"/tmp/strimzi/oauth.truststore.p12\" oauth.ssl.truststore.password=\"${CERTS_STORE_PASSWORD}\" oauth.ssl.truststore.type=\"PKCS12\""
         fi
 
-        SASL_MECHANISM="OAUTHBEARER"
         JAAS_CONFIG="org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required ${KAFKA_BRIDGE_OAUTH_CONFIG} ${OAUTH_CLIENT_SECRET} ${OAUTH_REFRESH_TOKEN} ${OAUTH_ACCESS_TOKEN} ${OAUTH_TRUSTSTORE};"
         OAUTH_CALLBACK_CLASS="io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler"
     fi
