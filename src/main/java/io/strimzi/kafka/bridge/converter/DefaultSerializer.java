@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.converter;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.Serializer;
 
@@ -20,6 +21,7 @@ public class DefaultSerializer<T> implements Serializer<T> {
 
     }
 
+    @SuppressFBWarnings("PZLA_PREFER_ZERO_LENGTH_ARRAYS")
     @Override
     public byte[] serialize(String topic, T data) {
 

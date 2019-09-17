@@ -36,7 +36,7 @@ import java.util.Map;
 public class AmqpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
     // converter from AMQP message to ConsumerRecord
-    private MessageConverter<K, V, Message, Collection<Message>> converter;
+    private MessageConverter<K, V, Message, Collection<Message>> converter = null;
 
     // receiver link for handling incoming message
     private Map<String, ProtonReceiver> receivers;
