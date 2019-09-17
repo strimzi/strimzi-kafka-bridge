@@ -5,6 +5,7 @@
 * Changed data types and enforced OpenAPI validation for `consumer.request.timeout.ms`, `enable.auto.commit`and `fetch.min.bytes`parameters on consumer creation. This is a breaking change.
 * Added HTTP GET method on `/consumers/{groupid}/instances/{name}/subscription` endpoint for getting subscribed topics and related assigned partitions.
 * Added automatic deletion of stale consumer after a configurable timeout if the HTTP DELETE is not called and the consumer is not used for long time.
+* Add support for OAuth authentication for connections between the Bridge and Kafka brokers (not HTTP connections)
 * Various bug fixes.
 
 ## 0.13.0

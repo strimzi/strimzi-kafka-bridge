@@ -42,3 +42,17 @@ if [ -n "$tls_auth_cert" ] && [ -n "$tls_auth_key" ]; then
     create_keystore $keystore_path $CERTS_STORE_PASSWORD $certs_key_path/$tls_auth_cert $certs_key_path/$tls_auth_key $tls_auth_cert
     echo "Preparing keystore is complete"
 fi
+
+if [ -d /opt/strimzi/oauth-certs ]; then
+  echo "Preparing truststore for OAuth"
+  # Add each certificate to the trust store
+  STORE=/tmp/strimzi/oauth.truststore.p12
+  declare -i INDEX=0
+  for CRT in /opt/strimzi/oauth-certs/**/*; do
+    ALIAS="oauth-${INDEX}"
+    echo "Adding $CRT to truststore $STORE with alias $ALIAS"
+    create_truststore "$STORE" "$CERTS_STORE_PASSWORD" "$CRT" "$ALIAS"
+    INDEX+=1
+  done
+  echo "Preparing truststore for OAuth is complete"
+fi
