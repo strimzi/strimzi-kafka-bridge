@@ -27,7 +27,7 @@ Afterwards, edit the `config/application.properties` file which contains the con
 Once your configuration is ready, start the bridge using:
 
 ```bash
-bin/kafka-bridge-run.sh --config-file config/application.properties
+bin/kafka_bridge_run.sh --config-file config/application.properties
 ```
 
 ## Documentation
