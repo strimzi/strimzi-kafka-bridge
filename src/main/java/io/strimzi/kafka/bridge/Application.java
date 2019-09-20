@@ -35,7 +35,7 @@ public class Application {
     private static final int DEFAULT_HEALTH_SERVER_PORT = 8080;
 
     public static void main(String[] args) {
-        log.info("Apache Kafka Bridge {} is starting", Application.class.getPackage().getImplementationVersion());
+        log.info("Strimzi Kafka Bridge {} is starting", Application.class.getPackage().getImplementationVersion());
         Vertx vertx = Vertx.vertx();
 
         if (args.length == 0)   {
