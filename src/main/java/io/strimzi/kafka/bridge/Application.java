@@ -35,10 +35,11 @@ public class Application {
     private static final int DEFAULT_HEALTH_SERVER_PORT = 8080;
 
     public static void main(String[] args) {
+        log.info("Strimzi Kafka Bridge {} is starting", Application.class.getPackage().getImplementationVersion());
         Vertx vertx = Vertx.vertx();
 
         if (args.length == 0)   {
-            log.error("Please specify a cofiguration file using the '--config-file` option. For example 'bin/run_bridge.sh --config-file config/application.properties'.");
+            log.error("Please specify a configuration file using the '--config-file` option. For example 'bin/kafka_bridge_run.sh --config-file config/application.properties'.");
             System.exit(1);
         }
 
