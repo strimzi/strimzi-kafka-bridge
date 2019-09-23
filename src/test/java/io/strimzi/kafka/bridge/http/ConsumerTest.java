@@ -17,6 +17,8 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Test;
 
 import javax.xml.bind.DatatypeConverter;
@@ -26,12 +28,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConsumerTest extends HttpBridgeTestBase {
+
+    private static final Logger LOGGER = LogManager.getLogger(ConsumerTest.class);
 
     private static final String FORWARDED = "Forwarded";
     private static final String X_FORWARDED_HOST = "X-Forwarded-Host";
@@ -1406,5 +1413,35 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 consumer.complete(true);
             });
         consumer.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void createConsumerWithInvalidValueOfConfiguration(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
+
+        JsonObject requestHeader = new JsonObject();
+        requestHeader.put("name", name);
+
+        LOGGER.info("Adding invalid value 'biary' to 'format' property configuration to invoke |422| status code");
+
+        requestHeader.put("format", "biary");
+        requestHeader.put("auto.offset.reset", "earliest");
+        requestHeader.put("fetch.min.bytes", "512");
+        requestHeader.put("consumer.request.timeout.ms", "30000");
+
+        consumerService()
+                .createConsumerRequest(groupId, requestHeader)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(requestHeader, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat("Response status code is not '422'", response.statusCode(), is(422));
+                        assertThat("Body message doesn't contain 'Invalid format type.'", response.body().getString("message"), equalTo("Invalid format type."));
+                    });
+                    create.complete(true);
+                });
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        context.completeNow();
     }
 }
