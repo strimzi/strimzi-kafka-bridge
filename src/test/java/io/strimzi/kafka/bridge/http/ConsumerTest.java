@@ -1416,7 +1416,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerWithInvalidValueOfConfiguration(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void createConsumerWithInvalidFormat(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<Boolean> create = new CompletableFuture<>();
 
         JsonObject requestHeader = new JsonObject();
@@ -1425,9 +1425,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         LOGGER.info("Adding invalid value 'biary' to 'format' property configuration to invoke |422| status code");
 
         requestHeader.put("format", "biary");
-        requestHeader.put("auto.offset.reset", "earliest");
-        requestHeader.put("fetch.min.bytes", "512");
-        requestHeader.put("consumer.request.timeout.ms", "30000");
 
         consumerService()
                 .createConsumerRequest(groupId, requestHeader)
@@ -1436,8 +1433,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
-                        assertThat("Response status code is not '422'", response.statusCode(), is(422));
-                        assertThat("Body message doesn't contain 'Invalid format type.'", response.body().getString("message"), equalTo("Invalid format type."));
+                        assertThat("Response status code is not '422'", response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat("Response status code is not '422'", HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), is(error.getCode()));
+                        LOGGER.info("This is message -> " + error.getMessage());
+                        assertThat("Body message doesn't contain 'Invalid format type.'", error.getMessage(), equalTo("Invalid format type."));
                     });
                     create.complete(true);
                 });
