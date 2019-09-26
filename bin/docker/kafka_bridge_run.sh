@@ -21,7 +21,7 @@ ${MYPATH}/kafka_bridge_tls_prepare_certificates.sh \
 
 # Generate and print the consumer config file
 echo "Kafka Bridge configuration:"
-${MYPATH}/kafka_bridge_config_generator.sh | tee /tmp/kafka-bridge.properties | sed 's/sasl.jaas.config=.*/sasl.jaas.config=[hidden]/g'
+${MYPATH}/kafka_bridge_config_generator.sh | tee /tmp/kafka-bridge.properties | sed 's/sasl.jaas.config=.*/sasl.jaas.config=[hidden]/g' | sed 's/password=.*/password=[hidden]/g'
 echo ""
 
 # Configure logging for Kubernetes deployments
