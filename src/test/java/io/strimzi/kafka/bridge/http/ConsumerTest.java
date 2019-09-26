@@ -17,8 +17,6 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Test;
 
 import javax.xml.bind.DatatypeConverter;
@@ -37,8 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConsumerTest extends HttpBridgeTestBase {
-
-    private static final Logger LOGGER = LogManager.getLogger(ConsumerTest.class);
 
     private static final String FORWARDED = "Forwarded";
     private static final String X_FORWARDED_HOST = "X-Forwarded-Host";
