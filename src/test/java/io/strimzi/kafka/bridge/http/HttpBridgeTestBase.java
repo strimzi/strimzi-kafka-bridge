@@ -23,6 +23,8 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +37,7 @@ import java.util.Map;
 @SuppressWarnings({"checkstyle:JavaNCSS"})
 class HttpBridgeTestBase {
 
+    static final Logger LOGGER = LogManager.getLogger(HttpBridgeTestBase.class);
     static Map<String, Object> config = new HashMap<>();
     static long timeout = 5L;
 

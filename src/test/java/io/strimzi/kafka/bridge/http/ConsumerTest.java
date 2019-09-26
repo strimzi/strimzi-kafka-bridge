@@ -26,6 +26,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -1406,5 +1409,35 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 consumer.complete(true);
             });
         consumer.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void createConsumerWithInvalidFormat(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
+
+        JsonObject requestHeader = new JsonObject();
+        requestHeader.put("name", name);
+
+        LOGGER.info("Adding invalid value 'biary' to 'format' property configuration to invoke |422| status code");
+
+        requestHeader.put("format", "biary");
+
+        consumerService()
+                .createConsumerRequest(groupId, requestHeader)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(requestHeader, ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat("Response status code is not '422'", response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat("Response status code is not '422'", HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), is(error.getCode()));
+                        LOGGER.info("This is message -> " + error.getMessage());
+                        assertThat("Body message doesn't contain 'Invalid format type.'", error.getMessage(), equalTo("Invalid format type."));
+                    });
+                    create.complete(true);
+                });
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        context.completeNow();
     }
 }
