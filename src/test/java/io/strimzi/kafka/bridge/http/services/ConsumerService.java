@@ -140,13 +140,20 @@ public class ConsumerService extends BaseService {
     }
 
     public ConsumerService createConsumer(VertxTestContext context, String groupId, JsonObject json) throws InterruptedException, ExecutionException, TimeoutException {
+        return this.createConsumer(context, groupId, json, HttpResponseStatus.OK);
+    }
+
+    public ConsumerService createConsumer(VertxTestContext context, String groupId, JsonObject json, HttpResponseStatus statusCode) throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<Boolean> create = new CompletableFuture<>();
         createConsumerRequest(groupId, json)
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
                         assertTrue(ar.succeeded());
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertEquals(statusCode.code(), response.statusCode());
+                        if (statusCode != HttpResponseStatus.OK) {
+                            return;
+                        }
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");

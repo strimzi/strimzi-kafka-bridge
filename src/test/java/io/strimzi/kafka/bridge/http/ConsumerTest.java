@@ -64,6 +64,21 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
+    void createConsumerAlreadyExists(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        // create consumer
+        consumerService().createConsumer(context, groupId, consumerWithEarliestReset, HttpResponseStatus.OK);
+
+        // Create the same consumer
+        consumerService().createConsumer(context, groupId, consumerWithEarliestReset, HttpResponseStatus.CONFLICT);
+
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+
+        consumerService()
+                .deleteConsumer(context, groupId, name);
+    }
+
+    @Test
     void createConsumerWrongFormat(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         JsonObject consumerJson = new JsonObject()
             .put("name", name)
