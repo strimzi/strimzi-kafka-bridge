@@ -64,12 +64,31 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerAlreadyExists(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createDuplicatedConsumer(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // create consumer
         consumerService().createConsumer(context, groupId, consumerWithEarliestReset, HttpResponseStatus.OK);
 
         // Create the same consumer
         consumerService().createConsumer(context, groupId, consumerWithEarliestReset, HttpResponseStatus.CONFLICT);
+
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+
+        consumerService()
+                .deleteConsumer(context, groupId, name);
+    }
+
+    @Test
+    void createConsumerWithInvalidConfigOption(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        // Create an invalid Json
+        JsonObject consumerWithInvalidValues = new JsonObject()
+                .put("name", name)
+                .put("auto.offset.reset", "earlINVALIDiest")
+                .put("enable.auto.commit", "true")
+                .put("fetch.min.bytes", "100");
+
+        // create consumer
+        consumerService().createConsumer(context, groupId, consumerWithInvalidValues, HttpResponseStatus.UNPROCESSABLE_ENTITY);
 
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
