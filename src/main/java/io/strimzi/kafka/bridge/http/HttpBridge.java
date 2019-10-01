@@ -23,7 +23,6 @@ import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -209,17 +208,12 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     private void createConsumer(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
 
-        JsonObject bodyAsJson = null;
-        // TODO: it seems that getBodyAsJson raises an exception when the body is empty and not null
-        try {
-            bodyAsJson = routingContext.getBodyAsJson();
-        } catch (DecodeException ex) {
-            
-        }
+        // check for an empty body
+        JsonObject body = routingContext.getBody().length() != 0 ? routingContext.getBodyAsJson() : new JsonObject();
         SinkBridgeEndpoint<byte[], byte[]> sink = null;
 
         try {
-            EmbeddedFormat format = EmbeddedFormat.from(bodyAsJson != null ? bodyAsJson.getString("format", "binary") : "binary");
+            EmbeddedFormat format = EmbeddedFormat.from(body.getString("format", "binary"));
 
             sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.bridgeConfig, this.httpBridgeContext,
                     format, new ByteArrayDeserializer(), new ByteArrayDeserializer());
