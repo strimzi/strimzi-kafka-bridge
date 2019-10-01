@@ -503,7 +503,7 @@ __required__|ID of the consumer group to which the subscribed consumer belongs.|
 |**Path**|**name** +
 __required__|Name of the subscribed consumer.|string
 |**Body**|**body** +
-__required__|List of topic partitions to which the consumer is subscribed. The consumer will seek the last offset in the specified partitions.|<<_partitions,Partitions>>
+__optional__|List of topic partitions to which the consumer is subscribed. The consumer will seek the last offset in the specified partitions.|<<_partitions,Partitions>>
 |===
 
 
