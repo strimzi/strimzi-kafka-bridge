@@ -177,7 +177,7 @@
             "name": "body",
             "in": "body",
             "description": "List of topic partitions to which the consumer is subscribed. The consumer will seek the last offset in the specified partitions.",
-            "required": true,
+            "required": false,
             "schema": {
               "$ref": "#/definitions/Partitions"
             }

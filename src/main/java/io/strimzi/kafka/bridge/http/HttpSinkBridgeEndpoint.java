@@ -72,8 +72,11 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         // get the consumer group-id
         groupId = routingContext.pathParam("groupid");
 
+        // if body from HTTP request is empty (null) then set an empty JSON to use default behaviour/values
+        JsonObject requestBody = bodyAsJson != null ? bodyAsJson : new JsonObject();
+
         // if no name, a random one is assigned
-        this.name = bodyAsJson.getString("name", bridgeConfig.getBridgeID() == null
+        this.name = requestBody.getString("name", bridgeConfig.getBridgeID() == null
                 ? "kafka-bridge-consumer-" + UUID.randomUUID()
                 : bridgeConfig.getBridgeID() + "-" + UUID.randomUUID());
 
@@ -97,16 +100,16 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         // get supported consumer configuration parameters
         Properties config = new Properties();
         addConfigParameter(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
-            bodyAsJson.getString(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, null), config);
+            requestBody.getString(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, null), config);
         // OpenAPI validation handles boolean and integer, quoted or not as string, in the same way
         // instead of raising a validation error due to this: https://github.com/vert-x3/vertx-web/issues/1375
-        Object enableAutoCommit = bodyAsJson.getValue(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG);
+        Object enableAutoCommit = requestBody.getValue(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG);
         addConfigParameter(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, 
             enableAutoCommit != null ? String.valueOf(enableAutoCommit) : null, config);
-        Object fetchMinBytes = bodyAsJson.getValue(ConsumerConfig.FETCH_MIN_BYTES_CONFIG);
+        Object fetchMinBytes = requestBody.getValue(ConsumerConfig.FETCH_MIN_BYTES_CONFIG);
         addConfigParameter(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, 
             fetchMinBytes != null ? String.valueOf(fetchMinBytes) : null, config);
-        Object requestTimeoutMs = bodyAsJson.getValue("consumer." + ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG);
+        Object requestTimeoutMs = requestBody.getValue("consumer." + ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG);
         addConfigParameter(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG,
             requestTimeoutMs != null ? String.valueOf(requestTimeoutMs) : null, config);
         addConfigParameter(ConsumerConfig.CLIENT_ID_CONFIG, this.name, config);
@@ -118,11 +121,11 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
         log.info("Created consumer {} in group {}", this.name, groupId);
         // send consumer instance id(name) and base URI as response
-        JsonObject body = new JsonObject()
+        JsonObject responseBody = new JsonObject()
                 .put("instance_id", this.name)
                 .put("base_uri", consumerBaseUri);
         HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
-                BridgeContentType.KAFKA_JSON, body.toBuffer());
+                BridgeContentType.KAFKA_JSON, responseBody.toBuffer());
     }
 
     private void doSeek(RoutingContext routingContext, JsonObject bodyAsJson) {

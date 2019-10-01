@@ -90,6 +90,34 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
+    void createConsumerEmptyBody(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        AtomicReference<String> name = new AtomicReference<>();
+        // create consumer
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
+        consumerService().createConsumerRequest(groupId, null)
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertTrue(ar.succeeded());
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        JsonObject bridgeResponse = response.body();
+                        String consumerInstanceId = bridgeResponse.getString("instance_id");
+                        name.set(consumerInstanceId);
+                        String consumerBaseUri = bridgeResponse.getString("base_uri");
+                        assertTrue(consumerInstanceId.startsWith(config.get(BridgeConfig.BRIDGE_ID).toString()));
+                        assertEquals(Urls.consumerInstance(groupId, consumerInstanceId), consumerBaseUri);
+                    });
+                    create.complete(true);
+                });
+
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+            .deleteConsumer(context, groupId, name.get());
+        context.completeNow();
+        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    @Test
     void createConsumerEnableAutoCommit(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // both "true" ("false") and true (false) works due to https://github.com/vert-x3/vertx-web/issues/1375
         // and the current OpenAPI validation doesn't recognize the first one as invalid
