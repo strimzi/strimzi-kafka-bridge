@@ -183,7 +183,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     private void doCommit(RoutingContext routingContext, JsonObject bodyAsJson) {
 
-        if (bodyAsJson != null) {
+        if (!bodyAsJson.isEmpty()) {
             JsonArray offsetsList = bodyAsJson.getJsonArray("offsets");
             Map<TopicPartition, OffsetAndMetadata> offsetData = new HashMap<>();
 
@@ -416,13 +416,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     @Override
     public void handle(Endpoint<?> endpoint, Handler<?> handler) {
         RoutingContext routingContext = (RoutingContext) endpoint.get();
-        JsonObject bodyAsJson = null;
-        // TODO: it seems that getBodyAsJson raises an exception when the body is empty and not null
-        try {
-            bodyAsJson = routingContext.getBodyAsJson();
-        } catch (DecodeException ex) {
-
-        }
+        // check for an empty body
+        JsonObject bodyAsJson = routingContext.getBody().length() != 0 ? routingContext.getBodyAsJson() : new JsonObject();
         log.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
 
         messageConverter = this.buildMessageConverter();

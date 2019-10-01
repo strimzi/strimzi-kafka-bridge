@@ -45,9 +45,13 @@ public class ConsumerService extends BaseService {
     // Consumer basic requests
 
     public HttpRequest<JsonObject> createConsumerRequest(String groupId, JsonObject json) {
-        return postRequest(Urls.consumer(groupId))
+        HttpRequest<JsonObject> request = postRequest(Urls.consumer(groupId));
+        if (json != null) {
+            request
                 .putHeader(CONTENT_LENGTH.toString(), String.valueOf(json.toBuffer().length()))
                 .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON);
+        }
+        return request;
     }
 
     public HttpRequest<JsonObject> deleteConsumerRequest(String groupId, String name) {

@@ -208,7 +208,8 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     private void createConsumer(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
 
-        JsonObject body = routingContext.getBodyAsJson();
+        // check for an empty body
+        JsonObject body = routingContext.getBody().length() != 0 ? routingContext.getBodyAsJson() : new JsonObject();
         SinkBridgeEndpoint<byte[], byte[]> sink = null;
 
         try {
