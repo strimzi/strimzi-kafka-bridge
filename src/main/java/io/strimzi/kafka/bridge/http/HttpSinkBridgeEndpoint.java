@@ -44,6 +44,8 @@ import java.util.stream.Collectors;
 
 public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
+    private static final JsonObject EMPTY_JSON = new JsonObject();
+
     Pattern forwardedHostPattern = Pattern.compile("host=([^;]+)", Pattern.CASE_INSENSITIVE);
     Pattern forwardedProtoPattern = Pattern.compile("proto=([^;]+)", Pattern.CASE_INSENSITIVE);
     Pattern hostPortPattern = Pattern.compile("^.*:[0-9]+$");
@@ -416,9 +418,24 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     @Override
     public void handle(Endpoint<?> endpoint, Handler<?> handler) {
         RoutingContext routingContext = (RoutingContext) endpoint.get();
-        // check for an empty body
-        JsonObject bodyAsJson = routingContext.getBody().length() != 0 ? routingContext.getBodyAsJson() : new JsonObject();
-        log.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
+
+        JsonObject bodyAsJson = EMPTY_JSON;
+        try {
+            // check for an empty body
+            if (routingContext.getBody().length() != 0) {
+                bodyAsJson = routingContext.getBodyAsJson();
+            }
+            log.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
+        } catch (DecodeException ex) {
+            int code = handleError(ex);
+            HttpBridgeError error = new HttpBridgeError(
+                code,
+                ex.getMessage()
+            );
+            HttpUtils.sendResponse(routingContext, code,
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            return;
+        }
 
         messageConverter = this.buildMessageConverter();
 
@@ -558,6 +575,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         if (ex instanceof IllegalStateException && ex.getMessage() != null &&
             ex.getMessage().contains("No current assignment for partition")) {
             return HttpResponseStatus.NOT_FOUND.code();
+        } else if (ex instanceof DecodeException) {
+            return HttpResponseStatus.UNPROCESSABLE_ENTITY.code();
         } else {
             return HttpResponseStatus.INTERNAL_SERVER_ERROR.code();
         }
