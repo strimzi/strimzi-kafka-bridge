@@ -62,7 +62,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     @Override
     public void open() {
-
+        this.messageConverter = this.buildMessageConverter();
     }
 
     @Override
@@ -436,8 +436,6 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             return;
         }
-
-        messageConverter = this.buildMessageConverter();
 
         switch (this.httpBridgeContext.getOpenApiOperation()) {
 

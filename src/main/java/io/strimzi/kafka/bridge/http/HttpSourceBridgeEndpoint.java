@@ -47,6 +47,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
     public void open() {
         this.name = this.bridgeConfig.getBridgeID() == null ? "kafka-bridge-producer-" + UUID.randomUUID() : this.bridgeConfig.getBridgeID() + "-" + UUID.randomUUID();
         this.closing = false;
+        this.messageConverter = this.buildMessageConverter();
         super.open();
     }
 
@@ -54,8 +55,6 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
     @SuppressWarnings("checkstyle:NPathComplexity")
     public void handle(Endpoint<?> endpoint) {
         RoutingContext routingContext = (RoutingContext) endpoint.get();
-
-        messageConverter = this.buildMessageConverter();
 
         String topic = routingContext.pathParam("topicname");
 
