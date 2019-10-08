@@ -2,8 +2,8 @@ dist: xenial
 sudo: required
 language: java
 jdk:
-- oraclejdk8
-- oraclejdk11
+- openjdk8
+- openjdk11
 services:
 - docker
 before_install:
