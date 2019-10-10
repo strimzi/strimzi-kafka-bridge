@@ -76,6 +76,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         consumer.subscribe(topic, done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
+            } else {
+                context.completeNow();
             }
         });
     }
@@ -123,6 +125,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         consumer.subscribe(topic, done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
+            } else {
+                context.completeNow();
             }
         });
     }
@@ -169,6 +173,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         consumer.subscribe(topic, done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
+            } else {
+                context.completeNow();
             }
         });
     }
@@ -179,7 +185,7 @@ public class ProducerTest extends HttpBridgeTestBase {
         kafkaCluster.createTopic(topic, 2, 1);
 
         String value = "message-value";
-        String key = "my-key";
+        String key = "my-key-bin";
 
         JsonArray records = new JsonArray();
         JsonObject json = new JsonObject();
@@ -216,6 +222,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         consumer.subscribe(topic, done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
+            } else {
+                context.completeNow();
             }
         });
     }
@@ -345,6 +353,8 @@ public class ProducerTest extends HttpBridgeTestBase {
         consumer.subscribe(topic, done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
+            } else {
+                context.completeNow();
             }
         });
     }

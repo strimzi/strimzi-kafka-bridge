@@ -16,7 +16,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
-
 import org.junit.jupiter.api.Test;
 
 import javax.xml.bind.DatatypeConverter;
@@ -121,7 +120,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     void createConsumerEnableAutoCommit(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // both "true" ("false") and true (false) works due to https://github.com/vert-x3/vertx-web/issues/1375
         // and the current OpenAPI validation doesn't recognize the first one as invalid
-        
+
         JsonObject consumerJson = new JsonObject()
             .put("name", name)
             .put("enable.auto.commit", true);
@@ -214,6 +213,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         consumerService()
             .deleteConsumer(context, groupId, name);
+        consumerService()
+            .deleteConsumer(context, groupId, name + "-1");
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
     }
@@ -245,7 +246,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 });
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         consumerService()
-                .deleteConsumer(context, groupId, name);
+            .deleteConsumer(context, groupId, name);
         context.completeNow();
 
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));

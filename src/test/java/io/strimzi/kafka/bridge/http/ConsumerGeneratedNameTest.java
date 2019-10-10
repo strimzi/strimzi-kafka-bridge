@@ -34,7 +34,9 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
         config.remove(BridgeConfig.BRIDGE_ID);
 
         bridgeConfig = BridgeConfig.fromMap(config);
-        httpBridge = new HttpBridge(bridgeConfig);
+        if (System.getenv("STRIMZI_USE_SYSTEM_BRIDGE") == null) {
+            httpBridge = new HttpBridge(bridgeConfig);
+        }
     }
 
     @AfterAll
@@ -58,7 +60,7 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         name = consumerInstanceId;
-                        assertTrue(consumerInstanceId.startsWith("kafka-bridge-consumer-"));
+                        assertTrue(consumerInstanceId.startsWith("kafka-bridge-consumer"));
                         create.complete(true);
                     });
                 });

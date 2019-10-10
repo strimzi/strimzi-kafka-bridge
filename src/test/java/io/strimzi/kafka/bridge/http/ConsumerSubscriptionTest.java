@@ -64,7 +64,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
     void subscribeExclusiveTopicAndPattern(VertxTestContext context) throws Throwable {
         String topic = "singleTopic";
 
-        String name = "my-kafka-consumer";
+        String name = "my-kafka-consumer-exclusive";
         String groupId = "my-group";
 
         JsonObject json = new JsonObject();
@@ -125,13 +125,15 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
         context.completeNow();
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        consumerService()
+            .deleteConsumer(context, groupId, name);
     }
 
     @Test
     void subscriptionConsumerDoesNotExist(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "subscriptionConsumerDoesNotExist";
         kafkaCluster.createTopic(topic, 1, 1);
-        String name = "my-kafka-consumer";
+        String name = "my-kafka-consumer-does-not-exists";
         String groupId = "my-group";
 
         JsonArray topics = new JsonArray();
@@ -165,7 +167,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         kafkaCluster.createTopic(topic, 1, 1);
         kafkaCluster.createTopic(topic2, 4, 1);
 
-        String name = "my-kafka-consumer";
+        String name = "my-kafka-consumer-list";
         String groupId = "my-group";
 
         JsonObject json = new JsonObject();
@@ -214,5 +216,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
                 });
 
         assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        consumerService()
+            .deleteConsumer(context, groupId, name);
     }
 }

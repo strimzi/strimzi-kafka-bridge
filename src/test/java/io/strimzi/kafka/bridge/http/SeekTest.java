@@ -274,6 +274,13 @@ public class SeekTest extends HttpBridgeTestBase {
     @Test
     @SuppressWarnings("checkstyle:MethodLength")
     void seekToOffsetAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+
+        String name = "my-kafka-consumer-SeekOffset";
+        JsonObject jsonConsumer = new JsonObject()
+            .put("name", name)
+            .put("format", "json");
+
+
         String topic = "seekToOffsetAndReceive";
         kafkaCluster.createTopic(topic, 2, 1);
         kafkaCluster.produce(topic, 10, 0);
