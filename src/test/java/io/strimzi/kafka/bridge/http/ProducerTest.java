@@ -21,6 +21,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,6 +175,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     }
 
     @Test
+    @DisabledIfEnvironmentVariable(named = "STRIMZI_USE_SYSTEM_BRIDGE", matches = "TRUE")
     void sendBinaryMessageWithKey(VertxTestContext context) {
         String topic = "sendBinaryMessageWithKey";
         kafkaCluster.createTopic(topic, 2, 1);

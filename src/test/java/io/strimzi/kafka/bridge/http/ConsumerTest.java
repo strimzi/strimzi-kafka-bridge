@@ -17,6 +17,7 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.concurrent.CompletableFuture;
@@ -89,6 +90,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
+    @DisabledIfEnvironmentVariable(named = "STRIMZI_USE_SYSTEM_BRIDGE", matches = "TRUE")
     void createConsumerEmptyBody(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         AtomicReference<String> name = new AtomicReference<>();
         // create consumer
