@@ -60,7 +60,7 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         name = consumerInstanceId;
-                        assertTrue(consumerInstanceId.startsWith("kafka-bridge-consumer"));
+                        assertTrue(consumerInstanceId.startsWith("kafka-bridge-consumer-"));
                         create.complete(true);
                     });
                 });

@@ -76,8 +76,6 @@ public class ProducerTest extends HttpBridgeTestBase {
         consumer.subscribe(topic, done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
-            } else {
-                context.completeNow();
             }
         });
     }
@@ -125,8 +123,6 @@ public class ProducerTest extends HttpBridgeTestBase {
         consumer.subscribe(topic, done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
-            } else {
-                context.completeNow();
             }
         });
     }
@@ -173,8 +169,6 @@ public class ProducerTest extends HttpBridgeTestBase {
         consumer.subscribe(topic, done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
-            } else {
-                context.completeNow();
             }
         });
     }
@@ -222,8 +216,6 @@ public class ProducerTest extends HttpBridgeTestBase {
         consumer.subscribe(topic, done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
-            } else {
-                context.completeNow();
             }
         });
     }
@@ -353,8 +345,6 @@ public class ProducerTest extends HttpBridgeTestBase {
         consumer.subscribe(topic, done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
-            } else {
-                context.completeNow();
             }
         });
     }
