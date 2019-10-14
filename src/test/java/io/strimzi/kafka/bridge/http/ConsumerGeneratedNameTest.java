@@ -34,7 +34,7 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
         config.remove(BridgeConfig.BRIDGE_ID);
 
         bridgeConfig = BridgeConfig.fromMap(config);
-        if (! "TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
+        if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
             httpBridge = new HttpBridge(bridgeConfig);
         }
     }
