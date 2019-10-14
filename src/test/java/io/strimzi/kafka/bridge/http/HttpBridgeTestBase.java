@@ -85,7 +85,7 @@ class HttpBridgeTestBase {
         kafkaCluster.start();
         vertx = Vertx.vertx();
 
-        if (System.getenv("STRIMZI_USE_SYSTEM_BRIDGE") == null) {
+        if (! "TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
             bridgeConfig = BridgeConfig.fromMap(config);
             httpBridge = new HttpBridge(bridgeConfig);
             httpBridge.setHealthChecker(new HealthChecker());
@@ -105,7 +105,7 @@ class HttpBridgeTestBase {
 
     @BeforeEach
     void before(VertxTestContext context) {
-        if (System.getenv("STRIMZI_USE_SYSTEM_BRIDGE") == null) {
+        if (! "TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
         } else {
             context.completeNow();
