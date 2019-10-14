@@ -24,8 +24,8 @@ import java.util.concurrent.TimeoutException;
 import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ConsumerService extends BaseService {
 
@@ -107,8 +107,8 @@ public class ConsumerService extends BaseService {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
+                        assertThat(ar.succeeded(), is(true));
+                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                     });
                     unsubscribe.complete(true);
                 });
@@ -134,8 +134,8 @@ public class ConsumerService extends BaseService {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(partitionsRoot, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
+                        assertThat(ar.succeeded(), is(true));
+                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                     });
                     subscribe.complete(true);
                 });
@@ -148,14 +148,14 @@ public class ConsumerService extends BaseService {
         createConsumerRequest(groupId, json)
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertEquals(json.getString("name"), consumerInstanceId);
-                        assertEquals(Urls.consumerInstance(groupId, json.getString("name")), consumerBaseUri);
+                        assertThat(consumerInstanceId, is(json.getString("name")));
+                        assertThat(consumerBaseUri, is(Urls.consumerInstance(groupId, json.getString("name"))));
                     });
                     create.complete(true);
                 });
@@ -185,8 +185,8 @@ public class ConsumerService extends BaseService {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(jsonObject, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
+                        assertThat(ar.succeeded(), is(true));
+                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                     });
                     subscribe.complete(true);
                 });
@@ -200,9 +200,9 @@ public class ConsumerService extends BaseService {
         deleteConsumerRequest(groupId, name)
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                     });
                     delete.complete(true);
                 });

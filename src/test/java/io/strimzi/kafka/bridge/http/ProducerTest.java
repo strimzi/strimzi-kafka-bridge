@@ -28,10 +28,10 @@ import org.slf4j.LoggerFactory;
 import javax.xml.bind.DatatypeConverter;
 import java.util.Properties;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 public class ProducerTest extends HttpBridgeTestBase {
 
@@ -62,11 +62,11 @@ public class ProducerTest extends HttpBridgeTestBase {
                 new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
         consumer.handler(record -> {
             context.verify(() -> {
-                assertEquals(value, record.value());
-                assertEquals(topic, record.topic());
-                assertEquals(0, record.partition());
-                assertEquals(0L, record.offset());
-                assertNull(record.key());
+                assertThat(record.value(), is(value));
+                assertThat(record.topic(), is(topic));
+                assertThat(record.partition(), is(0));
+                assertThat(record.offset(), is(0L));
+                assertThat(record.key(), nullValue());
             });
             LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                     record.topic(), record.partition(), record.offset(), record.key(), record.value());
@@ -109,11 +109,11 @@ public class ProducerTest extends HttpBridgeTestBase {
                 new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
         consumer.handler(record -> {
             context.verify(() -> {
-                assertEquals(value, record.value());
-                assertEquals(topic, record.topic());
-                assertEquals(partition, record.partition());
-                assertEquals(0L, record.offset());
-                assertNull(record.key());
+                assertThat(record.value(), is(value));
+                assertThat(record.topic(), is(topic));
+                assertThat(record.partition(), is(partition));
+                assertThat(record.offset(), is(0L));
+                assertThat(record.key(), nullValue());
             });
             LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                     record.topic(), record.partition(), record.offset(), record.key(), record.value());
@@ -155,11 +155,11 @@ public class ProducerTest extends HttpBridgeTestBase {
                 new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
         consumer.handler(record -> {
             context.verify(() -> {
-                assertEquals(value, record.value());
-                assertEquals(topic, record.topic());
-                assertNotNull(record.partition());
-                assertEquals(0L, record.offset());
-                assertEquals(record.key(), key);
+                assertThat(record.value(), is(value));
+                assertThat(record.topic(), is(topic));
+                assertThat(record.partition(), notNullValue());
+                assertThat(record.offset(), is(0L));
+                assertThat(record.key(), is(key));
             });
             LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                     record.topic(), record.partition(), record.offset(), record.key(), record.value());
@@ -202,11 +202,11 @@ public class ProducerTest extends HttpBridgeTestBase {
                 new ByteArrayDeserializer(), new ByteArrayDeserializer());
         consumer.handler(record -> {
             context.verify(() -> {
-                assertEquals(value, new String(record.value()));
-                assertEquals(topic, record.topic());
-                assertNotNull(record.partition());
-                assertEquals(0L, record.offset());
-                assertEquals(key, new String(record.key()));
+                assertThat(new String(record.value()), is(value));
+                assertThat(record.topic(), is(topic));
+                assertThat(record.partition(), notNullValue());
+                assertThat(record.offset(), is(0L));
+                assertThat(new String(record.key()), is(key));
             });
 
             LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
@@ -265,16 +265,16 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         consumer.batchHandler(records -> {
             context.verify(() -> {
-                assertEquals(this.count, records.size());
+                assertThat(records.size(), is(this.count));
                 for (int i = 0; i < records.size(); i++) {
                     KafkaConsumerRecord<String, String> record = records.recordAt(i);
                     LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                             record.topic(), record.partition(), record.offset(), record.key(), record.value());
-                    assertEquals(record.value(), "Periodic message [" + i + "]");
-                    assertEquals(topic, record.topic());
-                    assertNotNull(record.partition());
-                    assertNotNull(record.offset());
-                    assertEquals(record.key(), "key-" + i);
+                    assertThat(record.value(), is("Periodic message [" + i + "]"));
+                    assertThat(record.topic(), is(topic));
+                    assertThat(record.partition(), notNullValue());
+                    assertThat(record.offset(), notNullValue());
+                    assertThat(record.key(), is("key-" + i));
                 }
             });
 
@@ -306,18 +306,18 @@ public class ProducerTest extends HttpBridgeTestBase {
         producerService()
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
-                context.verify(() -> assertTrue(ar.succeeded()));
+                context.verify(() -> assertThat(ar.succeeded(), is(true)));
 
                 HttpResponse<JsonObject> response = ar.result();
-                assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                 JsonObject bridgeResponse = response.body();
 
                 JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                assertEquals(numMessages, offsets.size());
+                assertThat(offsets.size(), is(numMessages));
                 for (int i = 0; i < numMessages; i++) {
                     JsonObject metadata = offsets.getJsonObject(i);
-                    assertEquals(0, metadata.getInteger("partition"));
-                    assertNotNull(metadata.getLong("offset"));
+                    assertThat(metadata.getInteger("partition"), is(0));
+                    assertThat(metadata.getLong("offset"), notNullValue());
                 }
             });
 
@@ -328,11 +328,11 @@ public class ProducerTest extends HttpBridgeTestBase {
         this.count = 0;
         consumer.handler(record -> {
             context.verify(() -> {
-                assertEquals(value + "-" + this.count++, record.value());
-                assertEquals(topic, record.topic());
-                assertNotNull(record.partition());
-                assertNotNull(record.offset());
-                assertNull(record.key());
+                assertThat(record.value(), is(value + "-" + this.count++));
+                assertThat(record.topic(), is(topic));
+                assertThat(record.partition(), notNullValue());
+                assertThat(record.offset(), notNullValue());
+                assertThat(record.key(), nullValue());
             });
 
             LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
@@ -362,11 +362,11 @@ public class ProducerTest extends HttpBridgeTestBase {
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
                 context.verify(() -> {
-                    assertTrue(ar.succeeded());
+                    assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonObject> response = ar.result();
                     HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
-                    assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
+                    assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                    assertThat(error.getCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
                 });
                 context.completeNow();
             });
@@ -393,21 +393,20 @@ public class ProducerTest extends HttpBridgeTestBase {
             .sendRecordsRequest(kafkaTopic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
                 context.verify(() -> {
-                    assertTrue(ar.succeeded());
+                    assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonObject> response = ar.result();
                     JsonObject bridgeResponse = response.body();
 
                     JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                    assertEquals(1, offsets.size());
+                    assertThat(offsets.size(), is(1));
 
                     HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(0));
-                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                    assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
                     // the message got from the Kafka producer (starting from 2.3) is misleading
                     // this JIRA (https://issues.apache.org/jira/browse/KAFKA-8862) raises the issue
-                    assertEquals(
+                    assertThat(error.getMessage(), is(
                             "Topic " + kafkaTopic + " not present in metadata after " +
-                                    config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms.",
-                            error.getMessage());
+                                    config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms."));
                 });
                 context.completeNow();
             });
@@ -433,19 +432,18 @@ public class ProducerTest extends HttpBridgeTestBase {
             .sendRecordsRequest(kafkaTopic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
                 context.verify(() -> {
-                    assertTrue(ar.succeeded());
+                    assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonObject> response = ar.result();
                     JsonObject bridgeResponse = response.body();
 
                     JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                    assertEquals(1, offsets.size());
+                    assertThat(offsets.size(), is(1));
                     int code = offsets.getJsonObject(0).getInteger("error_code");
                     String statusMessage = offsets.getJsonObject(0).getString("message");
 
-                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), code);
-                    assertEquals("Topic " + kafkaTopic + " not present in metadata after " + 
-                                config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms.", 
-                                statusMessage);
+                    assertThat(code, is(HttpResponseStatus.NOT_FOUND.code()));
+                    assertThat(statusMessage, is("Topic " + kafkaTopic + " not present in metadata after " +
+                                config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms."));
                 });
                 context.completeNow();
             });
@@ -471,17 +469,17 @@ public class ProducerTest extends HttpBridgeTestBase {
             .sendRecordsToPartitionRequest(kafkaTopic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
                 context.verify(() -> {
-                    assertTrue(ar.succeeded());
+                    assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonObject> response = ar.result();
-                    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                     JsonObject bridgeResponse = response.body();
 
                     JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                    assertEquals(1, offsets.size());
+                    assertThat(offsets.size(), is(1));
                     JsonObject metadata = offsets.getJsonObject(0);
-                    assertNotNull(metadata.getInteger("partition"));
-                    assertEquals(partition, metadata.getInteger("partition"));
-                    assertEquals(0L, metadata.getLong("offset"));
+                    assertThat(metadata.getInteger("partition"), notNullValue());
+                    assertThat(metadata.getInteger("partition"), is(partition));
+                    assertThat(metadata.getLong("offset"), is(0L));
                 });
                 context.completeNow();
             });
@@ -576,12 +574,12 @@ public class ProducerTest extends HttpBridgeTestBase {
     Handler<AsyncResult<HttpResponse<JsonObject>>> verifyBadRequest(VertxTestContext context, String message) {
         return ar ->
             context.verify(() -> {
-                assertTrue(ar.succeeded());
+                assertThat(ar.succeeded(), is(true));
                 HttpResponse<JsonObject> response = ar.result();
-                assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
+                assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                 HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                assertEquals(HttpResponseStatus.BAD_REQUEST.code(), error.getCode());
-                assertEquals(message, error.getMessage());
+                assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+                assertThat(error.getMessage(), is(message));
                 context.completeNow();
             });
     }
@@ -589,16 +587,16 @@ public class ProducerTest extends HttpBridgeTestBase {
     Handler<AsyncResult<HttpResponse<JsonObject>>> verifyOK(VertxTestContext context) {
         return ar ->
             context.verify(() -> {
-                assertTrue(ar.succeeded());
+                assertThat(ar.succeeded(), is(true));
                 HttpResponse<JsonObject> response = ar.result();
-                assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                 JsonObject bridgeResponse = response.body();
 
                 JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                assertEquals(1, offsets.size());
+                assertThat(offsets.size(), is(1));
                 JsonObject metadata = offsets.getJsonObject(0);
-                assertNotNull(metadata.getInteger("partition"));
-                assertEquals(0L, metadata.getLong("offset"));
+                assertThat(metadata.getInteger("partition"), notNullValue());
+                assertThat(metadata.getLong("offset"), is(0L));
             });
     }
 
@@ -628,20 +626,20 @@ public class ProducerTest extends HttpBridgeTestBase {
                 .sendRecordsRequest(kafkaTopic, root, BridgeContentType.KAFKA_JSON_JSON)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
 
                         JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                        assertEquals(2, offsets.size());
+                        assertThat(offsets.size(), is(2));
                         JsonObject metadata = offsets.getJsonObject(0);
-                        assertNotNull(metadata.getInteger("partition"));
-                        assertEquals(partition, metadata.getInteger("partition"));
-                        assertEquals(0L, metadata.getLong("offset"));
+                        assertThat(metadata.getInteger("partition"), notNullValue());
+                        assertThat(metadata.getInteger("partition"), is(partition));
+                        assertThat(metadata.getLong("offset"), is(0L));
                         HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(1));
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                        assertEquals("Topic " + kafkaTopic + " not present in metadata after 10000 ms.", error.getMessage());
+                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getMessage(), is("Topic " + kafkaTopic + " not present in metadata after 10000 ms."));
                     });
                     context.completeNow();
                 });

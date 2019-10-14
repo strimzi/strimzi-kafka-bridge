@@ -28,11 +28,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConsumerTest extends HttpBridgeTestBase {
 
@@ -58,7 +56,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService().createConsumer(context, groupId, consumerWithEarliestReset);
 
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
         consumerService()
             .deleteConsumer(context, groupId, name);
     }
@@ -74,19 +72,19 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService().createConsumerRequest(groupId, consumerJson)
                 .sendJsonObject(consumerJson, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
-                        assertEquals("Invalid format type.", error.getMessage());
+                        assertThat(error.getCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        assertThat(error.getMessage(), is("Invalid format type."));
                     });
                     create.complete(true);
                 });
 
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -98,15 +96,15 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService().createConsumerRequest(groupId, null)
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         name.set(consumerInstanceId);
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertTrue(consumerInstanceId.startsWith(config.get(BridgeConfig.BRIDGE_ID).toString()));
-                        assertEquals(Urls.consumerInstance(groupId, consumerInstanceId), consumerBaseUri);
+                        assertThat(consumerInstanceId.startsWith(config.get(BridgeConfig.BRIDGE_ID).toString()), is(true));
+                        assertThat(consumerBaseUri, is(Urls.consumerInstance(groupId, consumerInstanceId)));
                     });
                     create.complete(true);
                 });
@@ -115,7 +113,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name.get());
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -146,13 +144,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService().createConsumerRequest(groupId, consumerJson)
                 .sendJsonObject(consumerJson, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.BAD_REQUEST.code(), error.getCode());
-                        assertEquals("Validation error on: body.enable.auto.commit - $.enable.auto.commit: string found, boolean expected",
-                                error.getMessage());
+                        assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+                        assertThat(error.getMessage(), is("Validation error on: body.enable.auto.commit - $.enable.auto.commit: string found, boolean expected"));
                     });
                     create.complete(true);
                 });
@@ -161,7 +158,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -201,13 +198,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService().createConsumerRequest(groupId, consumerJson)
                 .sendJsonObject(consumerJson, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.BAD_REQUEST.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.BAD_REQUEST.code(), error.getCode());
-                        assertEquals("Validation error on: body." + param + " - $." + param + ": string found, integer expected",
-                                error.getMessage());
+                        assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+                        assertThat(error.getMessage(), is("Validation error on: body." + param + " - $." + param + ": string found, integer expected"));
                     });
                     create.complete(true);
                 });
@@ -218,7 +214,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name + "-1");
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -235,14 +231,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .putHeader(X_FORWARDED_PROTO, xForwardedProto)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertEquals(name, consumerInstanceId);
-                        assertEquals(baseUri, consumerBaseUri);
+                        assertThat(consumerInstanceId, is(name));
+                        assertThat(consumerBaseUri, is(baseUri));
                     });
                     create.complete(true);
                 });
@@ -251,7 +247,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .deleteConsumer(context, groupId, name);
         context.completeNow();
 
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -266,14 +262,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .putHeader(FORWARDED, forwarded)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertEquals(name, consumerInstanceId);
-                        assertEquals(baseUri, consumerBaseUri);
+                        assertThat(consumerInstanceId, is(name));
+                        assertThat(consumerBaseUri, is(baseUri));
                     });
                     create.complete(true);
                 });
@@ -282,7 +278,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -302,14 +298,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .putHeaders(headers)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertEquals(name, consumerInstanceId);
-                        assertEquals(baseUri, consumerBaseUri);
+                        assertThat(consumerInstanceId, is(name));
+                        assertThat(consumerBaseUri, is(baseUri));
                     });
                     create.complete(true);
                 });
@@ -318,7 +314,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
 
@@ -336,14 +332,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .putHeader("X-Forwarded-Path", xForwardedPath)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertEquals(name, consumerInstanceId);
-                        assertEquals(baseUri, consumerBaseUri);
+                        assertThat(consumerInstanceId, is(name));
+                        assertThat(consumerBaseUri, is(baseUri));
                     });
                     create.complete(true);
                 });
@@ -352,7 +348,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -367,14 +363,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .putHeader(FORWARDED, forwarded)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertEquals(name, consumerInstanceId);
-                        assertEquals(baseUri, consumerBaseUri);
+                        assertThat(consumerInstanceId, is(name));
+                        assertThat(consumerBaseUri, is(baseUri));
                     });
                     create.complete(true);
                 });
@@ -383,7 +379,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -395,17 +391,17 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .putHeader(FORWARDED, forwarded)
                 .sendJsonObject(consumerWithEarliestReset, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), error.getCode());
-                        assertEquals("mqtt is not a valid schema/proto.", error.getMessage());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
+                        assertThat(error.getMessage(), is("mqtt is not a valid schema/proto."));
                     });
                     context.completeNow();
                 });
 
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -414,7 +410,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 "Invalid value foo for configuration auto.offset.reset: String must be one of: latest, earliest, none", context);
 
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -423,7 +419,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 "Validation error on: body.enable.auto.commit - $.enable.auto.commit: string found, boolean expected", context);
 
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -432,7 +428,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 "Validation error on: body.fetch.min.bytes - $.fetch.min.bytes: string found, integer expected", context);
 
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -441,7 +437,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 "Validation error on: body - $.foo: is not defined in the schema and the schema does not allow additional properties", context);
 
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -465,9 +461,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .as(BodyCodec.jsonArray())
             .send(ar -> {
                 context.verify(() -> {
-                    assertTrue(ar.succeeded());
+                    assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonArray> response = ar.result();
-                    assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                     JsonObject jsonResponse = response.body().getJsonObject(0);
 
                     String kafkaTopic = jsonResponse.getString("topic");
@@ -476,11 +472,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     String value = jsonResponse.getString("value");
                     long offset = jsonResponse.getLong("offset");
 
-                    assertEquals(topic, kafkaTopic);
-                    assertEquals(sentBody, value);
-                    assertEquals(0L, offset);
-                    assertNotNull(kafkaPartition);
-                    assertNull(key);
+                    assertThat(kafkaTopic, is(topic));
+                    assertThat(value, is(sentBody));
+                    assertThat(offset, is(0L));
+                    assertThat(kafkaPartition, notNullValue());
+                    assertThat(key, nullValue());
                 });
                 consume.complete(true);
             });
@@ -491,7 +487,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -519,9 +515,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject jsonResponse = response.body().getJsonObject(0);
 
                         String kafkaTopic = jsonResponse.getString("topic");
@@ -530,11 +526,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         String value = new String(DatatypeConverter.parseBase64Binary(jsonResponse.getString("value")));
                         long offset = jsonResponse.getLong("offset");
 
-                        assertEquals(topic, kafkaTopic);
-                        assertEquals(sentBody, value);
-                        assertEquals(0L, offset);
-                        assertNotNull(kafkaPartition);
-                        assertNull(key);
+                        assertThat(kafkaTopic, is(topic));
+                        assertThat(value, is(sentBody));
+                        assertThat(offset, is(0L));
+                        assertThat(kafkaPartition, notNullValue());
+                        assertThat(key, nullValue());
                     });
                     consume.complete(true);
                 });
@@ -545,7 +541,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -573,13 +569,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
-                        assertEquals(2, response.body().size());
+                        assertThat(response.body().size(), is(2));
 
                         for (int i = 0; i < 2; i++) {
                             JsonObject jsonResponse = response.body().getJsonObject(i);
-                            assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                            assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
 
                             String kafkaTopic = jsonResponse.getString("topic");
                             int kafkaPartition = jsonResponse.getInteger("partition");
@@ -587,11 +583,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
                             String value = jsonResponse.getString("value");
                             long offset = jsonResponse.getLong("offset");
 
-                            assertEquals("receiveSimpleMessage-" + (i + 1), kafkaTopic);
-                            assertEquals("Simple message-" + (i + 1), value);
-                            assertEquals(0L, offset);
-                            assertNotNull(kafkaPartition);
-                            assertNull(key);
+                            assertThat(kafkaTopic, is("receiveSimpleMessage-" + (i + 1)));
+                            assertThat(value, is("Simple message-" + (i + 1)));
+                            assertThat(offset, is(0L));
+                            assertThat(kafkaPartition, notNullValue());
+                            assertThat(key, nullValue());
                         }
                     });
                     consume.complete(true);
@@ -602,7 +598,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -632,10 +628,10 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
-                        assertEquals(2, response.body().size());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        assertThat(response.body().size(), is(2));
 
                         for (int i = 0; i < 2; i++) {
                             JsonObject jsonResponse = response.body().getJsonObject(i);
@@ -646,11 +642,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
                             String value = jsonResponse.getString("value");
                             long offset = jsonResponse.getLong("offset");
 
-                            assertEquals("receiveWithPattern-" + (i + 1), kafkaTopic);
-                            assertEquals("Simple message-" + (i + 1), value);
-                            assertEquals(0L, offset);
-                            assertNotNull(kafkaPartition);
-                            assertNull(key);
+                            assertThat(kafkaTopic, is("receiveWithPattern-" + (i + 1)));
+                            assertThat(value, is("Simple message-" + (i + 1)));
+                            assertThat(offset, is(0L));
+                            assertThat(kafkaPartition, notNullValue());
+                            assertThat(key, nullValue());
                         }
                     });
                     consume.complete(true);
@@ -662,7 +658,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -687,9 +683,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject jsonResponse = response.body().getJsonObject(0);
 
                         String kafkaTopic = jsonResponse.getString("topic");
@@ -698,11 +694,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         String value = jsonResponse.getString("value");
                         long offset = jsonResponse.getLong("offset");
 
-                        assertEquals(topic, kafkaTopic);
-                        assertEquals(sentBody, value);
-                        assertEquals(partition, kafkaPartition);
-                        assertEquals(0L, offset);
-                        assertNull(key);
+                        assertThat(kafkaTopic, is(topic));
+                        assertThat(value, is(sentBody));
+                        assertThat(kafkaPartition, is(partition));
+                        assertThat(offset, is(0L));
+                        assertThat(key, nullValue());
                     });
                     consume.complete(true);
                 });
@@ -713,7 +709,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -739,10 +735,10 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
-                        assertEquals(2, response.body().size());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        assertThat(response.body().size(), is(2));
 
                         for (int i = 0; i < 2; i++) {
                             JsonObject jsonResponse = response.body().getJsonObject(i);
@@ -753,12 +749,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
                             String value = jsonResponse.getString("value");
                             long offset = jsonResponse.getLong("offset");
 
-                            assertEquals("receiveSimpleMessageFromMultiplePartitions", kafkaTopic);
-                            assertEquals("Simple message from partition", value);
-                            assertEquals(0L, offset);
+                            assertThat(kafkaTopic, is("receiveSimpleMessageFromMultiplePartitions"));
+                            assertThat(value, is("Simple message from partition"));
+                            assertThat(offset, is(0L));
                             //context.assertNotNull(kafkaPartition);
-                            assertEquals(i, kafkaPartition);
-                            assertNull(key);
+                            assertThat(i, is(kafkaPartition));
+                            assertThat(key, nullValue());
                         }
                     });
                     consume.complete(true);
@@ -770,7 +766,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -797,9 +793,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject jsonResponse = response.body().getJsonObject(0);
 
                         String kafkaTopic = jsonResponse.getString("topic");
@@ -808,11 +804,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         String value = jsonResponse.getString("value");
                         long offset = jsonResponse.getLong("offset");
 
-                        assertEquals(topic, kafkaTopic);
-                        assertEquals(sentBody, value);
-                        assertEquals(0L, offset);
-                        assertNotNull(kafkaPartition);
-                        assertNull(key);
+                        assertThat(kafkaTopic, is(topic));
+                        assertThat(value, is(sentBody));
+                        assertThat(offset, is(0L));
+                        assertThat(kafkaPartition, notNullValue());
+                        assertThat(key, nullValue());
                     });
                     consume.complete(true);
                 });
@@ -834,11 +830,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .offsetsRequest(groupId, name, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
 
                         int code = response.statusCode();
-                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), code);
+                        assertThat(code, is(HttpResponseStatus.NO_CONTENT.code()));
                     });
                     commit.complete(true);
                 });
@@ -849,7 +845,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -876,9 +872,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject jsonResponse = response.body().getJsonObject(0);
 
                         String kafkaTopic = jsonResponse.getString("topic");
@@ -887,11 +883,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         String value = jsonResponse.getString("value");
                         long offset = jsonResponse.getLong("offset");
 
-                        assertEquals(topic, kafkaTopic);
-                        assertEquals(sentBody, value);
-                        assertEquals(0L, offset);
-                        assertNotNull(kafkaPartition);
-                        assertNull(key);
+                        assertThat(kafkaTopic, is(topic));
+                        assertThat(value, is(sentBody));
+                        assertThat(offset, is(0L));
+                        assertThat(kafkaPartition, notNullValue());
+                        assertThat(key, nullValue());
                     });
                     consume.complete(true);
                 });
@@ -904,11 +900,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .offsetsRequest(groupId, name)
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
 
                         int code = response.statusCode();
-                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), code);
+                        assertThat(code, is(HttpResponseStatus.NO_CONTENT.code()));
                     });
                     commit.complete(true);
                 });
@@ -919,7 +915,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -941,12 +937,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .createConsumerRequest(groupId, json)
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.CONFLICT.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.CONFLICT.code(), error.getCode());
-                        assertEquals("A consumer instance with the specified name already exists in the Kafka Bridge.", error.getMessage());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.CONFLICT.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.CONFLICT.code()));
+                        assertThat(error.getMessage(), is("A consumer instance with the specified name already exists in the Kafka Bridge."));
                         context.completeNow();
                     });
                     create2Again.complete(true);
@@ -961,14 +957,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .createConsumerRequest(groupId, json)
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertEquals(name + "diff", consumerInstanceId);
-                        assertEquals(Urls.consumerInstance(groupId, name) + "diff", consumerBaseUri);
+                        assertThat(consumerInstanceId, is(name + "diff"));
+                        assertThat(consumerBaseUri, is(Urls.consumerInstance(groupId, name) + "diff"));
                     });
                     create3Again.complete(true);
                 });
@@ -989,12 +985,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .as(BodyCodec.jsonObject())
             .send(ar -> {
                 context.verify(() -> {
-                    assertTrue(ar.succeeded());
+                    assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonObject> response = ar.result();
                     HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                    assertEquals("The specified consumer instance was not found.", error.getMessage());
+                    assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                    assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                    assertThat(error.getMessage(), is("The specified consumer instance was not found."));
                 });
                 context.completeNow();
             });
@@ -1017,12 +1013,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .offsetsRequest(groupId, name, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                        assertEquals("The specified consumer instance was not found.", error.getMessage());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getMessage(), is("The specified consumer instance was not found."));
                     });
                     context.completeNow();
                 });
@@ -1054,13 +1050,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
-                        assertEquals("Response exceeds the maximum number of bytes the consumer can receive",
-                                error.getMessage());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        assertThat(error.getMessage(), is("Response exceeds the maximum number of bytes the consumer can receive"));
                     });
                     consume.complete(true);
                 });
@@ -1071,7 +1066,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
 
@@ -1096,9 +1091,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject jsonResponse = response.body().getJsonObject(0);
 
                         String kafkaTopic = jsonResponse.getString("topic");
@@ -1107,11 +1102,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         String value = jsonResponse.getString("value");
                         long offset = jsonResponse.getLong("offset");
 
-                        assertEquals(topic, kafkaTopic);
-                        assertEquals(sentBody, value);
-                        assertEquals(0L, offset);
-                        assertNotNull(kafkaPartition);
-                        assertNull(key);
+                        assertThat(kafkaTopic, is(topic));
+                        assertThat(value, is(sentBody));
+                        assertThat(offset, is(0L));
+                        assertThat(kafkaPartition, notNullValue());
+                        assertThat(key, nullValue());
                     });
                     consume.complete(true);
                 });
@@ -1131,12 +1126,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), error.getCode());
-                        assertEquals("Consumer is not subscribed to any topics or assigned any partitions", error.getMessage());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
+                        assertThat(error.getMessage(), is("Consumer is not subscribed to any topics or assigned any partitions"));
                     });
                     consume2.complete(true);
                 });
@@ -1147,7 +1142,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -1171,12 +1166,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.NOT_ACCEPTABLE.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.NOT_ACCEPTABLE.code(), error.getCode());
-                        assertEquals("Consumer format does not match the embedded format requested by the Accept header.", error.getMessage());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
+                        assertThat(error.getMessage(), is("Consumer format does not match the embedded format requested by the Accept header."));
                     });
                     consume.complete(true);
                 });
@@ -1187,7 +1182,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -1218,16 +1213,16 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
 
                         JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                        assertEquals(1, offsets.size());
+                        assertThat(offsets.size(), is(1));
                         JsonObject metadata = offsets.getJsonObject(0);
-                        assertEquals(0, metadata.getInteger("partition"));
-                        assertEquals(0L, metadata.getLong("offset"));
+                        assertThat(metadata.getInteger("partition"), is(0));
+                        assertThat(metadata.getLong("offset"), is(0L));
                     });
                     produce.complete(true);
                 });
@@ -1251,9 +1246,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject jsonResponse = response.body().getJsonObject(0);
 
                         String kafkaTopic = jsonResponse.getString("topic");
@@ -1262,11 +1257,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         JsonObject value = jsonResponse.getJsonObject("value");
                         long offset = jsonResponse.getLong("offset");
 
-                        assertEquals(topic, kafkaTopic);
-                        assertEquals(sentValue, value);
-                        assertEquals(0L, offset);
-                        assertNotNull(kafkaPartition);
-                        assertEquals(sentKey, key);
+                        assertThat(kafkaTopic, is(topic));
+                        assertThat(value, is(sentValue));
+                        assertThat(offset, is(0L));
+                        assertThat(kafkaPartition, notNullValue());
+                        assertThat(key, is(sentKey));
                     });
                     consume.complete(true);
                 });
@@ -1277,7 +1272,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -1308,12 +1303,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.NOT_ACCEPTABLE.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.NOT_ACCEPTABLE.code(), error.getCode());
-                        assertTrue(error.getMessage().startsWith("Failed to decode"));
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
+                        assertThat(error.getMessage().startsWith("Failed to decode"), is(true));
                     });
                     consume.complete(true);
                 });
@@ -1325,7 +1320,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .deleteConsumer(context, groupId, name);
 
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -1339,13 +1334,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         name.set(consumerInstanceId);
-                        assertTrue(consumerInstanceId.startsWith(config.get(BridgeConfig.BRIDGE_ID).toString()));
+                        assertThat(consumerInstanceId.startsWith(config.get(BridgeConfig.BRIDGE_ID).toString()), is(true));
                         create.complete(true);
                     });
                 });
@@ -1367,12 +1362,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        assertTrue(consumerInstanceId.equals("consumer-1"));
+                        assertThat(consumerInstanceId, is("consumer-1"));
                     });
                     create.complete(true);
                 });
@@ -1391,14 +1386,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(consumerJson, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertEquals(name, consumerInstanceId);
-                        assertEquals(Urls.consumerInstance(groupId, name), consumerBaseUri);
+                        assertThat(consumerInstanceId, is(name));
+                        assertThat(consumerBaseUri, is(Urls.consumerInstance(groupId, name)));
 
                         vertx.setTimer(timeout * 2 * 1000L, timeouted -> {
                             CompletableFuture<Boolean> delete = new CompletableFuture<>();
@@ -1406,11 +1401,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
                             consumerService()
                                 .deleteConsumerRequest(groupId, name)
                                     .send(consumerDeletedResponse -> {
-                                        context.verify(() -> assertTrue(ar.succeeded()));
+                                        context.verify(() -> assertThat(ar.succeeded(), is(true)));
 
                                         HttpResponse<JsonObject> deletionResponse = consumerDeletedResponse.result();
-                                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), deletionResponse.statusCode());
-                                        assertEquals("The specified consumer instance was not found.", deletionResponse.body().getString("message"));
+                                        assertThat(deletionResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                                        assertThat(deletionResponse.body().getString("message"), is("The specified consumer instance was not found."));
 
                                         delete.complete(true);
                                         context.completeNow();
@@ -1430,12 +1425,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService().createConsumerRequest(groupId, json)
             .sendJsonObject(json, ar -> {
                 context.verify(() -> {
-                    assertTrue(ar.succeeded());
+                    assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonObject> response = ar.result();
-                    assertEquals(status.code(), response.statusCode());
+                    assertThat(response.statusCode(), is(status.code()));
                     HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertEquals(status.code(), error.getCode());
-                    assertEquals(message, error.getMessage());
+                    assertThat(error.getCode(), is(status.code()));
+                    assertThat(error.getMessage(), is(message));
                 });
                 consumer.complete(true);
             });
@@ -1458,7 +1453,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(requestHeader, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         assertThat("Response status code is not '422'", response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());

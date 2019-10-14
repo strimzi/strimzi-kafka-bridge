@@ -24,9 +24,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class SeekTest extends HttpBridgeTestBase {
 
@@ -44,16 +43,16 @@ public class SeekTest extends HttpBridgeTestBase {
             .positionsBeginningRequest(groupId, name, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                        assertEquals("The specified consumer instance was not found.", error.getMessage());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getMessage(), is("The specified consumer instance was not found."));
                         context.completeNow();
                     });
                 });
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -77,16 +76,16 @@ public class SeekTest extends HttpBridgeTestBase {
         seekService().positionsBeginningRequest(groupId, name, partitionsJSON)
             .sendJsonObject(partitionsJSON, ar -> {
                 context.verify(() -> {
-                    assertTrue(ar.succeeded());
+                    assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonObject> response = ar.result();
                     HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                    assertEquals("No current assignment for partition " + topic + "-" + notExistingPartition, error.getMessage());
+                    assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                    assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                    assertThat(error.getMessage(), is("No current assignment for partition " + topic + "-" + notExistingPartition));
                     context.completeNow();
                 });
             });
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -108,12 +107,12 @@ public class SeekTest extends HttpBridgeTestBase {
         seekService().positionsBeginningRequest(groupId, name, partitionsWithWrongTopic)
                 .sendJsonObject(partitionsWithWrongTopic, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                        assertEquals("No current assignment for partition " + notExistingTopic + "-" + 0, error.getMessage());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getMessage(), is("No current assignment for partition " + notExistingTopic + "-" + 0));
                         context.completeNow();
                     });
                     consumerInstanceDontHaveTopic.complete(true);
@@ -146,9 +145,9 @@ public class SeekTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         JsonArray body = ar.result().body();
-                        assertEquals(10, body.size());
+                        assertThat(body.size(), is(10));
                     });
                     consume.complete(true);
                 });
@@ -167,8 +166,8 @@ public class SeekTest extends HttpBridgeTestBase {
         seekService().positionsBeginningRequest(groupId, name, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
+                        assertThat(ar.succeeded(), is(true));
+                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                     });
                     seek.complete(true);
                 });
@@ -183,9 +182,9 @@ public class SeekTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         JsonArray body = ar.result().body();
-                        assertEquals(10, body.size());
+                        assertThat(body.size(), is(10));
                     });
                     consumeSeek.complete(true);
                 });
@@ -196,7 +195,7 @@ public class SeekTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -221,7 +220,8 @@ public class SeekTest extends HttpBridgeTestBase {
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
-                    context.verify(() -> assertTrue(ar.succeeded()));
+                    context.verify(() ->
+                            assertThat(ar.succeeded(), is(true)));
                     dummy.complete(true);
                 });
 
@@ -241,8 +241,8 @@ public class SeekTest extends HttpBridgeTestBase {
             .positionsBeginningEnd(groupId, name, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
+                        assertThat(ar.succeeded(), is(true));
+                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                     });
                     seek.complete(true);
                 });
@@ -256,10 +256,11 @@ public class SeekTest extends HttpBridgeTestBase {
                 .putHeader(ACCEPT.toString(), BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
-                    context.verify(() -> assertTrue(ar.succeeded()));
+                    context.verify(() ->
+                            assertThat(ar.succeeded(), is(true)));
 
                     JsonArray body = ar.result().body();
-                    assertEquals(0, body.size());
+                    assertThat(body.size(), is(0));
                     consumeSeek.complete(true);
                 });
 
@@ -300,7 +301,7 @@ public class SeekTest extends HttpBridgeTestBase {
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
-                    assertTrue(ar.succeeded());
+                    assertThat(ar.succeeded(), is(true));
                     dummy.complete(true);
                 });
         dummy.get(TEST_TIMEOUT, TimeUnit.SECONDS);
@@ -318,8 +319,8 @@ public class SeekTest extends HttpBridgeTestBase {
             .positionsRequest(groupId, name, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
-                        assertEquals(HttpResponseStatus.NO_CONTENT.code(), ar.result().statusCode());
+                        assertThat(ar.succeeded(), is(true));
+                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                     });
                     seek.complete(true);
                 });
@@ -332,7 +333,7 @@ public class SeekTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         JsonArray body = ar.result().body();
 
                         // check it read from partition 0, at offset 9, just one message
@@ -340,25 +341,25 @@ public class SeekTest extends HttpBridgeTestBase {
                                 .map(JsonObject.class::cast)
                                 .filter(jo -> jo.getInteger("partition") == 0 && jo.getLong("offset") == 9)
                                 .collect(Collectors.toList());
-                        assertFalse(metadata.isEmpty());
-                        assertEquals(1, metadata.size());
+                        assertThat(metadata.isEmpty(), is(false));
+                        assertThat(metadata.size(), is(1));
 
-                        assertEquals(topic, metadata.get(0).getString("topic"));
-                        assertEquals("value-9", metadata.get(0).getString("value"));
-                        assertEquals("key-9", metadata.get(0).getString("key"));
+                        assertThat(metadata.get(0).getString("topic"), is(topic));
+                        assertThat(metadata.get(0).getString("value"), is("value-9"));
+                        assertThat(metadata.get(0).getString("key"), is("key-9"));
 
                         // check it read from partition 1, starting from offset 5, the last 5 messages
                         metadata = body.stream()
                                 .map(JsonObject.class::cast)
                                 .filter(jo -> jo.getInteger("partition") == 1)
                                 .collect(Collectors.toList());
-                        assertFalse(metadata.isEmpty());
-                        assertEquals(5, metadata.size());
+                        assertThat(metadata.isEmpty(), is(false));
+                        assertThat(metadata.size(), is(5));
 
                         for (int i = 0; i < metadata.size(); i++) {
-                            assertEquals(topic, metadata.get(i).getString("topic"));
-                            assertEquals("value-" + (i + 5), metadata.get(i).getString("value"));
-                            assertEquals("key-" + (i + 5), metadata.get(i).getString("key"));
+                            assertThat(metadata.get(i).getString("topic"), is(topic));
+                            assertThat(metadata.get(i).getString("value"), is("value-" + (i + 5)));
+                            assertThat(metadata.get(i).getString("key"), is("key-" + (i + 5)));
                         }
                     });
                     consume.complete(true);
@@ -369,7 +370,7 @@ public class SeekTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -414,12 +415,12 @@ public class SeekTest extends HttpBridgeTestBase {
         seekService().positionsBeginningRequest(groupId, name, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                        assertEquals("No current assignment for partition " + notSubscribedTopic + "-0", error.getMessage());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getMessage(), is("No current assignment for partition " + notSubscribedTopic + "-0"));
                     });
                     seek.complete(true);
                 });
@@ -430,7 +431,7 @@ public class SeekTest extends HttpBridgeTestBase {
             .deleteConsumer(context, groupId, name);
         
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -476,12 +477,12 @@ public class SeekTest extends HttpBridgeTestBase {
             .positionsRequest(groupId, name, root)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                        assertEquals("No current assignment for partition " + notSubscribedTopic + "-0", error.getMessage());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getMessage(), is("No current assignment for partition " + notSubscribedTopic + "-0"));
                     });
                     seek.complete(true);
                 });
@@ -492,6 +493,6 @@ public class SeekTest extends HttpBridgeTestBase {
             .deleteConsumer(context, groupId, name);
         
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 }
