@@ -175,7 +175,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    @DisabledIfEnvironmentVariable(named = "STRIMZI_USE_SYSTEM_BRIDGE", matches = "TRUE")
+    @DisabledIfEnvironmentVariable(named = "STRIMZI_USE_SYSTEM_BRIDGE", matches = "((?i)TRUE(?-i))")
     void sendBinaryMessageWithKey(VertxTestContext context) {
         String topic = "sendBinaryMessageWithKey";
         kafkaCluster.createTopic(topic, 2, 1);
