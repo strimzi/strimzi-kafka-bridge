@@ -5,6 +5,9 @@
 
 package io.strimzi.kafka.bridge;
 
+import io.jaegertracing.Configuration;
+import io.opentracing.Tracer;
+import io.opentracing.util.GlobalTracer;
 import io.strimzi.kafka.bridge.amqp.AmqpBridge;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.HttpBridge;
@@ -34,6 +37,7 @@ public class Application {
 
     private static final int DEFAULT_HEALTH_SERVER_PORT = 8080;
 
+    @SuppressWarnings({"checkstyle:NPathComplexity"})
     public static void main(String[] args) {
         log.info("Strimzi Kafka Bridge {} is starting", Application.class.getPackage().getImplementationVersion());
         Vertx vertx = Vertx.vertx();
@@ -96,6 +100,16 @@ public class Application {
                     // so no need for a standalone HTTP health server
                     if (!bridgeConfig.getHttpConfig().isEnabled()) {
                         healthChecker.startHealthServer(vertx, healthServerPort);
+                    }
+
+                    // register OpenTracing Jaeger tracer
+                    if ("jaeger".equals(bridgeConfig.getTracing())) {
+                        if (config.get(Configuration.JAEGER_SERVICE_NAME) != null) {
+                            Tracer tracer = Configuration.fromEnv().getTracer();
+                            GlobalTracer.registerIfAbsent(tracer);
+                        } else {
+                            log.error("Jaeger tracing cannot be initialized because {} environment variable is not defined", Configuration.JAEGER_SERVICE_NAME);
+                        }
                     }
                 }
             });
