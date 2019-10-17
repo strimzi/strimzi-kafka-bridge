@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.15.0
+
+* Added support for Jaeger tracing
+* Various bug fixes.
+
 ## 0.14.0
 
 * Changed data types and enforced OpenAPI validation for `consumer.request.timeout.ms`, `enable.auto.commit`and `fetch.min.bytes`parameters on consumer creation. This is a breaking change.
