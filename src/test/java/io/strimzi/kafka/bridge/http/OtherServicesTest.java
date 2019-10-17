@@ -14,9 +14,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class OtherServicesTest extends HttpBridgeTestBase {
 
@@ -29,8 +28,8 @@ public class OtherServicesTest extends HttpBridgeTestBase {
                 .getRequest("/ready")
                     .send(ar -> {
                         context.verify(() -> {
-                            assertTrue(ar.succeeded());
-                            assertEquals(HttpResponseStatus.OK.code(), ar.result().statusCode());
+                            assertThat(ar.succeeded(), is(true));
+                            assertThat(ar.result().statusCode(), is(HttpResponseStatus.OK.code()));
                         });
                         if (l == iterations) {
                             context.completeNow();
@@ -49,8 +48,8 @@ public class OtherServicesTest extends HttpBridgeTestBase {
                 .getRequest("/healthy")
                     .send(ar -> {
                         context.verify(() -> {
-                            assertTrue(ar.succeeded());
-                            assertEquals(HttpResponseStatus.OK.code(), ar.result().statusCode());
+                            assertThat(ar.succeeded(), is(true));
+                            assertThat(ar.result().statusCode(), is(HttpResponseStatus.OK.code()));
                         });
                         if (l == iterations) {
                             context.completeNow();
@@ -67,46 +66,46 @@ public class OtherServicesTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
 
                         Map<String, Object> paths = bridgeResponse.getJsonObject("paths").getMap();
-                        // subscribe, list subscribtions and unsubscribe are using the same endpoint but different methods
+                        // subscribe, list subscriptions and unsubscribe are using the same endpoint but different methods
                         int pathsSize = HttpOpenApiOperations.values().length - 2;
-                        assertEquals(pathsSize, paths.size());
-                        assertTrue(paths.containsKey("/consumers/{groupid}"));
-                        assertEquals(HttpOpenApiOperations.CREATE_CONSUMER.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}").getJsonObject("post").getString("operationId"));
-                        assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/positions"));
-                        assertEquals(HttpOpenApiOperations.SEEK.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/positions").getJsonObject("post").getString("operationId"));
-                        assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/positions/beginning"));
-                        assertEquals(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/positions/beginning").getJsonObject("post").getString("operationId"));
-                        assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/positions/end"));
-                        assertEquals(HttpOpenApiOperations.SEEK_TO_END.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/positions/end").getJsonObject("post").getString("operationId"));
-                        assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/subscription"));
-                        assertEquals(HttpOpenApiOperations.SUBSCRIBE.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/subscription").getJsonObject("post").getString("operationId"));
-                        assertEquals(HttpOpenApiOperations.UNSUBSCRIBE.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/subscription").getJsonObject("delete").getString("operationId"));
-                        assertEquals(HttpOpenApiOperations.LIST_SUBSCRIPTIONS.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/subscription").getJsonObject("get").getString("operationId"));
-                        assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/assignments"));
-                        assertEquals(HttpOpenApiOperations.ASSIGN.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/assignments").getJsonObject("post").getString("operationId"));
-                        assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/records"));
-                        assertEquals(HttpOpenApiOperations.POLL.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/records").getJsonObject("get").getString("operationId"));
-                        assertTrue(paths.containsKey("/consumers/{groupid}/instances/{name}/offsets"));
-                        assertEquals(HttpOpenApiOperations.COMMIT.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/offsets").getJsonObject("post").getString("operationId"));
-                        assertTrue(paths.containsKey("/topics/{topicname}"));
-                        assertEquals(HttpOpenApiOperations.SEND.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/topics/{topicname}").getJsonObject("post").getString("operationId"));
-                        assertTrue(paths.containsKey("/topics/{topicname}/partitions/{partitionid}"));
-                        assertEquals(HttpOpenApiOperations.SEND_TO_PARTITION.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/topics/{topicname}/partitions/{partitionid}").getJsonObject("post").getString("operationId"));
-                        assertTrue(paths.containsKey("/healthy"));
-                        assertEquals(HttpOpenApiOperations.HEALTHY.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/healthy").getJsonObject("get").getString("operationId"));
-                        assertTrue(paths.containsKey("/ready"));
-                        assertEquals(HttpOpenApiOperations.READY.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/ready").getJsonObject("get").getString("operationId"));
-                        assertTrue(paths.containsKey("/openapi"));
-                        assertEquals(HttpOpenApiOperations.OPENAPI.toString(), bridgeResponse.getJsonObject("paths").getJsonObject("/openapi").getJsonObject("get").getString("operationId"));
-                        assertFalse(paths.containsKey("/karel"));
-                        assertEquals(18, bridgeResponse.getJsonObject("definitions").getMap().size());
-                        assertEquals(4, bridgeResponse.getJsonArray("tags").size());
+                        assertThat(paths.size(), is(pathsSize));
+                        assertThat(paths.containsKey("/consumers/{groupid}"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.CREATE_CONSUMER.toString()));
+                        assertThat(paths.containsKey("/consumers/{groupid}/instances/{name}/positions"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/positions").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.SEEK.toString()));
+                        assertThat(paths.containsKey("/consumers/{groupid}/instances/{name}/positions/beginning"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/positions/beginning").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString()));
+                        assertThat(paths.containsKey("/consumers/{groupid}/instances/{name}/positions/end"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/positions/end").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.SEEK_TO_END.toString()));
+                        assertThat(paths.containsKey("/consumers/{groupid}/instances/{name}/subscription"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/subscription").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.SUBSCRIBE.toString()));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/subscription").getJsonObject("delete").getString("operationId"), is(HttpOpenApiOperations.UNSUBSCRIBE.toString()));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/subscription").getJsonObject("get").getString("operationId"), is(HttpOpenApiOperations.LIST_SUBSCRIPTIONS.toString()));
+                        assertThat(paths.containsKey("/consumers/{groupid}/instances/{name}/assignments"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/assignments").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.ASSIGN.toString()));
+                        assertThat(paths.containsKey("/consumers/{groupid}/instances/{name}/records"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/records").getJsonObject("get").getString("operationId"), is(HttpOpenApiOperations.POLL.toString()));
+                        assertThat(paths.containsKey("/consumers/{groupid}/instances/{name}/offsets"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}/instances/{name}/offsets").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.COMMIT.toString()));
+                        assertThat(paths.containsKey("/topics/{topicname}"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/topics/{topicname}").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.SEND.toString()));
+                        assertThat(paths.containsKey("/topics/{topicname}/partitions/{partitionid}"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/topics/{topicname}/partitions/{partitionid}").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.SEND_TO_PARTITION.toString()));
+                        assertThat(paths.containsKey("/healthy"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/healthy").getJsonObject("get").getString("operationId"), is(HttpOpenApiOperations.HEALTHY.toString()));
+                        assertThat(paths.containsKey("/ready"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/ready").getJsonObject("get").getString("operationId"), is(HttpOpenApiOperations.READY.toString()));
+                        assertThat(paths.containsKey("/openapi"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/openapi").getJsonObject("get").getString("operationId"), is(HttpOpenApiOperations.OPENAPI.toString()));
+                        assertThat(paths.containsKey("/karel"), is(false));
+                        assertThat(bridgeResponse.getJsonObject("definitions").getMap().size(), is(18));
+                        assertThat(bridgeResponse.getJsonArray("tags").size(), is(4));
                     });
                     context.completeNow();
                 });
@@ -119,11 +118,11 @@ public class OtherServicesTest extends HttpBridgeTestBase {
             .as(BodyCodec.jsonObject())
             .sendJsonObject(null, ar -> {
                 context.verify(() -> {
-                    assertTrue(ar.succeeded());
+                    assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonObject> response = ar.result();
                     HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                    assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
+                    assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                    assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
                 });
                 context.completeNow();
             });

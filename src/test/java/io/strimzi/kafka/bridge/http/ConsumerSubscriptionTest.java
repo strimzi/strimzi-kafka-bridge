@@ -20,8 +20,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
@@ -46,12 +46,12 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                        assertEquals("The specified consumer instance was not found.", error.getMessage());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getMessage(), is("The specified consumer instance was not found."));
                     });
                     unsubscribe.complete(true);
                 });
@@ -88,13 +88,12 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
             .subscribeConsumerRequest(groupId, name, topicsRoot)
                 .sendJsonObject(topicsRoot, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.CONFLICT.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.CONFLICT.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.CONFLICT.code(), error.getCode());
-                        assertEquals("Subscriptions to topics, partitions, and patterns are mutually exclusive.",
-                                error.getMessage());
+                        assertThat(error.getCode(), is(HttpResponseStatus.CONFLICT.code()));
+                        assertThat(error.getMessage(), is("Subscriptions to topics, partitions, and patterns are mutually exclusive."));
                     });
 
                     subscribeConflict.complete(true);
@@ -109,13 +108,12 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
             .subscribeConsumerRequest(groupId, name, topicsRoot)
                 .sendJsonObject(topicsRoot, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), error.getCode());
-                        assertEquals("A list (of Topics type) or a topic_pattern must be specified.",
-                                error.getMessage());
+                        assertThat(error.getCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        assertThat(error.getMessage(), is("A list (of Topics type) or a topic_pattern must be specified."));
                     });
 
                     subscribeEmpty.complete(true);
@@ -124,7 +122,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         subscribeEmpty.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         context.completeNow();
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
         consumerService()
             .deleteConsumer(context, groupId, name);
     }
@@ -147,12 +145,12 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
             .subscribeConsumerRequest(groupId, name, topicsRoot)
                 .sendJsonObject(topicsRoot, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), response.statusCode());
-                        assertEquals(HttpResponseStatus.NOT_FOUND.code(), error.getCode());
-                        assertEquals("The specified consumer instance was not found.", error.getMessage());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getMessage(), is("The specified consumer instance was not found."));
                     });
                     subscribe.complete(true);
                 });
@@ -200,22 +198,22 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
 
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
-                        assertEquals(response.body().getJsonArray("topics").size(), 2);
-                        assertTrue(response.body().getJsonArray("topics").contains(topic));
-                        assertTrue(response.body().getJsonArray("topics").contains(topic2));
-                        assertEquals(response.body().getJsonArray("partitions").size(), 2);
-                        assertEquals(response.body().getJsonArray("partitions").getJsonObject(0).getJsonArray(topic2).size(), 4);
-                        assertEquals(response.body().getJsonArray("partitions").getJsonObject(1).getJsonArray(topic).size(), 1);
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        assertThat(response.body().getJsonArray("topics").size(), is(2));
+                        assertThat(response.body().getJsonArray("topics").contains(topic), is(true));
+                        assertThat(response.body().getJsonArray("topics").contains(topic2), is(true));
+                        assertThat(response.body().getJsonArray("partitions").size(), is(2));
+                        assertThat(response.body().getJsonArray("partitions").getJsonObject(0).getJsonArray(topic2).size(), is(4));
+                        assertThat(response.body().getJsonArray("partitions").getJsonObject(1).getJsonArray(topic).size(), is(1));
                         listSubscriptions.complete(true);
                         context.completeNow();
                     });
                 });
 
-        assertTrue(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
         consumerService()
             .deleteConsumer(context, groupId, name);
     }

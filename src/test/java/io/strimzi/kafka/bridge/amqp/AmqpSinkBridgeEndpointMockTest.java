@@ -49,8 +49,8 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import static junit.framework.TestCase.fail;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -147,8 +147,8 @@ class AmqpSinkBridgeEndpointMockTest {
         ArgumentCaptor<ErrorCondition> errorCap = ArgumentCaptor.forClass(ErrorCondition.class);
         verify(mockSender).setCondition(errorCap.capture());
         verify(mockSender).close();
-        assertEquals(errorCondition, errorCap.getValue().getCondition().toString());
-        assertEquals(errorMessage, errorCap.getValue().getDescription());
+        assertThat(errorCap.getValue().getCondition().toString(), is(errorCondition));
+        assertThat(errorCap.getValue().getDescription(), is(errorMessage));
     }
 
     // Test normal flow in AT_MOST_ONCE mode.
@@ -209,12 +209,13 @@ class AmqpSinkBridgeEndpointMockTest {
         verify(mockSender).send(tagCap.capture(), messageCap.capture());
         Message message = messageCap.getValue();
         // Assert the transformed message was as expected
-        assertEquals(topic + "/group.id/my_group", message.getAddress());
-        assertArrayEquals("Hello, world".getBytes(), ((Data) message.getBody()).getValue().getArray());
+        assertThat(topic + "/group.id/my_group", is(message.getAddress()));
+
+        assertThat(((Data) message.getBody()).getValue().getArray(), is("Hello, world".getBytes()));
         MessageAnnotations messageAnnotations = message.getMessageAnnotations();
-        assertEquals(topic, messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)));
-        assertEquals(0, messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION)));
-        assertEquals(0L, messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION)));
+        assertThat(messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)), is(topic));
+        assertThat(messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION)), is(0));
+        assertThat(messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION)), is(0L));
 
         // TODO test closure (commit)
     }
@@ -260,12 +261,12 @@ class AmqpSinkBridgeEndpointMockTest {
         Message message = messageCap.getValue();
 
         // Assert the transformed message was as expected
-        assertEquals(topic + "/group.id/my_group", message.getAddress());
-        assertArrayEquals("Hello, world".getBytes(), ((Data) message.getBody()).getValue().getArray());
+        assertThat(message.getAddress(), is(topic + "/group.id/my_group"));
+        assertThat(((Data) message.getBody()).getValue().getArray(), is("Hello, world".getBytes()));
         MessageAnnotations messageAnnotations = message.getMessageAnnotations();
-        assertEquals(topic, messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)));
-        assertEquals(0, messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION)));
-        assertEquals(0L, messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION)));
+        assertThat(messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_TOPIC_ANNOTATION)), is(topic));
+        assertThat(messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_PARTITION_ANNOTATION)), is(0));
+        assertThat(messageAnnotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_OFFSET_ANNOTATION)), is(0L));
 
         // Simulate Proton delivering settlement
         ProtonDelivery mockDelivery = mock(ProtonDelivery.class);

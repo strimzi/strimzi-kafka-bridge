@@ -19,8 +19,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
 
@@ -54,13 +54,13 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
                         name = consumerInstanceId;
-                        assertTrue(consumerInstanceId.startsWith("kafka-bridge-consumer-"));
+                        assertThat(consumerInstanceId.startsWith("kafka-bridge-consumer-"), is(true));
                         create.complete(true);
                     });
                 });
@@ -82,12 +82,12 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
-                        assertTrue(ar.succeeded());
+                        assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertEquals(HttpResponseStatus.OK.code(), response.statusCode());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        assertTrue(consumerInstanceId.equals("consumer-1"));
+                        assertThat(consumerInstanceId, is("consumer-1"));
                         create.complete(true);
                     });
                 });
