@@ -152,7 +152,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         props.putAll(kafkaConfig.getConfig());
         props.putAll(kafkaConfig.getConsumerConfig().getConfig());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
-        if (this.bridgeConfig.getTracing() != null && "jaeger".equals(this.bridgeConfig.getTracing())) {
+        if (this.bridgeConfig.getTracing() != null) {
             props.put(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, TracingConsumerInterceptor.class.getName());
         }
 

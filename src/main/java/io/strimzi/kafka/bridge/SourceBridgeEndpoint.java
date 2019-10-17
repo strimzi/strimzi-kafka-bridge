@@ -103,7 +103,7 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
         Properties props = new Properties();
         props.putAll(kafkaConfig.getConfig());
         props.putAll(kafkaConfig.getProducerConfig().getConfig());
-        if (this.bridgeConfig.getTracing() != null && "jaeger".equals(this.bridgeConfig.getTracing())) {
+        if (this.bridgeConfig.getTracing() != null) {
             props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, TracingProducerInterceptor.class.getName());
         }
 
