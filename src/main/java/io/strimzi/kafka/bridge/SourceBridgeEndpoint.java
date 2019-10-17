@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge;
 
+import io.opentracing.contrib.kafka.TracingProducerInterceptor;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.vertx.core.AsyncResult;
@@ -102,6 +103,9 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
         Properties props = new Properties();
         props.putAll(kafkaConfig.getConfig());
         props.putAll(kafkaConfig.getProducerConfig().getConfig());
+        if (this.bridgeConfig.getTracing() != null) {
+            props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, TracingProducerInterceptor.class.getName());
+        }
 
         this.producerUnsettledMode = KafkaProducer.create(this.vertx, props, this.keySerializer, this.valueSerializer);
 

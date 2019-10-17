@@ -19,6 +19,7 @@ public class BridgeConfig extends AbstractConfig {
     public static final String BRIDGE_CONFIG_PREFIX = "bridge.";
 
     public static final String BRIDGE_ID = BRIDGE_CONFIG_PREFIX + "id";
+    public static final String TRACING_TYPE = BRIDGE_CONFIG_PREFIX + "tracing";
 
     private KafkaConfig kafkaConfig;
     private AmqpConfig amqpConfig;
@@ -92,6 +93,14 @@ public class BridgeConfig extends AbstractConfig {
             return null;
         } else {
             return config.get(BridgeConfig.BRIDGE_ID).toString();
+        }
+    }
+
+    public String getTracing() {
+        if (config.get(BridgeConfig.TRACING_TYPE) == null) {
+            return null;
+        } else {
+            return config.get(BridgeConfig.TRACING_TYPE).toString();
         }
     }
 }

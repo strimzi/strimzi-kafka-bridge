@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge;
 
+import io.opentracing.contrib.kafka.TracingConsumerInterceptor;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.tracker.OffsetTracker;
@@ -151,6 +152,9 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         props.putAll(kafkaConfig.getConfig());
         props.putAll(kafkaConfig.getConsumerConfig().getConfig());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
+        if (this.bridgeConfig.getTracing() != null) {
+            props.put(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, TracingConsumerInterceptor.class.getName());
+        }
 
         if (config != null)
             props.putAll(config);

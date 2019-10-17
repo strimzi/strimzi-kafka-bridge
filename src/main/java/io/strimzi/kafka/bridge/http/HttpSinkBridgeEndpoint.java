@@ -6,6 +6,16 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.opentracing.References;
+import io.opentracing.Span;
+import io.opentracing.SpanContext;
+import io.opentracing.Tracer;
+import io.opentracing.Tracer.SpanBuilder;
+import io.opentracing.propagation.Format;
+import io.opentracing.propagation.TextMap;
+import io.opentracing.propagation.TextMapAdapter;
+import io.opentracing.tag.Tags;
+import io.opentracing.util.GlobalTracer;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
@@ -27,12 +37,16 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.common.TopicPartition;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.OffsetAndMetadata;
+import io.vertx.kafka.client.producer.KafkaHeader;
+
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -42,6 +56,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+@SuppressWarnings({"checkstyle:ClassFanOutComplexity"})
 public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     private static final JsonObject EMPTY_JSON = new JsonObject();
@@ -244,29 +259,68 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
             this.consume(records -> {
                 if (records.succeeded()) {
+
+                    Tracer tracer = GlobalTracer.get();
+
+                    SpanBuilder spanBuilder = tracer.buildSpan(HttpOpenApiOperations.POLL.toString());
+                    for (int i = 0; i < records.result().size(); i++) {
+                        KafkaConsumerRecord<K, V> record = records.result().recordAt(i);
+
+                        Map<String, String> headers = new HashMap<>();
+                        for (KafkaHeader header : record.headers()) {
+                            headers.put(header.key(), header.value().toString());
+                        }
+
+                        SpanContext parentSpan = tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(headers));
+                        if (parentSpan != null) {
+                            spanBuilder.addReference(References.FOLLOWS_FROM, parentSpan);
+                        }
+                    }
+                    Span span = spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER).start();
+                    HttpTracingUtils.setCommonTags(span, routingContext);
+
+                    tracer.inject(span.context(), Format.Builtin.TEXT_MAP, new TextMap() {
+                        @Override
+                        public void put(String key, String value) {
+                            routingContext.response().headers().add(key, value);
+                        }
+
+                        @Override
+                        public Iterator<Map.Entry<String, String>> iterator() {
+                            throw new UnsupportedOperationException("TextMapInjectAdapter should only be used with Tracer.inject()");
+                        }
+                    });
+
+                    HttpResponseStatus responseStatus;
                     try {
                         Buffer buffer = messageConverter.toMessages(records.result());
                         if (buffer.getBytes().length > this.maxBytes) {
+                            responseStatus = HttpResponseStatus.UNPROCESSABLE_ENTITY;
                             HttpBridgeError error = new HttpBridgeError(
-                                    HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                                    responseStatus.code(),
                                     "Response exceeds the maximum number of bytes the consumer can receive"
                             );
-                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                            HttpUtils.sendResponse(routingContext, responseStatus.code(),
                                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                         } else {
-                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
+                            responseStatus = HttpResponseStatus.OK;
+                            HttpUtils.sendResponse(routingContext, responseStatus.code(),
                                     this.format == EmbeddedFormat.BINARY ? BridgeContentType.KAFKA_JSON_BINARY : BridgeContentType.KAFKA_JSON_JSON,
                                     buffer);
                         }    
                     } catch (DecodeException e) {
                         log.error("Error decoding records as JSON", e);
+                        responseStatus = HttpResponseStatus.NOT_ACCEPTABLE;
                         HttpBridgeError error = new HttpBridgeError(
-                            HttpResponseStatus.NOT_ACCEPTABLE.code(),
+                            responseStatus.code(),
                             e.getMessage()
                         );
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_ACCEPTABLE.code(),
+                        HttpUtils.sendResponse(routingContext, responseStatus.code(),
                             BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                     }
+                    Tags.HTTP_STATUS.set(span, responseStatus.code());
+                    span.finish();
+
                 } else {
                     HttpBridgeError error = new HttpBridgeError(
                             HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
