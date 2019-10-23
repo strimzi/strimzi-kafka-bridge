@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [ "$STRIMZI_TRACING" = "jaeger" ]; then
+if [ -n "$STRIMZI_TRACING" ]; then
     BRIDGE_TRACING="bridge.tracing=${STRIMZI_TRACING}"
 fi
 
