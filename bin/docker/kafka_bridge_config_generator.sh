@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 
+if [ -n "$STRIMZI_TRACING" ]; then
+    BRIDGE_TRACING="bridge.tracing=${STRIMZI_TRACING}"
+fi
+
 BRIDGE_PROPERTIES=$(cat <<-EOF
 #Bridge configuration
 bridge.id=${KAFKA_BRIDGE_ID}
+${BRIDGE_TRACING}
 EOF
 )
 
