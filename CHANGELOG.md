@@ -1,5 +1,7 @@
 # CHANGELOG
 
+## 0.16.0
+
 ## 0.15.0
 
 * Added support for Jaeger tracing

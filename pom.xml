@@ -3,7 +3,7 @@
   
 	<groupId>io.strimzi</groupId>
 	<artifactId>kafka-bridge</artifactId>
-	<version>0.15.0-SNAPSHOT</version>
+	<version>0.16.0-SNAPSHOT</version>
 
 	<name>kafka-bridge</name>
 	<description>Apache Kafka bridge</description>
