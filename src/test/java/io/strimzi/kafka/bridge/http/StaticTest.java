@@ -60,9 +60,9 @@ public class StaticTest {
 
             // If we achieved this point, and the version was not displayed yet, test failed
             } else if ((procOutput.contains("Starting HTTP-Kafka bridge verticle")) &&  (!versionFound)) {
-                assertThat("Test Failed", false);
                 inputStreamReader.close();
                 bridgeProc.destroy();
+                assertThat("Test Failed", false);
             }
             // Check only the first 5 lines
             lineCount++;
