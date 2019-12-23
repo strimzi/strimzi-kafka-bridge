@@ -7,43 +7,28 @@ package io.strimzi.kafka.bridge.http;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
-
+import static io.strimzi.kafka.bridge.utils.KafkaBridgeVersion.getKafkaBridgeVersionFromFile;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class StaticTest {
-
-    public String getVersionFromFile(String releaseFile) throws Exception {
-
-        String versionFromFile;
-
-        try {
-            BufferedReader bufferedReader = new BufferedReader(new FileReader(releaseFile));
-            versionFromFile = bufferedReader.readLine();
-            bufferedReader.close();
-        } catch (FileNotFoundException e) {
-            throw new Exception("File not found : " + releaseFile);
-        } catch (IOException e) {
-            throw new Exception("Unable to open file : " + releaseFile);
-        }
-
-        if ((versionFromFile == null) || (versionFromFile.isEmpty())) {
-            throw new Exception("Unable to get Version from file : " + releaseFile);
-        }
-        return versionFromFile;
-    }
+/**
+ *  Static tests are those that does not applies for the regular @beforeAll, @beforeEach and @afterEach methods
+ *  So this class of tests does not extends HttpBridgeTestBase
+ */
+public class StaticTests {
 
     @Test
+    /**
+     * Start the kafka bridge using ProcessBuilder to run the kafka_bridge_run.sh script, then check
+     * if the bridge version is displayed in messages.
+     */
     void bridgeVersionDisplayedInStartupTest() throws Exception {
 
-        String kBVersion = getVersionFromFile("release.version");
+        String kBVersion = getKafkaBridgeVersionFromFile("release.version");
 
         ProcessBuilder bridgeJar = new ProcessBuilder(
-               "target/kafka-bridge-" + kBVersion + "/kafka-bridge-" + kBVersion + "/bin/kafka_bridge_run.sh",
+                "target/kafka-bridge-" + kBVersion + "/kafka-bridge-" + kBVersion + "/bin/kafka_bridge_run.sh",
                 "--config-file", "target/kafka-bridge-" + kBVersion + "/kafka-bridge-" + kBVersion + "/config/application.properties");
         Process bridgeProc = bridgeJar.start();
 
