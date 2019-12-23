@@ -13,9 +13,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class StaticTest {
 
@@ -43,8 +41,6 @@ public class StaticTest {
     void bridgeVersionDisplayedInStartupTest() throws Exception {
 
         String kBVersion = getVersionFromFile("release.version");
-        assertThat(kBVersion, is(not("Unable to get version")));
-        Boolean versionFound = false;
 
         ProcessBuilder bridgeJar = new ProcessBuilder(
                "target/kafka-bridge-" + kBVersion + "/kafka-bridge-" + kBVersion + "/bin/kafka_bridge_run.sh",
