@@ -4,11 +4,11 @@
  */
 package io.strimzi.kafka.bridge.http;
 
+import io.strimzi.kafka.bridge.utils.Utils;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import static io.strimzi.kafka.bridge.utils.KafkaBridgeVersion.getKafkaBridgeVersionFromFile;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -25,7 +25,7 @@ public class StaticTests {
      */
     void bridgeVersionDisplayedInStartupTest() throws Exception {
 
-        String kBVersion = getKafkaBridgeVersionFromFile("release.version");
+        String kBVersion = Utils.getKafkaBridgeVersionFromFile("release.version");
 
         ProcessBuilder bridgeJar = new ProcessBuilder(
                 "target/kafka-bridge-" + kBVersion + "/kafka-bridge-" + kBVersion + "/bin/kafka_bridge_run.sh",
