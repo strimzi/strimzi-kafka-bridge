@@ -19,26 +19,30 @@ import static org.hamcrest.Matchers.is;
 
 public class StaticTest {
 
-    public String getVersionFromFile() {
+    public String getVersionFromFile(String releaseFile) throws Exception {
 
-        String versionFromFile = "Unable to get version";
+        String versionFromFile;
 
         try {
-            BufferedReader bufferedReader = new BufferedReader(new FileReader("release.version"));
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(releaseFile));
             versionFromFile = bufferedReader.readLine();
             bufferedReader.close();
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            throw new Exception("File not found : " + releaseFile);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new Exception("Unable to open file : " + releaseFile);
+        }
+
+        if ((versionFromFile == null) || (versionFromFile.isEmpty())) {
+            throw new Exception("Unable to get Version from file : " + releaseFile);
         }
         return versionFromFile;
     }
 
     @Test
-    void bridgeVersionDisplayedInStartupTest() throws IOException, InterruptedException {
+    void bridgeVersionDisplayedInStartupTest() throws Exception {
 
-        String kBVersion = getVersionFromFile();
+        String kBVersion = getVersionFromFile("release.version");
         assertThat(kBVersion, is(not("Unable to get version")));
         Boolean versionFound = false;
 
@@ -56,24 +60,18 @@ public class StaticTest {
 
             if ((procOutput.contains("Strimzi Kafka Bridge")) && (procOutput.contains("starting"))) {
                 assertThat(procOutput, containsString("Strimzi Kafka Bridge " + kBVersion + " is starting"));
-                versionFound = true;
-
-            // If we achieved this point, and the version was not displayed yet, test failed
-            } else if ((procOutput.contains("Starting HTTP-Kafka bridge verticle")) &&  (!versionFound)) {
-                inputStreamReader.close();
-                bridgeProc.destroy();
-                assertThat("Test Failed", false);
-            }
-            // Check only the first 5 lines
-            lineCount++;
-            if (lineCount == 5) {
-                inputStreamReader.close();
-                bridgeProc.destroy();
-                return;
+                break;
+            } else {
+                // Check only the first 5 lines
+                lineCount++;
+                if (lineCount == 5) {
+                    inputStreamReader.close();
+                    bridgeProc.destroy();
+                    assertThat("Test Failed", false);
+                }
             }
         }
         bridgeProc.destroy();
         inputStreamReader.close();
     }
-
 }
