@@ -13,7 +13,7 @@ __Version__ : 0.1.0
 
 === Contact information
 [%hardbreaks]
-__Contact Email__ : strimzi@redhat.com
+__Contact Email__ : cncf-strimzi-dev@lists.cncf.io
 
 
 === License information
