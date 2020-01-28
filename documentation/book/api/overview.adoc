@@ -48,4 +48,10 @@ __Schemes__ : HTTP
 * `application/json`
 
 
+=== External Docs
+[%hardbreaks]
+__Description__ : Find out more about the Strimzi HTTP Bridge
+__URL__ : https://strimzi.io/documentation/
+
+
 
