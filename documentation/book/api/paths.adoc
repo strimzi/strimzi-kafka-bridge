@@ -11,7 +11,7 @@ Creates a consumer instance in the given consumer group. You can optionally spec
 
 ==== Parameters
 
-[options="header", cols=".^2,.^3,.^9,.^4"]
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
 |===
 |Type|Name|Description|Schema
 |**Path**|**groupid** +
@@ -23,7 +23,7 @@ __required__|Name and configuration of the consumer. The name is unique within t
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**200**|Consumer created successfully.|<<_createdconsumer,CreatedConsumer>>
@@ -110,7 +110,7 @@ Deletes a specified consumer instance. The request for this operation MUST use t
 
 ==== Parameters
 
-[options="header", cols=".^2,.^3,.^9,.^4"]
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
 |===
 |Type|Name|Description|Schema
 |**Path**|**groupid** +
@@ -122,7 +122,7 @@ __required__|Name of the consumer that you want to delete.|string
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**204**|Consumer removed successfully.|No Content
@@ -168,7 +168,7 @@ Assigns one or more topic partitions to a consumer.
 
 ==== Parameters
 
-[options="header", cols=".^2,.^3,.^9,.^4"]
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
 |===
 |Type|Name|Description|Schema
 |**Path**|**groupid** +
@@ -182,7 +182,7 @@ __required__|List of topic partitions to assign to the consumer.|<<_partitions,P
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**204**|Partitions assigned successfully.|No Content
@@ -258,7 +258,7 @@ Commits a list of consumer offsets. To commit offsets for all records fetched by
 
 ==== Parameters
 
-[options="header", cols=".^2,.^3,.^9,.^4"]
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
 |===
 |Type|Name|Description|Schema
 |**Path**|**groupid** +
@@ -272,7 +272,7 @@ __optional__|List of consumer offsets to commit to the consumer offsets commit l
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**204**|Commit made successfully.|No Content
@@ -337,7 +337,7 @@ Configures a subscribed consumer to fetch offsets from a particular offset the n
 
 ==== Parameters
 
-[options="header", cols=".^2,.^3,.^9,.^4"]
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
 |===
 |Type|Name|Description|Schema
 |**Path**|**groupid** +
@@ -351,7 +351,7 @@ __required__|List of partition offsets from which the subscribed consumer will n
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**204**|Seek performed successfully.|No Content
@@ -417,7 +417,7 @@ Configures a subscribed consumer to seek (and subsequently read from) the first 
 
 ==== Parameters
 
-[options="header", cols=".^2,.^3,.^9,.^4"]
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
 |===
 |Type|Name|Description|Schema
 |**Path**|**groupid** +
@@ -431,7 +431,7 @@ __required__|List of topic partitions to which the consumer is subscribed. The c
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**204**|Seek to the beginning performed successfully.|No Content
@@ -495,7 +495,7 @@ Configures a subscribed consumer to seek (and subsequently read from) the offset
 
 ==== Parameters
 
-[options="header", cols=".^2,.^3,.^9,.^4"]
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
 |===
 |Type|Name|Description|Schema
 |**Path**|**groupid** +
@@ -509,7 +509,7 @@ __optional__|List of topic partitions to which the consumer is subscribed. The c
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**204**|Seek to the end performed successfully.|No Content
@@ -573,7 +573,7 @@ Retrieves records for a subscribed consumer, including message values, topics, a
 
 ==== Parameters
 
-[options="header", cols=".^2,.^3,.^9,.^4"]
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
 |===
 |Type|Name|Description|Schema
 |**Path**|**groupid** +
@@ -589,7 +589,7 @@ __optional__|The maximum amount of time, in milliseconds, that the HTTP Bridge s
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**200**|Poll request executed successfully.|<<_consumerrecordlist,ConsumerRecordList>>
@@ -682,7 +682,7 @@ Subscribes a consumer to one or more topics. You can describe the topics to whic
 
 ==== Parameters
 
-[options="header", cols=".^2,.^3,.^9,.^4"]
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
 |===
 |Type|Name|Description|Schema
 |**Path**|**groupid** +
@@ -696,7 +696,7 @@ __required__|List of topics to which the consumer will subscribe.|<<_topics,Topi
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**204**|Consumer subscribed successfully.|No Content
@@ -779,7 +779,7 @@ Retrieves a list of the topics to which the consumer is subscribed.
 
 ==== Parameters
 
-[options="header", cols=".^2,.^3,.^9,.^4"]
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
 |===
 |Type|Name|Description|Schema
 |**Path**|**groupid** +
@@ -791,7 +791,7 @@ __required__|Name of the consumer that you want to unsubscribe from topics.|stri
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**200**|List of subscribed topics and partitions.|<<_subscribedtopiclist,SubscribedTopicList>>
@@ -846,7 +846,7 @@ Unsubscribes a consumer from all topics.
 
 ==== Parameters
 
-[options="header", cols=".^2,.^3,.^9,.^4"]
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
 |===
 |Type|Name|Description|Schema
 |**Path**|**groupid** +
@@ -858,7 +858,7 @@ __required__|Name of the consumer that you want to unsubscribe from topics.|stri
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**204**|Consumer unsubscribed successfully.|No Content
@@ -892,7 +892,7 @@ Check if the bridge is running. This does not necessarily imply that it is ready
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**200**|The bridge is healthy|No Content
@@ -908,7 +908,7 @@ Retrieves the OpenAPI v2 specification in JSON format.
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**200**|OpenAPI v2 specification in JSON format retrieved successfully.|string
@@ -929,7 +929,7 @@ Check if the bridge is ready and can accept requests.
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**200**|The bridge is ready|No Content
@@ -945,7 +945,7 @@ Sends one or more records to a given topic, optionally specifying a partition, k
 
 ==== Parameters
 
-[options="header", cols=".^2,.^3,.^9,.^4"]
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
 |===
 |Type|Name|Description|Schema
 |**Path**|**topicname** +
@@ -957,7 +957,7 @@ __required__||<<_producerrecordlist,ProducerRecordList>>
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**200**|Records sent successfully.|<<_offsetrecordsentlist,OffsetRecordSentList>>
@@ -1057,7 +1057,7 @@ Sends one or more records to a given topic partition, optionally specifying a ke
 
 ==== Parameters
 
-[options="header", cols=".^2,.^3,.^9,.^4"]
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
 |===
 |Type|Name|Description|Schema
 |**Path**|**partitionid** +
@@ -1071,7 +1071,7 @@ __required__|List of records to send to a given topic partition, including a val
 
 ==== Responses
 
-[options="header", cols=".^2,.^14,.^4"]
+[options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
 |**200**|Records sent successfully.|<<_offsetrecordsentlist,OffsetRecordSentList>>

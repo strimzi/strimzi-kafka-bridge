@@ -10,7 +10,7 @@ __Type__ : < string, < integer (int32) > array > map
 [[_consumer]]
 === Consumer
 
-[options="header", cols=".^3,.^11,.^4"]
+[options="header", cols=".^3a,.^11a,.^4a"]
 |===
 |Name|Description|Schema
 |**auto.offset.reset** +
@@ -33,7 +33,7 @@ __optional__|The unique name for the consumer instance. The name is unique withi
 [[_consumerrecord]]
 === ConsumerRecord
 
-[options="header", cols=".^3,.^4"]
+[options="header", cols=".^3a,.^4a"]
 |===
 |Name|Schema
 |**key** +
@@ -57,7 +57,7 @@ __Type__ : < <<_consumerrecord,ConsumerRecord>> > array
 [[_createdconsumer]]
 === CreatedConsumer
 
-[options="header", cols=".^3,.^11,.^4"]
+[options="header", cols=".^3a,.^11a,.^4a"]
 |===
 |Name|Description|Schema
 |**base_uri** +
@@ -70,7 +70,7 @@ __optional__|Unique ID for the consumer instance in the group.|string
 [[_error]]
 === Error
 
-[options="header", cols=".^3,.^4"]
+[options="header", cols=".^3a,.^4a"]
 |===
 |Name|Schema
 |**error_code** +
@@ -83,7 +83,7 @@ __optional__|string
 [[_offsetcommitseek]]
 === OffsetCommitSeek
 
-[options="header", cols=".^3,.^4"]
+[options="header", cols=".^3a,.^4a"]
 |===
 |Name|Schema
 |**offset** +
@@ -98,7 +98,7 @@ __required__|string
 [[_offsetcommitseeklist]]
 === OffsetCommitSeekList
 
-[options="header", cols=".^3,.^4"]
+[options="header", cols=".^3a,.^4a"]
 |===
 |Name|Schema
 |**offsets** +
@@ -109,7 +109,7 @@ __optional__|< <<_offsetcommitseek,OffsetCommitSeek>> > array
 [[_offsetrecordsent]]
 === OffsetRecordSent
 
-[options="header", cols=".^3,.^4"]
+[options="header", cols=".^3a,.^4a"]
 |===
 |Name|Schema
 |**offset** +
@@ -122,7 +122,7 @@ __optional__|integer (int32)
 [[_offsetrecordsentlist]]
 === OffsetRecordSentList
 
-[options="header", cols=".^3,.^4"]
+[options="header", cols=".^3a,.^4a"]
 |===
 |Name|Schema
 |**offsets** +
@@ -133,7 +133,7 @@ __optional__|< <<_offsetrecordsent,OffsetRecordSent>> > array
 [[_partition]]
 === Partition
 
-[options="header", cols=".^3,.^4"]
+[options="header", cols=".^3a,.^4a"]
 |===
 |Name|Schema
 |**partition** +
@@ -146,7 +146,7 @@ __optional__|string
 [[_partitions]]
 === Partitions
 
-[options="header", cols=".^3,.^4"]
+[options="header", cols=".^3a,.^4a"]
 |===
 |Name|Schema
 |**partitions** +
@@ -157,7 +157,7 @@ __optional__|< <<_partition,Partition>> > array
 [[_producerrecord]]
 === ProducerRecord
 
-[options="header", cols=".^3,.^4"]
+[options="header", cols=".^3a,.^4a"]
 |===
 |Name|Schema
 |**partition** +
@@ -168,7 +168,7 @@ __optional__|integer (int32)
 [[_producerrecordlist]]
 === ProducerRecordList
 
-[options="header", cols=".^3,.^4"]
+[options="header", cols=".^3a,.^4a"]
 |===
 |Name|Schema
 |**records** +
@@ -184,7 +184,7 @@ __Type__ : object
 [[_producerrecordtopartitionlist]]
 === ProducerRecordToPartitionList
 
-[options="header", cols=".^3,.^4"]
+[options="header", cols=".^3a,.^4a"]
 |===
 |Name|Schema
 |**records** +
@@ -195,7 +195,7 @@ __optional__|< <<_producerrecordtopartition,ProducerRecordToPartition>> > array
 [[_subscribedtopiclist]]
 === SubscribedTopicList
 
-[options="header", cols=".^3,.^4"]
+[options="header", cols=".^3a,.^4a"]
 |===
 |Name|Schema
 |**partitions** +
@@ -208,7 +208,7 @@ __optional__|<<_topics,Topics>>
 [[_topics]]
 === Topics
 
-[options="header", cols=".^3,.^11,.^4"]
+[options="header", cols=".^3a,.^11a,.^4a"]
 |===
 |Name|Description|Schema
 |**topic_pattern** +
