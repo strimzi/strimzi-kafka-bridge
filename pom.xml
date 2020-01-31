@@ -24,7 +24,7 @@
 		<swagger2markup.version>1.3.7</swagger2markup.version>
 		<jackson-databind.version>2.10.2</jackson-databind.version>
 		<spotbugs.version>3.1.12</spotbugs.version>
-		<strimzi-oauth-callback.version>0.3.0</strimzi-oauth-callback.version>
+		<strimzi-oauth.version>0.3.0</strimzi-oauth.version>
 		<jaeger.version>1.1.0</jaeger.version>
 		<opentracing.version>0.33.0</opentracing.version>
 		<opentracing-kafka-client.version>0.1.4</opentracing-kafka-client.version>
@@ -96,7 +96,7 @@
 		<dependency>
 			<groupId>io.strimzi</groupId>
 			<artifactId>kafka-oauth-client</artifactId>
-			<version>${strimzi-oauth-callback.version}</version>
+			<version>${strimzi-oauth.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.jaegertracing</groupId>
