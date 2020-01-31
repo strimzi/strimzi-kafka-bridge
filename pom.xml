@@ -66,12 +66,12 @@
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-web</artifactId>
-			<version>${vertx.version}</version>
+			<version>3.8.1</version>
 		</dependency>
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-web-api-contract</artifactId>
-			<version>${vertx.version}</version>
+			<version>3.8.1</version>
 		</dependency>
 		<dependency>
 			<groupId>io.vertx</groupId>
