@@ -1,6 +1,15 @@
 dist: xenial
 sudo: required
 language: java
+jobs:
+  include:
+  - os: linux
+    arch: s390x
+    jdk: openjdk11
+    addons:
+      apt:
+        packages:
+          - maven
 jdk:
 - openjdk8
 - openjdk11
