@@ -53,7 +53,6 @@ public class Application {
         }
         ConfigStoreOptions fileStore = new ConfigStoreOptions()
                 .setType("file")
-                .setOptional(true)
                 .setFormat("properties")
                 .setConfig(new JsonObject().put("path", getFilePath(path)).put("raw-data", true));
 
@@ -68,51 +67,56 @@ public class Application {
         ConfigRetriever retriever = ConfigRetriever.create(vertx, options);
         retriever.getConfig(ar -> {
 
-            Map<String, Object> config = ar.result().getMap();
-            BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
+            if (ar.succeeded()) {
+                Map<String, Object> config = ar.result().getMap();
+                BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
 
-            int healthServerPort = Integer.parseInt(config.getOrDefault(HEALTH_SERVER_PORT, DEFAULT_HEALTH_SERVER_PORT).toString());
+                int healthServerPort = Integer.parseInt(config.getOrDefault(HEALTH_SERVER_PORT, DEFAULT_HEALTH_SERVER_PORT).toString());
 
-            if (bridgeConfig.getAmqpConfig().isEnabled() && bridgeConfig.getAmqpConfig().getPort() == healthServerPort) {
-                log.error("Health server port {} conflicts with configured AMQP port", healthServerPort);
-                System.exit(1);
-            }
+                if (bridgeConfig.getAmqpConfig().isEnabled() && bridgeConfig.getAmqpConfig().getPort() == healthServerPort) {
+                    log.error("Health server port {} conflicts with configured AMQP port", healthServerPort);
+                    System.exit(1);
+                }
 
-            List<Future> futures = new ArrayList<>();
-            futures.add(deployAmqpBridge(vertx, bridgeConfig));
-            futures.add(deployHttpBridge(vertx, bridgeConfig));
+                List<Future> futures = new ArrayList<>();
+                futures.add(deployAmqpBridge(vertx, bridgeConfig));
+                futures.add(deployHttpBridge(vertx, bridgeConfig));
 
-            CompositeFuture.join(futures).setHandler(done -> {
-                if (done.succeeded()) {
-                    HealthChecker healthChecker = new HealthChecker();
-                    for (int i = 0; i < futures.size(); i++) {
-                        if (done.result().succeeded(i) && done.result().resultAt(i) != null) {
-                            healthChecker.addHealthCheckable(done.result().resultAt(i));
-                            // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
-                            // so it needs the checker for asking other protocols bridges status
-                            if (done.result().resultAt(i) instanceof HttpBridge) {
-                                ((HttpBridge) done.result().resultAt(i)).setHealthChecker(healthChecker);
+                CompositeFuture.join(futures).setHandler(done -> {
+                    if (done.succeeded()) {
+                        HealthChecker healthChecker = new HealthChecker();
+                        for (int i = 0; i < futures.size(); i++) {
+                            if (done.result().succeeded(i) && done.result().resultAt(i) != null) {
+                                healthChecker.addHealthCheckable(done.result().resultAt(i));
+                                // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
+                                // so it needs the checker for asking other protocols bridges status
+                                if (done.result().resultAt(i) instanceof HttpBridge) {
+                                    ((HttpBridge) done.result().resultAt(i)).setHealthChecker(healthChecker);
+                                }
+                            }
+                        }                    
+                        
+                        // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
+                        // so no need for a standalone HTTP health server
+                        if (!bridgeConfig.getHttpConfig().isEnabled()) {
+                            healthChecker.startHealthServer(vertx, healthServerPort);
+                        }
+
+                        // register OpenTracing Jaeger tracer
+                        if ("jaeger".equals(bridgeConfig.getTracing())) {
+                            if (config.get(Configuration.JAEGER_SERVICE_NAME) != null) {
+                                Tracer tracer = Configuration.fromEnv().getTracer();
+                                GlobalTracer.registerIfAbsent(tracer);
+                            } else {
+                                log.error("Jaeger tracing cannot be initialized because {} environment variable is not defined", Configuration.JAEGER_SERVICE_NAME);
                             }
                         }
-                    }                    
-                    
-                    // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
-                    // so no need for a standalone HTTP health server
-                    if (!bridgeConfig.getHttpConfig().isEnabled()) {
-                        healthChecker.startHealthServer(vertx, healthServerPort);
                     }
-
-                    // register OpenTracing Jaeger tracer
-                    if ("jaeger".equals(bridgeConfig.getTracing())) {
-                        if (config.get(Configuration.JAEGER_SERVICE_NAME) != null) {
-                            Tracer tracer = Configuration.fromEnv().getTracer();
-                            GlobalTracer.registerIfAbsent(tracer);
-                        } else {
-                            log.error("Jaeger tracing cannot be initialized because {} environment variable is not defined", Configuration.JAEGER_SERVICE_NAME);
-                        }
-                    }
-                }
-            });
+                });
+            } else {
+                log.error("Error starting the bridge", ar.cause());
+                System.exit(1);
+            }
         });
     }
 
