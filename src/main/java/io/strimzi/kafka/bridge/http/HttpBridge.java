@@ -409,15 +409,20 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             routingContext.request().path());
 
         String message = null;
-        // in case of validation exception, building a meaningful error message
-        if (routingContext.failure() != null && routingContext.failure() instanceof ValidationException) {
-            ValidationException validationException = (ValidationException) routingContext.failure();
-            StringBuilder sb = new StringBuilder();
-            if (validationException.parameterName() != null) {
-                sb.append("Validation error on: " + validationException.parameterName() + " - ");
+        if (routingContext.statusCode() == HttpResponseStatus.BAD_REQUEST.code()) {
+            message = HttpResponseStatus.BAD_REQUEST.reasonPhrase();
+            // in case of validation exception, building a meaningful error message
+            if (routingContext.failure() != null && routingContext.failure() instanceof ValidationException) {
+                ValidationException validationException = (ValidationException) routingContext.failure();
+                StringBuilder sb = new StringBuilder();
+                if (validationException.parameterName() != null) {
+                    sb.append("Validation error on: " + validationException.parameterName() + " - ");
+                }
+                sb.append(validationException.getMessage());
+                message = sb.toString();
             }
-            sb.append(validationException.getMessage());
-            message = sb.toString();
+        } else if (routingContext.statusCode() == HttpResponseStatus.NOT_FOUND.code()) {
+            message = HttpResponseStatus.NOT_FOUND.reasonPhrase();
         }
 
         HttpBridgeError error = new HttpBridgeError(routingContext.statusCode(), message);
@@ -425,9 +430,9 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
 
         log.error("[{}] Response: statusCode = {}, message = {} ", 
-            requestId, 
-            routingContext.response().getStatusCode(),
-            routingContext.response().getStatusMessage());
+            requestId,
+            routingContext.statusCode(),
+            message);
     }
 
     private void processConnection(HttpConnection httpConnection) {
