@@ -18,6 +18,7 @@ import io.opentracing.util.GlobalTracer;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
+import io.strimzi.kafka.bridge.IllegalEmbeddedFormatException;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
@@ -72,7 +73,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
         String topic = routingContext.pathParam("topicname");
 
-        List<KafkaProducerRecord<K, V>> records;
+        List<KafkaProducerRecord<K, V>> records = new ArrayList<>();
         Integer partition = null;
         if (routingContext.pathParam("partitionid") != null) {
             try {
@@ -107,7 +108,9 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         HttpTracingUtils.setCommonTags(span, routingContext);
 
         try {
-            records = messageConverter.toKafkaRecords(topic, partition, routingContext.getBody());
+            if (messageConverter != null) {
+                records = messageConverter.toKafkaRecords(topic, partition, routingContext.getBody());
+            }
 
             for (KafkaProducerRecord<K, V> record :records)   {
                 tracer.inject(span.context(), Format.Builtin.TEXT_MAP, new TextMap() {
@@ -215,6 +218,6 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             case BINARY:
                 return (MessageConverter<K, V, Buffer, Buffer>) new HttpBinaryMessageConverter();
         }
-        return null;
+        throw new IllegalEmbeddedFormatException("Invalid format type.");
     }
 }
