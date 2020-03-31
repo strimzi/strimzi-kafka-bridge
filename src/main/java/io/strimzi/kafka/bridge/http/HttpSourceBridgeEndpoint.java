@@ -73,7 +73,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
         String topic = routingContext.pathParam("topicname");
 
-        List<KafkaProducerRecord<K, V>> records = new ArrayList<>();
+        List<KafkaProducerRecord<K, V>> records;
         Integer partition = null;
         if (routingContext.pathParam("partitionid") != null) {
             try {
@@ -108,9 +108,10 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         HttpTracingUtils.setCommonTags(span, routingContext);
 
         try {
-            if (messageConverter != null) {
-                records = messageConverter.toKafkaRecords(topic, partition, routingContext.getBody());
+            if (messageConverter == null) {
+                return;
             }
+            records = messageConverter.toKafkaRecords(topic, partition, routingContext.getBody());
 
             for (KafkaProducerRecord<K, V> record :records)   {
                 tracer.inject(span.context(), Format.Builtin.TEXT_MAP, new TextMap() {
