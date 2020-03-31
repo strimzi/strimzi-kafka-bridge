@@ -56,6 +56,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
     public HttpSourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
                                     EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
         super(vertx, bridgeConfig, format, keySerializer, valueSerializer);
+        this.messageConverter = this.buildMessageConverter();
     }
 
     @Override
@@ -108,9 +109,6 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         HttpTracingUtils.setCommonTags(span, routingContext);
 
         try {
-            if (messageConverter == null) {
-                return;
-            }
             records = messageConverter.toKafkaRecords(topic, partition, routingContext.getBody());
 
             for (KafkaProducerRecord<K, V> record :records)   {
