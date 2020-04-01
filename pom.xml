@@ -14,7 +14,7 @@
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<slf4j-log4j12.version>1.7.18</slf4j-log4j12.version>
 		<log4j.version>1.2.17</log4j.version>
-		<vertx.version>3.8.5</vertx.version>
+		<vertx.version>3.9.0</vertx.version>
 		<debezium.version>1.0.0.Final</debezium.version>
 		<maven.checkstyle.version>3.1.0</maven.checkstyle.version>
 		<junit.platform.version>1.5.2</junit.platform.version>
@@ -29,7 +29,7 @@
 		<jaeger.version>1.1.0</jaeger.version>
 		<opentracing.version>0.33.0</opentracing.version>
 		<opentracing-kafka-client.version>0.1.11</opentracing-kafka-client.version>
-    </properties>
+	</properties>
 
 
 	<dependencyManagement>
@@ -39,16 +39,6 @@
 				<groupId>com.fasterxml.jackson.core</groupId>
 				<artifactId>jackson-databind</artifactId>
 				<version>${jackson-databind.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.kafka</groupId>
-				<artifactId>kafka-clients</artifactId>
-				<version>2.4.0</version>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.kafka</groupId>
-				<artifactId>kafka_2.12</artifactId>
-				<version>2.4.0</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -67,12 +57,12 @@
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-web</artifactId>
-			<version>3.8.1</version>
+			<version>${vertx.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-web-api-contract</artifactId>
-			<version>3.8.1</version>
+			<version>${vertx.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.vertx</groupId>
@@ -179,6 +169,12 @@
 			<groupId>org.hamcrest</groupId>
 			<artifactId>hamcrest-library</artifactId>
 			<version>${hamcrest.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.kafka</groupId>
+			<artifactId>kafka_2.12</artifactId>
+			<version>2.4.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
