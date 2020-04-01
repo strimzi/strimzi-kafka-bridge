@@ -43,8 +43,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
     private JsonObject consumerWithEarliestReset = new JsonObject()
         .put("name", name)
         .put("auto.offset.reset", "earliest")
-        .put("enable.auto.commit", "true")
-        .put("fetch.min.bytes", "100");
+        .put("enable.auto.commit", true)
+        .put("fetch.min.bytes", 100);
 
     JsonObject consumerJson = new JsonObject()
         .put("name", name)
@@ -118,9 +118,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     @Test
     void createConsumerEnableAutoCommit(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        // both "true" ("false") and true (false) works due to https://github.com/vert-x3/vertx-web/issues/1375
-        // and the current OpenAPI validation doesn't recognize the first one as invalid
-
         JsonObject consumerJson = new JsonObject()
             .put("name", name)
             .put("enable.auto.commit", true);
@@ -133,14 +130,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .put("enable.auto.commit", "true");
 
         // create consumer
-        consumerService().createConsumer(context, groupId, consumerJson);
-
-        consumerJson
-            .put("name", name + "-2")
-            .put("enable.auto.commit", "foo");
-
-        // create consumer
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
+        CompletableFuture<Boolean> createBooleanAsString = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerJson)
                 .sendJsonObject(consumerJson, ar -> {
                     context.verify(() -> {
@@ -151,10 +141,31 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         assertThat(error.getMessage(), is("Validation error on: body.enable.auto.commit - $.enable.auto.commit: string found, boolean expected"));
                     });
-                    create.complete(true);
+                    createBooleanAsString.complete(true);
                 });
 
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        createBooleanAsString.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        consumerJson
+            .put("name", name + "-2")
+            .put("enable.auto.commit", "foo");
+
+        // create consumer
+        CompletableFuture<Boolean> createGenericString = new CompletableFuture<>();
+        consumerService().createConsumerRequest(groupId, consumerJson)
+                .sendJsonObject(consumerJson, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+                        assertThat(error.getMessage(), is("Validation error on: body.enable.auto.commit - $.enable.auto.commit: string found, boolean expected"));
+                    });
+                    createGenericString.complete(true);
+                });
+
+        createGenericString.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         consumerService()
             .deleteConsumer(context, groupId, name);
         context.completeNow();
@@ -172,9 +183,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     private void createConsumerIntegerParam(VertxTestContext context, String param) throws InterruptedException, TimeoutException, ExecutionException {
-        // both "100" and 100 works due to https://github.com/vert-x3/vertx-web/issues/1375
-        // and the current OpenAPI validation doesn't recognize the first one as invalid
-        
         JsonObject consumerJson = new JsonObject()
             .put("name", name)
             .put(param, 100);
@@ -187,14 +195,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .put(param, "100");
 
         // create consumer
-        consumerService().createConsumer(context, groupId, consumerJson);
-
-        consumerJson
-            .put("name", name + "-2")
-            .put(param, "foo");
-
-        // create consumer
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
+        CompletableFuture<Boolean> createIntegerAsString = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerJson)
                 .sendJsonObject(consumerJson, ar -> {
                     context.verify(() -> {
@@ -205,14 +206,33 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         assertThat(error.getMessage(), is("Validation error on: body." + param + " - $." + param + ": string found, integer expected"));
                     });
-                    create.complete(true);
+                    createIntegerAsString.complete(true);
                 });
 
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        createIntegerAsString.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        consumerJson
+            .put("name", name + "-2")
+            .put(param, "foo");
+
+        // create consumer
+        CompletableFuture<Boolean> createGenericString = new CompletableFuture<>();
+        consumerService().createConsumerRequest(groupId, consumerJson)
+                .sendJsonObject(consumerJson, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+                        assertThat(error.getMessage(), is("Validation error on: body." + param + " - $." + param + ": string found, integer expected"));
+                    });
+                    createGenericString.complete(true);
+                });
+
+        createGenericString.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         consumerService()
             .deleteConsumer(context, groupId, name);
-        consumerService()
-            .deleteConsumer(context, groupId, name + "-1");
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -778,7 +798,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         kafkaCluster.produce(topic, sentBody, 1, 0);
 
         JsonObject json = consumerJson
-            .put("enable.auto.commit", "false");
+            .put("enable.auto.commit", false);
 
         // create consumer
         // subscribe to a topic
@@ -857,7 +877,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         kafkaCluster.produce(topic, sentBody, 1, 0);
 
         JsonObject json = consumerJson
-            .put("enable.auto.commit", "false");
+            .put("enable.auto.commit", false);
 
         // create consumer
         // subscribe to a topic
