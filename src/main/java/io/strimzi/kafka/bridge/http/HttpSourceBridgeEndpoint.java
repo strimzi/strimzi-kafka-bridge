@@ -18,7 +18,6 @@ import io.opentracing.util.GlobalTracer;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
-import io.strimzi.kafka.bridge.IllegalEmbeddedFormatException;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
@@ -226,6 +225,6 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             case BINARY:
                 return (MessageConverter<K, V, Buffer, Buffer>) new HttpBinaryMessageConverter();
         }
-        throw new IllegalEmbeddedFormatException("Invalid format type.");
+        return null;
     }
 }
