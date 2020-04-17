@@ -644,4 +644,84 @@ public class ProducerTest extends HttpBridgeTestBase {
                     context.completeNow();
                 });
     }
+
+    @Test
+    void jsonPayloadTest(VertxTestContext context) {
+        String kafkaTopic = "breakOpenApiRules";
+        kafkaCluster.createTopic(kafkaTopic, 3, 1);
+
+        String value = "Hello from the other side";
+        String key = "message-key";
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        json.put("key", key);
+        json.put("partition", 0);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        producerService()
+            .sendRecordsToPartitionRequest(kafkaTopic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: body.records[0] - " +
+                "$.records[0].partition: is not defined in the schema and the schema does not allow additional properties"));
+
+        records.remove(json);
+        records.clear();
+        json.remove("partition");
+        root.remove("records");
+
+        records.add(json);
+        root.put("records", records);
+
+        producerService()
+            .sendRecordsToPartitionRequest(kafkaTopic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendJsonObject(root, ar -> {
+                context.verify(() -> {
+                    assertThat(ar.succeeded(), is(true));
+                    HttpResponse<JsonObject> response = ar.result();
+                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+
+                    JsonObject bridgeResponse = response.body();
+                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                    assertThat(offsets.size(), is(1));
+
+                    JsonObject metadata = offsets.getJsonObject(0);
+                    assertThat(metadata.getInteger("partition"), is(0));
+                    assertThat(metadata.getInteger("offset"), is(1));
+                });
+            });
+
+        records.remove(json);
+        records.clear();
+        json.remove("value");
+        root.remove("records");
+
+        JsonObject jsonValue = new JsonObject();
+        jsonValue.put("first-object", "hello-there");
+
+        json.put("value", jsonValue);
+        records.add(json);
+        root.put("records", records);
+
+        producerService()
+            .sendRecordsToPartitionRequest(kafkaTopic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendJsonObject(root, ar -> {
+                context.verify(() -> {
+                    assertThat(ar.succeeded(), is(true));
+                    HttpResponse<JsonObject> response = ar.result();
+                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+
+                    JsonObject bridgeResponse = response.body();
+                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                    assertThat(offsets.size(), is(1));
+
+                    JsonObject metadata = offsets.getJsonObject(0);
+                    assertThat(metadata.getInteger("partition"), is(0));
+                    assertThat(metadata.getInteger("offset"), is(2));
+                });
+            });
+    }
 }
