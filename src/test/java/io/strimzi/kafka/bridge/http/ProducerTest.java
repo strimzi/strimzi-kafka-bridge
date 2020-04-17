@@ -689,7 +689,7 @@ public class ProducerTest extends HttpBridgeTestBase {
                     assertThat(offsets.size(), is(1));
 
                     JsonObject metadata = offsets.getJsonObject(0);
-                    assertThat(metadata.getInteger("partition"), notNullValue());
+                    assertThat(metadata.getInteger("partition"), is(0));
                     assertThat(metadata.getInteger("offset"), is(1));
                 });
             });
@@ -719,7 +719,7 @@ public class ProducerTest extends HttpBridgeTestBase {
                     assertThat(offsets.size(), is(1));
 
                     JsonObject metadata = offsets.getJsonObject(0);
-                    assertThat(metadata.getInteger("partition"), notNullValue());
+                    assertThat(metadata.getInteger("partition"), is(0));
                     assertThat(metadata.getInteger("offset"), is(2));
                 });
             });
