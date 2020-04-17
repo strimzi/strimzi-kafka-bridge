@@ -669,6 +669,7 @@ public class ProducerTest extends HttpBridgeTestBase {
                 "$.records[0].partition: is not defined in the schema and the schema does not allow additional properties"));
 
         records.remove(json);
+        records.clear();
         json.remove("partition");
         root.remove("records");
 
@@ -694,6 +695,7 @@ public class ProducerTest extends HttpBridgeTestBase {
             });
 
         records.remove(json);
+        records.clear();
         json.remove("value");
         root.remove("records");
 
