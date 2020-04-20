@@ -1,3 +1,8 @@
+/*
+ * Copyright Strimzi authors.
+ * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
+ */
+
 package io.strimzi.kafka.bridge.http;
 
 import io.strimzi.kafka.bridge.HealthChecker;
@@ -13,7 +18,11 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
@@ -22,7 +31,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.hasItem;
 
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
@@ -165,7 +176,7 @@ public class HttpCorsTests {
     private void createWebClient(boolean corsEnabled, String methodsAllowed, VertxTestContext context) {
         config.put(HttpConfig.HTTP_CORS_ENABLED, String.valueOf(corsEnabled));
         config.put(HttpConfig.HTTP_CORS_ALLOWED_ORIGINS, "https://strimzi.io");
-        config.put(HttpConfig.HTTP_CORS_ALLOWED_METHODS, methodsAllowed != null? methodsAllowed:"GET,POST,PUT,DELETE,OPTIONS,PATCH");
+        config.put(HttpConfig.HTTP_CORS_ALLOWED_METHODS, methodsAllowed != null ? methodsAllowed : "GET,POST,PUT,DELETE,OPTIONS,PATCH");
 
         if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
             bridgeConfig = BridgeConfig.fromMap(config);

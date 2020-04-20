@@ -19,7 +19,11 @@ import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.file.FileSystem;
-import io.vertx.core.http.*;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpConnection;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -34,7 +38,11 @@ import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
+import java.util.Iterator;
+import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * Main bridge class listening for connections and handling HTTP requests.
@@ -145,7 +153,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
 
                 //enable cors
-                if(this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
+                if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
                     Set<String> allowedHeaders = new HashSet<>();
                     //set predefined headers
                     allowedHeaders.add("x-requested-with");
@@ -157,8 +165,8 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                     //set allowed methods from property http.cors.allowedMethods
                     Set<HttpMethod> allowedMethods = new HashSet<>();
                     String configAllowedMethods = this.bridgeConfig.getHttpConfig().getCorsAllowedMethods();
-                    String configAllowedMethodsArray[] = configAllowedMethods.split(",");
-                    for(String method: configAllowedMethodsArray)
+                    String[] configAllowedMethodsArray = configAllowedMethods.split(",");
+                    for (String method: configAllowedMethodsArray)
                         allowedMethods.add(HttpMethod.valueOf(method));
 
                     //set allowed origins from property http.cors.allowedOrigins
