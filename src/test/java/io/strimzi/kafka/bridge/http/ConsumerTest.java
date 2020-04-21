@@ -88,7 +88,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
+    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)FALSE(?-i))")
     void createConsumerEmptyBody(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         AtomicReference<String> name = new AtomicReference<>();
         // create consumer
