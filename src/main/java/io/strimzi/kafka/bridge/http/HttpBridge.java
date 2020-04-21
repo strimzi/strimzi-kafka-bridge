@@ -158,6 +158,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                     //set predefined headers
                     allowedHeaders.add("x-requested-with");
                     allowedHeaders.add("Access-Control-Allow-Origin");
+                    allowedHeaders.add("Access-Control-Allow-Methods");
                     allowedHeaders.add("origin");
                     allowedHeaders.add("Content-Type");
                     allowedHeaders.add("accept");

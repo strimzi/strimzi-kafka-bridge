@@ -14,16 +14,11 @@ import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
-import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
@@ -32,9 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.*;
 
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
@@ -151,13 +144,13 @@ public class HttpCorsTests {
                     .send(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(200));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
-                        assertThat(ar.result().getHeader("access-control-allow-headers"), is("Access-Control-Allow-Origin,origin,x-requested-with,Content-Type,accept"));
+                        assertThat(ar.result().getHeader("access-control-allow-headers"), is("Access-Control-Allow-Origin,Access-Control-Allow-Methods,origin,x-requested-with,Content-Type,accept"));
                         List<String> list = Arrays.asList(ar.result().getHeader("access-control-allow-methods").split(","));
                         assertThat(list, hasItem("POST"));
                         client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
                                 .putHeader("Origin", "https://strimzi.io")
                                 .send(ar2 -> context.verify(() -> {
-                                    //we are not creating a topic, so we will get a 4040 status code
+                                    //we are not creating a topic, so we will get a 404 status code
                                     assertThat(ar2.result().statusCode(), is(404));
                                     context.completeNow();
                                 }));
@@ -168,7 +161,8 @@ public class HttpCorsTests {
     }
 
     /**
-     * Real requests (GET, POST, PUT, DELETE) for domains listed are allowed but not on specific HTTP methods
+     * Real requests (GET, POST, PUT, DELETE) for domains listed are allowed but not on specific HTTP methods.
+     * Browsers will control the list of allowed methods.
      */
     @Test
     public void testCorsMethodNotAllowed(VertxTestContext context) {
@@ -185,16 +179,10 @@ public class HttpCorsTests {
                     .send(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(200));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
-                        assertThat(ar.result().getHeader("access-control-allow-headers"), is("Access-Control-Allow-Origin,origin,x-requested-with,Content-Type,accept"));
+                        assertThat(ar.result().getHeader("access-control-allow-headers"), is("Access-Control-Allow-Origin,Access-Control-Allow-Methods,origin,x-requested-with,Content-Type,accept"));
                         List<String> list = Arrays.asList(ar.result().getHeader("access-control-allow-methods").split(","));
                         assertThat(list, not(hasItem("POST")));
-                        client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
-                                .putHeader("Origin", "https://evil.io")
-                                .send(ar2 -> context.verify(() -> {
-                                    assertThat(ar2.result().statusCode(), is(403));
-                                    assertThat(ar2.result().statusMessage(), is("CORS Rejected - Invalid origin"));
-                                    context.completeNow();
-                                }));
+                        context.completeNow();
                     }))));
         } else {
             context.completeNow();
