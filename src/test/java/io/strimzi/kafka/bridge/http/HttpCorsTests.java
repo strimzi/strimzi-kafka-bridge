@@ -78,26 +78,23 @@ public class HttpCorsTests {
         kafkaCluster.stop();
     }
 
-    /**
-     * When CORS is not enabled, OPTIONS requests are not supported (method not allowed)
-     * Real requests (GET, POST, PUT, DELETE) are allowed
-     */
+
     @Test
     public void testCorsNotEnabled(VertxTestContext context) {
-        createWebClient(false, null, context);
-        configureBridge();
+        createWebClient();
+        configureBridge(false, null);
 
         if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> client
-                    .request(HttpMethod.OPTIONS, 8080, "localhost", "/ready")
+                    .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://evil.io")
-                    .putHeader("Access-Control-Request-Method", "GET")
+                    .putHeader("Access-Control-Request-Method", "POST")
                     .send(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(405));
-                        client.request(HttpMethod.GET, 8080, "localhost", "/ready")
+                        client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
                                 .putHeader("Origin", "https://evil.io")
                                 .send(ar2 -> context.verify(() -> {
-                                    assertThat(ar2.result().statusCode(), is(200));
+                                    assertThat(ar2.result().statusCode(), is(405));
                                     context.completeNow();
                                 }));
                     }))));
@@ -107,22 +104,28 @@ public class HttpCorsTests {
     }
 
     /**
-     * When CORS is enabled, OPTIONS requests are supported
      * Real requests (GET, POST, PUT, DELETE) for domains not trusted are not allowed
      */
     @Test
     public void testCorsForbidden(VertxTestContext context) {
-        createWebClient(true, null, context);
-        configureBridge();
+        createWebClient();
+        configureBridge(true, null);
 
         if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> client
-                    .request(HttpMethod.OPTIONS, 8080, "localhost", "/ready")
+                    .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://evil.io")
-                    .putHeader("Access-Control-Request-Method", "GET")
+                    .putHeader("Access-Control-Request-Method", "POST")
                     .send(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(403));
-                        context.completeNow();
+                        assertThat(ar.result().statusMessage(), is("CORS Rejected - Invalid origin"));
+                        client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
+                                .putHeader("Origin", "https://evil.io")
+                                .send(ar2 -> context.verify(() -> {
+                                    assertThat(ar2.result().statusCode(), is(403));
+                                    assertThat(ar2.result().statusMessage(), is("CORS Rejected - Invalid origin"));
+                                    context.completeNow();
+                                }));
                     }))));
 
         } else {
@@ -131,31 +134,31 @@ public class HttpCorsTests {
     }
 
     /**
-     * When CORS is enabled, OPTIONS requests are supported
      * Real requests (GET, POST, PUT, DELETE) for domains trusted are allowed
      */
     @Test
     public void testCorsOriginAllowed(VertxTestContext context) {
-        createWebClient(true, null, context);
-        configureBridge();
+        createWebClient();
+        configureBridge(true, null);
 
         final String origin = "https://strimzi.io";
 
         if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> client
-                    .request(HttpMethod.OPTIONS, 8080, "localhost", "/ready")
+                    .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://strimzi.io")
-                    .putHeader("Access-Control-Request-Method", "GET")
+                    .putHeader("Access-Control-Request-Method", "POST")
                     .send(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(200));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
                         assertThat(ar.result().getHeader("access-control-allow-headers"), is("Access-Control-Allow-Origin,origin,x-requested-with,Content-Type,accept"));
                         List<String> list = Arrays.asList(ar.result().getHeader("access-control-allow-methods").split(","));
-                        assertThat(list, hasItem("GET"));
-                        client.request(HttpMethod.GET, 8080, "localhost", "/ready")
+                        assertThat(list, hasItem("POST"));
+                        client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
                                 .putHeader("Origin", "https://strimzi.io")
                                 .send(ar2 -> context.verify(() -> {
-                                    assertThat(ar2.result().statusCode(), is(200));
+                                    //we are not creating a topic, so we will get a 4040 status code
+                                    assertThat(ar2.result().statusCode(), is(404));
                                     context.completeNow();
                                 }));
                     }))));
@@ -165,41 +168,42 @@ public class HttpCorsTests {
     }
 
     /**
-     * When CORS is enabled, OPTIONS requests are supported
      * Real requests (GET, POST, PUT, DELETE) for domains listed are allowed.
      * However browser will check that the method set in Access-Control-Request-Method request header
-     * is contained in access-control-allow-methods responde header
+     * is contained in access-control-allow-methods response header
      */
     @Test
     public void testCorsMethodNotAllowed(VertxTestContext context) {
-        createWebClient(true, "POST,PUT,DELETE,OPTIONS,PATCH", context);
-        configureBridge();
+        createWebClient();
+        configureBridge(true, "GET,PUT,DELETE,OPTIONS,PATCH");
 
         final String origin = "https://strimzi.io";
 
         if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> client
-                    .request(HttpMethod.OPTIONS, 8080, "localhost", "/ready")
+                    .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://strimzi.io")
-                    .putHeader("Access-Control-Request-Method", "GET")
+                    .putHeader("Access-Control-Request-Method", "POST")
                     .send(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(200));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
                         assertThat(ar.result().getHeader("access-control-allow-headers"), is("Access-Control-Allow-Origin,origin,x-requested-with,Content-Type,accept"));
                         List<String> list = Arrays.asList(ar.result().getHeader("access-control-allow-methods").split(","));
-                        assertThat(list, not(hasItem("GET")));
-                        context.completeNow();
+                        assertThat(list, not(hasItem("POST")));
+                        client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
+                                .putHeader("Origin", "https://evil.io")
+                                .send(ar2 -> context.verify(() -> {
+                                    assertThat(ar2.result().statusCode(), is(403));
+                                    assertThat(ar2.result().statusMessage(), is("CORS Rejected - Invalid origin"));
+                                    context.completeNow();
+                                }));
                     }))));
         } else {
             context.completeNow();
         }
     }
 
-    private void createWebClient(boolean corsEnabled, String methodsAllowed, VertxTestContext context) {
-        config.put(HttpConfig.HTTP_CORS_ENABLED, String.valueOf(corsEnabled));
-        config.put(HttpConfig.HTTP_CORS_ALLOWED_ORIGINS, "https://strimzi.io");
-        config.put(HttpConfig.HTTP_CORS_ALLOWED_METHODS, methodsAllowed != null ? methodsAllowed : "GET,POST,PUT,DELETE,OPTIONS,PATCH");
-
+    private void createWebClient() {
         client = WebClient.create(vertx, new WebClientOptions()
                 .setDefaultHost(Urls.BRIDGE_HOST)
                 .setDefaultPort(Urls.BRIDGE_PORT)
@@ -207,8 +211,12 @@ public class HttpCorsTests {
 
     }
 
-    private void configureBridge() {
+    private void configureBridge(boolean corsEnabled, String methodsAllowed) {
         if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
+            config.put(HttpConfig.HTTP_CORS_ENABLED, String.valueOf(corsEnabled));
+            config.put(HttpConfig.HTTP_CORS_ALLOWED_ORIGINS, "https://strimzi.io");
+            config.put(HttpConfig.HTTP_CORS_ALLOWED_METHODS, methodsAllowed != null ? methodsAllowed : "GET,POST,PUT,DELETE,OPTIONS,PATCH");
+
             bridgeConfig = BridgeConfig.fromMap(config);
             httpBridge = new HttpBridge(bridgeConfig);
             httpBridge.setHealthChecker(new HealthChecker());
