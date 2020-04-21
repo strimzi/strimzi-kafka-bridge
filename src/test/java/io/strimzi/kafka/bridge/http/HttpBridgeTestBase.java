@@ -27,7 +27,6 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashMap;
@@ -40,7 +39,6 @@ class HttpBridgeTestBase {
     static final Logger LOGGER = LogManager.getLogger(HttpBridgeTestBase.class);
     static Map<String, Object> config = new HashMap<>();
     static long timeout = 5L;
-
     static {
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
@@ -63,6 +61,7 @@ class HttpBridgeTestBase {
     static BridgeConfig bridgeConfig;
     static KafkaFacade kafkaCluster = new KafkaFacade();
 
+    static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
 
     BaseService baseService() {
         return BaseService.getInstance(client);
@@ -81,15 +80,21 @@ class HttpBridgeTestBase {
     }
 
     @BeforeAll
-    static void beforeAll() {
+    static void beforeAll(VertxTestContext context) {
         kafkaCluster.start();
         vertx = Vertx.vertx();
 
-        if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
+        LOGGER.info(BRIDGE_EXTERNAL_ENV);
+
+        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+            LOGGER.info("Deploying in-memory bridge");
             bridgeConfig = BridgeConfig.fromMap(config);
             httpBridge = new HttpBridge(bridgeConfig);
             httpBridge.setHealthChecker(new HealthChecker());
         }
+        // else we create external bridge from the OS invoked by `.jar`
+
+        vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
 
         client = WebClient.create(vertx, new WebClientOptions()
             .setDefaultHost(Urls.BRIDGE_HOST)
@@ -101,14 +106,5 @@ class HttpBridgeTestBase {
     static void afterAll(VertxTestContext context) {
         kafkaCluster.stop();
         vertx.close(context.succeeding(arg -> context.completeNow()));
-    }
-
-    @BeforeEach
-    void before(VertxTestContext context) {
-        if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
-            vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
-        } else {
-            context.completeNow();
-        }
     }
 }

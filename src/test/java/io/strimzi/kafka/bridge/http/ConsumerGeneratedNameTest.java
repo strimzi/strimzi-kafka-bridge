@@ -26,22 +26,26 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
 
     private String groupId = "my-group";
     private static String bridgeID = "";
-    private String name = "";
+    private String consumerInstanceId = "";
 
     @BeforeAll
-    static void unsetBridgeID() {
+    static void unsetBridgeID(VertxTestContext context) {
         bridgeID = config.get(BridgeConfig.BRIDGE_ID).toString();
         config.remove(BridgeConfig.BRIDGE_ID);
 
         bridgeConfig = BridgeConfig.fromMap(config);
-        if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
+        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
             httpBridge = new HttpBridge(bridgeConfig);
         }
+
+        vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
     }
 
     @AfterAll
-    static void revertUnsetBridgeID() {
+    static void revertUnsetBridgeID(VertxTestContext context) {
         config.put(BridgeConfig.BRIDGE_ID, bridgeID);
+        vertx.close(context.succeeding(arg -> context.completeNow()));
+        kafkaCluster.stop();
     }
 
     @Test
@@ -54,19 +58,21 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
+                        LOGGER.info("Verifying that consumer name is created with random suffix");
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
+                        LOGGER.info("Response code from the Bridge is " + response.statusCode());
                         assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        name = consumerInstanceId;
+                        consumerInstanceId = bridgeResponse.getString("instance_id");
+                        LOGGER.info("Consumer instance of the consumer is " + consumerInstanceId);
                         assertThat(consumerInstanceId.startsWith("kafka-bridge-consumer-"), is(true));
                         create.complete(true);
                     });
                 });
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         consumerService()
-            .deleteConsumer(context, groupId, name);
+            .deleteConsumer(context, groupId, consumerInstanceId);
         context.completeNow();
     }
 

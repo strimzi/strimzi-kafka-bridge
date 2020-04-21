@@ -38,7 +38,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProducerTest.class);
 
     @Test
-    void sendSimpleMessage(VertxTestContext context) throws Throwable {
+    void sendSimpleMessage(VertxTestContext context) {
         String topic = "sendSimpleMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
@@ -175,7 +175,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    @DisabledIfEnvironmentVariable(named = "STRIMZI_USE_SYSTEM_BRIDGE", matches = "((?i)TRUE(?-i))")
+    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)FALSE(?-i))")
     void sendBinaryMessageWithKey(VertxTestContext context) {
         String topic = "sendBinaryMessageWithKey";
         kafkaCluster.createTopic(topic, 2, 1);
