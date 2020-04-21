@@ -168,9 +168,7 @@ public class HttpCorsTests {
     }
 
     /**
-     * Real requests (GET, POST, PUT, DELETE) for domains listed are allowed.
-     * However browser will check that the method set in Access-Control-Request-Method request header
-     * is contained in access-control-allow-methods response header
+     * Real requests (GET, POST, PUT, DELETE) for domains listed are allowed but not on specific HTTP methods
      */
     @Test
     public void testCorsMethodNotAllowed(VertxTestContext context) {
