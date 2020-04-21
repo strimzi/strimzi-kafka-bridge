@@ -84,7 +84,7 @@ class HttpBridgeTestBase {
         kafkaCluster.start();
         vertx = Vertx.vertx();
 
-        LOGGER.info(BRIDGE_EXTERNAL_ENV);
+        LOGGER.info("Environment variable " + " EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
 
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
             bridgeConfig = BridgeConfig.fromMap(config);
@@ -95,7 +95,6 @@ class HttpBridgeTestBase {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
         }
         // else we create external bridge from the OS invoked by `.jar`
-
 
         client = WebClient.create(vertx, new WebClientOptions()
             .setDefaultHost(Urls.BRIDGE_HOST)
