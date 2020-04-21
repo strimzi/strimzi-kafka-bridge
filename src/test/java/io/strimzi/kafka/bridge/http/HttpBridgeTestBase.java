@@ -87,14 +87,15 @@ class HttpBridgeTestBase {
         LOGGER.info(BRIDGE_EXTERNAL_ENV);
 
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
-            LOGGER.info("Deploying in-memory bridge");
             bridgeConfig = BridgeConfig.fromMap(config);
             httpBridge = new HttpBridge(bridgeConfig);
             httpBridge.setHealthChecker(new HealthChecker());
+
+            LOGGER.info("Deploying in-memory bridge");
+            vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
         }
         // else we create external bridge from the OS invoked by `.jar`
 
-        vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
 
         client = WebClient.create(vertx, new WebClientOptions()
             .setDefaultHost(Urls.BRIDGE_HOST)
