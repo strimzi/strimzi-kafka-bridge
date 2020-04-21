@@ -92,6 +92,7 @@ class HttpBridgeTestBase {
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
 
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+            LOGGER.info("Deploying in-memory bridge");
             bridgeConfig = BridgeConfig.fromMap(config);
             httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
             httpBridge.setHealthChecker(new HealthChecker());
