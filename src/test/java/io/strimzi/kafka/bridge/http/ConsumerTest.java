@@ -404,7 +404,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=mqtt";
 
@@ -561,6 +561,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        adminClientFacade.deleteAsyncTopic(topic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -618,12 +625,20 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        adminClientFacade.deleteAsyncTopic(topic1);
+        adminClientFacade.deleteAsyncTopic(topic2);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
-    void receiveFromTopicsWithPattern(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void receiveFromTopicsWithPattern(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         String topic1 = "receiveWithPattern-1";
         String topic2 = "receiveWithPattern-2";
         kafkaCluster.createTopic(topic1, 1, 1);
@@ -631,6 +646,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         String sentBody1 = "Simple message-1";
         String sentBody2 = "Simple message-2";
+
         kafkaCluster.produce(topic1, sentBody1, 1, 0);
         kafkaCluster.produce(topic2, sentBody2, 1, 0);
 
@@ -678,6 +694,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        adminClientFacade.deleteAsyncTopic(topic1);
+        adminClientFacade.deleteAsyncTopic(topic2);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -865,6 +889,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        LOGGER.info("Deleting async topics " + topic + " via Admin client");
+        adminClientFacade.deleteAsyncTopic(topic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -1064,7 +1096,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
 
-
         // consume records
         consumerService()
             .consumeRecordsRequest(groupId, name, null, 1, BridgeContentType.KAFKA_JSON_BINARY)
@@ -1086,6 +1117,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        adminClientFacade.deleteAsyncTopic(topic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -1292,6 +1330,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        LOGGER.info("Deleting async topics " + topic + " via Admin client");
+        adminClientFacade.deleteAsyncTopic(topic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -1339,6 +1385,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        LOGGER.info("Deleting async topics " + topic + " via Admin client");
+        adminClientFacade.deleteAsyncTopic(topic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -1399,7 +1452,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void consumerDeletedAfterInactivity(VertxTestContext context) {
+    void consumerDeletedAfterInactivity(VertxTestContext context) throws InterruptedException {
         CompletableFuture<Boolean> create = new CompletableFuture<>();
 
         consumerService()
@@ -1425,7 +1478,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                                         context.verify(() -> assertThat(ar.succeeded(), is(true)));
 
                                         HttpResponse<JsonObject> deletionResponse = consumerDeletedResponse.result();
-                                        assertThat(deletionResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                                        assertThat(deletionResponse.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                                         assertThat(deletionResponse.body().getString("message"), is("The specified consumer instance was not found."));
 
                                         delete.complete(true);
@@ -1435,6 +1488,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     });
                     create.complete(true);
                 });
+
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     private void checkCreatingConsumer(String key, String value, HttpResponseStatus status, String message, VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {

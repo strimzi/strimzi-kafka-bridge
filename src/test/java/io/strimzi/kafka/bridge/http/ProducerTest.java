@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -225,7 +226,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void sendPeriodicMessage(VertxTestContext context) {
+    void sendPeriodicMessage(VertxTestContext context) throws InterruptedException {
         String topic = "sendPeriodicMessage";
         kafkaCluster.createTopic(topic, 1, 1);
 
@@ -283,6 +284,8 @@ public class ProducerTest extends HttpBridgeTestBase {
             consumer.close();
             context.completeNow();
         });
+
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
 
         consumer.handler(record -> { });
     }
@@ -375,7 +378,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void sendToNonExistingPartitionsTest(VertxTestContext context) {
+    void sendToNonExistingPartitionsTest(VertxTestContext context) throws InterruptedException {
         String kafkaTopic = "sendToNonExistingPartitionsTest";
         kafkaCluster.createTopic(kafkaTopic, 3, 1);
 
@@ -410,12 +413,14 @@ public class ProducerTest extends HttpBridgeTestBase {
                             "Topic " + kafkaTopic + " not present in metadata after " +
                                     config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms."));
                 });
-                context.completeNow();
             });
+
+        context.completeNow();
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
-    void sendToNonExistingTopicTest(VertxTestContext context) {
+    void sendToNonExistingTopicTest(VertxTestContext context) throws InterruptedException {
         String kafkaTopic = "sendToNonExistingTopicTest";
 
         String value = "Hi, This is kafka bridge";
@@ -449,6 +454,8 @@ public class ProducerTest extends HttpBridgeTestBase {
                 });
                 context.completeNow();
             });
+
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -603,7 +610,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void sendMultipleRecordsWithOneInvalidPartitionTest(VertxTestContext context) {
+    void sendMultipleRecordsWithOneInvalidPartitionTest(VertxTestContext context) throws InterruptedException {
         String kafkaTopic = "sendMultipleRecordsWithOneInvalidPartitionTest";
         kafkaCluster.createTopic(kafkaTopic, 3, 1);
 
@@ -645,6 +652,8 @@ public class ProducerTest extends HttpBridgeTestBase {
                     });
                     context.completeNow();
                 });
+
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test

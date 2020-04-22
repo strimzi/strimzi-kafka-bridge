@@ -15,6 +15,8 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -28,6 +30,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ConsumerService extends BaseService {
+
+    static final Logger LOGGER = LogManager.getLogger(ConsumerService.class);
 
     private static ConsumerService consumerService;
 
@@ -144,6 +148,9 @@ public class ConsumerService extends BaseService {
     }
 
     public ConsumerService createConsumer(VertxTestContext context, String groupId, JsonObject json) throws InterruptedException, ExecutionException, TimeoutException {
+
+        LOGGER.info("Creating consumer with name " + json.getString("name"));
+
         CompletableFuture<Boolean> create = new CompletableFuture<>();
         createConsumerRequest(groupId, json)
                 .sendJsonObject(json, ar -> {
@@ -195,6 +202,9 @@ public class ConsumerService extends BaseService {
     }
 
     public ConsumerService deleteConsumer(VertxTestContext context, String groupId, String name) throws InterruptedException, ExecutionException, TimeoutException {
+
+        LOGGER.info("Deleting consumer with name " + name);
+
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
         deleteConsumerRequest(groupId, name)

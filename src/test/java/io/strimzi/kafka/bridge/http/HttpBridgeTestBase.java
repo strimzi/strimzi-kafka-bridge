@@ -13,6 +13,7 @@ import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
+import io.strimzi.kafka.bridge.facades.AdminClientFacade;
 import io.strimzi.kafka.bridge.facades.KafkaFacade;
 import io.strimzi.kafka.bridge.http.services.BaseService;
 import io.strimzi.kafka.bridge.http.services.ConsumerService;
@@ -41,6 +42,7 @@ class HttpBridgeTestBase {
 
     static final Logger LOGGER = LogManager.getLogger(HttpBridgeTestBase.class);
     static Map<String, Object> config = new HashMap<>();
+
     static long timeout = 5L;
     static {
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
@@ -62,7 +64,8 @@ class HttpBridgeTestBase {
     static WebClient client;
 
     static BridgeConfig bridgeConfig;
-    static KafkaFacade kafkaCluster = new KafkaFacade();
+    static KafkaFacade kafkaCluster;
+    static AdminClientFacade adminClientFacade;
     static MeterRegistry meterRegistry = null;
     static JmxCollectorRegistry jmxCollectorRegistry = null;
 
@@ -86,7 +89,9 @@ class HttpBridgeTestBase {
 
     @BeforeAll
     static void beforeAll(VertxTestContext context) {
+        kafkaCluster = new KafkaFacade();
         kafkaCluster.start();
+        adminClientFacade = AdminClientFacade.create();
         vertx = Vertx.vertx();
 
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
@@ -98,8 +103,10 @@ class HttpBridgeTestBase {
 
             LOGGER.info("Deploying in-memory bridge");
             vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
+        } else {
+            context.completeNow();
+            // else we create external bridge from the OS invoked by `.jar`
         }
-        // else we create external bridge from the OS invoked by `.jar`
 
         client = WebClient.create(vertx, new WebClientOptions()
             .setDefaultHost(Urls.BRIDGE_HOST)
@@ -109,7 +116,13 @@ class HttpBridgeTestBase {
 
     @AfterAll
     static void afterAll(VertxTestContext context) {
+        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+            vertx.close(context.succeeding(arg -> context.completeNow()));
+        } else {
+            // if we running external bridge
+            context.completeNow();
+        }
+        adminClientFacade.close();
         kafkaCluster.stop();
-        vertx.close(context.succeeding(arg -> context.completeNow()));
     }
 }

@@ -36,7 +36,7 @@ public class SeekTest extends HttpBridgeTestBase {
         .put("format", "json");
 
     @Test
-    void seekToNotExistingConsumer(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void seekToNotExistingConsumer(VertxTestContext context) throws InterruptedException {
         JsonObject root = new JsonObject();
 
         seekService()
@@ -55,8 +55,8 @@ public class SeekTest extends HttpBridgeTestBase {
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
-    @Test
     @Disabled // This test was disabled because of known issue described in https://github.com/strimzi/strimzi-kafka-bridge/issues/320
+    @Test
     void seekToNotExistingPartitionInSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToNotExistingPartitionInSubscribedTopic";
         kafkaCluster.createTopic(topic, 1, 1);
@@ -281,7 +281,6 @@ public class SeekTest extends HttpBridgeTestBase {
             .put("name", name)
             .put("format", "json");
 
-
         String topic = "seekToOffsetAndReceive";
         kafkaCluster.createTopic(topic, 2, 1);
         kafkaCluster.produce(topic, 10, 0);
@@ -369,6 +368,14 @@ public class SeekTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        LOGGER.info("Deleting async topics " + topic + " via Admin client");
+        adminClientFacade.deleteAsyncTopic(topic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -377,6 +384,9 @@ public class SeekTest extends HttpBridgeTestBase {
     void seekToBeginningMultipleTopicsWithNotSuscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String subscribedTopic = "seekToBeginningSubscribedTopic";
         String notSubscribedTopic = "seekToBeginningNotSubscribedTopic";
+
+        LOGGER.info("Creating topics " + subscribedTopic + "," + notSubscribedTopic);
+
         kafkaCluster.createTopic(subscribedTopic, 1, 1);
         kafkaCluster.createTopic(notSubscribedTopic, 1, 1);
 
@@ -386,7 +396,7 @@ public class SeekTest extends HttpBridgeTestBase {
         
         JsonObject topics = new JsonObject()
                                     .put("topics", new JsonArray().add(subscribedTopic));
-        
+
         // create consumer
         // subscribe to a topic
         consumerService()
@@ -429,7 +439,15 @@ public class SeekTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
-        
+
+        // topics deletion
+        LOGGER.info("Deleting async topics " + subscribedTopic + "," + notSubscribedTopic + " via Admin client");
+        adminClientFacade.deleteAsyncTopic(subscribedTopic);
+        adminClientFacade.deleteAsyncTopic(notSubscribedTopic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -440,6 +458,8 @@ public class SeekTest extends HttpBridgeTestBase {
         String notSubscribedTopic = "seekToOffsetNotSubscribedTopic";
         kafkaCluster.createTopic(subscribedTopic, 1, 1);
         kafkaCluster.createTopic(notSubscribedTopic, 1, 1);
+
+        LOGGER.info("Creating topics " + subscribedTopic + "," + notSubscribedTopic);
 
         JsonObject jsonConsumer = new JsonObject()
                                     .put("name", name)
@@ -491,7 +511,15 @@ public class SeekTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
-        
+
+        // topics deletion
+        LOGGER.info("Deleting async topics " + subscribedTopic + "," + notSubscribedTopic + " via Admin client");
+        adminClientFacade.deleteAsyncTopic(subscribedTopic);
+        adminClientFacade.deleteAsyncTopic(notSubscribedTopic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
