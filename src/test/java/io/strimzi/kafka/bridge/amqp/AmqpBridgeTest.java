@@ -128,8 +128,8 @@ class AmqpBridgeTest {
 
     @AfterAll
     public static void tearDown(VertxTestContext context) {
-        KAFKA_CLUSTER.stop();
         vertx.close(context.succeeding(arg -> context.completeNow()));
+        KAFKA_CLUSTER.stop();
     }
 
     @Test
