@@ -438,7 +438,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void sendToNonExistingTopicTest(VertxTestContext context) throws InterruptedException {
+    void sendToNonExistingTopicTest(VertxTestContext context) {
         String kafkaTopic = "sendToNonExistingTopicTest";
 
         String value = "Hi, This is kafka bridge";
@@ -472,8 +472,6 @@ public class ProducerTest extends HttpBridgeTestBase {
                 });
                 context.completeNow();
             });
-
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
