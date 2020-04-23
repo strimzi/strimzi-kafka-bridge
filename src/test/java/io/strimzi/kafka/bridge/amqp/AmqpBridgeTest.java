@@ -91,7 +91,7 @@ class AmqpBridgeTest {
 
     private static final String BRIDGE_HOST = "localhost";
     private static final int BRIDGE_PORT = 5672;
-    private static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "TRUE");
+    private static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
 
     // for periodic test
     private static final int PERIODIC_MAX_MESSAGE = 10;
