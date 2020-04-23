@@ -10,8 +10,6 @@ import io.strimzi.kafka.bridge.utils.KafkaJsonSerializer;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,9 +26,9 @@ public class KafkaFacade {
     protected static final int KAFKA_PORT = 9092;
     protected static final String DATA_DIR = "cluster";
     private static final long OPERATION_TIMEOUT = 60L;
+
     private static File dataDir;
     protected static KafkaCluster kafkaCluster;
-    static final Logger LOGGER = LogManager.getLogger(KafkaFacade.class);
 
     private static KafkaCluster kafkaCluster() {
 
@@ -101,7 +99,6 @@ public class KafkaFacade {
 
     public void start() {
         try {
-            LOGGER.info("Creating in-memory Kafka cluster.");
             kafkaCluster = kafkaCluster().deleteDataPriorToStartup(true).addBrokers(1).startup();
         } catch (IOException e) {
             e.printStackTrace();

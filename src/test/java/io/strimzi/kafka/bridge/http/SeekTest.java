@@ -6,6 +6,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
+import io.strimzi.kafka.bridge.http.base.HttpBridgeTestBase;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonArray;
@@ -59,7 +60,7 @@ public class SeekTest extends HttpBridgeTestBase {
     @Test
     void seekToNotExistingPartitionInSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToNotExistingPartitionInSubscribedTopic";
-        kafkaCluster.createTopic(topic, 1, 1);
+        adminClientFacade.createAsyncTopic(topic);
 
         // create consumer
         consumerService()
@@ -123,9 +124,9 @@ public class SeekTest extends HttpBridgeTestBase {
     @Test
     void seekToBeginningAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToBeginningAndReceive";
-        kafkaCluster.createTopic(topic, 1, 1);
+        adminClientFacade.createAsyncTopic(topic);
 
-        kafkaCluster.produce(topic, 10, 0);
+        basicKafkaClient.sendMessagesPlain(topic, 10);
 
         JsonObject jsonConsumer = new JsonObject();
         jsonConsumer.put("name", name);
@@ -194,6 +195,14 @@ public class SeekTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        LOGGER.info("Deleting async topics " + topic + " via Admin client");
+        adminClientFacade.deleteAsyncTopic(topic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.listAsyncTopic().size(), is(0));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -201,7 +210,7 @@ public class SeekTest extends HttpBridgeTestBase {
     @Test
     void seekToEndAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToEndAndReceive";
-        kafkaCluster.createTopic(topic, 1, 1);
+        adminClientFacade.createAsyncTopic(topic);
 
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));
@@ -227,7 +236,7 @@ public class SeekTest extends HttpBridgeTestBase {
 
         dummy.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        kafkaCluster.produceStrings(topic, 10, 0);
+        basicKafkaClient.sendMessagesPlain(topic, 10);
 
         // seek
         JsonArray partitions = new JsonArray();
@@ -269,6 +278,15 @@ public class SeekTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
                 .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        LOGGER.info("Deleting async topics " + topic + " via Admin client");
+        adminClientFacade.deleteAsyncTopic(topic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.listAsyncTopic().size(), is(0));
+
+
         context.completeNow();
     }
 
@@ -282,9 +300,11 @@ public class SeekTest extends HttpBridgeTestBase {
             .put("format", "json");
 
         String topic = "seekToOffsetAndReceive";
-        kafkaCluster.createTopic(topic, 2, 1);
-        kafkaCluster.produce(topic, 10, 0);
-        kafkaCluster.produce(topic, 10, 1);
+
+        adminClientFacade.createAsyncTopic(topic, 2, 1);
+
+        basicKafkaClient.sendJsonMessagesPlain(topic, 10, "value", 0);
+        basicKafkaClient.sendJsonMessagesPlain(topic, 10, "value", 1);
 
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));
@@ -374,7 +394,7 @@ public class SeekTest extends HttpBridgeTestBase {
         adminClientFacade.deleteAsyncTopic(topic);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+        assertThat(adminClientFacade.listAsyncTopic().size(), is(0));
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -387,8 +407,8 @@ public class SeekTest extends HttpBridgeTestBase {
 
         LOGGER.info("Creating topics " + subscribedTopic + "," + notSubscribedTopic);
 
-        kafkaCluster.createTopic(subscribedTopic, 1, 1);
-        kafkaCluster.createTopic(notSubscribedTopic, 1, 1);
+        adminClientFacade.createAsyncTopic(subscribedTopic);
+        adminClientFacade.createAsyncTopic(notSubscribedTopic);
 
         JsonObject jsonConsumer = new JsonObject()
                                     .put("name", name)
@@ -456,10 +476,11 @@ public class SeekTest extends HttpBridgeTestBase {
     void seekToOffsetMultipleTopicsWithNotSuscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String subscribedTopic = "seekToOffseSubscribedTopic";
         String notSubscribedTopic = "seekToOffsetNotSubscribedTopic";
-        kafkaCluster.createTopic(subscribedTopic, 1, 1);
-        kafkaCluster.createTopic(notSubscribedTopic, 1, 1);
 
         LOGGER.info("Creating topics " + subscribedTopic + "," + notSubscribedTopic);
+
+        adminClientFacade.createAsyncTopic(subscribedTopic);
+        adminClientFacade.createAsyncTopic(notSubscribedTopic);
 
         JsonObject jsonConsumer = new JsonObject()
                                     .put("name", name)
@@ -518,7 +539,8 @@ public class SeekTest extends HttpBridgeTestBase {
         adminClientFacade.deleteAsyncTopic(notSubscribedTopic);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+        LOGGER.info("Following topics " + adminClientFacade.listAsyncTopic().toString());
+        assertThat(adminClientFacade.listAsyncTopic().size(), is(0));
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));

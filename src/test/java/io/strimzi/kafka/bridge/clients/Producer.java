@@ -27,20 +27,43 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
     private final AtomicInteger numSent = new AtomicInteger(0);
     private final String topic;
     private final String clientName;
+    private final String message;
+    private final int partition;
+    private final boolean withNullKeyRecord;
 
-    public Producer(Properties properties, CompletableFuture<Integer> resultPromise, IntPredicate msgCntPredicate, String topic) {
+    public Producer(Properties properties, CompletableFuture<Integer> resultPromise, IntPredicate msgCntPredicate,
+                    String topic, String message, int partition, boolean withNullKeyRecord) {
         super(resultPromise, msgCntPredicate);
         this.topic = topic;
         this.clientName = "producer-sender-plain-";
         this.properties = properties;
+        this.message = message;
+        this.partition = partition;
+        this.withNullKeyRecord = withNullKeyRecord;
         this.vertx = Vertx.vertx();
     }
 
-    public Producer(CompletableFuture<Integer> resultPromise, IntPredicate msgCntPredicate, String topic) {
+    public Producer(Properties properties, CompletableFuture<Integer> resultPromise, IntPredicate msgCntPredicate,
+                    String topic, String message, int partition) {
+        super(resultPromise, msgCntPredicate);
+        this.topic = topic;
+        this.clientName = "producer-sender-plain-";
+        this.properties = properties;
+        this.message = message;
+        this.partition = partition;
+        this.withNullKeyRecord = false;
+        this.vertx = Vertx.vertx();
+    }
+
+    public Producer(CompletableFuture<Integer> resultPromise, IntPredicate msgCntPredicate, String topic, String message,
+                    int partition, boolean withNullKeyRecord) {
         super(resultPromise, msgCntPredicate);
         this.topic = topic;
         this.clientName = "producer-sender-plain-";
         this.properties = fillDefaultProperties();
+        this.message = message;
+        this.partition = partition;
+        this.withNullKeyRecord = withNullKeyRecord;
         this.vertx = Vertx.vertx();
     }
 
@@ -59,9 +82,9 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
                     resultPromise.complete(numSent.get());
                 }
             });
-            vertx.setPeriodic(1000, id -> sendNext(producer, topic));
+            vertx.setPeriodic(1000, id -> sendNext(producer, topic, message, partition, withNullKeyRecord));
         } else {
-            sendNext(producer, topic);
+            sendNext(producer, topic, message, partition, withNullKeyRecord);
         }
     }
 
@@ -73,11 +96,16 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
         }
     }
 
-    private void sendNext(KafkaProducer<String, String> producer, String topic) {
+    private void sendNext(KafkaProducer<String, String> producer, String topic, String message, int partition, boolean withNullKeyRecord) {
         if (msgCntPredicate.negate().test(numSent.get())) {
 
-            KafkaProducerRecord<String, String> record =
-                KafkaProducerRecord.create(topic, "\"Sending messages\": \"Hello-world - " + numSent.get() + "\"");
+            KafkaProducerRecord<String, String> record;
+
+            if (withNullKeyRecord) {
+                record = KafkaProducerRecord.create(topic, null, message + "-" + numSent.get(), partition);
+            } else {
+                record = KafkaProducerRecord.create(topic, "key-" + numSent.get(), message + "-" + numSent.get(), partition);
+            }
 
             producer.send(record, done -> {
                 if (done.succeeded()) {
@@ -94,12 +122,12 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
                     }
 
                     if (msgCntPredicate.negate().test(-1)) {
-                        sendNext(producer, topic);
+                        sendNext(producer, topic, message, partition, withNullKeyRecord);
                     }
 
                 } else {
                     LOGGER.error("Producer cannot connect to topic " + topic + ":" + done.cause().toString());
-                    sendNext(producer, topic);
+                    sendNext(producer, topic, message, partition, withNullKeyRecord);
                 }
             });
 
@@ -111,10 +139,13 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
 
         properties.setProperty("key.serializer", StringSerializer.class.getName());
         properties.setProperty("value.serializer", StringSerializer.class.getName());
-        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
         properties.setProperty(ProducerConfig.CLIENT_ID_CONFIG, this.clientName);
         properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
 
+        return properties;
+    }
+
+    public Properties getProperties() {
         return properties;
     }
 }

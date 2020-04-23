@@ -6,6 +6,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
+import io.strimzi.kafka.bridge.http.base.HttpBridgeTestBase;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonArray;
@@ -28,7 +29,8 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
     @Test
     void unsubscribeConsumerNotFound(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "unsubscribeConsumerNotFound";
-        kafkaCluster.createTopic(topic, 1, 1);
+
+        adminClientFacade.createAsyncTopic(topic);
 
         String name = "my-kafka-consumer";
         String groupId = "my-group";
@@ -129,9 +131,10 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
     @Test
     void subscriptionConsumerDoesNotExistBecauseNotCreated(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "subscriptionConsumerDoesNotExistBecauseNotCreated";
-        kafkaCluster.createTopic(topic, 1, 1);
         String name = "my-kafka-consumer-does-not-exists-because-not-created";
+        String topic = "subscriptionConsumerDoesNotExist";
+
+        adminClientFacade.createAsyncTopic(topic);
         String groupId = "my-group";
 
         JsonArray topics = new JsonArray();
@@ -202,8 +205,11 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
     void listConsumerSubscriptions(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "listConsumerSubscriptions";
         String topic2 = "listConsumerSubscriptions2";
-        kafkaCluster.createTopic(topic, 1, 1);
-        kafkaCluster.createTopic(topic2, 4, 1);
+
+        adminClientFacade.createAsyncTopic(topic, 1, 1);
+        adminClientFacade.createAsyncTopic(topic2, 4, 1);
+
+        assertThat(adminClientFacade.listAsyncTopic().size(), is(2));
 
         String name = "my-kafka-consumer-list";
         String groupId = "my-group";

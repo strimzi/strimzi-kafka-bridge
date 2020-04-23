@@ -4,16 +4,19 @@
  */
 package io.strimzi.kafka.bridge.clients;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import java.util.Properties;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
@@ -84,14 +87,17 @@ public class Consumer extends ClientHandlerBase<Integer> implements AutoCloseabl
         }
     }
 
-    private Properties fillDefaultProperties() {
+    @SuppressWarnings("Regexp") // for the `.toLowerCase()` because kafka needs this property as lower-case
+    @SuppressFBWarnings("DM_CONVERT_CASE")
+    public static Properties fillDefaultProperties() {
         Properties properties = new Properties();
 
         properties.setProperty("key.serializer", StringDeserializer.class.getName());
         properties.setProperty("value.serializer", StringDeserializer.class.getName());
-        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
-        properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, this.clientName);
+        properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-sender-plain-" + new Random().nextInt(Integer.MAX_VALUE));
         properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
+        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, OffsetResetStrategy.EARLIEST.name().toLowerCase());
+        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "consumer-group-" + new Random().nextInt(Integer.MAX_VALUE));
 
         return properties;
     }

@@ -103,7 +103,6 @@ class AmqpBridgeTest {
         kafkaCluster.start();
     }
 
-
     @AfterAll
     public static void tearDown() {
         kafkaCluster.stop();
@@ -153,7 +152,7 @@ class AmqpBridgeTest {
                 consumer.handler(record -> {
                     context.verify(() -> assertThat(record.value(), is(body)));
                     log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
-                            record.topic(), record.partition(), record.offset(), record.key(), record.value());
+                        record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     consumer.close();
                     consume.flag();
                 });
@@ -215,7 +214,7 @@ class AmqpBridgeTest {
                     // checking the right partition which should not be just the first one (0)
                     context.verify(() -> assertThat(record.partition(), is(1)));
                     log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
-                            record.topic(), record.partition(), record.offset(), record.key(), record.value());
+                        record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     consumer.close();
                     consume.flag();
                 });
@@ -274,7 +273,7 @@ class AmqpBridgeTest {
                     context.verify(() -> assertThat(record.value(), is(body)));
                     context.verify(() -> assertThat(record.key(), is("my_key")));
                     log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
-                            record.topic(), record.partition(), record.offset(), record.key(), record.value());
+                        record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     consumer.close();
                     consume.flag();
                 });
@@ -384,7 +383,7 @@ class AmqpBridgeTest {
                 KafkaConsumer<String, int[]> consumer = KafkaConsumer.create(this.vertx, config);
                 consumer.handler(record -> {
                     log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
-                            record.topic(), record.partition(), record.offset(), record.key(), record.value());
+                        record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     context.verify(() -> assertThat(record.value(), is(array)));
                     consumer.close();
                     consume.flag();
@@ -439,7 +438,7 @@ class AmqpBridgeTest {
                 KafkaConsumer<String, List<Object>> consumer = KafkaConsumer.create(this.vertx, config);
                 consumer.handler(record -> {
                     log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
-                            record.topic(), record.partition(), record.offset(), record.key(), record.value());
+                        record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     context.verify(() -> assertThat(record.value().equals(list), is(true)));
                     consumer.close();
                     consume.flag();
@@ -494,7 +493,7 @@ class AmqpBridgeTest {
                 KafkaConsumer<String, Map<Object, Object>> consumer = KafkaConsumer.create(this.vertx, config);
                 consumer.handler(record -> {
                     log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
-                            record.topic(), record.partition(), record.offset(), record.key(), record.value());
+                        record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     context.verify(() -> assertThat(record.value(), is(map)));
                     consumer.close();
                     consume.flag();
@@ -549,7 +548,7 @@ class AmqpBridgeTest {
                         for (int i = 0; i < records.size(); i++) {
                             KafkaConsumerRecord<String, String> record = records.recordAt(i);
                             log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
-                                    record.topic(), record.partition(), record.offset(), record.key(), record.value());
+                                record.topic(), record.partition(), record.offset(), record.key(), record.value());
                             int finalI = i;
                             assertThat("key-" + finalI, is(record.key()));
                         }
@@ -638,7 +637,7 @@ class AmqpBridgeTest {
                         consume.flag();
                     }
                 })
-                        .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
+                    .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
 
                 ProtonSender sender = connection.createSender(null);
                 sender.open();
@@ -695,7 +694,7 @@ class AmqpBridgeTest {
                             Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
                             assertThat(keyAnnotation, nullValue());
                             log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
-                                    topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
+                                topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
                             assertThat(topicAnnotation, is(topic));
                             assertThat(partitionAnnotation, is(0));
@@ -705,7 +704,7 @@ class AmqpBridgeTest {
                         consume.flag();
                     }
                 })
-                        .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
+                    .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
             } else {
                 context.failNow(ar.cause());
             }
@@ -762,7 +761,7 @@ class AmqpBridgeTest {
                         Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
                         assertThat(keyAnnotation, nullValue());
                         log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
-                                topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
+                            topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
                         assertThat(topicAnnotation, is(topic));
                         assertThat(partitionAnnotation, is(1));
@@ -771,7 +770,7 @@ class AmqpBridgeTest {
                         consume.flag();
                     }
                 })
-                        .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
+                    .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
             } else {
                 context.failNow(ar.cause());
             }
@@ -827,7 +826,7 @@ class AmqpBridgeTest {
                         Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
                         assertThat(keyAnnotation, notNullValue());
                         log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
-                                topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
+                            topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
                         assertThat(topicAnnotation, is(topic));
                         assertThat(partitionAnnotation, is(0));
@@ -837,7 +836,7 @@ class AmqpBridgeTest {
                         consume.flag();
                     }
                 })
-                        .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
+                    .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
             } else {
                 context.failNow(ar.cause());
             }
@@ -861,7 +860,7 @@ class AmqpBridgeTest {
 
                 ProtonReceiver receiver = connection.createReceiver(topic + "/group.id/my_group");
                 receiver.setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit())
-                        .open();
+                    .open();
 
                 this.vertx.setTimer(2000, t -> {
 
@@ -876,7 +875,7 @@ class AmqpBridgeTest {
                             noPartition.flag();
                         }
                     })
-                            .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
+                        .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
                 });
 
 
@@ -914,7 +913,7 @@ class AmqpBridgeTest {
 
         //Record with a null key
         KafkaConsumerRecord<String, byte[]> record = new KafkaConsumerRecordImpl(
-                new ConsumerRecord("mytopic", 0, 0, null, payload.getBytes()));
+            new ConsumerRecord("mytopic", 0, 0, null, payload.getBytes()));
         Message message = (Message) messageConverter.toMessage("0", record);
         return message.getMessageAnnotations().getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
     }
