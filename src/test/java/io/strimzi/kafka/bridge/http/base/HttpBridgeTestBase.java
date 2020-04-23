@@ -34,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.testcontainers.containers.KafkaContainer;
 
@@ -42,8 +43,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
+
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
+@Tag(HTTP_BRIDGE)
 public abstract class HttpBridgeTestBase {
 
     protected static final Logger LOGGER = LogManager.getLogger(HttpBridgeTestBase.class);
@@ -74,10 +78,10 @@ public abstract class HttpBridgeTestBase {
         config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
 
         adminClientFacade = AdminClientFacade.create(KAFKA_CONTAINER.getBootstrapServers());
-    }
+     }
 
     protected static Vertx vertx;
-    static WebClient client;
+    protected static WebClient client;
     protected static BasicKafkaClient basicKafkaClient;
     protected static AdminClientFacade adminClientFacade;
     protected static HttpBridge httpBridge;
@@ -110,8 +114,9 @@ public abstract class HttpBridgeTestBase {
 
     @BeforeAll
     static void beforeAll(VertxTestContext context) {
-        LOGGER.info(KAFKA_CONTAINER.getBootstrapServers());
+        vertx = Vertx.vertx();
 
+        LOGGER.info(KAFKA_CONTAINER.getBootstrapServers());
         basicKafkaClient = new BasicKafkaClient(KAFKA_CONTAINER.getBootstrapServers());
 
         vertx = Vertx.vertx();

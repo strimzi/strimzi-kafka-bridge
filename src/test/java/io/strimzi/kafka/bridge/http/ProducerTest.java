@@ -87,6 +87,7 @@ public class ProducerTest extends HttpBridgeTestBase {
                 context.failNow(done.cause());
             }
         });
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -136,6 +137,8 @@ public class ProducerTest extends HttpBridgeTestBase {
                 context.failNow(done.cause());
             }
         });
+
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -367,6 +370,8 @@ public class ProducerTest extends HttpBridgeTestBase {
                 context.failNow(done.cause());
             }
         });
+
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -505,6 +510,8 @@ public class ProducerTest extends HttpBridgeTestBase {
                 });
                 context.completeNow();
             });
+
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test

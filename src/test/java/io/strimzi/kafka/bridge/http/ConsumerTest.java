@@ -718,7 +718,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         adminClientFacade.createAsyncTopic(topic, 2, 1);
 
         String sentBody = "Simple message from partition";
-//        kafkaCluster.produce(topic, sentBody, 1, partition);
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, partition, true);
 
         // create a consumer
@@ -770,7 +769,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         adminClientFacade.createAsyncTopic(topic, 2, 1);
 
         String sentBody = "value";
-        // TODO: make client to send on differnet parittions...
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 1, true);
 
@@ -829,7 +827,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         String sentBody = "Simple message";
 
-//        kafkaCluster.produce(topic, sentBody, 1, 0);
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
 
         JsonObject json = consumerJson
@@ -917,7 +914,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         adminClientFacade.createAsyncTopic(topic);
 
         String sentBody = "Simple message";
-//        kafkaCluster.produce(topic, sentBody, 1, 0);
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
 
         JsonObject json = consumerJson
@@ -1149,7 +1145,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         adminClientFacade.createAsyncTopic(topic);
 
         String sentBody = "Simple message";
-//        kafkaCluster.produce(topic, sentBody, 1, 0);
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
 
         // create consumer
@@ -1191,7 +1186,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService().unsubscribeConsumer(context, groupId, name, topic);
 
         // Send new record
-//        kafkaCluster.produce(topic, sentBody, 1, 0);
         basicKafkaClient.sendMessagesPlain(topic, 1);
 
         // Try to consume after unsubscription
@@ -1226,9 +1220,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         adminClientFacade.createAsyncTopic(topic);
 
-//        String sentBody = "Simple message";
-//        kafkaCluster.produce(topic, sentBody, 1, 0);
-        basicKafkaClient.sendMessagesPlain(topic, 1);
+        String sentBody = "Simple message";
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0);
         // create consumer
         // subscribe to a topic
         consumerService()

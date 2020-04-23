@@ -7,6 +7,7 @@ package io.strimzi.kafka.bridge.amqp;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.kafka.bridge.MetricsReporter;
+import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpJsonMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpRawMessageConverter;
@@ -49,6 +50,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
@@ -63,6 +65,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static io.strimzi.kafka.bridge.Constants.AMQP_BRIDGE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -70,20 +73,27 @@ import static org.hamcrest.Matchers.nullValue;
 
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:ClassFanOutComplexity", "ClassDataAbstractionCoupling"})
+@Tag(AMQP_BRIDGE)
 class AmqpBridgeTest {
 
-    private static final Logger log = LoggerFactory.getLogger(AmqpBridgeTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AmqpBridgeTest.class);
 
     private static Map<String, Object> config = new HashMap<>();
+
+    private static Vertx vertx;
+    private static final KafkaFacade kafkaCluster;
 
     static {
         config.put(AmqpConfig.AMQP_ENABLED, true);
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+        kafkaCluster = new KafkaFacade();
     }
 
     private static final String BRIDGE_HOST = "localhost";
     private static final int BRIDGE_PORT = 5672;
+    private static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "TRUE");
 
     // for periodic test
     private static final int PERIODIC_MAX_MESSAGE = 10;
@@ -91,31 +101,46 @@ class AmqpBridgeTest {
     private int count;
 
     private Vertx vertx;
-    private AmqpBridge bridge;
 
-    private BridgeConfig bridgeConfig;
     static KafkaFacade kafkaCluster = new KafkaFacade();
     static MeterRegistry meterRegistry = BackendRegistries.getDefaultNow();
 
+    private static BridgeConfig bridgeConfig;
+    private static AmqpBridge bridge;
 
     @BeforeAll
-    public static void setUp() {
+    public static void setUp(VertxTestContext context) {
         kafkaCluster.start();
+
+        vertx = Vertx.vertx();
+
+        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+
+            bridgeConfig = BridgeConfig.fromMap(config);
+            bridge = new AmqpBridge(bridgeConfig, new MetricsReporter(null, meterRegistry);
+
+            LOGGER.info("Deploying in-memory bridge");
+            vertx.deployVerticle(bridge, context.succeeding(id -> context.completeNow()));
+
+        } else {
+            context.completeNow();
+            // else we create external bridge from the OS invoked by `.jar`
+        }
     }
 
     @AfterAll
-    public static void tearDown() {
+    public static void tearDown(VertxTestContext context) {
         kafkaCluster.stop();
     }
 
     @BeforeEach
     void before(VertxTestContext context) {
-        this.vertx = Vertx.vertx();
+        vertx = Vertx.vertx();
 
-        this.bridgeConfig = BridgeConfig.fromMap(config);
-        this.bridge = new AmqpBridge(this.bridgeConfig, new MetricsReporter(null, meterRegistry));
+        bridgeConfig = BridgeConfig.fromMap(config);
+        bridge = new AmqpBridge(bridgeConfig, new MetricsReporter(null, meterRegistry));
 
-        vertx.deployVerticle(this.bridge, context.succeeding(id -> context.completeNow()));
+        vertx.deployVerticle(bridge, context.succeeding(id -> context.completeNow()));
     }
 
     @AfterEach
@@ -128,7 +153,7 @@ class AmqpBridgeTest {
         String topic = "sendSimpleMessages";
         kafkaCluster.createTopic(topic, 1, 1);
 
-        ProtonClient client = ProtonClient.create(this.vertx);
+        ProtonClient client = ProtonClient.create(vertx);
 
         Checkpoint consume = context.checkpoint();
 
@@ -151,7 +176,7 @@ class AmqpBridgeTest {
                 KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
                 consumer.handler(record -> {
                     context.verify(() -> assertThat(record.value(), is(body)));
-                    log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                    LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                         record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     consumer.close();
                     consume.flag();
@@ -164,7 +189,7 @@ class AmqpBridgeTest {
                 });
 
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-                    log.info("Message delivered {}", delivery.getRemoteState());
+                    LOGGER.info("Message delivered {}", delivery.getRemoteState());
                     context.verify(() -> assertThat(Accepted.getInstance(), is(delivery.getRemoteState())));
 
                     sender.close();
@@ -213,7 +238,7 @@ class AmqpBridgeTest {
                     context.verify(() -> assertThat(record.value(), is(body)));
                     // checking the right partition which should not be just the first one (0)
                     context.verify(() -> assertThat(record.partition(), is(1)));
-                    log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                    LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                         record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     consumer.close();
                     consume.flag();
@@ -231,7 +256,7 @@ class AmqpBridgeTest {
                 message.setMessageAnnotations(messageAnnotations);
 
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-                    log.info("Message delivered {}", delivery.getRemoteState());
+                    LOGGER.info("Message delivered {}", delivery.getRemoteState());
                     context.verify(() -> assertThat(Accepted.getInstance(), is(delivery.getRemoteState())));
 
                     sender.close();
@@ -272,7 +297,7 @@ class AmqpBridgeTest {
                 consumer.handler(record -> {
                     context.verify(() -> assertThat(record.value(), is(body)));
                     context.verify(() -> assertThat(record.key(), is("my_key")));
-                    log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                    LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                         record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     consumer.close();
                     consume.flag();
@@ -290,7 +315,7 @@ class AmqpBridgeTest {
                 message.setMessageAnnotations(messageAnnotations);
 
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-                    log.info("Message delivered {}", delivery.getRemoteState());
+                    LOGGER.info("Message delivered {}", delivery.getRemoteState());
                     context.verify(() -> assertThat(Accepted.getInstance(), is(delivery.getRemoteState())));
 
                     sender.close();
@@ -343,7 +368,7 @@ class AmqpBridgeTest {
                 message.setBody(new Data(new Binary(value.getBytes())));
 
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-                    log.info("Message delivered {}", delivery.getRemoteState());
+                    LOGGER.info("Message delivered {}", delivery.getRemoteState());
                     context.verify(() -> assertThat(Accepted.getInstance(), is(delivery.getRemoteState())));
 
                     sender.close();
@@ -382,7 +407,7 @@ class AmqpBridgeTest {
 
                 KafkaConsumer<String, int[]> consumer = KafkaConsumer.create(this.vertx, config);
                 consumer.handler(record -> {
-                    log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                    LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                         record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     context.verify(() -> assertThat(record.value(), is(array)));
                     consumer.close();
@@ -399,7 +424,7 @@ class AmqpBridgeTest {
                 message.setBody(new AmqpValue(array));
 
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-                    log.info("Message delivered {}", delivery.getRemoteState());
+                    LOGGER.info("Message delivered {}", delivery.getRemoteState());
                     context.verify(() -> assertThat(Accepted.getInstance(), is(delivery.getRemoteState())));
                 });
             } else {
@@ -437,7 +462,7 @@ class AmqpBridgeTest {
 
                 KafkaConsumer<String, List<Object>> consumer = KafkaConsumer.create(this.vertx, config);
                 consumer.handler(record -> {
-                    log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                    LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                         record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     context.verify(() -> assertThat(record.value().equals(list), is(true)));
                     consumer.close();
@@ -454,7 +479,7 @@ class AmqpBridgeTest {
                 message.setBody(new AmqpValue(list));
 
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-                    log.info("Message delivered {}", delivery.getRemoteState());
+                    LOGGER.info("Message delivered {}", delivery.getRemoteState());
                     context.verify(() -> assertThat(Accepted.getInstance(), is(delivery.getRemoteState())));
                 });
             } else {
@@ -492,7 +517,7 @@ class AmqpBridgeTest {
 
                 KafkaConsumer<String, Map<Object, Object>> consumer = KafkaConsumer.create(this.vertx, config);
                 consumer.handler(record -> {
-                    log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                    LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                         record.topic(), record.partition(), record.offset(), record.key(), record.value());
                     context.verify(() -> assertThat(record.value(), is(map)));
                     consumer.close();
@@ -509,7 +534,7 @@ class AmqpBridgeTest {
                 message.setBody(new AmqpValue(map));
 
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
-                    log.info("Message delivered {}", delivery.getRemoteState());
+                    LOGGER.info("Message delivered {}", delivery.getRemoteState());
                     context.verify(() -> assertThat(Accepted.getInstance(), is(delivery.getRemoteState())));
                 });
             } else {
@@ -547,7 +572,7 @@ class AmqpBridgeTest {
                         assertThat(this.count, is(records.size()));
                         for (int i = 0; i < records.size(); i++) {
                             KafkaConsumerRecord<String, String> record = records.recordAt(i);
-                            log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                            LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                                 record.topic(), record.partition(), record.offset(), record.key(), record.value());
                             int finalI = i;
                             assertThat("key-" + finalI, is(record.key()));
@@ -581,7 +606,7 @@ class AmqpBridgeTest {
                             message.setMessageAnnotations(messageAnnotations);
 
                             sender.send(ProtonHelper.tag("my_tag_" + this.count), message, delivery -> {
-                                log.info("Message delivered {}", delivery.getRemoteState());
+                                LOGGER.info("Message delivered {}", delivery.getRemoteState());
                                 context.verify(() -> assertThat(Accepted.getInstance(), is(delivery.getRemoteState())));
                             });
 
@@ -630,20 +655,20 @@ class AmqpBridgeTest {
                     Section receivedBody = receivedMessage.getBody();
                     if (receivedBody instanceof Data) {
                         byte[] value = ((Data) receivedBody).getValue().getArray();
-                        log.info("Message received {}", new String(value));
+                        LOGGER.info("Message received {}", new String(value));
                         // default is AT_LEAST_ONCE QoS (unsettled) so we need to send disposition (settle) to sender
                         delivery.disposition(Accepted.getInstance(), true);
                         context.verify(() -> assertThat(sentBody, is(new String(value))));
                         consume.flag();
                     }
                 })
-                    .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
+                    .setPrefetch(bridgeConfig.getAmqpConfig().getFlowCredit()).open();
 
                 ProtonSender sender = connection.createSender(null);
                 sender.open();
 
                 sender.send(ProtonHelper.tag("my_tag"), sentMessage, delivery -> {
-                    log.info("Message delivered {}", delivery.getRemoteState());
+                    LOGGER.info("Message delivered {}", delivery.getRemoteState());
                     context.verify(() -> assertThat(Accepted.getInstance(), is(delivery.getRemoteState())));
                 });
 
@@ -693,7 +718,7 @@ class AmqpBridgeTest {
                             assertThat(offsetAnnotation, notNullValue());
                             Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
                             assertThat(keyAnnotation, nullValue());
-                            log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                            LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                                 topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
                             assertThat(topicAnnotation, is(topic));
@@ -704,7 +729,7 @@ class AmqpBridgeTest {
                         consume.flag();
                     }
                 })
-                    .setPrefetch(this.bridgeConfig.getAmqpConfig().getFlowCredit()).open();
+                    .setPrefetch(bridgeConfig.getAmqpConfig().getFlowCredit()).open();
             } else {
                 context.failNow(ar.cause());
             }
@@ -760,7 +785,7 @@ class AmqpBridgeTest {
                         assertThat(offsetAnnotation, notNullValue());
                         Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
                         assertThat(keyAnnotation, nullValue());
-                        log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                        LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                             topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
                         assertThat(topicAnnotation, is(topic));
@@ -825,7 +850,7 @@ class AmqpBridgeTest {
                         assertThat(offsetAnnotation, notNullValue());
                         Object keyAnnotation = annotations.getValue().get(Symbol.valueOf(AmqpBridge.AMQP_KEY_ANNOTATION));
                         assertThat(keyAnnotation, notNullValue());
-                        log.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                        LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                             topicAnnotation, partitionAnnotation, offsetAnnotation, keyAnnotation, new String(value));
 
                         assertThat(topicAnnotation, is(topic));
@@ -870,7 +895,7 @@ class AmqpBridgeTest {
                             context.failNow(ar1.cause());
                         } else {
                             ErrorCondition condition = receiver1.getRemoteCondition();
-                            log.info(condition.getDescription());
+                            LOGGER.info(condition.getDescription());
                             context.verify(() -> assertThat(condition.getCondition(), is(Symbol.getSymbol(AmqpBridge.AMQP_ERROR_NO_PARTITIONS))));
                             noPartition.flag();
                         }

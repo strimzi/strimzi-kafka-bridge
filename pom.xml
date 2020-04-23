@@ -369,6 +369,20 @@
 				</plugins>
 			</build>
 		</profile>
+		<profile>
+			<id>httpbridge</id>
+			<properties>
+				<skipTests>false</skipTests>
+				<groups>httpbridge</groups>
+			</properties>
+		</profile>
+		<profile>
+			<id>amqptbridge</id>
+			<properties>
+				<skipTests>false</skipTests>
+				<groups>amqptbridge</groups>
+			</properties>
+		</profile>
 	</profiles>
 
 	<licenses>
