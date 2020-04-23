@@ -78,7 +78,7 @@ public abstract class HttpBridgeTestBase {
         config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
 
         adminClientFacade = AdminClientFacade.create(KAFKA_CONTAINER.getBootstrapServers());
-     }
+    }
 
     protected static Vertx vertx;
     protected static WebClient client;

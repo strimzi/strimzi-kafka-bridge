@@ -46,9 +46,7 @@ import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -81,14 +79,14 @@ class AmqpBridgeTest {
     private static Map<String, Object> config = new HashMap<>();
 
     private static Vertx vertx;
-    private static final KafkaFacade kafkaCluster;
+    private static final KafkaFacade KAFKA_CLUSTER;
 
     static {
         config.put(AmqpConfig.AMQP_ENABLED, true);
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
-        kafkaCluster = new KafkaFacade();
+        KAFKA_CLUSTER = new KafkaFacade();
     }
 
     private static final String BRIDGE_HOST = "localhost";
@@ -110,7 +108,7 @@ class AmqpBridgeTest {
 
     @BeforeAll
     public static void setUp(VertxTestContext context) {
-        kafkaCluster.start();
+        KAFKA_CLUSTER.start();
 
         vertx = Vertx.vertx();
 
@@ -130,28 +128,14 @@ class AmqpBridgeTest {
 
     @AfterAll
     public static void tearDown(VertxTestContext context) {
-        kafkaCluster.stop();
-    }
-
-    @BeforeEach
-    void before(VertxTestContext context) {
-        vertx = Vertx.vertx();
-
-        bridgeConfig = BridgeConfig.fromMap(config);
-        bridge = new AmqpBridge(bridgeConfig, new MetricsReporter(null, meterRegistry));
-
-        vertx.deployVerticle(bridge, context.succeeding(id -> context.completeNow()));
-    }
-
-    @AfterEach
-    void after(VertxTestContext context) {
+        KAFKA_CLUSTER.stop();
         vertx.close(context.succeeding(arg -> context.completeNow()));
     }
 
     @Test
     void sendSimpleMessages(VertxTestContext context) throws InterruptedException {
         String topic = "sendSimpleMessages";
-        kafkaCluster.createTopic(topic, 1, 1);
+        KAFKA_CLUSTER.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(vertx);
 
@@ -169,7 +153,7 @@ class AmqpBridgeTest {
                 String body = "Simple message from " + connection.getContainer();
                 Message message = ProtonHelper.message(topic, body);
 
-                Properties config = kafkaCluster.getConsumerProperties();
+                Properties config = KAFKA_CLUSTER.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
@@ -205,7 +189,7 @@ class AmqpBridgeTest {
     @Test
     void sendSimpleMessageToPartition(VertxTestContext context) throws InterruptedException {
         String topic = "sendSimpleMessageToPartition";
-        kafkaCluster.createTopic(topic, 2, 1);
+        KAFKA_CLUSTER.createTopic(topic, 2, 1);
 
         try {
             Thread.sleep(1000);
@@ -229,7 +213,7 @@ class AmqpBridgeTest {
                 String body = "Simple message from " + connection.getContainer();
                 Message message = ProtonHelper.message(topic, body);
 
-                Properties config = kafkaCluster.getConsumerProperties();
+                Properties config = KAFKA_CLUSTER.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
@@ -272,7 +256,7 @@ class AmqpBridgeTest {
     @Test
     void sendSimpleMessageWithKey(VertxTestContext context) throws InterruptedException {
         String topic = "sendSimpleMessageWithKey";
-        kafkaCluster.createTopic(topic, 1, 1);
+        KAFKA_CLUSTER.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
@@ -289,7 +273,7 @@ class AmqpBridgeTest {
                 String body = "Simple message from " + connection.getContainer();
                 Message message = ProtonHelper.message(topic, body);
 
-                Properties config = kafkaCluster.getConsumerProperties();
+                Properties config = KAFKA_CLUSTER.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
@@ -331,7 +315,7 @@ class AmqpBridgeTest {
     @Test
     void sendBinaryMessage(VertxTestContext context) throws InterruptedException {
         String topic = "sendBinaryMessage";
-        kafkaCluster.createTopic(topic, 1, 1);
+        KAFKA_CLUSTER.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
@@ -347,7 +331,7 @@ class AmqpBridgeTest {
 
                 String value = "Binary message from " + connection.getContainer();
 
-                Properties config = kafkaCluster.getConsumerProperties();
+                Properties config = KAFKA_CLUSTER.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class);
 
@@ -384,7 +368,7 @@ class AmqpBridgeTest {
     @Test
     void sendArrayMessage(VertxTestContext context) throws InterruptedException {
         String topic = "sendArrayMessage";
-        kafkaCluster.createTopic(topic, 1, 1);
+        KAFKA_CLUSTER.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
@@ -401,7 +385,7 @@ class AmqpBridgeTest {
                 // send an array (i.e. integer values)
                 int[] array = {1, 2};
 
-                Properties config = kafkaCluster.getConsumerProperties();
+                Properties config = KAFKA_CLUSTER.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
 
@@ -437,7 +421,7 @@ class AmqpBridgeTest {
     @Test
     void sendListMessage(VertxTestContext context) throws InterruptedException {
         String topic = "sendListMessage";
-        kafkaCluster.createTopic(topic, 1, 1);
+        KAFKA_CLUSTER.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
@@ -456,7 +440,7 @@ class AmqpBridgeTest {
                 list.add("item1");
                 list.add(2);
 
-                Properties config = kafkaCluster.getConsumerProperties();
+                Properties config = KAFKA_CLUSTER.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
 
@@ -492,7 +476,7 @@ class AmqpBridgeTest {
     @Test
     void sendMapMessage(VertxTestContext context) throws InterruptedException {
         String topic = "sendMapMessage";
-        kafkaCluster.createTopic(topic, 1, 1);
+        KAFKA_CLUSTER.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
@@ -511,7 +495,7 @@ class AmqpBridgeTest {
                 map.put("1", 10);
                 map.put(2, "Hello");
 
-                Properties config = kafkaCluster.getConsumerProperties();
+                Properties config = KAFKA_CLUSTER.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
 
@@ -547,7 +531,7 @@ class AmqpBridgeTest {
     @Test
     void sendPeriodicMessage(VertxTestContext context) throws InterruptedException {
         String topic = "sendPeriodicMessage";
-        kafkaCluster.createTopic(topic, 1, 1);
+        KAFKA_CLUSTER.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
@@ -561,7 +545,7 @@ class AmqpBridgeTest {
                 ProtonSender sender = connection.createSender(null);
                 sender.open();
 
-                Properties config = kafkaCluster.getConsumerProperties();
+                Properties config = KAFKA_CLUSTER.getConsumerProperties();
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
@@ -634,7 +618,7 @@ class AmqpBridgeTest {
     @Test
     void sendReceiveInMultiplexing(VertxTestContext context) throws InterruptedException {
         String topic = "sendReceiveInMultiplexing";
-        kafkaCluster.createTopic(topic, 1, 1);
+        KAFKA_CLUSTER.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
@@ -682,12 +666,12 @@ class AmqpBridgeTest {
     @Test
     void receiveSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveSimpleMessage";
-        kafkaCluster.createTopic(topic, 1, 1);
+        KAFKA_CLUSTER.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
 
         Checkpoint consume = context.checkpoint();
-        kafkaCluster.produceStrings(topic, sentBody, 1, 0);
+        KAFKA_CLUSTER.produceStrings(topic, sentBody, 1, 0);
 
         ProtonClient client = ProtonClient.create(this.vertx);
         client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
@@ -740,13 +724,13 @@ class AmqpBridgeTest {
     @Test
     void receiveSimpleMessageFromPartition(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveSimpleMessageFromPartition";
-        kafkaCluster.createTopic(topic, 2, 1);
+        KAFKA_CLUSTER.createTopic(topic, 2, 1);
 
         String sentBody = "Simple message";
 
         // Futures for wait
         Checkpoint consume = context.checkpoint();
-        kafkaCluster.produceStrings(topic, sentBody, 1, 1);
+        KAFKA_CLUSTER.produceStrings(topic, sentBody, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
@@ -806,11 +790,11 @@ class AmqpBridgeTest {
     @Test
     void receiveSimpleMessageFromPartitionAndOffset(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveSimpleMessageFromPartitionAndOffset";
-        kafkaCluster.createTopic(topic, 1, 1);
+        KAFKA_CLUSTER.createTopic(topic, 1, 1);
 
         // Futures for wait
         Checkpoint consume = context.checkpoint();
-        kafkaCluster.produceStrings(topic, 11, 0);
+        KAFKA_CLUSTER.produceStrings(topic, 11, 0);
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
@@ -873,7 +857,7 @@ class AmqpBridgeTest {
     @Test
     void noPartitionsAvailable(VertxTestContext context) throws InterruptedException {
         String topic = "noPartitionsAvailable";
-        kafkaCluster.createTopic(topic, 1, 1);
+        KAFKA_CLUSTER.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
         Checkpoint noPartition = context.checkpoint();
