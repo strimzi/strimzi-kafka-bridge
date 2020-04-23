@@ -164,7 +164,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
     @Test
     void subscriptionConsumerDoesNotExistBecauseAnotherGroup(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "subscriptionConsumerDoesNotExistBecauseAnotherGroup";
-        kafkaCluster.createTopic(topic, 1, 1);
+        adminClientFacade.createAsyncTopic(topic, 1, 1);
         String name = "my-kafka-consumer-does-not-exists-because-another-group";
         String groupId = "my-group";
         String anotherGroupId = "anotherGroupId";
