@@ -49,7 +49,7 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerNameNotSet(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void createConsumerNameAndBridgeIdNotSet(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         JsonObject json = new JsonObject();
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
