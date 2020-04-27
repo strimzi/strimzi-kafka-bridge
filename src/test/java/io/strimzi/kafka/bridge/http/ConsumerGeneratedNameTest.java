@@ -58,7 +58,7 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
-                        LOGGER.info("Verifying that consumer name is created with random suffix");
+                        LOGGER.info("Verifying that consumer name is created with 'my-bridge-' plus random suffix");
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         LOGGER.info("Response code from the Bridge is " + response.statusCode());
@@ -66,7 +66,7 @@ public class ConsumerGeneratedNameTest extends HttpBridgeTestBase {
                         JsonObject bridgeResponse = response.body();
                         consumerInstanceId = bridgeResponse.getString("instance_id");
                         LOGGER.info("Consumer instance of the consumer is " + consumerInstanceId);
-                        assertThat(consumerInstanceId.startsWith("kafka-bridge-consumer-"), is(true));
+                        assertThat(consumerInstanceId.startsWith("my-bridge-"), is(true));
                         create.complete(true);
                     });
                 });
