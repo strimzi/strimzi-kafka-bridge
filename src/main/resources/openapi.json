@@ -546,7 +546,65 @@
                 }
             ]
         },
+        "/topics": {
+            "get": {
+                "tags": [
+                    "Topics"
+                ],
+                "description": "Retrieves a list of topics.",
+                "operationId": "listTopics",
+                "responses": {
+                    "200": {
+                        "description": "List of topics.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Topics"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/topics/{topicname}": {
+            "get": {
+                "tags": [
+                    "Topics"
+                ],
+                "description": "Gets metadata about a given topic.",
+                "operationId": "getTopic",
+                "responses": {
+                    "200": {
+                        "description": "Topic metadata",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TopicMetadata"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The specified topic was not found.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 404,
+                                            "message": "The specified topic was not found."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
             "post": {
                 "tags": [
                     "Topics",
@@ -1138,7 +1196,7 @@
                 "title": "ConsumerRecordList",
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas//ConsumerRecord"
+                    "$ref": "#/components/schemas/ConsumerRecord"
                 },
                 "example": [
                     {
@@ -1564,7 +1622,129 @@
                         }
                     ]
                 }
-            }
+            },
+            "TopicMetadata": {
+                "title": "TopicMetadata",
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the topic",
+                        "type": "string"
+                    },
+                    "configs": {
+                        "description": "Per-topic configuration overrides",
+                        "type": "object",
+                        "additionalProperties": true
+                    },
+                    "partitions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PartitionMetadata"
+                        }
+                    }
+                },
+                "additionalProperties": false,
+                "example": {
+                    "name": "topic",
+                    "offset": 2,
+                    "configs": {
+                        "cleanup.policy": "compact"
+                    },
+                    "partitions": [
+                        {
+                            "partition": 1,
+                            "leader": 1,
+                            "replicas": [
+                                {
+                                    "broker": 1,
+                                    "leader": true,
+                                    "in_sync": true
+                                },
+                                {
+                                    "broker": 2,
+                                    "leader": false,
+                                    "in_sync": true
+                                }
+                            ]
+                        },
+                        {
+                            "partition": 2,
+                            "leader": 2,
+                            "replicas": [
+                                {
+                                    "broker": 1,
+                                    "leader": false,
+                                    "in_sync": true
+                                },
+                                {
+                                    "broker": 2,
+                                    "leader": true,
+                                    "in_sync": true
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "PartitionMetadata": {
+                "title": "PartitionMetadata",
+                "type": "object",
+                "properties": {
+                    "partition": {
+                        "format": "int32",
+                        "type": "integer"
+                    },
+                    "leader": {
+                        "format": "int32",
+                        "type": "integer"
+                    },
+                    "replicas": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Replica"
+                        }
+                    }
+                },
+                "additionalProperties": false,
+                "example": {
+                    "partition": 1,
+                    "leader": 1,
+                    "replicas": [
+                        {
+                            "broker": 1,
+                            "leader": true,
+                            "in_sync": true
+                        },
+                        {
+                            "broker": 2,
+                            "leader": false,
+                            "in_sync": true
+                        }
+                    ]
+                }
+            },
+            "Replica": {
+                "title": "Replica",
+                "type": "object",
+                "properties": {
+                    "broker": {
+                        "format": "int32",
+                        "type": "integer"
+                    },
+                    "leader": {
+                        "type": "boolean"
+                    },
+                    "in_sync": {
+                        "type": "boolean"
+                    }
+                },
+                "additionalProperties": false,
+                "example": {
+                    "broker": 1,
+                    "leader": true,
+                    "in_sync": true
+                }
+            }            
         }
     },
     "tags": [

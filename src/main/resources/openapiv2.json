@@ -487,7 +487,45 @@
         }
       ]
     },
+    "/topics": {
+      "get": {
+        "tags": [
+          "Topics"
+        ],
+        "description": "Retrieves a list of topics.",
+        "operationId": "listTopics",
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of topics.",
+            "schema": {
+              "$ref": "#/definitions/Topics"
+            }
+          }
+        }
+      }
+    },
     "/topics/{topicname}": {
+      "get": {
+        "tags": [
+          "Topics"
+        ],
+        "description": "Gets metadata about a given topic.",
+        "operationId": "getTopic",
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Topic metadata",
+            "schema": {
+              "$ref": "#/definitions/TopicMetadata"
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "Topics",
@@ -1371,7 +1409,129 @@
           }
         ]
       }
-    }
+    },
+    "TopicMetadata": {
+      "title": "TopicMetadata",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Name of the topic",
+          "type": "string"
+        },
+        "configs": {
+          "description": "Per-topic configuration overrides",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "partitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PartitionMetadata"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "example": {
+        "name": "topic",
+        "offset": 2,
+        "configs": {
+          "cleanup.policy": "compact"
+        },
+        "partitions": [
+          {
+            "partition": 1,
+            "leader": 1,
+            "replicas": [
+              {
+                "broker": 1,
+                "leader": true,
+                "in_sync": true
+              },
+              {
+                "broker": 2,
+                "leader": false,
+                "in_sync": true
+              }
+            ]
+          },
+          {
+            "partition": 2,
+            "leader": 2,
+            "replicas": [
+              {
+                "broker": 1,
+                "leader": false,
+                "in_sync": true
+              },
+              {
+                "broker": 2,
+                "leader": true,
+                "in_sync": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "PartitionMetadata": {
+      "title": "PartitionMetadata",
+      "type": "object",
+      "properties": {
+        "partition": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "leader": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "replicas": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Replica"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "example": {
+        "partition": 1,
+        "leader": 1,
+        "replicas": [
+          {
+            "broker": 1,
+            "leader": true,
+            "in_sync": true
+          },
+          {
+            "broker": 2,
+            "leader": false,
+            "in_sync": true
+          }
+        ]
+      }
+    },
+    "Replica": {
+      "title": "Replica",
+      "type": "object",
+      "properties": {
+        "broker": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "leader": {
+          "type": "boolean"
+        },
+        "in_sync": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "example": {
+        "broker": 1,
+        "leader": true,
+        "in_sync": true
+      }
+    }            
   },
   "tags": [
     {
