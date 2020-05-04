@@ -19,16 +19,18 @@ import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.file.FileSystem;
-import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpConnection;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
 import io.vertx.ext.web.api.validation.ValidationException;
 
+import io.vertx.ext.web.handler.CorsHandler;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -36,9 +38,17 @@ import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
+import java.util.Iterator;
+import java.util.HashMap;
+import java.util.HashSet;
+
+import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
+import static io.netty.handler.codec.http.HttpHeaderNames.ORIGIN;
+import static io.netty.handler.codec.http.HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN;
+import static io.netty.handler.codec.http.HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS;
 
 /**
  * Main bridge class listening for connections and handling HTTP requests.
@@ -147,6 +157,34 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 // handling validation errors and not existing endpoints
                 this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
                 this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
+
+                //enable cors
+                if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
+                    Set<String> allowedHeaders = new HashSet<>();
+                    //set predefined headers
+                    allowedHeaders.add("x-requested-with");
+                    allowedHeaders.add(ACCESS_CONTROL_ALLOW_ORIGIN.toString());
+                    allowedHeaders.add(ACCESS_CONTROL_ALLOW_METHODS.toString());
+                    allowedHeaders.add(ORIGIN.toString());
+                    allowedHeaders.add(CONTENT_TYPE.toString());
+                    allowedHeaders.add(ACCEPT.toString());
+
+                    //set allowed methods from property http.cors.allowedMethods
+                    Set<HttpMethod> allowedMethods = new HashSet<>();
+                    String configAllowedMethods = this.bridgeConfig.getHttpConfig().getCorsAllowedMethods();
+                    String[] configAllowedMethodsArray = configAllowedMethods.split(",");
+                    for (String method: configAllowedMethodsArray)
+                        allowedMethods.add(HttpMethod.valueOf(method));
+
+                    //set allowed origins from property http.cors.allowedOrigins
+                    String allowedOrigins = this.bridgeConfig.getHttpConfig().getCorsAllowedOrigins();
+
+                    log.info("Allowed origins for Cors: {}", allowedOrigins);
+
+                    this.router.route().handler(CorsHandler.create(allowedOrigins)
+                            .allowedHeaders(allowedHeaders)
+                            .allowedMethods(allowedMethods));
+                }
 
                 log.info("Starting HTTP-Kafka bridge verticle...");
                 this.httpBridgeContext = new HttpBridgeContext<>();

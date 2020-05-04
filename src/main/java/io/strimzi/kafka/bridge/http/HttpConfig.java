@@ -18,6 +18,9 @@ public class HttpConfig extends AbstractConfig {
     public static final String HTTP_CONFIG_PREFIX = "http.";
 
     public static final String HTTP_ENABLED = HTTP_CONFIG_PREFIX + "enabled";
+    public static final String HTTP_CORS_ENABLED = HTTP_CONFIG_PREFIX + "cors.enabled";
+    public static final String HTTP_CORS_ALLOWED_ORIGINS = HTTP_CONFIG_PREFIX + "cors.allowedOrigins";
+    public static final String HTTP_CORS_ALLOWED_METHODS = HTTP_CONFIG_PREFIX + "cors.allowedMethods";
     public static final String HTTP_HOST = HTTP_CONFIG_PREFIX + "host";
     public static final String HTTP_PORT = HTTP_CONFIG_PREFIX + "port";
     public static final String HTTP_CONSUMER_TIMEOUT = HTTP_CONFIG_PREFIX + "timeoutSeconds";
@@ -62,6 +65,27 @@ public class HttpConfig extends AbstractConfig {
      */
     public long getConsumerTimeout() {
         return Long.parseLong(this.config.getOrDefault(HTTP_CONSUMER_TIMEOUT, DEFAULT_CONSUMER_TIMEOUT).toString());
+    }
+
+    /**
+     * @return if CORS is enabled
+     */
+    public boolean isCorsEnabled() {
+        return Boolean.valueOf(this.config.getOrDefault(HTTP_CORS_ENABLED, false).toString());
+    }
+
+    /**
+     * @return list of CORS Allowed Origins (default *)
+     */
+    public String getCorsAllowedOrigins() {
+        return (String) this.config.getOrDefault(HTTP_CORS_ALLOWED_ORIGINS, "*");
+    }
+
+    /**
+     * @return list of CORS Allowed Methods (default GET,POST,PUT,DELETE,OPTIONS,PATCH)
+     */
+    public String getCorsAllowedMethods() {
+        return (String) this.config.getOrDefault(HTTP_CORS_ALLOWED_METHODS, "GET,POST,PUT,DELETE,OPTIONS,PATCH");
     }
 
     /**

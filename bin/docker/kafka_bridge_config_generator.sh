@@ -122,6 +122,9 @@ HTTP_PROPERTIES=$(cat <<-EOF
 http.enabled=${KAFKA_BRIDGE_HTTP_ENABLED}
 http.host=${KAFKA_BRIDGE_HTTP_HOST}
 http.port=${KAFKA_BRIDGE_HTTP_PORT}
+http.cors.enabled=${KAFKA_BRIDGE_CORS_ENABLED}
+http.cors.allowedOrigins=${KAFKA_BRIDGE_CORS_ALLOWED_ORIGINS}
+http.cors.allowedMethods=${KAFKA_BRIDGE_CORS_ALLOWED_METHODS}
 EOF
 )
 AMQP_PROPERTIES=$(cat <<-EOF
