@@ -150,7 +150,7 @@ public class HttpCorsTests {
                     .send(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(200));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
-                        assertThat(ar.result().getHeader("access-control-allow-headers"), is("Access-Control-Allow-Origin,Access-Control-Allow-Methods,origin,x-requested-with,Content-Type,accept"));
+                        assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,origin,x-requested-with,content-type,access-control-allow-methods,accept"));
                         List<String> list = Arrays.asList(ar.result().getHeader("access-control-allow-methods").split(","));
                         assertThat(list, hasItem("POST"));
                         client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
@@ -185,7 +185,7 @@ public class HttpCorsTests {
                     .send(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(200));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
-                        assertThat(ar.result().getHeader("access-control-allow-headers"), is("Access-Control-Allow-Origin,Access-Control-Allow-Methods,origin,x-requested-with,Content-Type,accept"));
+                        assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,origin,x-requested-with,content-type,access-control-allow-methods,accept"));
                         List<String> list = Arrays.asList(ar.result().getHeader("access-control-allow-methods").split(","));
                         assertThat(list, not(hasItem("POST")));
                         context.completeNow();
