@@ -44,6 +44,8 @@ import java.util.Iterator;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import static io.netty.handler.codec.http.HttpHeaders.Names.*;
+
 /**
  * Main bridge class listening for connections and handling HTTP requests.
  */
@@ -157,11 +159,11 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                     Set<String> allowedHeaders = new HashSet<>();
                     //set predefined headers
                     allowedHeaders.add("x-requested-with");
-                    allowedHeaders.add("Access-Control-Allow-Origin");
-                    allowedHeaders.add("Access-Control-Allow-Methods");
-                    allowedHeaders.add("origin");
-                    allowedHeaders.add("Content-Type");
-                    allowedHeaders.add("accept");
+                    allowedHeaders.add(ACCESS_CONTROL_ALLOW_ORIGIN);
+                    allowedHeaders.add(ACCESS_CONTROL_ALLOW_METHODS);
+                    allowedHeaders.add(ORIGIN);
+                    allowedHeaders.add(CONTENT_TYPE);
+                    allowedHeaders.add(ACCEPT);
 
                     //set allowed methods from property http.cors.allowedMethods
                     Set<HttpMethod> allowedMethods = new HashSet<>();
