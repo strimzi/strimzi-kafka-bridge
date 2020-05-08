@@ -559,7 +559,10 @@
                         "content": {
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Topics"
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
                                 }
                             }
                         }

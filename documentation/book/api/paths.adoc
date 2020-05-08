@@ -936,6 +936,32 @@ Check if the bridge is ready and can accept requests.
 |===
 
 
+[[_listtopics]]
+=== GET /topics
+
+==== Description
+Retrieves a list of topics.
+
+
+==== Responses
+
+[options="header", cols=".^2a,.^14a,.^4a"]
+|===
+|HTTP Code|Description|Schema
+|**200**|List of topics.|< string > array
+|===
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Topics
+
+
 [[_send]]
 === POST /topics/{topicname}
 
@@ -1044,6 +1070,82 @@ __required__||<<_producerrecordlist,ProducerRecordList>>
     "error_code" : 422,
     "message" : "The record list contains invalid records."
   }
+}
+----
+
+
+[[_gettopic]]
+=== GET /topics/{topicname}
+
+==== Description
+Gets metadata about a given topic.
+
+
+==== Parameters
+
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**topicname** +
+__required__|Name of the topic to which you want to send records.|string
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2a,.^14a,.^4a"]
+|===
+|HTTP Code|Description|Schema
+|**200**|Topic metadata|<<_topicmetadata,TopicMetadata>>
+|===
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Topics
+
+
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "name" : "topic",
+  "offset" : 2,
+  "configs" : {
+    "cleanup.policy" : "compact"
+  },
+  "partitions" : [ {
+    "partition" : 1,
+    "leader" : 1,
+    "replicas" : [ {
+      "broker" : 1,
+      "leader" : true,
+      "in_sync" : true
+    }, {
+      "broker" : 2,
+      "leader" : false,
+      "in_sync" : true
+    } ]
+  }, {
+    "partition" : 2,
+    "leader" : 2,
+    "replicas" : [ {
+      "broker" : 1,
+      "leader" : false,
+      "in_sync" : true
+    }, {
+      "broker" : 2,
+      "leader" : true,
+      "in_sync" : true
+    } ]
+  } ]
 }
 ----
 

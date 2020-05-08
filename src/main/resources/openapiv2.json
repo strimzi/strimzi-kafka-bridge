@@ -501,7 +501,10 @@
           "200": {
             "description": "List of topics.",
             "schema": {
-              "$ref": "#/definitions/Topics"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         }

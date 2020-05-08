@@ -143,6 +143,21 @@ __optional__|string
 |===
 
 
+[[_partitionmetadata]]
+=== PartitionMetadata
+
+[options="header", cols=".^3a,.^4a"]
+|===
+|Name|Schema
+|**leader** +
+__optional__|integer (int32)
+|**partition** +
+__optional__|integer (int32)
+|**replicas** +
+__optional__|< <<_replica,Replica>> > array
+|===
+
+
 [[_partitions]]
 === Partitions
 
@@ -192,6 +207,21 @@ __optional__|< <<_producerrecordtopartition,ProducerRecordToPartition>> > array
 |===
 
 
+[[_replica]]
+=== Replica
+
+[options="header", cols=".^3a,.^4a"]
+|===
+|Name|Schema
+|**broker** +
+__optional__|integer (int32)
+|**in_sync** +
+__optional__|boolean
+|**leader** +
+__optional__|boolean
+|===
+
+
 [[_subscribedtopiclist]]
 === SubscribedTopicList
 
@@ -202,6 +232,21 @@ __optional__|< <<_producerrecordtopartition,ProducerRecordToPartition>> > array
 __optional__|< <<_assignedtopicpartitions,AssignedTopicPartitions>> > array
 |**topics** +
 __optional__|<<_topics,Topics>>
+|===
+
+
+[[_topicmetadata]]
+=== TopicMetadata
+
+[options="header", cols=".^3a,.^11a,.^4a"]
+|===
+|Name|Description|Schema
+|**configs** +
+__optional__|Per-topic configuration overrides|object
+|**name** +
+__optional__|Name of the topic|string
+|**partitions** +
+__optional__||< <<_partitionmetadata,PartitionMetadata>> > array
 |===
 
 
