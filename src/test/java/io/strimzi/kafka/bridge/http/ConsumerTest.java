@@ -30,6 +30,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ConsumerTest extends HttpBridgeTestBase {
@@ -1503,7 +1504,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                     JsonObject bridgeResponse = response.body();
                     consumerInstanceId[0] = bridgeResponse.getString("instance_id");
-                    assertThat(consumerInstanceId[0], is("my-bridge-"));
+                    assertThat(consumerInstanceId[0], startsWith("my-bridge-"));
                 });
                 create.complete(true);
             });
