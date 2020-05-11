@@ -1486,4 +1486,32 @@ public class ConsumerTest extends HttpBridgeTestBase {
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         context.completeNow();
     }
+
+    @Test
+    void createConsumerNameIsNotSetAndBridgeIdIsSet(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        JsonObject json = new JsonObject();
+        String[] consumerInstanceId = {""};
+
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
+        consumerService()
+            .createConsumerRequest(groupId, json)
+            .as(BodyCodec.jsonObject())
+            .sendJsonObject(json, ar -> {
+                context.verify(() -> {
+                    assertThat(ar.succeeded(), is(true));
+                    HttpResponse<JsonObject> response = ar.result();
+                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                    JsonObject bridgeResponse = response.body();
+                    consumerInstanceId[0] = bridgeResponse.getString("instance_id");
+                    assertThat(consumerInstanceId[0], is("my-bridge-"));
+                });
+                create.complete(true);
+            });
+
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+            .deleteConsumer(context, groupId, consumerInstanceId[0]);
+        context.completeNow();
+
+    }
 }
