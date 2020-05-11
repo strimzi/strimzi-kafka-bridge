@@ -2,6 +2,8 @@
 
 ## 0.16.0
 
+* Add support for CORS
+
 ## 0.15.0
 
 * Added support for Jaeger tracing
