@@ -54,7 +54,6 @@ public class ConsumerGeneratedNameTest {
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, 5L);
-        config.put(BridgeConfig.BRIDGE_ID, "");
         KAFKA_CLUSTER = new KafkaFacade();
     }
 
@@ -110,7 +109,7 @@ public class ConsumerGeneratedNameTest {
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(json, ar -> {
                     context.verify(() -> {
-                        LOGGER.info("Verifying that consumer name is created with '-' plus random hashcode");
+                        LOGGER.info("Verifying that consumer name is created with 'kafka-bridge-consumer-' plus random hashcode");
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         LOGGER.info("Response code from the Bridge is " + response.statusCode());
@@ -118,7 +117,7 @@ public class ConsumerGeneratedNameTest {
                         JsonObject bridgeResponse = response.body();
                         consumerInstanceId = bridgeResponse.getString("instance_id");
                         LOGGER.info("Consumer instance of the consumer is " + consumerInstanceId);
-                        assertThat(consumerInstanceId.startsWith("-"), is(true));
+                        assertThat(consumerInstanceId.startsWith("kafka-bridge-consumer-"), is(true));
                         create.complete(true);
                     });
                 });
