@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class AdminClientTest extends HttpBridgeTestBase  {
     @Test
@@ -35,6 +36,7 @@ public class AdminClientTest extends HttpBridgeTestBase  {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
+        // send a message and wait its delivery to make sure the topic has been made visible to the brokers
         CompletableFuture<Boolean> producer = new CompletableFuture<>();
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
@@ -74,6 +76,7 @@ public class AdminClientTest extends HttpBridgeTestBase  {
         JsonObject root = new JsonObject();
         root.put("records", records);
 
+        // send a message and wait its delivery to make sure the topic has been made visible to the brokers
         CompletableFuture<Boolean> producer = new CompletableFuture<>();
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
@@ -95,6 +98,9 @@ public class AdminClientTest extends HttpBridgeTestBase  {
                         assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         assertThat(bridgeResponse.getString("name"), is(topic));
+                        JsonObject configs = bridgeResponse.getJsonObject("configs");
+                        assertThat(configs, notNullValue());
+                        assertThat(configs.getString("cleanup.policy"), is("delete"));
                         JsonArray partitions = bridgeResponse.getJsonArray("partitions");
                         assertThat(partitions.size(), is(2));
                         for (int i = 0; i < 2; i++) {

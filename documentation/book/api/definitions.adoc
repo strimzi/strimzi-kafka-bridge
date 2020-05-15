@@ -242,7 +242,7 @@ __optional__|<<_topics,Topics>>
 |===
 |Name|Description|Schema
 |**configs** +
-__optional__|Per-topic configuration overrides|object
+__optional__|Per-topic configuration overrides|< string, string > map
 |**name** +
 __optional__|Name of the topic|string
 |**partitions** +

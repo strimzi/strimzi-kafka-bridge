@@ -492,7 +492,7 @@
         "tags": [
           "Topics"
         ],
-        "description": "Retrieves a list of topics.",
+        "description": "Retrieves a list of all topics.",
         "operationId": "listTopics",
         "produces": [
           "application/vnd.kafka.v2+json"
@@ -505,6 +505,11 @@
               "items": {
                 "type": "string"
               }
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": [
+                "topic1", "topic2"
+              ]
             }
           }
         }
@@ -515,7 +520,7 @@
         "tags": [
           "Topics"
         ],
-        "description": "Gets metadata about a given topic.",
+        "description": "Retrieves the metadata about a given topic.",
         "operationId": "getTopic",
         "produces": [
           "application/vnd.kafka.v2+json"
@@ -525,6 +530,49 @@
             "description": "Topic metadata",
             "schema": {
               "$ref": "#/definitions/TopicMetadata"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "name": "topic",
+                "offset": 2,
+                "configs": {
+                  "cleanup.policy": "compact"
+                },
+                "partitions": [
+                  {
+                    "partition": 1,
+                    "leader": 1,
+                    "replicas": [
+                      {
+                        "broker": 1,
+                        "leader": true,
+                        "in_sync": true
+                      },
+                      {
+                        "broker": 2,
+                        "leader": false,
+                        "in_sync": true
+                      }
+                    ]
+                  },
+                  {
+                    "partition": 2,
+                    "leader": 2,
+                    "replicas": [
+                      {
+                        "broker": 1,
+                        "leader": false,
+                        "in_sync": true
+                      },
+                      {
+                        "broker": 2,
+                        "leader": true,
+                        "in_sync": true
+                      }
+                    ]
+                  }
+                ]
+              }
             }
           }
         }
@@ -608,7 +656,7 @@
         {
           "name": "topicname",
           "in": "path",
-          "description": "Name of the topic to which you want to send records.",
+          "description": "Name of the topic which you want to either retrieve metadata for, or to send records to.",
           "required": true,
           "type": "string"
         }
@@ -1424,7 +1472,9 @@
         "configs": {
           "description": "Per-topic configuration overrides",
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "partitions": {
           "type": "array",
@@ -1543,7 +1593,7 @@
     },
     {
       "name": "Topics",
-      "description": "Topic operations to send messages to a specified topic or topic partition. You can include message keys in requests."
+      "description": "Topic operations to send messages to a specified topic or topic partition, optionally including message keys in requests. You can also retrieve topics and topic metadata."
     },
     {
       "name": "Seek",

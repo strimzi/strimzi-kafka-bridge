@@ -10,8 +10,10 @@ import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.kafka.admin.Config;
 import io.vertx.kafka.admin.KafkaAdminClient;
 import io.vertx.kafka.admin.TopicDescription;
+import io.vertx.kafka.client.common.ConfigResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,8 +22,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+/**
+ * Base class for admin client endpoint
+ */
 public abstract class AdminClientEndpoint implements BridgeEndpoint {
-    protected final Logger log = LoggerFactory.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(AdminClientEndpoint.class);
 
     protected String name;
     protected final Vertx vertx;
@@ -31,9 +36,15 @@ public abstract class AdminClientEndpoint implements BridgeEndpoint {
 
     private KafkaAdminClient adminClient;
 
+    /**
+     * Constructor
+     *
+     * @param vertx Vert.x instance
+     * @param bridgeConfig Bridge configuration
+     */
     public AdminClientEndpoint(Vertx vertx, BridgeConfig bridgeConfig) {
         this.vertx = vertx;
-        this.name = "kafka-bridge-admin-client";
+        this.name = "kafka-bridge-admin";
         this.bridgeConfig = bridgeConfig;
     }
 
@@ -50,11 +61,11 @@ public abstract class AdminClientEndpoint implements BridgeEndpoint {
 
     @Override
     public void open() {
-        // create an admin consumer to handle topic and partition queries
+        // create an admin client
         KafkaConfig kafkaConfig = this.bridgeConfig.getKafkaConfig();
         Properties props = new Properties();
         props.putAll(kafkaConfig.getConfig());
-        props.putAll(kafkaConfig.getConsumerConfig().getConfig());
+        props.putAll(kafkaConfig.getAdminConfig().getConfig());
 
         this.adminClient = KafkaAdminClient.create(this.vertx, props);
     }
@@ -68,7 +79,7 @@ public abstract class AdminClientEndpoint implements BridgeEndpoint {
     }
 
     /**
-     * Returns all the topics which the consumer currently subscribes
+     * Returns all the topics.
      */
     protected void listTopics(Handler<AsyncResult<Set<String>>> handler) {
         log.info("List topics");
@@ -81,6 +92,14 @@ public abstract class AdminClientEndpoint implements BridgeEndpoint {
     protected void describeTopics(List<String> topicNames, Handler<AsyncResult<Map<String, TopicDescription>>> handler) {
         log.info("Describe topics {}", topicNames);
         this.adminClient.describeTopics(topicNames, handler);
+    }
+
+    /**
+     * Returns the configuration of the specified resources.
+     */
+    protected void describeConfigs(List<ConfigResource> configResources, Handler<AsyncResult<Map<ConfigResource, Config>>> handler) {
+        log.info("Describe configs {}", configResources);
+        this.adminClient.describeConfigs(configResources, handler);
     }
 
     /**

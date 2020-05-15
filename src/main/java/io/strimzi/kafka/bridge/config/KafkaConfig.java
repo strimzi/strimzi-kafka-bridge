@@ -17,6 +17,7 @@ public class KafkaConfig extends AbstractConfig {
 
     private KafkaProducerConfig producerConfig;
     private KafkaConsumerConfig consumerConfig;
+    private KafkaAdminConfig adminConfig;
 
     /**
      * Constructor
@@ -24,11 +25,13 @@ public class KafkaConfig extends AbstractConfig {
      * @param config Kafka common configuration parameters map
      * @param consumerConfig Kafka consumer related configuration
      * @param producerConfig Kafka producer related configuration
+     * @param adminConfig Kafka admin related configuration
      */
-    private KafkaConfig(Map<String, Object> config, KafkaConsumerConfig consumerConfig, KafkaProducerConfig producerConfig) {
+    private KafkaConfig(Map<String, Object> config, KafkaConsumerConfig consumerConfig, KafkaProducerConfig producerConfig, KafkaAdminConfig adminConfig) {
         super(config);
         this.consumerConfig = consumerConfig;
         this.producerConfig = producerConfig;
+        this.adminConfig = adminConfig;
     }
 
     /**
@@ -46,6 +49,13 @@ public class KafkaConfig extends AbstractConfig {
     }
 
     /**
+     * @return the Kafka admin configuration
+     */
+    public KafkaAdminConfig getAdminConfig() {
+        return this.adminConfig;
+    }
+
+    /**
      * Loads Kafka related configuration parameters from a related map
      *
      * @param map map from which loading configuration parameters
@@ -54,14 +64,16 @@ public class KafkaConfig extends AbstractConfig {
     public static KafkaConfig fromMap(Map<String, Object> map) {
         KafkaProducerConfig producerConfig = KafkaProducerConfig.fromMap(map);
         KafkaConsumerConfig consumerConfig = KafkaConsumerConfig.fromMap(map);
+        KafkaAdminConfig adminConfig = KafkaAdminConfig.fromMap(map);
 
         // filter the common Kafka related configuration parameters, stripping the prefix as well
         return new KafkaConfig(map.entrySet().stream()
                 .filter(e -> e.getKey().startsWith(KafkaConfig.KAFKA_CONFIG_PREFIX) &&
                         !e.getKey().startsWith(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX) &&
-                        !e.getKey().startsWith(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX))
+                        !e.getKey().startsWith(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX) &&
+                        !e.getKey().startsWith(KafkaAdminConfig.KAFKA_ADMIN_CONFIG_PREFIX))
                 .collect(Collectors.toMap(e -> e.getKey().substring(KafkaConfig.KAFKA_CONFIG_PREFIX.length()), Map.Entry::getValue)),
-                consumerConfig, producerConfig);
+                consumerConfig, producerConfig, adminConfig);
     }
 
     @Override
@@ -70,6 +82,7 @@ public class KafkaConfig extends AbstractConfig {
                 "config=" + this.config +
                 ",consumerConfig=" + this.consumerConfig +
                 ",producerConfig=" + this.producerConfig +
+                ",adminConfig=" + this.adminConfig +
                 ")";
     }
 }

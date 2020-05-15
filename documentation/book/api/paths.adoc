@@ -940,7 +940,7 @@ Check if the bridge is ready and can accept requests.
 === GET /topics
 
 ==== Description
-Retrieves a list of topics.
+Retrieves a list of all topics.
 
 
 ==== Responses
@@ -962,6 +962,17 @@ Retrieves a list of topics.
 * Topics
 
 
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : [ "topic1", "topic2" ]
+}
+----
+
+
 [[_send]]
 === POST /topics/{topicname}
 
@@ -975,7 +986,7 @@ Sends one or more records to a given topic, optionally specifying a partition, k
 |===
 |Type|Name|Description|Schema
 |**Path**|**topicname** +
-__required__|Name of the topic to which you want to send records.|string
+__required__|Name of the topic which you want to either retrieve metadata for, or to send records to.|string
 |**Body**|**body** +
 __required__||<<_producerrecordlist,ProducerRecordList>>
 |===
@@ -1078,7 +1089,7 @@ __required__||<<_producerrecordlist,ProducerRecordList>>
 === GET /topics/{topicname}
 
 ==== Description
-Gets metadata about a given topic.
+Retrieves the metadata about a given topic.
 
 
 ==== Parameters
@@ -1087,7 +1098,7 @@ Gets metadata about a given topic.
 |===
 |Type|Name|Description|Schema
 |**Path**|**topicname** +
-__required__|Name of the topic to which you want to send records.|string
+__required__|Name of the topic which you want to either retrieve metadata for, or to send records to.|string
 |===
 
 
@@ -1116,36 +1127,38 @@ __required__|Name of the topic to which you want to send records.|string
 [source,json]
 ----
 {
-  "name" : "topic",
-  "offset" : 2,
-  "configs" : {
-    "cleanup.policy" : "compact"
-  },
-  "partitions" : [ {
-    "partition" : 1,
-    "leader" : 1,
-    "replicas" : [ {
-      "broker" : 1,
-      "leader" : true,
-      "in_sync" : true
+  "application/vnd.kafka.v2+json" : {
+    "name" : "topic",
+    "offset" : 2,
+    "configs" : {
+      "cleanup.policy" : "compact"
+    },
+    "partitions" : [ {
+      "partition" : 1,
+      "leader" : 1,
+      "replicas" : [ {
+        "broker" : 1,
+        "leader" : true,
+        "in_sync" : true
+      }, {
+        "broker" : 2,
+        "leader" : false,
+        "in_sync" : true
+      } ]
     }, {
-      "broker" : 2,
-      "leader" : false,
-      "in_sync" : true
+      "partition" : 2,
+      "leader" : 2,
+      "replicas" : [ {
+        "broker" : 1,
+        "leader" : false,
+        "in_sync" : true
+      }, {
+        "broker" : 2,
+        "leader" : true,
+        "in_sync" : true
+      } ]
     } ]
-  }, {
-    "partition" : 2,
-    "leader" : 2,
-    "replicas" : [ {
-      "broker" : 1,
-      "leader" : false,
-      "in_sync" : true
-    }, {
-      "broker" : 2,
-      "leader" : true,
-      "in_sync" : true
-    } ]
-  } ]
+  }
 }
 ----
 

@@ -42,11 +42,18 @@ public class HttpBridgeContext<K, V> {
         return this.httpSourceEndpoints;
     }
 
-
+    /**
+     * @return the admin endpoint
+     */
     public AdminClientEndpoint getAdminClientEndpoint() {
         return this.adminClientEndpoint;
     }
 
+    /**
+     * Sets the admin endpoint
+     *
+     * @param adminClientEndpoint the admin endpoint
+     */
     void setAdminClientEndpoint(AdminClientEndpoint adminClientEndpoint) {
         this.adminClientEndpoint = adminClientEndpoint;
     }
@@ -83,7 +90,7 @@ public class HttpBridgeContext<K, V> {
         getHttpSourceEndpoints().clear();
     }
 
-    public void closeAdminClientEndpoints() {
+    public void closeAdminClientEndpoint() {
         if (this.adminClientEndpoint != null)
             this.adminClientEndpoint.close();
     }

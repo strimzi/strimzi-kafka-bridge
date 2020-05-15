@@ -218,7 +218,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         this.httpBridgeContext.closeAllSourceBridgeEndpoints();
 
         // admin client cleanup
-        this.httpBridgeContext.closeAdminClientEndpoints();
+        this.httpBridgeContext.closeAdminClientEndpoint();
 
         if (this.httpServer != null) {
 
