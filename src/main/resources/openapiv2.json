@@ -656,7 +656,7 @@
         {
           "name": "topicname",
           "in": "path",
-          "description": "Name of the topic which you want to either retrieve metadata for, or to send records to.",
+          "description": "Name of the topic which you want to either retrieve metadata for, or send records to.",
           "required": true,
           "type": "string"
         }
@@ -774,7 +774,135 @@
         }
       ]
     },
+    "/topics/{topicname}/partitions": {
+      "get": {
+        "tags": [
+          "Topics"
+        ],
+        "description": "Retrieves a list of partitions for the topic.",
+        "operationId": "listPartitions",
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of partitions",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/PartitionMetadata"
+              }
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": [
+                {
+                  "partition": 1,
+                  "leader": 1,
+                  "replicas": [
+                    {
+                      "broker": 1,
+                      "leader": true,
+                      "in_sync": true
+                    },
+                    {
+                      "broker": 2,
+                      "leader": false,
+                      "in_sync": true
+                    }
+                  ]
+                },
+                {
+                  "partition": 2,
+                  "leader": 2,
+                  "replicas": [
+                    {
+                      "broker": 1,
+                      "leader": false,
+                      "in_sync": true
+                    },
+                    {
+                      "broker": 2,
+                      "leader": true,
+                      "in_sync": true
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "404": {
+            "description": "The specified topic was not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 404,
+                "message": "The specified topic was not found."
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "topicname",
+          "in": "path",
+          "description": "Name of the topic which you want to either retrieve metadata for, or send records to.",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
     "/topics/{topicname}/partitions/{partitionid}": {
+      "get": {
+        "tags": [
+          "Topics"
+        ],
+        "description": "Retrieves a partition metadata for the topic partition.",
+        "operationId": "getPartition",
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Partition metadata",
+            "schema": {
+              "$ref": "#/definitions/PartitionMetadata"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "partition": 1,
+                "leader": 1,
+                "replicas": [
+                  {
+                    "broker": 1,
+                    "leader": true,
+                    "in_sync": true
+                  },
+                  {
+                    "broker": 2,
+                    "leader": false,
+                    "in_sync": true
+                  }
+                ]
+              }
+            }
+          },
+          "404": {
+            "description": "The specified topic partition was not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "examples": {
+              "application/vnd.kafka.v2+json": {
+                "error_code": 404,
+                "message": "The specified topic partition was not found."
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "Topics",
@@ -855,14 +983,14 @@
         {
           "name": "topicname",
           "in": "path",
-          "description": "Name of the topic containing the partition to which you want to send records.",
+          "description": "Name of the topic which you want to either retrieve metadata for, or send records to.",
           "required": true,
           "type": "string"
         },
         {
           "name": "partitionid",
           "in": "path",
-          "description": "ID of the partition to which you want to send records.",
+          "description": "ID of the partition to which you want to either retrieve metadata for, or send records.",
           "required": true,
           "type": "integer"
         }

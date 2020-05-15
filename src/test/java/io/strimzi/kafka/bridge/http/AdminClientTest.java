@@ -25,28 +25,8 @@ import static org.hamcrest.Matchers.notNullValue;
 public class AdminClientTest extends HttpBridgeTestBase  {
     @Test
     void listTopicsTest(VertxTestContext context) throws Exception {
-        String topic = "testListTopics";
-        kafkaCluster.createTopic(topic, 1, 1);
-
-        JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("value", "hello");
-        records.add(json);
-
-        JsonObject root = new JsonObject();
-        root.put("records", records);
-
-        // send a message and wait its delivery to make sure the topic has been made visible to the brokers
-        CompletableFuture<Boolean> producer = new CompletableFuture<>();
-        producerService()
-                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root, ar1 -> {
-                    context.verify(() -> {
-                        assertThat(ar1.succeeded(), is(true));
-                        producer.complete(true);
-                    });
-                });
-        producer.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        final String topic = "testListTopics";
+        setupTopic(context, topic, 1);
 
         baseService()
                 .getRequest("/topics")
@@ -65,28 +45,8 @@ public class AdminClientTest extends HttpBridgeTestBase  {
 
     @Test
     void getTopicTest(VertxTestContext context) throws Exception {
-        String topic = "testGetTopic";
-        kafkaCluster.createTopic(topic, 2, 1);
-
-        JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("value", "hello");
-        records.add(json);
-
-        JsonObject root = new JsonObject();
-        root.put("records", records);
-
-        // send a message and wait its delivery to make sure the topic has been made visible to the brokers
-        CompletableFuture<Boolean> producer = new CompletableFuture<>();
-        producerService()
-                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root, ar1 -> {
-                    context.verify(() -> {
-                        assertThat(ar1.succeeded(), is(true));
-                        producer.complete(true);
-                    });
-                });
-        producer.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        final String topic = "testGetTopic";
+        setupTopic(context, topic, 2);
 
         baseService()
                 .getRequest("/topics/" + topic)
@@ -121,7 +81,7 @@ public class AdminClientTest extends HttpBridgeTestBase  {
 
     @Test
     void getTopicNotFoundTest(VertxTestContext context) throws Exception {
-        String topic = "testGetTopicNotFound";
+        final String topic = "testGetTopicNotFound";
 
         baseService()
                 .getRequest("/topics/" + topic)
@@ -136,4 +96,85 @@ public class AdminClientTest extends HttpBridgeTestBase  {
                 });
     }
 
+    @Test
+    void listPartitionsTest(VertxTestContext context) throws Exception {
+        final String topic = "testListPartitions";
+        setupTopic(context, topic, 2);
+
+        baseService()
+                .getRequest("/topics/" + topic + "/partitions")
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonArray> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        JsonArray bridgeResponse = response.body();
+                        assertThat(bridgeResponse.size(), is(2));
+                        for (int i = 0; i < 2; i++) {
+                            JsonObject partition = bridgeResponse.getJsonObject(i);
+                            assertThat(partition.getInteger("partition"), is(i));
+                            assertThat(partition.getInteger("leader"), is(1));
+                            JsonArray replicas = partition.getJsonArray("replicas");
+                            assertThat(replicas.size(), is(1));
+                            JsonObject replica0 = replicas.getJsonObject(0);
+                            assertThat(replica0.getInteger("broker"), is(1));
+                            assertThat(replica0.getBoolean("leader"), is(true));
+                            assertThat(replica0.getBoolean("in_sync"), is(true));
+                        }
+                    });
+                    context.completeNow();
+                });
+    }
+
+    @Test
+    void getPartitionTest(VertxTestContext context) throws Exception {
+        final String topic = "testGetPartition";
+        setupTopic(context, topic, 2);
+
+        baseService()
+                .getRequest("/topics/" + topic + "/partitions/0")
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        JsonObject bridgeResponse = response.body();
+                        assertThat(bridgeResponse.getInteger("partition"), is(0));
+                        assertThat(bridgeResponse.getInteger("leader"), is(1));
+                        JsonArray replicas = bridgeResponse.getJsonArray("replicas");
+                        assertThat(replicas.size(), is(1));
+                        JsonObject replica0 = replicas.getJsonObject(0);
+                        assertThat(replica0.getInteger("broker"), is(1));
+                        assertThat(replica0.getBoolean("leader"), is(true));
+                        assertThat(replica0.getBoolean("in_sync"), is(true));
+                    });
+                    context.completeNow();
+                });
+    }
+
+    void setupTopic(VertxTestContext context, String topic, int partitions) throws Exception {
+        kafkaCluster.createTopic(topic, 2, 1);
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", "hello");
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        // send a message and wait its delivery to make sure the topic has been made visible to the brokers
+        CompletableFuture<Boolean> producer = new CompletableFuture<>();
+        producerService()
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root, ar1 -> {
+                    context.verify(() -> {
+                        assertThat(ar1.succeeded(), is(true));
+                        producer.complete(true);
+                    });
+                });
+        producer.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+    }
 }

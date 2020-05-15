@@ -1018,7 +1018,7 @@ Sends one or more records to a given topic, optionally specifying a partition, k
 |===
 |Type|Name|Description|Schema
 |**Path**|**topicname** +
-__required__|Name of the topic which you want to either retrieve metadata for, or to send records to.|string
+__required__|Name of the topic which you want to either retrieve metadata for, or send records to.|string
 |**Body**|**body** +
 __required__||<<_producerrecordlist,ProducerRecordList>>
 |===
@@ -1130,7 +1130,7 @@ Retrieves the metadata about a given topic.
 |===
 |Type|Name|Description|Schema
 |**Path**|**topicname** +
-__required__|Name of the topic which you want to either retrieve metadata for, or to send records to.|string
+__required__|Name of the topic which you want to either retrieve metadata for, or send records to.|string
 |===
 
 
@@ -1195,6 +1195,90 @@ __required__|Name of the topic which you want to either retrieve metadata for, o
 ----
 
 
+[[_listpartitions]]
+=== GET /topics/{topicname}/partitions
+
+==== Description
+Retrieves a list of partitions for the topic.
+
+
+==== Parameters
+
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**topicname** +
+__required__|Name of the topic which you want to either retrieve metadata for, or send records to.|string
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2a,.^14a,.^4a"]
+|===
+|HTTP Code|Description|Schema
+|**200**|List of partitions|< <<_partitionmetadata,PartitionMetadata>> > array
+|**404**|The specified topic was not found.|<<_error,Error>>
+|===
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Topics
+
+
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : [ {
+    "partition" : 1,
+    "leader" : 1,
+    "replicas" : [ {
+      "broker" : 1,
+      "leader" : true,
+      "in_sync" : true
+    }, {
+      "broker" : 2,
+      "leader" : false,
+      "in_sync" : true
+    } ]
+  }, {
+    "partition" : 2,
+    "leader" : 2,
+    "replicas" : [ {
+      "broker" : 1,
+      "leader" : false,
+      "in_sync" : true
+    }, {
+      "broker" : 2,
+      "leader" : true,
+      "in_sync" : true
+    } ]
+  } ]
+}
+----
+
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified topic was not found."
+  }
+}
+----
+
+
 [[_sendtopartition]]
 === POST /topics/{topicname}/partitions/{partitionid}
 
@@ -1208,9 +1292,9 @@ Sends one or more records to a given topic partition, optionally specifying a ke
 |===
 |Type|Name|Description|Schema
 |**Path**|**partitionid** +
-__required__|ID of the partition to which you want to send records.|integer
+__required__|ID of the partition to which you want to either retrieve metadata for, or send records.|integer
 |**Path**|**topicname** +
-__required__|Name of the topic containing the partition to which you want to send records.|string
+__required__|Name of the topic which you want to either retrieve metadata for, or send records to.|string
 |**Body**|**body** +
 __required__|List of records to send to a given topic partition, including a value (required) and a key (optional).|<<_producerrecordtopartitionlist,ProducerRecordToPartitionList>>
 |===
@@ -1301,6 +1385,80 @@ __required__|List of records to send to a given topic partition, including a val
   "application/vnd.kafka.v2+json" : {
     "error_code" : 422,
     "message" : "The record is not valid."
+  }
+}
+----
+
+
+[[_getpartition]]
+=== GET /topics/{topicname}/partitions/{partitionid}
+
+==== Description
+Retrieves a partition metadata for the topic partition.
+
+
+==== Parameters
+
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**partitionid** +
+__required__|ID of the partition to which you want to either retrieve metadata for, or send records.|integer
+|**Path**|**topicname** +
+__required__|Name of the topic which you want to either retrieve metadata for, or send records to.|string
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2a,.^14a,.^4a"]
+|===
+|HTTP Code|Description|Schema
+|**200**|Partition metadata|<<_partitionmetadata,PartitionMetadata>>
+|**404**|The specified topic partition was not found.|<<_error,Error>>
+|===
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Topics
+
+
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "partition" : 1,
+    "leader" : 1,
+    "replicas" : [ {
+      "broker" : 1,
+      "leader" : true,
+      "in_sync" : true
+    }, {
+      "broker" : 2,
+      "leader" : false,
+      "in_sync" : true
+    } ]
+  }
+}
+----
+
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified topic partition was not found."
   }
 }
 ----

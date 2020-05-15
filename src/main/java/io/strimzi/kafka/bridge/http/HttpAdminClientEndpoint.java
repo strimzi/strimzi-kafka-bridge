@@ -23,6 +23,7 @@ import io.vertx.kafka.admin.Config;
 import io.vertx.kafka.admin.ConfigEntry;
 import io.vertx.kafka.admin.TopicDescription;
 import io.vertx.kafka.client.common.ConfigResource;
+import io.vertx.kafka.client.common.TopicPartitionInfo;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 
 import java.util.Collections;
@@ -60,6 +61,14 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
 
             case GET_TOPIC:
                 doGetTopic(routingContext);
+                break;
+
+            case LIST_PARTITIONS:
+                doListPartitions(routingContext);
+                break;
+
+            case GET_PARTITION:
+                doGetPartition(routingContext);
                 break;
 
             default:
@@ -156,5 +165,103 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         });
+    }
+
+    public void doListPartitions(RoutingContext routingContext) {
+        String topicName = routingContext.pathParam("topicname");
+        describeTopics(Collections.singletonList(topicName), describeTopicsResult -> {
+            if (describeTopicsResult.succeeded()) {
+                Map<String, TopicDescription> topicDescriptions = describeTopicsResult.result();
+                JsonArray root = new JsonArray();
+                TopicDescription description = topicDescriptions.get(topicName);
+                if (description != null) {
+                    description.getPartitions().forEach(partitionInfo -> {
+                        root.add(createPartitionMetadata(partitionInfo));
+                    });
+                }
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
+            } else if (describeTopicsResult.cause() instanceof UnknownTopicOrPartitionException) {
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.NOT_FOUND.code(),
+                        describeTopicsResult.cause().getMessage()
+                );
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            } else {
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        describeTopicsResult.cause().getMessage()
+                );
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            }
+        });
+    }
+
+    public void doGetPartition(RoutingContext routingContext) {
+        String topicName = routingContext.pathParam("topicname");
+        final int partitionId;
+        try {
+            partitionId = Integer.parseInt(routingContext.pathParam("partitionid"));
+        } catch (NumberFormatException ne) {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                    "Specified partition is not a valid number");
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            return;
+        }
+        describeTopics(Collections.singletonList(topicName), describeTopicsResult -> {
+            if (describeTopicsResult.succeeded()) {
+                Map<String, TopicDescription> topicDescriptions = describeTopicsResult.result();
+                TopicDescription description = topicDescriptions.get(topicName);
+                if (description != null && partitionId < description.getPartitions().size()) {
+                    JsonObject root = createPartitionMetadata(description.getPartitions().get(partitionId));
+                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
+                } else {
+                    HttpBridgeError error = new HttpBridgeError(
+                            HttpResponseStatus.NOT_FOUND.code(),
+                            "Specified partition does not exist."
+                    );
+                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
+                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                }
+            } else if (describeTopicsResult.cause() instanceof UnknownTopicOrPartitionException) {
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.NOT_FOUND.code(),
+                        describeTopicsResult.cause().getMessage()
+                );
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            } else {
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        describeTopicsResult.cause().getMessage()
+                );
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            }
+        });
+    }
+
+    private static JsonObject createPartitionMetadata(TopicPartitionInfo partitionInfo) {
+        int leaderId = partitionInfo.getLeader().getId();
+        JsonObject root = new JsonObject();
+        root.put("partition", partitionInfo.getPartition());
+        root.put("leader", leaderId);
+        JsonArray replicasArray = new JsonArray();
+        Set<Integer> insyncSet = new HashSet<Integer>();
+        partitionInfo.getIsr().forEach(node -> {
+            insyncSet.add(node.getId());
+        });
+        partitionInfo.getReplicas().forEach(node -> {
+            JsonObject replica = new JsonObject();
+            replica.put("broker", node.getId());
+            replica.put("leader", leaderId == node.getId());
+            replica.put("in_sync", insyncSet.contains(node.getId()));
+            replicasArray.add(replica);
+        });
+        root.put("replicas", replicasArray);
+        return root;
     }
 }

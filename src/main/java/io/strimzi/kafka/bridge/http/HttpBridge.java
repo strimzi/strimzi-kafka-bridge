@@ -158,6 +158,8 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 routerFactory.addHandlerByOperationId(this.SEEK_TO_END.getOperationId().toString(), this.SEEK_TO_END);
                 routerFactory.addHandlerByOperationId(this.LIST_TOPICS.getOperationId().toString(), this.LIST_TOPICS);
                 routerFactory.addHandlerByOperationId(this.GET_TOPIC.getOperationId().toString(), this.GET_TOPIC);
+                routerFactory.addHandlerByOperationId(this.LIST_PARTITIONS.getOperationId().toString(), this.LIST_PARTITIONS);
+                routerFactory.addHandlerByOperationId(this.GET_PARTITION.getOperationId().toString(), this.GET_PARTITION);
                 routerFactory.addHandlerByOperationId(this.HEALTHY.getOperationId().toString(), this.HEALTHY);
                 routerFactory.addHandlerByOperationId(this.READY.getOperationId().toString(), this.READY);
                 routerFactory.addHandlerByOperationId(this.OPENAPI.getOperationId().toString(), this.OPENAPI);
@@ -345,6 +347,16 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private void getTopic(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.GET_TOPIC);
+        processAdminClient(routingContext);
+    }
+
+    private void listPartitions(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.LIST_PARTITIONS);
+        processAdminClient(routingContext);
+    }
+
+    private void getPartition(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.GET_PARTITION);
         processAdminClient(routingContext);
     }
 
@@ -646,6 +658,22 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         @Override
         public void process(RoutingContext routingContext) {
             getTopic(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation LIST_PARTITIONS = new HttpOpenApiOperation(HttpOpenApiOperations.LIST_PARTITIONS) {
+
+        @Override
+        public void process(RoutingContext routingContext) {
+            listPartitions(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation GET_PARTITION = new HttpOpenApiOperation(HttpOpenApiOperations.GET_PARTITION) {
+
+        @Override
+        public void process(RoutingContext routingContext) {
+            getPartition(routingContext);
         }
     };
 
