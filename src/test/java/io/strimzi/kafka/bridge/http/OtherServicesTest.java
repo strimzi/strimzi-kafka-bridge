@@ -48,10 +48,13 @@ public class OtherServicesTest extends HttpBridgeTestBase {
                 .getRequest("/healthy")
                     .send(ar -> {
                         context.verify(() -> {
+                            LOGGER.info("Verifying that endpoint /healthy is ready " + ar.succeeded() + " for "
+                                + l + " time with status code " + ar.result().statusCode());
                             assertThat(ar.succeeded(), is(true));
                             assertThat(ar.result().statusCode(), is(HttpResponseStatus.OK.code()));
                         });
                         if (l == iterations) {
+                            LOGGER.info("Successfully completing the context");
                             context.completeNow();
                         }
                     });

@@ -30,6 +30,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ConsumerTest extends HttpBridgeTestBase {
@@ -87,8 +88,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
+    @DisabledIfEnvironmentVariable(named = "BRIDGE_EXTERNAL_ENV", matches = "((?i)FALSE(?-i))")
     @Test
-    @DisabledIfEnvironmentVariable(named = "STRIMZI_USE_SYSTEM_BRIDGE", matches = "((?i)TRUE(?-i))")
     void createConsumerEmptyBody(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         AtomicReference<String> name = new AtomicReference<>();
         // create consumer
@@ -1485,5 +1486,33 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 });
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         context.completeNow();
+    }
+
+    @Test
+    void createConsumerNameIsNotSetAndBridgeIdIsSet(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        JsonObject json = new JsonObject();
+        String[] consumerInstanceId = {""};
+
+        CompletableFuture<Boolean> create = new CompletableFuture<>();
+        consumerService()
+            .createConsumerRequest(groupId, json)
+            .as(BodyCodec.jsonObject())
+            .sendJsonObject(json, ar -> {
+                context.verify(() -> {
+                    assertThat(ar.succeeded(), is(true));
+                    HttpResponse<JsonObject> response = ar.result();
+                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                    JsonObject bridgeResponse = response.body();
+                    consumerInstanceId[0] = bridgeResponse.getString("instance_id");
+                    assertThat(consumerInstanceId[0], startsWith("my-bridge-"));
+                });
+                create.complete(true);
+            });
+
+        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+            .deleteConsumer(context, groupId, consumerInstanceId[0]);
+        context.completeNow();
+
     }
 }
