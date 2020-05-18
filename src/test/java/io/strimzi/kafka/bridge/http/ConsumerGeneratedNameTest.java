@@ -44,7 +44,7 @@ import static org.hamcrest.Matchers.is;
 @ExtendWith(VertxExtension.class)
 public class ConsumerGeneratedNameTest {
 
-    private static final Logger LOGGER = LogManager.getLogger(HttpBridgeTestBase.class);
+    private static final Logger LOGGER = LogManager.getLogger(ConsumerGeneratedNameTest.class);
 
     private static Map<String, Object> config = new HashMap<>();
     private static final KafkaFacade KAFKA_CLUSTER;
