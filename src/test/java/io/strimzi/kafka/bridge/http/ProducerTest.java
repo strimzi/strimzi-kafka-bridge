@@ -20,6 +20,7 @@ import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -174,6 +175,7 @@ public class ProducerTest extends HttpBridgeTestBase {
         });
     }
 
+    @Disabled("Will be check in the next PR, this is just external tests for Bridge")
     @DisabledIfEnvironmentVariable(named = "BRIDGE_EXTERNAL_ENV", matches = "((?i)FALSE(?-i))")
     @Test
     void sendBinaryMessageWithKey(VertxTestContext context) {
