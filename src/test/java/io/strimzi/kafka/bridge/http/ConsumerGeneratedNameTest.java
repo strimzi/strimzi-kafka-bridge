@@ -6,6 +6,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.strimzi.StrimziKafkaContainer;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.JmxCollectorRegistry;
 import io.strimzi.kafka.bridge.MetricsReporter;
@@ -52,14 +53,14 @@ public class ConsumerGeneratedNameTest {
     private static final Logger LOGGER = LogManager.getLogger(ConsumerGeneratedNameTest.class);
 
     private static Map<String, Object> config = new HashMap<>();
-    private static final KafkaContainer KAFKA_CLUSTER;
+    private static final StrimziKafkaContainer KAFKA_CLUSTER;
 
     static {
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, 5L);
-        KAFKA_CLUSTER = new KafkaContainer();
+        KAFKA_CLUSTER = new StrimziKafkaContainer("latest-kafka-2.4.0");
     }
 
     private static final int TEST_TIMEOUT = 60;

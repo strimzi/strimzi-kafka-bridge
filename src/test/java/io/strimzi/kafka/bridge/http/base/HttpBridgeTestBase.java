@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.http.base;
 
+import io.strimzi.StrimziKafkaContainer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.StrimziKafkaContainer;
 import io.strimzi.kafka.bridge.HealthChecker;
@@ -61,12 +62,12 @@ public abstract class HttpBridgeTestBase {
     protected static  final int TEST_TIMEOUT = 60;
     protected int count;
 
-    public static final KafkaContainer KAFKA_CONTAINER;
+    public static final StrimziKafkaContainer KAFKA_CONTAINER;
 
     protected static long timeout = 5L;
 
     static {
-        KAFKA_CONTAINER = new KafkaContainer();
+        KAFKA_CONTAINER = new StrimziKafkaContainer("latest-kafka-2.4.0");
         KAFKA_CONTAINER.start();
 
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_CONTAINER.getBootstrapServers());
