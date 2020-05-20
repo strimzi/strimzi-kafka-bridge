@@ -57,7 +57,6 @@ public abstract class HttpBridgeTestBase {
     protected static final int PERIODIC_MAX_MESSAGE = 10;
     protected static final int PERIODIC_DELAY = 200;
     protected static final int MULTIPLE_MAX_MESSAGE = 10;
-    protected static final int TEST_TIMEOUT = 60;
     protected int count;
 
     public static final KafkaContainer KAFKA_CONTAINER;

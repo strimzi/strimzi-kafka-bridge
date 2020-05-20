@@ -30,7 +30,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -105,8 +104,6 @@ public class ConsumerGeneratedNameTest {
         vertx.close(context.succeeding(arg -> context.completeNow()));
     }
 
-    @Disabled("java.util.concurrent.TimeoutException because somethings there is created 'my-bridge-72e9dead-' + hash" +
-        "and sometimes 'kafka-bridge-consumer-'ds + hash")
     @Test
     void createConsumerNameIsNotSetAndBridgeIdNotSet(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         JsonObject json = new JsonObject();
