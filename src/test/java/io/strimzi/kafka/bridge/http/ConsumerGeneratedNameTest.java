@@ -40,7 +40,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static io.strimzi.kafka.bridge.http.base.HttpBridgeTestBase.TEST_TIMEOUT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -60,13 +59,14 @@ public class ConsumerGeneratedNameTest {
         KAFKA_CLUSTER = new KafkaFacade();
     }
 
-    static Vertx vertx;
-    static HttpBridge httpBridge;
-    static WebClient client;
-    static BridgeConfig bridgeConfig;
-    static MeterRegistry meterRegistry = null;
-    static JmxCollectorRegistry jmxCollectorRegistry = null;
-    static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
+    private static final int TEST_TIMEOUT = 60;
+    private static Vertx vertx;
+    private static HttpBridge httpBridge;
+    private static WebClient client;
+    private static BridgeConfig bridgeConfig;
+    private static MeterRegistry meterRegistry = null;
+    private static JmxCollectorRegistry jmxCollectorRegistry = null;
+    private static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
 
     ConsumerService consumerService() {
         return ConsumerService.getInstance(client);

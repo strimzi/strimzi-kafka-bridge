@@ -91,7 +91,7 @@ public class HttpCorsTests {
         createWebClient();
         configureBridge(false, null);
 
-        if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
+        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://evil.io")
@@ -118,7 +118,7 @@ public class HttpCorsTests {
         createWebClient();
         configureBridge(true, null);
 
-        if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
+        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://evil.io")
@@ -150,7 +150,7 @@ public class HttpCorsTests {
 
         final String origin = "https://strimzi.io";
 
-        if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
+        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://strimzi.io")
@@ -185,7 +185,7 @@ public class HttpCorsTests {
 
         final String origin = "https://strimzi.io";
 
-        if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
+        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://strimzi.io")
@@ -212,7 +212,7 @@ public class HttpCorsTests {
     }
 
     private void configureBridge(boolean corsEnabled, String methodsAllowed) {
-        if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
+        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
             config.put(HttpConfig.HTTP_CORS_ENABLED, String.valueOf(corsEnabled));
             config.put(HttpConfig.HTTP_CORS_ALLOWED_ORIGINS, "https://strimzi.io");
             config.put(HttpConfig.HTTP_CORS_ALLOWED_METHODS, methodsAllowed != null ? methodsAllowed : "GET,POST,PUT,DELETE,OPTIONS,PATCH");
