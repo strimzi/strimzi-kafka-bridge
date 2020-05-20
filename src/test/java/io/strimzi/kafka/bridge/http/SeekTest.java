@@ -60,7 +60,7 @@ public class SeekTest extends HttpBridgeTestBase {
     @Test
     void seekToNotExistingPartitionInSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToNotExistingPartitionInSubscribedTopic";
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         // create consumer
         consumerService()
@@ -124,7 +124,7 @@ public class SeekTest extends HttpBridgeTestBase {
     @Test
     void seekToBeginningAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToBeginningAndReceive";
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         basicKafkaClient.sendMessagesPlain(topic, 10);
 
@@ -198,10 +198,10 @@ public class SeekTest extends HttpBridgeTestBase {
 
         // topics deletion
         LOGGER.info("Deleting async topics " + topic + " via Admin client");
-        adminClientFacade.deleteAsyncTopic(topic);
+        adminClientFacade.deleteTopic(topic);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.listAsyncTopic().size(), is(0));
+        assertThat(adminClientFacade.listTopic().size(), is(0));
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -210,7 +210,7 @@ public class SeekTest extends HttpBridgeTestBase {
     @Test
     void seekToEndAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToEndAndReceive";
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));
@@ -281,10 +281,10 @@ public class SeekTest extends HttpBridgeTestBase {
 
         // topics deletion
         LOGGER.info("Deleting async topics " + topic + " via Admin client");
-        adminClientFacade.deleteAsyncTopic(topic);
+        adminClientFacade.deleteTopic(topic);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.listAsyncTopic().size(), is(0));
+        assertThat(adminClientFacade.listTopic().size(), is(0));
 
 
         context.completeNow();
@@ -301,7 +301,7 @@ public class SeekTest extends HttpBridgeTestBase {
 
         String topic = "seekToOffsetAndReceive";
 
-        adminClientFacade.createAsyncTopic(topic, 2, 1);
+        adminClientFacade.createTopic(topic, 2, 1);
 
         basicKafkaClient.sendJsonMessagesPlain(topic, 10, "value", 0);
         basicKafkaClient.sendJsonMessagesPlain(topic, 10, "value", 1);
@@ -391,10 +391,10 @@ public class SeekTest extends HttpBridgeTestBase {
 
         // topics deletion
         LOGGER.info("Deleting async topics " + topic + " via Admin client");
-        adminClientFacade.deleteAsyncTopic(topic);
+        adminClientFacade.deleteTopic(topic);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.listAsyncTopic().size(), is(0));
+        assertThat(adminClientFacade.listTopic().size(), is(0));
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -407,8 +407,8 @@ public class SeekTest extends HttpBridgeTestBase {
 
         LOGGER.info("Creating topics " + subscribedTopic + "," + notSubscribedTopic);
 
-        adminClientFacade.createAsyncTopic(subscribedTopic);
-        adminClientFacade.createAsyncTopic(notSubscribedTopic);
+        adminClientFacade.createTopic(subscribedTopic);
+        adminClientFacade.createTopic(notSubscribedTopic);
 
         JsonObject jsonConsumer = new JsonObject()
                                     .put("name", name)
@@ -462,8 +462,8 @@ public class SeekTest extends HttpBridgeTestBase {
 
         // topics deletion
         LOGGER.info("Deleting async topics " + subscribedTopic + "," + notSubscribedTopic + " via Admin client");
-        adminClientFacade.deleteAsyncTopic(subscribedTopic);
-        adminClientFacade.deleteAsyncTopic(notSubscribedTopic);
+        adminClientFacade.deleteTopic(subscribedTopic);
+        adminClientFacade.deleteTopic(notSubscribedTopic);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
         assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
@@ -479,8 +479,8 @@ public class SeekTest extends HttpBridgeTestBase {
 
         LOGGER.info("Creating topics " + subscribedTopic + "," + notSubscribedTopic);
 
-        adminClientFacade.createAsyncTopic(subscribedTopic);
-        adminClientFacade.createAsyncTopic(notSubscribedTopic);
+        adminClientFacade.createTopic(subscribedTopic);
+        adminClientFacade.createTopic(notSubscribedTopic);
 
         JsonObject jsonConsumer = new JsonObject()
                                     .put("name", name)
@@ -535,12 +535,12 @@ public class SeekTest extends HttpBridgeTestBase {
 
         // topics deletion
         LOGGER.info("Deleting async topics " + subscribedTopic + "," + notSubscribedTopic + " via Admin client");
-        adminClientFacade.deleteAsyncTopic(subscribedTopic);
-        adminClientFacade.deleteAsyncTopic(notSubscribedTopic);
+        adminClientFacade.deleteTopic(subscribedTopic);
+        adminClientFacade.deleteTopic(notSubscribedTopic);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        LOGGER.info("Following topics " + adminClientFacade.listAsyncTopic().toString());
-        assertThat(adminClientFacade.listAsyncTopic().size(), is(0));
+        LOGGER.info("Following topics " + adminClientFacade.listTopic().toString());
+        assertThat(adminClientFacade.listTopic().size(), is(0));
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));

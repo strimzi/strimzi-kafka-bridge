@@ -466,7 +466,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void receiveSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveSimpleMessage";
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         String sentBody = "Simple message";
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
@@ -517,7 +517,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void receiveBinaryMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveBinaryMessage";
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         String sentBody = "Simple message";
 //        kafkaCluster.produce(topic, sentBody.getBytes(), 1, 0);
@@ -567,7 +567,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .deleteConsumer(context, groupId, name);
 
         // topics deletion
-        adminClientFacade.deleteAsyncTopic(topic);
+        adminClientFacade.deleteTopic(topic);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
         assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
@@ -581,8 +581,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String topic1 = "receiveSimpleMessage-1";
         String topic2 = "receiveSimpleMessage-2";
 
-        adminClientFacade.createAsyncTopic(topic1);
-        adminClientFacade.createAsyncTopic(topic2);
+        adminClientFacade.createTopic(topic1);
+        adminClientFacade.createTopic(topic2);
 
         basicKafkaClient.sendJsonMessagesPlain(topic1, 1, "Simple message", 0, true);
         basicKafkaClient.sendJsonMessagesPlain(topic2, 1, "Simple message", 0, true);
@@ -630,8 +630,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .deleteConsumer(context, groupId, name);
 
         // topics deletion
-        adminClientFacade.deleteAsyncTopic(topic1);
-        adminClientFacade.deleteAsyncTopic(topic2);
+        adminClientFacade.deleteTopic(topic1);
+        adminClientFacade.deleteTopic(topic2);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
         assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
@@ -645,13 +645,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String topic1 = "receiveWithPattern-1";
         String topic2 = "receiveWithPattern-2";
 
-        adminClientFacade.createAsyncTopic(topic1);
-        adminClientFacade.createAsyncTopic(topic2);
+        adminClientFacade.createTopic(topic1);
+        adminClientFacade.createTopic(topic2);
 
         String message = "Simple message";
 
-//        kafkaCluster.produce(topic1, sentBody1, 1, 0);
-//        kafkaCluster.produce(topic2, sentBody2, 1, 0);
         basicKafkaClient.sendJsonMessagesPlain(topic1, 1, message, 0, true);
         basicKafkaClient.sendJsonMessagesPlain(topic2, 1, message, 0, true);
 
@@ -701,8 +699,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .deleteConsumer(context, groupId, name);
 
         // topics deletion
-        adminClientFacade.deleteAsyncTopic(topic1);
-        adminClientFacade.deleteAsyncTopic(topic2);
+        adminClientFacade.deleteTopic(topic1);
+        adminClientFacade.deleteTopic(topic2);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
         assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
@@ -716,7 +714,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String topic = "receiveSimpleMessageFromPartition";
         int partition = 1;
 
-        adminClientFacade.createAsyncTopic(topic, 2, 1);
+        adminClientFacade.createTopic(topic, 2, 1);
 
         String sentBody = "Simple message from partition";
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, partition, true);
@@ -767,7 +765,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     void receiveSimpleMessageFromMultiplePartitions(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveSimpleMessageFromMultiplePartitions";
 
-        adminClientFacade.createAsyncTopic(topic, 2, 1);
+        adminClientFacade.createTopic(topic, 2, 1);
 
         String sentBody = "value";
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
@@ -824,7 +822,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void commitOffset(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "commitOffset";
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         String sentBody = "Simple message";
 
@@ -900,7 +898,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         // topics deletion
         LOGGER.info("Deleting async topics " + topic + " via Admin client");
-        adminClientFacade.deleteAsyncTopic(topic);
+        adminClientFacade.deleteTopic(topic);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
         assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
@@ -912,7 +910,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void commitEmptyOffset(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "commitEmptyOffset";
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         String sentBody = "Simple message";
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
@@ -982,7 +980,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void consumerAlreadyExistsTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "consumerAlreadyExistsTest";
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         String name = "my-kafka-consumer4";
         JsonObject json = new JsonObject();
@@ -1089,10 +1087,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
     void doNotRespondTooLongMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "doNotRespondTooLongMessage";
 
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
-//        String sentBody = "Simple message";
-//        kafkaCluster.produceStrings(topic, sentBody, 1, 0);
         basicKafkaClient.sendMessagesPlain(topic, 1);
 
         JsonObject json = new JsonObject();
@@ -1129,7 +1125,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .deleteConsumer(context, groupId, name);
 
         // topics deletion
-        adminClientFacade.deleteAsyncTopic(topic);
+        adminClientFacade.deleteTopic(topic);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
         assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
@@ -1143,7 +1139,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     void doNotReceiveMessageAfterUnsubscribe(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "doNotReceiveMessageAfterUnsubscribe";
 
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         String sentBody = "Simple message";
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
@@ -1219,7 +1215,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     void formatAndAcceptMismatch(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "formatAndAcceptMismatch";
 
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         String sentBody = "Simple message";
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0);
@@ -1259,7 +1255,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     void sendReceiveJsonMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "sendReceiveJsonMessage";
 
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         JsonObject sentKey = new JsonObject()
                 .put("f1", "v1")
@@ -1345,7 +1341,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         // topics deletion
         LOGGER.info("Deleting async topics " + topic + " via Admin client");
-        adminClientFacade.deleteAsyncTopic(topic);
+        adminClientFacade.deleteTopic(topic);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
         assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
@@ -1358,7 +1354,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     void tryReceiveNotValidJsonMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "tryReceiveNotValidJsonMessage";
 
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         // send a simple String which is not JSON encoded
         basicKafkaClient.sendMessagesPlain(topic, 1);
@@ -1400,7 +1396,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         // topics deletion
         LOGGER.info("Deleting async topics " + topic + " via Admin client");
-        adminClientFacade.deleteAsyncTopic(topic);
+        adminClientFacade.deleteTopic(topic);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
         assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));

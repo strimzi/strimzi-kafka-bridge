@@ -6,6 +6,7 @@
 package io.strimzi.kafka.bridge.http.base;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.strimzi.StrimziKafkaContainer;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.JmxCollectorRegistry;
 import io.strimzi.kafka.bridge.MetricsReporter;
@@ -36,7 +37,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.testcontainers.containers.KafkaContainer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -60,15 +60,12 @@ public abstract class HttpBridgeTestBase {
     protected static  final int TEST_TIMEOUT = 60;
     protected int count;
 
-    public static final KafkaContainer KAFKA_CONTAINER;
+    public static final StrimziKafkaContainer KAFKA_CONTAINER;
 
     protected static long timeout = 5L;
 
     static {
-        KAFKA_CONTAINER = new KafkaContainer();
-        // this is needed because by default in kafka container we have __metrics_topic, which is not needed...
-        KAFKA_CONTAINER.withEnv("KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE", "false");
-
+        KAFKA_CONTAINER = new StrimziKafkaContainer();
         KAFKA_CONTAINER.start();
 
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_CONTAINER.getBootstrapServers());
@@ -153,11 +150,11 @@ public abstract class HttpBridgeTestBase {
 
     @AfterEach
     void tearDown() throws ExecutionException, InterruptedException {
-        Set<String> topics =  adminClientFacade.listAsyncTopic();
+        Set<String> topics =  adminClientFacade.listTopic();
 
         for (String topic : topics) {
             LOGGER.info("Deleting topic " + topic);
-            adminClientFacade.deleteAsyncTopic(topic);
+            adminClientFacade.deleteTopic(topic);
         }
     }
 }

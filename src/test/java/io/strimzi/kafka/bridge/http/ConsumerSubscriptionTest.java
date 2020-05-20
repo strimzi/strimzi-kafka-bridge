@@ -30,7 +30,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
     void unsubscribeConsumerNotFound(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "unsubscribeConsumerNotFound";
 
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         String name = "my-kafka-consumer";
         String groupId = "my-group";
@@ -134,7 +134,8 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         String name = "my-kafka-consumer-does-not-exists-because-not-created";
         String topic = "subscriptionConsumerDoesNotExist";
 
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
+
         String groupId = "my-group";
 
         JsonArray topics = new JsonArray();
@@ -164,7 +165,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
     @Test
     void subscriptionConsumerDoesNotExistBecauseAnotherGroup(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "subscriptionConsumerDoesNotExistBecauseAnotherGroup";
-        adminClientFacade.createAsyncTopic(topic, 1, 1);
+        adminClientFacade.createTopic(topic, 1, 1);
         String name = "my-kafka-consumer-does-not-exists-because-another-group";
         String groupId = "my-group";
         String anotherGroupId = "anotherGroupId";
@@ -206,10 +207,10 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         String topic = "listConsumerSubscriptions";
         String topic2 = "listConsumerSubscriptions2";
 
-        adminClientFacade.createAsyncTopic(topic, 1, 1);
-        adminClientFacade.createAsyncTopic(topic2, 4, 1);
+        adminClientFacade.createTopic(topic, 1, 1);
+        adminClientFacade.createTopic(topic2, 4, 1);
 
-        assertThat(adminClientFacade.listAsyncTopic().size(), is(2));
+        assertThat(adminClientFacade.listTopic().size(), is(2));
 
         String name = "my-kafka-consumer-list";
         String groupId = "my-group";

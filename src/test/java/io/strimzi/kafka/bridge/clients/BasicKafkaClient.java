@@ -32,7 +32,13 @@ public class BasicKafkaClient {
     }
 
     /**
-     * Send messages to external entrypoint of the cluster with PLAINTEXT security protocol setting
+     * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
+     * @param timeoutMs timeout for the sending messages
+     * @param topicName topic name where messages are send
+     * @param messageCount message count
+     * @param message specific message to send
+     * @param partition partition count, how many shards/partitions will topic have
+     * @param withNullKeyRecord boolean, which allowing sending messages with NULL key
      * @return sent message count
      */
     public int sendMessagesPlain(long timeoutMs, String topicName, int messageCount, String message, int partition,
@@ -61,7 +67,9 @@ public class BasicKafkaClient {
     }
 
     /**
-     * Send messages to external entrypoint of the cluster with PLAINTEXT security protocol setting
+     * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
+     * @param topicName topic name where messages are send
+     * @param messageCount message count
      * @return sent message count
      */
     public int sendMessagesPlain(String topicName, int messageCount) {
@@ -70,7 +78,13 @@ public class BasicKafkaClient {
     }
 
     /**
-     * Send messages to external entrypoint of the cluster with PLAINTEXT security protocol setting
+     * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
+     * @param timeoutMs timeout for the sending messages
+     * @param topicName topic name where messages are send
+     * @param messageCount message count
+     * @param message specific message to send
+     * @param partition partition count, how many shards/partitions will topic have
+     * @param withNullKeyRecord boolean, which allowing sending messages with NULL key
      * @return sent message count
      */
     public int sendJsonMessagesPlain(long timeoutMs, String topicName, int messageCount, String message, int partition,
@@ -98,7 +112,12 @@ public class BasicKafkaClient {
     }
 
     /**
-     * Send messages to external entrypoint of the cluster with PLAINTEXT security protocol setting
+     * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
+     * @param topicName topic name where messages are send
+     * @param messageCount message count
+     * @param message specific message to send
+     * @param partition partition count, how many shards/partitions will topic have
+     * @param withNullKeyRecord boolean, which allowing sending messages with NULL key
      * @return sent message count
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message, int partition, boolean withNullKeyRecord) {
@@ -107,7 +126,11 @@ public class BasicKafkaClient {
     }
 
     /**
-     * Send messages to external entrypoint of the cluster with PLAINTEXT security protocol setting
+     * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
+     * @param topicName topic name where messages are send
+     * @param messageCount message count
+     * @param message specific message to send
+     * @param partition partition count, how many shards/partitions will topic have
      * @return sent message count
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message, int partition) {
@@ -116,7 +139,10 @@ public class BasicKafkaClient {
     }
 
     /**
-     * Send messages to external entrypoint of the cluster with PLAINTEXT security protocol setting
+     * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
+     * @param topicName topic name where messages are send
+     * @param messageCount message count
+     * @param message specific message to send
      * @return sent message count
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message) {
@@ -125,7 +151,9 @@ public class BasicKafkaClient {
     }
 
     /**
-     * Send messages to external entrypoint of the cluster with PLAINTEXT security protocol setting
+     * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
+     * @param topicName topic name where messages are send
+     * @param messageCount message count
      * @return sent message count
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount) {
@@ -134,7 +162,10 @@ public class BasicKafkaClient {
     }
 
     /**
-     * Receive messages to external entrypoint of the cluster with PLAINTEXT security protocol setting
+     * Receive messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
+     * @param timeoutMs timeout for the receiving messages
+     * @param topicName topic name from messages are received
+     * @param messageCount message count
      * @return received message count
      */
     @SuppressWarnings("Regexp") // for the `.toLowerCase()` because kafka needs this property as lower-case
@@ -166,7 +197,9 @@ public class BasicKafkaClient {
     }
 
     /**
-     * Receive messages to external entrypoint of the cluster with PLAINTEXT security protocol setting
+     * Receive messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
+     * @param topicName topic name from messages are received
+     * @param messageCount message count
      * @return received message count
      */
     public int receiveMessagesPlain(String topicName, int messageCount) {

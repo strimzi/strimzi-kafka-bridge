@@ -39,13 +39,13 @@ public class AdminClientFacade {
     }
 
     /**
-     * Method createAsyncTopic used for the race condition between in-memory kafka cluster and also encapsulate the get
+     * Method createTopic used for the race condition between in-memory kafka cluster and also encapsulate the get
      *
      * @param topicName         name of the topic
      * @param partitions        number of partitions
      * @param replicationFactor number of replication factor
      */
-    public void createAsyncTopic(String topicName, int partitions, int replicationFactor) throws ExecutionException, InterruptedException {
+    public void createTopic(String topicName, int partitions, int replicationFactor) throws ExecutionException, InterruptedException {
         CreateTopicsResult createTopicsResult = adminClient.createTopics(Collections.singletonList(new NewTopic(topicName, partitions, (short) replicationFactor)));
         createTopicsResult.all().get();
 
@@ -53,27 +53,27 @@ public class AdminClientFacade {
     }
 
     /**
-     * Method createAsyncTopic used for the race condition between in-memory kafka cluster and also encapsulate the get
+     * Method createTopic used for the race condition between in-memory kafka cluster and also encapsulate the get
      * with default values
      * @param topicName         name of the topic
      */
-    public void createAsyncTopic(String topicName) throws InterruptedException, ExecutionException {
-        createAsyncTopic(topicName, 1, 1);
+    public void createTopic(String topicName) throws InterruptedException, ExecutionException {
+        createTopic(topicName, 1, 1);
     }
 
     /**
-     * Method listAsyncTopic used for the race condition between in-memory kafka cluster and also encapsulate the get
+     * Method listTopic used for the race condition between in-memory kafka cluster and also encapsulate the get
      */
-    public Set<String> listAsyncTopic() throws InterruptedException, ExecutionException {
+    public Set<String> listTopic() throws InterruptedException, ExecutionException {
         return adminClient.listTopics().names().get();
     }
 
     /**
-     * Method deleteAsyncTopic used for the race condition between in-memory kafka cluster and also encapsulate the get
+     * Method deleteTopic used for the race condition between in-memory kafka cluster and also encapsulate the get
      *
      * @param topicName              name of the topic
      */
-    public void deleteAsyncTopic(String topicName) throws InterruptedException, ExecutionException {
+    public void deleteTopic(String topicName) throws InterruptedException, ExecutionException {
         DeleteTopicsResult deleteTopicsResult = adminClient.deleteTopics(Collections.singletonList(topicName));
         deleteTopicsResult.all().get();
         LOGGER.info("Topic with name " + topicName + " is deleted.");

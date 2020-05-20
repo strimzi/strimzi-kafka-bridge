@@ -47,7 +47,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     @Test
     void sendSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendSimpleMessage";
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         String value = "message-value";
 
@@ -94,7 +94,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     void sendSimpleMessageToPartition(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendSimpleMessageToPartition";
 
-        adminClientFacade.createAsyncTopic(topic, 2, 1);
+        adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
 
@@ -145,7 +145,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     void sendSimpleMessageWithKey(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendSimpleMessageWithKey";
 
-        adminClientFacade.createAsyncTopic(topic, 2, 1);
+        adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
         String key = "my-key";
@@ -195,7 +195,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     void sendBinaryMessageWithKey(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendBinaryMessageWithKey";
 
-        adminClientFacade.createAsyncTopic(topic, 2, 1);
+        adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
         String key = "my-key-bin";
@@ -240,11 +240,16 @@ public class ProducerTest extends HttpBridgeTestBase {
         });
     }
 
-    @Disabled("FLAKY somethi")
+    @Disabled("This is flaky test" +
+        "java.lang.AssertionError: java.lang.AssertionError: \n" +
+        "Expected: is <10>\n" +
+        "     but: was <1>\n" +
+        "Expected :is <10>\n" +
+        "Actual   :<1>")
     @Test
     void sendPeriodicMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendPeriodicMessage";
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_CONTAINER.getBootstrapServers());
@@ -286,7 +291,7 @@ public class ProducerTest extends HttpBridgeTestBase {
         consumer.batchHandler(records -> {
             context.verify(() -> {
                 assertThat(records.size(), is(this.count));
-                for (int i = 0; i < records.size(); i++) {
+                for (int i = 1; i < records.size(); i++) {
                     KafkaConsumerRecord<String, String> record = records.recordAt(i);
                     LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                             record.topic(), record.partition(), record.offset(), record.key(), record.value());
@@ -308,7 +313,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     @Test
     void sendMultipleMessages(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendMultipleMessages";
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         String value = "message-value";
 
@@ -377,7 +382,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     @Test
     void emptyRecordTest(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "emptyRecordTest";
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         JsonObject root = new JsonObject();
 
@@ -398,7 +403,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     @Test
     void sendToNonExistingPartitionsTest(VertxTestContext context) throws InterruptedException, ExecutionException {
         String kafkaTopic = "sendToNonExistingPartitionsTest";
-        adminClientFacade.createAsyncTopic(kafkaTopic, 3, 1);
+        adminClientFacade.createTopic(kafkaTopic, 3, 1);
 
         String value = "Hi, This is kafka bridge";
         int partition = 1000;
@@ -477,7 +482,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     @Test
     void sendToOnePartitionTest(VertxTestContext context) throws InterruptedException, ExecutionException {
         String kafkaTopic = "sendToOnePartitionTest";
-        adminClientFacade.createAsyncTopic(kafkaTopic, 3, 1);
+        adminClientFacade.createTopic(kafkaTopic, 3, 1);
 
         String value = "Hi, This is kafka bridge";
         int partition = 1;
@@ -515,7 +520,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     @Test
     void sendToOneStringPartitionTest(VertxTestContext context) throws InterruptedException, ExecutionException {
         String kafkaTopic = "sendToOneStringPartitionTest";
-        adminClientFacade.createAsyncTopic(kafkaTopic, 3, 1);
+        adminClientFacade.createTopic(kafkaTopic, 3, 1);
 
         String value = "Hi, This is kafka bridge";
         String partition = "karel";
@@ -536,7 +541,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     @Test
     void sendToBothPartitionTest(VertxTestContext context) throws InterruptedException, ExecutionException {
         String kafkaTopic = "sendToBothPartitionTest";
-        adminClientFacade.createAsyncTopic(kafkaTopic, 3, 1);
+        adminClientFacade.createTopic(kafkaTopic, 3, 1);
 
         String value = "Hi, This is kafka bridge";
         int partition = 1;
@@ -559,7 +564,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     @Test
     void sendMessageLackingRequiredProperty(VertxTestContext context) throws Throwable {
         String topic = "sendMessageLackingRequiredProperty";
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         String key = "my-key";
 
@@ -579,7 +584,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     @Test
     void sendMessageWithUnknownProperty(VertxTestContext context) throws Throwable {
         String topic = "sendMessageWithUnknownProperty";
-        adminClientFacade.createAsyncTopic(topic);
+        adminClientFacade.createTopic(topic);
 
         String value = "message-value";
 
@@ -630,7 +635,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     @Test
     void sendMultipleRecordsWithOneInvalidPartitionTest(VertxTestContext context) throws InterruptedException, ExecutionException {
         String kafkaTopic = "sendMultipleRecordsWithOneInvalidPartitionTest";
-        adminClientFacade.createAsyncTopic(kafkaTopic, 3, 1);
+        adminClientFacade.createTopic(kafkaTopic, 3, 1);
 
         String value = "Hi, This is kafka bridge";
         int partition = 1;
@@ -678,7 +683,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     void jsonPayloadTest(VertxTestContext context) throws InterruptedException, ExecutionException {
         String kafkaTopic = "breakOpenApiRules";
 
-        adminClientFacade.createAsyncTopic(kafkaTopic, 3, 1);
+        adminClientFacade.createTopic(kafkaTopic, 3, 1);
 
         String value = "Hello from the other side";
         String key = "message-key";
