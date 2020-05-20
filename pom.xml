@@ -35,14 +35,13 @@
 		<commons-cli.version>1.4</commons-cli.version>
 	</properties>
 
-<!--	AFTER THIS PR is merged in operator master un-commend it - https://github.com/strimzi/strimzi-kafka-operator/pull/3061-->
-<!--	<repositories>-->
-<!--		<repository>-->
-<!--			<id>test-container</id>-->
-<!--			<name>Strimzi Kafka Container repository</name>-->
-<!--			<url>https://oss.sonatype.org/content/repositories/snapshots</url>-->
-<!--		</repository>-->
-<!--	</repositories>-->
+	<repositories>
+		<repository>
+			<id>test-container</id>
+			<name>Strimzi Kafka Container repository</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</repository>
+	</repositories>
 
 	<dependencies>
 		<dependency>
