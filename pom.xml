@@ -237,7 +237,7 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.testcontainers</gr	oupId>
+			<groupId>org.testcontainers</groupId>
 			<artifactId>junit-jupiter</artifactId>
 			<version>${test-containers.version}</version>
 			<scope>test</scope>
