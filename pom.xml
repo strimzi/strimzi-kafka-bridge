@@ -39,7 +39,7 @@
 		<repository>
 			<id>test-container</id>
 			<name>Strimzi Kafka Container repository</name>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
 		</repository>
 	</repositories>
 
