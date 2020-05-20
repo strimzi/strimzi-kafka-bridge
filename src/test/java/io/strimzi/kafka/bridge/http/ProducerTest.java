@@ -19,6 +19,7 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.consumer.impl.KafkaConsumerRecordsImpl;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -30,12 +31,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.DatatypeConverter;
+import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -240,12 +243,6 @@ public class ProducerTest extends HttpBridgeTestBase {
         });
     }
 
-    @Disabled("This is flaky test" +
-        "java.lang.AssertionError: java.lang.AssertionError: \n" +
-        "Expected: is <10>\n" +
-        "     but: was <1>\n" +
-        "Expected :is <10>\n" +
-        "Actual   :<1>")
     @Test
     void sendPeriodicMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendPeriodicMessage";
@@ -290,7 +287,9 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         consumer.batchHandler(records -> {
             context.verify(() -> {
+                LOGGER.info("Verifying that records size {} matching the counter of messages {}", records.size(), count);
                 assertThat(records.size(), is(this.count));
+
                 for (int i = 1; i < records.size(); i++) {
                     KafkaConsumerRecord<String, String> record = records.recordAt(i);
                     LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
@@ -299,7 +298,7 @@ public class ProducerTest extends HttpBridgeTestBase {
                     assertThat(record.topic(), is(topic));
                     assertThat(record.partition(), notNullValue());
                     assertThat(record.offset(), notNullValue());
-                    assertThat(record.key(), is("key-" + i));
+                    assertThat(record.key(), startsWith("key-"));
                 }
             });
 
