@@ -13,7 +13,6 @@ import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
-import io.strimzi.kafka.bridge.facades.KafkaFacade;
 import io.strimzi.kafka.bridge.http.services.ConsumerService;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.Vertx;
@@ -30,8 +29,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.testcontainers.containers.KafkaContainer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,23 +41,25 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 @ExtendWith(VertxExtension.class)
+@Tag(HTTP_BRIDGE)
 public class ConsumerGeneratedNameTest {
 
     private static final Logger LOGGER = LogManager.getLogger(ConsumerGeneratedNameTest.class);
 
     private static Map<String, Object> config = new HashMap<>();
-    private static final KafkaFacade KAFKA_CLUSTER;
+    private static final KafkaContainer KAFKA_CLUSTER;
 
     static {
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, 5L);
-        KAFKA_CLUSTER = new KafkaFacade();
+        KAFKA_CLUSTER = new KafkaContainer();
     }
 
     private static final int TEST_TIMEOUT = 60;
