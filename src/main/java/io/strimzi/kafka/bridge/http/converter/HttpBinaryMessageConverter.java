@@ -11,7 +11,9 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
+import io.vertx.kafka.client.producer.KafkaHeader;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
+import io.vertx.kafka.client.producer.impl.KafkaHeaderImpl;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.ArrayList;
@@ -26,6 +28,7 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
         Integer partitionFromBody = null;
         byte[] key = null;
         byte[] value = null;
+        List<KafkaHeader> headers = new ArrayList<>();
 
         JsonObject json = message.toJsonObject();
 
@@ -35,6 +38,15 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
             }
             if (json.containsKey("value")) {
                 value = DatatypeConverter.parseBase64Binary(json.getString("value"));
+            }
+            if (json.containsKey("headers")) {
+                for (Object obj: json.getJsonArray("headers")) {
+                    JsonObject jsonObject = (JsonObject) obj;
+                    headers.add(new KafkaHeaderImpl(
+                        jsonObject.getString("key"),
+                        Buffer.factory.buffer(
+                            DatatypeConverter.parseBase64Binary(jsonObject.getString("value")))));
+                }
             }
             if (json.containsKey("partition")) {
                 partitionFromBody = json.getInteger("partition");
@@ -48,6 +60,7 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
         }
 
         KafkaProducerRecord<byte[], byte[]> record = KafkaProducerRecord.create(kafkaTopic, key, value, partitionFromBody);
+        record.addHeaders(headers);
 
         return record;
     }
@@ -91,6 +104,19 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
             jsonObject.put("partition", record.partition());
             jsonObject.put("offset", record.offset());
 
+            if (!record.headers().isEmpty()) {
+                JsonArray headers = new JsonArray();
+
+                for (KafkaHeader kafkaHeader: record.headers()) {
+                    JsonObject header = new JsonObject();
+
+                    header.put("key", kafkaHeader.key());
+                    header.put("value", DatatypeConverter.printBase64Binary(kafkaHeader.value().getBytes()));
+
+                    headers.add(header);
+                }
+                jsonObject.put("headers", headers);
+            }
             jsonArray.add(jsonObject);
         }
 

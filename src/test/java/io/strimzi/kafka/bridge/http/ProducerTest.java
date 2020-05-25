@@ -19,6 +19,8 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.producer.KafkaHeader;
+import io.vertx.kafka.client.producer.impl.KafkaHeaderImpl;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -30,6 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.DatatypeConverter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -230,6 +234,70 @@ public class ProducerTest extends HttpBridgeTestBase {
 
             LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                     record.topic(), record.partition(), record.offset(), record.key(), record.value());
+            consumer.close();
+            context.completeNow();
+        });
+
+        consumer.subscribe(topic, done -> {
+            if (!done.succeeded()) {
+                context.failNow(done.cause());
+            }
+        });
+    }
+
+    @Test
+    void sendSimpleMessageWithHeaders(VertxTestContext context) throws ExecutionException, InterruptedException {
+        String topic = "sendSimpleMessageWithHeaders";
+        adminClientFacade.createTopic(topic, 2, 1);
+
+        String value = "message-value";
+        String sentBody = "Simple message";
+        List<KafkaHeader> headers = new ArrayList<>();
+        headers.add(new KafkaHeaderImpl("key1", DatatypeConverter.printBase64Binary("value1".getBytes())));
+        headers.add(new KafkaHeaderImpl("key2", DatatypeConverter.printBase64Binary("value2".getBytes())));
+        headers.add(new KafkaHeaderImpl("key2", DatatypeConverter.printBase64Binary("value2".getBytes())));
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        JsonArray jsonHeaders = new JsonArray();
+        for (KafkaHeader kafkaHeader: headers) {
+            JsonObject header = new JsonObject();
+            header.put("key", kafkaHeader.key());
+            header.put("value", kafkaHeader.value().toString());
+            jsonHeaders.add(header);
+        }
+        json.put("headers", jsonHeaders);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        producerService()
+            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendJsonObject(root, verifyOK(context));
+
+        Properties consumerProperties = Consumer.fillDefaultProperties();
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
+
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
+            new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
+        consumer.handler(record -> {
+            context.verify(() -> {
+                assertThat(record.value(), is(value));
+                assertThat(record.topic(), is(topic));
+                assertThat(record.partition(), notNullValue());
+                assertThat(record.offset(), is(0L));
+                assertThat(record.headers().size(), is(3));
+                assertThat(record.headers().get(0).key(), is("key1"));
+                assertThat(record.headers().get(0).value().toString(), is("value1"));
+                assertThat(record.headers().get(1).key(), is("key2"));
+                assertThat(record.headers().get(1).value().toString(), is("value2"));
+                assertThat(record.headers().get(2).key(), is("key2"));
+                assertThat(record.headers().get(2).value().toString(), is("value2"));
+            });
+            LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}, headers={}",
+                record.topic(), record.partition(), record.offset(), record.key(), record.value(), record.headers());
             consumer.close();
             context.completeNow();
         });

@@ -49,6 +49,8 @@ __optional__|The unique name for the consumer instance. The name is unique withi
 [options="header", cols=".^3a,.^4a"]
 |===
 |Name|Schema
+|**headers** +
+__optional__|<<_kafkaheaderlist,KafkaHeaderList>>
 |**key** +
 __optional__|string
 |**offset** +
@@ -91,6 +93,24 @@ __optional__|integer (int32)
 |**message** +
 __optional__|string
 |===
+
+
+[[_kafkaheader]]
+=== KafkaHeader
+
+[options="header", cols=".^3a,.^4a"]
+|===
+|Name|Schema
+|**key** +
+__required__|string
+|**value** +
+__required__|string
+|===
+
+
+[[_kafkaheaderlist]]
+=== KafkaHeaderList
+__Type__ : < <<_kafkaheader,KafkaHeader>> > array
 
 
 [[_offsetcommitseek]]
@@ -188,6 +208,8 @@ __optional__|< <<_partition,Partition>> > array
 [options="header", cols=".^3a,.^4a"]
 |===
 |Name|Schema
+|**headers** +
+__optional__|<<_kafkaheaderlist,KafkaHeaderList>>
 |**partition** +
 __optional__|integer (int32)
 |===
