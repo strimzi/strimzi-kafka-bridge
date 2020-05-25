@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.17.0
+
+* Use `log4j2` instead of `log4j`
+
 ## 0.16.0
 
 * Add support for CORS
