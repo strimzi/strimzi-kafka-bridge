@@ -6,7 +6,7 @@ MYPATH="$(dirname "$0")"
 # Configure logging
 if [ -z "$KAFKA_BRIDGE_LOG4J_OPTS" ]
 then
-      KAFKA_BRIDGE_LOG4J_OPTS="-Dlog4j.configuration=file:${MYPATH}/../config/log4j.properties"
+      KAFKA_BRIDGE_LOG4J_OPTS="-Dlog4j2.configurationFile=file:${MYPATH}/../config/log4j2.properties"
 fi
 
 # Make sure that we use /dev/urandom
