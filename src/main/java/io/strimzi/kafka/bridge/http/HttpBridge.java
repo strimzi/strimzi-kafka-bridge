@@ -17,7 +17,7 @@ import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
@@ -82,7 +82,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         this.bridgeConfig = bridgeConfig;
     }
 
-    private void bindHttpServer(Future<Void> startFuture) {
+    private void bindHttpServer(Promise<Void> startPromise) {
         HttpServerOptions httpServerOptions = httpServerOptions();
 
         this.httpServer = this.vertx.createHttpServer(httpServerOptions)
@@ -101,10 +101,10 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                         }
 
                         this.isReady = true;
-                        startFuture.complete();
+                        startPromise.complete();
                     } else {
                         log.error("Error starting HTTP-Kafka Bridge", httpServerAsyncResult.cause());
-                        startFuture.fail(httpServerAsyncResult.cause());
+                        startPromise.fail(httpServerAsyncResult.cause());
                     }
                 });
     }
@@ -130,7 +130,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     }
 
     @Override
-    public void start(Future<Void> startFuture) throws Exception {
+    public void start(Promise<Void> startPromise) throws Exception {
 
         OpenAPI3RouterFactory.create(vertx, "openapi.json", ar -> {
             if (ar.succeeded()) {
@@ -188,16 +188,16 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
                 log.info("Starting HTTP-Kafka bridge verticle...");
                 this.httpBridgeContext = new HttpBridgeContext<>();
-                this.bindHttpServer(startFuture);
+                this.bindHttpServer(startPromise);
             } else {
                 log.error("Failed to create OpenAPI router factory");
-                startFuture.fail(ar.cause());
+                startPromise.fail(ar.cause());
             }
         });
     }
 
     @Override
-    public void stop(Future<Void> stopFuture) throws Exception {
+    public void stop(Promise<Void> stopPromise) throws Exception {
 
         log.info("Stopping HTTP-Kafka bridge verticle ...");
 
@@ -217,10 +217,10 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
                 if (done.succeeded()) {
                     log.info("HTTP-Kafka bridge has been shut down successfully");
-                    stopFuture.complete();
+                    stopPromise.complete();
                 } else {
                     log.info("Error while shutting down HTTP-Kafka bridge", done.cause());
-                    stopFuture.fail(done.cause());
+                    stopPromise.fail(done.cause());
                 }
             });
         }

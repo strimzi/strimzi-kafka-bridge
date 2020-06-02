@@ -13,6 +13,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.common.PartitionInfo;
 import io.vertx.kafka.client.common.TopicPartition;
@@ -274,9 +275,9 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         List<Future> partitionsForHandlers = new ArrayList<>();
         // ask about partitions for all the requested topic subscriptions
         for (SinkTopicSubscription topicSubscription : this.topicSubscriptions) {
-            Future<List<PartitionInfo>> fut = Future.future();
-            partitionsForHandlers.add(fut);
-            this.consumer.partitionsFor(topicSubscription.getTopic(), fut.completer());
+            Promise<List<PartitionInfo>> promise = Promise.promise();
+            partitionsForHandlers.add(promise.future());
+            this.consumer.partitionsFor(topicSubscription.getTopic(), promise);
         }
 
         CompositeFuture.join(partitionsForHandlers).onComplete(partitionsResult -> {
