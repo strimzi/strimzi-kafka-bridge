@@ -15,7 +15,7 @@ import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.proton.ProtonClient;
@@ -102,9 +102,9 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
     /**
      * Start the AMQP server
      *
-     * @param startFuture
+     * @param startPromise
      */
-    private void bindAmqpServer(Future<Void> startFuture) {
+    private void bindAmqpServer(Promise<Void> startPromise) {
 
         ProtonServerOptions options = this.createServerOptions();
 
@@ -122,10 +122,10 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
 
                         this.isReady = true;
 
-                        startFuture.complete();
+                        startPromise.complete();
                     } else {
                         log.error("Error starting AMQP-Kafka Bridge", ar.cause());
-                        startFuture.fail(ar.cause());
+                        startPromise.fail(ar.cause());
                     }
                 });
     }
@@ -133,9 +133,9 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
     /**
      * Connect to an AMQP server/router
      *
-     * @param startFuture
+     * @param startPromise
      */
-    private void connectAmqpClient(Future<Void> startFuture) {
+    private void connectAmqpClient(Promise<Void> startPromise) {
 
         this.client = ProtonClient.create(this.vertx);
 
@@ -161,17 +161,17 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
 
                 this.isReady = true;
 
-                startFuture.complete();
+                startPromise.complete();
 
             } else {
                 log.error("Error connecting AMQP-Kafka Bridge as client", ar.cause());
-                startFuture.fail(ar.cause());
+                startPromise.fail(ar.cause());
             }
         });
     }
 
     @Override
-    public void start(Future<Void> startFuture) throws Exception {
+    public void start(Promise<Void> startPromise) throws Exception {
 
         log.info("Starting AMQP-Kafka bridge verticle...");
 
@@ -180,14 +180,14 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
         AmqpMode mode = this.bridgeConfig.getAmqpConfig().getMode();
         log.info("AMQP-Kafka Bridge configured in {} mode", mode);
         if (mode == AmqpMode.SERVER) {
-            this.bindAmqpServer(startFuture);
+            this.bindAmqpServer(startPromise);
         } else {
-            this.connectAmqpClient(startFuture);
+            this.connectAmqpClient(startPromise);
         }
     }
 
     @Override
-    public void stop(Future<Void> stopFuture) throws Exception {
+    public void stop(Promise<Void> stopPromise) throws Exception {
 
         log.info("Stopping AMQP-Kafka bridge verticle ...");
 
@@ -213,10 +213,10 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
 
                 if (done.succeeded()) {
                     log.info("AMQP-Kafka bridge has been shut down successfully");
-                    stopFuture.complete();
+                    stopPromise.complete();
                 } else {
                     log.info("Error while shutting down AMQP-Kafka bridge", done.cause());
-                    stopFuture.fail(done.cause());
+                    stopPromise.fail(done.cause());
                 }
             });
         }

@@ -16,6 +16,7 @@ import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
@@ -128,7 +129,7 @@ public class Application {
      * @return                      Future for the bridge startup
      */
     private static Future<AmqpBridge> deployAmqpBridge(Vertx vertx, BridgeConfig bridgeConfig)  {
-        Future<AmqpBridge> amqpFuture = Future.future();
+        Promise<AmqpBridge> amqpPromise = Promise.promise();
 
         if (bridgeConfig.getAmqpConfig().isEnabled()) {
             AmqpBridge amqpBridge = new AmqpBridge(bridgeConfig);
@@ -136,17 +137,17 @@ public class Application {
             vertx.deployVerticle(amqpBridge, done -> {
                 if (done.succeeded()) {
                     log.info("AMQP verticle instance deployed [{}]", done.result());
-                    amqpFuture.complete(amqpBridge);
+                    amqpPromise.complete(amqpBridge);
                 } else {
                     log.error("Failed to deploy AMQP verticle instance", done.cause());
-                    amqpFuture.fail(done.cause());
+                    amqpPromise.fail(done.cause());
                 }
             });
         } else {
-            amqpFuture.complete();
+            amqpPromise.complete();
         }
 
-        return amqpFuture;
+        return amqpPromise.future();
     }
 
     /**
@@ -157,7 +158,7 @@ public class Application {
      * @return                      Future for the bridge startup
      */
     private static Future<HttpBridge> deployHttpBridge(Vertx vertx, BridgeConfig bridgeConfig)  {
-        Future<HttpBridge> httpFuture = Future.future();
+        Promise<HttpBridge> httpPromise = Promise.promise();
 
         if (bridgeConfig.getHttpConfig().isEnabled()) {
             HttpBridge httpBridge = new HttpBridge(bridgeConfig);
@@ -165,17 +166,17 @@ public class Application {
             vertx.deployVerticle(httpBridge, done -> {
                 if (done.succeeded()) {
                     log.info("HTTP verticle instance deployed [{}]", done.result());
-                    httpFuture.complete(httpBridge);
+                    httpPromise.complete(httpBridge);
                 } else {
                     log.error("Failed to deploy HTTP verticle instance", done.cause());
-                    httpFuture.fail(done.cause());
+                    httpPromise.fail(done.cause());
                 }
             });
         } else {
-            httpFuture.complete();
+            httpPromise.complete();
         }
 
-        return httpFuture;
+        return httpPromise.future();
     }
 
     private static String getFilePath(String arg) {

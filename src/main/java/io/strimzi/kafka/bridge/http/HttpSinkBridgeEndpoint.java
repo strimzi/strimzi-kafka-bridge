@@ -30,6 +30,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.DecodeException;
@@ -149,9 +150,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         for (int i = 0; i < seekOffsetsList.size(); i++) {
             TopicPartition topicPartition = new TopicPartition(seekOffsetsList.getJsonObject(i));
             long offset = seekOffsetsList.getJsonObject(i).getLong("offset");
-            Future<Void> fut = Future.future();
-            seekHandlers.add(fut);
-            this.seek(topicPartition, offset, fut.completer());
+            Promise<Void> promise = Promise.promise();
+            seekHandlers.add(promise.future());
+            this.seek(topicPartition, offset, promise);
         }
 
         CompositeFuture.join(seekHandlers).onComplete(done -> {

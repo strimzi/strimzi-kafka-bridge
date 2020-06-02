@@ -29,6 +29,7 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
@@ -148,9 +149,9 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         // start sending records asynchronously
         List<Future> sendHandlers = new ArrayList<>(records.size());
         for (KafkaProducerRecord<K, V> record : records) {
-            Future<RecordMetadata> fut = Future.future();
-            sendHandlers.add(fut);
-            this.send(record, fut.completer());
+            Promise<RecordMetadata> promise = Promise.promise();
+            sendHandlers.add(promise.future());
+            this.send(record, promise);
         }
 
         // wait for ALL futures completed
