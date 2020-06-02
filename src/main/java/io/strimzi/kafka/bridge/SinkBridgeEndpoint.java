@@ -279,7 +279,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             this.consumer.partitionsFor(topicSubscription.getTopic(), fut.completer());
         }
 
-        CompositeFuture.join(partitionsForHandlers).setHandler(partitionsResult -> {
+        CompositeFuture.join(partitionsForHandlers).onComplete(partitionsResult -> {
 
             if (partitionsResult.failed()) {
                 this.handlePartition(Future.failedFuture(partitionsResult.cause()));

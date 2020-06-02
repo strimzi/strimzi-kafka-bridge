@@ -154,7 +154,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             this.seek(topicPartition, offset, fut.completer());
         }
 
-        CompositeFuture.join(seekHandlers).setHandler(done -> {
+        CompositeFuture.join(seekHandlers).onComplete(done -> {
             if (done.succeeded()) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {

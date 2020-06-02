@@ -82,7 +82,7 @@ public class Application {
                 futures.add(deployAmqpBridge(vertx, bridgeConfig));
                 futures.add(deployHttpBridge(vertx, bridgeConfig));
 
-                CompositeFuture.join(futures).setHandler(done -> {
+                CompositeFuture.join(futures).onComplete(done -> {
                     if (done.succeeded()) {
                         HealthChecker healthChecker = new HealthChecker();
                         for (int i = 0; i < futures.size(); i++) {

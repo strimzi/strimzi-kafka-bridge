@@ -155,7 +155,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
         // wait for ALL futures completed
         List<KafkaProducerRecord<K, V>> finalRecords = records;
-        CompositeFuture.join(sendHandlers).setHandler(done -> {
+        CompositeFuture.join(sendHandlers).onComplete(done -> {
 
             for (int i = 0; i < sendHandlers.size(); i++) {
                 // check if, for each future, the sending operation is completed successfully or failed
