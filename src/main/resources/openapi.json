@@ -1162,11 +1162,11 @@
                 "description": "Retrieves the OpenAPI v2 specification in JSON format."
             }
         },
-        "/version": {
+        "/": {
             "get": {
                 "responses": {
                     "200": {
-                        "description": "Info about Kafka Bridge instance version.",
+                        "description": "Info about Kafka Bridge instance configuration.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1176,7 +1176,7 @@
                         }
                     }
                 },
-                "operationId": "version",
+                "operationId": "configuration",
                 "description": "Retrieves the Kafka Bridge instance version in JSON format."
             }
         }

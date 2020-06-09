@@ -28,7 +28,7 @@ public enum HttpOpenApiOperations {
     HEALTHY("healthy"),
     READY("ready"),
     OPENAPI("openapi"),
-    VERSION("version");
+    CONFIGURATION("configuration");
 
     private final String text;
 

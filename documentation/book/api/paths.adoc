@@ -2,6 +2,27 @@
 [[_paths]]
 == Paths
 
+[[_configuration]]
+=== GET /
+
+==== Description
+Retrieves the Kafka Bridge instance version in JSON format.
+
+
+==== Responses
+
+[options="header", cols=".^2a,.^14a,.^4a"]
+|===
+|HTTP Code|Description|Schema
+|**200**|Info about Kafka Bridge instance configuration.|string
+|===
+
+
+==== Produces
+
+* `application/json`
+
+
 [[_createconsumer]]
 === POST /consumers/{groupid}
 
@@ -1272,27 +1293,6 @@ __required__|List of records to send to a given topic partition, including a val
   }
 }
 ----
-
-
-[[_version]]
-=== GET /version
-
-==== Description
-Retrieves the Kafka Bridge instance version in JSON format.
-
-
-==== Responses
-
-[options="header", cols=".^2a,.^14a,.^4a"]
-|===
-|HTTP Code|Description|Schema
-|**200**|Info about Kafka Bridge instance version.|string
-|===
-
-
-==== Produces
-
-* `application/json`
 
 
 
