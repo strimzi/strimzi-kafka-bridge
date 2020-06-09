@@ -27,7 +27,8 @@ public enum HttpOpenApiOperations {
     SEEK_TO_END("seekToEnd"),
     HEALTHY("healthy"),
     READY("ready"),
-    OPENAPI("openapi");
+    OPENAPI("openapi"),
+    VERSION("version");
 
     private final String text;
 

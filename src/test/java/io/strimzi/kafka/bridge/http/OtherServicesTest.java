@@ -16,6 +16,7 @@ import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class OtherServicesTest extends HttpBridgeTestBase {
 
@@ -108,6 +109,8 @@ public class OtherServicesTest extends HttpBridgeTestBase {
                         assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/ready").getJsonObject("get").getString("operationId"), is(HttpOpenApiOperations.READY.toString()));
                         assertThat(paths.containsKey("/openapi"), is(true));
                         assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/openapi").getJsonObject("get").getString("operationId"), is(HttpOpenApiOperations.OPENAPI.toString()));
+                        assertThat(paths.containsKey("/version"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/version").getJsonObject("get").getString("operationId"), is(HttpOpenApiOperations.VERSION.toString()));
                         assertThat(paths.containsKey("/karel"), is(false));
                         assertThat(bridgeResponse.getJsonObject("definitions").getMap().size(), is(21));
                         assertThat(bridgeResponse.getJsonArray("tags").size(), is(4));
@@ -131,5 +134,20 @@ public class OtherServicesTest extends HttpBridgeTestBase {
                 });
                 context.completeNow();
             });
+    }
+
+    @Test
+    void getVersion(VertxTestContext context) {
+        baseService()
+                .getRequest("/version")
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.body().getString("bridge_version"), is(notNullValue()));
+                    });
+                    context.completeNow();
+                });
     }
 }
