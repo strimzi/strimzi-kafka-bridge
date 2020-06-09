@@ -56,4 +56,4 @@ function get_gc_opts {
 export JAVA_OPTS="${JAVA_OPTS} $(get_gc_opts)"
 
 # starting Kafka Bridge with final configuration
-${MYPATH}/../kafka_bridge_run.sh --config-file=/tmp/kafka-bridge.properties "$@"
+${MYPATH}/../kafka_bridge_run.sh --config-file=/tmp/kafka-bridge.properties --docker "$@"
