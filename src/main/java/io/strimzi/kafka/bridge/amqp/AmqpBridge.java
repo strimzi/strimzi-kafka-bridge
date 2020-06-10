@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.amqp;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.kafka.bridge.ConnectionEndpoint;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.HealthCheckable;
@@ -90,13 +91,17 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
     // if the bridge is ready to handle requests
     private boolean isReady = false;
 
+    private MeterRegistry meterRegistry;
+
     /**
      * Constructor
      *
      * @param bridgeConfig bridge configuration
+     * @param meterRegistry registry for scraping metrics
      */
-    public AmqpBridge(BridgeConfig bridgeConfig) {
+    public AmqpBridge(BridgeConfig bridgeConfig, MeterRegistry meterRegistry) {
         this.bridgeConfig = bridgeConfig;
+        this.meterRegistry = meterRegistry;
     }
 
     /**
