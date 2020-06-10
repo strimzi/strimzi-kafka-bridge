@@ -1023,7 +1023,7 @@
           "200": {
             "description": "Information about Kafka Bridge instance.",
             "schema": {
-              "type": "string"
+              "$ref": "#/definitions/BridgeInfo"
             }
           }
         },
@@ -1601,7 +1601,21 @@
         "leader": true,
         "in_sync": true
       }
-    }            
+    }
+    },
+    "BridgeInfo": {
+      "title": "BridgeInfo",
+      "description": "Information about Kafka Bridge instance.",
+      "type": "object",
+      "properties": {
+        "bridge_version": {
+          "type": "string"
+        }
+      },
+      "example": {
+        "bridge_version": "0.16.0"
+      }
+    }
   },
   "tags": [
     {

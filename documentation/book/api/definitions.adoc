@@ -7,6 +7,19 @@
 __Type__ : < string, < integer (int32) > array > map
 
 
+[[_bridgeinfo]]
+=== BridgeInfo
+Information about Kafka Bridge instance.
+
+
+[options="header", cols=".^3a,.^4a"]
+|===
+|Name|Schema
+|**bridge_version** +
+__optional__|string
+|===
+
+
 [[_consumer]]
 === Consumer
 

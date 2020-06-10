@@ -14,13 +14,24 @@ Retrieves information about the Kafka Bridge instance, in JSON format.
 [options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
-|**200**|Information about Kafka Bridge instance.|string
+|**200**|Information about Kafka Bridge instance.|<<_bridgeinfo,BridgeInfo>>
 |===
 
 
 ==== Produces
 
 * `application/json`
+
+
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "bridge_version" : "0.16.0"
+}
+----
 
 
 [[_createconsumer]]
