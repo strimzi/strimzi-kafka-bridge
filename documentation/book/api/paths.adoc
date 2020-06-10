@@ -2,11 +2,11 @@
 [[_paths]]
 == Paths
 
-[[_configuration]]
+[[_info]]
 === GET /
 
 ==== Description
-Retrieves the Kafka Bridge instance version in JSON format.
+Retrieves the Kafka Bridge instance info in JSON format.
 
 
 ==== Responses
@@ -14,7 +14,7 @@ Retrieves the Kafka Bridge instance version in JSON format.
 [options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
-|**200**|Info about Kafka Bridge instance configuration.|string
+|**200**|Info about Kafka Bridge instance.|string
 |===
 
 

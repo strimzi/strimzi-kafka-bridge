@@ -161,7 +161,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 routerFactory.addHandlerByOperationId(this.HEALTHY.getOperationId().toString(), this.HEALTHY);
                 routerFactory.addHandlerByOperationId(this.READY.getOperationId().toString(), this.READY);
                 routerFactory.addHandlerByOperationId(this.OPENAPI.getOperationId().toString(), this.OPENAPI);
-                routerFactory.addHandlerByOperationId(this.CONFIGURATION.getOperationId().toString(), this.CONFIGURATION);
+                routerFactory.addHandlerByOperationId(this.INFO.getOperationId().toString(), this.INFO);
 
                 this.router = routerFactory.getRouter();
 
@@ -721,7 +721,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
-    HttpOpenApiOperation CONFIGURATION = new HttpOpenApiOperation(HttpOpenApiOperations.CONFIGURATION) {
+    HttpOpenApiOperation INFO = new HttpOpenApiOperation(HttpOpenApiOperations.INFO) {
 
         @Override
         public void process(RoutingContext routingContext) {

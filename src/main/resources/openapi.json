@@ -1166,7 +1166,7 @@
             "get": {
                 "responses": {
                     "200": {
-                        "description": "Info about Kafka Bridge instance configuration.",
+                        "description": "Info about Kafka Bridge instance.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1176,8 +1176,8 @@
                         }
                     }
                 },
-                "operationId": "configuration",
-                "description": "Retrieves the Kafka Bridge instance version in JSON format."
+                "operationId": "info",
+                "description": "Retrieves the Kafka Bridge instance info in JSON format."
             }
         }
     },
