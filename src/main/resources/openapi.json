@@ -1161,6 +1161,24 @@
                 "operationId": "openapi",
                 "description": "Retrieves the OpenAPI v2 specification in JSON format."
             }
+        },
+        "/": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Information about Kafka Bridge instance.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BridgeInfo"
+                                }
+                            }
+                        }
+                    }
+                },
+                "operationId": "info",
+                "description": "Retrieves information about the Kafka Bridge instance, in JSON format."
+            }
         }
     },
     "components": {
@@ -1749,7 +1767,20 @@
                     "leader": true,
                     "in_sync": true
                 }
-            }            
+            },
+            "BridgeInfo": {
+                "title": "BridgeInfo",
+                "description": "Information about Kafka Bridge instance.",
+                "type": "object",
+                "properties": {
+                    "bridge_version": {
+                        "type": "string"
+                    }
+                },
+                "example": {
+                    "bridge_version": "0.16.0"
+                }
+            }
         }
     },
     "tags": [

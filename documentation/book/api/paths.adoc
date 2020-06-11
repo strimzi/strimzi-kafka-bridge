@@ -2,6 +2,38 @@
 [[_paths]]
 == Paths
 
+[[_info]]
+=== GET /
+
+==== Description
+Retrieves information about the Kafka Bridge instance, in JSON format.
+
+
+==== Responses
+
+[options="header", cols=".^2a,.^14a,.^4a"]
+|===
+|HTTP Code|Description|Schema
+|**200**|Information about Kafka Bridge instance.|<<_bridgeinfo,BridgeInfo>>
+|===
+
+
+==== Produces
+
+* `application/json`
+
+
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "bridge_version" : "0.16.0"
+}
+----
+
+
 [[_createconsumer]]
 === POST /consumers/{groupid}
 

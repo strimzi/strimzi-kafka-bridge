@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.AdminClientEndpoint;
+import io.strimzi.kafka.bridge.Application;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.HealthCheckable;
@@ -160,6 +161,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 routerFactory.addHandlerByOperationId(this.HEALTHY.getOperationId().toString(), this.HEALTHY);
                 routerFactory.addHandlerByOperationId(this.READY.getOperationId().toString(), this.READY);
                 routerFactory.addHandlerByOperationId(this.OPENAPI.getOperationId().toString(), this.OPENAPI);
+                routerFactory.addHandlerByOperationId(this.INFO.getOperationId().toString(), this.INFO);
 
                 this.router = routerFactory.getRouter();
 
@@ -476,6 +478,15 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         });
     }
 
+    private void information(RoutingContext routingContext) {
+        // Only maven built binary has this value set.
+        String version = Application.class.getPackage().getImplementationVersion();
+        JsonObject versionJson = new JsonObject();
+        versionJson.put("bridge_version", version == null ? "null" : version);
+        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
+                BridgeContentType.JSON, versionJson.toBuffer());
+    }
+
     @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
     private void errorHandler(RoutingContext routingContext) {
         int requestId = System.identityHashCode(routingContext.request());
@@ -707,6 +718,14 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         @Override
         public void process(RoutingContext routingContext) {
             openapi(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation INFO = new HttpOpenApiOperation(HttpOpenApiOperations.INFO) {
+
+        @Override
+        public void process(RoutingContext routingContext) {
+            information(routingContext);
         }
     };
 }
