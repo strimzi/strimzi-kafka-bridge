@@ -56,7 +56,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.ACCESS_CONTROL_ALLOW_M
 /**
  * Main bridge class listening for connections and handling HTTP requests.
  */
-@SuppressWarnings("checkstyle:MemberName")
+@SuppressWarnings({"checkstyle:MemberName", "checkstyle:ClassFanOutComplexity"})
 public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private static final Logger log = LoggerFactory.getLogger(HttpBridge.class);
