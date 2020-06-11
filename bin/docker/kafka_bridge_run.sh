@@ -11,7 +11,7 @@ mkdir -p /tmp/strimzi
 
 # Import certificates into keystore and truststore
 # $1 = trusted certs, $2 = TLS auth cert, $3 = TLS auth key, $4 = truststore path, $5 = keystore path, $6 = certs and key path
-${MYPATH}/kafka_bridge_tls_prepare_certificates.sh \
+"${MYPATH}"/kafka_bridge_tls_prepare_certificates.sh \
     "$KAFKA_BRIDGE_TRUSTED_CERTS" \
     "$KAFKA_BRIDGE_TLS_AUTH_CERT" \
     "$KAFKA_BRIDGE_TLS_AUTH_KEY" \
@@ -21,16 +21,16 @@ ${MYPATH}/kafka_bridge_tls_prepare_certificates.sh \
 
 # Generate and print the consumer config file
 echo "Kafka Bridge configuration:"
-${MYPATH}/kafka_bridge_config_generator.sh | tee /tmp/kafka-bridge.properties | sed 's/sasl.jaas.config=.*/sasl.jaas.config=[hidden]/g' | sed 's/password=.*/password=[hidden]/g'
+"${MYPATH}"/kafka_bridge_config_generator.sh | tee /tmp/kafka-bridge.properties | sed 's/sasl.jaas.config=.*/sasl.jaas.config=[hidden]/g' | sed 's/password=.*/password=[hidden]/g'
 echo ""
 
 # Configure logging for Kubernetes deployments
 export KAFKA_BRIDGE_LOG4J_OPTS="-Dlog4j2.configurationFile=file:$STRIMZI_HOME/custom-config/log4j2.properties"
 
 # Configure Memory
-. ${MYPATH}/dynamic_resources.sh
+. "${MYPATH}"/dynamic_resources.sh
 
-MAX_HEAP=`get_heap_size`
+MAX_HEAP=$(get_heap_size)
 if [ -n "$MAX_HEAP" ]; then
   export JAVA_OPTS="-Xms${MAX_HEAP}m -Xmx${MAX_HEAP}m $JAVA_OPTS"
 fi
@@ -56,4 +56,4 @@ function get_gc_opts {
 export JAVA_OPTS="${JAVA_OPTS} $(get_gc_opts)"
 
 # starting Kafka Bridge with final configuration
-${MYPATH}/../kafka_bridge_run.sh --config-file=/tmp/kafka-bridge.properties "$@"
+exec /usr/bin/tini -s -w -e 143 -- "${MYPATH}"/../kafka_bridge_run.sh --config-file=/tmp/kafka-bridge.properties "$@"

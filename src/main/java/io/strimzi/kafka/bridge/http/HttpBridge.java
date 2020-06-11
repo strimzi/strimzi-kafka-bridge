@@ -6,6 +6,8 @@
 package io.strimzi.kafka.bridge.http;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.AdminClientEndpoint;
 import io.strimzi.kafka.bridge.BridgeContentType;
@@ -74,13 +76,17 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private Map<String, Long> timestampMap = new HashMap<>();
 
+    private MeterRegistry meterRegistry;
+
     /**
      * Constructor
      *
      * @param bridgeConfig bridge configuration
+     * @param meterRegistry registry for scraping metrics
      */
-    public HttpBridge(BridgeConfig bridgeConfig) {
+    public HttpBridge(BridgeConfig bridgeConfig, MeterRegistry meterRegistry) {
         this.bridgeConfig = bridgeConfig;
+        this.meterRegistry = meterRegistry;
     }
 
     private void bindHttpServer(Promise<Void> startPromise) {
@@ -160,6 +166,8 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 // handling validation errors and not existing endpoints
                 this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
                 this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
+
+                this.router.route("/metrics").handler(this::metricsHandler);
 
                 //enable cors
                 if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
@@ -504,6 +512,11 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             requestId,
             routingContext.statusCode(),
             message);
+    }
+
+    private void metricsHandler(RoutingContext routingContext) {
+        PrometheusMeterRegistry prometheusMeterRegistry = (PrometheusMeterRegistry) meterRegistry;
+        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(prometheusMeterRegistry.scrape());
     }
 
     private void processConnection(HttpConnection httpConnection) {

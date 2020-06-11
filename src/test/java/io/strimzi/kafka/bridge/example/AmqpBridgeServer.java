@@ -5,9 +5,11 @@
 
 package io.strimzi.kafka.bridge.example;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.kafka.bridge.amqp.AmqpBridge;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.core.Vertx;
+import io.vertx.micrometer.backends.BackendRegistries;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -24,8 +26,9 @@ public class AmqpBridgeServer {
 
         Map<String, Object> config = new HashMap<>();
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
+        MeterRegistry meterRegistry = BackendRegistries.getDefaultNow();
         
-        AmqpBridge bridge = new AmqpBridge(bridgeConfig);
+        AmqpBridge bridge = new AmqpBridge(bridgeConfig, meterRegistry);
 
         vertx.deployVerticle(bridge);
 

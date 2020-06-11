@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
@@ -18,6 +19,7 @@ import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import io.vertx.micrometer.backends.BackendRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
@@ -57,6 +59,7 @@ public class HttpCorsTests {
 
     static BridgeConfig bridgeConfig;
     static KafkaFacade kafkaCluster = new KafkaFacade();
+    static MeterRegistry meterRegistry = BackendRegistries.getDefaultNow();
 
     @BeforeAll
     static void beforeAll() {
@@ -213,7 +216,7 @@ public class HttpCorsTests {
             config.put(HttpConfig.HTTP_CORS_ALLOWED_METHODS, methodsAllowed != null ? methodsAllowed : "GET,POST,PUT,DELETE,OPTIONS,PATCH");
 
             bridgeConfig = BridgeConfig.fromMap(config);
-            httpBridge = new HttpBridge(bridgeConfig);
+            httpBridge = new HttpBridge(bridgeConfig, meterRegistry);
             httpBridge.setHealthChecker(new HealthChecker());
         }
     }
