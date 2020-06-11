@@ -478,7 +478,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         });
     }
 
-    private void version(RoutingContext routingContext) {
+    private void information(RoutingContext routingContext) {
         // Only maven built binary has this value set.
         String version = Application.class.getPackage().getImplementationVersion();
         JsonObject versionJson = new JsonObject();
@@ -725,7 +725,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
         @Override
         public void process(RoutingContext routingContext) {
-            version(routingContext);
+            information(routingContext);
         }
     };
 }
