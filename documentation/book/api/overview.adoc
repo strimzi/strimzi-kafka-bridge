@@ -35,7 +35,7 @@ __Schemes__ : HTTP
 * Consumers : Consumer operations to create consumers in your Kafka cluster and perform common actions, such as subscribing to topics, retrieving processed records, and committing offsets.
 * Producer : Producer operations to send records to a specified topic or topic partition.
 * Seek : Seek operations that enable a consumer to begin receiving messages from a given offset position.
-* Topics : Topic operations to send messages to a specified topic or topic partition. You can include message keys in requests.
+* Topics : Topic operations to send messages to a specified topic or topic partition, optionally including message keys in requests. You can also retrieve topics and topic metadata.
 
 
 === Consumes

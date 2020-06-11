@@ -8,6 +8,7 @@ package io.strimzi.kafka.bridge.http;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.facades.KafkaFacade;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.Vertx;
@@ -17,6 +18,7 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import io.vertx.micrometer.backends.BackendRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,6 +50,7 @@ public class HttpCorsTests {
     static {
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
         config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
+        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
     }
 
     static Vertx vertx;

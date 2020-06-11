@@ -9,6 +9,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.strimzi.kafka.bridge.AdminClientEndpoint;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.HealthCheckable;
@@ -55,7 +56,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.ACCESS_CONTROL_ALLOW_M
 /**
  * Main bridge class listening for connections and handling HTTP requests.
  */
-@SuppressWarnings("checkstyle:MemberName")
+@SuppressWarnings({"checkstyle:MemberName", "checkstyle:ClassFanOutComplexity"})
 public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private static final Logger log = LoggerFactory.getLogger(HttpBridge.class);
@@ -154,6 +155,8 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 routerFactory.addHandlerByOperationId(this.SEEK.getOperationId().toString(), this.SEEK);
                 routerFactory.addHandlerByOperationId(this.SEEK_TO_BEGINNING.getOperationId().toString(), this.SEEK_TO_BEGINNING);
                 routerFactory.addHandlerByOperationId(this.SEEK_TO_END.getOperationId().toString(), this.SEEK_TO_END);
+                routerFactory.addHandlerByOperationId(this.LIST_TOPICS.getOperationId().toString(), this.LIST_TOPICS);
+                routerFactory.addHandlerByOperationId(this.GET_TOPIC.getOperationId().toString(), this.GET_TOPIC);
                 routerFactory.addHandlerByOperationId(this.HEALTHY.getOperationId().toString(), this.HEALTHY);
                 routerFactory.addHandlerByOperationId(this.READY.getOperationId().toString(), this.READY);
                 routerFactory.addHandlerByOperationId(this.OPENAPI.getOperationId().toString(), this.OPENAPI);
@@ -196,6 +199,9 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
                 log.info("Starting HTTP-Kafka bridge verticle...");
                 this.httpBridgeContext = new HttpBridgeContext<>();
+                AdminClientEndpoint adminClientEndpoint = new HttpAdminClientEndpoint(this.vertx, this.bridgeConfig, this.httpBridgeContext);
+                this.httpBridgeContext.setAdminClientEndpoint(adminClientEndpoint);
+                adminClientEndpoint.open();
                 this.bindHttpServer(startPromise);
             } else {
                 log.error("Failed to create OpenAPI router factory");
@@ -218,6 +224,9 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         // for each connection, we have to close the connection itself but before that
         // all the sink/source endpoints (so the related links inside each of them)
         this.httpBridgeContext.closeAllSourceBridgeEndpoints();
+
+        // admin client cleanup
+        this.httpBridgeContext.closeAdminClientEndpoint();
 
         if (this.httpServer != null) {
 
@@ -327,6 +336,16 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         processConsumer(routingContext);
     }
 
+    private void listTopics(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.LIST_TOPICS);
+        processAdminClient(routingContext);
+    }
+
+    private void getTopic(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.GET_TOPIC);
+        processAdminClient(routingContext);
+    }
+
     private void assign(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.ASSIGN);
         processConsumer(routingContext);
@@ -412,6 +431,20 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     ex.getMessage()
+            );
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+        }
+    }
+
+    private void processAdminClient(RoutingContext routingContext) {
+        AdminClientEndpoint adminClientEndpoint = this.httpBridgeContext.getAdminClientEndpoint();
+        if (adminClientEndpoint != null) {
+            adminClientEndpoint.handle(new HttpEndpoint(routingContext));
+        } else {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    "The AdminClient was not found."
             );
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
@@ -586,6 +619,22 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         @Override
         public void process(RoutingContext routingContext) {
             listSubscriptions(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation LIST_TOPICS = new HttpOpenApiOperation(HttpOpenApiOperations.LIST_TOPICS) {
+
+        @Override
+        public void process(RoutingContext routingContext) {
+            listTopics(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation GET_TOPIC = new HttpOpenApiOperation(HttpOpenApiOperations.GET_TOPIC) {
+
+        @Override
+        public void process(RoutingContext routingContext) {
+            getTopic(routingContext);
         }
     };
 

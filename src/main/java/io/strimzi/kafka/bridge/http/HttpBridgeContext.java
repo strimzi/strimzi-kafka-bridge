@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.strimzi.kafka.bridge.AdminClientEndpoint;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.vertx.core.http.HttpConnection;
@@ -23,8 +24,9 @@ public class HttpBridgeContext<K, V> {
 
     private Map<String, SinkBridgeEndpoint<K, V>> httpSinkEndpoints = new HashMap<>();
     private Map<HttpConnection, SourceBridgeEndpoint<K, V>> httpSourceEndpoints = new HashMap<>();
-    private HttpOpenApiOperations openApiOperation;
+    private AdminClientEndpoint adminClientEndpoint;
 
+    private HttpOpenApiOperations openApiOperation;
 
     /**
      * @return map of sink endpoints
@@ -38,6 +40,22 @@ public class HttpBridgeContext<K, V> {
      */
     public Map<HttpConnection, SourceBridgeEndpoint<K, V>> getHttpSourceEndpoints() {
         return this.httpSourceEndpoints;
+    }
+
+    /**
+     * @return the admin endpoint
+     */
+    public AdminClientEndpoint getAdminClientEndpoint() {
+        return this.adminClientEndpoint;
+    }
+
+    /**
+     * Sets the admin endpoint
+     *
+     * @param adminClientEndpoint the admin endpoint
+     */
+    void setAdminClientEndpoint(AdminClientEndpoint adminClientEndpoint) {
+        this.adminClientEndpoint = adminClientEndpoint;
     }
 
     /**
@@ -70,5 +88,10 @@ public class HttpBridgeContext<K, V> {
                 source.getValue().close();
         }
         getHttpSourceEndpoints().clear();
+    }
+
+    public void closeAdminClientEndpoint() {
+        if (this.adminClientEndpoint != null)
+            this.adminClientEndpoint.close();
     }
 }

@@ -17,6 +17,8 @@ public enum HttpOpenApiOperations {
     SUBSCRIBE("subscribe"),
     UNSUBSCRIBE("unsubscribe"),
     LIST_SUBSCRIPTIONS("listSubscriptions"),
+    LIST_TOPICS("listTopics"),
+    GET_TOPIC("getTopic"),
     ASSIGN("assign"),
     POLL("poll"),
     COMMIT("commit"),
