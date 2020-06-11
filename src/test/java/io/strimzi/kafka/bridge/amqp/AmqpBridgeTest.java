@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.amqp;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpJsonMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpRawMessageConverter;
@@ -21,6 +22,7 @@ import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.impl.KafkaConsumerRecordImpl;
+import io.vertx.micrometer.backends.BackendRegistries;
 import io.vertx.proton.ProtonClient;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonHelper;
@@ -92,6 +94,7 @@ class AmqpBridgeTest {
 
     private BridgeConfig bridgeConfig;
     static KafkaFacade kafkaCluster = new KafkaFacade();
+    static MeterRegistry meterRegistry = BackendRegistries.getDefaultNow();
 
 
     @BeforeAll
@@ -110,7 +113,7 @@ class AmqpBridgeTest {
         this.vertx = Vertx.vertx();
 
         this.bridgeConfig = BridgeConfig.fromMap(config);
-        this.bridge = new AmqpBridge(this.bridgeConfig);
+        this.bridge = new AmqpBridge(this.bridgeConfig, meterRegistry);
 
         vertx.deployVerticle(this.bridge, context.succeeding(id -> context.completeNow()));
     }

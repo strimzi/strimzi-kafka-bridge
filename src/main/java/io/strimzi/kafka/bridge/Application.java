@@ -6,6 +6,7 @@
 package io.strimzi.kafka.bridge;
 
 import io.jaegertracing.Configuration;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
 import io.strimzi.kafka.bridge.amqp.AmqpBridge;
@@ -18,12 +19,19 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import io.vertx.core.json.JsonObject;
+import io.vertx.micrometer.Label;
+import io.vertx.micrometer.MetricsDomain;
+import io.vertx.micrometer.MicrometerMetricsOptions;
+import io.vertx.micrometer.VertxPrometheusOptions;
+import io.vertx.micrometer.backends.BackendRegistries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -34,14 +42,26 @@ public class Application {
 
     private static final Logger log = LoggerFactory.getLogger(Application.class);
 
-    private static final String HEALTH_SERVER_PORT = "HEALTH_SERVER_PORT";
+    private static final String EMBEDDED_HTTP_SERVER_PORT = "EMBEDDED_HTTP_SERVER_PORT";
 
-    private static final int DEFAULT_HEALTH_SERVER_PORT = 8080;
+    private static final int DEFAULT_EMBEDDED_HTTP_SERVER_PORT = 8080;
 
     @SuppressWarnings({"checkstyle:NPathComplexity"})
     public static void main(String[] args) {
         log.info("Strimzi Kafka Bridge {} is starting", Application.class.getPackage().getImplementationVersion());
-        Vertx vertx = Vertx.vertx();
+        // setup Micrometer metrics options
+        VertxOptions vertxOptions = new VertxOptions().setMetricsOptions(
+                new MicrometerMetricsOptions()
+                        .setPrometheusOptions(new VertxPrometheusOptions().setEnabled(true))
+                        // define the lables on the HTTP server related metrics
+                        .setLabels(EnumSet.of(Label.REMOTE, Label.LOCAL, Label.HTTP_PATH, Label.HTTP_METHOD, Label.HTTP_CODE))
+                        // disable metrics about pool and verticles
+                        .setDisabledMetricsCategories(EnumSet.of(MetricsDomain.NAMED_POOLS, MetricsDomain.VERTICLES))
+                        .setJvmMetricsEnabled(true)
+                        .setEnabled(true));
+        Vertx vertx = Vertx.vertx(vertxOptions);
+
+        MeterRegistry meterRegistry = BackendRegistries.getDefaultNow();
 
         if (args.length == 0)   {
             log.error("Please specify a configuration file using the '--config-file` option. For example 'bin/kafka_bridge_run.sh --config-file config/application.properties'.");
@@ -72,16 +92,16 @@ public class Application {
                 Map<String, Object> config = ar.result().getMap();
                 BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
 
-                int healthServerPort = Integer.parseInt(config.getOrDefault(HEALTH_SERVER_PORT, DEFAULT_HEALTH_SERVER_PORT).toString());
+                int embeddedHttpServerPort = Integer.parseInt(config.getOrDefault(EMBEDDED_HTTP_SERVER_PORT, DEFAULT_EMBEDDED_HTTP_SERVER_PORT).toString());
 
-                if (bridgeConfig.getAmqpConfig().isEnabled() && bridgeConfig.getAmqpConfig().getPort() == healthServerPort) {
-                    log.error("Health server port {} conflicts with configured AMQP port", healthServerPort);
+                if (bridgeConfig.getAmqpConfig().isEnabled() && bridgeConfig.getAmqpConfig().getPort() == embeddedHttpServerPort) {
+                    log.error("Embedded HTTP server port {} conflicts with configured AMQP port", embeddedHttpServerPort);
                     System.exit(1);
                 }
 
                 List<Future> futures = new ArrayList<>();
-                futures.add(deployAmqpBridge(vertx, bridgeConfig));
-                futures.add(deployHttpBridge(vertx, bridgeConfig));
+                futures.add(deployAmqpBridge(vertx, bridgeConfig, meterRegistry));
+                futures.add(deployHttpBridge(vertx, bridgeConfig, meterRegistry));
 
                 CompositeFuture.join(futures).onComplete(done -> {
                     if (done.succeeded()) {
@@ -97,10 +117,12 @@ public class Application {
                             }
                         }                    
                         
-                        // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
-                        // so no need for a standalone HTTP health server
+                        // when HTTP protocol is enabled, it handles healthy/ready/metrics endpoints as well,
+                        // so no need for a standalone embedded HTTP server
                         if (!bridgeConfig.getHttpConfig().isEnabled()) {
-                            healthChecker.startHealthServer(vertx, healthServerPort);
+                            EmbeddedHttpServer embeddedHttpServer =
+                                    new EmbeddedHttpServer(vertx, healthChecker, meterRegistry, embeddedHttpServerPort);
+                            embeddedHttpServer.start();
                         }
 
                         // register OpenTracing Jaeger tracer
@@ -126,13 +148,14 @@ public class Application {
      *
      * @param vertx                 Vertx instance
      * @param bridgeConfig          Bridge configuration
+     * @param meterRegistry         Registry for scraping metrics
      * @return                      Future for the bridge startup
      */
-    private static Future<AmqpBridge> deployAmqpBridge(Vertx vertx, BridgeConfig bridgeConfig)  {
+    private static Future<AmqpBridge> deployAmqpBridge(Vertx vertx, BridgeConfig bridgeConfig, MeterRegistry meterRegistry)  {
         Promise<AmqpBridge> amqpPromise = Promise.promise();
 
         if (bridgeConfig.getAmqpConfig().isEnabled()) {
-            AmqpBridge amqpBridge = new AmqpBridge(bridgeConfig);
+            AmqpBridge amqpBridge = new AmqpBridge(bridgeConfig, meterRegistry);
 
             vertx.deployVerticle(amqpBridge, done -> {
                 if (done.succeeded()) {
@@ -155,13 +178,14 @@ public class Application {
      *
      * @param vertx                 Vertx instance
      * @param bridgeConfig          Bridge configuration
+     * @param meterRegistry         Registry for scraping metrics
      * @return                      Future for the bridge startup
      */
-    private static Future<HttpBridge> deployHttpBridge(Vertx vertx, BridgeConfig bridgeConfig)  {
+    private static Future<HttpBridge> deployHttpBridge(Vertx vertx, BridgeConfig bridgeConfig, MeterRegistry meterRegistry)  {
         Promise<HttpBridge> httpPromise = Promise.promise();
 
         if (bridgeConfig.getHttpConfig().isEnabled()) {
-            HttpBridge httpBridge = new HttpBridge(bridgeConfig);
+            HttpBridge httpBridge = new HttpBridge(bridgeConfig, meterRegistry);
             
             vertx.deployVerticle(httpBridge, done -> {
                 if (done.succeeded()) {
