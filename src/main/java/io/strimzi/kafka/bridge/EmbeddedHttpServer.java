@@ -21,6 +21,7 @@ public class EmbeddedHttpServer {
 
     private final HealthChecker healthChecker;
     private final MeterRegistry meterRegistry;
+    private final JmxCollectorRegistry jmxCollectorRegistry;
     private final Vertx vertx;
     private final int port;
 
@@ -30,12 +31,14 @@ public class EmbeddedHttpServer {
      * @param vertx Vert.x instance
      * @param healthChecker HealthChecker instance for checking health of enabled bridges
      * @param meterRegistry registry for scraping metrics
+     * @param jmxCollectorRegistry registry for scraping JMX metrics
      * @param port port on which listening requests
      */
-    public EmbeddedHttpServer(Vertx vertx, HealthChecker healthChecker, MeterRegistry meterRegistry, int port) {
+    public EmbeddedHttpServer(Vertx vertx, HealthChecker healthChecker, MeterRegistry meterRegistry, JmxCollectorRegistry jmxCollectorRegistry, int port) {
         this.vertx = vertx;
         this.healthChecker = healthChecker;
         this.meterRegistry = meterRegistry;
+        this.jmxCollectorRegistry = jmxCollectorRegistry;
         this.port = port;
     }
 
@@ -54,7 +57,12 @@ public class EmbeddedHttpServer {
                         request.response().setStatusCode(httpResponseStatus.code()).end();
                     } else if (request.path().equals("/metrics")) {
                         PrometheusMeterRegistry prometheusMeterRegistry = (PrometheusMeterRegistry) meterRegistry;
-                        request.response().setStatusCode(HttpResponseStatus.OK.code()).end(prometheusMeterRegistry.scrape());
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(jmxCollectorRegistry.scrape());
+                        sb.append(prometheusMeterRegistry.scrape());
+
+                        request.response().setStatusCode(HttpResponseStatus.OK.code()).end(sb.toString());
                     } else {
                         request.response().setStatusCode(HttpResponseStatus.NOT_FOUND.code()).end();
                     }

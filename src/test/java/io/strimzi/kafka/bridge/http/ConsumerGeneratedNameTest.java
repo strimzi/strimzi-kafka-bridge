@@ -7,6 +7,7 @@ package io.strimzi.kafka.bridge.http;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.HealthChecker;
+import io.strimzi.kafka.bridge.JmxCollectorRegistry;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
@@ -66,6 +67,16 @@ public class ConsumerGeneratedNameTest {
     static MeterRegistry meterRegistry = BackendRegistries.getDefaultNow();
     static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
 
+    static JmxCollectorRegistry jmxCollectorRegistry;
+
+    static {
+        try {
+            jmxCollectorRegistry = new JmxCollectorRegistry("");
+        } catch (Exception ex) {
+
+        }
+    }
+
     ConsumerService consumerService() {
         return ConsumerService.getInstance(client);
     }
@@ -82,7 +93,7 @@ public class ConsumerGeneratedNameTest {
 
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
             bridgeConfig = BridgeConfig.fromMap(config);
-            httpBridge = new HttpBridge(bridgeConfig, meterRegistry);
+            httpBridge = new HttpBridge(bridgeConfig, meterRegistry, jmxCollectorRegistry);
             httpBridge.setHealthChecker(new HealthChecker());
 
             LOGGER.info("Deploying in-memory bridge");

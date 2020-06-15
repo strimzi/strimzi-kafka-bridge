@@ -26,10 +26,17 @@ import io.vertx.micrometer.MetricsDomain;
 import io.vertx.micrometer.MicrometerMetricsOptions;
 import io.vertx.micrometer.VertxPrometheusOptions;
 import io.vertx.micrometer.backends.BackendRegistries;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.MalformedObjectNameException;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -38,6 +45,7 @@ import java.util.Map;
 /**
  * Apache Kafka bridge main application class
  */
+@SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
 public class Application {
 
     private static final Logger log = LoggerFactory.getLogger(Application.class);
@@ -53,7 +61,7 @@ public class Application {
         VertxOptions vertxOptions = new VertxOptions().setMetricsOptions(
                 new MicrometerMetricsOptions()
                         .setPrometheusOptions(new VertxPrometheusOptions().setEnabled(true))
-                        // define the lables on the HTTP server related metrics
+                        // define the labels on the HTTP server related metrics
                         .setLabels(EnumSet.of(Label.REMOTE, Label.LOCAL, Label.HTTP_PATH, Label.HTTP_METHOD, Label.HTTP_CODE))
                         // disable metrics about pool and verticles
                         .setDisabledMetricsCategories(EnumSet.of(MetricsDomain.NAMED_POOLS, MetricsDomain.VERTICLES))
@@ -63,84 +71,89 @@ public class Application {
 
         MeterRegistry meterRegistry = BackendRegistries.getDefaultNow();
 
-        if (args.length == 0)   {
-            log.error("Please specify a configuration file using the '--config-file` option. For example 'bin/kafka_bridge_run.sh --config-file config/application.properties'.");
-            System.exit(1);
-        }
+        try {
+            CommandLine commandLine = new DefaultParser().parse(generateOptions(), args);
 
-        String path = args[0];
-        if (args.length > 1) {
-            path = args[0] + "=" + args[1];
-        }
-        ConfigStoreOptions fileStore = new ConfigStoreOptions()
-                .setType("file")
-                .setFormat("properties")
-                .setConfig(new JsonObject().put("path", getFilePath(path)).put("raw-data", true));
+            ConfigStoreOptions fileStore = new ConfigStoreOptions()
+                    .setType("file")
+                    .setFormat("properties")
+                    .setConfig(new JsonObject().put("path", getFilePath(commandLine.getOptionValue("config-file"))).put("raw-data", true));
 
-        ConfigStoreOptions envStore = new ConfigStoreOptions()
-                .setType("env")
-                .setConfig(new JsonObject().put("raw-data", true));
+            ConfigStoreOptions envStore = new ConfigStoreOptions()
+                    .setType("env")
+                    .setConfig(new JsonObject().put("raw-data", true));
 
-        ConfigRetrieverOptions options = new ConfigRetrieverOptions()
-                .addStore(fileStore)
-                .addStore(envStore);
+            ConfigRetrieverOptions options = new ConfigRetrieverOptions()
+                    .addStore(fileStore)
+                    .addStore(envStore);
 
-        ConfigRetriever retriever = ConfigRetriever.create(vertx, options);
-        retriever.getConfig(ar -> {
+            ConfigRetriever retriever = ConfigRetriever.create(vertx, options);
+            retriever.getConfig(ar -> {
 
-            if (ar.succeeded()) {
-                Map<String, Object> config = ar.result().getMap();
-                BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
+                if (ar.succeeded()) {
+                    Map<String, Object> config = ar.result().getMap();
+                    BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
 
-                int embeddedHttpServerPort = Integer.parseInt(config.getOrDefault(EMBEDDED_HTTP_SERVER_PORT, DEFAULT_EMBEDDED_HTTP_SERVER_PORT).toString());
+                    int embeddedHttpServerPort = Integer.parseInt(config.getOrDefault(EMBEDDED_HTTP_SERVER_PORT, DEFAULT_EMBEDDED_HTTP_SERVER_PORT).toString());
 
-                if (bridgeConfig.getAmqpConfig().isEnabled() && bridgeConfig.getAmqpConfig().getPort() == embeddedHttpServerPort) {
-                    log.error("Embedded HTTP server port {} conflicts with configured AMQP port", embeddedHttpServerPort);
-                    System.exit(1);
-                }
+                    if (bridgeConfig.getAmqpConfig().isEnabled() && bridgeConfig.getAmqpConfig().getPort() == embeddedHttpServerPort) {
+                        log.error("Embedded HTTP server port {} conflicts with configured AMQP port", embeddedHttpServerPort);
+                        System.exit(1);
+                    }
 
-                List<Future> futures = new ArrayList<>();
-                futures.add(deployAmqpBridge(vertx, bridgeConfig, meterRegistry));
-                futures.add(deployHttpBridge(vertx, bridgeConfig, meterRegistry));
+                    try {
+                        JmxCollectorRegistry jmxCollectorRegistry = getJmxCollectorRegistry(commandLine);
 
-                CompositeFuture.join(futures).onComplete(done -> {
-                    if (done.succeeded()) {
-                        HealthChecker healthChecker = new HealthChecker();
-                        for (int i = 0; i < futures.size(); i++) {
-                            if (done.result().succeeded(i) && done.result().resultAt(i) != null) {
-                                healthChecker.addHealthCheckable(done.result().resultAt(i));
-                                // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
-                                // so it needs the checker for asking other protocols bridges status
-                                if (done.result().resultAt(i) instanceof HttpBridge) {
-                                    ((HttpBridge) done.result().resultAt(i)).setHealthChecker(healthChecker);
+                        List<Future> futures = new ArrayList<>();
+                        futures.add(deployAmqpBridge(vertx, bridgeConfig, meterRegistry));
+                        futures.add(deployHttpBridge(vertx, bridgeConfig, meterRegistry, jmxCollectorRegistry));
+
+                        CompositeFuture.join(futures).onComplete(done -> {
+                            if (done.succeeded()) {
+                                HealthChecker healthChecker = new HealthChecker();
+                                for (int i = 0; i < futures.size(); i++) {
+                                    if (done.result().succeeded(i) && done.result().resultAt(i) != null) {
+                                        healthChecker.addHealthCheckable(done.result().resultAt(i));
+                                        // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
+                                        // so it needs the checker for asking other protocols bridges status
+                                        if (done.result().resultAt(i) instanceof HttpBridge) {
+                                            ((HttpBridge) done.result().resultAt(i)).setHealthChecker(healthChecker);
+                                        }
+                                    }
+                                }
+
+                                // when HTTP protocol is enabled, it handles healthy/ready/metrics endpoints as well,
+                                // so no need for a standalone embedded HTTP server
+                                if (!bridgeConfig.getHttpConfig().isEnabled()) {
+                                    EmbeddedHttpServer embeddedHttpServer =
+                                            new EmbeddedHttpServer(vertx, healthChecker, meterRegistry, jmxCollectorRegistry, embeddedHttpServerPort);
+                                    embeddedHttpServer.start();
+                                }
+
+                                // register OpenTracing Jaeger tracer
+                                if ("jaeger".equals(bridgeConfig.getTracing())) {
+                                    if (config.get(Configuration.JAEGER_SERVICE_NAME) != null) {
+                                        Tracer tracer = Configuration.fromEnv().getTracer();
+                                        GlobalTracer.registerIfAbsent(tracer);
+                                    } else {
+                                        log.error("Jaeger tracing cannot be initialized because {} environment variable is not defined", Configuration.JAEGER_SERVICE_NAME);
+                                    }
                                 }
                             }
-                        }                    
-                        
-                        // when HTTP protocol is enabled, it handles healthy/ready/metrics endpoints as well,
-                        // so no need for a standalone embedded HTTP server
-                        if (!bridgeConfig.getHttpConfig().isEnabled()) {
-                            EmbeddedHttpServer embeddedHttpServer =
-                                    new EmbeddedHttpServer(vertx, healthChecker, meterRegistry, embeddedHttpServerPort);
-                            embeddedHttpServer.start();
-                        }
-
-                        // register OpenTracing Jaeger tracer
-                        if ("jaeger".equals(bridgeConfig.getTracing())) {
-                            if (config.get(Configuration.JAEGER_SERVICE_NAME) != null) {
-                                Tracer tracer = Configuration.fromEnv().getTracer();
-                                GlobalTracer.registerIfAbsent(tracer);
-                            } else {
-                                log.error("Jaeger tracing cannot be initialized because {} environment variable is not defined", Configuration.JAEGER_SERVICE_NAME);
-                            }
-                        }
+                        });
+                    } catch (Exception ex) {
+                        log.error("Error starting the bridge", ex);
+                        System.exit(1);
                     }
-                });
-            } else {
-                log.error("Error starting the bridge", ar.cause());
-                System.exit(1);
-            }
-        });
+                } else {
+                    log.error("Error starting the bridge", ar.cause());
+                    System.exit(1);
+                }
+            });
+        } catch (ParseException parseException) {
+            log.error("Error starting the bridge", parseException);
+            System.exit(1);
+        }
     }
 
     /**
@@ -179,13 +192,14 @@ public class Application {
      * @param vertx                 Vertx instance
      * @param bridgeConfig          Bridge configuration
      * @param meterRegistry         Registry for scraping metrics
+     * @param jmxCollectorRegistry  Registry for scraping JMX metrics
      * @return                      Future for the bridge startup
      */
-    private static Future<HttpBridge> deployHttpBridge(Vertx vertx, BridgeConfig bridgeConfig, MeterRegistry meterRegistry)  {
+    private static Future<HttpBridge> deployHttpBridge(Vertx vertx, BridgeConfig bridgeConfig, MeterRegistry meterRegistry, JmxCollectorRegistry jmxCollectorRegistry)  {
         Promise<HttpBridge> httpPromise = Promise.promise();
 
         if (bridgeConfig.getHttpConfig().isEnabled()) {
-            HttpBridge httpBridge = new HttpBridge(bridgeConfig, meterRegistry);
+            HttpBridge httpBridge = new HttpBridge(bridgeConfig, meterRegistry, jmxCollectorRegistry);
             
             vertx.deployVerticle(httpBridge, done -> {
                 if (done.succeeded()) {
@@ -203,19 +217,53 @@ public class Application {
         return httpPromise.future();
     }
 
-    private static String getFilePath(String arg) {
-        String[] confFileArg = arg.split("=");
-        String path = "";
-        if (confFileArg[0].equals("--config-file")) {
-            if (confFileArg[1].startsWith(File.separator)) {
-                // absolute path
-                path = confFileArg[1];
-            } else {
-                // relative path
-                path = System.getProperty("user.dir") + File.separator + confFileArg[1];
-            }
-            return path;
+    /**
+     * Return a JmxCollectorRegistry instance with the YAML configuration filters provided
+     * through the command line or configured without any filters
+     *
+     * @param commandLine command line parameters containing the path to the JMX YAML configuration
+     * @return  JmxCollectorRegistry instanc
+     * @throws MalformedObjectNameException
+     * @throws IOException
+     */
+    private static JmxCollectorRegistry getJmxCollectorRegistry(CommandLine commandLine)
+            throws MalformedObjectNameException, IOException {
+        if (commandLine.hasOption("jmx-metrics-config")) {
+            return new JmxCollectorRegistry(new File(getFilePath(commandLine.getOptionValue("jmx-metrics-config"))));
+        } else {
+            return new JmxCollectorRegistry("");
         }
-        return null;
+    }
+
+    /**
+     * Generate the command line options
+     *
+     * @return command line options
+     */
+    private static Options generateOptions() {
+
+        Option configFileOption = Option.builder()
+                .required(true)
+                .hasArg(true)
+                .longOpt("config-file")
+                .desc("Configuration file with bridge parameters")
+                .build();
+
+        Option jmxMetricsFileOption = Option.builder()
+                .required(false)
+                .hasArg(true)
+                .longOpt("jmx-metrics-config")
+                .desc("JMX Kafka metrics YAML configuration file")
+                .build();
+
+        Options options = new Options();
+        options.addOption(configFileOption);
+        options.addOption(jmxMetricsFileOption);
+        return options;
+    }
+
+    private static String getFilePath(String arg) {
+        // return the file path as absolute (if it's relative)
+        return arg.startsWith(File.separator) ? arg : System.getProperty("user.dir") + File.separator + arg;
     }
 }

@@ -17,6 +17,7 @@ import io.strimzi.kafka.bridge.HealthCheckable;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.IllegalEmbeddedFormatException;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
+import io.strimzi.kafka.bridge.JmxCollectorRegistry;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
@@ -79,16 +80,19 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     private Map<ConsumerInstanceId, Long> timestampMap = new HashMap<>();
 
     private MeterRegistry meterRegistry;
+    private JmxCollectorRegistry jmxCollectorRegistry;
 
     /**
      * Constructor
      *
      * @param bridgeConfig bridge configuration
      * @param meterRegistry registry for scraping metrics
+     * @param jmxCollectorRegistry registry for scraping JMX metrics
      */
-    public HttpBridge(BridgeConfig bridgeConfig, MeterRegistry meterRegistry) {
+    public HttpBridge(BridgeConfig bridgeConfig, MeterRegistry meterRegistry, JmxCollectorRegistry jmxCollectorRegistry) {
         this.bridgeConfig = bridgeConfig;
         this.meterRegistry = meterRegistry;
+        this.jmxCollectorRegistry = jmxCollectorRegistry;
     }
 
     private void bindHttpServer(Promise<Void> startPromise) {
@@ -533,7 +537,12 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private void metricsHandler(RoutingContext routingContext) {
         PrometheusMeterRegistry prometheusMeterRegistry = (PrometheusMeterRegistry) meterRegistry;
-        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(prometheusMeterRegistry.scrape());
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(jmxCollectorRegistry.scrape());
+        sb.append(prometheusMeterRegistry.scrape());
+
+        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(sb.toString());
     }
 
     private void processConnection(HttpConnection httpConnection) {
