@@ -159,6 +159,84 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
     }
 
     @Test
+    void subscriptionSuccessful(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "subscriptionSuccessful";
+        kafkaCluster.createTopic(topic, 1, 1);
+        String name = "my-kafka-consumer-42";
+        String groupId = "my-group";
+
+        JsonArray topics = new JsonArray();
+        topics.add(topic);
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("format", "json");
+
+        // create consumer
+        consumerService()
+                .createConsumer(context, groupId, json);
+
+        JsonObject topicsRoot = new JsonObject();
+        topicsRoot.put("topics", topics);
+
+        CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
+        consumerService()
+                .subscribeConsumerRequest(groupId, name, topicsRoot)
+                .sendJsonObject(topicsRoot, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
+                    });
+                    subscribe.complete(true);
+                });
+        subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+                .deleteConsumer(context, groupId, name);
+        context.completeNow();
+    }
+
+    @Test
+    void subscriptionConsumerDoesNotExistInConsumerGroup(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "subscriptionConsumerDoesNotExistInConsumerGroup";
+        kafkaCluster.createTopic(topic, 1, 1);
+        String name = "my-kafka-consumer-does-not-exists-in-group";
+        String groupId = "my-group";
+        String anotherGroupId = "another-my-group";
+
+        JsonArray topics = new JsonArray();
+        topics.add(topic);
+
+        JsonObject topicsRoot = new JsonObject();
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("format", "json");
+
+        // create consumer
+        consumerService()
+                .createConsumer(context, groupId, json);
+
+        CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
+        consumerService()
+                .subscribeConsumerRequest(anotherGroupId, name, topicsRoot)
+                .sendJsonObject(topicsRoot, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.getMessage(), is("The specified consumer instance was not found."));
+                    });
+                    subscribe.complete(true);
+                });
+        subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+                .deleteConsumer(context, groupId, name);
+        context.completeNow();
+    }
+    @Test
     void listConsumerSubscriptions(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "listConsumerSubscriptions";
         String topic2 = "listConsumerSubscriptions2";

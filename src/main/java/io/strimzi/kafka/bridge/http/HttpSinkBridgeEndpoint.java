@@ -95,7 +95,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 ? "kafka-bridge-consumer-" + UUID.randomUUID()
                 : bridgeConfig.getBridgeID() + "-" + UUID.randomUUID());
 
-        if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(this.name)) {
+        if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(HttpUtils.nameWithPrefix(name, groupId))) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.CONFLICT.code(),
                     "A consumer instance with the specified name already exists in the Kafka Bridge."

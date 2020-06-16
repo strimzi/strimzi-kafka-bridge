@@ -275,15 +275,16 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.bridgeConfig, this.httpBridgeContext,
                     format, new ByteArrayDeserializer(), new ByteArrayDeserializer());
 
+            String groupId = routingContext.pathParam("groupid");
             sink.closeHandler(endpoint -> {
-                httpBridgeContext.getHttpSinkEndpoints().remove(endpoint.name());
+                httpBridgeContext.getHttpSinkEndpoints().remove(HttpUtils.nameWithPrefix(endpoint.name(), groupId));
             });        
             sink.open();
 
             sink.handle(new HttpEndpoint(routingContext), s -> {
                 SinkBridgeEndpoint<byte[], byte[]> endpoint = (SinkBridgeEndpoint<byte[], byte[]>) s;
-                httpBridgeContext.getHttpSinkEndpoints().put(endpoint.name(), endpoint);
-                timestampMap.put(endpoint.name(), System.currentTimeMillis());
+                httpBridgeContext.getHttpSinkEndpoints().put(HttpUtils.nameWithPrefix(endpoint.name(), groupId), endpoint);
+                timestampMap.put(HttpUtils.nameWithPrefix(endpoint.name(), groupId), System.currentTimeMillis());
             });
         } catch (Exception ex) {
             if (sink != null) {
@@ -304,7 +305,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private void deleteConsumer(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.DELETE_CONSUMER);
-        String deleteInstanceID = routingContext.pathParam("name");
+        String deleteInstanceID = routingContext.pathParam("groupid") + "." + routingContext.pathParam("name");
 
         SinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(deleteInstanceID);
 
@@ -384,7 +385,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
      * @param routingContext RoutingContext instance
      */
     private void processConsumer(RoutingContext routingContext) {
-        String instanceId = routingContext.pathParam("name");
+        String instanceId = routingContext.pathParam("groupid") + "." + routingContext.pathParam("name");
 
         SinkBridgeEndpoint<byte[], byte[]> sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(instanceId);
 

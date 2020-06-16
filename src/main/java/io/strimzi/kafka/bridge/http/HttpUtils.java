@@ -40,4 +40,8 @@ public class HttpUtils {
             log.warn("[{}] Response: already ended!", routingContext.get("request-id").toString());
         } 
     }
+
+    public static String nameWithPrefix(String name, String prefix) {
+        return prefix + "." + name;
+    }
 }
