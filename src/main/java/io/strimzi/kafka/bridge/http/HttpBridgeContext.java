@@ -6,6 +6,7 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.strimzi.kafka.bridge.AdminClientEndpoint;
+import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.vertx.core.http.HttpConnection;
@@ -22,7 +23,7 @@ import java.util.Map;
  */
 public class HttpBridgeContext<K, V> {
 
-    private Map<String, SinkBridgeEndpoint<K, V>> httpSinkEndpoints = new HashMap<>();
+    private Map<ConsumerInstanceId, SinkBridgeEndpoint<K, V>> httpSinkEndpoints = new HashMap<>();
     private Map<HttpConnection, SourceBridgeEndpoint<K, V>> httpSourceEndpoints = new HashMap<>();
     private AdminClientEndpoint adminClientEndpoint;
 
@@ -31,7 +32,7 @@ public class HttpBridgeContext<K, V> {
     /**
      * @return map of sink endpoints
      */
-    public Map<String, SinkBridgeEndpoint<K, V>> getHttpSinkEndpoints() {
+    public Map<ConsumerInstanceId, SinkBridgeEndpoint<K, V>> getHttpSinkEndpoints() {
         return this.httpSinkEndpoints;
     }
 
@@ -75,7 +76,7 @@ public class HttpBridgeContext<K, V> {
     }
 
     public void closeAllSinkBridgeEndpoints() {
-        for (Map.Entry<String, SinkBridgeEndpoint<K, V>> sink: getHttpSinkEndpoints().entrySet()) {
+        for (Map.Entry<ConsumerInstanceId, SinkBridgeEndpoint<K, V>> sink: getHttpSinkEndpoints().entrySet()) {
             if (sink.getValue() != null)
                 sink.getValue().close();
         }
