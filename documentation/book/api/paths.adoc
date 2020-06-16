@@ -101,10 +101,8 @@ __required__|Name and configuration of the consumer. The name is unique within t
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "instance_id" : "consumer1",
-    "base_uri" : "http://localhost:8080/consumers/my-group/instances/consumer1"
-  }
+  "instance_id" : "consumer1",
+  "base_uri" : "http://localhost:8080/consumers/my-group/instances/consumer1"
 }
 ----
 
@@ -113,10 +111,8 @@ __required__|Name and configuration of the consumer. The name is unique within t
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 409,
-    "message" : "A consumer instance with the specified name already exists in the Kafka Bridge."
-  }
+  "error_code" : 409,
+  "message" : "A consumer instance with the specified name already exists in the Kafka Bridge."
 }
 ----
 
@@ -125,10 +121,8 @@ __required__|Name and configuration of the consumer. The name is unique within t
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 422,
-    "message" : "One or more consumer configuration options have invalid values."
-  }
+  "error_code" : 422,
+  "message" : "One or more consumer configuration options have invalid values."
 }
 ----
 
@@ -183,10 +177,8 @@ __required__|Name of the consumer that you want to delete.|string
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 404,
-    "message" : "The specified consumer instance was not found."
-  }
+  "error_code" : 404,
+  "message" : "The specified consumer instance was not found."
 }
 ----
 
@@ -261,10 +253,8 @@ __required__|List of topic partitions to assign to the consumer.|<<_partitions,P
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 404,
-    "message" : "The specified consumer instance was not found."
-  }
+  "error_code" : 404,
+  "message" : "The specified consumer instance was not found."
 }
 ----
 
@@ -273,10 +263,8 @@ __required__|List of topic partitions to assign to the consumer.|<<_partitions,P
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 409,
-    "message" : "Subscriptions to topics, partitions, and patterns are mutually exclusive."
-  }
+  "error_code" : 409,
+  "message" : "Subscriptions to topics, partitions, and patterns are mutually exclusive."
 }
 ----
 
@@ -352,10 +340,8 @@ __optional__|List of consumer offsets to commit to the consumer offsets commit l
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 404,
-    "message" : "The specified consumer instance was not found."
-  }
+  "error_code" : 404,
+  "message" : "The specified consumer instance was not found."
 }
 ----
 
@@ -432,10 +418,8 @@ __required__|List of partition offsets from which the subscribed consumer will n
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 404,
-    "message" : "The specified consumer instance was not found."
-  }
+  "error_code" : 404,
+  "message" : "The specified consumer instance was not found."
 }
 ----
 
@@ -510,10 +494,8 @@ __required__|List of topic partitions to which the consumer is subscribed. The c
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 404,
-    "message" : "The specified consumer instance was not found."
-  }
+  "error_code" : 404,
+  "message" : "The specified consumer instance was not found."
 }
 ----
 
@@ -588,10 +570,8 @@ __optional__|List of topic partitions to which the consumer is subscribed. The c
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 404,
-    "message" : "The specified consumer instance was not found."
-  }
+  "error_code" : 404,
+  "message" : "The specified consumer instance was not found."
 }
 ----
 
@@ -648,24 +628,41 @@ __optional__|The maximum amount of time, in milliseconds, that the HTTP Bridge s
 ===== Response 200
 [source,json]
 ----
-{
-  "application/vnd.kafka.json.v2+json" : [ {
-    "topic" : "topic",
-    "key" : "key1",
-    "value" : {
-      "foo" : "bar"
-    },
-    "partition" : 0,
-    "offset" : 2
-  }, {
-    "topic" : "topic",
-    "key" : "key2",
-    "value" : [ "foo2", "bar2" ],
-    "partition" : 1,
-    "offset" : 3
-  } ],
-  "application/vnd.kafka.binary.v2+json" : "[\n  {\n    \"topic\": \"test\",\n    \"key\": \"a2V5\",\n    \"value\": \"Y29uZmx1ZW50\",\n    \"partition\": 1,\n    \"offset\": 100,\n  },\n  {\n    \"topic\": \"test\",\n    \"key\": \"a2V5\",\n    \"value\": \"a2Fma2E=\",\n    \"partition\": 2,\n    \"offset\": 101,\n  }\n]"
-}
+[ {
+  "topic" : "topic",
+  "key" : "key1",
+  "value" : {
+    "foo" : "bar"
+  },
+  "partition" : 0,
+  "offset" : 2
+}, {
+  "topic" : "topic",
+  "key" : "key2",
+  "value" : [ "foo2", "bar2" ],
+  "partition" : 1,
+  "offset" : 3
+} ]
+----
+
+[source,json]
+----
+[
+  {
+    "topic": "test",
+    "key": "a2V5",
+    "value": "Y29uZmx1ZW50",
+    "partition": 1,
+    "offset": 100,
+  },
+  {
+    "topic": "test",
+    "key": "a2V5",
+    "value": "a2Fma2E=",
+    "partition": 2,
+    "offset": 101,
+  }
+]
 ----
 
 
@@ -673,10 +670,8 @@ __optional__|The maximum amount of time, in milliseconds, that the HTTP Bridge s
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 404,
-    "message" : "The specified consumer instance was not found."
-  }
+  "error_code" : 404,
+  "message" : "The specified consumer instance was not found."
 }
 ----
 
@@ -685,10 +680,8 @@ __optional__|The maximum amount of time, in milliseconds, that the HTTP Bridge s
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 406,
-    "message" : "The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request."
-  }
+  "error_code" : 406,
+  "message" : "The `format` used in the consumer creation request does not match the embedded format in the Accept header of this request."
 }
 ----
 
@@ -697,10 +690,8 @@ __optional__|The maximum amount of time, in milliseconds, that the HTTP Bridge s
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 422,
-    "message" : "Response exceeds the maximum number of bytes the consumer can receive"
-  }
+  "error_code" : 422,
+  "message" : "Response exceeds the maximum number of bytes the consumer can receive"
 }
 ----
 
@@ -770,10 +761,8 @@ __required__|List of topics to which the consumer will subscribe.|<<_topics,Topi
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 404,
-    "message" : "The specified consumer instance was not found."
-  }
+  "error_code" : 404,
+  "message" : "The specified consumer instance was not found."
 }
 ----
 
@@ -782,10 +771,8 @@ __required__|List of topics to which the consumer will subscribe.|<<_topics,Topi
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 409,
-    "message" : "Subscriptions to topics, partitions, and patterns are mutually exclusive."
-  }
+  "error_code" : 409,
+  "message" : "Subscriptions to topics, partitions, and patterns are mutually exclusive."
 }
 ----
 
@@ -794,10 +781,8 @@ __required__|List of topics to which the consumer will subscribe.|<<_topics,Topi
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 422,
-    "message" : "A list (of Topics type) or a topic_pattern must be specified."
-  }
+  "error_code" : 422,
+  "message" : "A list (of Topics type) or a topic_pattern must be specified."
 }
 ----
 
@@ -861,10 +846,8 @@ __required__|Name of the consumer that you want to unsubscribe from topics.|stri
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 404,
-    "message" : "The specified consumer instance was not found."
-  }
+  "error_code" : 404,
+  "message" : "The specified consumer instance was not found."
 }
 ----
 
@@ -999,9 +982,7 @@ Retrieves a list of all topics.
 ===== Response 200
 [source,json]
 ----
-{
-  "application/vnd.kafka.v2+json" : [ "topic1", "topic2" ]
-}
+[ "topic1", "topic2" ]
 ----
 
 
@@ -1077,18 +1058,16 @@ __required__||<<_producerrecordlist,ProducerRecordList>>
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "offsets" : [ {
-      "partition" : 2,
-      "offset" : 0
-    }, {
-      "partition" : 1,
-      "offset" : 1
-    }, {
-      "partition" : 2,
-      "offset" : 2
-    } ]
-  }
+  "offsets" : [ {
+    "partition" : 2,
+    "offset" : 0
+  }, {
+    "partition" : 1,
+    "offset" : 1
+  }, {
+    "partition" : 2,
+    "offset" : 2
+  } ]
 }
 ----
 
@@ -1097,10 +1076,8 @@ __required__||<<_producerrecordlist,ProducerRecordList>>
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 404,
-    "message" : "The specified topic was not found."
-  }
+  "error_code" : 404,
+  "message" : "The specified topic was not found."
 }
 ----
 
@@ -1109,10 +1086,8 @@ __required__||<<_producerrecordlist,ProducerRecordList>>
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 422,
-    "message" : "The record list contains invalid records."
-  }
+  "error_code" : 422,
+  "message" : "The record list contains invalid records."
 }
 ----
 
@@ -1159,38 +1134,36 @@ __required__|Name of the topic which you want to either retrieve metadata for, o
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "name" : "topic",
-    "offset" : 2,
-    "configs" : {
-      "cleanup.policy" : "compact"
-    },
-    "partitions" : [ {
-      "partition" : 1,
-      "leader" : 1,
-      "replicas" : [ {
-        "broker" : 1,
-        "leader" : true,
-        "in_sync" : true
-      }, {
-        "broker" : 2,
-        "leader" : false,
-        "in_sync" : true
-      } ]
+  "name" : "topic",
+  "offset" : 2,
+  "configs" : {
+    "cleanup.policy" : "compact"
+  },
+  "partitions" : [ {
+    "partition" : 1,
+    "leader" : 1,
+    "replicas" : [ {
+      "broker" : 1,
+      "leader" : true,
+      "in_sync" : true
     }, {
-      "partition" : 2,
-      "leader" : 2,
-      "replicas" : [ {
-        "broker" : 1,
-        "leader" : false,
-        "in_sync" : true
-      }, {
-        "broker" : 2,
-        "leader" : true,
-        "in_sync" : true
-      } ]
+      "broker" : 2,
+      "leader" : false,
+      "in_sync" : true
     } ]
-  }
+  }, {
+    "partition" : 2,
+    "leader" : 2,
+    "replicas" : [ {
+      "broker" : 1,
+      "leader" : false,
+      "in_sync" : true
+    }, {
+      "broker" : 2,
+      "leader" : true,
+      "in_sync" : true
+    } ]
+  } ]
 }
 ----
 
@@ -1266,18 +1239,16 @@ __required__|List of records to send to a given topic partition, including a val
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "offsets" : [ {
-      "partition" : 2,
-      "offset" : 0
-    }, {
-      "partition" : 1,
-      "offset" : 1
-    }, {
-      "partition" : 2,
-      "offset" : 2
-    } ]
-  }
+  "offsets" : [ {
+    "partition" : 2,
+    "offset" : 0
+  }, {
+    "partition" : 1,
+    "offset" : 1
+  }, {
+    "partition" : 2,
+    "offset" : 2
+  } ]
 }
 ----
 
@@ -1286,10 +1257,8 @@ __required__|List of records to send to a given topic partition, including a val
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 404,
-    "message" : "The specified topic partition was not found."
-  }
+  "error_code" : 404,
+  "message" : "The specified topic partition was not found."
 }
 ----
 
@@ -1298,10 +1267,8 @@ __required__|List of records to send to a given topic partition, including a val
 [source,json]
 ----
 {
-  "application/vnd.kafka.v2+json" : {
-    "error_code" : 422,
-    "message" : "The record is not valid."
-  }
+  "error_code" : 422,
+  "message" : "The record is not valid."
 }
 ----
 

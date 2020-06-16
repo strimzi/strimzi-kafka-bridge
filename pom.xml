@@ -20,7 +20,7 @@
 		<hamcrest.version>2.2</hamcrest.version>
 		<maven-jar-plugin.version>3.1.2</maven-jar-plugin.version>
 		<maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
-		<swagger2markup.version>1.3.7</swagger2markup.version>
+		<swagger2markup.version>2.0.0-SNAPSHOT</swagger2markup.version>
 		<jackson-core.version>2.10.2</jackson-core.version>
 		<spotbugs.version>4.0.1</spotbugs.version>
 		<strimzi-oauth.version>0.5.0</strimzi-oauth.version>
@@ -189,6 +189,15 @@
 			<id>jcenter-releases</id>
 			<name>jcenter</name>
 			<url>https://jcenter.bintray.com</url>
+		</pluginRepository>
+		<!-- Added for downloading the Swagger2Markup snapshot -->
+		<pluginRepository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>jfrog-releases</id>
+			<name>jfrog</name>
+			<url>http://oss.jfrog.org/artifactory/oss-snapshot-local/</url>
 		</pluginRepository>
 	</pluginRepositories>
 
