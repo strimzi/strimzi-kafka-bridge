@@ -6,6 +6,7 @@
 package io.strimzi.kafka.bridge.amqp;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpJsonMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpRawMessageConverter;
@@ -113,7 +114,7 @@ class AmqpBridgeTest {
         this.vertx = Vertx.vertx();
 
         this.bridgeConfig = BridgeConfig.fromMap(config);
-        this.bridge = new AmqpBridge(this.bridgeConfig, meterRegistry);
+        this.bridge = new AmqpBridge(this.bridgeConfig, new MetricsReporter(null, meterRegistry));
 
         vertx.deployVerticle(this.bridge, context.succeeding(id -> context.completeNow()));
     }

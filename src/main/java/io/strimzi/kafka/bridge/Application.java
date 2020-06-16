@@ -77,7 +77,7 @@ public class Application {
             ConfigStoreOptions fileStore = new ConfigStoreOptions()
                     .setType("file")
                     .setFormat("properties")
-                    .setConfig(new JsonObject().put("path", getFilePath(commandLine.getOptionValue("config-file"))).put("raw-data", true));
+                    .setConfig(new JsonObject().put("path", absoluteFilePath(commandLine.getOptionValue("config-file"))).put("raw-data", true));
 
             ConfigStoreOptions envStore = new ConfigStoreOptions()
                     .setType("env")
@@ -104,9 +104,11 @@ public class Application {
                     try {
                         JmxCollectorRegistry jmxCollectorRegistry = getJmxCollectorRegistry(commandLine);
 
+                        MetricsReporter metricsReporter = new MetricsReporter(jmxCollectorRegistry, meterRegistry);
+
                         List<Future> futures = new ArrayList<>();
-                        futures.add(deployAmqpBridge(vertx, bridgeConfig, meterRegistry));
-                        futures.add(deployHttpBridge(vertx, bridgeConfig, meterRegistry, jmxCollectorRegistry));
+                        futures.add(deployAmqpBridge(vertx, bridgeConfig, metricsReporter));
+                        futures.add(deployHttpBridge(vertx, bridgeConfig, metricsReporter));
 
                         CompositeFuture.join(futures).onComplete(done -> {
                             if (done.succeeded()) {
@@ -126,7 +128,7 @@ public class Application {
                                 // so no need for a standalone embedded HTTP server
                                 if (!bridgeConfig.getHttpConfig().isEnabled()) {
                                     EmbeddedHttpServer embeddedHttpServer =
-                                            new EmbeddedHttpServer(vertx, healthChecker, meterRegistry, jmxCollectorRegistry, embeddedHttpServerPort);
+                                            new EmbeddedHttpServer(vertx, healthChecker, metricsReporter, embeddedHttpServerPort);
                                     embeddedHttpServer.start();
                                 }
 
@@ -161,14 +163,14 @@ public class Application {
      *
      * @param vertx                 Vertx instance
      * @param bridgeConfig          Bridge configuration
-     * @param meterRegistry         Registry for scraping metrics
+     * @param metricsReporter       MetricsReporter instance for scraping metrics from different registries
      * @return                      Future for the bridge startup
      */
-    private static Future<AmqpBridge> deployAmqpBridge(Vertx vertx, BridgeConfig bridgeConfig, MeterRegistry meterRegistry)  {
+    private static Future<AmqpBridge> deployAmqpBridge(Vertx vertx, BridgeConfig bridgeConfig, MetricsReporter metricsReporter)  {
         Promise<AmqpBridge> amqpPromise = Promise.promise();
 
         if (bridgeConfig.getAmqpConfig().isEnabled()) {
-            AmqpBridge amqpBridge = new AmqpBridge(bridgeConfig, meterRegistry);
+            AmqpBridge amqpBridge = new AmqpBridge(bridgeConfig, metricsReporter);
 
             vertx.deployVerticle(amqpBridge, done -> {
                 if (done.succeeded()) {
@@ -191,15 +193,14 @@ public class Application {
      *
      * @param vertx                 Vertx instance
      * @param bridgeConfig          Bridge configuration
-     * @param meterRegistry         Registry for scraping metrics
-     * @param jmxCollectorRegistry  Registry for scraping JMX metrics
+     * @param metricsReporter       MetricsReporter instance for scraping metrics from different registries
      * @return                      Future for the bridge startup
      */
-    private static Future<HttpBridge> deployHttpBridge(Vertx vertx, BridgeConfig bridgeConfig, MeterRegistry meterRegistry, JmxCollectorRegistry jmxCollectorRegistry)  {
+    private static Future<HttpBridge> deployHttpBridge(Vertx vertx, BridgeConfig bridgeConfig, MetricsReporter metricsReporter)  {
         Promise<HttpBridge> httpPromise = Promise.promise();
 
         if (bridgeConfig.getHttpConfig().isEnabled()) {
-            HttpBridge httpBridge = new HttpBridge(bridgeConfig, meterRegistry, jmxCollectorRegistry);
+            HttpBridge httpBridge = new HttpBridge(bridgeConfig, metricsReporter);
             
             vertx.deployVerticle(httpBridge, done -> {
                 if (done.succeeded()) {
@@ -229,7 +230,7 @@ public class Application {
     private static JmxCollectorRegistry getJmxCollectorRegistry(CommandLine commandLine)
             throws MalformedObjectNameException, IOException {
         if (commandLine.hasOption("jmx-metrics-config")) {
-            return new JmxCollectorRegistry(new File(getFilePath(commandLine.getOptionValue("jmx-metrics-config"))));
+            return new JmxCollectorRegistry(new File(absoluteFilePath(commandLine.getOptionValue("jmx-metrics-config"))));
         } else {
             return new JmxCollectorRegistry("");
         }
@@ -262,7 +263,7 @@ public class Application {
         return options;
     }
 
-    private static String getFilePath(String arg) {
+    private static String absoluteFilePath(String arg) {
         // return the file path as absolute (if it's relative)
         return arg.startsWith(File.separator) ? arg : System.getProperty("user.dir") + File.separator + arg;
     }

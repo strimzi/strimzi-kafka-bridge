@@ -8,6 +8,7 @@ package io.strimzi.kafka.bridge.http;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.JmxCollectorRegistry;
+import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.facades.KafkaFacade;
@@ -20,7 +21,6 @@ import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import io.vertx.micrometer.backends.BackendRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
@@ -60,17 +60,8 @@ public class HttpCorsTests {
 
     static BridgeConfig bridgeConfig;
     static KafkaFacade kafkaCluster = new KafkaFacade();
-    static MeterRegistry meterRegistry = BackendRegistries.getDefaultNow();
-
-    static JmxCollectorRegistry jmxCollectorRegistry;
-
-    static {
-        try {
-            jmxCollectorRegistry = new JmxCollectorRegistry("");
-        } catch (Exception ex) {
-
-        }
-    }
+    static MeterRegistry meterRegistry = null;
+    static JmxCollectorRegistry jmxCollectorRegistry = null;
 
     @BeforeAll
     static void beforeAll() {
@@ -227,7 +218,7 @@ public class HttpCorsTests {
             config.put(HttpConfig.HTTP_CORS_ALLOWED_METHODS, methodsAllowed != null ? methodsAllowed : "GET,POST,PUT,DELETE,OPTIONS,PATCH");
 
             bridgeConfig = BridgeConfig.fromMap(config);
-            httpBridge = new HttpBridge(bridgeConfig, meterRegistry, jmxCollectorRegistry);
+            httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
             httpBridge.setHealthChecker(new HealthChecker());
         }
     }

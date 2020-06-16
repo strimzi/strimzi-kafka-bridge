@@ -8,6 +8,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.JmxCollectorRegistry;
+import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
@@ -23,7 +24,6 @@ import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import io.vertx.micrometer.backends.BackendRegistries;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.logging.log4j.LogManager;
@@ -64,18 +64,9 @@ public class ConsumerGeneratedNameTest {
     static HttpBridge httpBridge;
     static WebClient client;
     static BridgeConfig bridgeConfig;
-    static MeterRegistry meterRegistry = BackendRegistries.getDefaultNow();
+    static MeterRegistry meterRegistry = null;
+    static JmxCollectorRegistry jmxCollectorRegistry = null;
     static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
-
-    static JmxCollectorRegistry jmxCollectorRegistry;
-
-    static {
-        try {
-            jmxCollectorRegistry = new JmxCollectorRegistry("");
-        } catch (Exception ex) {
-
-        }
-    }
 
     ConsumerService consumerService() {
         return ConsumerService.getInstance(client);
@@ -93,7 +84,7 @@ public class ConsumerGeneratedNameTest {
 
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
             bridgeConfig = BridgeConfig.fromMap(config);
-            httpBridge = new HttpBridge(bridgeConfig, meterRegistry, jmxCollectorRegistry);
+            httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
             httpBridge.setHealthChecker(new HealthChecker());
 
             LOGGER.info("Deploying in-memory bridge");
