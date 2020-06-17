@@ -726,4 +726,20 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             }
         });
     }
+
+    /**
+     * Returns the first offset for the given partition.
+     */
+    protected void getBeginningOffset(TopicPartition topicPartition, Handler<AsyncResult<Long>> handler) {
+        log.info("Get the first offset for partition {}", topicPartition);
+        this.consumer.beginningOffsets(topicPartition, handler);
+    }
+
+    /**
+     * Returns the last offset for the given partition.
+     */
+    protected void getEndOffset(TopicPartition topicPartition, Handler<AsyncResult<Long>> handler) {
+        log.info("Get the last offset for partition {}", topicPartition);
+        this.consumer.endOffsets(topicPartition, handler);
+    }
 }

@@ -16,6 +16,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
@@ -1514,5 +1515,30 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .deleteConsumer(context, groupId, consumerInstanceId[0]);
         context.completeNow();
 
+    }
+
+    @Test
+    void getOffsetsSummary(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "getOffsetsSummary";
+        kafkaCluster.createTopic(topic, 1, 1);
+
+        String sentBody = "Simple message from partition";
+        // send one message to increment the offset by 5
+        kafkaCluster.produce(topic, sentBody, 5, 0);
+        
+        baseService()
+                .getRequest("/topics/" + topic + "/partitions/0/offsets")
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), Matchers.is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), Matchers.is(HttpResponseStatus.OK.code()));
+                        JsonObject bridgeResponse = response.body();
+                        assertThat(bridgeResponse.getLong("beginning_offset"), Matchers.is(0L));
+                        assertThat(bridgeResponse.getLong("end_offset"), Matchers.is(5L));
+                    });
+                    context.completeNow();
+                });
     }
 }

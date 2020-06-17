@@ -1098,6 +1098,66 @@
                 }
             ]
         },
+        "/topics/{topicname}/partitions/{partitionid}/offsets": {
+            "get": {
+                "tags": [
+                    "Topics"
+                ],
+                "description": "Retrieves a summary of the offsets for the topic partition.",
+                "operationId": "getOffsets",
+                "responses": {
+                    "200": {
+                        "description": "a summary of the offsets",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OffsetsSummary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The specified topic partition was not found.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 404,
+                                            "message": "The specified topic partition was not found."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "parameters": [
+                {
+                    "name": "topicname",
+                    "in": "path",
+                    "description": "Name of the topic containing the partition.",
+
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "partitionid",
+                    "in": "path",
+                    "description": "ID of the partition.",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ]
+        },
         "/consumers/{groupid}/instances/{name}": {
             "delete": {
                 "tags": [
@@ -1384,6 +1444,24 @@
                             "offset": 91
                         }
                     ]
+                }
+            },
+            "OffsetsSummary": {
+                "title": "OffsetsSummary",
+                "type": "object",
+                "properties": {
+                    "beginning_offset": {
+                        "format": "int64",
+                        "type": "integer"
+                    },
+                    "end_offset": {
+                        "format": "int64",
+                        "type": "integer"
+                    }
+                },
+                "example": {
+                    "beginning_offset": 10,
+                    "end_offset": 50
                 }
             },
             "Error": {

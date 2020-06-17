@@ -146,6 +146,13 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 BridgeContentType.KAFKA_JSON, body.toBuffer());
     }
 
+    void initAdminConsumer(ConsumerInstanceId consumerInstanceId) {
+        this.groupId = consumerInstanceId.getGroupId();
+        this.name = consumerInstanceId.getInstanceId();
+        this.consumerInstanceId = consumerInstanceId;
+        initConsumer(false, null);
+    }
+
     private void doSeek(RoutingContext routingContext, JsonObject bodyAsJson) {
         JsonArray seekOffsetsList = bodyAsJson.getJsonArray("offsets");
 
@@ -460,6 +467,43 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         this.unsubscribe();
     }
 
+    public void doGetOffsets(RoutingContext routingContext) {
+        String topicName = routingContext.pathParam("topicname");
+        final int partitionId;
+        try {
+            partitionId = Integer.parseInt(routingContext.pathParam("partitionid"));
+        } catch (NumberFormatException ne) {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                    "Specified partition is not a valid number");
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            return;
+        }
+        TopicPartition topicPartition = new TopicPartition(topicName, partitionId);
+        Promise<Long> getBeginningOffsetsPromise = Promise.promise();
+        this.getBeginningOffset(topicPartition, getBeginningOffsetsPromise);
+        Promise<Long> getEndOffsetsPromise = Promise.promise();
+        this.getEndOffset(topicPartition, getEndOffsetsPromise);
+        Future<Long> getBeginningOffsetsFuture = getBeginningOffsetsPromise.future();
+        Future<Long> getEndOffsetsFuture = getEndOffsetsPromise.future();
+        CompositeFuture.join(getBeginningOffsetsFuture, getEndOffsetsFuture).onComplete(done -> {
+            if (done.succeeded() && getBeginningOffsetsFuture.result() != null && getEndOffsetsFuture.result() != null) {
+                JsonObject root = new JsonObject();
+                root.put("beginning_offset", getBeginningOffsetsFuture.result());
+                root.put("end_offset", getEndOffsetsFuture.result());
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
+            } else {
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        done.cause().getMessage()
+                );
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            }
+        });
+    }
+
     /**
      * Add a configuration parameter with key and value to the provided Properties bag
      *
@@ -474,9 +518,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     }
 
     @Override
+    @SuppressWarnings({"checkstyle:CyclomaticComplexity"})
     public void handle(Endpoint<?> endpoint, Handler<?> handler) {
         RoutingContext routingContext = (RoutingContext) endpoint.get();
-
         JsonObject bodyAsJson = EMPTY_JSON;
         try {
             // check for an empty body
@@ -535,6 +579,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 break;
             case LIST_SUBSCRIPTIONS:
                 doListSubscriptions(routingContext);
+                break;
+
+            case GET_OFFSETS:
+                doGetOffsets(routingContext);
                 break;
 
             default:

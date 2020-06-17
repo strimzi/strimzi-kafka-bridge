@@ -47,6 +47,7 @@ import java.util.Set;
 import java.util.Iterator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.UUID;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
@@ -78,6 +79,8 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     private Map<ConsumerInstanceId, Long> timestampMap = new HashMap<>();
 
     private MetricsReporter metricsReporter;
+
+    private ConsumerInstanceId adminConsumerInstanceId;
 
     /**
      * Constructor
@@ -160,6 +163,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 routerFactory.addHandlerByOperationId(this.GET_TOPIC.getOperationId().toString(), this.GET_TOPIC);
                 routerFactory.addHandlerByOperationId(this.LIST_PARTITIONS.getOperationId().toString(), this.LIST_PARTITIONS);
                 routerFactory.addHandlerByOperationId(this.GET_PARTITION.getOperationId().toString(), this.GET_PARTITION);
+                routerFactory.addHandlerByOperationId(this.GET_OFFSETS.getOperationId().toString(), this.GET_OFFSETS);
                 routerFactory.addHandlerByOperationId(this.HEALTHY.getOperationId().toString(), this.HEALTHY);
                 routerFactory.addHandlerByOperationId(this.READY.getOperationId().toString(), this.READY);
                 routerFactory.addHandlerByOperationId(this.OPENAPI.getOperationId().toString(), this.OPENAPI);
@@ -363,6 +367,11 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         processAdminClient(routingContext);
     }
 
+    private void getOffsets(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.GET_OFFSETS);
+        processAdminConsumer(routingContext);
+    }
+
     private void assign(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.ASSIGN);
         processConsumer(routingContext);
@@ -412,6 +421,49 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.NOT_FOUND.code(),
                     "The specified consumer instance was not found."
+            );
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+        }
+    }
+
+    private synchronized SinkBridgeEndpoint<byte[], byte[]> getAdminConsumer() {
+        if (this.adminConsumerInstanceId == null) {
+            String uuid = UUID.randomUUID().toString();
+            String groupId = "kafka-bridge-consumer-group-" + uuid;
+            String instanceId = "kafka-bridge-admin-consumer-" + uuid;
+            this.adminConsumerInstanceId = new ConsumerInstanceId(groupId, instanceId);
+        }
+        SinkBridgeEndpoint<byte[], byte[]> sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(this.adminConsumerInstanceId);
+        if (sinkEndpoint == null) {
+            try {
+                sinkEndpoint = new HttpSinkBridgeEndpoint<>(this.vertx, this.bridgeConfig, this.httpBridgeContext,
+                        EmbeddedFormat.BINARY, new ByteArrayDeserializer(), new ByteArrayDeserializer());
+                sinkEndpoint.closeHandler(endpoint -> {
+                    HttpSinkBridgeEndpoint<byte[], byte[]> httpEndpoint = (HttpSinkBridgeEndpoint<byte[], byte[]>) endpoint;
+                    httpBridgeContext.getHttpSinkEndpoints().remove(httpEndpoint.consumerInstanceId());
+                });
+                sinkEndpoint.open();
+                ((HttpSinkBridgeEndpoint) sinkEndpoint).initAdminConsumer(this.adminConsumerInstanceId);
+                httpBridgeContext.getHttpSinkEndpoints().put(this.adminConsumerInstanceId, sinkEndpoint);
+            } catch (Exception ex) {
+                if (sinkEndpoint != null) {
+                    sinkEndpoint.close();
+                }
+            }
+        }
+        return sinkEndpoint;
+    }
+
+    private void processAdminConsumer(RoutingContext routingContext) {
+        SinkBridgeEndpoint<byte[], byte[]> sinkEndpoint = getAdminConsumer();
+        if (sinkEndpoint != null) {
+            timestampMap.replace(sinkEndpoint.consumerInstanceId(), System.currentTimeMillis());
+            sinkEndpoint.handle(new HttpEndpoint(routingContext));
+        } else {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.NOT_FOUND.code(),
+                    "The admin consumer instance was not found."
             );
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
@@ -681,8 +733,16 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         }
     };
 
+    HttpOpenApiOperation GET_OFFSETS = new HttpOpenApiOperation(HttpOpenApiOperations.GET_OFFSETS) {
+
+        @Override
+        public void process(RoutingContext routingContext) {
+            getOffsets(routingContext);
+        }
+    };
+
     HttpOpenApiOperation ASSIGN = new HttpOpenApiOperation(HttpOpenApiOperations.ASSIGN) {
-    
+
         @Override
         public void process(RoutingContext routingContext) {
             assign(routingContext);
@@ -690,7 +750,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation POLL = new HttpOpenApiOperation(HttpOpenApiOperations.POLL) {
-    
+
         @Override
         public void process(RoutingContext routingContext) {
             poll(routingContext);
@@ -698,7 +758,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation COMMIT = new HttpOpenApiOperation(HttpOpenApiOperations.COMMIT) {
-    
+
         @Override
         public void process(RoutingContext routingContext) {
             commit(routingContext);
@@ -706,7 +766,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation SEEK = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK) {
-    
+
         @Override
         public void process(RoutingContext routingContext) {
             seek(routingContext);
@@ -714,7 +774,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation SEEK_TO_BEGINNING = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK_TO_BEGINNING) {
-    
+
         @Override
         public void process(RoutingContext routingContext) {
             seekToBeginning(routingContext);
@@ -722,7 +782,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation SEEK_TO_END = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK_TO_END) {
-    
+
         @Override
         public void process(RoutingContext routingContext) {
             seekToEnd(routingContext);
@@ -730,7 +790,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation HEALTHY = new HttpOpenApiOperation(HttpOpenApiOperations.HEALTHY) {
-    
+
         @Override
         public void process(RoutingContext routingContext) {
             healthy(routingContext);
@@ -738,7 +798,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation READY = new HttpOpenApiOperation(HttpOpenApiOperations.READY) {
-    
+
         @Override
         public void process(RoutingContext routingContext) {
             ready(routingContext);
@@ -746,7 +806,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation OPENAPI = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPI) {
-    
+
         @Override
         public void process(RoutingContext routingContext) {
             openapi(routingContext);

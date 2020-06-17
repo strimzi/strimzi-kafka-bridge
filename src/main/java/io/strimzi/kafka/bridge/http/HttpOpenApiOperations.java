@@ -27,6 +27,7 @@ public enum HttpOpenApiOperations {
     SEEK("seek"),
     SEEK_TO_BEGINNING("seekToBeginning"),
     SEEK_TO_END("seekToEnd"),
+    GET_OFFSETS("getOffsets"),
     HEALTHY("healthy"),
     READY("ready"),
     OPENAPI("openapi"),

@@ -143,6 +143,19 @@ __optional__|< <<_offsetrecordsent,OffsetRecordSent>> > array
 |===
 
 
+[[_offsetssummary]]
+=== OffsetsSummary
+
+[options="header", cols=".^3a,.^4a"]
+|===
+|Name|Schema
+|**beginning_offset** +
+__optional__|integer (int64)
+|**end_offset** +
+__optional__|integer (int64)
+|===
+
+
 [[_partition]]
 === Partition
 
