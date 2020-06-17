@@ -97,7 +97,7 @@ public class AmqpBridge extends AbstractVerticle implements HealthCheckable {
      * Constructor
      *
      * @param bridgeConfig bridge configuration
-     * @@param metricsReporter MetricsReporter instance for scraping metrics from different registries
+     * @param metricsReporter MetricsReporter instance for scraping metrics from different registries
      */
     public AmqpBridge(BridgeConfig bridgeConfig, MetricsReporter metricsReporter) {
         this.bridgeConfig = bridgeConfig;
