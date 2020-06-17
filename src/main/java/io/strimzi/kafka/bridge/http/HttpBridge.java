@@ -6,8 +6,6 @@
 package io.strimzi.kafka.bridge.http;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.AdminClientEndpoint;
 import io.strimzi.kafka.bridge.Application;
@@ -17,6 +15,7 @@ import io.strimzi.kafka.bridge.HealthCheckable;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.IllegalEmbeddedFormatException;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
+import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
@@ -78,17 +77,17 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private Map<ConsumerInstanceId, Long> timestampMap = new HashMap<>();
 
-    private MeterRegistry meterRegistry;
+    private MetricsReporter metricsReporter;
 
     /**
      * Constructor
      *
      * @param bridgeConfig bridge configuration
-     * @param meterRegistry registry for scraping metrics
+     * @param metricsReporter MetricsReporter instance for scraping metrics from different registries
      */
-    public HttpBridge(BridgeConfig bridgeConfig, MeterRegistry meterRegistry) {
+    public HttpBridge(BridgeConfig bridgeConfig, MetricsReporter metricsReporter) {
         this.bridgeConfig = bridgeConfig;
-        this.meterRegistry = meterRegistry;
+        this.metricsReporter = metricsReporter;
     }
 
     private void bindHttpServer(Promise<Void> startPromise) {
@@ -139,7 +138,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     }
 
     @Override
-    public void start(Promise<Void> startPromise) throws Exception {
+    public void start(Promise<Void> startPromise) {
 
         OpenAPI3RouterFactory.create(vertx, "openapi.json", ar -> {
             if (ar.succeeded()) {
@@ -532,8 +531,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     }
 
     private void metricsHandler(RoutingContext routingContext) {
-        PrometheusMeterRegistry prometheusMeterRegistry = (PrometheusMeterRegistry) meterRegistry;
-        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(prometheusMeterRegistry.scrape());
+        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(metricsReporter.scrape());
     }
 
     private void processConnection(HttpConnection httpConnection) {

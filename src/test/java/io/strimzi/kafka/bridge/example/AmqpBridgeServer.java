@@ -6,6 +6,7 @@
 package io.strimzi.kafka.bridge.example;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.amqp.AmqpBridge;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.core.Vertx;
@@ -28,7 +29,7 @@ public class AmqpBridgeServer {
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
         MeterRegistry meterRegistry = BackendRegistries.getDefaultNow();
         
-        AmqpBridge bridge = new AmqpBridge(bridgeConfig, meterRegistry);
+        AmqpBridge bridge = new AmqpBridge(bridgeConfig, new MetricsReporter(null, meterRegistry));
 
         vertx.deployVerticle(bridge);
 
