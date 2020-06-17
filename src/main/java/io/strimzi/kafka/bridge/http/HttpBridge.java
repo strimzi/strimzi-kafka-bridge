@@ -16,6 +16,7 @@ import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.HealthCheckable;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.IllegalEmbeddedFormatException;
+import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
@@ -75,7 +76,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private HealthChecker healthChecker;
 
-    private Map<String, Long> timestampMap = new HashMap<>();
+    private Map<ConsumerInstanceId, Long> timestampMap = new HashMap<>();
 
     private MeterRegistry meterRegistry;
 
@@ -121,9 +122,9 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         Long timeoutInMs = timeout * 1000L;
         vertx.setPeriodic(timeoutInMs / 2, ignore -> {
             log.debug("Looking for stale consumers in {} entries", timestampMap.size());
-            Iterator<Map.Entry<String, Long>> it = timestampMap.entrySet().iterator();
+            Iterator<Map.Entry<ConsumerInstanceId, Long>> it = timestampMap.entrySet().iterator();
             while (it.hasNext()) {
-                Map.Entry<String, Long> item = it.next();
+                Map.Entry<ConsumerInstanceId, Long> item = it.next();
                 if (item.getValue() + timeoutInMs < System.currentTimeMillis()) {
                     SinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(item.getKey());
                     if (deleteSinkEndpoint != null) {
@@ -276,14 +277,15 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                     format, new ByteArrayDeserializer(), new ByteArrayDeserializer());
 
             sink.closeHandler(endpoint -> {
-                httpBridgeContext.getHttpSinkEndpoints().remove(endpoint.name());
+                HttpSinkBridgeEndpoint<byte[], byte[]> httpEndpoint = (HttpSinkBridgeEndpoint<byte[], byte[]>) endpoint;
+                httpBridgeContext.getHttpSinkEndpoints().remove(httpEndpoint.consumerInstanceId());
             });        
             sink.open();
 
-            sink.handle(new HttpEndpoint(routingContext), s -> {
-                SinkBridgeEndpoint<byte[], byte[]> endpoint = (SinkBridgeEndpoint<byte[], byte[]>) s;
-                httpBridgeContext.getHttpSinkEndpoints().put(endpoint.name(), endpoint);
-                timestampMap.put(endpoint.name(), System.currentTimeMillis());
+            sink.handle(new HttpEndpoint(routingContext), endpoint -> {
+                HttpSinkBridgeEndpoint<byte[], byte[]> httpEndpoint = (HttpSinkBridgeEndpoint<byte[], byte[]>) endpoint;
+                httpBridgeContext.getHttpSinkEndpoints().put(httpEndpoint.consumerInstanceId(), httpEndpoint);
+                timestampMap.put(httpEndpoint.consumerInstanceId(), System.currentTimeMillis());
             });
         } catch (Exception ex) {
             if (sink != null) {
@@ -304,15 +306,17 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private void deleteConsumer(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.DELETE_CONSUMER);
-        String deleteInstanceID = routingContext.pathParam("name");
+        String groupId = routingContext.pathParam("groupid");
+        String instanceId = routingContext.pathParam("name");
+        ConsumerInstanceId kafkaConsumerInstanceId = new ConsumerInstanceId(groupId, instanceId);
 
-        SinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(deleteInstanceID);
+        SinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(kafkaConsumerInstanceId);
 
         if (deleteSinkEndpoint != null) {
             deleteSinkEndpoint.handle(new HttpEndpoint(routingContext));
 
-            this.httpBridgeContext.getHttpSinkEndpoints().remove(deleteInstanceID);
-            timestampMap.remove(deleteInstanceID);
+            this.httpBridgeContext.getHttpSinkEndpoints().remove(kafkaConsumerInstanceId);
+            timestampMap.remove(kafkaConsumerInstanceId);
         } else {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.NOT_FOUND.code(),
@@ -384,12 +388,14 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
      * @param routingContext RoutingContext instance
      */
     private void processConsumer(RoutingContext routingContext) {
+        String groupId = routingContext.pathParam("groupid");
         String instanceId = routingContext.pathParam("name");
+        ConsumerInstanceId kafkaConsumerInstanceId = new ConsumerInstanceId(groupId, instanceId);
 
-        SinkBridgeEndpoint<byte[], byte[]> sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(instanceId);
+        SinkBridgeEndpoint<byte[], byte[]> sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(kafkaConsumerInstanceId);
 
         if (sinkEndpoint != null) {
-            timestampMap.replace(instanceId, System.currentTimeMillis());
+            timestampMap.replace(kafkaConsumerInstanceId, System.currentTimeMillis());
             sinkEndpoint.handle(new HttpEndpoint(routingContext));
         } else {
             HttpBridgeError error = new HttpBridgeError(

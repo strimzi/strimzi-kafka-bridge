@@ -62,6 +62,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected OffsetTracker offsetTracker;
 
     private KafkaConsumer<K, V> consumer;
+    protected ConsumerInstanceId consumerInstanceId;
 
     protected String groupId;
     protected List<SinkTopicSubscription> topicSubscriptions;
@@ -130,6 +131,10 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             this.consumer.close();
         }
         this.handleClose();
+    }
+
+    public ConsumerInstanceId consumerInstanceId() {
+        return this.consumerInstanceId;
     }
 
     /**

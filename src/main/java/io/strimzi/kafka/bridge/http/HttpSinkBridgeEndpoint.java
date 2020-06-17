@@ -19,6 +19,7 @@ import io.opentracing.util.GlobalTracer;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
+import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
@@ -88,14 +89,16 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     public void doCreateConsumer(RoutingContext routingContext, JsonObject bodyAsJson, Handler<SinkBridgeEndpoint<K, V>> handler) {
         // get the consumer group-id
-        groupId = routingContext.pathParam("groupid");
+        this.groupId = routingContext.pathParam("groupid");
 
         // if no name, a random one is assigned
         this.name = bodyAsJson.getString("name", bridgeConfig.getBridgeID() == null
                 ? "kafka-bridge-consumer-" + UUID.randomUUID()
                 : bridgeConfig.getBridgeID() + "-" + UUID.randomUUID());
 
-        if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(this.name)) {
+        this.consumerInstanceId = new ConsumerInstanceId(this.groupId, this.name);
+
+        if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(this.consumerInstanceId)) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.CONFLICT.code(),
                     "A consumer instance with the specified name already exists in the Kafka Bridge."
@@ -134,7 +137,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
         handler.handle(this);
 
-        log.info("Created consumer {} in group {}", this.name, groupId);
+        log.info("Created consumer {} in group {}", this.name, this.groupId);
         // send consumer instance id(name) and base URI as response
         JsonObject body = new JsonObject()
                 .put("instance_id", this.name)
