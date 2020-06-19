@@ -154,4 +154,23 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                     context.completeNow();
                 });
     }
+
+    @Test
+    void openApiTestWithForwardedPath(VertxTestContext context) {
+        String forwardedPath = "/app/kafka-bridge";
+        baseService()
+                .getRequest("/openapi")
+                .putHeader("x-Forwarded-Path", forwardedPath)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        JsonObject bridgeResponse = response.body();
+                        assertThat(bridgeResponse.getString("basePath"), is(forwardedPath));
+                    });
+                    context.completeNow();
+                });
+    }
 }
