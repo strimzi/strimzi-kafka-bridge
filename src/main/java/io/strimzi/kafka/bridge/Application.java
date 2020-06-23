@@ -55,7 +55,7 @@ public class Application {
     private static final Logger log = LoggerFactory.getLogger(Application.class);
 
     private static final String EMBEDDED_HTTP_SERVER_PORT = "EMBEDDED_HTTP_SERVER_PORT";
-    private static final String BRIDGE_METRICS_ENABLED = "BRIDGE_METRICS_ENABLED";
+    private static final String KAFKA_BRIDGE_METRICS_ENABLED = "KAFKA_BRIDGE_METRICS_ENABLED";
 
     private static final int DEFAULT_EMBEDDED_HTTP_SERVER_PORT = 8080;
 
@@ -65,7 +65,7 @@ public class Application {
         try {
             VertxOptions vertxOptions = new VertxOptions();
             JmxCollectorRegistry jmxCollectorRegistry = null;
-            if (Boolean.valueOf(System.getenv(BRIDGE_METRICS_ENABLED))) {
+            if (Boolean.valueOf(System.getenv(KAFKA_BRIDGE_METRICS_ENABLED))) {
                 // setup Micrometer metrics options
                 vertxOptions.setMetricsOptions(
                         new MicrometerMetricsOptions()
