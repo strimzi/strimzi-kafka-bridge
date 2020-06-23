@@ -39,6 +39,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -231,12 +232,17 @@ public class Application {
      * @throws IOException
      */
     private static JmxCollectorRegistry getJmxCollectorRegistry()
-            throws MalformedObjectNameException {
+            throws MalformedObjectNameException, IOException {
         InputStream is = Application.class.getClassLoader().getResourceAsStream("jmx_metrics_config.yaml");
-        String yaml = new BufferedReader(new InputStreamReader(is))
-                .lines()
-                .collect(Collectors.joining("\n"));
-        return new JmxCollectorRegistry(yaml);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+        try {
+            String yaml = reader
+                    .lines()
+                    .collect(Collectors.joining("\n"));
+            return new JmxCollectorRegistry(yaml);
+        } finally {
+            reader.close();
+        }
     }
 
     /**
