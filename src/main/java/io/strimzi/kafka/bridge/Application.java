@@ -30,17 +30,20 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.management.MalformedObjectNameException;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Apache Kafka bridge main application class
@@ -51,27 +54,38 @@ public class Application {
     private static final Logger log = LoggerFactory.getLogger(Application.class);
 
     private static final String EMBEDDED_HTTP_SERVER_PORT = "EMBEDDED_HTTP_SERVER_PORT";
+    private static final String BRIDGE_METRICS_ENABLED = "BRIDGE_METRICS_ENABLED";
 
     private static final int DEFAULT_EMBEDDED_HTTP_SERVER_PORT = 8080;
+
+
 
     @SuppressWarnings({"checkstyle:NPathComplexity"})
     public static void main(String[] args) {
         log.info("Strimzi Kafka Bridge {} is starting", Application.class.getPackage().getImplementationVersion());
-        // setup Micrometer metrics options
-        VertxOptions vertxOptions = new VertxOptions().setMetricsOptions(
-                new MicrometerMetricsOptions()
-                        .setPrometheusOptions(new VertxPrometheusOptions().setEnabled(true))
-                        // define the labels on the HTTP server related metrics
-                        .setLabels(EnumSet.of(Label.REMOTE, Label.LOCAL, Label.HTTP_PATH, Label.HTTP_METHOD, Label.HTTP_CODE))
-                        // disable metrics about pool and verticles
-                        .setDisabledMetricsCategories(EnumSet.of(MetricsDomain.NAMED_POOLS, MetricsDomain.VERTICLES))
-                        .setJvmMetricsEnabled(true)
-                        .setEnabled(true));
-        Vertx vertx = Vertx.vertx(vertxOptions);
-
-        MeterRegistry meterRegistry = BackendRegistries.getDefaultNow();
-
         try {
+            VertxOptions vertxOptions = new VertxOptions();
+            JmxCollectorRegistry jmxCollectorRegistry = null;
+            if (Boolean.valueOf(System.getenv(BRIDGE_METRICS_ENABLED))) {
+                // setup Micrometer metrics options
+                vertxOptions.setMetricsOptions(
+                        new MicrometerMetricsOptions()
+                                .setPrometheusOptions(new VertxPrometheusOptions().setEnabled(true))
+                                // define the labels on the HTTP server related metrics
+                                .setLabels(EnumSet.of(Label.REMOTE, Label.LOCAL, Label.HTTP_PATH, Label.HTTP_METHOD, Label.HTTP_CODE))
+                                // disable metrics about pool and verticles
+                                .setDisabledMetricsCategories(EnumSet.of(MetricsDomain.NAMED_POOLS, MetricsDomain.VERTICLES))
+                                .setJvmMetricsEnabled(true)
+                                .setEnabled(true));
+
+                jmxCollectorRegistry = getJmxCollectorRegistry();
+            }
+            Vertx vertx = Vertx.vertx(vertxOptions);
+            // MeterRegistry default instance is just null if metrics are not enabled in the VertxOptions instance
+            MeterRegistry meterRegistry = BackendRegistries.getDefaultNow();
+            MetricsReporter metricsReporter = new MetricsReporter(jmxCollectorRegistry, meterRegistry);
+
+
             CommandLine commandLine = new DefaultParser().parse(generateOptions(), args);
 
             ConfigStoreOptions fileStore = new ConfigStoreOptions()
@@ -101,59 +115,50 @@ public class Application {
                         System.exit(1);
                     }
 
-                    try {
-                        JmxCollectorRegistry jmxCollectorRegistry = getJmxCollectorRegistry(commandLine);
+                    List<Future> futures = new ArrayList<>();
+                    futures.add(deployAmqpBridge(vertx, bridgeConfig, metricsReporter));
+                    futures.add(deployHttpBridge(vertx, bridgeConfig, metricsReporter));
 
-                        MetricsReporter metricsReporter = new MetricsReporter(jmxCollectorRegistry, meterRegistry);
-
-                        List<Future> futures = new ArrayList<>();
-                        futures.add(deployAmqpBridge(vertx, bridgeConfig, metricsReporter));
-                        futures.add(deployHttpBridge(vertx, bridgeConfig, metricsReporter));
-
-                        CompositeFuture.join(futures).onComplete(done -> {
-                            if (done.succeeded()) {
-                                HealthChecker healthChecker = new HealthChecker();
-                                for (int i = 0; i < futures.size(); i++) {
-                                    if (done.result().succeeded(i) && done.result().resultAt(i) != null) {
-                                        healthChecker.addHealthCheckable(done.result().resultAt(i));
-                                        // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
-                                        // so it needs the checker for asking other protocols bridges status
-                                        if (done.result().resultAt(i) instanceof HttpBridge) {
-                                            ((HttpBridge) done.result().resultAt(i)).setHealthChecker(healthChecker);
-                                        }
-                                    }
-                                }
-
-                                // when HTTP protocol is enabled, it handles healthy/ready/metrics endpoints as well,
-                                // so no need for a standalone embedded HTTP server
-                                if (!bridgeConfig.getHttpConfig().isEnabled()) {
-                                    EmbeddedHttpServer embeddedHttpServer =
-                                            new EmbeddedHttpServer(vertx, healthChecker, metricsReporter, embeddedHttpServerPort);
-                                    embeddedHttpServer.start();
-                                }
-
-                                // register OpenTracing Jaeger tracer
-                                if ("jaeger".equals(bridgeConfig.getTracing())) {
-                                    if (config.get(Configuration.JAEGER_SERVICE_NAME) != null) {
-                                        Tracer tracer = Configuration.fromEnv().getTracer();
-                                        GlobalTracer.registerIfAbsent(tracer);
-                                    } else {
-                                        log.error("Jaeger tracing cannot be initialized because {} environment variable is not defined", Configuration.JAEGER_SERVICE_NAME);
+                    CompositeFuture.join(futures).onComplete(done -> {
+                        if (done.succeeded()) {
+                            HealthChecker healthChecker = new HealthChecker();
+                            for (int i = 0; i < futures.size(); i++) {
+                                if (done.result().succeeded(i) && done.result().resultAt(i) != null) {
+                                    healthChecker.addHealthCheckable(done.result().resultAt(i));
+                                    // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
+                                    // so it needs the checker for asking other protocols bridges status
+                                    if (done.result().resultAt(i) instanceof HttpBridge) {
+                                        ((HttpBridge) done.result().resultAt(i)).setHealthChecker(healthChecker);
                                     }
                                 }
                             }
-                        });
-                    } catch (Exception ex) {
-                        log.error("Error starting the bridge", ex);
-                        System.exit(1);
-                    }
+
+                            // when HTTP protocol is enabled, it handles healthy/ready/metrics endpoints as well,
+                            // so no need for a standalone embedded HTTP server
+                            if (!bridgeConfig.getHttpConfig().isEnabled()) {
+                                EmbeddedHttpServer embeddedHttpServer =
+                                        new EmbeddedHttpServer(vertx, healthChecker, metricsReporter, embeddedHttpServerPort);
+                                embeddedHttpServer.start();
+                            }
+
+                            // register OpenTracing Jaeger tracer
+                            if ("jaeger".equals(bridgeConfig.getTracing())) {
+                                if (config.get(Configuration.JAEGER_SERVICE_NAME) != null) {
+                                    Tracer tracer = Configuration.fromEnv().getTracer();
+                                    GlobalTracer.registerIfAbsent(tracer);
+                                } else {
+                                    log.error("Jaeger tracing cannot be initialized because {} environment variable is not defined", Configuration.JAEGER_SERVICE_NAME);
+                                }
+                            }
+                        }
+                    });
                 } else {
                     log.error("Error starting the bridge", ar.cause());
                     System.exit(1);
                 }
             });
-        } catch (ParseException parseException) {
-            log.error("Error starting the bridge", parseException);
+        } catch (Exception ex) {
+            log.error("Error starting the bridge", ex);
             System.exit(1);
         }
     }
@@ -219,21 +224,19 @@ public class Application {
     }
 
     /**
-     * Return a JmxCollectorRegistry instance with the YAML configuration filters provided
-     * through the command line or configured without any filters
+     * Return a JmxCollectorRegistry instance with the YAML configuration filters
      *
-     * @param commandLine command line parameters containing the path to the JMX YAML configuration
-     * @return  JmxCollectorRegistry instanc
+     * @return JmxCollectorRegistry instance
      * @throws MalformedObjectNameException
      * @throws IOException
      */
-    private static JmxCollectorRegistry getJmxCollectorRegistry(CommandLine commandLine)
-            throws MalformedObjectNameException, IOException {
-        if (commandLine.hasOption("jmx-metrics-config")) {
-            return new JmxCollectorRegistry(new File(absoluteFilePath(commandLine.getOptionValue("jmx-metrics-config"))));
-        } else {
-            return new JmxCollectorRegistry("");
-        }
+    private static JmxCollectorRegistry getJmxCollectorRegistry()
+            throws MalformedObjectNameException {
+        InputStream is = Application.class.getClassLoader().getResourceAsStream("jmx_metrics_config.yaml");
+        String yaml = new BufferedReader(new InputStreamReader(is))
+                .lines()
+                .collect(Collectors.joining("\n"));
+        return new JmxCollectorRegistry(yaml);
     }
 
     /**
@@ -250,16 +253,8 @@ public class Application {
                 .desc("Configuration file with bridge parameters")
                 .build();
 
-        Option jmxMetricsFileOption = Option.builder()
-                .required(false)
-                .hasArg(true)
-                .longOpt("jmx-metrics-config")
-                .desc("JMX Kafka metrics YAML configuration file")
-                .build();
-
         Options options = new Options();
         options.addOption(configFileOption);
-        options.addOption(jmxMetricsFileOption);
         return options;
     }
 
