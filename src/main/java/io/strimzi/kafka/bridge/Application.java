@@ -59,8 +59,6 @@ public class Application {
 
     private static final int DEFAULT_EMBEDDED_HTTP_SERVER_PORT = 8080;
 
-
-
     @SuppressWarnings({"checkstyle:NPathComplexity"})
     public static void main(String[] args) {
         log.info("Strimzi Kafka Bridge {} is starting", Application.class.getPackage().getImplementationVersion());
