@@ -66,17 +66,9 @@ public class Application {
             VertxOptions vertxOptions = new VertxOptions();
             JmxCollectorRegistry jmxCollectorRegistry = null;
             if (Boolean.valueOf(System.getenv(KAFKA_BRIDGE_METRICS_ENABLED))) {
+                log.info("Metrics enabled and exposed on the /metrics endpoint");
                 // setup Micrometer metrics options
-                vertxOptions.setMetricsOptions(
-                        new MicrometerMetricsOptions()
-                                .setPrometheusOptions(new VertxPrometheusOptions().setEnabled(true))
-                                // define the labels on the HTTP server related metrics
-                                .setLabels(EnumSet.of(Label.REMOTE, Label.LOCAL, Label.HTTP_PATH, Label.HTTP_METHOD, Label.HTTP_CODE))
-                                // disable metrics about pool and verticles
-                                .setDisabledMetricsCategories(EnumSet.of(MetricsDomain.NAMED_POOLS, MetricsDomain.VERTICLES))
-                                .setJvmMetricsEnabled(true)
-                                .setEnabled(true));
-
+                vertxOptions.setMetricsOptions(metricsOptions());
                 jmxCollectorRegistry = getJmxCollectorRegistry();
             }
             Vertx vertx = Vertx.vertx(vertxOptions);
@@ -160,6 +152,22 @@ public class Application {
             log.error("Error starting the bridge", ex);
             System.exit(1);
         }
+    }
+
+    /**
+     * Set up the Vert.x metrics options
+     * 
+     * @return instance of the MicrometerMetricsOptions on Vert.x
+     */
+    private static MicrometerMetricsOptions metricsOptions() {
+        return new MicrometerMetricsOptions()
+                .setPrometheusOptions(new VertxPrometheusOptions().setEnabled(true))
+                // define the labels on the HTTP server related metrics
+                .setLabels(EnumSet.of(Label.REMOTE, Label.LOCAL, Label.HTTP_PATH, Label.HTTP_METHOD, Label.HTTP_CODE))
+                // disable metrics about pool and verticles
+                .setDisabledMetricsCategories(EnumSet.of(MetricsDomain.NAMED_POOLS, MetricsDomain.VERTICLES))
+                .setJvmMetricsEnabled(true)
+                .setEnabled(true);
     }
 
     /**
