@@ -4,8 +4,8 @@
 
 * Added an Admin Client endpoint and related API for getting topics list and topic details
 * Made available bridge information (i.e. version) on the root `/` endpoint
-* Exposed HTTP and JVM related metrics
-* Aded tini usage for running the bridge in containerized environment
+* Exposed HTTP server, JVM and Kafka consumer and producer related metrics in the Prometheus format
+* Added tini usage for running the bridge in containerized environment
 * Use `log4j2` instead of `log4j`
 
 ## 0.16.0
