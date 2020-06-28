@@ -3,6 +3,11 @@ sudo: required
 language: java
 jobs:
   fast_finish: true
+  include:
+  - os: linux
+    jdk: openjdk8
+  - os: linux
+    jdk: openjdk11
   allow_failures:
   - os: linux
     arch: s390x
@@ -11,9 +16,6 @@ jobs:
       apt:
         packages:
           - maven
-jdk:
-- openjdk8
-- openjdk11
 services:
 - docker
 before_install:
