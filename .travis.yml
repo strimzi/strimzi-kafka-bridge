@@ -8,7 +8,7 @@ jobs:
     jdk: openjdk8
   - os: linux
     jdk: openjdk11
-  - bridge: s390xbuild
+  - build: s390x # custom job identifier to be referenced in the allow_failures section
     os: linux
     arch: s390x
     jdk: openjdk11
@@ -17,7 +17,7 @@ jobs:
         packages:
           - maven
   allow_failures:
-  - bridge: s390xbuild
+  - build: s390x
 services:
 - docker
 before_install:
