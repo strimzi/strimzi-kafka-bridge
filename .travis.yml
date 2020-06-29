@@ -2,18 +2,22 @@ dist: xenial
 sudo: required
 language: java
 jobs:
+  fast_finish: true
   include:
   - os: linux
-    dist: bionic
+    jdk: openjdk8
+  - os: linux
+    jdk: openjdk11
+  - build: s390x # custom job identifier to be referenced in the allow_failures section
+    os: linux
     arch: s390x
     jdk: openjdk11
     addons:
       apt:
         packages:
           - maven
-jdk:
-- openjdk8
-- openjdk11
+  allow_failures:
+  - build: s390x
 services:
 - docker
 before_install:
