@@ -25,7 +25,6 @@ __Terms of service__ : http://swagger.io/terms/
 
 === URI scheme
 [%hardbreaks]
-__Host__ : bridge.swagger.io
 __BasePath__ : /
 __Schemes__ : HTTP
 
