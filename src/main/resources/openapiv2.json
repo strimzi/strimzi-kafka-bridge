@@ -350,7 +350,7 @@
         {
           "name": "name",
           "in": "path",
-          "description": "Name of the consumer that you want to unsubscribe from topics.",
+          "description": "Name of the consumer to unsubscribe from topics.",
           "required": true,
           "type": "string"
         }
@@ -481,7 +481,7 @@
         {
           "name": "name",
           "in": "path",
-          "description": "Name of the consumer to which you want to assign topic partitions.",
+          "description": "Name of the consumer to assign topic partitions to.",
           "required": true,
           "type": "string"
         }
@@ -656,7 +656,7 @@
         {
           "name": "topicname",
           "in": "path",
-          "description": "Name of the topic which you want to either retrieve metadata for, or send records to.",
+          "description": "Name of the topic to send records to or retrieve metadata from.",
           "required": true,
           "type": "string"
         }
@@ -754,7 +754,7 @@
         {
           "name": "name",
           "in": "path",
-          "description": "Name of the subscribed consumer for which you want to retrieve records.",
+          "description": "Name of the subscribed consumer to retrieve records from.",
           "required": true,
           "type": "string"
         },
@@ -848,7 +848,7 @@
         {
           "name": "topicname",
           "in": "path",
-          "description": "Name of the topic which you want to either retrieve metadata for, or send records to.",
+          "description": "Name of the topic to send records to or retrieve metadata from.",
           "required": true,
           "type": "string"
         }
@@ -859,7 +859,7 @@
         "tags": [
           "Topics"
         ],
-        "description": "Retrieves a partition metadata for the topic partition.",
+        "description": "Retrieves partition metadata for the topic partition.",
         "operationId": "getPartition",
         "produces": [
           "application/vnd.kafka.v2+json"
@@ -983,14 +983,14 @@
         {
           "name": "topicname",
           "in": "path",
-          "description": "Name of the topic which you want to either retrieve metadata for, or send records to.",
+          "description": "Name of the topic to send records to or retrieve metadata from.",
           "required": true,
           "type": "string"
         },
         {
           "name": "partitionid",
           "in": "path",
-          "description": "ID of the partition to which you want to either retrieve metadata for, or send records.",
+          "description": "ID of the partition to send records to or retrieve metadata from.",
           "required": true,
           "type": "integer"
         }
@@ -1038,7 +1038,7 @@
         {
           "name": "name",
           "in": "path",
-          "description": "Name of the consumer that you want to delete.",
+          "description": "Name of the consumer to delete.",
           "required": true,
           "type": "string"
         }
