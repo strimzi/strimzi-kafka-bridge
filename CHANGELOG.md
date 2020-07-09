@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.18.0
+
+* Use Java 11 as the Java runtime
+
 ## 0.17.0
 
 * Added an Admin Client endpoint and related API for getting topics list and topic details
