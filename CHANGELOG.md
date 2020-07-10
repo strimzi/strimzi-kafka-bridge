@@ -3,6 +3,8 @@
 ## 0.18.0
 
 * Use Java 11 as the Java runtime
+* Renamed exposed HTTP server and Kafka consumer and producer metrics, using `strimzi_bridge` as prefix
+* Added topic-partition retrivial operation to the Admin Client endpoint
 
 ## 0.17.0
 
