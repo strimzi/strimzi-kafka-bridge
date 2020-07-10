@@ -148,7 +148,7 @@ Deletes a specified consumer instance. The request for this operation MUST use t
 |**Path**|**groupid** +
 __required__|ID of the consumer group to which the consumer belongs.|string
 |**Path**|**name** +
-__required__|Name of the consumer that you want to delete.|string
+__required__|Name of the consumer to delete.|string
 |===
 
 
@@ -206,7 +206,7 @@ Assigns one or more topic partitions to a consumer.
 |**Path**|**groupid** +
 __required__|ID of the consumer group to which the consumer belongs.|string
 |**Path**|**name** +
-__required__|Name of the consumer to which you want to assign topic partitions.|string
+__required__|Name of the consumer to assign topic partitions to.|string
 |**Body**|**body** +
 __required__|List of topic partitions to assign to the consumer.|<<_partitions,Partitions>>
 |===
@@ -611,7 +611,7 @@ Retrieves records for a subscribed consumer, including message values, topics, a
 |**Path**|**groupid** +
 __required__|ID of the consumer group to which the subscribed consumer belongs.|string
 |**Path**|**name** +
-__required__|Name of the subscribed consumer for which you want to retrieve records.|string
+__required__|Name of the subscribed consumer to retrieve records from.|string
 |**Query**|**max_bytes** +
 __optional__|The maximum size, in bytes, of unencoded keys and values that can be included in the response. Otherwise, an error response with code 422 is returned.|integer
 |**Query**|**timeout** +
@@ -720,7 +720,7 @@ Subscribes a consumer to one or more topics. You can describe the topics to whic
 |**Path**|**groupid** +
 __required__|ID of the consumer group to which the subscribed consumer belongs.|string
 |**Path**|**name** +
-__required__|Name of the consumer that you want to unsubscribe from topics.|string
+__required__|Name of the consumer to unsubscribe from topics.|string
 |**Body**|**body** +
 __required__|List of topics to which the consumer will subscribe.|<<_topics,Topics>>
 |===
@@ -817,7 +817,7 @@ Retrieves a list of the topics to which the consumer is subscribed.
 |**Path**|**groupid** +
 __required__|ID of the consumer group to which the subscribed consumer belongs.|string
 |**Path**|**name** +
-__required__|Name of the consumer that you want to unsubscribe from topics.|string
+__required__|Name of the consumer to unsubscribe from topics.|string
 |===
 
 
@@ -884,7 +884,7 @@ Unsubscribes a consumer from all topics.
 |**Path**|**groupid** +
 __required__|ID of the consumer group to which the subscribed consumer belongs.|string
 |**Path**|**name** +
-__required__|Name of the consumer that you want to unsubscribe from topics.|string
+__required__|Name of the consumer to unsubscribe from topics.|string
 |===
 
 
@@ -1018,7 +1018,7 @@ Sends one or more records to a given topic, optionally specifying a partition, k
 |===
 |Type|Name|Description|Schema
 |**Path**|**topicname** +
-__required__|Name of the topic which you want to either retrieve metadata for, or to send records to.|string
+__required__|Name of the topic to send records to or retrieve metadata from.|string
 |**Body**|**body** +
 __required__||<<_producerrecordlist,ProducerRecordList>>
 |===
@@ -1130,7 +1130,7 @@ Retrieves the metadata about a given topic.
 |===
 |Type|Name|Description|Schema
 |**Path**|**topicname** +
-__required__|Name of the topic which you want to either retrieve metadata for, or to send records to.|string
+__required__|Name of the topic to send records to or retrieve metadata from.|string
 |===
 
 
@@ -1195,6 +1195,90 @@ __required__|Name of the topic which you want to either retrieve metadata for, o
 ----
 
 
+[[_listpartitions]]
+=== GET /topics/{topicname}/partitions
+
+==== Description
+Retrieves a list of partitions for the topic.
+
+
+==== Parameters
+
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**topicname** +
+__required__|Name of the topic to send records to or retrieve metadata from.|string
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2a,.^14a,.^4a"]
+|===
+|HTTP Code|Description|Schema
+|**200**|List of partitions|< <<_partitionmetadata,PartitionMetadata>> > array
+|**404**|The specified topic was not found.|<<_error,Error>>
+|===
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Topics
+
+
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : [ {
+    "partition" : 1,
+    "leader" : 1,
+    "replicas" : [ {
+      "broker" : 1,
+      "leader" : true,
+      "in_sync" : true
+    }, {
+      "broker" : 2,
+      "leader" : false,
+      "in_sync" : true
+    } ]
+  }, {
+    "partition" : 2,
+    "leader" : 2,
+    "replicas" : [ {
+      "broker" : 1,
+      "leader" : false,
+      "in_sync" : true
+    }, {
+      "broker" : 2,
+      "leader" : true,
+      "in_sync" : true
+    } ]
+  } ]
+}
+----
+
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified topic was not found."
+  }
+}
+----
+
+
 [[_sendtopartition]]
 === POST /topics/{topicname}/partitions/{partitionid}
 
@@ -1208,9 +1292,9 @@ Sends one or more records to a given topic partition, optionally specifying a ke
 |===
 |Type|Name|Description|Schema
 |**Path**|**partitionid** +
-__required__|ID of the partition to which you want to send records.|integer
+__required__|ID of the partition to send records to or retrieve metadata from.|integer
 |**Path**|**topicname** +
-__required__|Name of the topic containing the partition to which you want to send records.|string
+__required__|Name of the topic to send records to or retrieve metadata from.|string
 |**Body**|**body** +
 __required__|List of records to send to a given topic partition, including a value (required) and a key (optional).|<<_producerrecordtopartitionlist,ProducerRecordToPartitionList>>
 |===
@@ -1301,6 +1385,80 @@ __required__|List of records to send to a given topic partition, including a val
   "application/vnd.kafka.v2+json" : {
     "error_code" : 422,
     "message" : "The record is not valid."
+  }
+}
+----
+
+
+[[_getpartition]]
+=== GET /topics/{topicname}/partitions/{partitionid}
+
+==== Description
+Retrieves partition metadata for the topic partition.
+
+
+==== Parameters
+
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**partitionid** +
+__required__|ID of the partition to send records to or retrieve metadata from.|integer
+|**Path**|**topicname** +
+__required__|Name of the topic to send records to or retrieve metadata from.|string
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2a,.^14a,.^4a"]
+|===
+|HTTP Code|Description|Schema
+|**200**|Partition metadata|<<_partitionmetadata,PartitionMetadata>>
+|**404**|The specified topic partition was not found.|<<_error,Error>>
+|===
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Topics
+
+
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "partition" : 1,
+    "leader" : 1,
+    "replicas" : [ {
+      "broker" : 1,
+      "leader" : true,
+      "in_sync" : true
+    }, {
+      "broker" : 2,
+      "leader" : false,
+      "in_sync" : true
+    } ]
+  }
+}
+----
+
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified topic partition was not found."
   }
 }
 ----

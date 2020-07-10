@@ -78,7 +78,8 @@ public class OtherServicesTest extends HttpBridgeTestBase {
                         Map<String, Object> paths = bridgeResponse.getJsonObject("paths").getMap();
                         // subscribe, list subscriptions and unsubscribe are using the same endpoint but different methods (-2)
                         // getTopic and send are using the same endpoint but different methods (-1)
-                        int pathsSize = HttpOpenApiOperations.values().length - 3;
+                        // getPartition and sendToPartition are using the same endpoint but different methods (-1)
+                        int pathsSize = HttpOpenApiOperations.values().length - 4;
                         assertThat(paths.size(), is(pathsSize));
                         assertThat(paths.containsKey("/consumers/{groupid}"), is(true));
                         assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/consumers/{groupid}").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.CREATE_CONSUMER.toString()));
@@ -102,6 +103,7 @@ public class OtherServicesTest extends HttpBridgeTestBase {
                         assertThat(paths.containsKey("/topics/{topicname}"), is(true));
                         assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/topics/{topicname}").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.SEND.toString()));
                         assertThat(paths.containsKey("/topics/{topicname}/partitions/{partitionid}"), is(true));
+                        assertThat(paths.containsKey("/topics/{topicname}/partitions"), is(true));
                         assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/topics/{topicname}/partitions/{partitionid}").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.SEND_TO_PARTITION.toString()));
                         assertThat(paths.containsKey("/healthy"), is(true));
                         assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/healthy").getJsonObject("get").getString("operationId"), is(HttpOpenApiOperations.HEALTHY.toString()));
