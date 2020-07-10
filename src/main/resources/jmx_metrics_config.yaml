@@ -3,14 +3,14 @@ lowercaseOutputName: true
 rules:
   # more specific rules to consumer and producer with topic related information
   - pattern: kafka.producer<type=(.+), client-id=(.+), topic=(.+)><>([a-z-]+)
-    name: kafka_producer_$4
+    name: strimzi_bridge_kafka_producer_$4
     type: GAUGE
     labels:
       type: "$1"
       clientId: "$2"
       topic: "$3"
   - pattern: kafka.consumer<type=(.+), client-id=(.+), topic=(.+)><>([a-z-]+)
-    name: kafka_consumer_$4
+    name: strimzi_bridge_kafka_consumer_$4
     type: GAUGE
     labels:
       type: "$1"
@@ -18,7 +18,7 @@ rules:
       topic: "$3"
   # more general metrics
   - pattern: kafka.(\w+)<type=(.+), client-id=(.+)><>([a-z-]+)
-    name: kafka_$1_$4
+    name: strimzi_bridge_kafka_$1_$4
     type: GAUGE
     labels:
       type: "$2"

@@ -5,8 +5,10 @@
 
 package io.strimzi.kafka.bridge;
 
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.micrometer.prometheus.PrometheusNamingConvention;
 
 /**
  * Used for scraping and reporting metrics in Prometheus format
@@ -25,6 +27,15 @@ public class MetricsReporter {
     public MetricsReporter(JmxCollectorRegistry jmxCollectorRegistry, MeterRegistry meterRegistry) {
         this.jmxCollectorRegistry = jmxCollectorRegistry;
         this.meterRegistry = meterRegistry;
+        if (this.meterRegistry instanceof PrometheusMeterRegistry) {
+            this.meterRegistry.config().namingConvention(new PrometheusNamingConvention() {
+                @Override
+                public String name(String name, Meter.Type type, String baseUnit) {
+                    String metricName = name.startsWith("vertx.") ? name.replace("vertx.", "strimzi.bridge.") : name;
+                    return super.name(metricName, type, baseUnit);
+                }
+            });
+        }
     }
 
     /**
