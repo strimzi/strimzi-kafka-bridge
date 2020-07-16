@@ -86,13 +86,8 @@ public abstract class HttpBridgeTestBase {
     protected static BridgeConfig bridgeConfig;
     protected static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
 
-    static BridgeConfig bridgeConfig;
-    static KafkaFacade kafkaCluster;
-    static AdminClientFacade adminClientFacade;
     static MeterRegistry meterRegistry = null;
     static JmxCollectorRegistry jmxCollectorRegistry = null;
-
-    static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
 
     BaseService baseService() {
         return BaseService.getInstance(client);
