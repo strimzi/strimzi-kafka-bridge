@@ -5,8 +5,6 @@ jobs:
   fast_finish: true
   include:
   - os: linux
-    jdk: openjdk8
-  - os: linux
     jdk: openjdk11
   - build: s390x # custom job identifier to be referenced in the allow_failures section
     os: linux
