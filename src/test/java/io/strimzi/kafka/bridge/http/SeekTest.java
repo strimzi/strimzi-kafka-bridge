@@ -196,13 +196,6 @@ public class SeekTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
 
-        // topics deletion
-        LOGGER.info("Deleting async topics " + topic + " via Admin client");
-        adminClientFacade.deleteTopic(topic);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.listTopic().size(), is(0));
-
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -278,14 +271,6 @@ public class SeekTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
                 .deleteConsumer(context, groupId, name);
-
-        // topics deletion
-        LOGGER.info("Deleting async topics " + topic + " via Admin client");
-        adminClientFacade.deleteTopic(topic);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.listTopic().size(), is(0));
-
 
         context.completeNow();
     }
@@ -389,13 +374,6 @@ public class SeekTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
 
-        // topics deletion
-        LOGGER.info("Deleting async topics " + topic + " via Admin client");
-        adminClientFacade.deleteTopic(topic);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.listTopic().size(), is(0));
-
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -459,14 +437,6 @@ public class SeekTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
-
-        // topics deletion
-        LOGGER.info("Deleting async topics " + subscribedTopic + "," + notSubscribedTopic + " via Admin client");
-        adminClientFacade.deleteTopic(subscribedTopic);
-        adminClientFacade.deleteTopic(notSubscribedTopic);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -532,15 +502,6 @@ public class SeekTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
-
-        // topics deletion
-        LOGGER.info("Deleting async topics " + subscribedTopic + "," + notSubscribedTopic + " via Admin client");
-        adminClientFacade.deleteTopic(subscribedTopic);
-        adminClientFacade.deleteTopic(notSubscribedTopic);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        LOGGER.info("Following topics " + adminClientFacade.listTopic().toString());
-        assertThat(adminClientFacade.listTopic().size(), is(0));
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
