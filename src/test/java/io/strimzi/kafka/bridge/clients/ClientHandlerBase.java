@@ -5,8 +5,8 @@
 package io.strimzi.kafka.bridge.clients;
 
 import io.vertx.core.AbstractVerticle;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.IntPredicate;

@@ -6,6 +6,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
+import io.strimzi.kafka.bridge.http.base.HttpBridgeTestBase;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
@@ -22,7 +23,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-public class AdminClientTest extends HttpBridgeTestBase  {
+public class AdminClientTest extends HttpBridgeTestBase {
     @Test
     void listTopicsTest(VertxTestContext context) throws Exception {
         final String topic = "testListTopics";
@@ -155,7 +156,7 @@ public class AdminClientTest extends HttpBridgeTestBase  {
     }
 
     void setupTopic(VertxTestContext context, String topic, int partitions) throws Exception {
-        kafkaCluster.createTopic(topic, 2, 1);
+        adminClientFacade.createTopic(topic, partitions, 1);
 
         JsonArray records = new JsonArray();
         JsonObject json = new JsonObject();

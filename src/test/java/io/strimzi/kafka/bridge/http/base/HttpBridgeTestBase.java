@@ -7,7 +7,6 @@ package io.strimzi.kafka.bridge.http.base;
 
 import io.strimzi.StrimziKafkaContainer;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.strimzi.StrimziKafkaContainer;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.JmxCollectorRegistry;
 import io.strimzi.kafka.bridge.MetricsReporter;
@@ -89,7 +88,7 @@ public abstract class HttpBridgeTestBase {
     static MeterRegistry meterRegistry = null;
     static JmxCollectorRegistry jmxCollectorRegistry = null;
 
-    BaseService baseService() {
+    protected BaseService baseService() {
         return BaseService.getInstance(client);
     }
 

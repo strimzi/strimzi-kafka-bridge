@@ -7,7 +7,6 @@ package io.strimzi.kafka.bridge.amqp;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.kafka.bridge.MetricsReporter;
-import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpJsonMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpRawMessageConverter;
@@ -98,9 +97,6 @@ class AmqpBridgeTest {
     private static final int PERIODIC_DELAY = 200;
     private int count;
 
-    private Vertx vertx;
-
-    static KafkaFacade kafkaCluster = new KafkaFacade();
     static MeterRegistry meterRegistry = BackendRegistries.getDefaultNow();
 
     private static BridgeConfig bridgeConfig;
@@ -115,7 +111,7 @@ class AmqpBridgeTest {
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
 
             bridgeConfig = BridgeConfig.fromMap(config);
-            bridge = new AmqpBridge(bridgeConfig, new MetricsReporter(null, meterRegistry);
+            bridge = new AmqpBridge(bridgeConfig, new MetricsReporter(null, meterRegistry));
 
             LOGGER.info("Deploying in-memory bridge");
             vertx.deployVerticle(bridge, context.succeeding(id -> context.completeNow()));
