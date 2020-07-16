@@ -1141,8 +1141,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         adminClientFacade.createTopic(topic);
 
-        String sentBody = "Simple message";
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
+        String message = "Simple message";
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, message, 0, true);
 
         // create consumer
         // subscribe to a topic
@@ -1169,7 +1169,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         long offset = jsonResponse.getLong("offset");
 
                         assertThat(kafkaTopic, is(topic));
-                        assertThat(value, is(sentBody + "-0"));
+                        assertThat(value, is(message + "-0"));
                         assertThat(offset, is(0L));
                         assertThat(kafkaPartition, notNullValue());
                         assertThat(key, nullValue());

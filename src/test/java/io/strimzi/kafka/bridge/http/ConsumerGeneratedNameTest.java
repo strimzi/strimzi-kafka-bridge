@@ -59,7 +59,7 @@ public class ConsumerGeneratedNameTest {
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, 5L);
-        KAFKA_CLUSTER = new StrimziKafkaContainer("latest-kafka-2.4.0");
+        KAFKA_CLUSTER = new StrimziKafkaContainer();
     }
 
     private static final int TEST_TIMEOUT = 60;

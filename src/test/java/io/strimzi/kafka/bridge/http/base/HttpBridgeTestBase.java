@@ -65,7 +65,7 @@ public abstract class HttpBridgeTestBase {
     protected static long timeout = 5L;
 
     static {
-        KAFKA_CONTAINER = new StrimziKafkaContainer("latest-kafka-2.4.0");
+        KAFKA_CONTAINER = new StrimziKafkaContainer();
         KAFKA_CONTAINER.start();
 
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_CONTAINER.getBootstrapServers());
