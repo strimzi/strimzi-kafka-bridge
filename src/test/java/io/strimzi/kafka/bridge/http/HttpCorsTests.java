@@ -6,6 +6,7 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.strimzi.StrimziKafkaContainer;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.JmxCollectorRegistry;
 import io.strimzi.kafka.bridge.MetricsReporter;
@@ -54,18 +55,23 @@ public class HttpCorsTests {
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
     }
 
+    private static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
+
     static Vertx vertx;
     static HttpBridge httpBridge;
     static WebClient client;
 
     static BridgeConfig bridgeConfig;
-    static KafkaFacade kafkaCluster = new KafkaFacade();
+    static StrimziKafkaContainer KAFKA_CONTAINER;
     static MeterRegistry meterRegistry = null;
     static JmxCollectorRegistry jmxCollectorRegistry = null;
 
     @BeforeAll
     static void beforeAll() {
-        kafkaCluster.start();
+        if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
+            KAFKA_CONTAINER = new StrimziKafkaContainer();
+            KAFKA_CONTAINER.start();
+        } // else use external kafka
     }
 
     @BeforeEach
@@ -82,7 +88,9 @@ public class HttpCorsTests {
 
     @AfterAll
     static void afterAll() {
-        kafkaCluster.stop();
+        if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
+            KAFKA_CONTAINER.stop();
+        }
     }
 
 
