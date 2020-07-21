@@ -54,16 +54,13 @@ public class ConsumerGeneratedNameTest {
     private static Map<String, Object> config = new HashMap<>();
     private static StrimziKafkaContainer KAFKA_CONTAINER;
     private static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
+    private static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
 
     static {
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, 5L);
-
-        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
-            KAFKA_CONTAINER = new StrimziKafkaContainer();
-        } // else use external kafka
     }
 
     private static final int TEST_TIMEOUT = 60;
@@ -87,8 +84,12 @@ public class ConsumerGeneratedNameTest {
 
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
 
-        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+        if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
+            KAFKA_CONTAINER = new StrimziKafkaContainer();
             KAFKA_CONTAINER.start();
+        } // else use external kafka
+
+        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
 
             bridgeConfig = BridgeConfig.fromMap(config);
             httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));

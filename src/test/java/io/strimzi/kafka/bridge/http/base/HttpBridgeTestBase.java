@@ -62,12 +62,13 @@ public abstract class HttpBridgeTestBase {
 
     public static StrimziKafkaContainer KAFKA_CONTAINER = null;
     protected static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
+    protected static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
 
     protected static long timeout = 5L;
 
     static {
 
-        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+        if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
             KAFKA_CONTAINER = new StrimziKafkaContainer();
             KAFKA_CONTAINER.start();
         } // else use external kafka
