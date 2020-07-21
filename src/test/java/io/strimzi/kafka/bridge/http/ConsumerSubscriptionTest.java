@@ -132,7 +132,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
     @Test
     void subscriptionConsumerDoesNotExistBecauseNotCreated(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String name = "my-kafka-consumer-does-not-exists-because-not-created";
-        String topic = "subscriptionConsumerDoesNotExist";
+        String topic = "subscriptionConsumerDoesNotExistBecauseNotCreated";
 
         adminClientFacade.createTopic(topic);
 
