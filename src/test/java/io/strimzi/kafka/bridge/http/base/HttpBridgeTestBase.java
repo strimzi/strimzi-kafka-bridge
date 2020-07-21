@@ -60,13 +60,17 @@ public abstract class HttpBridgeTestBase {
     protected static  final int TEST_TIMEOUT = 60;
     protected int count;
 
-    public static final StrimziKafkaContainer KAFKA_CONTAINER;
+    public static StrimziKafkaContainer KAFKA_CONTAINER = null;
+    protected static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
 
     protected static long timeout = 5L;
 
     static {
-        KAFKA_CONTAINER = new StrimziKafkaContainer();
-        KAFKA_CONTAINER.start();
+
+        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+            KAFKA_CONTAINER = new StrimziKafkaContainer();
+            KAFKA_CONTAINER.start();
+        } // else use external kafka
 
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_CONTAINER.getBootstrapServers());
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
@@ -83,7 +87,6 @@ public abstract class HttpBridgeTestBase {
     protected static AdminClientFacade adminClientFacade;
     protected static HttpBridge httpBridge;
     protected static BridgeConfig bridgeConfig;
-    protected static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
 
     static MeterRegistry meterRegistry = null;
     static JmxCollectorRegistry jmxCollectorRegistry = null;

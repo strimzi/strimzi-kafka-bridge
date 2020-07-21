@@ -52,14 +52,18 @@ public class ConsumerGeneratedNameTest {
     private static final Logger LOGGER = LogManager.getLogger(ConsumerGeneratedNameTest.class);
 
     private static Map<String, Object> config = new HashMap<>();
-    private static final StrimziKafkaContainer KAFKA_CLUSTER;
+    private static StrimziKafkaContainer KAFKA_CONTAINER;
+    private static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
 
     static {
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, 5L);
-        KAFKA_CLUSTER = new StrimziKafkaContainer();
+
+        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+            KAFKA_CONTAINER = new StrimziKafkaContainer();
+        } // else use external kafka
     }
 
     private static final int TEST_TIMEOUT = 60;
@@ -69,7 +73,6 @@ public class ConsumerGeneratedNameTest {
     private static BridgeConfig bridgeConfig;
     private static MeterRegistry meterRegistry = null;
     private static JmxCollectorRegistry jmxCollectorRegistry = null;
-    private static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
 
     ConsumerService consumerService() {
         return ConsumerService.getInstance(client);
@@ -80,12 +83,13 @@ public class ConsumerGeneratedNameTest {
 
     @BeforeAll
     static void beforeAll(VertxTestContext context) {
-        KAFKA_CLUSTER.start();
         vertx = Vertx.vertx();
 
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
 
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+            KAFKA_CONTAINER.start();
+
             bridgeConfig = BridgeConfig.fromMap(config);
             httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
             httpBridge.setHealthChecker(new HealthChecker());
@@ -103,8 +107,10 @@ public class ConsumerGeneratedNameTest {
 
     @AfterAll
     static void afterAll(VertxTestContext context) {
-        KAFKA_CLUSTER.stop();
-        vertx.close(context.succeeding(arg -> context.completeNow()));
+        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+            KAFKA_CONTAINER.stop();
+            vertx.close(context.succeeding(arg -> context.completeNow()));
+        }
     }
 
     @Test
