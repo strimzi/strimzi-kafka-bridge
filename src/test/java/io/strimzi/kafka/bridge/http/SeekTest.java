@@ -349,8 +349,8 @@ public class SeekTest extends HttpBridgeTestBase {
                         assertThat(metadata.size(), is(1));
 
                         assertThat(metadata.get(0).getString("topic"), is(topic));
-                        assertThat(metadata.get(0).getString("value"), is("value-9"));
-                        assertThat(metadata.get(0).getString("key"), is("key-9"));
+                        assertThat(metadata.get(0).getString("value"), is("value"));
+                        assertThat(metadata.get(0).getString("key"), is("key"));
 
                         // check it read from partition 1, starting from offset 5, the last 5 messages
                         metadata = body.stream()
@@ -362,8 +362,8 @@ public class SeekTest extends HttpBridgeTestBase {
 
                         for (int i = 0; i < metadata.size(); i++) {
                             assertThat(metadata.get(i).getString("topic"), is(topic));
-                            assertThat(metadata.get(i).getString("value"), is("value-" + (i + 5)));
-                            assertThat(metadata.get(i).getString("key"), is("key-" + (i + 5)));
+                            assertThat(metadata.get(i).getString("value"), is("value"));
+                            assertThat(metadata.get(i).getString("key"), is("key"));
                         }
                     });
                     consume.complete(true);

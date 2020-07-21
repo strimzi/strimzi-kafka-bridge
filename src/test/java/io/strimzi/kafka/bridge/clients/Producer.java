@@ -102,9 +102,9 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
             KafkaProducerRecord<String, String> record;
 
             if (withNullKeyRecord) {
-                record = KafkaProducerRecord.create(topic, null, message + "-" + numSent.get(), partition);
+                record = KafkaProducerRecord.create(topic, null, message, partition);
             } else {
-                record = KafkaProducerRecord.create(topic, "key-" + numSent.get(), message + "-" + numSent.get(), partition);
+                record = KafkaProducerRecord.create(topic, "key", message, partition);
             }
 
             producer.send(record, done -> {

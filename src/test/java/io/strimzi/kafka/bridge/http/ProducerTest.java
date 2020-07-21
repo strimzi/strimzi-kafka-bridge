@@ -65,7 +65,7 @@ public class ProducerTest extends HttpBridgeTestBase {
             .sendJsonObject(root, verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
-        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_CONTAINER.getBootstrapServers());
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
                 new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
@@ -115,7 +115,7 @@ public class ProducerTest extends HttpBridgeTestBase {
             .sendJsonObject(root, verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
-        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_CONTAINER.getBootstrapServers());
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
                 new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
@@ -165,7 +165,7 @@ public class ProducerTest extends HttpBridgeTestBase {
             .sendJsonObject(root, verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
-        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_CONTAINER.getBootstrapServers());
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
                 new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
@@ -215,7 +215,7 @@ public class ProducerTest extends HttpBridgeTestBase {
                 .sendJsonObject(root, verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
-        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_CONTAINER.getBootstrapServers());
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
 
         KafkaConsumer<byte[], byte[]> consumer = KafkaConsumer.create(vertx, consumerProperties,
                 new ByteArrayDeserializer(), new ByteArrayDeserializer());
@@ -247,7 +247,7 @@ public class ProducerTest extends HttpBridgeTestBase {
         adminClientFacade.createTopic(topic);
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
-        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_CONTAINER.getBootstrapServers());
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
                 new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
@@ -344,7 +344,7 @@ public class ProducerTest extends HttpBridgeTestBase {
             });
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
-        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_CONTAINER.getBootstrapServers());
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
                 new StringDeserializer(), new KafkaJsonDeserializer<String>(String.class));

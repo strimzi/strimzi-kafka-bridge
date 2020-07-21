@@ -496,7 +496,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     long offset = jsonResponse.getLong("offset");
 
                     assertThat(kafkaTopic, is(topic));
-                    assertThat(value, is(sentBody + "-0"));
+                    assertThat(value, is(sentBody));
                     assertThat(offset, is(0L));
                     assertThat(kafkaPartition, notNullValue());
                     assertThat(key, nullValue());
@@ -615,7 +615,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                             long offset = jsonResponse.getLong("offset");
 
                             assertThat(kafkaTopic, is("receiveSimpleMessage-" + (i + 1)));
-                            assertThat(value, is("Simple message-" + 0));
+                            assertThat(value, is("Simple message"));
                             assertThat(offset, is(0L));
                             assertThat(kafkaPartition, notNullValue());
                             assertThat(key, nullValue());
@@ -683,7 +683,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                             long offset = jsonResponse.getLong("offset");
 
                             assertThat(kafkaTopic, is("receiveWithPattern-" + (i + 1)));
-                            assertThat(value, is(message + "-0"));
+                            assertThat(value, is(message));
                             assertThat(offset, is(0L));
                             assertThat(kafkaPartition, notNullValue());
                             assertThat(key, nullValue());
@@ -744,7 +744,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         long offset = jsonResponse.getLong("offset");
 
                         assertThat(kafkaTopic, is(topic));
-                        assertThat(value, is(sentBody + "-0"));
+                        assertThat(value, is(sentBody));
                         assertThat(kafkaPartition, is(partition));
                         assertThat(offset, is(0L));
                         assertThat(key, nullValue());
@@ -800,7 +800,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                             long offset = jsonResponse.getLong("offset");
 
                             assertThat(kafkaTopic, is("receiveSimpleMessageFromMultiplePartitions"));
-                            assertThat(value, is(sentBody + "-0"));
+                            assertThat(value, is(sentBody));
                             assertThat(offset, is(0L));
                             //context.assertNotNull(kafkaPartition);
                             assertThat(i, is(kafkaPartition));
@@ -856,7 +856,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         long offset = jsonResponse.getLong("offset");
 
                         assertThat(kafkaTopic, is(topic));
-                        assertThat(value, is(sentBody + "-0"));
+                        assertThat(value, is(sentBody));
                         assertThat(offset, is(0L));
                         assertThat(kafkaPartition, notNullValue());
                         assertThat(key, nullValue());
@@ -943,7 +943,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         long offset = jsonResponse.getLong("offset");
 
                         assertThat(kafkaTopic, is(topic));
-                        assertThat(value, is(sentBody + "-0"));
+                        assertThat(value, is(sentBody));
                         assertThat(offset, is(0L));
                         assertThat(kafkaPartition, notNullValue());
                         assertThat(key, nullValue());
@@ -1169,7 +1169,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         long offset = jsonResponse.getLong("offset");
 
                         assertThat(kafkaTopic, is(topic));
-                        assertThat(value, is(message + "-0"));
+                        assertThat(value, is(message));
                         assertThat(offset, is(0L));
                         assertThat(kafkaPartition, notNullValue());
                         assertThat(key, nullValue());
