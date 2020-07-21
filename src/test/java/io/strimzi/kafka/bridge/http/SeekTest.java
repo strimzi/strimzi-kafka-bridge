@@ -126,7 +126,7 @@ public class SeekTest extends HttpBridgeTestBase {
         String topic = "seekToBeginningAndReceive";
         adminClientFacade.createTopic(topic);
 
-        basicKafkaClient.sendMessagesPlain(topic, 10);
+        basicKafkaClient.sendStringMessagesPlain(topic, 10);
 
         JsonObject jsonConsumer = new JsonObject();
         jsonConsumer.put("name", name);
@@ -229,7 +229,7 @@ public class SeekTest extends HttpBridgeTestBase {
 
         dummy.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        basicKafkaClient.sendMessagesPlain(topic, 10);
+        basicKafkaClient.sendStringMessagesPlain(topic, 10);
 
         // seek
         JsonArray partitions = new JsonArray();

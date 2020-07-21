@@ -41,8 +41,8 @@ public class BasicKafkaClient {
      * @param withNullKeyRecord boolean, which allowing sending messages with NULL key
      * @return sent message count
      */
-    public int sendMessagesPlain(long timeoutMs, String topicName, int messageCount, String message, int partition,
-                                 boolean withNullKeyRecord) {
+    public int sendStringMessagesPlain(long timeoutMs, String topicName, int messageCount, String message, int partition,
+                                       boolean withNullKeyRecord) {
         CompletableFuture<Integer> resultPromise = new CompletableFuture<>();
         IntPredicate msgCntPredicate = x -> x == messageCount;
 
@@ -72,8 +72,8 @@ public class BasicKafkaClient {
      * @param messageCount message count
      * @return sent message count
      */
-    public int sendMessagesPlain(String topicName, int messageCount) {
-        return sendMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, "\"Hello\" : \"World\"",
+    public int sendStringMessagesPlain(String topicName, int messageCount) {
+        return sendStringMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, "\"Hello\" : \"World\"",
             0, false);
     }
 
@@ -170,7 +170,7 @@ public class BasicKafkaClient {
      */
     @SuppressWarnings("Regexp") // for the `.toLowerCase()` because kafka needs this property as lower-case
     @SuppressFBWarnings("DM_CONVERT_CASE")
-    public int receiveMessagesPlain(long timeoutMs, String topicName, int messageCount) {
+    public int receiveStringMessagesPlain(long timeoutMs, String topicName, int messageCount) {
 
         CompletableFuture<Integer> resultPromise = new CompletableFuture<>();
         IntPredicate msgCntPredicate = x -> x == messageCount;
@@ -202,7 +202,7 @@ public class BasicKafkaClient {
      * @param messageCount message count
      * @return received message count
      */
-    public int receiveMessagesPlain(String topicName, int messageCount) {
-        return receiveMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount);
+    public int receiveStringMessagesPlain(String topicName, int messageCount) {
+        return receiveStringMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount);
     }
 }

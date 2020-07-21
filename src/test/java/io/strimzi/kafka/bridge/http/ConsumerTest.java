@@ -1089,7 +1089,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
         adminClientFacade.createTopic(topic);
 
-        basicKafkaClient.sendMessagesPlain(topic, 1);
+        basicKafkaClient.sendStringMessagesPlain(topic, 1);
 
         JsonObject json = new JsonObject();
         json.put("name", name);
@@ -1183,7 +1183,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService().unsubscribeConsumer(context, groupId, name, topic);
 
         // Send new record
-        basicKafkaClient.sendMessagesPlain(topic, 1);
+        basicKafkaClient.sendStringMessagesPlain(topic, 1);
 
         // Try to consume after unsubscription
         CompletableFuture<Boolean> consume2 = new CompletableFuture<>();
@@ -1357,7 +1357,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         adminClientFacade.createTopic(topic);
 
         // send a simple String which is not JSON encoded
-        basicKafkaClient.sendMessagesPlain(topic, 1);
+        basicKafkaClient.sendStringMessagesPlain(topic, 1);
 
         JsonArray topics = new JsonArray();
         topics.add(topic);
