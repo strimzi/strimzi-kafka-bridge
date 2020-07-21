@@ -12,7 +12,6 @@ import io.strimzi.kafka.bridge.JmxCollectorRegistry;
 import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
-import io.strimzi.kafka.bridge.facades.KafkaFacade;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -62,15 +61,15 @@ public class HttpCorsTests {
     static WebClient client;
 
     static BridgeConfig bridgeConfig;
-    static StrimziKafkaContainer KAFKA_CONTAINER;
+    static StrimziKafkaContainer kafkaContainer;
     static MeterRegistry meterRegistry = null;
     static JmxCollectorRegistry jmxCollectorRegistry = null;
 
     @BeforeAll
     static void beforeAll() {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
-            KAFKA_CONTAINER = new StrimziKafkaContainer();
-            KAFKA_CONTAINER.start();
+            kafkaContainer = new StrimziKafkaContainer();
+            kafkaContainer.start();
         } // else use external kafka
     }
 
@@ -89,7 +88,7 @@ public class HttpCorsTests {
     @AfterAll
     static void afterAll() {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
-            KAFKA_CONTAINER.stop();
+            kafkaContainer.stop();
         }
     }
 

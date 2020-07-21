@@ -52,7 +52,7 @@ public class ConsumerGeneratedNameTest {
     private static final Logger LOGGER = LogManager.getLogger(ConsumerGeneratedNameTest.class);
 
     private static Map<String, Object> config = new HashMap<>();
-    private static StrimziKafkaContainer KAFKA_CONTAINER;
+    private static StrimziKafkaContainer kafkaContainer;
     private static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
     private static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
 
@@ -85,8 +85,8 @@ public class ConsumerGeneratedNameTest {
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
 
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
-            KAFKA_CONTAINER = new StrimziKafkaContainer();
-            KAFKA_CONTAINER.start();
+            kafkaContainer = new StrimziKafkaContainer();
+            kafkaContainer.start();
         } // else use external kafka
 
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
@@ -109,7 +109,7 @@ public class ConsumerGeneratedNameTest {
     @AfterAll
     static void afterAll(VertxTestContext context) {
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
-            KAFKA_CONTAINER.stop();
+            kafkaContainer.stop();
             vertx.close(context.succeeding(arg -> context.completeNow()));
         }
     }

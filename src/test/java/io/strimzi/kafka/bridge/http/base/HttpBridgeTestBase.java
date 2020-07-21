@@ -60,7 +60,7 @@ public abstract class HttpBridgeTestBase {
     protected static  final int TEST_TIMEOUT = 60;
     protected int count;
 
-    public static StrimziKafkaContainer KAFKA_CONTAINER = null;
+    public static StrimziKafkaContainer kafkaContainer = null;
     protected static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
     protected static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
 
@@ -69,17 +69,17 @@ public abstract class HttpBridgeTestBase {
     static {
 
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
-            KAFKA_CONTAINER = new StrimziKafkaContainer();
-            KAFKA_CONTAINER.start();
+            kafkaContainer = new StrimziKafkaContainer();
+            kafkaContainer.start();
         } // else use external kafka
 
-        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_CONTAINER.getBootstrapServers());
+        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
         config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
 
-        adminClientFacade = AdminClientFacade.create(KAFKA_CONTAINER.getBootstrapServers());
+        adminClientFacade = AdminClientFacade.create(kafkaContainer.getBootstrapServers());
     }
 
     protected static Vertx vertx;
@@ -112,8 +112,8 @@ public abstract class HttpBridgeTestBase {
     static void beforeAll(VertxTestContext context) {
         vertx = Vertx.vertx();
 
-        LOGGER.info(KAFKA_CONTAINER.getBootstrapServers());
-        basicKafkaClient = new BasicKafkaClient(KAFKA_CONTAINER.getBootstrapServers());
+        LOGGER.info(kafkaContainer.getBootstrapServers());
+        basicKafkaClient = new BasicKafkaClient(kafkaContainer.getBootstrapServers());
 
         vertx = Vertx.vertx();
 
