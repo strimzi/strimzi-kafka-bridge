@@ -7,6 +7,7 @@ package io.strimzi.kafka.bridge.http;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.strimzi.kafka.bridge.http.base.HttpBridgeTestBase;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.MultiMap;
@@ -16,6 +17,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
@@ -404,7 +406,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=mqtt";
 
@@ -464,10 +466,10 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void receiveSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveSimpleMessage";
-        kafkaCluster.createTopic(topic, 1, 1);
+        adminClientFacade.createTopic(topic);
 
         String sentBody = "Simple message";
-        kafkaCluster.produce(topic, sentBody, 1, 0);
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
 
         // create consumer
         // subscribe to a topic
@@ -511,13 +513,15 @@ public class ConsumerTest extends HttpBridgeTestBase {
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
+    @Disabled("Implement in the next PR")
     @Test
     void receiveBinaryMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveBinaryMessage";
-        kafkaCluster.createTopic(topic, 1, 1);
+        adminClientFacade.createTopic(topic);
 
         String sentBody = "Simple message";
-        kafkaCluster.produce(topic, sentBody.getBytes(), 1, 0);
+//        kafkaCluster.produce(topic, sentBody.getBytes(), 1, 0);
+        // TODO: make client to producer binary data..
 
         JsonObject json = new JsonObject();
         json.put("name", name);
@@ -548,7 +552,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         long offset = jsonResponse.getLong("offset");
 
                         assertThat(kafkaTopic, is(topic));
-                        assertThat(value, is(sentBody));
+                        assertThat(value, is(sentBody + "-0"));
                         assertThat(offset, is(0L));
                         assertThat(kafkaPartition, notNullValue());
                         assertThat(key, nullValue());
@@ -561,6 +565,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        adminClientFacade.deleteTopic(topic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -569,13 +580,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
     void receiveFromMultipleTopics(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic1 = "receiveSimpleMessage-1";
         String topic2 = "receiveSimpleMessage-2";
-        kafkaCluster.createTopic(topic1, 1, 1);
-        kafkaCluster.createTopic(topic2, 1, 1);
 
-        String sentBody1 = "Simple message-1";
-        String sentBody2 = "Simple message-2";
-        kafkaCluster.produce(topic1, sentBody1, 1, 0);
-        kafkaCluster.produce(topic2, sentBody2, 1, 0);
+        adminClientFacade.createTopic(topic1);
+        adminClientFacade.createTopic(topic2);
+
+        basicKafkaClient.sendJsonMessagesPlain(topic1, 1, "Simple message", 0, true);
+        basicKafkaClient.sendJsonMessagesPlain(topic2, 1, "Simple message", 0, true);
 
         // create consumer
         // subscribe to a topic
@@ -605,7 +615,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                             long offset = jsonResponse.getLong("offset");
 
                             assertThat(kafkaTopic, is("receiveSimpleMessage-" + (i + 1)));
-                            assertThat(value, is("Simple message-" + (i + 1)));
+                            assertThat(value, is("Simple message"));
                             assertThat(offset, is(0L));
                             assertThat(kafkaPartition, notNullValue());
                             assertThat(key, nullValue());
@@ -618,21 +628,30 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        adminClientFacade.deleteTopic(topic1);
+        adminClientFacade.deleteTopic(topic2);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     @Test
-    void receiveFromTopicsWithPattern(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void receiveFromTopicsWithPattern(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         String topic1 = "receiveWithPattern-1";
         String topic2 = "receiveWithPattern-2";
-        kafkaCluster.createTopic(topic1, 1, 1);
-        kafkaCluster.createTopic(topic2, 1, 1);
 
-        String sentBody1 = "Simple message-1";
-        String sentBody2 = "Simple message-2";
-        kafkaCluster.produce(topic1, sentBody1, 1, 0);
-        kafkaCluster.produce(topic2, sentBody2, 1, 0);
+        adminClientFacade.createTopic(topic1);
+        adminClientFacade.createTopic(topic2);
+
+        String message = "Simple message";
+
+        basicKafkaClient.sendJsonMessagesPlain(topic1, 1, message, 0, true);
+        basicKafkaClient.sendJsonMessagesPlain(topic2, 1, message, 0, true);
 
         JsonObject topicPattern = new JsonObject();
         topicPattern.put("topic_pattern", "receiveWithPattern-\\d");
@@ -664,7 +683,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                             long offset = jsonResponse.getLong("offset");
 
                             assertThat(kafkaTopic, is("receiveWithPattern-" + (i + 1)));
-                            assertThat(value, is("Simple message-" + (i + 1)));
+                            assertThat(value, is(message));
                             assertThat(offset, is(0L));
                             assertThat(kafkaPartition, notNullValue());
                             assertThat(key, nullValue());
@@ -678,6 +697,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        adminClientFacade.deleteTopic(topic1);
+        adminClientFacade.deleteTopic(topic2);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -686,10 +713,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
     void receiveSimpleMessageFromPartition(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveSimpleMessageFromPartition";
         int partition = 1;
-        kafkaCluster.createTopic(topic, 2, 1);
+
+        adminClientFacade.createTopic(topic, 2, 1);
 
         String sentBody = "Simple message from partition";
-        kafkaCluster.produce(topic, sentBody, 1, partition);
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, partition, true);
 
         // create a consumer
         // subscribe to a topic
@@ -736,11 +764,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void receiveSimpleMessageFromMultiplePartitions(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveSimpleMessageFromMultiplePartitions";
-        kafkaCluster.createTopic(topic, 2, 1);
 
-        String sentBody = "Simple message from partition";
-        kafkaCluster.produce(topic, sentBody, 1, 0);
-        kafkaCluster.produce(topic, sentBody, 1, 1);
+        adminClientFacade.createTopic(topic, 2, 1);
+
+        String sentBody = "value";
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 1, true);
 
         // create a consumer
         // subscribe to a topic
@@ -771,7 +800,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                             long offset = jsonResponse.getLong("offset");
 
                             assertThat(kafkaTopic, is("receiveSimpleMessageFromMultiplePartitions"));
-                            assertThat(value, is("Simple message from partition"));
+                            assertThat(value, is(sentBody));
                             assertThat(offset, is(0L));
                             //context.assertNotNull(kafkaPartition);
                             assertThat(i, is(kafkaPartition));
@@ -793,10 +822,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void commitOffset(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "commitOffset";
-        kafkaCluster.createTopic(topic, 1, 1);
+        adminClientFacade.createTopic(topic);
 
         String sentBody = "Simple message";
-        kafkaCluster.produce(topic, sentBody, 1, 0);
+
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
 
         JsonObject json = consumerJson
             .put("enable.auto.commit", false);
@@ -865,6 +895,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        LOGGER.info("Deleting async topics " + topic + " via Admin client");
+        adminClientFacade.deleteTopic(topic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -872,10 +910,10 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void commitEmptyOffset(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "commitEmptyOffset";
-        kafkaCluster.createTopic(topic, 1, 1);
+        adminClientFacade.createTopic(topic);
 
         String sentBody = "Simple message";
-        kafkaCluster.produce(topic, sentBody, 1, 0);
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
 
         JsonObject json = consumerJson
             .put("enable.auto.commit", false);
@@ -942,7 +980,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void consumerAlreadyExistsTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "consumerAlreadyExistsTest";
-        kafkaCluster.createTopic(topic, 1, 1);
+        adminClientFacade.createTopic(topic);
 
         String name = "my-kafka-consumer4";
         JsonObject json = new JsonObject();
@@ -1048,10 +1086,10 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void doNotRespondTooLongMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "doNotRespondTooLongMessage";
-        kafkaCluster.createTopic(topic, 1, 1);
 
-        String sentBody = "Simple message";
-        kafkaCluster.produceStrings(topic, sentBody, 1, 0);
+        adminClientFacade.createTopic(topic);
+
+        basicKafkaClient.sendStringMessagesPlain(topic, 1);
 
         JsonObject json = new JsonObject();
         json.put("name", name);
@@ -1063,7 +1101,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
             .subscribeConsumer(context, groupId, name, topic);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
-
 
         // consume records
         consumerService()
@@ -1086,6 +1123,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        adminClientFacade.deleteTopic(topic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -1094,10 +1138,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void doNotReceiveMessageAfterUnsubscribe(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "doNotReceiveMessageAfterUnsubscribe";
-        kafkaCluster.createTopic(topic, 1, 1);
 
-        String sentBody = "Simple message";
-        kafkaCluster.produce(topic, sentBody, 1, 0);
+        adminClientFacade.createTopic(topic);
+
+        String message = "Simple message";
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, message, 0, true);
 
         // create consumer
         // subscribe to a topic
@@ -1124,7 +1169,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
                         long offset = jsonResponse.getLong("offset");
 
                         assertThat(kafkaTopic, is(topic));
-                        assertThat(value, is(sentBody));
+                        assertThat(value, is(message));
                         assertThat(offset, is(0L));
                         assertThat(kafkaPartition, notNullValue());
                         assertThat(key, nullValue());
@@ -1138,7 +1183,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService().unsubscribeConsumer(context, groupId, name, topic);
 
         // Send new record
-        kafkaCluster.produce(topic, sentBody, 1, 0);
+        basicKafkaClient.sendStringMessagesPlain(topic, 1);
 
         // Try to consume after unsubscription
         CompletableFuture<Boolean> consume2 = new CompletableFuture<>();
@@ -1169,11 +1214,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void formatAndAcceptMismatch(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "formatAndAcceptMismatch";
-        kafkaCluster.createTopic(topic, 1, 1);
+
+        adminClientFacade.createTopic(topic);
 
         String sentBody = "Simple message";
-        kafkaCluster.produce(topic, sentBody, 1, 0);
-
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0);
         // create consumer
         // subscribe to a topic
         consumerService()
@@ -1209,7 +1254,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void sendReceiveJsonMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "sendReceiveJsonMessage";
-        kafkaCluster.createTopic(topic, 1, 1);
+
+        adminClientFacade.createTopic(topic);
 
         JsonObject sentKey = new JsonObject()
                 .put("f1", "v1")
@@ -1292,6 +1338,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        LOGGER.info("Deleting async topics " + topic + " via Admin client");
+        adminClientFacade.deleteTopic(topic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -1299,11 +1353,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void tryReceiveNotValidJsonMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "tryReceiveNotValidJsonMessage";
-        kafkaCluster.createTopic(topic, 1, 1);
 
-        String sentBody = "Simple message";
+        adminClientFacade.createTopic(topic);
+
         // send a simple String which is not JSON encoded
-        kafkaCluster.produceStrings(topic, sentBody, 1, 0);
+        basicKafkaClient.sendStringMessagesPlain(topic, 1);
 
         JsonArray topics = new JsonArray();
         topics.add(topic);
@@ -1339,6 +1393,13 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        LOGGER.info("Deleting async topics " + topic + " via Admin client");
+        adminClientFacade.deleteTopic(topic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -1399,7 +1460,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void consumerDeletedAfterInactivity(VertxTestContext context) {
+    void consumerDeletedAfterInactivity(VertxTestContext context) throws InterruptedException {
         CompletableFuture<Boolean> create = new CompletableFuture<>();
 
         consumerService()
@@ -1435,6 +1496,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     });
                     create.complete(true);
                 });
+
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     private void checkCreatingConsumer(String key, String value, HttpResponseStatus status, String message, VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {

@@ -3,17 +3,21 @@
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
 
-package io.strimzi.kafka.bridge.http;
+package io.strimzi.kafka.bridge.http.base;
 
+import io.strimzi.StrimziKafkaContainer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.JmxCollectorRegistry;
 import io.strimzi.kafka.bridge.MetricsReporter;
+import io.strimzi.kafka.bridge.clients.BasicKafkaClient;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
-import io.strimzi.kafka.bridge.facades.KafkaFacade;
+import io.strimzi.kafka.bridge.facades.AdminClientFacade;
+import io.strimzi.kafka.bridge.http.HttpBridge;
+import io.strimzi.kafka.bridge.http.HttpConfig;
 import io.strimzi.kafka.bridge.http.services.BaseService;
 import io.strimzi.kafka.bridge.http.services.ConsumerService;
 import io.strimzi.kafka.bridge.http.services.ProducerService;
@@ -29,64 +33,88 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+
+import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
 
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
-class HttpBridgeTestBase {
+@Tag(HTTP_BRIDGE)
+public abstract class HttpBridgeTestBase {
 
-    static final Logger LOGGER = LogManager.getLogger(HttpBridgeTestBase.class);
-    static Map<String, Object> config = new HashMap<>();
-    static long timeout = 5L;
+    protected static final Logger LOGGER = LogManager.getLogger(HttpBridgeTestBase.class);
+    protected static Map<String, Object> config = new HashMap<>();
+
+    // for periodic/multiple messages test
+    protected static final int PERIODIC_MAX_MESSAGE = 10;
+    protected static final int PERIODIC_DELAY = 1000;
+    protected static final int MULTIPLE_MAX_MESSAGE = 10;
+    protected static  final int TEST_TIMEOUT = 60;
+    protected int count;
+
+    public static StrimziKafkaContainer kafkaContainer = null;
+    protected static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
+    protected static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
+
+    protected static long timeout = 5L;
+
     static {
-        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+
+        if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
+            kafkaContainer = new StrimziKafkaContainer();
+            kafkaContainer.start();
+        } // else use external kafka
+
+        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
         config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
+
+        adminClientFacade = AdminClientFacade.create(kafkaContainer.getBootstrapServers());
     }
 
-    // for periodic/multiple messages test
-    static final int PERIODIC_MAX_MESSAGE = 10;
-    static final int PERIODIC_DELAY = 200;
-    static final int MULTIPLE_MAX_MESSAGE = 10;
-    static final int TEST_TIMEOUT = 60;
-    int count;
+    protected static Vertx vertx;
+    protected static WebClient client;
+    protected static BasicKafkaClient basicKafkaClient;
+    protected static AdminClientFacade adminClientFacade;
+    protected static HttpBridge httpBridge;
+    protected static BridgeConfig bridgeConfig;
 
-    static Vertx vertx;
-    static HttpBridge httpBridge;
-    static WebClient client;
-
-    static BridgeConfig bridgeConfig;
-    static KafkaFacade kafkaCluster = new KafkaFacade();
     static MeterRegistry meterRegistry = null;
     static JmxCollectorRegistry jmxCollectorRegistry = null;
 
-    static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
-
-    BaseService baseService() {
+    protected BaseService baseService() {
         return BaseService.getInstance(client);
     }
 
-    ConsumerService consumerService() {
+    protected ConsumerService consumerService() {
         return ConsumerService.getInstance(client);
     }
 
-    SeekService seekService() {
+    protected SeekService seekService() {
         return SeekService.getInstance(client);
     }
 
-    ProducerService producerService() {
+    protected ProducerService producerService() {
         return ProducerService.getInstance(client);
     }
 
     @BeforeAll
     static void beforeAll(VertxTestContext context) {
-        kafkaCluster.start();
+        vertx = Vertx.vertx();
+
+        LOGGER.info(kafkaContainer.getBootstrapServers());
+        basicKafkaClient = new BasicKafkaClient(kafkaContainer.getBootstrapServers());
+
         vertx = Vertx.vertx();
 
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
@@ -98,8 +126,10 @@ class HttpBridgeTestBase {
 
             LOGGER.info("Deploying in-memory bridge");
             vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
+        } else {
+            context.completeNow();
+            // else we create external bridge from the OS invoked by `.jar`
         }
-        // else we create external bridge from the OS invoked by `.jar`
 
         client = WebClient.create(vertx, new WebClientOptions()
             .setDefaultHost(Urls.BRIDGE_HOST)
@@ -109,7 +139,21 @@ class HttpBridgeTestBase {
 
     @AfterAll
     static void afterAll(VertxTestContext context) {
-        kafkaCluster.stop();
-        vertx.close(context.succeeding(arg -> context.completeNow()));
+        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+            vertx.close(context.succeeding(arg -> context.completeNow()));
+        } else {
+            // if we running external bridge
+            context.completeNow();
+        }
+    }
+
+    @AfterEach
+    void tearDown() throws ExecutionException, InterruptedException {
+        Set<String> topics =  adminClientFacade.listTopic();
+
+        for (String topic : topics) {
+            LOGGER.info("Deleting topic " + topic);
+            adminClientFacade.deleteTopic(topic);
+        }
     }
 }

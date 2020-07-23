@@ -5,6 +5,7 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.strimzi.kafka.bridge.http.base.HttpBridgeTestBase;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;

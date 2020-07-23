@@ -6,6 +6,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
+import io.strimzi.kafka.bridge.http.base.HttpBridgeTestBase;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonArray;
@@ -36,7 +37,7 @@ public class SeekTest extends HttpBridgeTestBase {
         .put("format", "json");
 
     @Test
-    void seekToNotExistingConsumer(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void seekToNotExistingConsumer(VertxTestContext context) throws InterruptedException {
         JsonObject root = new JsonObject();
 
         seekService()
@@ -55,11 +56,11 @@ public class SeekTest extends HttpBridgeTestBase {
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
-    @Test
     @Disabled // This test was disabled because of known issue described in https://github.com/strimzi/strimzi-kafka-bridge/issues/320
+    @Test
     void seekToNotExistingPartitionInSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToNotExistingPartitionInSubscribedTopic";
-        kafkaCluster.createTopic(topic, 1, 1);
+        adminClientFacade.createTopic(topic);
 
         // create consumer
         consumerService()
@@ -123,9 +124,9 @@ public class SeekTest extends HttpBridgeTestBase {
     @Test
     void seekToBeginningAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToBeginningAndReceive";
-        kafkaCluster.createTopic(topic, 1, 1);
+        adminClientFacade.createTopic(topic);
 
-        kafkaCluster.produce(topic, 10, 0);
+        basicKafkaClient.sendStringMessagesPlain(topic, 10);
 
         JsonObject jsonConsumer = new JsonObject();
         jsonConsumer.put("name", name);
@@ -194,6 +195,7 @@ public class SeekTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -201,7 +203,7 @@ public class SeekTest extends HttpBridgeTestBase {
     @Test
     void seekToEndAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "seekToEndAndReceive";
-        kafkaCluster.createTopic(topic, 1, 1);
+        adminClientFacade.createTopic(topic);
 
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));
@@ -227,7 +229,7 @@ public class SeekTest extends HttpBridgeTestBase {
 
         dummy.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        kafkaCluster.produceStrings(topic, 10, 0);
+        basicKafkaClient.sendStringMessagesPlain(topic, 10);
 
         // seek
         JsonArray partitions = new JsonArray();
@@ -269,6 +271,7 @@ public class SeekTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
                 .deleteConsumer(context, groupId, name);
+
         context.completeNow();
     }
 
@@ -281,11 +284,12 @@ public class SeekTest extends HttpBridgeTestBase {
             .put("name", name)
             .put("format", "json");
 
-
         String topic = "seekToOffsetAndReceive";
-        kafkaCluster.createTopic(topic, 2, 1);
-        kafkaCluster.produce(topic, 10, 0);
-        kafkaCluster.produce(topic, 10, 1);
+
+        adminClientFacade.createTopic(topic, 2, 1);
+
+        basicKafkaClient.sendJsonMessagesPlain(topic, 10, "value", 0);
+        basicKafkaClient.sendJsonMessagesPlain(topic, 10, "value", 1);
 
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));
@@ -345,8 +349,8 @@ public class SeekTest extends HttpBridgeTestBase {
                         assertThat(metadata.size(), is(1));
 
                         assertThat(metadata.get(0).getString("topic"), is(topic));
-                        assertThat(metadata.get(0).getString("value"), is("value-9"));
-                        assertThat(metadata.get(0).getString("key"), is("key-9"));
+                        assertThat(metadata.get(0).getString("value"), is("value"));
+                        assertThat(metadata.get(0).getString("key"), is("key"));
 
                         // check it read from partition 1, starting from offset 5, the last 5 messages
                         metadata = body.stream()
@@ -358,8 +362,8 @@ public class SeekTest extends HttpBridgeTestBase {
 
                         for (int i = 0; i < metadata.size(); i++) {
                             assertThat(metadata.get(i).getString("topic"), is(topic));
-                            assertThat(metadata.get(i).getString("value"), is("value-" + (i + 5)));
-                            assertThat(metadata.get(i).getString("key"), is("key-" + (i + 5)));
+                            assertThat(metadata.get(i).getString("value"), is("value"));
+                            assertThat(metadata.get(i).getString("key"), is("key"));
                         }
                     });
                     consume.complete(true);
@@ -369,6 +373,7 @@ public class SeekTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -377,8 +382,11 @@ public class SeekTest extends HttpBridgeTestBase {
     void seekToBeginningMultipleTopicsWithNotSuscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String subscribedTopic = "seekToBeginningSubscribedTopic";
         String notSubscribedTopic = "seekToBeginningNotSubscribedTopic";
-        kafkaCluster.createTopic(subscribedTopic, 1, 1);
-        kafkaCluster.createTopic(notSubscribedTopic, 1, 1);
+
+        LOGGER.info("Creating topics " + subscribedTopic + "," + notSubscribedTopic);
+
+        adminClientFacade.createTopic(subscribedTopic);
+        adminClientFacade.createTopic(notSubscribedTopic);
 
         JsonObject jsonConsumer = new JsonObject()
                                     .put("name", name)
@@ -386,7 +394,7 @@ public class SeekTest extends HttpBridgeTestBase {
         
         JsonObject topics = new JsonObject()
                                     .put("topics", new JsonArray().add(subscribedTopic));
-        
+
         // create consumer
         // subscribe to a topic
         consumerService()
@@ -429,7 +437,7 @@ public class SeekTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
-        
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -438,8 +446,11 @@ public class SeekTest extends HttpBridgeTestBase {
     void seekToOffsetMultipleTopicsWithNotSuscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String subscribedTopic = "seekToOffseSubscribedTopic";
         String notSubscribedTopic = "seekToOffsetNotSubscribedTopic";
-        kafkaCluster.createTopic(subscribedTopic, 1, 1);
-        kafkaCluster.createTopic(notSubscribedTopic, 1, 1);
+
+        LOGGER.info("Creating topics " + subscribedTopic + "," + notSubscribedTopic);
+
+        adminClientFacade.createTopic(subscribedTopic);
+        adminClientFacade.createTopic(notSubscribedTopic);
 
         JsonObject jsonConsumer = new JsonObject()
                                     .put("name", name)
@@ -491,7 +502,7 @@ public class SeekTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
-        
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }

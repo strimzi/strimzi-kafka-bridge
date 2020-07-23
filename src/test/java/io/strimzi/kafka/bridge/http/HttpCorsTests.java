@@ -6,12 +6,12 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.strimzi.StrimziKafkaContainer;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.JmxCollectorRegistry;
 import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
-import io.strimzi.kafka.bridge.facades.KafkaFacade;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -54,18 +54,23 @@ public class HttpCorsTests {
         config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
     }
 
+    private static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
+
     static Vertx vertx;
     static HttpBridge httpBridge;
     static WebClient client;
 
     static BridgeConfig bridgeConfig;
-    static KafkaFacade kafkaCluster = new KafkaFacade();
+    static StrimziKafkaContainer kafkaContainer;
     static MeterRegistry meterRegistry = null;
     static JmxCollectorRegistry jmxCollectorRegistry = null;
 
     @BeforeAll
     static void beforeAll() {
-        kafkaCluster.start();
+        if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
+            kafkaContainer = new StrimziKafkaContainer();
+            kafkaContainer.start();
+        } // else use external kafka
     }
 
     @BeforeEach
@@ -82,7 +87,9 @@ public class HttpCorsTests {
 
     @AfterAll
     static void afterAll() {
-        kafkaCluster.stop();
+        if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
+            kafkaContainer.stop();
+        }
     }
 
 
@@ -91,7 +98,7 @@ public class HttpCorsTests {
         createWebClient();
         configureBridge(false, null);
 
-        if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
+        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://evil.io")
@@ -118,7 +125,7 @@ public class HttpCorsTests {
         createWebClient();
         configureBridge(true, null);
 
-        if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
+        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://evil.io")
@@ -150,7 +157,7 @@ public class HttpCorsTests {
 
         final String origin = "https://strimzi.io";
 
-        if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
+        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://strimzi.io")
@@ -185,7 +192,7 @@ public class HttpCorsTests {
 
         final String origin = "https://strimzi.io";
 
-        if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
+        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://strimzi.io")
@@ -212,7 +219,7 @@ public class HttpCorsTests {
     }
 
     private void configureBridge(boolean corsEnabled, String methodsAllowed) {
-        if (!"TRUE".equalsIgnoreCase(System.getenv("STRIMZI_USE_SYSTEM_BRIDGE"))) {
+        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
             config.put(HttpConfig.HTTP_CORS_ENABLED, String.valueOf(corsEnabled));
             config.put(HttpConfig.HTTP_CORS_ALLOWED_ORIGINS, "https://strimzi.io");
             config.put(HttpConfig.HTTP_CORS_ALLOWED_METHODS, methodsAllowed != null ? methodsAllowed : "GET,POST,PUT,DELETE,OPTIONS,PATCH");

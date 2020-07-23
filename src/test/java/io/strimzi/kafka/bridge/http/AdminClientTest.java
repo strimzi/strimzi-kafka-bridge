@@ -6,6 +6,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
+import io.strimzi.kafka.bridge.http.base.HttpBridgeTestBase;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
@@ -22,7 +23,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-public class AdminClientTest extends HttpBridgeTestBase  {
+public class AdminClientTest extends HttpBridgeTestBase {
     @Test
     void listTopicsTest(VertxTestContext context) throws Exception {
         final String topic = "testListTopics";
@@ -66,11 +67,11 @@ public class AdminClientTest extends HttpBridgeTestBase  {
                         for (int i = 0; i < 2; i++) {
                             JsonObject partition = partitions.getJsonObject(i);
                             assertThat(partition.getInteger("partition"), is(i));
-                            assertThat(partition.getInteger("leader"), is(1));
+                            assertThat(partition.getInteger("leader"), is(0));
                             JsonArray replicas = partition.getJsonArray("replicas");
                             assertThat(replicas.size(), is(1));
                             JsonObject replica0 = replicas.getJsonObject(0);
-                            assertThat(replica0.getInteger("broker"), is(1));
+                            assertThat(replica0.getInteger("broker"), is(0));
                             assertThat(replica0.getBoolean("leader"), is(true));
                             assertThat(replica0.getBoolean("in_sync"), is(true));
                         }
@@ -80,7 +81,7 @@ public class AdminClientTest extends HttpBridgeTestBase  {
     }
 
     @Test
-    void getTopicNotFoundTest(VertxTestContext context) throws Exception {
+    void getTopicNotFoundTest(VertxTestContext context) {
         final String topic = "testGetTopicNotFound";
 
         baseService()
@@ -114,11 +115,11 @@ public class AdminClientTest extends HttpBridgeTestBase  {
                         for (int i = 0; i < 2; i++) {
                             JsonObject partition = bridgeResponse.getJsonObject(i);
                             assertThat(partition.getInteger("partition"), is(i));
-                            assertThat(partition.getInteger("leader"), is(1));
+                            assertThat(partition.getInteger("leader"), is(0));
                             JsonArray replicas = partition.getJsonArray("replicas");
                             assertThat(replicas.size(), is(1));
                             JsonObject replica0 = replicas.getJsonObject(0);
-                            assertThat(replica0.getInteger("broker"), is(1));
+                            assertThat(replica0.getInteger("broker"), is(0));
                             assertThat(replica0.getBoolean("leader"), is(true));
                             assertThat(replica0.getBoolean("in_sync"), is(true));
                         }
@@ -142,11 +143,11 @@ public class AdminClientTest extends HttpBridgeTestBase  {
                         assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         assertThat(bridgeResponse.getInteger("partition"), is(0));
-                        assertThat(bridgeResponse.getInteger("leader"), is(1));
+                        assertThat(bridgeResponse.getInteger("leader"), is(0));
                         JsonArray replicas = bridgeResponse.getJsonArray("replicas");
                         assertThat(replicas.size(), is(1));
                         JsonObject replica0 = replicas.getJsonObject(0);
-                        assertThat(replica0.getInteger("broker"), is(1));
+                        assertThat(replica0.getInteger("broker"), is(0));
                         assertThat(replica0.getBoolean("leader"), is(true));
                         assertThat(replica0.getBoolean("in_sync"), is(true));
                     });
@@ -155,7 +156,7 @@ public class AdminClientTest extends HttpBridgeTestBase  {
     }
 
     void setupTopic(VertxTestContext context, String topic, int partitions) throws Exception {
-        kafkaCluster.createTopic(topic, 2, 1);
+        adminClientFacade.createTopic(topic, partitions, 1);
 
         JsonArray records = new JsonArray();
         JsonObject json = new JsonObject();
