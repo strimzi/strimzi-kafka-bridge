@@ -69,8 +69,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void createConsumerWrongFormat(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
 
-        String name = "kafka-consumer-10";
-
         JsonObject consumerJson = new JsonObject()
             .put("name", name)
             .put("format", "foo");
@@ -414,9 +412,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
     void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=mqtt";
-
-        name = "my-kafka-consumer-1";
-        consumerWithEarliestReset.put("name", name);
 
         consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
                 .putHeader(FORWARDED, forwarded)
