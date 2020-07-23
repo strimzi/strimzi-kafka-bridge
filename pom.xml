@@ -19,7 +19,7 @@
 		<junit.platform.version>1.5.2</junit.platform.version>
 		<hamcrest.version>2.2</hamcrest.version>
 		<maven-jar-plugin.version>3.1.2</maven-jar-plugin.version>
-		<maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
+		<maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
 		<swagger2markup.version>1.3.7</swagger2markup.version>
 		<jackson-core.version>2.10.2</jackson-core.version>
 		<spotbugs.version>4.0.1</spotbugs.version>
@@ -27,8 +27,6 @@
 		<jaeger.version>1.1.0</jaeger.version>
 		<opentracing.version>0.33.0</opentracing.version>
 		<opentracing-kafka-client.version>0.1.12</opentracing-kafka-client.version>
-		<junit5.version>5.4.2</junit5.version>
-		<junit-plaforms-commons.version>1.5.2</junit-plaforms-commons.version>
 		<micrometer.version>1.3.1</micrometer.version>
 		<jmx-prometheus-collector.version>0.12.0</jmx-prometheus-collector.version>
 		<commons-cli.version>1.4</commons-cli.version>
@@ -200,29 +198,6 @@
 			<artifactId>debezium-core</artifactId>
 			<version>${debezium.version}</version>
 			<type>test-jar</type>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-api</artifactId>
-			<version>${junit5.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-params</artifactId>
-			<version>${junit5.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.junit.platform</groupId>
-			<artifactId>junit-platform-commons</artifactId>
-			<version>${junit-plaforms-commons.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-engine</artifactId>
-			<version>${junit5.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
