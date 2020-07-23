@@ -17,11 +17,13 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import javax.xml.bind.DatatypeConverter;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -1564,6 +1566,17 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, consumerInstanceId[0]);
         context.completeNow();
+    }
 
+    @BeforeEach
+    void setUp() {
+        name = generateRandomConsumerName();
+        consumerWithEarliestReset.put("name", name);
+        consumerJson.put("name", name);
+    }
+
+    private String generateRandomConsumerName() {
+        int salt = new Random().nextInt(Integer.MAX_VALUE);
+        return "my-kafka-consumer" + salt + salt;
     }
 }
