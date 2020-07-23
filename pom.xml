@@ -204,7 +204,7 @@
 			<groupId>io.strimzi</groupId>
 			<artifactId>test-container</artifactId>
 			<version>${project.version}</version>
-		</dependency>
+		</dependency> 
 	</dependencies>
 
 	<pluginRepositories>
