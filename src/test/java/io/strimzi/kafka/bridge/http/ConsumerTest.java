@@ -412,7 +412,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException {
+    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=mqtt";
 
@@ -1510,6 +1510,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         context.completeNow();
     }
 
+    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void consumerDeletedAfterInactivity(VertxTestContext context) {
         CompletableFuture<Boolean> create = new CompletableFuture<>();

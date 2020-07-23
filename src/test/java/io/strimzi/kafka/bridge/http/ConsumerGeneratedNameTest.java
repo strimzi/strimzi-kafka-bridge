@@ -32,6 +32,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashMap;
@@ -47,6 +48,7 @@ import static org.hamcrest.Matchers.is;
 
 @ExtendWith(VertxExtension.class)
 @Tag(HTTP_BRIDGE)
+@DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
 public class ConsumerGeneratedNameTest {
 
     private static final Logger LOGGER = LogManager.getLogger(ConsumerGeneratedNameTest.class);
