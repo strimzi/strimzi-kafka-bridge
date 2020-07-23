@@ -65,7 +65,7 @@ public class ProducerTest extends HttpBridgeTestBase {
             .sendJsonObject(root, verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
-        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
                 new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
@@ -115,7 +115,7 @@ public class ProducerTest extends HttpBridgeTestBase {
             .sendJsonObject(root, verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
-        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
                 new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
@@ -165,7 +165,7 @@ public class ProducerTest extends HttpBridgeTestBase {
             .sendJsonObject(root, verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
-        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
                 new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
@@ -191,7 +191,7 @@ public class ProducerTest extends HttpBridgeTestBase {
     }
 
     @Disabled("Will be check in the next PR, this is just external tests for Bridge")
-    @DisabledIfEnvironmentVariable(named = "BRIDGE_EXTERNAL_ENV", matches = "((?i)FALSE(?-i))")
+    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void sendBinaryMessageWithKey(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendBinaryMessageWithKey";
@@ -215,7 +215,7 @@ public class ProducerTest extends HttpBridgeTestBase {
                 .sendJsonObject(root, verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
-        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<byte[], byte[]> consumer = KafkaConsumer.create(vertx, consumerProperties,
                 new ByteArrayDeserializer(), new ByteArrayDeserializer());
@@ -241,13 +241,14 @@ public class ProducerTest extends HttpBridgeTestBase {
         });
     }
 
+    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void sendPeriodicMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendPeriodicMessage";
         adminClientFacade.createTopic(topic);
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
-        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
                 new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
@@ -344,7 +345,7 @@ public class ProducerTest extends HttpBridgeTestBase {
             });
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
-        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
                 new StringDeserializer(), new KafkaJsonDeserializer<String>(String.class));
@@ -439,6 +440,7 @@ public class ProducerTest extends HttpBridgeTestBase {
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
+    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void sendToNonExistingTopicTest(VertxTestContext context) {
         String kafkaTopic = "sendToNonExistingTopicTest";
@@ -629,6 +631,7 @@ public class ProducerTest extends HttpBridgeTestBase {
             });
     }
 
+    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void sendMultipleRecordsWithOneInvalidPartitionTest(VertxTestContext context) throws InterruptedException, ExecutionException {
         String kafkaTopic = "sendMultipleRecordsWithOneInvalidPartitionTest";

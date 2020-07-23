@@ -86,11 +86,14 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 });
 
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
-    @DisabledIfEnvironmentVariable(named = "BRIDGE_EXTERNAL_ENV", matches = "((?i)FALSE(?-i))")
     @Test
     void createConsumerEmptyBody(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         AtomicReference<String> name = new AtomicReference<>();
@@ -406,9 +409,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException {
+    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=mqtt";
+
+        name = "my-kafka-consumer-1";
+        consumerWithEarliestReset.put("name", name);
 
         consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
                 .putHeader(FORWARDED, forwarded)
@@ -1124,12 +1130,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
 
-        // topics deletion
-        adminClientFacade.deleteTopic(topic);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
-
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -1339,13 +1339,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
 
-        // topics deletion
-        LOGGER.info("Deleting async topics " + topic + " via Admin client");
-        adminClientFacade.deleteTopic(topic);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
-
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -1393,13 +1386,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
-
-        // topics deletion
-        LOGGER.info("Deleting async topics " + topic + " via Admin client");
-        adminClientFacade.deleteTopic(topic);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -1459,6 +1445,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         context.completeNow();
     }
 
+    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void consumerDeletedAfterInactivity(VertxTestContext context) throws InterruptedException {
         CompletableFuture<Boolean> create = new CompletableFuture<>();

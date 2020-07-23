@@ -64,22 +64,30 @@ public abstract class HttpBridgeTestBase {
     protected static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
     protected static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
 
+    protected static String kafkaUri;
+
     protected static long timeout = 5L;
 
     static {
-
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
             kafkaContainer = new StrimziKafkaContainer();
             kafkaContainer.start();
-        } // else use external kafka
 
-        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
+            kafkaUri = kafkaContainer.getBootstrapServers();
+
+            config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
+            adminClientFacade = AdminClientFacade.create(kafkaUri);
+        } else {
+            // else use external kafka
+            kafkaUri = "localhost:9092";
+        }
+
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
         config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
 
-        adminClientFacade = AdminClientFacade.create(kafkaContainer.getBootstrapServers());
+        adminClientFacade = AdminClientFacade.create(kafkaUri);
     }
 
     protected static Vertx vertx;
@@ -112,8 +120,7 @@ public abstract class HttpBridgeTestBase {
     static void beforeAll(VertxTestContext context) {
         vertx = Vertx.vertx();
 
-        LOGGER.info(kafkaContainer.getBootstrapServers());
-        basicKafkaClient = new BasicKafkaClient(kafkaContainer.getBootstrapServers());
+        basicKafkaClient = new BasicKafkaClient(kafkaUri);
 
         vertx = Vertx.vertx();
 
@@ -149,11 +156,17 @@ public abstract class HttpBridgeTestBase {
 
     @AfterEach
     void tearDown() throws ExecutionException, InterruptedException {
-        Set<String> topics =  adminClientFacade.listTopic();
 
-        for (String topic : topics) {
-            LOGGER.info("Deleting topic " + topic);
-            adminClientFacade.deleteTopic(topic);
+        Set<String> topics = adminClientFacade.listTopic();
+
+        while (topics.size() > 0) {
+
+            topics =  adminClientFacade.listTopic();
+
+            for (String topic : topics) {
+                LOGGER.info("Deleting topic " + topic);
+                adminClientFacade.deleteTopic(topic);
+            }
         }
     }
 }
