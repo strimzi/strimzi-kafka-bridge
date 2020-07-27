@@ -48,7 +48,6 @@ import static org.hamcrest.Matchers.is;
 
 @ExtendWith(VertxExtension.class)
 @Tag(HTTP_BRIDGE)
-@DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
 public class ConsumerGeneratedNameTest {
 
     private static final Logger LOGGER = LogManager.getLogger(ConsumerGeneratedNameTest.class);

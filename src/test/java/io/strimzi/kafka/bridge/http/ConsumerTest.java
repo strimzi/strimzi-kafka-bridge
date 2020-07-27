@@ -1441,7 +1441,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         context.completeNow();
     }
 
-    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void consumerDeletedAfterInactivity(VertxTestContext context) {
         CompletableFuture<Boolean> create = new CompletableFuture<>();

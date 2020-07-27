@@ -241,7 +241,6 @@ public class ProducerTest extends HttpBridgeTestBase {
         });
     }
 
-    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void sendPeriodicMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendPeriodicMessage";
@@ -440,7 +439,6 @@ public class ProducerTest extends HttpBridgeTestBase {
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
-    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void sendToNonExistingTopicTest(VertxTestContext context) {
         String kafkaTopic = "sendToNonExistingTopicTest";
@@ -631,7 +629,6 @@ public class ProducerTest extends HttpBridgeTestBase {
             });
     }
 
-    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void sendMultipleRecordsWithOneInvalidPartitionTest(VertxTestContext context) throws InterruptedException, ExecutionException {
         String kafkaTopic = "sendMultipleRecordsWithOneInvalidPartitionTest";
