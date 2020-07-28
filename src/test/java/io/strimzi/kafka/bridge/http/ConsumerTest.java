@@ -466,7 +466,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     @Test
     void receiveSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "receiveSimpleMessage-1";
+        String topic = "receiveSimpleMessage";
         adminClientFacade.createTopic(topic);
 
         String sentBody = "Simple message";
@@ -712,7 +712,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     @Test
     void receiveSimpleMessageFromPartition(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "receiveSimpleMessageFromPartition-1";
+        String topic = "receiveSimpleMessageFromPartition";
         int partition = 1;
 
         adminClientFacade.createTopic(topic, 2, 1);
