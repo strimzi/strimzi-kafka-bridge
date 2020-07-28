@@ -408,7 +408,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=mqtt";
 
