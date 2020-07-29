@@ -93,7 +93,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void sendSimpleMessageToPartition(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String topic = "sendSimpleMessageToPartition-1";
+        String topic = "sendSimpleMessageToPartition";
 
         adminClientFacade.createTopic(topic, 2, 1);
 
@@ -144,7 +144,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void sendSimpleMessageWithKey(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String topic = "sendSimpleMessageWithKey-1";
+        String topic = "sendSimpleMessageWithKey";
 
         adminClientFacade.createTopic(topic, 2, 1);
 
