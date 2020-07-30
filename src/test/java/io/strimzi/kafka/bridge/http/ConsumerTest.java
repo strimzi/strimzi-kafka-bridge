@@ -44,7 +44,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     private String name = "my-kafka-consumer";
     private String groupId = "my-group";
 
-    private JsonObject consumerWithEarliestReset = new JsonObject()
+    private JsonObject consumerWithEarliestResetJson = new JsonObject()
         .put("name", name)
         .put("auto.offset.reset", "earliest")
         .put("enable.auto.commit", true)
@@ -57,7 +57,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void createConsumer(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // create consumer
-        consumerService().createConsumer(context, groupId, consumerWithEarliestReset);
+        consumerService().createConsumer(context, groupId, consumerWithEarliestResetJson);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -251,10 +251,10 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String baseUri = xForwardedProto + "://" + xForwardedHost + "/consumers/" + groupId + "/instances/" + name;
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(X_FORWARDED_HOST, xForwardedHost)
                 .putHeader(X_FORWARDED_PROTO, xForwardedProto)
-                .sendJsonObject(consumerWithEarliestReset, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -283,9 +283,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String baseUri = "https://my-api-gateway-host:443/consumers/" + groupId + "/instances/" + name;
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(FORWARDED, forwarded)
-                .sendJsonObject(consumerWithEarliestReset, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -319,9 +319,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
         headers.add(FORWARDED, forwarded2);
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeaders(headers)
-                .sendJsonObject(consumerWithEarliestReset, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -352,10 +352,10 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String baseUri = "https://my-api-gateway-host:443/my-bridge/consumers/" + groupId + "/instances/" + name;
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(FORWARDED, forwarded)
                 .putHeader("X-Forwarded-Path", xForwardedPath)
-                .sendJsonObject(consumerWithEarliestReset, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -384,9 +384,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String baseUri = "http://my-api-gateway-host:80/consumers/" + groupId + "/instances/" + name;
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(FORWARDED, forwarded)
-                .sendJsonObject(consumerWithEarliestReset, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -412,9 +412,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=mqtt";
 
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(FORWARDED, forwarded)
-                .sendJsonObject(consumerWithEarliestReset, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1560,7 +1560,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @BeforeEach
     void setUp() {
         name = generateRandomConsumerName();
-        consumerWithEarliestReset.put("name", name);
+        consumerWithEarliestResetJson.put("name", name);
         consumerJson.put("name", name);
     }
 
