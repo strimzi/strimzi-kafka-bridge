@@ -17,11 +17,12 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import javax.xml.bind.DatatypeConverter;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +44,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     private String name = "my-kafka-consumer";
     private String groupId = "my-group";
 
-    private JsonObject consumerWithEarliestReset = new JsonObject()
+    private JsonObject consumerWithEarliestResetJson = new JsonObject()
         .put("name", name)
         .put("auto.offset.reset", "earliest")
         .put("enable.auto.commit", true)
@@ -56,7 +57,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     @Test
     void createConsumer(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // create consumer
-        consumerService().createConsumer(context, groupId, consumerWithEarliestReset);
+        consumerService().createConsumer(context, groupId, consumerWithEarliestResetJson);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -66,6 +67,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     @Test
     void createConsumerWrongFormat(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+
         JsonObject consumerJson = new JsonObject()
             .put("name", name)
             .put("format", "foo");
@@ -86,11 +88,11 @@ public class ConsumerTest extends HttpBridgeTestBase {
                 });
 
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
-    @DisabledIfEnvironmentVariable(named = "BRIDGE_EXTERNAL_ENV", matches = "((?i)FALSE(?-i))")
     @Test
     void createConsumerEmptyBody(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         AtomicReference<String> name = new AtomicReference<>();
@@ -249,10 +251,10 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String baseUri = xForwardedProto + "://" + xForwardedHost + "/consumers/" + groupId + "/instances/" + name;
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(X_FORWARDED_HOST, xForwardedHost)
                 .putHeader(X_FORWARDED_PROTO, xForwardedProto)
-                .sendJsonObject(consumerWithEarliestReset, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -281,9 +283,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String baseUri = "https://my-api-gateway-host:443/consumers/" + groupId + "/instances/" + name;
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(FORWARDED, forwarded)
-                .sendJsonObject(consumerWithEarliestReset, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -317,9 +319,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
         headers.add(FORWARDED, forwarded2);
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeaders(headers)
-                .sendJsonObject(consumerWithEarliestReset, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -350,10 +352,10 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String baseUri = "https://my-api-gateway-host:443/my-bridge/consumers/" + groupId + "/instances/" + name;
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(FORWARDED, forwarded)
                 .putHeader("X-Forwarded-Path", xForwardedPath)
-                .sendJsonObject(consumerWithEarliestReset, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -382,9 +384,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
         String baseUri = "http://my-api-gateway-host:80/consumers/" + groupId + "/instances/" + name;
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(FORWARDED, forwarded)
-                .sendJsonObject(consumerWithEarliestReset, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -410,9 +412,9 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=mqtt";
 
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestReset)
+        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(FORWARDED, forwarded)
-                .sendJsonObject(consumerWithEarliestReset, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -423,7 +425,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     });
                     context.completeNow();
                 });
-
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
@@ -1124,12 +1125,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
 
-        // topics deletion
-        adminClientFacade.deleteTopic(topic);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
-
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -1339,13 +1334,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, name);
 
-        // topics deletion
-        LOGGER.info("Deleting async topics " + topic + " via Admin client");
-        adminClientFacade.deleteTopic(topic);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
-
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -1393,13 +1381,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
         // consumer deletion
         consumerService()
             .deleteConsumer(context, groupId, name);
-
-        // topics deletion
-        LOGGER.info("Deleting async topics " + topic + " via Admin client");
-        adminClientFacade.deleteTopic(topic);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -1460,7 +1441,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void consumerDeletedAfterInactivity(VertxTestContext context) throws InterruptedException {
+    void consumerDeletedAfterInactivity(VertxTestContext context) {
         CompletableFuture<Boolean> create = new CompletableFuture<>();
 
         consumerService()
@@ -1496,8 +1477,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     });
                     create.complete(true);
                 });
-
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
     private void checkCreatingConsumer(String key, String value, HttpResponseStatus status, String message, VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
@@ -1576,6 +1555,17 @@ public class ConsumerTest extends HttpBridgeTestBase {
         consumerService()
             .deleteConsumer(context, groupId, consumerInstanceId[0]);
         context.completeNow();
+    }
 
+    @BeforeEach
+    void setUp() {
+        name = generateRandomConsumerName();
+        consumerWithEarliestResetJson.put("name", name);
+        consumerJson.put("name", name);
+    }
+
+    private String generateRandomConsumerName() {
+        int salt = new Random().nextInt(Integer.MAX_VALUE);
+        return "my-kafka-consumer" + salt;
     }
 }
