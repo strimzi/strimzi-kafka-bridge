@@ -12,6 +12,7 @@ jobs:
     os: linux
     arch: s390x
     jdk: openjdk11
+    script: "mvn install -DskipTests"
     addons:
       apt:
         packages:
