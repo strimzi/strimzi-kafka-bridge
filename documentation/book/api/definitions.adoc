@@ -190,10 +190,6 @@ __optional__|< <<_partition,Partition>> > array
 |Name|Schema
 |**partition** +
 __optional__|integer (int32)
-|**key** +
-__optional__|object, string
-|**value** +
-__required__|object, string, null
 |===
 
 
