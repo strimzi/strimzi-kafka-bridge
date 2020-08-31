@@ -5,6 +5,7 @@
 package io.strimzi.kafka.bridge.clients;
 
 import io.vertx.core.Vertx;
+import io.vertx.kafka.client.producer.KafkaHeader;
 import io.vertx.kafka.client.producer.KafkaProducer;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import io.vertx.kafka.client.producer.RecordMetadata;
@@ -15,6 +16,8 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,43 +30,21 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
     private final AtomicInteger numSent = new AtomicInteger(0);
     private final String topic;
     private final String clientName;
+    private final List<KafkaHeader> headers;
     private final String message;
     private final int partition;
     private final boolean withNullKeyRecord;
 
-    public Producer(Properties properties, CompletableFuture<Integer> resultPromise, IntPredicate msgCntPredicate,
-                    String topic, String message, int partition, boolean withNullKeyRecord) {
-        super(resultPromise, msgCntPredicate);
-        this.topic = topic;
-        this.clientName = "producer-sender-plain-";
-        this.properties = properties;
-        this.message = message;
-        this.partition = partition;
-        this.withNullKeyRecord = withNullKeyRecord;
-        this.vertx = Vertx.vertx();
-    }
+    public Producer(ProducerBuilder producerBuilder) {
+        super(producerBuilder.resultPromise, producerBuilder.msgCntPredicate);
 
-    public Producer(Properties properties, CompletableFuture<Integer> resultPromise, IntPredicate msgCntPredicate,
-                    String topic, String message, int partition) {
-        super(resultPromise, msgCntPredicate);
-        this.topic = topic;
+        this.properties = producerBuilder.properties;
+        this.topic = producerBuilder.topic;
         this.clientName = "producer-sender-plain-";
-        this.properties = properties;
-        this.message = message;
-        this.partition = partition;
-        this.withNullKeyRecord = false;
-        this.vertx = Vertx.vertx();
-    }
-
-    public Producer(CompletableFuture<Integer> resultPromise, IntPredicate msgCntPredicate, String topic, String message,
-                    int partition, boolean withNullKeyRecord) {
-        super(resultPromise, msgCntPredicate);
-        this.topic = topic;
-        this.clientName = "producer-sender-plain-";
-        this.properties = fillDefaultProperties();
-        this.message = message;
-        this.partition = partition;
-        this.withNullKeyRecord = withNullKeyRecord;
+        this.headers = producerBuilder.headers;
+        this.message = producerBuilder.message;
+        this.partition = producerBuilder.partition;
+        this.withNullKeyRecord = producerBuilder.withNullKeyRecord;
         this.vertx = Vertx.vertx();
     }
 
@@ -82,9 +63,9 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
                     resultPromise.complete(numSent.get());
                 }
             });
-            vertx.setPeriodic(1000, id -> sendNext(producer, topic, message, partition, withNullKeyRecord));
+            vertx.setPeriodic(1000, id -> sendNext(producer, topic, headers, message, partition, withNullKeyRecord));
         } else {
-            sendNext(producer, topic, message, partition, withNullKeyRecord);
+            sendNext(producer, topic, headers, message, partition, withNullKeyRecord);
         }
     }
 
@@ -96,7 +77,8 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
         }
     }
 
-    private void sendNext(KafkaProducer<String, String> producer, String topic, String message, int partition, boolean withNullKeyRecord) {
+    private void sendNext(KafkaProducer<String, String> producer, String topic, List<KafkaHeader> headers,
+                          String message, int partition, boolean withNullKeyRecord) {
         if (msgCntPredicate.negate().test(numSent.get())) {
 
             KafkaProducerRecord<String, String> record;
@@ -106,6 +88,8 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
             } else {
                 record = KafkaProducerRecord.create(topic, "key", message, partition);
             }
+
+            record.addHeaders(headers);
 
             producer.send(record, done -> {
                 if (done.succeeded()) {
@@ -122,12 +106,12 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
                     }
 
                     if (msgCntPredicate.negate().test(-1)) {
-                        sendNext(producer, topic, message, partition, withNullKeyRecord);
+                        sendNext(producer, topic, headers, message, partition, withNullKeyRecord);
                     }
 
                 } else {
                     LOGGER.error("Producer cannot connect to topic " + topic + ":" + done.cause().toString());
-                    sendNext(producer, topic, message, partition, withNullKeyRecord);
+                    sendNext(producer, topic, headers, message, partition, withNullKeyRecord);
                 }
             });
 
@@ -147,5 +131,45 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
 
     public Properties getProperties() {
         return properties;
+    }
+
+    public static class ProducerBuilder {
+        private final CompletableFuture<Integer> resultPromise;
+        private final IntPredicate msgCntPredicate;
+        private final String topic;
+        private final String message;
+        private final int partition;
+
+        private Properties properties;
+        private List<KafkaHeader> headers = Collections.emptyList();
+        private boolean withNullKeyRecord = false;
+
+        public ProducerBuilder(CompletableFuture<Integer> resultPromise, IntPredicate msgCntPredicate, String topic,
+                       String message, int partition) {
+            this.resultPromise = resultPromise;
+            this.msgCntPredicate = msgCntPredicate;
+            this.topic = topic;
+            this.message = message;
+            this.partition = partition;
+        }
+
+        public ProducerBuilder withProperties(Properties properties) {
+            this.properties = properties;
+            return this;
+        }
+
+        public ProducerBuilder withHeaders(List<KafkaHeader> headers) {
+            this.headers = headers;
+            return this;
+        }
+
+        public ProducerBuilder withNullKeyRecord(boolean withNullKeyRecord) {
+            this.withNullKeyRecord = withNullKeyRecord;
+            return this;
+        }
+
+        public Producer build() {
+            return new Producer(this);
+        }
     }
 }

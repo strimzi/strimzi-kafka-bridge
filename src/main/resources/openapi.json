@@ -1273,13 +1273,62 @@
     },
     "components": {
         "schemas": {
+            "KafkaHeader": {
+                "example": {
+                    "key": "key1",
+                    "value": "dmFsdWUx"
+                },
+                "properties": {
+                    "key": {
+                        "type": "string"
+                    },
+                    "value": {
+                        "format": "byte",
+                        "type": "string",
+                        "description": "The header value in binary format, base64-encoded"
+                    }
+                },
+                "title": "KafkaHeader",
+                "required": [
+                    "value",
+                    "key"
+                ],
+                "type": "object"
+            },
+            "KafkaHeaderList": {
+                "title": "KafkaHeaderList",
+                "type": "array",
+                "items": {
+                    "$ref": "#/definitions/KafkaHeader"
+                },
+                "example": [
+                    {
+                        "key": "key1",
+                        "value": "dmFsdWUx"
+                    },
+                    {
+                        "key": "key2",
+                        "value": "dmFsdWUy"
+                    }
+                ]
+            },
             "ConsumerRecord": {
                 "example": {
                     "key": "key1",
                     "offset": 2,
                     "partition": 0,
                     "topic": "topic",
-                    "value": "value1"
+                    "value": "value1",
+                    "headers": [
+                        {
+                            "key": "key1",
+                            "value": "dmFsdWUx"
+                        },
+                        {
+                            "key": "key2",
+                            "value": "dmFsdWUy"
+                        }
+                    ]
                 },
                 "properties": {
                     "key": {
@@ -1298,6 +1347,9 @@
                     },
                     "value": {
                         "type": "string"
+                    },
+                    "headers": {
+                        "$ref": "#/definitions/KafkaHeaderList"
                     }
                 },
                 "title": "ConsumerRecord",
@@ -1563,10 +1615,27 @@
                                 "type": "string"
                             }
                         ]
+                    },
+                    "headers": {
+                        "$ref": "#/definitions/KafkaHeaderList"
                     }
                 },
                 "additionalProperties": false,
-                "example": "{\n    \"key\": \"key\"\n    \"partition\": 23\n    \"value\": {\"foo\": \"bar\"}\n}"
+                "example": {
+                    "key": "key1",
+                    "partition": 0,
+                    "value": "value1",
+                    "headers": [
+                        {
+                            "key": "key1",
+                            "value": "dmFsdWUx"
+                        },
+                        {
+                            "key": "key2",
+                            "value": "dmFsdWUy"
+                        }
+                    ]
+                }
             },
             "ProducerRecordList": {
                 "title": "ProducerRecordList",

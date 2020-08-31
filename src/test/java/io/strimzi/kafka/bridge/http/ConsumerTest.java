@@ -17,11 +17,15 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.kafka.client.producer.KafkaHeader;
+import io.vertx.kafka.client.producer.impl.KafkaHeaderImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import javax.xml.bind.DatatypeConverter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -501,6 +505,72 @@ public class ConsumerTest extends HttpBridgeTestBase {
                     assertThat(offset, is(0L));
                     assertThat(kafkaPartition, notNullValue());
                     assertThat(key, nullValue());
+                });
+                consume.complete(true);
+            });
+
+        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        // consumer deletion
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+        context.completeNow();
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+
+    @Test
+    void receiveSimpleMessageWithHeaders(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "receiveSimpleMessageWithHeaders";
+        adminClientFacade.createTopic(topic, 1, 1);
+
+        String sentBody = "Simple message";
+        List<KafkaHeader> headers = new ArrayList<>();
+        headers.add(new KafkaHeaderImpl("key1", "value1"));
+        headers.add(new KafkaHeaderImpl("key1", "value1"));
+        headers.add(new KafkaHeaderImpl("key2", "value2"));
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, headers, sentBody, true);
+
+        // create consumer
+        // subscribe to a topic
+        consumerService()
+            .createConsumer(context, groupId, consumerJson)
+            .subscribeConsumer(context, groupId, name, topic);
+
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+        // consume records
+        consumerService()
+            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+            .as(BodyCodec.jsonArray())
+            .send(ar -> {
+                context.verify(() -> {
+                    assertThat(ar.succeeded(), is(true));
+                    HttpResponse<JsonArray> response = ar.result();
+                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                    assertThat(response.body().size(), is(1));
+                    JsonObject jsonResponse = response.body().getJsonObject(0);
+
+                    String kafkaTopic = jsonResponse.getString("topic");
+                    int kafkaPartition = jsonResponse.getInteger("partition");
+                    String key = jsonResponse.getString("key");
+                    String value = jsonResponse.getString("value");
+                    long offset = jsonResponse.getLong("offset");
+                    JsonArray kafkaHeaders = jsonResponse.getJsonArray("headers");
+
+                    assertThat(kafkaTopic, is(topic));
+                    assertThat(value, is(sentBody));
+                    assertThat(offset, is(0L));
+                    assertThat(kafkaPartition, notNullValue());
+                    assertThat(key, nullValue());
+                    assertThat(kafkaHeaders.size(), is(3));
+                    assertThat(kafkaHeaders.getJsonObject(0).getString("key"), is("key1"));
+                    assertThat(new String(DatatypeConverter.parseBase64Binary(
+                        kafkaHeaders.getJsonObject(0).getString("value"))), is("value1"));
+                    assertThat(kafkaHeaders.getJsonObject(1).getString("key"), is("key1"));
+                    assertThat(new String(DatatypeConverter.parseBase64Binary(
+                        kafkaHeaders.getJsonObject(1).getString("value"))), is("value1"));
+                    assertThat(kafkaHeaders.getJsonObject(2).getString("key"), is("key2"));
+                    assertThat(new String(DatatypeConverter.parseBase64Binary(
+                        kafkaHeaders.getJsonObject(2).getString("value"))), is("value2"));
                 });
                 consume.complete(true);
             });
