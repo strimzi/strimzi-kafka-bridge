@@ -97,7 +97,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void sendSimpleMessageToPartition(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String topic = "sendSimpleMessageToPartition-1";
+        String topic = "sendSimpleMessageToPartition";
 
         adminClientFacade.createTopic(topic, 2, 1);
 
@@ -148,7 +148,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void sendSimpleMessageWithKey(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String topic = "sendSimpleMessageWithKey-1";
+        String topic = "sendSimpleMessageWithKey";
 
         adminClientFacade.createTopic(topic, 2, 1);
 
@@ -348,7 +348,6 @@ public class ProducerTest extends HttpBridgeTestBase {
                     if (!done.succeeded()) {
                         context.failNow(done.cause());
                     }
-                    LOGGER.info("===============\n {}", done.toString());
                 });
             }
         });
@@ -357,8 +356,6 @@ public class ProducerTest extends HttpBridgeTestBase {
             context.verify(() -> {
                 LOGGER.info("Verifying that records size {} matching the counter of messages {}", records.size(), count);
                 assertThat(records.size(), is(this.count));
-
-                LOGGER.info("HERE4....");
 
                 for (int i = 1; i < records.size(); i++) {
                     KafkaConsumerRecord<String, String> record = records.recordAt(i);
