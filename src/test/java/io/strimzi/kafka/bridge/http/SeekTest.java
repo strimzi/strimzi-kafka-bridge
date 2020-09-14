@@ -87,6 +87,10 @@ public class SeekTest extends HttpBridgeTestBase {
                 });
             });
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+
+        // consumer deletion
+        consumerService()
+            .deleteConsumer(context, groupId, name);
     }
 
     @Test
@@ -118,6 +122,11 @@ public class SeekTest extends HttpBridgeTestBase {
                     });
                     consumerInstanceDontHaveTopic.complete(true);
                 });
+
+        // consumer deletion
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+
         consumerInstanceDontHaveTopic.get(TEST_TIMEOUT, TimeUnit.SECONDS);
     }
 

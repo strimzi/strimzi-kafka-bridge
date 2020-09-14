@@ -199,6 +199,10 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
                     subscribe.complete(true);
                 });
         subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+
         context.completeNow();
     }
 
