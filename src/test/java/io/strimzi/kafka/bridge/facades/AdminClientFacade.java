@@ -12,10 +12,14 @@ import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Duration;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Class AdminClientFacade used for encapsulate complexity and asynchronous code of AdminClient.
@@ -77,6 +81,17 @@ public class AdminClientFacade {
         DeleteTopicsResult deleteTopicsResult = adminClient.deleteTopics(Collections.singletonList(topicName));
         deleteTopicsResult.all().get();
         LOGGER.info("Topic with name " + topicName + " is deleted.");
+    }
+
+    /**
+     * Delete collection of provided topics by their name
+     *
+     * @param topics              collection of topics
+     */
+    public void deleteTopics(Collection<String> topics) throws InterruptedException, ExecutionException, TimeoutException {
+        DeleteTopicsResult deleteTopicsResult = adminClient.deleteTopics(topics);
+        deleteTopicsResult.all().get(Duration.ofMinutes(1).toMillis(), TimeUnit.MILLISECONDS);
+        LOGGER.info("Topics with names " + topics + " is deleted.");
     }
 
     /**

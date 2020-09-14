@@ -28,8 +28,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
     @Test
     void unsubscribeConsumerNotFound(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "unsubscribeConsumerNotFound";
-
         adminClientFacade.createTopic(topic);
 
         String name = "my-kafka-consumer";
@@ -64,8 +62,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
     @Test
     void subscribeExclusiveTopicAndPattern(VertxTestContext context) throws Throwable {
-        String topic = "singleTopic";
-
         String name = "my-kafka-consumer-exclusive";
         String groupId = "my-group";
 
@@ -132,8 +128,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
     @Test
     void subscriptionConsumerDoesNotExistBecauseNotCreated(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String name = "my-kafka-consumer-does-not-exists-because-not-created";
-        String topic = "subscriptionConsumerDoesNotExistBecauseNotCreated";
-
         adminClientFacade.createTopic(topic);
 
         String groupId = "my-group";

@@ -26,7 +26,6 @@ import static org.hamcrest.Matchers.notNullValue;
 public class AdminClientTest extends HttpBridgeTestBase {
     @Test
     void listTopicsTest(VertxTestContext context) throws Exception {
-        final String topic = "testListTopics";
         setupTopic(context, topic, 1);
 
         baseService()
@@ -82,8 +81,6 @@ public class AdminClientTest extends HttpBridgeTestBase {
 
     @Test
     void getTopicNotFoundTest(VertxTestContext context) {
-        final String topic = "testGetTopicNotFound";
-
         baseService()
                 .getRequest("/topics/" + topic)
                 .as(BodyCodec.jsonObject())
@@ -99,7 +96,6 @@ public class AdminClientTest extends HttpBridgeTestBase {
 
     @Test
     void listPartitionsTest(VertxTestContext context) throws Exception {
-        final String topic = "testListPartitions";
         setupTopic(context, topic, 2);
 
         baseService()
@@ -130,7 +126,6 @@ public class AdminClientTest extends HttpBridgeTestBase {
 
     @Test
     void getPartitionTest(VertxTestContext context) throws Exception {
-        final String topic = "testGetPartition";
         setupTopic(context, topic, 2);
 
         baseService()
