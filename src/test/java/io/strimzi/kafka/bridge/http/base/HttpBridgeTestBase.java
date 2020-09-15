@@ -122,8 +122,6 @@ public abstract class HttpBridgeTestBase {
 
         basicKafkaClient = new BasicKafkaClient(kafkaUri);
 
-        vertx = Vertx.vertx();
-
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
 
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
