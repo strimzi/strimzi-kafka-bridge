@@ -18,7 +18,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
-import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.producer.KafkaHeader;
 import io.vertx.kafka.client.producer.impl.KafkaHeaderImpl;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -37,6 +36,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -342,28 +342,23 @@ public class ProducerTest extends HttpBridgeTestBase {
             }
         });
 
-        consumer.batchHandler(records -> {
-            context.verify(() -> {
-                LOGGER.info("Verifying that records size {} matching the counter of messages {}", records.size(), count);
-                assertThat(records.size(), is(this.count));
-
-                for (int i = 1; i < records.size(); i++) {
-                    KafkaConsumerRecord<String, String> record = records.recordAt(i);
-                    LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
-                            record.topic(), record.partition(), record.offset(), record.key(), record.value());
-                    assertThat(record.value(), containsString("Periodic message ["));
-                    assertThat(record.topic(), is(topic));
-                    assertThat(record.partition(), notNullValue());
-                    assertThat(record.offset(), notNullValue());
-                    assertThat(record.key().replace("\"", ""), startsWith("key-"));
-                }
-            });
-
-            consumer.close();
-            context.completeNow();
+        AtomicInteger received = new AtomicInteger();
+        consumer.handler(record -> {
+            LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                record.topic(), record.partition(), record.offset(), record.key(), record.value());
+            assertThat(record.value(), containsString("Periodic message ["));
+            assertThat(record.topic(), is(topic));
+            assertThat(record.partition(), notNullValue());
+            assertThat(record.offset(), notNullValue());
+            assertThat(record.key().replace("\"", ""), startsWith("key-"));
+            received.getAndIncrement();
+            if (received.get() == 10) {
+                context.completeNow();
+                consumer.close();
+            }
         });
 
-        consumer.handler(record -> { });
+        assertThat(context.awaitCompletion(TEST_TIMEOUT * 2, TimeUnit.SECONDS), is(true));
     }
 
     @Test
