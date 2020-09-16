@@ -1487,7 +1487,8 @@
         "value": {
           "type": [
             "object",
-            "string"
+            "string",
+            "null"
           ]
         },
         "key": {

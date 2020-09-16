@@ -466,6 +466,52 @@ public class ProducerTest extends HttpBridgeTestBase {
     }
 
     @Test
+    void sendMessageWithNullValueTest(VertxTestContext context) throws InterruptedException, ExecutionException {
+        String topic = "sendMessageWithNullValueTest";
+        adminClientFacade.createTopic(topic);
+
+        String key = "my-key";
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("key", key);
+        json.putNull("value");
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        producerService()
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root, verifyOK(context));
+
+        Properties consumerProperties = Consumer.fillDefaultProperties();
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
+
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
+                new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
+        consumer.handler(record -> {
+            context.verify(() -> {
+                assertThat(record.value(), is(nullValue()));
+                assertThat(record.topic(), is(topic));
+                assertThat(record.partition(), notNullValue());
+                assertThat(record.offset(), is(0L));
+                assertThat(record.key(), is(key));
+            });
+            LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                    record.topic(), record.partition(), record.offset(), record.key(), record.value());
+            consumer.close();
+            context.completeNow();
+        });
+
+        consumer.subscribe(topic, done -> {
+            if (!done.succeeded()) {
+                context.failNow(done.cause());
+            }
+        });
+    }
+
+    @Test
     void sendToNonExistingPartitionsTest(VertxTestContext context) throws InterruptedException, ExecutionException {
         String kafkaTopic = "sendToNonExistingPartitionsTest";
         adminClientFacade.createTopic(kafkaTopic, 3, 1);
