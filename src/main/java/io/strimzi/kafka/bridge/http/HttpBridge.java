@@ -48,9 +48,10 @@ import java.util.Iterator;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderNames.ORIGIN;
+import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
 import static io.netty.handler.codec.http.HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static io.netty.handler.codec.http.HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS;
 
@@ -164,6 +165,9 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 routerFactory.addHandlerByOperationId(this.READY.getOperationId().toString(), this.READY);
                 routerFactory.addHandlerByOperationId(this.OPENAPI.getOperationId().toString(), this.OPENAPI);
                 routerFactory.addHandlerByOperationId(this.INFO.getOperationId().toString(), this.INFO);
+                if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
+                    routerFactory.addGlobalHandler(getCorsHandler());
+                }
 
                 this.router = routerFactory.getRouter();
 
@@ -172,34 +176,6 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
 
                 this.router.route("/metrics").handler(this::metricsHandler);
-
-                //enable cors
-                if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
-                    Set<String> allowedHeaders = new HashSet<>();
-                    //set predefined headers
-                    allowedHeaders.add("x-requested-with");
-                    allowedHeaders.add(ACCESS_CONTROL_ALLOW_ORIGIN.toString());
-                    allowedHeaders.add(ACCESS_CONTROL_ALLOW_METHODS.toString());
-                    allowedHeaders.add(ORIGIN.toString());
-                    allowedHeaders.add(CONTENT_TYPE.toString());
-                    allowedHeaders.add(ACCEPT.toString());
-
-                    //set allowed methods from property http.cors.allowedMethods
-                    Set<HttpMethod> allowedMethods = new HashSet<>();
-                    String configAllowedMethods = this.bridgeConfig.getHttpConfig().getCorsAllowedMethods();
-                    String[] configAllowedMethodsArray = configAllowedMethods.split(",");
-                    for (String method: configAllowedMethodsArray)
-                        allowedMethods.add(HttpMethod.valueOf(method));
-
-                    //set allowed origins from property http.cors.allowedOrigins
-                    String allowedOrigins = this.bridgeConfig.getHttpConfig().getCorsAllowedOrigins();
-
-                    log.info("Allowed origins for Cors: {}", allowedOrigins);
-
-                    this.router.route().handler(CorsHandler.create(allowedOrigins)
-                            .allowedHeaders(allowedHeaders)
-                            .allowedMethods(allowedMethods));
-                }
 
                 log.info("Starting HTTP-Kafka bridge verticle...");
                 this.httpBridgeContext = new HttpBridgeContext<>();
@@ -212,6 +188,35 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 startPromise.fail(ar.cause());
             }
         });
+    }
+
+    private CorsHandler getCorsHandler() {
+        Set<String> allowedHeaders = new HashSet<>();
+        //set predefined headers
+        allowedHeaders.add("x-requested-with");
+        allowedHeaders.add("x-forwarded-proto");
+        allowedHeaders.add("x-forwarded-host");
+        allowedHeaders.add(ACCESS_CONTROL_ALLOW_ORIGIN.toString());
+        allowedHeaders.add(ACCESS_CONTROL_ALLOW_METHODS.toString());
+        allowedHeaders.add(ORIGIN.toString());
+        allowedHeaders.add(CONTENT_TYPE.toString());
+        allowedHeaders.add(CONTENT_LENGTH.toString());
+        allowedHeaders.add(ACCEPT.toString());
+
+        //set allowed methods from property http.cors.allowedMethods
+        Set<HttpMethod> allowedMethods = new HashSet<>();
+        String configAllowedMethods = this.bridgeConfig.getHttpConfig().getCorsAllowedMethods();
+        String[] configAllowedMethodsArray = configAllowedMethods.split(",");
+        for (String method: configAllowedMethodsArray)
+            allowedMethods.add(HttpMethod.valueOf(method));
+
+        //set allowed origins from property http.cors.allowedOrigins
+        String allowedOrigins = this.bridgeConfig.getHttpConfig().getCorsAllowedOrigins();
+
+        log.info("Allowed origins for Cors: {}", allowedOrigins);
+        return CorsHandler.create(allowedOrigins)
+                .allowedHeaders(allowedHeaders)
+                .allowedMethods(allowedMethods);
     }
 
     @Override

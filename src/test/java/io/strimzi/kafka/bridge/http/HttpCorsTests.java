@@ -7,6 +7,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.StrimziKafkaContainer;
+import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.JmxCollectorRegistry;
 import io.strimzi.kafka.bridge.MetricsReporter;
@@ -16,6 +17,8 @@ import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.junit5.VertxExtension;
@@ -155,6 +158,12 @@ public class HttpCorsTests {
         createWebClient();
         configureBridge(true, null);
 
+        JsonArray topics = new JsonArray();
+        topics.add("topic");
+
+        JsonObject topicsRoot = new JsonObject();
+        topicsRoot.put("topics", topics);
+
         final String origin = "https://strimzi.io";
 
         if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
@@ -165,12 +174,13 @@ public class HttpCorsTests {
                     .send(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(200));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
-                        assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,origin,x-requested-with,content-type,access-control-allow-methods,accept"));
+                        assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,content-length,x-forwarded-proto,x-forwarded-host,origin,x-requested-with,content-type,access-control-allow-methods,accept"));
                         List<String> list = Arrays.asList(ar.result().getHeader("access-control-allow-methods").split(","));
                         assertThat(list, hasItem("POST"));
                         client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
                                 .putHeader("Origin", "https://strimzi.io")
-                                .send(ar2 -> context.verify(() -> {
+                                .putHeader("content-type", BridgeContentType.KAFKA_JSON)
+                                .sendJsonObject(topicsRoot, ar2 -> context.verify(() -> {
                                     //we are not creating a topic, so we will get a 404 status code
                                     assertThat(ar2.result().statusCode(), is(404));
                                     context.completeNow();
@@ -200,7 +210,7 @@ public class HttpCorsTests {
                     .send(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(200));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
-                        assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,origin,x-requested-with,content-type,access-control-allow-methods,accept"));
+                        assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,content-length,x-forwarded-proto,x-forwarded-host,origin,x-requested-with,content-type,access-control-allow-methods,accept"));
                         List<String> list = Arrays.asList(ar.result().getHeader("access-control-allow-methods").split(","));
                         assertThat(list, not(hasItem("POST")));
                         context.completeNow();
