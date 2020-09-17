@@ -100,6 +100,13 @@
 			<groupId>io.strimzi</groupId>
 			<artifactId>kafka-oauth-client</artifactId>
 			<version>${strimzi-oauth.version}</version>
+              <exclusions>
+                    <exclusion>
+                        <groupId>org.bouncycastle</groupId>
+                        <artifactId>bcprov-jdk15on</artifactId>
+                    </exclusion>
+                </exclusions>
+
 		</dependency>
 		<dependency>
 			<groupId>io.jaegertracing</groupId>
@@ -205,6 +212,43 @@
 			<artifactId>test-container</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+
+		<!-- Transitive dependency version overrides for Vulnerabilities: -->
+                <!-- overriding version commons-io for vertex 3.9.3 - Vulnerability -->
+                <dependency>
+                        <groupId>commons-io</groupId>
+                        <artifactId>commons-io</artifactId>
+                        <version>2.5</version>
+                </dependency>
+                <!-- overriding version of snakeyaml for prometheus.jmx.collector 0.12.0: Vulnerability: DOS -->
+                <dependency>
+                        <groupId>org.yaml</groupId>
+                        <artifactId>snakeyaml</artifactId>
+                        <version>1.26</version>
+                </dependency>
+                <!-- overriding version of keycloak for kafka-oauth-client 0.5.0 : Vulnerability: Remote Code Execution -->
+                <dependency>
+                        <groupId>org.keycloak</groupId>
+                        <artifactId>keycloak-common</artifactId>
+                        <version>11.0.0</version>
+                        <exclusions>
+                                <exclusion>
+                                        <groupId>org.bouncycastle</groupId>
+                                        <artifactId>bcprov-jdk15on</artifactId>
+                                </exclusion>
+                        </exclusions>
+                </dependency>
+                <dependency>
+                        <groupId>org.keycloak</groupId>
+                        <artifactId>keycloak-core</artifactId>
+                        <version>11.0.0</version>
+                        <exclusions>
+                                <exclusion>
+                                        <groupId>org.bouncycastle</groupId>
+                                        <artifactId>bcprov-jdk15on</artifactId>
+                                </exclusion>
+                        </exclusions>
+                </dependency>
 	</dependencies>
 
 	<pluginRepositories>
