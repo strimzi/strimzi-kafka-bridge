@@ -22,6 +22,7 @@ import io.vertx.kafka.client.producer.impl.KafkaHeaderImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.ArrayList;
@@ -412,7 +413,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
     }
 
     @Test
-    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException {
+    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=mqtt";
 
@@ -470,7 +471,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     @Test
     void receiveSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "receiveSimpleMessage";
         adminClientFacade.createTopic(topic);
 
         String sentBody = "Simple message";
@@ -520,7 +520,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     @Test
     void receiveSimpleMessageWithHeaders(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "receiveSimpleMessageWithHeaders";
         adminClientFacade.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
@@ -782,7 +781,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     @Test
     void receiveSimpleMessageFromPartition(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "receiveSimpleMessageFromPartition";
         int partition = 1;
 
         adminClientFacade.createTopic(topic, 2, 1);
@@ -1510,6 +1508,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
         context.completeNow();
     }
 
+    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void consumerDeletedAfterInactivity(VertxTestContext context) {
         CompletableFuture<Boolean> create = new CompletableFuture<>();

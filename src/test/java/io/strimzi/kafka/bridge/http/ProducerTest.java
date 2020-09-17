@@ -18,7 +18,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
-import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.producer.KafkaHeader;
 import io.vertx.kafka.client.producer.impl.KafkaHeaderImpl;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -37,6 +36,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -51,7 +51,6 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void sendSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String topic = "sendSimpleMessage";
         adminClientFacade.createTopic(topic);
 
         String value = "message-value";
@@ -97,8 +96,6 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void sendSimpleMessageToPartition(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String topic = "sendSimpleMessageToPartition";
-
         adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
@@ -148,8 +145,6 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void sendSimpleMessageWithKey(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String topic = "sendSimpleMessageWithKey";
-
         adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
@@ -198,8 +193,6 @@ public class ProducerTest extends HttpBridgeTestBase {
     @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void sendBinaryMessageWithKey(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String topic = "sendBinaryMessageWithKey";
-
         adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
@@ -247,7 +240,6 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void sendSimpleMessageWithHeaders(VertxTestContext context) throws ExecutionException, InterruptedException {
-        String topic = "sendSimpleMessageWithHeaders";
         adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
@@ -311,14 +303,13 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void sendPeriodicMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String topic = "sendPeriodicMessage";
         adminClientFacade.createTopic(topic);
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
+
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
-                new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties);
 
         this.count = 0;
 
@@ -351,33 +342,27 @@ public class ProducerTest extends HttpBridgeTestBase {
             }
         });
 
-        consumer.batchHandler(records -> {
-            context.verify(() -> {
-                LOGGER.info("Verifying that records size {} matching the counter of messages {}", records.size(), count);
-                assertThat(records.size(), is(this.count));
-
-                for (int i = 1; i < records.size(); i++) {
-                    KafkaConsumerRecord<String, String> record = records.recordAt(i);
-                    LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
-                            record.topic(), record.partition(), record.offset(), record.key(), record.value());
-                    assertThat(record.value(), containsString("Periodic message ["));
-                    assertThat(record.topic(), is(topic));
-                    assertThat(record.partition(), notNullValue());
-                    assertThat(record.offset(), notNullValue());
-                    assertThat(record.key(), startsWith("key-"));
-                }
-            });
-
-            consumer.close();
-            context.completeNow();
+        AtomicInteger received = new AtomicInteger();
+        consumer.handler(record -> {
+            LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                record.topic(), record.partition(), record.offset(), record.key(), record.value());
+            assertThat(record.value(), containsString("Periodic message ["));
+            assertThat(record.topic(), is(topic));
+            assertThat(record.partition(), notNullValue());
+            assertThat(record.offset(), notNullValue());
+            assertThat(record.key().replace("\"", ""), startsWith("key-"));
+            received.getAndIncrement();
+            if (received.get() == 10) {
+                context.completeNow();
+                consumer.close();
+            }
         });
 
-        consumer.handler(record -> { });
+        assertThat(context.awaitCompletion(TEST_TIMEOUT * 2, TimeUnit.SECONDS), is(true));
     }
 
     @Test
     void sendMultipleMessages(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String topic = "sendMultipleMessages";
         adminClientFacade.createTopic(topic);
 
         String value = "message-value";
@@ -446,7 +431,6 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void emptyRecordTest(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String topic = "emptyRecordTest";
         adminClientFacade.createTopic(topic);
 
         JsonObject root = new JsonObject();
@@ -513,8 +497,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void sendToNonExistingPartitionsTest(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String kafkaTopic = "sendToNonExistingPartitionsTest";
-        adminClientFacade.createTopic(kafkaTopic, 3, 1);
+        adminClientFacade.createTopic(topic, 3, 1);
 
         String value = "Hi, This is kafka bridge";
         int partition = 1000;
@@ -529,7 +512,7 @@ public class ProducerTest extends HttpBridgeTestBase {
         root.put("records", records);
 
         producerService()
-            .sendRecordsRequest(kafkaTopic, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
                 context.verify(() -> {
                     assertThat(ar.succeeded(), is(true));
@@ -544,7 +527,7 @@ public class ProducerTest extends HttpBridgeTestBase {
                     // the message got from the Kafka producer (starting from 2.3) is misleading
                     // this JIRA (https://issues.apache.org/jira/browse/KAFKA-8862) raises the issue
                     assertThat(error.getMessage(), is(
-                            "Topic " + kafkaTopic + " not present in metadata after " +
+                            "Topic " + topic + " not present in metadata after " +
                                     config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms."));
                 });
             });
@@ -553,10 +536,9 @@ public class ProducerTest extends HttpBridgeTestBase {
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
+    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void sendToNonExistingTopicTest(VertxTestContext context) {
-        String kafkaTopic = "sendToNonExistingTopicTest";
-
         String value = "Hi, This is kafka bridge";
         int partition = 1;
 
@@ -570,7 +552,7 @@ public class ProducerTest extends HttpBridgeTestBase {
         root.put("records", records);
 
         producerService()
-            .sendRecordsRequest(kafkaTopic, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
                 context.verify(() -> {
                     assertThat(ar.succeeded(), is(true));
@@ -583,7 +565,7 @@ public class ProducerTest extends HttpBridgeTestBase {
                     String statusMessage = offsets.getJsonObject(0).getString("message");
 
                     assertThat(code, is(HttpResponseStatus.NOT_FOUND.code()));
-                    assertThat(statusMessage, is("Topic " + kafkaTopic + " not present in metadata after " +
+                    assertThat(statusMessage, is("Topic " + topic + " not present in metadata after " +
                                 config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms."));
                 });
                 context.completeNow();
@@ -592,8 +574,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void sendToOnePartitionTest(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String kafkaTopic = "sendToOnePartitionTest";
-        adminClientFacade.createTopic(kafkaTopic, 3, 1);
+        adminClientFacade.createTopic(topic, 3, 1);
 
         String value = "Hi, This is kafka bridge";
         int partition = 1;
@@ -607,7 +588,7 @@ public class ProducerTest extends HttpBridgeTestBase {
         root.put("records", records);
 
         producerService()
-            .sendRecordsToPartitionRequest(kafkaTopic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
                 context.verify(() -> {
                     assertThat(ar.succeeded(), is(true));
@@ -630,8 +611,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void sendToOneStringPartitionTest(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String kafkaTopic = "sendToOneStringPartitionTest";
-        adminClientFacade.createTopic(kafkaTopic, 3, 1);
+        adminClientFacade.createTopic(topic, 3, 1);
 
         String value = "Hi, This is kafka bridge";
         String partition = "karel";
@@ -645,14 +625,13 @@ public class ProducerTest extends HttpBridgeTestBase {
         root.put("records", records);
 
         producerService()
-            .sendRecordsToPartitionRequest(kafkaTopic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, verifyBadRequest(context, "Validation error on: partitionid - Value is not a valid number"));
     }
 
     @Test
     void sendToBothPartitionTest(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String kafkaTopic = "sendToBothPartitionTest";
-        adminClientFacade.createTopic(kafkaTopic, 3, 1);
+        adminClientFacade.createTopic(topic, 3, 1);
 
         String value = "Hi, This is kafka bridge";
         int partition = 1;
@@ -667,14 +646,13 @@ public class ProducerTest extends HttpBridgeTestBase {
         root.put("records", records);
 
         producerService()
-            .sendRecordsToPartitionRequest(kafkaTopic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, verifyBadRequest(context, "Validation error on: body.records[0] - " +
                     "$.records[0].partition: is not defined in the schema and the schema does not allow additional properties"));
     }
 
     @Test
     void sendMessageLackingRequiredProperty(VertxTestContext context) throws Throwable {
-        String topic = "sendMessageLackingRequiredProperty";
         adminClientFacade.createTopic(topic);
 
         String key = "my-key";
@@ -694,7 +672,6 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void sendMessageWithUnknownProperty(VertxTestContext context) throws Throwable {
-        String topic = "sendMessageWithUnknownProperty";
         adminClientFacade.createTopic(topic);
 
         String value = "message-value";
@@ -743,10 +720,10 @@ public class ProducerTest extends HttpBridgeTestBase {
             });
     }
 
+    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void sendMultipleRecordsWithOneInvalidPartitionTest(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String kafkaTopic = "sendMultipleRecordsWithOneInvalidPartitionTest";
-        adminClientFacade.createTopic(kafkaTopic, 3, 1);
+        adminClientFacade.createTopic(topic, 3, 1);
 
         String value = "Hi, This is kafka bridge";
         int partition = 1;
@@ -766,7 +743,7 @@ public class ProducerTest extends HttpBridgeTestBase {
         root.put("records", records);
 
         producerService()
-                .sendRecordsRequest(kafkaTopic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
                 .sendJsonObject(root, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
@@ -782,7 +759,7 @@ public class ProducerTest extends HttpBridgeTestBase {
                         assertThat(metadata.getLong("offset"), is(0L));
                         HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(1));
                         assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getMessage(), is("Topic " + kafkaTopic + " not present in metadata after 10000 ms."));
+                        assertThat(error.getMessage(), is("Topic " + topic + " not present in metadata after 10000 ms."));
                     });
                     context.completeNow();
                 });
@@ -792,9 +769,7 @@ public class ProducerTest extends HttpBridgeTestBase {
 
     @Test
     void jsonPayloadTest(VertxTestContext context) throws InterruptedException, ExecutionException {
-        String kafkaTopic = "breakOpenApiRules";
-
-        adminClientFacade.createTopic(kafkaTopic, 3, 1);
+        adminClientFacade.createTopic(topic, 3, 1);
 
         String value = "Hello from the other side";
         String key = "message-key";
@@ -810,7 +785,7 @@ public class ProducerTest extends HttpBridgeTestBase {
         root.put("records", records);
 
         producerService()
-            .sendRecordsToPartitionRequest(kafkaTopic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendRecordsToPartitionRequest(topic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, verifyBadRequest(context, "Validation error on: body.records[0] - " +
                 "$.records[0].partition: is not defined in the schema and the schema does not allow additional properties"));
 
@@ -823,7 +798,7 @@ public class ProducerTest extends HttpBridgeTestBase {
         root.put("records", records);
 
         producerService()
-            .sendRecordsToPartitionRequest(kafkaTopic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendRecordsToPartitionRequest(topic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
                 context.verify(() -> {
                     assertThat(ar.succeeded(), is(true));
@@ -853,7 +828,7 @@ public class ProducerTest extends HttpBridgeTestBase {
         root.put("records", records);
 
         producerService()
-            .sendRecordsToPartitionRequest(kafkaTopic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendRecordsToPartitionRequest(topic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
             .sendJsonObject(root, ar -> {
                 context.verify(() -> {
                     assertThat(ar.succeeded(), is(true));

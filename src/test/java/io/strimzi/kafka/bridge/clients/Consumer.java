@@ -92,8 +92,8 @@ public class Consumer extends ClientHandlerBase<Integer> implements AutoCloseabl
     public static Properties fillDefaultProperties() {
         Properties properties = new Properties();
 
-        properties.setProperty("key.serializer", StringDeserializer.class.getName());
-        properties.setProperty("value.serializer", StringDeserializer.class.getName());
+        properties.setProperty("key.deserializer", StringDeserializer.class.getName());
+        properties.setProperty("value.deserializer", StringDeserializer.class.getName());
         properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-sender-plain-" + new Random().nextInt(Integer.MAX_VALUE));
         properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, OffsetResetStrategy.EARLIEST.name().toLowerCase());

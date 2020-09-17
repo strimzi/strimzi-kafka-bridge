@@ -59,7 +59,6 @@ public class SeekTest extends HttpBridgeTestBase {
     @Disabled // This test was disabled because of known issue described in https://github.com/strimzi/strimzi-kafka-bridge/issues/320
     @Test
     void seekToNotExistingPartitionInSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "seekToNotExistingPartitionInSubscribedTopic";
         adminClientFacade.createTopic(topic);
 
         // create consumer
@@ -132,7 +131,6 @@ public class SeekTest extends HttpBridgeTestBase {
 
     @Test
     void seekToBeginningAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "seekToBeginningAndReceive";
         adminClientFacade.createTopic(topic);
 
         basicKafkaClient.sendStringMessagesPlain(topic, 10);
@@ -211,7 +209,6 @@ public class SeekTest extends HttpBridgeTestBase {
 
     @Test
     void seekToEndAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "seekToEndAndReceive";
         adminClientFacade.createTopic(topic);
 
         JsonObject topics = new JsonObject();
@@ -292,8 +289,6 @@ public class SeekTest extends HttpBridgeTestBase {
         JsonObject jsonConsumer = new JsonObject()
             .put("name", name)
             .put("format", "json");
-
-        String topic = "seekToOffsetAndReceive";
 
         adminClientFacade.createTopic(topic, 2, 1);
 

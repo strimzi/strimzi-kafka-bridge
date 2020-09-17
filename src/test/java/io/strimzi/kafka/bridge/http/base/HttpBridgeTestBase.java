@@ -33,15 +33,17 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
 
@@ -59,6 +61,7 @@ public abstract class HttpBridgeTestBase {
     protected static final int MULTIPLE_MAX_MESSAGE = 10;
     protected static final int TEST_TIMEOUT = 60;
     protected int count;
+    protected String topic;
 
     public static StrimziKafkaContainer kafkaContainer = null;
     protected static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
@@ -152,19 +155,11 @@ public abstract class HttpBridgeTestBase {
         }
     }
 
-    @AfterEach
-    void tearDown() throws ExecutionException, InterruptedException {
+    @BeforeEach
+    void tearDown() throws ExecutionException, InterruptedException, TimeoutException {
+        topic = "my-topic-" + new Random().nextInt(Integer.MAX_VALUE);
 
-        Set<String> topics = adminClientFacade.listTopic();
-
-        while (topics.size() > 0) {
-
-            topics =  adminClientFacade.listTopic();
-
-            for (String topic : topics) {
-                LOGGER.info("Deleting topic " + topic);
-                adminClientFacade.deleteTopic(topic);
-            }
-        }
+        Collection<String> topics = adminClientFacade.listTopic();
+        adminClientFacade.deleteTopics(topics);
     }
 }
