@@ -28,7 +28,7 @@
 		<opentracing.version>0.33.0</opentracing.version>
 		<opentracing-kafka-client.version>0.1.12</opentracing-kafka-client.version>
 		<micrometer.version>1.3.9</micrometer.version>
-		<jmx-prometheus-collector.version>0.10</jmx-prometheus-collector.version>
+		<jmx-prometheus-collector.version>0.12.0</jmx-prometheus-collector.version>
 		<commons-cli.version>1.4</commons-cli.version>
 	</properties>
 
@@ -101,13 +101,6 @@
 			<groupId>io.strimzi</groupId>
 			<artifactId>kafka-oauth-client</artifactId>
 			<version>${strimzi-oauth.version}</version>
-              <exclusions>
-                    <exclusion>
-                        <groupId>org.bouncycastle</groupId>
-                        <artifactId>bcprov-jdk15on</artifactId>
-                    </exclusion>
-                </exclusions>
-
 		</dependency>
 		<dependency>
 			<groupId>io.jaegertracing</groupId>
@@ -226,29 +219,6 @@
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
 			<version>1.26</version>
-		</dependency>
-		<!-- overriding version of keycloak for kafka-oauth-client 0.5.0 : Vulnerability: Remote Code Execution -->
-		<dependency>
-			<groupId>org.keycloak</groupId>
-			<artifactId>keycloak-common</artifactId>
-			<version>11.0.0</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.bouncycastle</groupId>
-					<artifactId>bcprov-jdk15on</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.keycloak</groupId>
-			<artifactId>keycloak-core</artifactId>
-			<version>11.0.0</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.bouncycastle</groupId>
-					<artifactId>bcprov-jdk15on</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 	</dependencies>
 
