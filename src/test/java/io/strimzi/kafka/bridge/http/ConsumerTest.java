@@ -781,7 +781,6 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     @Test
     void receiveSimpleMessageFromPartition(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "receiveSimpleMessageFromPartition-1";
         int partition = 1;
 
         adminClientFacade.createTopic(topic, 2, 1);
