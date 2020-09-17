@@ -258,6 +258,8 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
                     });
                 });
 
+        listSubscriptions.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
         consumerService()
             .deleteConsumer(context, groupId, name);
