@@ -27,8 +27,8 @@
 		<jaeger.version>1.1.0</jaeger.version>
 		<opentracing.version>0.33.0</opentracing.version>
 		<opentracing-kafka-client.version>0.1.12</opentracing-kafka-client.version>
-		<micrometer.version>1.3.1</micrometer.version>
-		<jmx-prometheus-collector.version>0.12.0</jmx-prometheus-collector.version>
+		<micrometer.version>1.3.9</micrometer.version>
+		<jmx-prometheus-collector.version>0.10</jmx-prometheus-collector.version>
 		<commons-cli.version>1.4</commons-cli.version>
 	</properties>
 
@@ -95,6 +95,7 @@
 			<groupId>com.github.spotbugs</groupId>
 			<artifactId>spotbugs-annotations</artifactId>
 			<version>${spotbugs.version}</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.strimzi</groupId>
@@ -214,41 +215,41 @@
 		</dependency>
 
 		<!-- Transitive dependency version overrides for Vulnerabilities: -->
-                <!-- overriding version commons-io for vertex 3.9.3 - Vulnerability -->
-                <dependency>
-                        <groupId>commons-io</groupId>
-                        <artifactId>commons-io</artifactId>
-                        <version>2.5</version>
-                </dependency>
-                <!-- overriding version of snakeyaml for prometheus.jmx.collector 0.12.0: Vulnerability: DOS -->
-                <dependency>
-                        <groupId>org.yaml</groupId>
-                        <artifactId>snakeyaml</artifactId>
-                        <version>1.26</version>
-                </dependency>
-                <!-- overriding version of keycloak for kafka-oauth-client 0.5.0 : Vulnerability: Remote Code Execution -->
-                <dependency>
-                        <groupId>org.keycloak</groupId>
-                        <artifactId>keycloak-common</artifactId>
-                        <version>11.0.0</version>
-                        <exclusions>
-                                <exclusion>
-                                        <groupId>org.bouncycastle</groupId>
-                                        <artifactId>bcprov-jdk15on</artifactId>
-                                </exclusion>
-                        </exclusions>
-                </dependency>
-                <dependency>
-                        <groupId>org.keycloak</groupId>
-                        <artifactId>keycloak-core</artifactId>
-                        <version>11.0.0</version>
-                        <exclusions>
-                                <exclusion>
-                                        <groupId>org.bouncycastle</groupId>
-                                        <artifactId>bcprov-jdk15on</artifactId>
-                                </exclusion>
-                        </exclusions>
-                </dependency>
+		<!-- overriding version commons-io for vertex 3.9.3 - Vulnerability -->
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.5</version>
+		</dependency>
+		<!-- overriding version of snakeyaml for prometheus.jmx.collector 0.12.0: Vulnerability: DOS -->
+		<dependency>
+			<groupId>org.yaml</groupId>
+			<artifactId>snakeyaml</artifactId>
+			<version>1.26</version>
+		</dependency>
+		<!-- overriding version of keycloak for kafka-oauth-client 0.5.0 : Vulnerability: Remote Code Execution -->
+		<dependency>
+			<groupId>org.keycloak</groupId>
+			<artifactId>keycloak-common</artifactId>
+			<version>11.0.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.bouncycastle</groupId>
+					<artifactId>bcprov-jdk15on</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.keycloak</groupId>
+			<artifactId>keycloak-core</artifactId>
+			<version>11.0.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.bouncycastle</groupId>
+					<artifactId>bcprov-jdk15on</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 	</dependencies>
 
 	<pluginRepositories>
@@ -332,13 +333,15 @@
 			<plugin>
 				<groupId>com.github.spotbugs</groupId>
 				<artifactId>spotbugs-maven-plugin</artifactId>
-				<version>3.1.12</version><dependencies>
-				<!-- overwrite dependency on spotbugs if you want to specify the version of˓→spotbugs -->
-				<dependency>
-					<groupId>com.github.spotbugs</groupId>
-					<artifactId>spotbugs</artifactId>
-					<version>${spotbugs.version}</version>
-				</dependency></dependencies>
+				<version>3.1.12</version>
+				<dependencies>
+					<!-- overwrite dependency on spotbugs if you want to specify the version of˓→spotbugs -->
+					<dependency>
+						<groupId>com.github.spotbugs</groupId>
+						<artifactId>spotbugs</artifactId>
+						<version>${spotbugs.version}</version>
+					</dependency>
+				</dependencies>
 				<configuration>
 					<effort>Max</effort>
 					<!-- Reports all bugs (other values are medium and max) -->
