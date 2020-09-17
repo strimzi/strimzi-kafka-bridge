@@ -17,6 +17,7 @@ import io.vertx.junit5.VertxTestContext;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -210,6 +211,20 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
         assertThat(adminClientFacade.listTopic().size(), is(2));
 
+        String value = "message-value";
+
+        JsonArray records = new JsonArray();
+        JsonObject jsonRecords = new JsonObject();
+        jsonRecords.put("value", value);
+        records.add(jsonRecords);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        producerService()
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root, done -> { });
+
         String name = "my-kafka-consumer-list";
         String groupId = "my-group";
 
@@ -226,16 +241,23 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
         consumerService()
                 .createConsumer(context, groupId, json)
-                .subscribeConsumer(context, groupId, name, topic)
-                .subscribeConsumer(context, groupId, name, topic2);
-
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+                .subscribeConsumer(context, groupId, name, topic, topic2);
 
         // poll to subscribe
+        CountDownLatch latch = new CountDownLatch(2);
         consumerService()
                 .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonObject())
-                .send(ar -> consume.complete(true));
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    latch.countDown();
+                });
+        consumerService()
+                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    latch.countDown();
+                });
+        latch.await(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         CompletableFuture<Boolean> listSubscriptions = new CompletableFuture<>();
         consumerService()
@@ -244,7 +266,7 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
                 .send(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
-
+                        listSubscriptions.complete(true);
                         HttpResponse<JsonObject> response = ar.result();
                         assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         assertThat(response.body().getJsonArray("topics").size(), is(2));
@@ -253,7 +275,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
                         assertThat(response.body().getJsonArray("partitions").size(), is(2));
                         assertThat(response.body().getJsonArray("partitions").getJsonObject(0).getJsonArray(topic2).size(), is(4));
                         assertThat(response.body().getJsonArray("partitions").getJsonObject(1).getJsonArray(topic).size(), is(1));
-                        listSubscriptions.complete(true);
                         context.completeNow();
                     });
                 });
