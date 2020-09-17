@@ -758,8 +758,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
                             assertThat(kafkaPartition, notNullValue());
                             assertThat(key, nullValue());
                         }
+                        consume.complete(true);
                     });
-                    consume.complete(true);
                 });
 
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
