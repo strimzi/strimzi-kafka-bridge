@@ -26,6 +26,7 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -691,7 +692,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     protected void consume(Handler<AsyncResult<KafkaConsumerRecords<K, V>>> consumeHandler) {
-        this.consumer.poll(this.pollTimeOut, consumeHandler);
+        this.consumer.poll(Duration.ofMillis(this.pollTimeOut), consumeHandler);
     }
 
     protected void commit(Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata> offsetsData, 
