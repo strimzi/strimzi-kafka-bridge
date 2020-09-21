@@ -47,14 +47,14 @@ public class Consumer extends ClientHandlerBase<Integer> implements AutoCloseabl
 
     @Override
     protected void handleClient() {
-        LOGGER.info("Consumer is starting with following properties: " + properties.toString());
+        LOGGER.info("Consumer is starting with following properties: {}", properties.toString());
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, properties);
 
         if (msgCntPredicate.test(-1)) {
             vertx.eventBus().consumer(clientName, msg -> {
                 if (msg.body().equals("stop")) {
-                    LOGGER.debug("Received stop command! Consumed messages: " + numReceived.get());
+                    LOGGER.debug("Received stop command! Consumed messages: {}", numReceived.get());
                     resultPromise.complete(numReceived.get());
                 }
             });
@@ -63,8 +63,8 @@ public class Consumer extends ClientHandlerBase<Integer> implements AutoCloseabl
         consumer.subscribe(topic, ar -> {
             if (ar.succeeded()) {
                 consumer.handler(record -> {
-                    LOGGER.debug("Processing key=" + record.key() + ",value=" + record.value() +
-                        ",partition=" + record.partition() + ",offset=" + record.offset());
+                    LOGGER.debug("Processing key={}, value={}, partition={}, offset={}",
+                                            record.key(), record.value(), record.partition(), record.offset());
                     numReceived.getAndIncrement();
 
                     if (msgCntPredicate.test(numReceived.get())) {
@@ -73,7 +73,7 @@ public class Consumer extends ClientHandlerBase<Integer> implements AutoCloseabl
                     }
                 });
             } else {
-                LOGGER.warn("Consumer could not subscribe " + ar.cause().getMessage());
+                LOGGER.warn("Consumer could not subscribe {}", ar.cause().getMessage());
                 resultPromise.completeExceptionally(ar.cause());
             }
         });
@@ -81,7 +81,7 @@ public class Consumer extends ClientHandlerBase<Integer> implements AutoCloseabl
 
     @Override
     public void close() {
-        LOGGER.info("Closing Vert.x instance for the client " + this.getClass().getName());
+        LOGGER.info("Closing Vert.x instance for the client {}", this.getClass().getName());
         if (vertx != null) {
             vertx.close();
         }
