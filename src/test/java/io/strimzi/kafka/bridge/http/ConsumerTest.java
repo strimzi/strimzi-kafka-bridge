@@ -1631,10 +1631,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
         name = generateRandomConsumerName();
         consumerWithEarliestResetJson.put("name", name);
         consumerJson.put("name", name);
+        groupId = generateRandomConsumerGroupName();
     }
 
     private String generateRandomConsumerName() {
         int salt = new Random().nextInt(Integer.MAX_VALUE);
         return "my-kafka-consumer" + salt;
     }
+
 }

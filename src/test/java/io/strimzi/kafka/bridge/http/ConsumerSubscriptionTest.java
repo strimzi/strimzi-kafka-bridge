@@ -14,6 +14,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
@@ -26,12 +27,13 @@ import static org.hamcrest.Matchers.is;
 
 public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
+    String groupId = "my-group";
+
     @Test
     void unsubscribeConsumerNotFound(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         adminClientFacade.createTopic(topic);
 
         String name = "my-kafka-consumer";
-        String groupId = "my-group";
 
         JsonArray topics = new JsonArray();
         topics.add(topic);
@@ -63,7 +65,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
     @Test
     void subscribeExclusiveTopicAndPattern(VertxTestContext context) throws Throwable {
         String name = "my-kafka-consumer-exclusive";
-        String groupId = "my-group";
 
         JsonObject json = new JsonObject();
         json.put("name", name);
@@ -130,8 +131,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         String name = "my-kafka-consumer-does-not-exists-because-not-created";
         adminClientFacade.createTopic(topic);
 
-        String groupId = "my-group";
-
         JsonArray topics = new JsonArray();
         topics.add(topic);
 
@@ -161,7 +160,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         String topic = "subscriptionConsumerDoesNotExistBecauseAnotherGroup";
         adminClientFacade.createTopic(topic, 1, 1);
         String name = "my-kafka-consumer-does-not-exists-because-another-group";
-        String groupId = "my-group";
         String anotherGroupId = "anotherGroupId";
 
         JsonArray topics = new JsonArray();
@@ -211,7 +209,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         assertThat(adminClientFacade.listTopic().size(), is(2));
 
         String name = "my-kafka-consumer-list";
-        String groupId = "my-group";
 
         JsonObject json = new JsonObject();
         json.put("name", name);
@@ -266,4 +263,10 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
             .deleteConsumer(context, groupId, name);
         context.completeNow();
     }
+
+    @BeforeEach
+    void setUp() {
+        groupId = generateRandomConsumerGroupName();
+    }
+
 }

@@ -162,4 +162,9 @@ public abstract class HttpBridgeTestBase {
         Collection<String> topics = adminClientFacade.listTopic();
         adminClientFacade.deleteTopics(topics);
     }
+
+    protected String generateRandomConsumerGroupName() {
+        int salt = new Random().nextInt(Integer.MAX_VALUE);
+        return "my-consumer-group" + salt;
+    }
 }
