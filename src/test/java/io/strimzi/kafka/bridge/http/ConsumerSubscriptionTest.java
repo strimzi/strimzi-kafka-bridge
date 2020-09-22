@@ -14,6 +14,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
@@ -26,12 +27,13 @@ import static org.hamcrest.Matchers.is;
 
 public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
+    String groupId = "my-group";
+
     @Test
     void unsubscribeConsumerNotFound(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         adminClientFacade.createTopic(topic);
 
         String name = "my-kafka-consumer";
-        String groupId = "my-group";
 
         JsonArray topics = new JsonArray();
         topics.add(topic);
@@ -63,7 +65,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
     @Test
     void subscribeExclusiveTopicAndPattern(VertxTestContext context) throws Throwable {
         String name = "my-kafka-consumer-exclusive";
-        String groupId = "my-group";
 
         JsonObject json = new JsonObject();
         json.put("name", name);
@@ -130,8 +131,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         String name = "my-kafka-consumer-does-not-exists-because-not-created";
         adminClientFacade.createTopic(topic);
 
-        String groupId = "my-group";
-
         JsonArray topics = new JsonArray();
         topics.add(topic);
 
@@ -161,7 +160,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         String topic = "subscriptionConsumerDoesNotExistBecauseAnotherGroup";
         adminClientFacade.createTopic(topic, 1, 1);
         String name = "my-kafka-consumer-does-not-exists-because-another-group";
-        String groupId = "my-group";
         String anotherGroupId = "anotherGroupId";
 
         JsonArray topics = new JsonArray();
@@ -211,7 +209,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
         assertThat(adminClientFacade.listTopic().size(), is(2));
 
         String name = "my-kafka-consumer-list";
-        String groupId = "my-group";
 
         JsonObject json = new JsonObject();
         json.put("name", name);
@@ -226,16 +223,20 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
 
         consumerService()
                 .createConsumer(context, groupId, json)
-                .subscribeConsumer(context, groupId, name, topic)
-                .subscribeConsumer(context, groupId, name, topic2);
-
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+                .subscribeConsumer(context, groupId, name, topic, topic2);
 
         // poll to subscribe
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
         consumerService()
                 .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonObject())
-                .send(ar -> consume.complete(true));
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    if (ar.succeeded()) {
+                        LOGGER.info(ar.result().body());
+                        consume.complete(true);
+                    }
+                });
+        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         CompletableFuture<Boolean> listSubscriptions = new CompletableFuture<>();
         consumerService()
@@ -244,7 +245,6 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
                 .send(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
-
                         HttpResponse<JsonObject> response = ar.result();
                         assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         assertThat(response.body().getJsonArray("topics").size(), is(2));
@@ -253,13 +253,20 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestBase {
                         assertThat(response.body().getJsonArray("partitions").size(), is(2));
                         assertThat(response.body().getJsonArray("partitions").getJsonObject(0).getJsonArray(topic2).size(), is(4));
                         assertThat(response.body().getJsonArray("partitions").getJsonObject(1).getJsonArray(topic).size(), is(1));
-                        listSubscriptions.complete(true);
-                        context.completeNow();
                     });
+                    listSubscriptions.complete(true);
                 });
 
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        listSubscriptions.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
     }
+
+    @BeforeEach
+    void setUp() {
+        groupId = generateRandomConsumerGroupName();
+    }
+
 }

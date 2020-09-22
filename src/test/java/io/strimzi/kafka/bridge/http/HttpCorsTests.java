@@ -111,7 +111,7 @@ public class HttpCorsTests {
                         client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
                                 .putHeader("Origin", "https://evil.io")
                                 .send(ar2 -> context.verify(() -> {
-                                    assertThat(ar2.result().statusCode(), is(405));
+                                    assertThat(ar2.result().statusCode(), is(400));
                                     context.completeNow();
                                 }));
                     }))));
