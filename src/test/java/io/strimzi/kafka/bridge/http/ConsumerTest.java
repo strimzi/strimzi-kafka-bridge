@@ -1636,7 +1636,7 @@ public class ConsumerTest extends HttpBridgeTestBase {
 
     private String generateRandomConsumerName() {
         int salt = new Random().nextInt(Integer.MAX_VALUE);
-        return "my-kafka-consumer" + salt;
+        return "my-kafka-consumer-" + salt;
     }
 
 }

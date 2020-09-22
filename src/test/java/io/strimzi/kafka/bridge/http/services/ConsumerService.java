@@ -33,6 +33,8 @@ public class ConsumerService extends BaseService {
 
     static final Logger LOGGER = LogManager.getLogger(ConsumerService.class);
 
+    private static final int POLL_TIMEOUT = 4000;
+
     private static ConsumerService consumerService;
 
     private ConsumerService(WebClient webClient) {
@@ -65,7 +67,7 @@ public class ConsumerService extends BaseService {
     }
 
     public HttpRequest<Buffer> consumeRecordsRequest(String groupId, String name, String bridgeContentType) {
-        return consumeRecordsRequest(groupId, name, 1000, null, bridgeContentType);
+        return consumeRecordsRequest(groupId, name, POLL_TIMEOUT, null, bridgeContentType);
     }
 
     public HttpRequest<Buffer> consumeRecordsRequest(String groupId, String name, Integer timeout, Integer maxBytes, String bridgeContentType) {

@@ -165,6 +165,6 @@ public abstract class HttpBridgeTestBase {
 
     protected String generateRandomConsumerGroupName() {
         int salt = new Random().nextInt(Integer.MAX_VALUE);
-        return "my-consumer-group" + salt;
+        return "my-group-" + salt;
     }
 }
