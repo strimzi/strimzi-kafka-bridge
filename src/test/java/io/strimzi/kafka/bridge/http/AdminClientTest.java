@@ -150,13 +150,53 @@ public class AdminClientTest extends HttpBridgeTestAbstract {
                 });
     }
 
+    @Test
+    void getOffsetsSummaryTest(VertxTestContext context) throws Exception {
+        setupTopic(context, topic, 1, 5);
+        baseService()
+                .getRequest("/topics/" + topic + "/partitions/0/offsets")
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        JsonObject bridgeResponse = response.body();
+                        assertThat(bridgeResponse.getLong("beginning_offset"), is(0L));
+                        assertThat(bridgeResponse.getLong("end_offset"), is(5L));
+                    });
+                    context.completeNow();
+                });
+    }
+
+    @Test
+    void getOffsetsSummaryNotFoundTest(VertxTestContext context) throws Exception {
+        baseService()
+                .getRequest("/topics/" + topic + "/partitions/0/offsets")
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                    });
+                    context.completeNow();
+                });
+    }
+
     void setupTopic(VertxTestContext context, String topic, int partitions) throws Exception {
+        setupTopic(context, topic, partitions, 1);
+    }
+
+    void setupTopic(VertxTestContext context, String topic, int partitions, int count) throws Exception {
         adminClientFacade.createTopic(topic, partitions, 1);
 
         JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("value", "hello");
-        records.add(json);
+        for (int i = 0; i < count; i++) {
+            JsonObject json = new JsonObject();
+            json.put("value", "hello");
+            records.add(json);
+        }
 
         JsonObject root = new JsonObject();
         root.put("records", records);

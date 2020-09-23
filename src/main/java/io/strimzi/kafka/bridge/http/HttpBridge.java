@@ -161,6 +161,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 routerFactory.addHandlerByOperationId(this.GET_TOPIC.getOperationId().toString(), this.GET_TOPIC);
                 routerFactory.addHandlerByOperationId(this.LIST_PARTITIONS.getOperationId().toString(), this.LIST_PARTITIONS);
                 routerFactory.addHandlerByOperationId(this.GET_PARTITION.getOperationId().toString(), this.GET_PARTITION);
+                routerFactory.addHandlerByOperationId(this.GET_OFFSETS.getOperationId().toString(), this.GET_OFFSETS);
                 routerFactory.addHandlerByOperationId(this.HEALTHY.getOperationId().toString(), this.HEALTHY);
                 routerFactory.addHandlerByOperationId(this.READY.getOperationId().toString(), this.READY);
                 routerFactory.addHandlerByOperationId(this.OPENAPI.getOperationId().toString(), this.OPENAPI);
@@ -365,6 +366,11 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private void getPartition(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.GET_PARTITION);
+        processAdminClient(routingContext);
+    }
+
+    private void getOffsets(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.GET_OFFSETS);
         processAdminClient(routingContext);
     }
 
@@ -684,6 +690,14 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         @Override
         public void process(RoutingContext routingContext) {
             getPartition(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation GET_OFFSETS = new HttpOpenApiOperation(HttpOpenApiOperations.GET_OFFSETS) {
+
+        @Override
+        public void process(RoutingContext routingContext) {
+            getOffsets(routingContext);
         }
     };
 
