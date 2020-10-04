@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.github.bucket4j.grid.ProxyManager;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
@@ -20,11 +21,15 @@ import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.strimzi.kafka.bridge.contentRouting.ContentRouter;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeResult;
+import io.strimzi.kafka.bridge.rateLimiting.BucketDate;
+import io.strimzi.kafka.bridge.rateLimiting.RateLimiting;
+import io.strimzi.kafka.bridge.rateLimiting.RateLimitingPolicy;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -46,33 +51,104 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.Map.Entry;
 
 public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
     private boolean closing;
-
+    
+    private ProxyManager<String> globalBuckets;
+    private Map<String, BucketDate> localBuckets;
+    private boolean invokedCbr = false;
+    Map<String, String> headers;
+    
     public HttpSourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
-                                    EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+                                    EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer,
+                                    ProxyManager<String> globalBuckets, Map<String, BucketDate> localBuckets) {
         super(vertx, bridgeConfig, format, keySerializer, valueSerializer);
+        this.globalBuckets = globalBuckets;
+        this.localBuckets = localBuckets;
+        
     }
 
     @Override
     public void open() {
-        this.name = this.bridgeConfig.getBridgeID() == null ? "kafka-bridge-producer-" + UUID.randomUUID() : this.bridgeConfig.getBridgeID() + "-" + UUID.randomUUID();
+        this.name = this.bridgeConfig.getBridgeID() == null ? 
+                "kafka-bridge-producer-" + UUID.randomUUID() : this.bridgeConfig.getBridgeID() + "-" + UUID.randomUUID();
         this.closing = false;
         this.messageConverter = this.buildMessageConverter();
         super.open();
     }
+    
+    
+    /*
+     * converts the MultiMap object to a traditional Java Map object. This step might not be 
+     * necessary; it is done so that custom classes can use Java Maps instead of MultiMaps, which 
+     * would require additional JARS to be downloaded
+     */
+    public Map<String, String> getHeaders(RoutingContext routingContext) {
+        MultiMap httpHeaders = routingContext.request().headers();
+        Map<String, String> headers = new HashMap<>();
+        for (Entry<String, String> header: httpHeaders.entries()) {
+            headers.put(header.getKey(), header.getValue());
+        }
+        this.headers = headers;
+        return this.headers;
+    }
+    
+    public Map<String, String> getHeaders() {
+        return this.headers;
+    }
 
     @Override
-    @SuppressWarnings("checkstyle:NPathComplexity")
     public void handle(Endpoint<?> endpoint) {
         RoutingContext routingContext = (RoutingContext) endpoint.get();
-
-        String topic = routingContext.pathParam("topicname");
-
+        
+        this.headers = getHeaders(routingContext);
+        
+        if (routingContext.pathParams().containsKey("topicname")) {
+            
+            // the topic is provided
+            this.invokedCbr = false;
+            String topicName = routingContext.pathParam("topicname");
+            log.info("Topic already present in request: " + topicName); 
+            throttleRequestsAndSendToTopic(routingContext, topicName);
+            
+        } else if (bridgeConfig.getHttpConfig().isRoutingEnabled()) {
+            
+            // use content based routing
+            this.invokedCbr = true;
+            CompletableFuture.supplyAsync(() -> {
+                return ContentRouter.getTopic(headers, routingContext, bridgeConfig.getRoutingPolicy());                    
+            }).thenAccept(topic -> {
+                log.info("Assigned topic: " + topic);
+                if (topic != null && topic.length() > 0) {
+                    throttleRequestsAndSendToTopic(routingContext, topic);
+                } else {
+                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            BridgeContentType.KAFKA_JSON, new JsonObject().put("error", "some error happened while assigning the topic").toBuffer());
+                }
+            });
+        } else {
+            log.error("Invalid endpoint. The conten-based routing is not enabled");
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.BAD_REQUEST.code(), BridgeContentType.JSON, 
+                    new JsonObject().put("error", "Invalid endpoint. The conten-based routing is not enabled").toBuffer());
+        }        
+    }
+    
+    private void throttleRequestsAndSendToTopic(RoutingContext routingContext, String topic) {
+        if (this.bridgeConfig.getHttpConfig().isRateLimitingEnabled()) {
+            RateLimiting.allowRequest(this, routingContext, topic);
+        } else {
+            sendMessagesToTopic(routingContext, topic);
+        }
+    }
+    
+    
+    @SuppressWarnings("checkstyle:NPathComplexity")
+    public void sendMessagesToTopic(RoutingContext routingContext, String topic) {
         List<KafkaProducerRecord<K, V>> records;
         Integer partition = null;
         if (routingContext.pathParam("partitionid") != null) {
@@ -87,15 +163,15 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                 return;
             }
         }
-
+        
         Tracer tracer = GlobalTracer.get();
-
+        
         MultiMap httpHeaders = routingContext.request().headers();
         Map<String, String> headers = new HashMap<>();
         for (Entry<String, String> header: httpHeaders.entries()) {
             headers.put(header.getKey(), header.getValue());
         }
-
+        
         String operationName = partition == null ? HttpOpenApiOperations.SEND.toString() : HttpOpenApiOperations.SEND_TO_PARTITION.toString();
         SpanBuilder spanBuilder;
         SpanContext parentSpan = tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(headers));
@@ -106,27 +182,27 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         }
         Span span = spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER).start();
         HttpTracingUtils.setCommonTags(span, routingContext);
-
+        
         try {
             if (messageConverter == null) {
                 HttpBridgeError error = new HttpBridgeError(
                         HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), HttpResponseStatus.INTERNAL_SERVER_ERROR.reasonPhrase());
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
-
+                
                 Tags.HTTP_STATUS.set(span, HttpResponseStatus.INTERNAL_SERVER_ERROR.code());
                 span.finish();
                 return;
             }
             records = messageConverter.toKafkaRecords(topic, partition, routingContext.getBody());
-
+            
             for (KafkaProducerRecord<K, V> record :records)   {
                 tracer.inject(span.context(), Format.Builtin.TEXT_MAP, new TextMap() {
                     @Override
                     public void put(String key, String value) {
                         record.addHeader(key, value);
                     }
-
+                    
                     @Override
                     public Iterator<Map.Entry<String, String>> iterator() {
                         throw new UnsupportedOperationException("TextMapInjectAdapter should only be used with Tracer.inject()");
@@ -139,13 +215,13 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                     e.getMessage());
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
-
+            
             Tags.HTTP_STATUS.set(span, HttpResponseStatus.UNPROCESSABLE_ENTITY.code());
             span.finish();
             return;
         }
         List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
-
+        
         // start sending records asynchronously
         List<Future> sendHandlers = new ArrayList<>(records.size());
         for (KafkaProducerRecord<K, V> record : records) {
@@ -153,16 +229,17 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             sendHandlers.add(promise.future());
             this.send(record, promise);
         }
-
+        
         // wait for ALL futures completed
         List<KafkaProducerRecord<K, V>> finalRecords = records;
         CompositeFuture.join(sendHandlers).onComplete(done -> {
-
+            
             for (int i = 0; i < sendHandlers.size(); i++) {
                 // check if, for each future, the sending operation is completed successfully or failed
                 if (sendHandlers.get(i).succeeded() && sendHandlers.get(i).result() != null) {
                     RecordMetadata metadata = (RecordMetadata) sendHandlers.get(i).result();
-                    log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", finalRecords.get(i), metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
+                    log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", finalRecords.get(i), 
+                            metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
                     results.add(new HttpBridgeResult<>(metadata));
                 } else {
                     String msg = sendHandlers.get(i).cause().getMessage();
@@ -174,13 +251,23 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             
             Tags.HTTP_STATUS.set(span, HttpResponseStatus.OK.code());
             span.finish();
+            
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
-                    BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
+                    BridgeContentType.KAFKA_JSON, buildResponse(topic, results).toBuffer());
             
             if (this.closing) {
                 this.close();
             }
         });
+        
+    }
+    
+    private JsonObject buildResponse(String topic, List<HttpBridgeResult<?>> results) {        
+        JsonObject responceBody = buildOffsets(results);
+        if (invokedCbr) {
+            responceBody.put("topic", topic);
+        }
+        return responceBody;
     }
 
     @Override
@@ -227,5 +314,21 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                 return (MessageConverter<K, V, Buffer, Buffer>) new HttpBinaryMessageConverter();
         }
         return null;
+    }
+    
+    public RateLimitingPolicy getRateLimitingPolicy() {
+        return this.bridgeConfig.getRateLimitingPolicy();
+    }
+    
+    public Map<String, BucketDate> getLocalBuckets() {
+        return this.localBuckets;
+    }
+    
+    public ProxyManager<String> getGlobalBuckets() {
+        return this.globalBuckets;
+    }
+    
+    public MessageConverter<?, ?, Buffer, Buffer> getMessageConverter() {
+        return this.messageConverter;
     }
 }

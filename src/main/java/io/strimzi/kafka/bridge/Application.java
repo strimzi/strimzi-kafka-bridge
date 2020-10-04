@@ -11,7 +11,10 @@ import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
 import io.strimzi.kafka.bridge.amqp.AmqpBridge;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.strimzi.kafka.bridge.contentRouting.RoutingPolicy;
+import io.strimzi.kafka.bridge.contentRouting.Topic;
 import io.strimzi.kafka.bridge.http.HttpBridge;
+import io.strimzi.kafka.bridge.rateLimiting.RateLimitingPolicy;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
@@ -30,18 +33,26 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.kafka.clients.CommonClientConfigs;
+import org.everit.json.schema.Schema;
+import org.everit.json.schema.loader.SchemaLoader;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.management.MalformedObjectNameException;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -105,10 +116,14 @@ public class Application {
                         log.error("Embedded HTTP server port {} conflicts with configured AMQP port", embeddedHttpServerPort);
                         System.exit(1);
                     }
-
+                    
+                    configureContentRouting(bridgeConfig);
+                    configureRateLimiting(bridgeConfig);
+                    
                     List<Future> futures = new ArrayList<>();
                     futures.add(deployAmqpBridge(vertx, bridgeConfig, metricsReporter));
                     futures.add(deployHttpBridge(vertx, bridgeConfig, metricsReporter));
+                    futures.add(deployHazelcast(bridgeConfig));
 
                     CompositeFuture.join(futures).onComplete(done -> {
                         if (done.succeeded()) {
@@ -273,5 +288,82 @@ public class Application {
     private static String absoluteFilePath(String arg) {
         // return the file path as absolute (if it's relative)
         return arg.startsWith(File.separator) ? arg : System.getProperty("user.dir") + File.separator + arg;
+    }
+    
+    private static void configureContentRouting(BridgeConfig bridgeConfig) {
+        try {
+            if (bridgeConfig.getHttpConfig().isRoutingEnabled()) {
+                String contentRoutingEnvVar = bridgeConfig.getHttpConfig().getEnvironmentCbrConfigMapName();
+                JSONObject jsonRules;
+                
+                if (System.getenv().get(contentRoutingEnvVar) != null) {
+                    jsonRules = new JSONObject(new JSONTokener(System.getenv().get(contentRoutingEnvVar)));
+                } else {
+                    throw new RuntimeException("You need to provide a configuration file if content-based routing is enabled");
+                }
+
+                JSONObject jsonSchema = new JSONObject(
+                        new JSONTokener(new FileReader("config/cbr_schema_validation.json")));
+
+                Schema schema = SchemaLoader.load(jsonSchema);
+                schema.validate(jsonRules);
+                
+                // create RoutingPolicy object and a map containing all the topics
+                HashMap<String, Topic> allTopics = new HashMap<String, Topic>();
+                RoutingPolicy routingPolicy = new RoutingPolicy(jsonRules, allTopics);
+                bridgeConfig.setRoutingPolicy(routingPolicy);
+
+                // create the topics that don't exist already
+                RoutingPolicy.createTopics(allTopics, (String) bridgeConfig.getKafkaConfig()
+                        .getConfig().get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG));
+
+            } else {
+                bridgeConfig.setRoutingPolicy(null);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error("An error happened during the initialization of content-based routing. The bridge is started without this functionality");
+            bridgeConfig.getHttpConfig().setErrorWhileContentRouting();
+        }
+    }
+    
+    private static void configureRateLimiting(BridgeConfig bridgeConfig) {
+        try {
+            if (bridgeConfig.getHttpConfig().isRateLimitingEnabled()) {
+                String rateLimitingEnvVar = bridgeConfig.getHttpConfig().getEnvironmentRlConfigMapName();
+                JSONArray jsonLimits;
+                if (System.getenv().get(rateLimitingEnvVar) != null) {
+                    jsonLimits = new JSONArray(new JSONTokener(System.getenv().get(rateLimitingEnvVar)));
+                } else {
+                    throw new RuntimeException("You need to provide a configuration file if rate limiting is enabled");                    
+                }
+                JSONObject jsonSchema = new JSONObject(
+                        new JSONTokener(new FileReader("config/rl_schema_validation.json")));
+                Schema schema = SchemaLoader.load(jsonSchema);
+                schema.validate(jsonLimits);
+                bridgeConfig.setRateLimitingPolicy(new RateLimitingPolicy(jsonLimits));
+                log.info("Rate limiting configured");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error("An error happened during the initialization of rate-limiting. The bridge is started without this functionality");
+            bridgeConfig.getHttpConfig().setErrorWhileRateLimiting();
+        }   
+    }
+    
+    private static Future<Void> deployHazelcast(BridgeConfig bridgeConfig) {
+        Promise<Void> promise = Promise.promise();
+        if (bridgeConfig.getHttpConfig().isRateLimitingEnabled() && bridgeConfig.getRateLimitingPolicy().usesGlobalRL()) {
+            HttpBridge.startHazelcast(res -> {
+                if (res.succeeded()) {
+                    promise.complete();
+                } else {
+                    promise.fail(res.cause());
+                }
+            }, bridgeConfig.getRateLimitingPolicy().getWindowTimeGlobalRl());
+        } else {
+            promise.complete();
+        }
+        return promise.future();
     }
 }

@@ -6,6 +6,7 @@
 package io.strimzi.kafka.bridge.http;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.github.bucket4j.grid.ProxyManager;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.AdminClientEndpoint;
 import io.strimzi.kafka.bridge.Application;
@@ -20,7 +21,11 @@ import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.strimzi.kafka.bridge.rateLimiting.BucketDate;
+import io.strimzi.kafka.bridge.rateLimiting.RlDeploymentOperations;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.http.HttpServer;
@@ -79,6 +84,10 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     private Map<ConsumerInstanceId, Long> timestampMap = new HashMap<>();
 
     private MetricsReporter metricsReporter;
+    
+    private static ProxyManager<String> globalBuckets = null;
+    
+    private Map<String, BucketDate> localBuckets;
 
     /**
      * Constructor
@@ -89,6 +98,8 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     public HttpBridge(BridgeConfig bridgeConfig, MetricsReporter metricsReporter) {
         this.bridgeConfig = bridgeConfig;
         this.metricsReporter = metricsReporter;
+        
+        this.localBuckets = RlDeploymentOperations.startLocalRlMap(bridgeConfig);
     }
 
     private void bindHttpServer(Promise<Void> startPromise) {
@@ -145,6 +156,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             if (ar.succeeded()) {
                 OpenAPI3RouterFactory routerFactory = ar.result();
                 routerFactory.addHandlerByOperationId(this.SEND.getOperationId().toString(), this.SEND);
+                routerFactory.addHandlerByOperationId(this.SEND_WITH_CBR_RULES.getOperationId().toString(), this.SEND_WITH_CBR_RULES);
                 routerFactory.addHandlerByOperationId(this.SEND_TO_PARTITION.getOperationId().toString(), this.SEND_TO_PARTITION);
                 routerFactory.addHandlerByOperationId(this.CREATE_CONSUMER.getOperationId().toString(), this.CREATE_CONSUMER);
                 routerFactory.addHandlerByOperationId(this.DELETE_CONSUMER.getOperationId().toString(), this.DELETE_CONSUMER);
@@ -261,6 +273,11 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     private void send(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SEND);
+        this.processProducer(routingContext);
+    }
+    
+    private void sendWithCbrRules(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SEND_WITH_CBR_RULES);
         this.processProducer(routingContext);
     }
 
@@ -438,7 +455,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         try {
             if (source == null) {
                 source = new HttpSourceBridgeEndpoint<>(this.vertx, this.bridgeConfig,
-                        contentTypeToFormat(contentType), new ByteArraySerializer(), new ByteArraySerializer());
+                        contentTypeToFormat(contentType), new ByteArraySerializer(), new ByteArraySerializer(), globalBuckets, this.localBuckets);
 
                 source.closeHandler(s -> {
                     this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
@@ -473,6 +490,11 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
         }
+    }    
+
+    
+    public static void startHazelcast(Handler<AsyncResult<Void>> resultHandler, int evictionTime) {
+        globalBuckets = RlDeploymentOperations.startHazelcast(resultHandler, evictionTime);
     }
 
     private void healthy(RoutingContext routingContext) {
@@ -603,6 +625,14 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         @Override
         public void process(RoutingContext routingContext) {
             send(routingContext);
+        }
+    };
+    
+    HttpOpenApiOperation SEND_WITH_CBR_RULES = new HttpOpenApiOperation(HttpOpenApiOperations.SEND_WITH_CBR_RULES) {
+        
+        @Override
+        public void process(RoutingContext routingContext) {
+            sendWithCbrRules(routingContext);
         }
     };
 

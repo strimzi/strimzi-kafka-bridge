@@ -568,6 +568,98 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "tags": [
+                    "Topics",
+                    "Producer"
+                ],
+                "description": "Sends one or more records to a topic, that is determined dynamically",
+                "operationId": "sendWithCbrRules",
+                "requestBody": {
+                    "content": {
+                        "application/vnd.kafka.json.v2+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProducerRecordList"
+                            }
+                        },
+                        "application/vnd.kafka.binary.v2+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProducerRecordList"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Records sent successfully.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OffsetRecordSentList"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "offsets": [
+                                                {
+                                                    "partition": 2,
+                                                    "offset": 0
+                                                },
+                                                {
+                                                    "partition": 1,
+                                                    "offset": 1
+                                                },
+                                                {
+                                                    "partition": 2,
+                                                    "offset": 2
+                                                }
+                                            ],
+                                            "topic": "topic_to_which_the_messages_were_sent"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Content based routing is not enabled, so this route cannot be accessed",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 400,
+                                            "message": "Cannot use content-routing if such option is disabled in the configuration file provided."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "The record list is not valid.",
+                        "content": {
+                            "application/vnd.kafka.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 422,
+                                            "message": "The record list contains invalid records."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/topics/{topicname}": {

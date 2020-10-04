@@ -1,0 +1,170 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://example.com/product.schema.json",
+  "title": "RoutingRules",
+  "oneOf": [
+    {
+      "description": "Set of routing rules",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "custom-rules": {
+          "description": "Set of rules, with which the request is matched.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "conditions": {
+                "description": "All the conditions need to match in order for the rule to be applied",
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "header-name": {
+                          "type": "string",
+                          "minLength": 2
+                        },
+                        "exists": {
+                          "type": "boolean",
+                          "description": "If set to false, the condition is fulfilled if the header is missing.",
+                          "default": "true"
+                        },
+                        "header-value": {
+                          "type": "string",
+                          "minLength": 2,
+                          "description": "regex to which the header must match in order for the condition to be fulfilled"
+                        }
+                      },
+                      "required": [
+                        "header-name"
+                      ],
+                      "if": {
+                        "properties": {
+                          "exists": {
+                            "const": false
+                          }
+                        },
+                        "required": [
+                          "exists"
+                        ]
+                      },
+                      "then": {
+                        "not": {
+                          "required": [
+                            "header-value"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "custom-class": {
+                          "type": "string",
+                          "description": "Name of the class, that implements the RoutingConditionInterface interface.",
+                          "minLength": 3
+                        },
+                        "url": {
+                          "type": "string",
+                          "minLength": 3,
+                          "description": "URL from which it is possible to downlaod a .zip file that contains all the jars required for your content routing"
+                        }
+                      },
+                      "required": [
+                        "custom-class",
+                        "url"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "topic": {
+                "description": "Topic to which messages will be written to if the rule is triggered",
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "topic-name"
+                ],
+                "properties": {
+                  "topic-name": {
+                    "minLength": 3,
+                    "maxLength": 20,
+                    "type": "string"
+                  },
+                  "replicationFactor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10
+                  },
+                  "partitionNumber": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 7
+                  }
+                }
+              }
+            },
+            "required": [
+              "topic",
+              "conditions"
+            ]
+          }
+        },
+        "default-topic": {
+          "description": "Topic to which messages will be written to if none of the rules can be applied",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "topic-name": {
+              "minLength": 3,
+              "maxLength": 20,
+              "type": "string"
+            },
+            "replicationFactor": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            },
+            "partitionNumber": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            }
+          },
+          "required": [
+            "topic-name"
+          ]
+        }
+      },
+      "required": [
+        "default-topic"
+      ]
+    },
+    {
+      "description": "Custom class that returns the topic name",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "type": "string",
+          "minLength": 3
+        },
+        "custom-class": {
+          "type": "string",
+          "minLength": 3
+        }
+      },
+      "required": [
+        "url",
+        "custom-class"
+      ]
+    }
+  ]
+}

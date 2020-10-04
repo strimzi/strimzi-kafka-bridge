@@ -15,6 +15,9 @@ import java.util.stream.Collectors;
  */
 public class HttpConfig extends AbstractConfig {
 
+    private static final String ENV_ROUTING_CONFIG_MAP_NAME = "ROUTING_CONFIG_MAP";
+    private static final String ENV_RATE_LIMITING_CONFIG_MAP_NAME = "RATE_LIMITING_CONFIG_MAP";
+
     public static final String HTTP_CONFIG_PREFIX = "http.";
 
     public static final String HTTP_ENABLED = HTTP_CONFIG_PREFIX + "enabled";
@@ -29,6 +32,9 @@ public class HttpConfig extends AbstractConfig {
     public static final String DEFAULT_HOST = "0.0.0.0";
     public static final int DEFAULT_PORT = 8080;
     public static final long DEFAULT_CONSUMER_TIMEOUT = -1L;
+
+    private boolean errorWhileRateLimiting = false;
+    private boolean errorWhileContentRouting = false;
 
     /**
      * Constructor
@@ -87,6 +93,34 @@ public class HttpConfig extends AbstractConfig {
     public String getCorsAllowedMethods() {
         return (String) this.config.getOrDefault(HTTP_CORS_ALLOWED_METHODS, "GET,POST,PUT,DELETE,OPTIONS,PATCH");
     }
+    
+    /**
+     * @return if content based routing is enabled
+     */
+    public boolean isRoutingEnabled() {
+        if (System.getenv().containsKey(ENV_ROUTING_CONFIG_MAP_NAME) && !this.errorWhileContentRouting) {
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * @return if content rate  limiting is enabled
+     */
+    public boolean isRateLimitingEnabled() {
+        if (System.getenv().containsKey(ENV_RATE_LIMITING_CONFIG_MAP_NAME) && !this.errorWhileRateLimiting) {
+            return true;
+        }
+        return false;
+    }
+    
+    public String getEnvironmentRlConfigMapName() {
+        return ENV_RATE_LIMITING_CONFIG_MAP_NAME;
+    }
+    
+    public String getEnvironmentCbrConfigMapName() {
+        return ENV_ROUTING_CONFIG_MAP_NAME;
+    }
 
     /**
      * Loads HTTP related configuration parameters from a related map
@@ -106,5 +140,13 @@ public class HttpConfig extends AbstractConfig {
         return "HttpConfig(" +
                 "config=" + this.config +
                 ")";
+    }
+    
+    public void setErrorWhileRateLimiting() {
+        this.errorWhileRateLimiting = true;
+    }
+    
+    public void setErrorWhileContentRouting() {
+        this.errorWhileContentRouting = true;
     }
 }

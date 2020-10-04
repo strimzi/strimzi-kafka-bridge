@@ -11,6 +11,7 @@ package io.strimzi.kafka.bridge.http;
 public enum HttpOpenApiOperations {
 
     SEND("send"),
+    SEND_WITH_CBR_RULES("sendWithCbrRules"),
     SEND_TO_PARTITION("sendToPartition"),
     CREATE_CONSUMER("createConsumer"),
     DELETE_CONSUMER("deleteConsumer"),

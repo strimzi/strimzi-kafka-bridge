@@ -9,7 +9,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import io.strimzi.kafka.bridge.amqp.AmqpConfig;
+import io.strimzi.kafka.bridge.contentRouting.RoutingPolicy;
 import io.strimzi.kafka.bridge.http.HttpConfig;
+import io.strimzi.kafka.bridge.rateLimiting.RateLimitingPolicy;
 
 /**
  * Bridge configuration properties
@@ -24,6 +26,8 @@ public class BridgeConfig extends AbstractConfig {
     private KafkaConfig kafkaConfig;
     private AmqpConfig amqpConfig;
     private HttpConfig httpConfig;
+    private RoutingPolicy routingPolicy;
+    private RateLimitingPolicy rateLimitingPolicy;
 
     /**
      * Constructor
@@ -85,6 +89,8 @@ public class BridgeConfig extends AbstractConfig {
                 ",kafkaConfig=" + this.kafkaConfig +
                 ",amqpConfig=" + this.amqpConfig +
                 ",httpConfig=" + this.httpConfig +
+                ",rlConfig=" + this.rateLimitingPolicy +
+                ",cbrConfig=" + this.routingPolicy +
                 ")";
     }
 
@@ -102,5 +108,21 @@ public class BridgeConfig extends AbstractConfig {
         } else {
             return config.get(BridgeConfig.TRACING_TYPE).toString();
         }
+    }
+    
+    public void setRoutingPolicy(RoutingPolicy routingPolicy) {
+        this.routingPolicy = routingPolicy;
+    }
+    
+    public RoutingPolicy getRoutingPolicy() {
+        return this.routingPolicy;
+    }
+    
+    public void setRateLimitingPolicy(RateLimitingPolicy rateLimitingPolicy) {
+        this.rateLimitingPolicy = rateLimitingPolicy;
+    }
+    
+    public RateLimitingPolicy getRateLimitingPolicy() {
+        return this.rateLimitingPolicy;
     }
 }
