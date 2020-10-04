@@ -78,13 +78,13 @@ public abstract class HttpBridgeTestBase {
 
             kafkaUri = kafkaContainer.getBootstrapServers();
 
-            config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
             adminClientFacade = AdminClientFacade.create(kafkaUri);
         } else {
             // else use external kafka
             kafkaUri = "localhost:9092";
         }
 
+        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
@@ -161,5 +161,10 @@ public abstract class HttpBridgeTestBase {
 
         Collection<String> topics = adminClientFacade.listTopic();
         adminClientFacade.deleteTopics(topics);
+    }
+
+    protected String generateRandomConsumerGroupName() {
+        int salt = new Random().nextInt(Integer.MAX_VALUE);
+        return "my-group-" + salt;
     }
 }

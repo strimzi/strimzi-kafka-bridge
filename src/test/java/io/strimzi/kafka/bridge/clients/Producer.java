@@ -50,16 +50,16 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
 
     @Override
     protected void handleClient() {
-        LOGGER.info("Creating instance of Vert.x for the client " + this.getClass().getName());
+        LOGGER.info("Creating instance of Vert.x for the client {}", this.getClass().getName());
 
-        LOGGER.info("Producer is starting with following properties: " + properties.toString());
+        LOGGER.info("Producer is starting with following properties: {}", properties.toString());
 
         KafkaProducer<String, String> producer = KafkaProducer.create(vertx, properties);
 
         if (msgCntPredicate.test(-1)) {
             vertx.eventBus().consumer(clientName, msg -> {
                 if (msg.body().equals("stop")) {
-                    LOGGER.info("Received stop command! Produced messages: " + numSent.get());
+                    LOGGER.info("Received stop command! Produced messages: {}", numSent.get());
                     resultPromise.complete(numSent.get());
                 }
             });
@@ -71,7 +71,7 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
 
     @Override
     public void close() {
-        LOGGER.info("Closing Vert.x instance for the client {}" +  this.getClass().getName());
+        LOGGER.info("Closing Vert.x instance for the client {}", this.getClass().getName());
         if (vertx != null) {
             vertx.close();
         }
@@ -94,14 +94,13 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
             producer.send(record, done -> {
                 if (done.succeeded()) {
                     RecordMetadata recordMetadata = done.result();
-                    LOGGER.info("Message " + record.value() + " written on topic=" + recordMetadata.getTopic() +
-                        ", partition=" + recordMetadata.getPartition() +
-                        ", offset=" + recordMetadata.getOffset());
-
+                    LOGGER.info("Message {} written on topic={}, partition={}, offset={}",
+                            record.value(), recordMetadata.getTopic(), recordMetadata.getPartition(), recordMetadata.getOffset());
+                    
                     numSent.getAndIncrement();
 
                     if (msgCntPredicate.test(numSent.get())) {
-                        LOGGER.info("Producer produced " + numSent.get() + " messages");
+                        LOGGER.info("Producer produced {} messages", numSent.get());
                         resultPromise.complete(numSent.get());
                     }
 
@@ -110,7 +109,7 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
                     }
 
                 } else {
-                    LOGGER.error("Producer cannot connect to topic " + topic + ":" + done.cause().toString());
+                    LOGGER.error("Producer cannot connect to topic {}", topic, done.cause());
                     sendNext(producer, topic, headers, message, partition, withNullKeyRecord);
                 }
             });

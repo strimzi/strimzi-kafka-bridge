@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.19.0
+
+* Fixed bug not allowing to send records with `null` values
+* Added support for Kafka headers on records to send
+* Refactoring around overall tests suite
+* Fixed some other minor bugs
+
 ## 0.18.0
 
 * Use Java 11 as the Java runtime

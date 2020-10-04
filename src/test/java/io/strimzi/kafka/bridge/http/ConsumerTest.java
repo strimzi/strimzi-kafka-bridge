@@ -758,8 +758,8 @@ public class ConsumerTest extends HttpBridgeTestBase {
                             assertThat(kafkaPartition, notNullValue());
                             assertThat(key, nullValue());
                         }
+                        consume.complete(true);
                     });
-                    consume.complete(true);
                 });
 
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
@@ -1631,10 +1631,12 @@ public class ConsumerTest extends HttpBridgeTestBase {
         name = generateRandomConsumerName();
         consumerWithEarliestResetJson.put("name", name);
         consumerJson.put("name", name);
+        groupId = generateRandomConsumerGroupName();
     }
 
     private String generateRandomConsumerName() {
         int salt = new Random().nextInt(Integer.MAX_VALUE);
-        return "my-kafka-consumer" + salt;
+        return "my-kafka-consumer-" + salt;
     }
+
 }
