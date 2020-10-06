@@ -491,6 +491,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             if (readFile.succeeded()) {
                 HttpUtils.sendFile(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, "openapiv2.json");
             } else {
+                log.error("Failed to read OpenAPI JSON file", readFile.cause());
                 HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     readFile.cause().getMessage());
