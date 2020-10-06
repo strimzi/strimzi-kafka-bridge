@@ -73,9 +73,6 @@ public class OtherServicesTest extends HttpBridgeTestBase {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        LOGGER.info("error code = {}", error.getCode());
-                        LOGGER.info("error message = {}", error.getMessage());
                         assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
 
