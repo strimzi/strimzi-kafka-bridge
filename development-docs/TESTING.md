@@ -16,7 +16,7 @@ This document gives a detailed breakdown of the testing processes and testing op
 
 ## Pre-requisites
 
-To run any tests you need build whole project. You can achieve that with following command  `mvn clean install -DskipTests` 
+To run any tests you need to build whole project. You can achieve that with following command - `mvn clean install -DskipTests` 
 in root directory of the project.
 
 The next requirement is to have [docker](https://docs.docker.com/get-docker/) installed, because we use test-containers. 
@@ -26,14 +26,14 @@ In case of interest you can check our implementation of Strimzi `Kafka` containe
 
 You can find tests inside `src.test.java` package. Moreover we have the auxiliary classes and the most notable one are:
  
-- `src.test.java.io.strimzi.kafka.bridge.utils` = static methods
-- `src.test.java.io.strimzi.kafka.bridge.clients` = clients for testing overall communication of the `Kafka Bridge`
-- `src.test.java.io.strimzi.kafka.bridge.facades` = encapsulation of the standalone `Kafka` and `AdminClient` instance
+- `Utils` static methods
+- `Clients` clients for testing overall communication of the `Kafka Bridge`
+- `Facades` encapsulation of the standalone `Kafka` and `AdminClient` instance
 
 Furthermore we divide our test suite on two separate parts:
 
-1. `src.test.java.io.strimzi.kafka.bridge.http` = package, where you can find all test cases related to the `Http Kafka Bridge`
-2. `src.test.java.io.strimzi.kafka.bridge.amqp` = package, where you can find all tests cases related to the `Amqp Kafka Bridge`
+1. `Http`package, where you can find all test cases related to the `Http Kafka Bridge`
+2. `Amqp`package, where you can find all tests cases related to the `Amqp Kafka Bridge`
 
 ## Approaches
 
@@ -46,12 +46,12 @@ the following  terminology is needed.
 - for `Amqp Kafka Bridge` we use [KafkaFacade](https://github.com/strimzi/strimzi-kafka-bridge/blob/master/src/test/java/io/strimzi/kafka/bridge/facades/KafkaFacade.java) 
 
 `Kafka Bridge` =
- -  we use for deployment `Http Kafka Bridge` and `Amqp Kafka Bridge` the [Vert.x](https://vertx.io/) 
+ - for deployment of the `Http Kafka Bridge` and `Amqp Kafka Bridge` we are using [Vert.x](https://vertx.io/) 
 
 #### Standalone 
 `Kafka` 
  - we use latest version of the `Kafka` and you can start the `Kafka` instance by the `zookeeper-server-start.sh` and
-`kafka-server-start.sh`, which can be for instance download from [this](https://kafka.apache.org/downloads) site
+`kafka-server-start.sh`, which can be for instance downloaded from [this](https://kafka.apache.org/downloads) site
 
 `Kafka Bridge` 
  - start `Kafka Bridge` instance using bash script located `target/kafka-bridge-{version}/kafka-bridge-{version}/bin/kafka_bridge_run.sh` 
@@ -60,10 +60,12 @@ with following command `kafka_bridge_run.sh --config-file ../config/application.
 ----  
 The approaches are as follows:
 
-1. Using in-memory `Kafka` and in-memory `Kafka Bridge`
-2. Using standalone `Kafka` and standalone `Kafka Bridge`
-3. Using in-memory `Kafka` and standalone `Kafka Bridge`
-4. Using standalone `Kafka` and in-memory `Kafka Bridge`
+|  Approach	| Supported |
+|---	|---	| 
+|   1. Using in-memory `Kafka` and in-memory `Kafka Bridge` | Yes
+|   2. Using standalone `Kafka` and standalone `Kafka Bridge` | Yes
+|   3. Using in-memory `Kafka` and standalone `Kafka Bridge` | No
+|   4. Using standalone `Kafka` and in-memory `Kafka Bridge` | No
 
 In our CI we are currently testing the first approach which is the most important. Also, in the future we are planning 
 to add the second option. Rest of these approaches are not so essential. 
@@ -84,7 +86,7 @@ In this phase we perform:
 * Deploy the WebClient
 
 Everything is setup in the `HttpBridgeTestBase` class. In the static block we instantiate the Strimzi `Kafka` container,
-AdminClient to be shared across all test suites. In @Before we create our `Kafka` client, `Kafka Bridge` instance and lastly
+AdminClient to be shared across all test suites. In `@Before` we create our `Kafka` client, `Kafka Bridge` instance and lastly
 Webclient, which is used for communication with `Kafka Bridge` REST API.
 
 Setup in-memory Strimzi `Kafka` container and in-memory `Kafka Bridge` example:
