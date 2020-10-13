@@ -20,8 +20,8 @@ fi
 echo "Run docu check ..."
 make docu_check
 
-echo "Packaging ..."
-make java_package
+echo "Verifying ..."
+make java_verify
 
 echo "PULL_REQUEST=$PULL_REQUEST"
 echo "TAG=$TAG"
