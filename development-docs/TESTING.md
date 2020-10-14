@@ -19,7 +19,7 @@ This document gives a detailed breakdown of the testing processes and testing op
 To run any tests you need to build whole project. You can achieve that with following command - `mvn clean install -DskipTests` 
 in root directory of the project.
 
-The next requirement is to have [docker](https://docs.docker.com/get-docker/) installed, because we use test-containers. 
+The next requirement is to have [docker](https://docs.docker.com/get-docker/) installed, because we use [test-containers](https://www.testcontainers.org/). 
 In case of interest you can check our implementation of Strimzi `Kafka` container [here](https://github.com/strimzi/strimzi-kafka-operator/tree/master/test-container).
 
 ## Package Structure
@@ -85,7 +85,7 @@ In this phase we perform:
 * Deploy the in-memory `Kafka Bridge` or standalone `Kafka-Bridge`
 * Deploy the WebClient
 
-Everything is setup in the `HttpBridgeTestBase` class. In the static block we instantiate the Strimzi `Kafka` container,
+Everything is setup in the `HttpBridgeTestAbstract` class. In the static block we instantiate the Strimzi `Kafka` container,
 AdminClient to be shared across all test suites. In `@Before` we create our `Kafka` client, `Kafka Bridge` instance and lastly
 Webclient, which is used for communication with `Kafka Bridge` REST API.
 
@@ -183,6 +183,6 @@ System tests can be configured by several environment variables, which are loade
 
 ## Running single test class
 
-Use the `verify` build goal and provide `-Dit.test=TestClassName[#testMethodName]` system property.
+Use the `test` build goal and provide `-Dtest=TestClassName[#testMethodName]` system property.
 
-    mvn verify -Dit.test=ConsumerTest#receiveSimpleMessage
+    mvn test -Dtest=SeekTest#seekToNotExistingTopic

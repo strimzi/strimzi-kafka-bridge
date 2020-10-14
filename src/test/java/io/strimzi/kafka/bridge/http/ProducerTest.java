@@ -8,7 +8,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.clients.Consumer;
 import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
-import io.strimzi.kafka.bridge.http.base.HttpBridgeTestBase;
+import io.strimzi.kafka.bridge.http.base.HttpBridgeTestAbstract;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.KafkaJsonDeserializer;
 import io.vertx.core.AsyncResult;
@@ -45,7 +45,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-public class ProducerTest extends HttpBridgeTestBase {
+public class ProducerTest extends HttpBridgeTestAbstract {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProducerTest.class);
 
@@ -313,9 +313,9 @@ public class ProducerTest extends HttpBridgeTestBase {
 
         this.count = 0;
 
-        vertx.setPeriodic(HttpBridgeTestBase.PERIODIC_DELAY, timerId -> {
+        vertx.setPeriodic(HttpBridgeTestAbstract.PERIODIC_DELAY, timerId -> {
 
-            if (this.count < HttpBridgeTestBase.PERIODIC_MAX_MESSAGE) {
+            if (this.count < HttpBridgeTestAbstract.PERIODIC_MAX_MESSAGE) {
 
                 JsonArray records = new JsonArray();
                 JsonObject json = new JsonObject();

@@ -50,9 +50,9 @@ import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
 @Tag(HTTP_BRIDGE)
-public abstract class HttpBridgeTestBase {
+public abstract class HttpBridgeTestAbstract {
 
-    protected static final Logger LOGGER = LogManager.getLogger(HttpBridgeTestBase.class);
+    protected static final Logger LOGGER = LogManager.getLogger(HttpBridgeTestAbstract.class);
     protected static Map<String, Object> config = new HashMap<>();
 
     // for periodic/multiple messages test
