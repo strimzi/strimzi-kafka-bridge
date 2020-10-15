@@ -6,7 +6,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.http.base.HttpBridgeTestBase;
+import io.strimzi.kafka.bridge.http.base.HttpBridgeTestAbstract;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonArray;
@@ -28,7 +28,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class SeekTest extends HttpBridgeTestBase {
+public class SeekTest extends HttpBridgeTestAbstract {
 
     private String name = "my-kafka-consumer";
     private String groupId = "my-group";

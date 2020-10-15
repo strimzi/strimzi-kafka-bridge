@@ -5,7 +5,7 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.strimzi.kafka.bridge.http.base.HttpBridgeTestBase;
+import io.strimzi.kafka.bridge.http.base.HttpBridgeTestAbstract;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
@@ -19,7 +19,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-public class OtherServicesTest extends HttpBridgeTestBase {
+public class OtherServicesTest extends HttpBridgeTestAbstract {
 
     @Test
     void readyTest(VertxTestContext context) throws InterruptedException {
