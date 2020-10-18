@@ -240,14 +240,15 @@ public class Application {
     private static JmxCollectorRegistry getJmxCollectorRegistry()
             throws MalformedObjectNameException, IOException {
         InputStream is = Application.class.getClassLoader().getResourceAsStream("jmx_metrics_config.yaml");
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-        try {
+        if (is == null) {
+            return null;
+        }
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
             String yaml = reader
                     .lines()
                     .collect(Collectors.joining("\n"));
             return new JmxCollectorRegistry(yaml);
-        } finally {
-            reader.close();
         }
     }
 
