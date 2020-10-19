@@ -10,7 +10,6 @@ import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.Serializer;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.Map;
 
@@ -28,25 +27,11 @@ public class DefaultSerializer<T> implements Serializer<T> {
         if (data == null)
             return null;
 
-        ByteArrayOutputStream b = new ByteArrayOutputStream();
-        ObjectOutputStream o = null;
-
-        try {
-            o = new ObjectOutputStream(b);
+        try (ByteArrayOutputStream b = new ByteArrayOutputStream(); ObjectOutputStream o = new ObjectOutputStream(b)) {
             o.writeObject(data);
             return b.toByteArray();
         } catch (Exception e) {
             throw new SerializationException("Error when serializing", e);
-        } finally {
-
-            try {
-                b.close();
-                if (o != null) {
-                    o.close();
-                }
-            } catch (IOException ioEx) {
-                throw new RuntimeException("Failed to close streams", ioEx);
-            }
         }
     }
 
