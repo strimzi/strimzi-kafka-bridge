@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertTrue;
 
 class OffsetTrackerTest {
@@ -66,28 +68,28 @@ class OffsetTrackerTest {
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 0);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(0L));
 
         log.info("0_1 deliverd");
         offsetTracker.delivered(0, 1);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 3);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(3L));
 
         log.info("0_4 deliverd");
         offsetTracker.delivered(0, 4);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 4);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(4L));
 
         log.info("0_5 deliverd");
         offsetTracker.delivered(0, 5);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 5);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(5L));
 
         offsetTracker.clear();
     }
@@ -106,42 +108,42 @@ class OffsetTrackerTest {
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 0);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(0L));
 
         log.info("0_1 deliverd");
         offsetTracker.delivered(0, 1);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 1);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(1L));
 
         log.info("0_2 deliverd");
         offsetTracker.delivered(0, 2);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 2);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(2L));
 
         log.info("0_3 deliverd");
         offsetTracker.delivered(0, 3);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 3);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(3L));
 
         log.info("0_4 deliverd");
         offsetTracker.delivered(0, 4);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 4);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(4L));
 
         log.info("0_5 deliverd");
         offsetTracker.delivered(0, 5);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 5);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(5L));
 
         offsetTracker.clear();
     }
@@ -160,14 +162,14 @@ class OffsetTrackerTest {
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 2);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(2L));
 
         log.info("0_3 deliverd");
         offsetTracker.delivered(0, 3);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 3);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(3L));
 
         log.info("0_0 deliverd");
         offsetTracker.delivered(0, 0);
@@ -188,14 +190,14 @@ class OffsetTrackerTest {
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 4);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(4L));
 
         log.info("0_5 deliverd");
         offsetTracker.delivered(0, 5);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 5);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(5L));
 
         offsetTracker.clear();
     }
@@ -214,42 +216,42 @@ class OffsetTrackerTest {
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 0);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(0L));
 
         log.info("0_1 deliverd");
         offsetTracker.delivered(0, 1);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 1);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(1L));
 
         log.info("0_2 deliverd");
         offsetTracker.delivered(0, 2);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 2);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(2L));
 
         log.info("0_3 deliverd");
         offsetTracker.delivered(0, 3);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 3);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(3L));
 
         log.info("0_4 deliverd");
         offsetTracker.delivered(0, 4);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 4);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(4L));
 
         log.info("0_5 deliverd");
         offsetTracker.delivered(0, 5);
         this.offsets = offsetTracker.getOffsets();
         printOffsetsToCommit(this.offsets);
         offsetTracker.commit(this.offsets);
-        assertTrue(this.offsets.get(new TopicPartition("my_topic", 0)).offset() == 5);
+        assertThat(this.offsets.get(new TopicPartition("my_topic", 0)).offset(), is(5L));
 
         offsetTracker.clear();
     }
