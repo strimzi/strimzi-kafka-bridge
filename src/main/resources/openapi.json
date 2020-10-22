@@ -1107,7 +1107,7 @@
                 "operationId": "getOffsets",
                 "responses": {
                     "200": {
-                        "description": "a summary of the offsets",
+                        "description": "A summary of the offsets of the topic partition.",
                         "content": {
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
@@ -1141,7 +1141,6 @@
                     "name": "topicname",
                     "in": "path",
                     "description": "Name of the topic containing the partition.",
-
                     "required": true,
                     "schema": {
                         "type": "string"
