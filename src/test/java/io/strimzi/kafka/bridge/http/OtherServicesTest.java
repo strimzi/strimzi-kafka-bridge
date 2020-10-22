@@ -104,6 +104,7 @@ public class OtherServicesTest extends HttpBridgeTestAbstract {
                         assertThat(paths.containsKey("/topics/{topicname}"), is(true));
                         assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/topics/{topicname}").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.SEND.toString()));
                         assertThat(paths.containsKey("/topics/{topicname}/partitions/{partitionid}"), is(true));
+                        assertThat(paths.containsKey("/topics/{topicname}/partitions/{partitionid}/offsets"), is(true));
                         assertThat(paths.containsKey("/topics/{topicname}/partitions"), is(true));
                         assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/topics/{topicname}/partitions/{partitionid}").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.SEND_TO_PARTITION.toString()));
                         assertThat(paths.containsKey("/healthy"), is(true));
@@ -115,7 +116,7 @@ public class OtherServicesTest extends HttpBridgeTestAbstract {
                         assertThat(paths.containsKey("/"), is(true));
                         assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/").getJsonObject("get").getString("operationId"), is(HttpOpenApiOperations.INFO.toString()));
                         assertThat(paths.containsKey("/karel"), is(false));
-                        assertThat(bridgeResponse.getJsonObject("definitions").getMap().size(), is(24));
+                        assertThat(bridgeResponse.getJsonObject("definitions").getMap().size(), is(25));
                         assertThat(bridgeResponse.getJsonArray("tags").size(), is(4));
                     });
                     context.completeNow();

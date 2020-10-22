@@ -1464,4 +1464,69 @@ __required__|Name of the topic to send records to or retrieve metadata from.|str
 ----
 
 
+[[_getoffsets]]
+=== GET /topics/{topicname}/partitions/{partitionid}/offsets
+
+==== Description
+Retrieves a summary of the offsets for the topic partition.
+
+
+==== Parameters
+
+[options="header", cols=".^2a,.^3a,.^9a,.^4a"]
+|===
+|Type|Name|Description|Schema
+|**Path**|**partitionid** +
+__required__|ID of the partition.|integer
+|**Path**|**topicname** +
+__required__|Name of the topic containing the partition.|string
+|===
+
+
+==== Responses
+
+[options="header", cols=".^2a,.^14a,.^4a"]
+|===
+|HTTP Code|Description|Schema
+|**200**|A summary of the offsets for the topic partition.|<<_offsetssummary,OffsetsSummary>>
+|**404**|The specified topic partition was not found.|<<_error,Error>>
+|===
+
+
+==== Produces
+
+* `application/vnd.kafka.v2+json`
+
+
+==== Tags
+
+* Topics
+
+
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "beginning_offset" : 10,
+    "end_offset" : 50
+  }
+}
+----
+
+
+===== Response 404
+[source,json]
+----
+{
+  "application/vnd.kafka.v2+json" : {
+    "error_code" : 404,
+    "message" : "The specified topic partition was not found."
+  }
+}
+----
+
+
 
