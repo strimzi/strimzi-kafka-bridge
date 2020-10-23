@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.20.0
+
+* Added a new Admin Client feature to get begin/end offsets for topic partitions
+
 ## 0.19.0
 
 * Fixed bug not allowing to send records with `null` values
