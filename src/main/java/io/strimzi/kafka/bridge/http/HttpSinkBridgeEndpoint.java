@@ -366,6 +366,13 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         this.setAssignHandler(assignResult -> {
             if (assignResult.succeeded()) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+            } else {
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.CONFLICT.code(),
+                        assignResult.cause().getMessage()
+                );
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.CONFLICT.code(),
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         });
 

@@ -198,7 +198,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
-     * Unubscribe all the topics which the consumer currently subscribes
+     * Unsubscribe all the topics which the consumer currently subscribes
      */
     protected void unsubscribe() {
         log.info("Unsubscribe from topics {}", this.topicSubscriptions);
@@ -360,6 +360,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             Optional<PartitionInfo> requestedPartitionInfo =
                     availablePartitions.stream()
                             .filter(p -> p.getTopic().equals(topicSubscription.getTopic()) &&
+                                    topicSubscription.getPartition() != null &&
                                     p.getPartition() == topicSubscription.getPartition())
                             .findFirst();
 

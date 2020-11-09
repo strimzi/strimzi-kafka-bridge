@@ -224,7 +224,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
 
         consumerService()
                 .createConsumer(context, groupId, json)
-                .subscribeConsumer(context, groupId, name, topic, topic2);
+                .subscribeConsumer(context, groupId, name, topicsRoot);
 
         // poll to subscribe
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
@@ -292,6 +292,60 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                     consume.complete(true);
                 });
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+        context.completeNow();
+    }
+
+    @Test
+    void assignTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topicToSub = "subscribe-topic";
+
+        adminClientFacade.createTopic(topicToSub, 4, 1);
+
+        assertThat(adminClientFacade.listTopic().size(), is(1));
+
+        String name = "my-kafka-consumer-assign";
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("format", "json");
+
+        JsonObject partitionsRoot = new JsonObject();
+        JsonArray partitions = new JsonArray();
+        JsonObject part0 = new JsonObject();
+        part0.put("topic", topicToSub);
+        part0.put("partition", 0);
+
+        JsonObject part1 = new JsonObject();
+        part1.put("topic", topicToSub);
+        part1.put("partition", 1);
+        partitions.add(part0);
+        partitions.add(part1);
+
+        partitionsRoot.put("partitions", partitions);
+
+        consumerService()
+                .createConsumer(context, groupId, json)
+                .subscribeConsumer(context, groupId, name, topicToSub);
+
+        CompletableFuture<Boolean> assignCF = new CompletableFuture<>();
+        consumerService()
+                .assignRequest(groupId, name, partitionsRoot)
+                .sendJsonObject(partitionsRoot, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.CONFLICT.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.CONFLICT.code()));
+                        assertThat(error.getMessage(), is("Subscription to topics, partitions and pattern are mutually exclusive"));
+                    });
+                    assignCF.complete(true);
+                });
+
+        assignCF.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
         consumerService()
                 .deleteConsumer(context, groupId, name);
         context.completeNow();
