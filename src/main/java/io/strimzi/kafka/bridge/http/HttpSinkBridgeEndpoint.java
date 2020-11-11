@@ -248,6 +248,16 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     }
 
     private void doPoll(RoutingContext routingContext) {
+        if (!topicSubscriptionsPatternUsed && topicSubscriptions.isEmpty()) {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    "Consumer is not subscribed to any topics or assigned any partitions"
+            );
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            return;
+        }
+
         String accept = routingContext.request().getHeader("Accept");
 
         // check that the accepted body by the client is the same as the format on creation

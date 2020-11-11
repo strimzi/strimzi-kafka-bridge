@@ -14,6 +14,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -261,6 +262,38 @@ public class ConsumerSubscriptionTest extends HttpBridgeTestAbstract {
 
         consumerService()
             .deleteConsumer(context, groupId, name);
+        context.completeNow();
+    }
+
+    @Test
+    void tryToPollWithoutSubscriptionTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String name = "my-kafka-consumer-list";
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("format", "json");
+
+        consumerService()
+                .createConsumer(context, groupId, json);
+        // poll
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+        consumerService()
+                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
+                        assertThat(error.getCode(), CoreMatchers.is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
+                        assertThat(error.getMessage(), CoreMatchers.is("Consumer is not subscribed to any topics or assigned any partitions"));
+
+                    });
+                    consume.complete(true);
+                });
+        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+                .deleteConsumer(context, groupId, name);
         context.completeNow();
     }
 
