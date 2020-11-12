@@ -3,6 +3,7 @@
 ## 0.20.0
 
 * Added a new Admin Client feature to get begin/end offsets for topic partitions
+* Move from Docker Hub to Quay.io as our container registry
 
 ## 0.19.0
 
