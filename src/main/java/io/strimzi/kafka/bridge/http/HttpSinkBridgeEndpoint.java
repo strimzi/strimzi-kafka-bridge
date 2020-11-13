@@ -248,7 +248,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     }
 
     private void doPoll(RoutingContext routingContext) {
-        if (!topicSubscriptionsPatternUsed && topicSubscriptions.isEmpty()) {
+        if (topicSubscriptionsPattern == null && topicSubscriptions.isEmpty()) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     "Consumer is not subscribed to any topics or assigned any partitions"
