@@ -299,9 +299,9 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
 
     @Test
     void assignTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topicToSub = "subscribe-topic";
+        String topic = "subscribe-and-assign-topic";
 
-        adminClientFacade.createTopic(topicToSub, 4, 1);
+        adminClientFacade.createTopic(topic, 4, 1);
 
         assertThat(adminClientFacade.listTopic().size(), is(1));
 
@@ -314,11 +314,11 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
         JsonObject partitionsRoot = new JsonObject();
         JsonArray partitions = new JsonArray();
         JsonObject part0 = new JsonObject();
-        part0.put("topic", topicToSub);
+        part0.put("topic", topic);
         part0.put("partition", 0);
 
         JsonObject part1 = new JsonObject();
-        part1.put("topic", topicToSub);
+        part1.put("topic", topic);
         part1.put("partition", 1);
         partitions.add(part0);
         partitions.add(part1);
@@ -327,7 +327,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
 
         consumerService()
                 .createConsumer(context, groupId, json)
-                .subscribeConsumer(context, groupId, name, topicToSub);
+                .subscribeConsumer(context, groupId, name, topic);
 
         CompletableFuture<Boolean> assignCF = new CompletableFuture<>();
         consumerService()
