@@ -367,7 +367,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             if (assignResult.succeeded()) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
-                if (assignResult.cause().getMessage().equals("Subscription to topics, partitions and pattern are mutually exclusive")) {
+                if (assignResult.cause() instanceof IllegalStateException) {
                     HttpBridgeError error = new HttpBridgeError(
                             HttpResponseStatus.CONFLICT.code(),
                             assignResult.cause().getMessage()
