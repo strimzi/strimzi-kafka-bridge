@@ -69,6 +69,10 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected List<SinkTopicSubscription> topicSubscriptions;
     protected Pattern topicSubscriptionsPattern;
 
+    protected boolean subscribed;
+    protected boolean assigned;
+
+
     private int recordIndex;
     private int batchSize;
 
@@ -115,6 +119,8 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.format = format;
         this.keyDeserializer = keyDeserializer;
         this.valueDeserializer = valueDeserializer;
+        this.subscribed = false;
+        this.assigned = false;
     }
 
     @Override
@@ -191,6 +197,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.shouldAttachSubscriberHandler = shouldAttachHandler;
 
         log.info("Subscribe to topics {}", this.topicSubscriptions);
+        this.subscribed = true;
         this.setPartitionsAssignmentHandlers();
 
         Set<String> topics = this.topicSubscriptions.stream().map(ts -> ts.getTopic()).collect(Collectors.toSet());
@@ -204,6 +211,8 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         log.info("Unsubscribe from topics {}", this.topicSubscriptions);
         topicSubscriptions.clear();
         topicSubscriptionsPattern = null;
+        this.subscribed = false;
+        this.assigned = false;
         this.consumer.unsubscribe(this::unsubscribeHandler);
     }
 
@@ -228,6 +237,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         log.info("Subscribe to topics with pattern {}", pattern);
         this.setPartitionsAssignmentHandlers();
+        this.subscribed = true;
         this.consumer.subscribe(pattern, this::subscribeHandler);
     }
 
@@ -276,6 +286,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.shouldAttachSubscriberHandler = shouldAttachHandler;
 
         log.info("Assigning to topics partitions {}", this.topicSubscriptions);
+        this.assigned = true;
         this.partitionsAssignmentAndSeek();
     }
 

@@ -339,7 +339,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.CONFLICT.code()));
                         assertThat(error.getCode(), is(HttpResponseStatus.CONFLICT.code()));
-                        assertThat(error.getMessage(), is("Subscription to topics, partitions and pattern are mutually exclusive"));
+                        assertThat(error.getMessage(), is("Subscriptions to topics, partitions, and patterns are mutually exclusive."));
                     });
                     assignCF.complete(true);
                 });
