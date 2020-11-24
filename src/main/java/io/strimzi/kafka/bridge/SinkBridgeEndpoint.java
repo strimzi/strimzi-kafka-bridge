@@ -67,6 +67,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected String groupId;
     protected List<SinkTopicSubscription> topicSubscriptions;
+    protected Pattern topicSubscriptionsPattern;
 
     private int recordIndex;
     private int batchSize;
@@ -110,6 +111,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.vertx = vertx;
         this.bridgeConfig = bridgeConfig;
         this.topicSubscriptions = new ArrayList<>();
+        this.topicSubscriptionsPattern = null;
         this.format = format;
         this.keyDeserializer = keyDeserializer;
         this.valueDeserializer = valueDeserializer;
@@ -199,9 +201,9 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
      * Unubscribe all the topics which the consumer currently subscribes
      */
     protected void unsubscribe() {
-
         log.info("Unsubscribe from topics {}", this.topicSubscriptions);
         topicSubscriptions.clear();
+        topicSubscriptionsPattern = null;
         this.consumer.unsubscribe(this::unsubscribeHandler);
     }
 
@@ -221,6 +223,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
      */
     protected void subscribe(Pattern pattern, boolean shouldAttachHandler) {
 
+        topicSubscriptionsPattern = pattern;
         this.shouldAttachSubscriberHandler = shouldAttachHandler;
 
         log.info("Subscribe to topics with pattern {}", pattern);
