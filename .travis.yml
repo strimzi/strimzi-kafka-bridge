@@ -8,6 +8,15 @@ jobs:
     jdk: openjdk8
   - os: linux
     jdk: openjdk11
+  - build: ppc64le
+    os: linux
+    arch: ppc64le
+    jdk: openjdk11
+    script: mvn install -DskipTests
+    addons:
+      apt:
+        packages:
+        - maven    
   - build: s390x
     os: linux
     arch: s390x
@@ -19,6 +28,7 @@ jobs:
         - maven
   allow_failures:
   - build: s390x
+  - build: ppc64le  
 services:
 - docker
 before_install:
