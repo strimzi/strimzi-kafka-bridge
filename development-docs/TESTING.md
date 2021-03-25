@@ -20,7 +20,7 @@ To run any tests you need to build whole project. You can achieve that with foll
 in root directory of the project.
 
 The next requirement is to have [docker](https://docs.docker.com/get-docker/) installed, because we use [test-containers](https://www.testcontainers.org/). 
-In case of interest you can check our implementation of Strimzi `Kafka` container [here](https://github.com/strimzi/strimzi-kafka-operator/tree/master/test-container).
+In case of interest you can check our implementation of Strimzi `Kafka` container [here](https://github.com/strimzi/strimzi-kafka-operator/tree/main/test-container).
 
 ## Package Structure
 
@@ -42,8 +42,8 @@ the following  terminology is needed.
 
 #### In-memory 
 `Kafka` = 
-- for `Http Kafka Bridge` we use [Strimzi Kafka container]([here](https://github.com/strimzi/strimzi-kafka-operator/tree/master/test-container).)
-- for `Amqp Kafka Bridge` we use [KafkaFacade](https://github.com/strimzi/strimzi-kafka-bridge/blob/master/src/test/java/io/strimzi/kafka/bridge/facades/KafkaFacade.java) 
+- for `Http Kafka Bridge` we use [Strimzi Kafka container]([here](https://github.com/strimzi/strimzi-kafka-operator/tree/main/test-container).)
+- for `Amqp Kafka Bridge` we use [KafkaFacade](https://github.com/strimzi/strimzi-kafka-bridge/blob/main/src/test/java/io/strimzi/kafka/bridge/facades/KafkaFacade.java) 
 
 `Kafka Bridge` =
  - for deployment of the `Http Kafka Bridge` and `Amqp Kafka Bridge` we are using [Vert.x](https://vertx.io/) 
@@ -170,7 +170,7 @@ The following table shows currently used tags:
 There is also a mvn profile for the main groups - `httpbridge`, `amqpbridge` and `all`, but we suggest to use profile with id `all` (default) and then include or exclude specific groups.
 If you want specify the profile, use the `-P` flag - for example `-Phttpbridge`.
 
-All available test groups are listed in [Constants](https://github.com/strimzi/strimzi-kafka-bridge/blob/master/src/test/java/io/strimzi/kafka/bridge/Constants.java) class.
+All available test groups are listed in [Constants](https://github.com/strimzi/strimzi-kafka-bridge/blob/main/src/test/java/io/strimzi/kafka/bridge/Constants.java) class.
 
 ## Environment variables
 

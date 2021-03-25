@@ -3,7 +3,7 @@ include ./Makefile.docker
 include ./Makefile.maven
 
 PROJECT_NAME ?= kafka-bridge
-GITHUB_VERSION ?= master
+GITHUB_VERSION ?= main
 RELEASE_VERSION ?= latest
 
 ifneq ($(RELEASE_VERSION),latest)

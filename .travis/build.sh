@@ -27,17 +27,17 @@ echo "PULL_REQUEST=$PULL_REQUEST"
 echo "TAG=$TAG"
 echo "BRANCH=$BRANCH"
 
-# Docker build and push only if on master, no pull request and "latest" tag
+# Docker build and push only if on main, no pull request and "latest" tag
 if [ "$PULL_REQUEST" != "false" ] ; then
     make docu_html
     make docu_htmlnoheader
 
     echo "Building Pull Request - nothing to push"
-elif [ "$TAG" = "latest" ] && [ "$BRANCH" != "master" ] ; then
+elif [ "$TAG" = "latest" ] && [ "$BRANCH" != "main" ] ; then
     make docu_html
     make docu_htmlnoheader
 
-    echo "Not in master branch and not in release tag - nothing to push"
+    echo "Not in main branch and not in release tag - nothing to push"
 else
     if [ "${MAIN_BUILD}" = "TRUE" ] ; then
         echo "Login into Docker Hub ..."
@@ -52,7 +52,7 @@ else
         echo "Pushing to Docker Hub ..."
         make docker_push
 
-        if [ "$BRANCH" = "master" ]; then
+        if [ "$BRANCH" = "main" ]; then
             make docu_pushtowebsite
         fi
     fi

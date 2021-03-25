@@ -25,6 +25,6 @@ git config user.email "ci@travis.tld"
 
 git add -A
 git commit -s -m "Update Kafka Bridge documentation (Travis CI build ${TRAVIS_BUILD_NUMBER})" --allow-empty
-git push origin master
+git push origin main
 
 popd

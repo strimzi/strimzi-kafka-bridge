@@ -28,7 +28,7 @@ script:
 env:
   global:
   - PULL_REQUEST=${TRAVIS_PULL_REQUEST}
-  - BRANCH=${TRAVIS_BRANCH:-master}
+  - BRANCH=${TRAVIS_BRANCH:-main}
   - TAG=${TRAVIS_TAG:-latest}
   - DOCKER_REGISTRY=quay.io
   - MVN_ARGS="-B"
