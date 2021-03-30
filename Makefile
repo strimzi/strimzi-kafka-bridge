@@ -50,13 +50,13 @@ release_package: java_package
 docu_html: docu_htmlclean docu_check
 	mkdir -p documentation/html
 	$(CP) -vrL documentation/book/images documentation/html/images
-	asciidoctor -v --failure-level WARN -t -dbook -a ProductVersion=$(RELEASE_VERSION) documentation/book/master.adoc -o documentation/html/index.html
+	asciidoctor -v --failure-level WARN -t -dbook -a ProductVersion=$(RELEASE_VERSION) documentation/book/bridge.adoc -o documentation/html/bridge.html
 
 .PHONY: docu_htmlnoheader
 docu_htmlnoheader: docu_htmlnoheaderclean docu_check
 	mkdir -p documentation/htmlnoheader
 	$(CP) -vrL documentation/book/images documentation/htmlnoheader/images
-	asciidoctor -v --failure-level WARN -t -dbook -a ProductVersion=$(RELEASE_VERSION) -s documentation/book/master.adoc -o documentation/htmlnoheader/master.html
+	asciidoctor -v --failure-level WARN -t -dbook -a ProductVersion=$(RELEASE_VERSION) -s documentation/book/bridge.adoc -o documentation/htmlnoheader/bridge.html
 
 .PHONY: docu_api
 docu_api: 
