@@ -8,12 +8,12 @@ eval `ssh-agent -s`
 ssh-add github_deploy_key
 
 git clone git@github.com:strimzi/strimzi.github.io.git /tmp/website
-rm -rf /tmp/website/docs/bridge/developing/images
-rm -rf /tmp/website/docs/bridge/developing/full/images
-cp -v documentation/htmlnoheader/bridge.html /tmp/website/docs/bridge/developing/bridge.html
-cp -v documentation/html/bridge.html /tmp/website/docs/bridge/developing/full/bridge.html
-cp -vrL documentation/htmlnoheader/images /tmp/website/docs/bridge/developing/images
-cp -vrL documentation/htmlnoheader/images /tmp/website/docs/bridge/developing/full/images
+rm -rf /tmp/website/docs/bridge/in-development/images
+rm -rf /tmp/website/docs/bridge/in-development/full/images
+cp -v documentation/htmlnoheader/bridge.html /tmp/website/docs/bridge/in-development/bridge.html
+cp -v documentation/html/bridge.html /tmp/website/docs/bridge/in-development/full/bridge.html
+cp -vrL documentation/htmlnoheader/images /tmp/website/docs/bridge/in-development/images
+cp -vrL documentation/htmlnoheader/images /tmp/website/docs/bridge/in-development/full/images
 
 pushd /tmp/website
 
