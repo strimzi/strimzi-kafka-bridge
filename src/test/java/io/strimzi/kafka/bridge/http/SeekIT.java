@@ -6,7 +6,7 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.http.base.HttpBridgeTestAbstract;
+import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonArray;
@@ -28,7 +28,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class SeekTest extends HttpBridgeTestAbstract {
+public class SeekIT extends HttpBridgeITAbstract {
 
     private String name = "my-kafka-consumer";
     private String groupId = "my-group";
@@ -395,7 +395,7 @@ public class SeekTest extends HttpBridgeTestAbstract {
         JsonObject jsonConsumer = new JsonObject()
                                     .put("name", name)
                                     .put("format", "json");
-        
+
         JsonObject topics = new JsonObject()
                                     .put("topics", new JsonArray().add(subscribedTopic));
 
@@ -404,7 +404,7 @@ public class SeekTest extends HttpBridgeTestAbstract {
         consumerService()
             .createConsumer(context, groupId, jsonConsumer)
             .subscribeConsumer(context, groupId, name, topics);
-        
+
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
 
         // poll to subscribe
@@ -459,16 +459,16 @@ public class SeekTest extends HttpBridgeTestAbstract {
         JsonObject jsonConsumer = new JsonObject()
                                     .put("name", name)
                                     .put("format", "json");
-        
+
         JsonObject topics = new JsonObject()
                                     .put("topics", new JsonArray().add(subscribedTopic));
-        
+
         // create consumer
         // subscribe to a topic
         consumerService()
             .createConsumer(context, groupId, jsonConsumer)
             .subscribeConsumer(context, groupId, name, topics);
-        
+
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
 
         // poll to subscribe

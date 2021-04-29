@@ -16,7 +16,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
  *  Static tests are those that does not applies for the regular @beforeAll, @beforeEach and @afterEach methods
  *  So this class of tests does not extends HttpBridgeTestBase
  */
-public class StaticTests {
+public class StaticIT {
 
     @Test
     /**

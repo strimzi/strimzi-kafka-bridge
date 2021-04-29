@@ -45,9 +45,9 @@ import static org.hamcrest.Matchers.hasItem;
 
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
-public class HttpCorsTests {
+public class HttpCorsIT {
 
-    static final Logger LOGGER = LogManager.getLogger(HttpCorsTests.class);
+    static final Logger LOGGER = LogManager.getLogger(HttpCorsIT.class);
     static Map<String, Object> config = new HashMap<>();
     static long timeout = 5L;
 
