@@ -273,9 +273,6 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>${maven-surefire-plugin.version}</version>
 				<configuration>
-					<excludes>
-						<exclude>**/*StaticTests.java</exclude>
-					</excludes>
                                         <trimStackTrace>false</trimStackTrace>
                                         <skipTests>${skip.surefire.tests}</skipTests>
 				</configuration>
@@ -291,11 +288,6 @@
                                                         <goal>verify</goal>
                                                 </goals>
                                                 <configuration>
-                                                        <includes>
-                                                                <include>**/IT*.java</include>
-                                                                <include>**/*IT.java</include>
-                                                                <include>**/*StaticTest.java</include>
-                                                        </includes>
                                                         <trimStackTrace>false</trimStackTrace>
                                                         <forkCount>0</forkCount>
                                                         <!-- This is workaround for https://issues.apache.org/jira/browse/SUREFIRE-1809 -->
