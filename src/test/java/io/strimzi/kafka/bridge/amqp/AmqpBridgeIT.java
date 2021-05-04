@@ -71,9 +71,9 @@ import static org.hamcrest.Matchers.nullValue;
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:ClassFanOutComplexity", "ClassDataAbstractionCoupling"})
 @Tag(AMQP_BRIDGE)
-class AmqpBridgeTest {
+class AmqpBridgeIT {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AmqpBridgeTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AmqpBridgeIT.class);
 
     private static Map<String, Object> config = new HashMap<>();
 
@@ -137,7 +137,7 @@ class AmqpBridgeTest {
 
         Checkpoint consume = context.checkpoint();
 
-        client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
+        client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
                 ProtonConnection connection = ar.result();
@@ -197,7 +197,7 @@ class AmqpBridgeTest {
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
-        client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
+        client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
                 ProtonConnection connection = ar.result();
@@ -257,7 +257,7 @@ class AmqpBridgeTest {
         ProtonClient client = ProtonClient.create(this.vertx);
 
         Checkpoint consume = context.checkpoint();
-        client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
+        client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
                 ProtonConnection connection = ar.result();
@@ -316,7 +316,7 @@ class AmqpBridgeTest {
         ProtonClient client = ProtonClient.create(this.vertx);
 
         Checkpoint consume = context.checkpoint();
-        client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
+        client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
                 ProtonConnection connection = ar.result();
@@ -369,7 +369,7 @@ class AmqpBridgeTest {
         ProtonClient client = ProtonClient.create(this.vertx);
 
         Checkpoint consume = context.checkpoint();
-        client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
+        client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
                 ProtonConnection connection = ar.result();
@@ -422,7 +422,7 @@ class AmqpBridgeTest {
         ProtonClient client = ProtonClient.create(this.vertx);
 
         Checkpoint consume = context.checkpoint();
-        client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
+        client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
                 ProtonConnection connection = ar.result();
@@ -477,7 +477,7 @@ class AmqpBridgeTest {
         ProtonClient client = ProtonClient.create(this.vertx);
 
         Checkpoint consume = context.checkpoint();
-        client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
+        client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
                 ProtonConnection connection = ar.result();
@@ -532,7 +532,7 @@ class AmqpBridgeTest {
         ProtonClient client = ProtonClient.create(this.vertx);
 
         Checkpoint consume = context.checkpoint();
-        client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
+        client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
                 ProtonConnection connection = ar.result();
@@ -567,7 +567,7 @@ class AmqpBridgeTest {
 
                 this.count = 0;
 
-                this.vertx.setPeriodic(AmqpBridgeTest.PERIODIC_DELAY, timerId -> {
+                this.vertx.setPeriodic(AmqpBridgeIT.PERIODIC_DELAY, timerId -> {
 
                     if (connection.isDisconnected()) {
                         this.vertx.cancelTimer(timerId);
@@ -575,7 +575,7 @@ class AmqpBridgeTest {
                         context.verify(() -> assertThat(false, is(true)));
                     } else {
 
-                        if (this.count < AmqpBridgeTest.PERIODIC_MAX_MESSAGE) {
+                        if (this.count < AmqpBridgeIT.PERIODIC_MAX_MESSAGE) {
 
                             // sending with a key
                             Map<Symbol, Object> map = new HashMap<>();
@@ -619,7 +619,7 @@ class AmqpBridgeTest {
         ProtonClient client = ProtonClient.create(this.vertx);
 
         Checkpoint consume = context.checkpoint();
-        client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
+        client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
 
             if (ar.succeeded()) {
 
@@ -670,7 +670,7 @@ class AmqpBridgeTest {
         KAFKA_FACADE.produceStrings(topic, sentBody, 1, 0);
 
         ProtonClient client = ProtonClient.create(this.vertx);
-        client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
+        client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
                 ProtonConnection connection = ar.result();
@@ -730,7 +730,7 @@ class AmqpBridgeTest {
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
-        client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
+        client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
                 ProtonConnection connection = ar.result();
@@ -794,7 +794,7 @@ class AmqpBridgeTest {
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
-        client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
+        client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
                 ProtonConnection connection = ar.result();
@@ -857,7 +857,7 @@ class AmqpBridgeTest {
 
         ProtonClient client = ProtonClient.create(this.vertx);
         Checkpoint noPartition = context.checkpoint();
-        client.connect(AmqpBridgeTest.BRIDGE_HOST, AmqpBridgeTest.BRIDGE_PORT, ar -> {
+        client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {
 
                 ProtonConnection connection = ar.result();

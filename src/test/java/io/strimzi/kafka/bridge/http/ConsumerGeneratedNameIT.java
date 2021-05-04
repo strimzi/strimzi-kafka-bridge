@@ -49,9 +49,9 @@ import static org.hamcrest.Matchers.is;
 @ExtendWith(VertxExtension.class)
 @Tag(HTTP_BRIDGE)
 @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
-public class ConsumerGeneratedNameTest {
+public class ConsumerGeneratedNameIT {
 
-    private static final Logger LOGGER = LogManager.getLogger(ConsumerGeneratedNameTest.class);
+    private static final Logger LOGGER = LogManager.getLogger(ConsumerGeneratedNameIT.class);
 
     private static Map<String, Object> config = new HashMap<>();
     private static StrimziKafkaContainer kafkaContainer;
