@@ -28,8 +28,9 @@ public class StaticIT {
         String kBVersion = Utils.getKafkaBridgeVersionFromFile("release.version");
 
         ProcessBuilder bridgeJar = new ProcessBuilder(
-                "target/kafka-bridge-" + kBVersion + "/kafka-bridge-" + kBVersion + "/bin/kafka_bridge_run.sh",
-                "--config-file", "target/kafka-bridge-" + kBVersion + "/kafka-bridge-" + kBVersion + "/config/application.properties");
+                String.format("target/kafka-bridge-%s/kafka-bridge-%s/bin/kafka_bridge_run.sh", kBVersion, kBVersion),
+                "--config-file",
+                String.format("target/kafka-bridge-%s/kafka-bridge-%s/config/application.properties", kBVersion, kBVersion));
         Process bridgeProc = bridgeJar.start();
 
         InputStreamReader inputStreamReader = new InputStreamReader(bridgeProc.getInputStream());

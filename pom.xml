@@ -1,5 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>io.strimzi</groupId>
 	<artifactId>kafka-bridge</artifactId>
@@ -19,7 +19,7 @@
 		<hamcrest.version>2.2</hamcrest.version>
 		<maven-jar-plugin.version>3.1.2</maven-jar-plugin.version>
 		<maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
-                <maven-failsafe-plugin.version>3.0.0-M5</maven-failsafe-plugin.version>
+		<maven-failsafe-plugin.version>3.0.0-M5</maven-failsafe-plugin.version>
 		<swagger2markup.version>1.3.7</swagger2markup.version>
 		<jackson-core.version>2.10.2</jackson-core.version>
 		<spotbugs.version>4.0.1</spotbugs.version>
@@ -31,9 +31,9 @@
 		<jmx-prometheus-collector.version>0.12.0</jmx-prometheus-collector.version>
 		<commons-cli.version>1.4</commons-cli.version>
 		<test-container.version>0.20.0</test-container.version>
-                <!-- property to skip surefire tests during failsafe execution -->
-                <!--suppress UnresolvedMavenProperty -->
-                <skip.surefire.tests>${skipTests}</skip.surefire.tests>
+		<!-- property to skip surefire tests during failsafe execution -->
+		<!--suppress UnresolvedMavenProperty -->
+		<skip.surefire.tests>${skipTests}</skip.surefire.tests>
 	</properties>
 
 	<dependencies>
@@ -273,48 +273,48 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>${maven-surefire-plugin.version}</version>
 				<configuration>
-                                        <trimStackTrace>false</trimStackTrace>
-                                        <skipTests>${skip.surefire.tests}</skipTests>
+					<trimStackTrace>false</trimStackTrace>
+					<skipTests>${skip.surefire.tests}</skipTests>
 				</configuration>
 			</plugin>
-                        <plugin>
-                                <groupId>org.apache.maven.plugins</groupId>
-                                <artifactId>maven-failsafe-plugin</artifactId>
-                                <version>${maven-failsafe-plugin.version}</version>
-                                <executions>
-                                        <execution>
-                                                <goals>
-                                                        <goal>integration-test</goal>
-                                                        <goal>verify</goal>
-                                                </goals>
-                                                <configuration>
-                                                        <trimStackTrace>false</trimStackTrace>
-                                                        <forkCount>0</forkCount>
-                                                        <!-- This is workaround for https://issues.apache.org/jira/browse/SUREFIRE-1809 -->
-                                                        <useModulePath>false</useModulePath>
-                                                        <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
-                                                                <disable>false</disable>
-                                                                <version>3.0</version>
-                                                                <usePhrasedFileName>false</usePhrasedFileName>
-                                                                <usePhrasedTestSuiteClassName>true</usePhrasedTestSuiteClassName>
-                                                                <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
-                                                                <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
-                                                        </statelessTestsetReporter>
-                                                        <consoleOutputReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5ConsoleOutputReporter">
-                                                                <disable>false</disable>
-                                                                <encoding>UTF-8</encoding>
-                                                                <usePhrasedFileName>true</usePhrasedFileName>
-                                                        </consoleOutputReporter>
-                                                        <statelessTestsetInfoReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoReporter">
-                                                                <disable>false</disable>
-                                                                <usePhrasedFileName>false</usePhrasedFileName>
-                                                                <usePhrasedClassNameInRunning>false</usePhrasedClassNameInRunning>
-                                                                <usePhrasedClassNameInTestCaseSummary>true</usePhrasedClassNameInTestCaseSummary>
-                                                        </statelessTestsetInfoReporter>
-                                                </configuration>
-                                        </execution>
-                                </executions>
-                        </plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>${maven-failsafe-plugin.version}</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+						<configuration>
+							<trimStackTrace>false</trimStackTrace>
+							<forkCount>0</forkCount>
+							<!-- This is workaround for https://issues.apache.org/jira/browse/SUREFIRE-1809 -->
+							<useModulePath>false</useModulePath>
+							<statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+								<disable>false</disable>
+								<version>3.0</version>
+								<usePhrasedFileName>false</usePhrasedFileName>
+								<usePhrasedTestSuiteClassName>true</usePhrasedTestSuiteClassName>
+								<usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
+								<usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
+							</statelessTestsetReporter>
+							<consoleOutputReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5ConsoleOutputReporter">
+								<disable>false</disable>
+								<encoding>UTF-8</encoding>
+								<usePhrasedFileName>true</usePhrasedFileName>
+							</consoleOutputReporter>
+							<statelessTestsetInfoReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoReporter">
+								<disable>false</disable>
+								<usePhrasedFileName>false</usePhrasedFileName>
+								<usePhrasedClassNameInRunning>false</usePhrasedClassNameInRunning>
+								<usePhrasedClassNameInTestCaseSummary>true</usePhrasedClassNameInTestCaseSummary>
+							</statelessTestsetInfoReporter>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
