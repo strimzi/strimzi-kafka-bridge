@@ -23,11 +23,20 @@ COPY target/kafka-bridge-${strimzi_kafka_bridge_version}/kafka-bridge-${strimzi_
 #####
 # Add Tini
 #####
-ENV TINI_VERSION v0.18.0
-ENV TINI_SHA256=12d20136605531b09a2c2dac02ccee85e1b874eb322ef6baf7561cd93f93c855
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /usr/bin/tini
-RUN echo "${TINI_SHA256} */usr/bin/tini" | sha256sum -c \
-    && chmod +x /usr/bin/tini
+ENV TINI_VERSION v0.19.0
+ENV TINI_SHA256_AMD64=93dcc18adc78c65a028a84799ecf8ad40c936fdfc5f2a57b1acda5a8117fa82c
+ENV TINI_SHA256_PPC64LE=3f658420974768e40810001a038c29d003728c5fe86da211cff5059e48cfdfde
+
+RUN set -ex; \
+    if [[ ${TARGETPLATFORM} = "linux/ppc64le" ]]; then \
+        curl -s -L https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-ppc64le -o /usr/bin/tini; \
+        echo "${TINI_SHA256_PPC64LE} */usr/bin/tini" | sha256sum -c; \
+        chmod +x /usr/bin/tini; \
+    else \
+        curl -s -L https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -o /usr/bin/tini; \
+        echo "${TINI_SHA256_AMD64} */usr/bin/tini" | sha256sum -c; \
+        chmod +x /usr/bin/tini; \
+    fi
 
 USER 1001
 
