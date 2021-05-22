@@ -817,7 +817,7 @@ Retrieves a list of the topics to which the consumer is subscribed.
 |**Path**|**groupid** +
 __required__|ID of the consumer group to which the subscribed consumer belongs.|string
 |**Path**|**name** +
-__required__|Name of the subscribed consumer.|string
+__required__|Name of the consumer.|string
 |===
 
 
