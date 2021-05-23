@@ -285,7 +285,7 @@
                     {
                         "name": "name",
                         "in": "path",
-                        "description": "Name of the consumer to subscribe to topics.",
+                        "description": "Name of the subscribed consumer.",
                         "required": true,
                         "schema": {
                             "type": "string"
@@ -382,7 +382,7 @@
                     {
                         "name": "name",
                         "in": "path",
-                        "description": "Name of the subscribed consumer.",
+                        "description": "Name of the consumer to subscribe to topics.",
                         "required": true,
                         "schema": {
                             "type": "string"
