@@ -418,28 +418,29 @@
                             }
                         }
                     }
-                }
-            },
-            "parameters": [
-                {
-                    "name": "groupid",
-                    "in": "path",
-                    "description": "ID of the consumer group to which the subscribed consumer belongs.",
-                    "required": true,
-                    "schema": {
-                        "type": "string"
-                    }
                 },
-                {
-                    "name": "name",
-                    "in": "path",
-                    "description": "Name of the consumer to unsubscribe from topics.",
-                    "required": true,
-                    "schema": {
-                        "type": "string"
+                "parameters": [
+                    {
+                        "name": "groupid",
+                        "in": "path",
+                        "description": "ID of the consumer group to which the subscribed consumer belongs.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "Name of the consumer to unsubscribe from topics.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
-                }
-            ]
+                ]
+            }
+
         },
         "/consumers/{groupid}/instances/{name}/positions": {
             "post": {
@@ -1586,7 +1587,7 @@
                         "type": "string"
                     },
                     "fetch.min.bytes": {
-                        "description": "Sets the minimum ammount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount.",
+                        "description": "Sets the minimum amount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount.",
                         "type": "integer"
                     },
                     "consumer.request.timeout.ms": {
