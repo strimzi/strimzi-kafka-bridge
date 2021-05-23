@@ -720,7 +720,7 @@ Subscribes a consumer to one or more topics. You can describe the topics to whic
 |**Path**|**groupid** +
 __required__|ID of the consumer group to which the subscribed consumer belongs.|string
 |**Path**|**name** +
-__required__|Name of the consumer to subscribe to topics.|string
+__required__|Name of the consumer to unsubscribe from topics.|string
 |**Body**|**body** +
 __required__|List of topics to which the consumer will subscribe.|<<_topics,Topics>>
 |===
@@ -817,7 +817,7 @@ Retrieves a list of the topics to which the consumer is subscribed.
 |**Path**|**groupid** +
 __required__|ID of the consumer group to which the subscribed consumer belongs.|string
 |**Path**|**name** +
-__required__|Name of the subscribed consumer.|string
+__required__|Name of the consumer to unsubscribe from topics.|string
 |===
 
 
