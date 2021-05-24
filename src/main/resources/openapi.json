@@ -440,7 +440,6 @@
                     }
                 ]
             }
-
         },
         "/consumers/{groupid}/instances/{name}/positions": {
             "post": {
