@@ -4,6 +4,7 @@
 
 * Added a new Admin Client feature to get begin/end offsets for topic partitions
 * Move from Docker Hub to Quay.io as our container registry
+* Use Red Hat UBI8 as the base image
 
 ## 0.19.0
 
