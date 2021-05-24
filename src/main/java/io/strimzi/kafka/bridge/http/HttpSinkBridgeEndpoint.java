@@ -361,6 +361,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             );
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.CONFLICT.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            return;
         }
         JsonArray partitionsList = bodyAsJson.getJsonArray("partitions");
         this.topicSubscriptions.addAll(
