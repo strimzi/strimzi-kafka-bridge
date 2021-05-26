@@ -14,13 +14,13 @@ public class Urls {
 
     private static final String CONSUMERS_PATH = "/consumers/";
     private static final String INSTANCES_PATH =  "/instances/";
-    private static final String POSITIONS_BEGGINING_PATH =  "/positions/beginning";
+    private static final String POSITIONS_BEGINNING_PATH =  "/positions/beginning";
     private static final String POSITIONS_END_PATH =  "/positions/end";
     private static final String POSITIONS_PATH =  "/positions";
     private static final String SUBSCRIPTION_PATH =  "/subscription";
     private static final String TOPICS_PATH = "/topics/";
     private static final String PARTITIONS_PATH = "/partitions/";
-    private static final String ASSIGMENTS_PATH = "/assignments";
+    private static final String ASSIGNMENTS_PATH = "/assignments";
     private static final String OFFSETS_PATH = "/offsets";
     private static final String RECORDS_PATH = "/records";
 
@@ -33,7 +33,7 @@ public class Urls {
     }
 
     public static String consumerInstancePositionBeginning(String groupId, String name) {
-        return consumerInstance(groupId, name) + POSITIONS_BEGGINING_PATH;
+        return consumerInstance(groupId, name) + POSITIONS_BEGINNING_PATH;
     }
 
     public static String consumerInstancePositionEnd(String groupId, String name) {
@@ -49,7 +49,7 @@ public class Urls {
     }
 
     public static String consumerInstanceAssignments(String groupId, String name) {
-        return consumerInstance(groupId, name) + ASSIGMENTS_PATH;
+        return consumerInstance(groupId, name) + ASSIGNMENTS_PATH;
     }
 
     public static String consumerInstanceOffsets(String groupId, String name) {
