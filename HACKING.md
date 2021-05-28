@@ -75,3 +75,16 @@ Attach the ZIP and TAR.GZ archives to the release.
 8. On the `main` git branch:
   * Update the versions to the next SNAPSHOT version using the `next_version` `make` target. 
   For example to update the next version to `0.6.0-SNAPSHOT` run: `make NEXT_VERSION=0.6.0-SNAPSHOT next_version`.
+
+## Building container images for other platforms with Docker `buildx`
+
+Docker supports building images for different platforms using the `docker buildx` command. If you want to use it to
+build Strimzi images, you can just set the environment variable `DOCKER_BUILDX` to `buildx`, set the environment
+variable `DOCKER_BUILD_ARGS` to pass additional build options such as the platform and run the build. For example
+following can be used to build Strimzi images for Linux on PowerPC/ppc64le architecture:
+
+```
+export DOCKER_BUILDX=buildx
+export DOCKER_BUILD_ARGS="--platform linux/ppc64le"
+make all
+```
