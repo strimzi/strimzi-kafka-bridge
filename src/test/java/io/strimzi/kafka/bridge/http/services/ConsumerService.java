@@ -93,6 +93,13 @@ public class ConsumerService extends BaseService {
                 .as(BodyCodec.jsonObject());
     }
 
+    public HttpRequest<JsonObject> assignRequest(String groupId, String name, JsonObject json) {
+        return postRequest(Urls.consumerInstanceAssignments(groupId, name))
+                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(json.toBuffer().length()))
+                .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON)
+                .as(BodyCodec.jsonObject());
+    }
+
     public HttpRequest<JsonObject> offsetsRequest(String groupId, String name) {
         return postRequest(Urls.consumerInstanceOffsets(groupId, name));
     }
