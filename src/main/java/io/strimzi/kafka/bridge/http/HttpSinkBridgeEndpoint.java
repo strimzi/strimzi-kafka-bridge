@@ -483,6 +483,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         }
     }
 
+    @SuppressWarnings({"checkstyle:CyclomaticComplexity"})
     @Override
     public void handle(Endpoint<?> endpoint, Handler<?> handler) {
         RoutingContext routingContext = (RoutingContext) endpoint.get();
@@ -490,7 +491,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         JsonObject bodyAsJson = EMPTY_JSON;
         try {
             // check for an empty body
-            if (routingContext.getBody().length() != 0) {
+            if (routingContext.getBody() != null && routingContext.getBody().length() != 0) {
                 bodyAsJson = routingContext.getBodyAsJson();
             }
             log.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);

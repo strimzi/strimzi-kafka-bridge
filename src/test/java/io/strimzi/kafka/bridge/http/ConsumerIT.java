@@ -11,7 +11,7 @@ import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.MultiMap;
-import io.vertx.core.http.CaseInsensitiveHeaders;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
@@ -319,7 +319,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         String baseUri = "https://my-api-gateway-host:443/consumers/" + groupId + "/instances/" + name;
 
         // we have to use MultiMap because of https://github.com/vert-x3/vertx-web/issues/1383
-        MultiMap headers = new CaseInsensitiveHeaders();
+        MultiMap headers = new HeadersMultiMap();
         headers.add(FORWARDED, forwarded);
         headers.add(FORWARDED, forwarded2);
 

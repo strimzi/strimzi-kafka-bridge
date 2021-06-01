@@ -172,7 +172,7 @@ public class HttpCorsIT {
                     .putHeader("Origin", "https://strimzi.io")
                     .putHeader("Access-Control-Request-Method", "POST")
                     .send(ar -> context.verify(() -> {
-                        assertThat(ar.result().statusCode(), is(200));
+                        assertThat(ar.result().statusCode(), is(204));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
                         assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,content-length,x-forwarded-proto,x-forwarded-host,origin,x-requested-with,content-type,access-control-allow-methods,accept"));
                         List<String> list = Arrays.asList(ar.result().getHeader("access-control-allow-methods").split(","));
@@ -208,7 +208,7 @@ public class HttpCorsIT {
                     .putHeader("Origin", "https://strimzi.io")
                     .putHeader("Access-Control-Request-Method", "POST")
                     .send(ar -> context.verify(() -> {
-                        assertThat(ar.result().statusCode(), is(200));
+                        assertThat(ar.result().statusCode(), is(204));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
                         assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,content-length,x-forwarded-proto,x-forwarded-host,origin,x-requested-with,content-type,access-control-allow-methods,accept"));
                         List<String> list = Arrays.asList(ar.result().getHeader("access-control-allow-methods").split(","));

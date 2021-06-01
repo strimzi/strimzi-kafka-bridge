@@ -44,7 +44,7 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
                     JsonObject jsonObject = (JsonObject) obj;
                     headers.add(new KafkaHeaderImpl(
                         jsonObject.getString("key"),
-                        Buffer.factory.buffer(
+                        Buffer.buffer(
                             DatatypeConverter.parseBase64Binary(jsonObject.getString("value")))));
                 }
             }
