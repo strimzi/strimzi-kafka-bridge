@@ -117,6 +117,17 @@ EOF
 )
 done
 
+ADMIN_CLIENT_PROPERTIES="#Apache Kafka AdminClient"
+for i in $KAFKA_BRIDGE_ADMIN_CLIENT_CONFIG; do
+        key="kafka.admin.$(echo $i | cut -d'=' -f1)"
+        value="$(echo -n $i | cut -d'=' -f2)"
+        ADMIN_CLIENT_PROPERTIES=$(cat <<EOF
+$ADMIN_CLIENT_PROPERTIES
+${key}=${value}
+EOF
+)
+done
+
 HTTP_PROPERTIES=$(cat <<-EOF
 #HTTP configuration
 http.enabled=${KAFKA_BRIDGE_HTTP_ENABLED}
@@ -144,6 +155,8 @@ PROPERTIES=$(cat <<EOF
 $BRIDGE_PROPERTIES
 
 $KAFKA_PROPERTIES
+
+$ADMIN_CLIENT_PROPERTIES
 
 $PRODUCER_PROPERTIES
 
