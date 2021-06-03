@@ -28,6 +28,7 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpConnection;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -495,7 +496,22 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         FileSystem fileSystem = vertx.fileSystem();
         fileSystem.readFile("openapiv2.json", readFile -> {
             if (readFile.succeeded()) {
-                HttpUtils.sendFile(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, "openapiv2.json");
+                String xForwardedPath = routingContext.request().getHeader("x-forwarded-path");
+                String xForwardedPrefix = routingContext.request().getHeader("x-forwarded-prefix");
+                if (xForwardedPath == null && xForwardedPrefix == null) {
+                    HttpUtils.sendFile(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, "openapiv2.json");
+                } else {
+                    String path = "/";
+                    if (xForwardedPrefix != null) {
+                        path = xForwardedPrefix;
+                    }
+                    if (xForwardedPath != null) {
+                        path = xForwardedPath;
+                    }
+                    JsonObject json = (JsonObject) Json.decodeValue(readFile.result());
+                    json.put("basePath", path);
+                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, json.toBuffer());
+                }
             } else {
                 log.error("Failed to read OpenAPI JSON file", readFile.cause());
                 HttpBridgeError error = new HttpBridgeError(
