@@ -154,4 +154,63 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                     context.completeNow();
                 });
     }
+
+    @Test
+    void openApiTestWithForwardedPath(VertxTestContext context) {
+        String forwardedPath = "/app/kafka-bridge";
+        baseService()
+                .getRequest("/openapi")
+                .putHeader("x-Forwarded-Path", forwardedPath)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        JsonObject bridgeResponse = response.body();
+                        assertThat(bridgeResponse.getString("basePath"), is(forwardedPath));
+                    });
+                    context.completeNow();
+                });
+    }
+
+    @Test
+    void openApiTestWithForwardedPrefix(VertxTestContext context) {
+        String forwardedPrefix = "/app/kafka-bridge";
+        baseService()
+                .getRequest("/openapi")
+                .putHeader("x-Forwarded-Prefix", forwardedPrefix)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        JsonObject bridgeResponse = response.body();
+                        assertThat(bridgeResponse.getString("basePath"), is(forwardedPrefix));
+                    });
+                    context.completeNow();
+                });
+    }
+
+    @Test
+    void openApiTestWithForwardedPathAndPrefix(VertxTestContext context) {
+        String forwardedPath = "/app/kafka-bridge-path";
+        String forwardedPrefix = "/app/kafka-bridge-prefix";
+        baseService()
+                .getRequest("/openapi")
+                .putHeader("x-Forwarded-Path", forwardedPath)
+                .putHeader("x-Forwarded-Prefix", forwardedPrefix)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        JsonObject bridgeResponse = response.body();
+                        assertThat(bridgeResponse.getString("basePath"), is(forwardedPath));
+                    });
+                    context.completeNow();
+                });
+    }
 }
