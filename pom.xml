@@ -8,13 +8,6 @@
 	<name>kafka-bridge</name>
 	<description>Apache Kafka bridge</description>
 
-	<repositories>
-		<repository>
-			<id>oauth-staging</id>
-			<url>https://oss.sonatype.org/content/repositories/iostrimzi-1104</url>
-		</repository>
-	</repositories>
-
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
