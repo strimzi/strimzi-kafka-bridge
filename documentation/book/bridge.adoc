@@ -2,7 +2,7 @@ include::common/attributes.adoc[]
 
 :context: book
 
-= {ProductLongName} API reference
+= Strimzi Kafka Bridge API reference
 
 [id='api_reference-{context}']
 
