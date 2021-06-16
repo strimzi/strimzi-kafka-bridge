@@ -8,7 +8,7 @@ jobs:
     os: linux
     arch: ppc64le
     jdk: openjdk11
-    script: mvn install -DskipTests
+    script: mvn install -DskipTests -Dmaven.javadoc.skip=true
     addons:
       apt:
         packages:
@@ -17,7 +17,7 @@ jobs:
     os: linux
     arch: s390x
     jdk: openjdk11
-    script: mvn install -DskipTests
+    script: mvn install -DskipTests -Dmaven.javadoc.skip=true
     addons:
       apt:
         packages:
@@ -34,6 +34,6 @@ env:
   - BRANCH=${TRAVIS_BRANCH:-main}
   - TAG=${TRAVIS_TAG:-latest}
   - DOCKER_REGISTRY=quay.io
-  - MVN_ARGS="-B -Dmaven.javadoc.skip=true"
+  - MVN_ARGS="-B"
   - TESTCONTAINERS_RYUK_DISABLED=TRUE
   - TESTCONTAINERS_CHECKS_DISABLE=TRUE
