@@ -6,6 +6,10 @@ export DOCKER_ORG=${DOCKER_ORG:-strimzi}
 export DOCKER_REGISTRY=${DOCKER_REGISTRY:-quay.io}
 export DOCKER_TAG=$COMMIT
 
+# Disable pulling images in test container => fails because of Docker limits
+export TESTCONTAINERS_RYUK_DISABLED=TRUE
+export TESTCONTAINERS_CHECKS_DISABLE=TRUE
+
 echo "Build reason: ${BUILD_REASON}"
 echo "Source branch: ${BRANCH}"
 
