@@ -12,7 +12,7 @@ function grep_check {
   local description=$2
   local opts=${3:--i -E -r -n}
   local fatalness=${4:-1}
-  x=$("$GREP" "$opts" "$pattern" documentation/book/)
+  x=$($GREP $opts "$pattern" documentation/book/)
   if [ -n "$x" ]; then
     echo "$description:"
     echo "$x"
