@@ -15,6 +15,8 @@ public interface BridgeEndpoint {
 
     /**
      * Name of the bridge endpoint
+     *
+     * @return Returns the name of the bridge endpoint
      */
     String name();
 

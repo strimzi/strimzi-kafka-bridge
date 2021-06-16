@@ -4,10 +4,6 @@ language: java
 jobs:
   fast_finish: true
   include:
-  - os: linux
-    jdk: openjdk8
-  - os: linux
-    jdk: openjdk11
   - build: ppc64le
     os: linux
     arch: ppc64le

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 fatal=0
-GREP=grep
+GREP="grep"
 
-if [ $(uname -s) = "Darwin" ]; then
-  GREP=ggrep
+if [ "$(uname -s)" = "Darwin" ]; then
+  GREP="ggrep"
 fi
 
 function grep_check {
@@ -12,7 +12,7 @@ function grep_check {
   local description=$2
   local opts=${3:--i -E -r -n}
   local fatalness=${4:-1}
-  x=$($GREP $opts "$pattern" documentation/book/)
+  x=$("$GREP" "$opts" "$pattern" documentation/book/)
   if [ -n "$x" ]; then
     echo "$description:"
     echo "$x"
@@ -47,7 +47,7 @@ grep_check 'leveloffset+=[0-9]+'  "It should be leveloffset=+... not +="
 # include: should be include::
 grep_check 'include:[^:[ ]+[[]'  "It should be include::...[] (two colons) not include:...[]"
 
-if [ $fatal -gt 0 ]; then
+if [ "$fatal" -gt 0 ]; then
   echo "ERROR: ${fatal} docs problems found."
   exit 1
 fi
