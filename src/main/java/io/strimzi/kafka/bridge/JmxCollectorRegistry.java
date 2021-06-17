@@ -26,7 +26,7 @@ public class JmxCollectorRegistry {
      * Constructor
      *
      * @param yamlConfig YAML configuration string with metrics filtering rules
-     * @throws MalformedObjectNameException
+     * @throws MalformedObjectNameException Throws MalformedObjectNameException
      */
     public JmxCollectorRegistry(String yamlConfig) throws MalformedObjectNameException {
         new JmxCollector(yamlConfig).register();
@@ -37,8 +37,8 @@ public class JmxCollectorRegistry {
      * Constructor
      *
      * @param yamlFileConfig file containing the YAML configuration with metrics filtering rules
-     * @throws MalformedObjectNameException
-     * @throws IOException
+     * @throws MalformedObjectNameException Throws MalformedObjectNameException
+     * @throws IOException Throws IOException
      */
     public JmxCollectorRegistry(File yamlFileConfig) throws MalformedObjectNameException, IOException {
         new JmxCollector(yamlFileConfig).register();

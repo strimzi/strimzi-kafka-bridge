@@ -64,7 +64,7 @@ docu_api:
 
 .PHONY: docu_check
 docu_check: docu_api
-	./.travis/check_docs.sh
+	./.azure/scripts/check_docs.sh
 
 .PHONY: docu_clean
 docu_clean: docu_htmlclean docu_htmlnoheaderclean
@@ -79,4 +79,4 @@ docu_htmlnoheaderclean:
 
 .PHONY: docu_pushtowebsite
 docu_pushtowebsite: docu_htmlnoheader docu_html
-	./.travis/docu-push-to-website.sh
+	./.azure/scripts/docu-push-to-website.sh

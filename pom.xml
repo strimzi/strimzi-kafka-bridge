@@ -5,8 +5,66 @@
 	<artifactId>kafka-bridge</artifactId>
 	<version>0.21.0-SNAPSHOT</version>
 
-	<name>kafka-bridge</name>
-	<description>Apache Kafka bridge</description>
+	<name>Strimzi Kafka Bridge</name>
+	<description>Bridge that allows HTTP- or AMQP-based clients to interact with Apache Kafka clusters.</description>
+	<url>https://strimzi.io/</url>
+
+	<scm>
+		<connection>scm:git:git://github.com/strimzi/strimzi-kafka-bridge.git</connection>
+		<developerConnection>scm:git:ssh://github.com:strimzi/strimzi-kafka-bridge.git</developerConnection>
+		<url>https://github.com/strimzi/strimzi-kafka-bridge</url>
+	</scm>
+
+	<issueManagement>
+		<system>GitHub</system>
+		<url>https://github.com/strimzi/strimzi-kafka-bridge/issues</url>
+	</issueManagement>
+
+	<licenses>
+		<license>
+			<name>The Apache License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<name>Tom Bentley</name>
+			<email>tbentley@redhat.com</email>
+			<organization>Red Hat</organization>
+			<organizationUrl>https://www.redhat.com</organizationUrl>
+		</developer>
+		<developer>
+			<name>Paolo Patierno</name>
+			<email>ppatierno@live.com</email>
+			<organization>Red Hat</organization>
+			<organizationUrl>https://www.redhat.com</organizationUrl>
+		</developer>
+		<developer>
+			<name>Jakub Scholz</name>
+			<email>github@scholzj.com</email>
+			<organization>Red Hat</organization>
+			<organizationUrl>https://www.redhat.com</organizationUrl>
+		</developer>
+		<developer>
+			<name>Sam Hawker</name>
+			<email>sam.b.hawker@gmail.com</email>
+			<organization>IBM</organization>
+			<organizationUrl>https://www.ibm.com</organizationUrl>
+		</developer>
+		<developer>
+			<name>Jakub Stejskal</name>
+			<email>xstejs24@gmail.com</email>
+			<organization>Red Hat</organization>
+			<organizationUrl>https://www.redhat.com</organizationUrl>
+		</developer>
+		<developer>
+			<name>Stanislav Knot</name>
+			<email>sknot@redhat.com</email>
+			<organization>Red Hat</organization>
+			<organizationUrl>https://www.redhat.com</organizationUrl>
+		</developer>
+	</developers>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -21,6 +79,11 @@
 		<maven-jar-plugin.version>3.1.2</maven-jar-plugin.version>
 		<maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.0.0-M5</maven-failsafe-plugin.version>
+		<maven.assembly.version>3.1.0</maven.assembly.version>
+		<maven.javadoc.version>3.1.0</maven.javadoc.version>
+		<maven.source.version>3.0.1</maven.source.version>
+		<maven.gpg.version>1.6</maven.gpg.version>
+		<sonatype.nexus.staging>1.6.3</sonatype.nexus.staging>
 		<swagger2markup.version>1.3.7</swagger2markup.version>
 		<jackson-core.version>2.11.3</jackson-core.version>
 		<spotbugs.version>4.0.1</spotbugs.version>
@@ -259,6 +322,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-assembly-plugin</artifactId>
+				<version>${maven.assembly.version}</version>
 				<executions>
 					<execution>
 						<phase>package</phase>
@@ -317,6 +381,38 @@
 								<usePhrasedClassNameInRunning>false</usePhrasedClassNameInRunning>
 								<usePhrasedClassNameInTestCaseSummary>true</usePhrasedClassNameInTestCaseSummary>
 							</statelessTestsetInfoReporter>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>${maven.source.version}</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>${maven.javadoc.version}</version>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<configuration>
+							<sourcepath>${project.build.sourceDirectory}:${project.build.directory}/generated-sources/annotations</sourcepath>
+							<show>public</show>
+							<failOnError>true</failOnError>
+							<failOnWarnings>true</failOnWarnings>
 						</configuration>
 					</execution>
 				</executions>
@@ -402,52 +498,53 @@
 				<groups>amqptbridge</groups>
 			</properties>
 		</profile>
+		<profile>
+			<id>ossrh</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<properties>
+				<!--suppress UnresolvedMavenProperty -->
+				<gpg.executable>${env.GPG_EXECUTABLE}</gpg.executable>
+				<!--suppress UnresolvedMavenProperty -->
+				<gpg.passphrase>${env.GPG_PASSPHRASE}</gpg.passphrase>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>${maven.gpg.version}</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+								<configuration>
+									<gpgArguments>
+										<arg>--batch</arg>
+										<arg>--pinentry-mode</arg>
+										<arg>loopback</arg>
+									</gpgArguments>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.sonatype.plugins</groupId>
+						<artifactId>nexus-staging-maven-plugin</artifactId>
+						<version>${sonatype.nexus.staging}</version>
+						<extensions>true</extensions>
+						<configuration>
+							<serverId>ossrh</serverId>
+							<nexusUrl>https://oss.sonatype.org/</nexusUrl>
+							<autoReleaseAfterClose>false</autoReleaseAfterClose>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 	</profiles>
-
-	<licenses>
-		<license>
-			<name>The Apache License, Version 2.0</name>
-			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-		</license>
-	</licenses>
-
-	<developers>
-        <developer>
-            <name>Tom Bentley</name>
-            <email>tbentley@redhat.com</email>
-            <organization>Red Hat</organization>
-            <organizationUrl>https://www.redhat.com</organizationUrl>
-        </developer>
-        <developer>
-            <name>Paolo Patierno</name>
-            <email>ppatierno@live.com</email>
-            <organization>Red Hat</organization>
-            <organizationUrl>https://www.redhat.com</organizationUrl>
-        </developer>
-        <developer>
-            <name>Jakub Scholz</name>
-            <email>github@scholzj.com</email>
-            <organization>Red Hat</organization>
-            <organizationUrl>https://www.redhat.com</organizationUrl>
-        </developer>
-        <developer>
-            <name>Sam Hawker</name>
-            <email>sam.b.hawker@gmail.com</email>
-            <organization>IBM</organization>
-            <organizationUrl>https://www.ibm.com</organizationUrl>
-        </developer>
-        <developer>
-            <name>Jakub Stejskal</name>
-            <email>xstejs24@gmail.com</email>
-            <organization>Red Hat</organization>
-            <organizationUrl>https://www.redhat.com</organizationUrl>
-        </developer>
-		<developer>
-			<name>Stanislav Knot</name>
-			<email>sknot@redhat.com</email>
-			<organization>Red Hat</organization>
-			<organizationUrl>https://www.redhat.com</organizationUrl>
-		</developer>
-    </developers>
-
 </project>
