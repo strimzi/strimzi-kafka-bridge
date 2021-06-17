@@ -1,5 +1,6 @@
-[![Build Status](https://travis-ci.org/strimzi/strimzi-kafka-bridge.svg?branch=main)](https://travis-ci.org/strimzi/strimzi-kafka-bridge)
+[![Build Status](https://dev.azure.com/cncf/strimzi/_apis/build/status/strimzi-kafka-bridge?branchName=main)](https://dev.azure.com/cncf/strimzi/_build/latest?definitionId=34&branchName=main)
 [![GitHub release](https://img.shields.io/github/release/strimzi/strimzi-kafka-bridge.svg)](https://github.com/strimzi/strimzi-kafka-bridge/releases/latest)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.strimzi/kafka-bridge/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.strimzi/kafka-bridge)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Twitter Follow](https://img.shields.io/twitter/follow/strimziio.svg?style=social&label=Follow&style=for-the-badge)](https://twitter.com/strimziio)
 
