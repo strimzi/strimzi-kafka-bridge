@@ -29,7 +29,7 @@ public class ConnectionEndpoint {
     /**
      * Return the sink endpoints collection
      *
-     * @return
+     * @return  Returns the sink endpoint collection
      */
     public List<SinkBridgeEndpoint> getSinks() {
         return this.sinks;
@@ -49,7 +49,7 @@ public class ConnectionEndpoint {
     /**
      * Return the source endpoint
      *
-     * @return
+     * @return  Returns the source endpoint
      */
     public SourceBridgeEndpoint getSource() {
         return this.source;

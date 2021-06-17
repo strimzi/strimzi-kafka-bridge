@@ -4,15 +4,11 @@ language: java
 jobs:
   fast_finish: true
   include:
-  - os: linux
-    jdk: openjdk8
-  - os: linux
-    jdk: openjdk11
   - build: ppc64le
     os: linux
     arch: ppc64le
     jdk: openjdk11
-    script: mvn install -DskipTests
+    script: mvn install -DskipTests -Dmaven.javadoc.skip=true
     addons:
       apt:
         packages:
@@ -21,14 +17,11 @@ jobs:
     os: linux
     arch: s390x
     jdk: openjdk11
-    script: mvn install -DskipTests
+    script: mvn install -DskipTests -Dmaven.javadoc.skip=true
     addons:
       apt:
         packages:
         - maven
-  allow_failures:
-  - build: s390x
-  - build: ppc64le
 services:
 - docker
 before_install:
@@ -44,7 +37,3 @@ env:
   - MVN_ARGS="-B"
   - TESTCONTAINERS_RYUK_DISABLED=TRUE
   - TESTCONTAINERS_CHECKS_DISABLE=TRUE
-  - secure: x+/dNLqAA7GVihb8Cx0/VXyTbAIslFcAPSeq6tDOXrpQqbDzC/LZ8Qzs/OpC6m3Htjogkk85Sibe8RRcxq4ENPUpjx7YZ2pxh2Wye5fjhqX2HVTVE8AQBlKLH/3BaayibzCmc4ydM6daf4gUNq0WTNq5FmW0vUf4dfeICMzbKHMYWVBwDisCiTqCmAXldIm4qoxBoxuSO02Tsfc6cZxXLmjhNGzlwkGOJHnURSGYk5GGM8SFTU4gCJAbSFZSVDGaFvvX9+YRL0UYS505QzPvQqlBizv4szhjx9E67u3px3D5kCOOlteX/npWPQQjr2n2Mi6P0cyC8lwF0Qbcqx/CK+XWlfz+i1wgN6okNVtArsDmFgB/HDLyi9SZkT3WCks6TyObxEJELptbv08YBMydH37SyX8PMeY3tkyUcgByiiQX7M4CZL57sNJ8vJyu21Wv65oZdRETeLlbh1PksqAuP08ldZy73l4NgN8czLlyFY1ujhjk5VZPfQEY5ec5O7I1IRGL6NBpeEc7C//GZRrsBvt39Axwotr7ZOoDcaFBJhs8J5ggsu/zSpf54fiAUy+xMLqc8wD2ujc+3IvD2PUzqxZHT590FrZq/VMrzxm+J0AX729rN69vGcnUCLq6rJclx+ET7Bj4qtuLDIufJPAgAdQwE/BAv1nWE0EIh7JT2GE= #DOCKER_USER
-  - secure: Oz8ba2oujxWvnHs7QZjYbGw997Af19U5IVy6+dgoN/dQ+XIwKL+65V4VlbInulCIOC0fOx5sRzU0cnSUccrYo7vZylgw8b1JUfYVoXwktvZteyLjEt7FJN9zSm8IEdshSEqfgl9MoYzPUQxHwcYvykL9rfxwgpVXqSPxu8gR36Ilb5bvA6nhYzzzzJRldGy63vNTKJx6Up7dxLwLClAPOZ8Uk2yYO7WbZsDDT4+0XsejRbcpz7CzvFGlC2pX3fdv9/k5Sev8SSKjOkWBgBgeYz78XuEng+JZ1F5SfVwoKbAdz3s4XSVVpgNfWKjsMIehWvpZlXVmE7KHjJ51QdduQlHeRjjnAKCwZGW/e0d8btGaaYduZnbIfHt/kVZmje0m1AhATY07tCPXrTB7Lc5oqrZ1+ULG777nHFilTXGukQoX1Ck264jZm0uXByeJ/aascQrRqDiYGNjiWJnToCJouVxsqwnAmJ4DOmt8eAwCW9m0uQB+D6huyGKTXiZR7G6O5CPF8AtGs2JZOk52/Oty4d6/x3wiQHUQ4TGtbKuCqLz4YF+rMffbyj8vDtJqGVGibENSlFY47VayiURgMwTx19p9A8FaajBwNe85Bq6JIjQgMdE/vj+zdlh342vnq/LpMcyc/twshnuR6mjBQokm0RfCF5RNQBHVPfb0FJ6MTYs= #DOCKER_PASS
-  - secure: Bybx+XrGAipRNL83iHHpROqsyjJpvuXe03j36Ig9cwmmr5gh2zvq0xQY610d90pr4WPPIb/DbuzOj8QPq25bPcBl+0B5oRsDhHQE4Uwmv/GBnZU3hh07SuCOw63tcjmrwFRU4lXHUv/m8hMC1JSZ2JxgVleZiMj6msUqoBr+KgzlRAUqH9LTxkz56dieMh1QtcZ7ZUHOhzBN+wgBcp8USCOxcWcbIJBYFWaNGqCAxZiL9jcDjes90cvmE47F6UcEkqnvjGdp50aTYvPDhOh6pz9vvqto8YzND6X1nX03xtQfqc2boRF33YNA3kmH8dJsMeCNqIBRfThxgBpi5xGKCpgCbMM1UgWcMZ3CKSd+XF4iKr3pobpqV9RO3s821/TNJjeiW1sn28f1T+3yw+ZHvMOj3WUncbLMyn1Qj52yA7DO/UlNuHoonrFIaSqC8uxx5p8yUsKUfnVEwP7F9Uqxq+IXX2VtHTtwcT3Xwa+n4lHcCUc47xwVnH8OsHNufzad3RS1uFBJIS5dH+TO3qJukIgsudDztaJ13vLGiu0MSpxMloRvqKtmxLxtTtc0f9smD9ArSWvHuBboiN3HL0+cJUA/mSkqxXcE3cVqKOzEe/DLbzZr++ySXRq3LhzXO91hNFwT+vuER2MpvFTbKsizVse1G+MGe0z+CnoJnunMYTI= #QUAY_USER
-  - secure: vgbMXWi05v9v74/H6g1QiDu9QqYZKu2JOXAkg5waqGrA399h+1aS7VTD4TFPmRPUyrdRz7/TCNsiRIVk3N40i0DNyosGloiCaiB6sV91Dt3tt4X6Z5WOJzeA08GhtO6wmeJF/miWpxoiGI5hZp0zybv2mrCmYjisb0tAG4ZhiUzuZnMmPdi6vegasWfjZjOryU/NoGIvdlFsSQETR0edvt/FUFQV/SYaipRldiWhU37JUNssG90m1yel1+QV7q519HUvSAwdWwAC25ItRfPVvQp0+JeO576aft4D9LR5FxCAhCJdZFOznQOdNOWWaUHieqLZ5qR5OpcQsUEpkeD8dPk7yBUkephBlvrEZedD04OVfO0r8AhY2ebRGVR+sKck2wCu+xN5R21KccXA8jPh/ps3/4ddb9UhnHB5du1npi+uNFnne+Kn8bgcfq7pwUIOixzhbwTIoNbNPXQ7mUfww/Y6MG5Hn0ERemQn6lbyhG582O91kaiWxb1NUFO+UJAB62mio2fWF9HfNs6mhrr30VPb4MKj2D67k9QQpzyz99wfasg5KYXzfob+11HIpEkx6PVtdQGVjpOoW3GT6Au6psIT2mfD5TsmdVXWFrvyhaEzv6k9upL4FjqeJ/gTAVcMN3SaD4LVk0N8AdUTgfRSKIn2UziJ/AtLMoiqooXIJI8= #QUAY_PASS
