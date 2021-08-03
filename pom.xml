@@ -113,13 +113,6 @@
 		<skip.surefire.tests>${skipTests}</skip.surefire.tests>
 	</properties>
 
-	<repositories>
-		<repository>
-			<id>env-var-config-provider-staging</id>
-			<url>https://oss.sonatype.org/content/repositories/iostrimzi-1112/</url>
-		</repository>
-	</repositories>
-
 	<dependencies>
 		<dependency>
 			<groupId>io.vertx</groupId>
