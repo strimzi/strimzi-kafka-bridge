@@ -226,6 +226,10 @@ __optional__|< <<_partition,Partition>> > array
 __optional__|<<_kafkaheaderlist,KafkaHeaderList>>
 |**partition** +
 __optional__|integer (int32)
+|**key** +
+__optional__| string __or__ object
+|**value** +
+| string __or__ object __or__ *null*
 |===
 
 
@@ -242,7 +246,15 @@ __optional__|< <<_producerrecord,ProducerRecord>> > array
 
 [[_producerrecordtopartition]]
 === ProducerRecordToPartition
-__Type__ : object
+
+[options="header", cols=".^3a,.^4a"]
+|===
+|Name|Schema
+|**key** +
+__optional__| string __or__ object
+|**value** +
+| string __or__ object __or__ *null*
+|===
 
 
 [[_producerrecordtopartitionlist]]
