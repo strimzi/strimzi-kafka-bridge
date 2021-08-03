@@ -82,8 +82,10 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<log4j.version>2.13.3</log4j.version>
-		<vertx.version>4.1.0</vertx.version>
+		<vertx.version>4.1.2</vertx.version>
 		<kafka.version>2.7.0</kafka.version>
+		<kafka-kubernetes-config-provider.version>0.1.0</kafka-kubernetes-config-provider.version>
+		<kafka-env-var-config-provider.version>0.1.0</kafka-env-var-config-provider.version>
 		<debezium.version>1.2.3.Final</debezium.version>
 		<maven.checkstyle.version>3.1.0</maven.checkstyle.version>
 		<hamcrest.version>2.2</hamcrest.version>
@@ -213,6 +215,46 @@
 			<artifactId>commons-cli</artifactId>
 			<version>${commons-cli.version}</version>
 		</dependency>
+		<!-- Kubernetes Configuration Provider for Apache Kafka -->
+		<dependency>
+			<groupId>io.strimzi</groupId>
+			<artifactId>kafka-kubernetes-config-provider</artifactId>
+			<version>${kafka-kubernetes-config-provider.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>com.fasterxml.jackson.core</groupId>
+					<artifactId>jackson-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.fasterxml.jackson.core</groupId>
+					<artifactId>jackson-annotations</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.fasterxml.jackson.core</groupId>
+					<artifactId>jackson-databind</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- EnvVar Configuration Provider for Apache Kafka -->
+		<dependency>
+			<groupId>io.strimzi</groupId>
+			<artifactId>kafka-env-var-config-provider</artifactId>
+			<version>${kafka-env-var-config-provider.version}</version>
+		</dependency>
+
+		<!-- Transitive dependency version overrides for Vulnerabilities: -->
+		<!-- overriding version commons-io for Vert.x - Vulnerability -->
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.7</version>
+		</dependency>
+		<!-- overriding version of snakeyaml for prometheus.jmx.collector 0.12.0: Vulnerability: DOS -->
+		<dependency>
+			<groupId>org.yaml</groupId>
+			<artifactId>snakeyaml</artifactId>
+			<version>1.29</version>
+		</dependency>
 
 		<!-- Testing -->
 		<dependency>
@@ -270,20 +312,6 @@
 			<version>${debezium.version}</version>
 			<type>test-jar</type>
 			<scope>test</scope>
-		</dependency>
-
-		<!-- Transitive dependency version overrides for Vulnerabilities: -->
-		<!-- overriding version commons-io for vertex 3.9.3 - Vulnerability -->
-		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>2.7</version>
-		</dependency>
-		<!-- overriding version of snakeyaml for prometheus.jmx.collector 0.12.0: Vulnerability: DOS -->
-		<dependency>
-			<groupId>org.yaml</groupId>
-			<artifactId>snakeyaml</artifactId>
-			<version>1.26</version>
 		</dependency>
 	</dependencies>
 
