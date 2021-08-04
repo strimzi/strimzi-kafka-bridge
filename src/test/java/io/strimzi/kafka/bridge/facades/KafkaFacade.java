@@ -6,7 +6,6 @@ package io.strimzi.kafka.bridge.facades;
 
 import io.strimzi.kafka.bridge.utils.KafkaJsonSerializer;
 import kafka.server.KafkaConfig$;
-import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -55,7 +54,7 @@ public class KafkaFacade {
         Properties props = new Properties();
         props.setProperty("bootstrap.servers", kafkaCluster.bootstrapServers());
         props.setProperty("group.id", "groupId");
-        props.setProperty("auto.offset.reset", OffsetResetStrategy.EARLIEST.toString().toLowerCase());
+        props.setProperty("auto.offset.reset", "earliest");
         props.setProperty("enable.auto.commit", Boolean.FALSE.toString());
         return props;
     }
@@ -81,7 +80,6 @@ public class KafkaFacade {
     public void produce(String topic, int messageCount, int partition) throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<Boolean> produce = new CompletableFuture<>();
         AtomicInteger index = new AtomicInteger();
-
         produce("", messageCount, new KafkaJsonSerializer(), new KafkaJsonSerializer(),
             () -> produce.complete(true), () -> new ProducerRecord<>(topic, partition, "key-" + index.get(), "value-" + index.getAndIncrement()));
         produce.get(OPERATION_TIMEOUT, TimeUnit.SECONDS);
