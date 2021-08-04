@@ -208,7 +208,6 @@ class AmqpBridgeIT {
                 String body = "Simple message from " + connection.getContainer();
                 Message message = ProtonHelper.message(topic, body);
                 Properties config = KAFKA_FACADE.getConsumerProperties();
-
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
