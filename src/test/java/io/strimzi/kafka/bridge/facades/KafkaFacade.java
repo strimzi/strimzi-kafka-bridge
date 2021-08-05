@@ -5,7 +5,6 @@
 package io.strimzi.kafka.bridge.facades;
 
 import io.strimzi.kafka.bridge.utils.KafkaJsonSerializer;
-import kafka.server.KafkaConfig$;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -35,7 +34,7 @@ public class KafkaFacade {
     public static EmbeddedKafkaCluster kafkaCluster() {
 
         Properties props = new Properties();
-        props.setProperty(KafkaConfig$.MODULE$.AutoCreateTopicsEnableProp(), "false");
+        props.setProperty("auto.create.topics.enable", "false");
         props.setProperty("listeners", "PLAINTEXT://localhost:" + KAFKA_PORT);
         props.setProperty("port", "" + KAFKA_PORT);
         kafkaCluster = new EmbeddedKafkaCluster(1, props);
@@ -46,7 +45,7 @@ public class KafkaFacade {
         try {
             kafkaCluster.createTopic(topic, partitions, replicationFactor);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage());
         }
     }
 

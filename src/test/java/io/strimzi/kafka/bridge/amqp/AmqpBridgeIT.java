@@ -215,7 +215,7 @@ class AmqpBridgeIT {
                 KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
                 consumer.handler(record -> {
                     context.verify(() -> assertThat(record.value(), is(body)));
-//                     checking the right partition which should not be just the first one (0)
+                    // checking the right partition which should not be just the first one (0)
                     context.verify(() -> assertThat(record.partition(), is(1)));
                     LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                             record.topic(), record.partition(), record.offset(), record.key(), record.value());
