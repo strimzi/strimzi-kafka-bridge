@@ -290,6 +290,8 @@ public class SeekIT extends HttpBridgeITAbstract {
             .put("name", name)
             .put("format", "json");
 
+        final String topic = "seekToOffsetAndReceive";
+
         adminClientFacade.createTopic(topic, 2, 1);
 
         basicKafkaClient.sendJsonMessagesPlain(topic, 10, "value", 0);
@@ -353,8 +355,8 @@ public class SeekIT extends HttpBridgeITAbstract {
                         assertThat(metadata.size(), is(1));
 
                         assertThat(metadata.get(0).getString("topic"), is(topic));
-                        assertThat(metadata.get(0).getString("value"), is("value"));
-                        assertThat(metadata.get(0).getString("key"), is("key"));
+                        assertThat(metadata.get(0).getString("value"), is("value-9"));
+                        assertThat(metadata.get(0).getString("key"), is("key-9"));
 
                         // check it read from partition 1, starting from offset 5, the last 5 messages
                         metadata = body.stream()
@@ -366,8 +368,8 @@ public class SeekIT extends HttpBridgeITAbstract {
 
                         for (int i = 0; i < metadata.size(); i++) {
                             assertThat(metadata.get(i).getString("topic"), is(topic));
-                            assertThat(metadata.get(i).getString("value"), is("value"));
-                            assertThat(metadata.get(i).getString("key"), is("key"));
+                            assertThat(metadata.get(i).getString("value"), is("value-" + (i + metadata.size())));
+                            assertThat(metadata.get(i).getString("key"), is("key-" + (i + metadata.size())));
                         }
                     });
                     consume.complete(true);

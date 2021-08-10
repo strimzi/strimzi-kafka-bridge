@@ -30,6 +30,8 @@ public class AdminClientFacade {
     private static AdminClient adminClient;
     private static AdminClientFacade adminClientFacade;
 
+    private AdminClientFacade() {}
+
     public static synchronized AdminClientFacade create(String bootstrapServer) {
 
         if (adminClientFacade == null) {
