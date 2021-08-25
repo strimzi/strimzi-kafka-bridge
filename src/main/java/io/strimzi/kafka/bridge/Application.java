@@ -5,13 +5,11 @@
 
 package io.strimzi.kafka.bridge;
 
-import io.jaegertracing.Configuration;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.opentracing.Tracer;
-import io.opentracing.util.GlobalTracer;
 import io.strimzi.kafka.bridge.amqp.AmqpBridge;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.HttpBridge;
+import io.strimzi.kafka.bridge.tracing.TracingUtil;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
@@ -30,6 +28,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +66,7 @@ public class Application {
         try {
             VertxOptions vertxOptions = new VertxOptions();
             JmxCollectorRegistry jmxCollectorRegistry = null;
-            if (Boolean.valueOf(System.getenv(KAFKA_BRIDGE_METRICS_ENABLED))) {
+            if (Boolean.parseBoolean(System.getenv(KAFKA_BRIDGE_METRICS_ENABLED))) {
                 log.info("Metrics enabled and exposed on the /metrics endpoint");
                 // setup Micrometer metrics options
                 vertxOptions.setMetricsOptions(metricsOptions());
@@ -82,17 +81,17 @@ public class Application {
             CommandLine commandLine = new DefaultParser().parse(generateOptions(), args);
 
             ConfigStoreOptions fileStore = new ConfigStoreOptions()
-                    .setType("file")
-                    .setFormat("properties")
-                    .setConfig(new JsonObject().put("path", absoluteFilePath(commandLine.getOptionValue("config-file"))).put("raw-data", true));
+                .setType("file")
+                .setFormat("properties")
+                .setConfig(new JsonObject().put("path", absoluteFilePath(commandLine.getOptionValue("config-file"))).put("raw-data", true));
 
             ConfigStoreOptions envStore = new ConfigStoreOptions()
-                    .setType("env")
-                    .setConfig(new JsonObject().put("raw-data", true));
+                .setType("env")
+                .setConfig(new JsonObject().put("raw-data", true));
 
             ConfigRetrieverOptions options = new ConfigRetrieverOptions()
-                    .addStore(fileStore)
-                    .addStore(envStore);
+                .addStore(fileStore)
+                .addStore(envStore);
 
             ConfigRetriever retriever = ConfigRetriever.create(vertx, options);
             retriever.getConfig(ar -> {
@@ -126,22 +125,15 @@ public class Application {
                                 }
                             }
 
+                            // register Jaeger tracer - if set, etc
+                            TracingUtil.initialize(bridgeConfig);
+
                             // when HTTP protocol is enabled, it handles healthy/ready/metrics endpoints as well,
                             // so no need for a standalone embedded HTTP server
                             if (!bridgeConfig.getHttpConfig().isEnabled()) {
                                 EmbeddedHttpServer embeddedHttpServer =
-                                        new EmbeddedHttpServer(vertx, healthChecker, metricsReporter, embeddedHttpServerPort);
+                                    new EmbeddedHttpServer(vertx, healthChecker, metricsReporter, embeddedHttpServerPort);
                                 embeddedHttpServer.start();
-                            }
-
-                            // register OpenTracing Jaeger tracer
-                            if ("jaeger".equals(bridgeConfig.getTracing())) {
-                                if (config.get(Configuration.JAEGER_SERVICE_NAME) != null) {
-                                    Tracer tracer = Configuration.fromEnv().getTracer();
-                                    GlobalTracer.registerIfAbsent(tracer);
-                                } else {
-                                    log.error("Jaeger tracing cannot be initialized because {} environment variable is not defined", Configuration.JAEGER_SERVICE_NAME);
-                                }
                             }
                         }
                     });
@@ -150,19 +142,19 @@ public class Application {
                     System.exit(1);
                 }
             });
-        } catch (Exception ex) {
-            log.error("Error starting the bridge", ex);
+        } catch (RuntimeException | MalformedObjectNameException | IOException | ParseException e) {
+            log.error("Error starting the bridge", e);
             System.exit(1);
         }
     }
 
     /**
      * Set up the Vert.x metrics options
-     * 
+     *
      * @return instance of the MicrometerMetricsOptions on Vert.x
      */
     private static MicrometerMetricsOptions metricsOptions() {
-        Set<String> set = new HashSet();
+        Set<String> set = new HashSet<>();
         set.add(MetricsDomain.NAMED_POOLS.name());
         set.add(MetricsDomain.VERTICLES.name());
         return new MicrometerMetricsOptions()
@@ -218,7 +210,7 @@ public class Application {
 
         if (bridgeConfig.getHttpConfig().isEnabled()) {
             HttpBridge httpBridge = new HttpBridge(bridgeConfig, metricsReporter);
-            
+
             vertx.deployVerticle(httpBridge, done -> {
                 if (done.succeeded()) {
                     log.info("HTTP verticle instance deployed [{}]", done.result());

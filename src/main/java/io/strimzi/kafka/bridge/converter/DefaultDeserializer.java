@@ -8,6 +8,7 @@ import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Map;
 
@@ -26,7 +27,7 @@ public class DefaultDeserializer<T> implements Deserializer<T> {
 
         try (ByteArrayInputStream b = new ByteArrayInputStream(data); ObjectInputStream o = new ObjectInputStream(b)) {
             return (T) o.readObject();
-        } catch (Exception e) {
+        } catch (IOException | ClassNotFoundException e) {
             throw new SerializationException("Error when deserializing", e);
         }
     }
