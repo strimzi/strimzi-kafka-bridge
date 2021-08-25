@@ -10,6 +10,7 @@ import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.Serializer;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.Map;
 
@@ -20,7 +21,7 @@ public class DefaultSerializer<T> implements Serializer<T> {
 
     }
 
-    @SuppressFBWarnings("PZLA_PREFER_ZERO_LENGTH_ARRAYS")
+    @SuppressFBWarnings({"PZLA_PREFER_ZERO_LENGTH_ARRAYS"})
     @Override
     public byte[] serialize(String topic, T data) {
 
@@ -30,7 +31,7 @@ public class DefaultSerializer<T> implements Serializer<T> {
         try (ByteArrayOutputStream b = new ByteArrayOutputStream(); ObjectOutputStream o = new ObjectOutputStream(b)) {
             o.writeObject(data);
             return b.toByteArray();
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new SerializationException("Error when serializing", e);
         }
     }

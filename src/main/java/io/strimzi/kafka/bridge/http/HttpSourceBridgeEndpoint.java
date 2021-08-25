@@ -6,15 +6,6 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.opentracing.Span;
-import io.opentracing.SpanContext;
-import io.opentracing.Tracer;
-import io.opentracing.Tracer.SpanBuilder;
-import io.opentracing.propagation.Format;
-import io.opentracing.propagation.TextMap;
-import io.opentracing.propagation.TextMapAdapter;
-import io.opentracing.tag.Tags;
-import io.opentracing.util.GlobalTracer;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
@@ -25,10 +16,12 @@ import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeResult;
+import io.strimzi.kafka.bridge.tracing.SpanHandle;
+import io.strimzi.kafka.bridge.tracing.TracingHandle;
+import io.strimzi.kafka.bridge.tracing.TracingUtil;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -41,12 +34,8 @@ import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.kafka.common.serialization.Serializer;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.Map.Entry;
 
 public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
@@ -88,24 +77,10 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             }
         }
 
-        Tracer tracer = GlobalTracer.get();
-
-        MultiMap httpHeaders = routingContext.request().headers();
-        Map<String, String> headers = new HashMap<>();
-        for (Entry<String, String> header: httpHeaders.entries()) {
-            headers.put(header.getKey(), header.getValue());
-        }
-
         String operationName = partition == null ? HttpOpenApiOperations.SEND.toString() : HttpOpenApiOperations.SEND_TO_PARTITION.toString();
-        SpanBuilder spanBuilder;
-        SpanContext parentSpan = tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(headers));
-        if (parentSpan == null) {
-            spanBuilder = tracer.buildSpan(operationName);
-        } else {
-            spanBuilder = tracer.buildSpan(operationName).asChildOf(parentSpan);
-        }
-        Span span = spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER).start();
-        HttpTracingUtils.setCommonTags(span, routingContext);
+
+        TracingHandle tracing = TracingUtil.getTracing();
+        SpanHandle<K, V> span = tracing.span(routingContext, operationName);
 
         try {
             if (messageConverter == null) {
@@ -114,24 +89,13 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
 
-                Tags.HTTP_STATUS.set(span, HttpResponseStatus.INTERNAL_SERVER_ERROR.code());
-                span.finish();
+                span.finish(HttpResponseStatus.INTERNAL_SERVER_ERROR.code());
                 return;
             }
             records = messageConverter.toKafkaRecords(topic, partition, routingContext.getBody());
 
             for (KafkaProducerRecord<K, V> record :records)   {
-                tracer.inject(span.context(), Format.Builtin.TEXT_MAP, new TextMap() {
-                    @Override
-                    public void put(String key, String value) {
-                        record.addHeader(key, value);
-                    }
-
-                    @Override
-                    public Iterator<Map.Entry<String, String>> iterator() {
-                        throw new UnsupportedOperationException("TextMapInjectAdapter should only be used with Tracer.inject()");
-                    }
-                });
+                span.inject(record);
             }
         } catch (Exception e) {
             HttpBridgeError error = new HttpBridgeError(
@@ -140,8 +104,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
 
-            Tags.HTTP_STATUS.set(span, HttpResponseStatus.UNPROCESSABLE_ENTITY.code());
-            span.finish();
+            span.finish(HttpResponseStatus.UNPROCESSABLE_ENTITY.code());
             return;
         }
         List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
@@ -172,8 +135,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                 }
             }
             
-            Tags.HTTP_STATUS.set(span, HttpResponseStatus.OK.code());
-            span.finish();
+            span.finish(HttpResponseStatus.OK.code());
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
                     BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
             

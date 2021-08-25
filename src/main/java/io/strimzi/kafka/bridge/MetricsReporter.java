@@ -28,13 +28,15 @@ public class MetricsReporter {
         this.jmxCollectorRegistry = jmxCollectorRegistry;
         this.meterRegistry = meterRegistry;
         if (this.meterRegistry instanceof PrometheusMeterRegistry) {
-            this.meterRegistry.config().namingConvention(new PrometheusNamingConvention() {
-                @Override
-                public String name(String name, Meter.Type type, String baseUnit) {
-                    String metricName = name.startsWith("vertx.") ? name.replace("vertx.", "strimzi.bridge.") : name;
-                    return super.name(metricName, type, baseUnit);
-                }
-            });
+            this.meterRegistry.config().namingConvention(new MetricsNamingConvention());
+        }
+    }
+
+    private static class MetricsNamingConvention extends PrometheusNamingConvention {
+        @Override
+        public String name(String name, Meter.Type type, String baseUnit) {
+            String metricName = name.startsWith("vertx.") ? name.replace("vertx.", "strimzi.bridge.") : name;
+            return super.name(metricName, type, baseUnit);
         }
     }
 

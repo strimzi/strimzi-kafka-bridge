@@ -6,20 +6,10 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.opentracing.References;
-import io.opentracing.Span;
-import io.opentracing.SpanContext;
-import io.opentracing.Tracer;
-import io.opentracing.Tracer.SpanBuilder;
-import io.opentracing.propagation.Format;
-import io.opentracing.propagation.TextMap;
-import io.opentracing.propagation.TextMapAdapter;
-import io.opentracing.tag.Tags;
-import io.opentracing.util.GlobalTracer;
 import io.strimzi.kafka.bridge.BridgeContentType;
+import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Endpoint;
-import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
@@ -27,6 +17,10 @@ import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.strimzi.kafka.bridge.tracing.SpanBuilderHandle;
+import io.strimzi.kafka.bridge.tracing.SpanHandle;
+import io.strimzi.kafka.bridge.tracing.TracingHandle;
+import io.strimzi.kafka.bridge.tracing.TracingUtil;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -42,13 +36,11 @@ import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.OffsetAndMetadata;
 import io.vertx.kafka.client.producer.KafkaHeader;
-
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -250,6 +242,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
     }
 
+    @SuppressWarnings("checkstyle:NPathComplexity") // tracing abstraction adds new npath complexity ...
     private void doPoll(RoutingContext routingContext) {
         if (topicSubscriptionsPattern == null && topicSubscriptions.isEmpty()) {
             HttpBridgeError error = new HttpBridgeError(
@@ -277,9 +270,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             this.consume(records -> {
                 if (records.succeeded()) {
 
-                    Tracer tracer = GlobalTracer.get();
+                    TracingHandle tracing = TracingUtil.getTracing();
+                    SpanBuilderHandle<K, V> builder = tracing.builder(routingContext, HttpOpenApiOperations.POLL.toString());
 
-                    SpanBuilder spanBuilder = tracer.buildSpan(HttpOpenApiOperations.POLL.toString());
                     for (int i = 0; i < records.result().size(); i++) {
                         KafkaConsumerRecord<K, V> record = records.result().recordAt(i);
 
@@ -288,25 +281,11 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                             headers.put(header.key(), header.value().toString());
                         }
 
-                        SpanContext parentSpan = tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(headers));
-                        if (parentSpan != null) {
-                            spanBuilder.addReference(References.FOLLOWS_FROM, parentSpan);
-                        }
+                        builder.addRef(headers);
                     }
-                    Span span = spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER).start();
-                    HttpTracingUtils.setCommonTags(span, routingContext);
+                    SpanHandle<K, V> span = builder.span(routingContext);
 
-                    tracer.inject(span.context(), Format.Builtin.TEXT_MAP, new TextMap() {
-                        @Override
-                        public void put(String key, String value) {
-                            routingContext.response().headers().add(key, value);
-                        }
-
-                        @Override
-                        public Iterator<Map.Entry<String, String>> iterator() {
-                            throw new UnsupportedOperationException("TextMapInjectAdapter should only be used with Tracer.inject()");
-                        }
-                    });
+                    span.inject(routingContext);
 
                     HttpResponseStatus responseStatus;
                     try {
@@ -335,8 +314,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                         HttpUtils.sendResponse(routingContext, responseStatus.code(),
                             BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                     }
-                    Tags.HTTP_STATUS.set(span, responseStatus.code());
-                    span.finish();
+                    span.finish(responseStatus.code());
 
                 } else {
                     HttpBridgeError error = new HttpBridgeError(
