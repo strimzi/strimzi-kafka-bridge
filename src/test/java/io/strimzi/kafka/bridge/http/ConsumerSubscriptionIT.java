@@ -14,12 +14,14 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+import org.apache.kafka.common.KafkaFuture;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -204,8 +206,11 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
         String topic = "listConsumerSubscriptions";
         String topic2 = "listConsumerSubscriptions2";
 
-        adminClientFacade.createTopic(topic, 1, 1);
-        adminClientFacade.createTopic(topic2, 4, 1);
+        KafkaFuture<Void> future1 = adminClientFacade.createTopic(topic, 1, 1);
+        KafkaFuture<Void> future2 = adminClientFacade.createTopic(topic2, 4, 1);
+
+        future1.get();
+        future2.get();
 
         assertThat(adminClientFacade.listTopic().size(), is(2));
 
@@ -301,7 +306,9 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
     void assignAfterSubscriptionTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "subscribe-and-assign-topic";
 
-        adminClientFacade.createTopic(topic, 4, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 4, 1);
+
+        future.get();
 
         assertThat(adminClientFacade.listTopic().size(), is(1));
 

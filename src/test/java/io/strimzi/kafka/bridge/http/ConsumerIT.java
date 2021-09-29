@@ -19,6 +19,7 @@ import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.client.producer.KafkaHeader;
 import io.vertx.kafka.client.producer.impl.KafkaHeaderImpl;
+import org.apache.kafka.common.KafkaFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -651,8 +652,11 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         String topic1 = "receiveSimpleMessage-1";
         String topic2 = "receiveSimpleMessage-2";
 
-        adminClientFacade.createTopic(topic1);
-        adminClientFacade.createTopic(topic2);
+        KafkaFuture<Void> future1 = adminClientFacade.createTopic(topic1);
+        KafkaFuture<Void> future2 = adminClientFacade.createTopic(topic2);
+
+        future1.get();
+        future2.get();
 
         basicKafkaClient.sendJsonMessagesPlain(topic1, 1, "Simple message", 0, true);
         basicKafkaClient.sendJsonMessagesPlain(topic2, 1, "Simple message", 0, true);
@@ -891,7 +895,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     @Test
     void commitOffset(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "commitOffset";
-        adminClientFacade.createTopic(topic);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+        future.get();
 
         String sentBody = "Simple message";
 
@@ -979,7 +984,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     @Test
     void commitEmptyOffset(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "commitEmptyOffset";
-        adminClientFacade.createTopic(topic);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+        future.get();
 
         String sentBody = "Simple message";
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);

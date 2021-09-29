@@ -22,6 +22,7 @@ import io.vertx.kafka.client.producer.KafkaHeader;
 import io.vertx.kafka.client.producer.impl.KafkaHeaderImpl;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.Disabled;
@@ -96,7 +97,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
     @Test
     void sendSimpleMessageToPartition(VertxTestContext context) throws InterruptedException, ExecutionException {
-        adminClientFacade.createTopic(topic, 2, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
 
@@ -110,6 +111,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         JsonObject root = new JsonObject();
         root.put("records", records);
+
+        future.get();
 
         producerService()
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
@@ -145,7 +148,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
     @Test
     void sendSimpleMessageWithKey(VertxTestContext context) throws InterruptedException, ExecutionException {
-        adminClientFacade.createTopic(topic, 2, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
         String key = "my-key";
@@ -158,6 +161,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         JsonObject root = new JsonObject();
         root.put("records", records);
+
+        future.get();
 
         producerService()
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
@@ -574,7 +579,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
     @Test
     void sendToOnePartitionTest(VertxTestContext context) throws InterruptedException, ExecutionException {
-        adminClientFacade.createTopic(topic, 3, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 3, 1);
 
         String value = "Hi, This is kafka bridge";
         int partition = 1;
@@ -586,6 +591,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         JsonObject root = new JsonObject();
         root.put("records", records);
+
+        future.get();
 
         producerService()
             .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
@@ -611,7 +618,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
     @Test
     void sendToOneStringPartitionTest(VertxTestContext context) throws InterruptedException, ExecutionException {
-        adminClientFacade.createTopic(topic, 3, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 3, 1);
 
         String value = "Hi, This is kafka bridge";
         String partition = "karel";
@@ -623,6 +630,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         JsonObject root = new JsonObject();
         root.put("records", records);
+
+        future.get();
 
         producerService()
             .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
@@ -723,7 +732,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
     @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
     void sendMultipleRecordsWithOneInvalidPartitionTest(VertxTestContext context) throws InterruptedException, ExecutionException {
-        adminClientFacade.createTopic(topic, 3, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 3, 1);
 
         String value = "Hi, This is kafka bridge";
         int partition = 1;
@@ -741,6 +750,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         JsonObject root = new JsonObject();
         root.put("records", records);
+
+        future.get();
 
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)

@@ -12,6 +12,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+import org.apache.kafka.common.KafkaFuture;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -189,7 +190,7 @@ public class AdminClientIT extends HttpBridgeITAbstract {
     }
 
     void setupTopic(VertxTestContext context, String topic, int partitions, int count) throws Exception {
-        adminClientFacade.createTopic(topic, partitions, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, partitions, 1);
 
         JsonArray records = new JsonArray();
         for (int i = 0; i < count; i++) {
@@ -200,6 +201,7 @@ public class AdminClientIT extends HttpBridgeITAbstract {
 
         JsonObject root = new JsonObject();
         root.put("records", records);
+        future.get();
 
         // send a message and wait its delivery to make sure the topic has been made visible to the brokers
         CompletableFuture<Boolean> producer = new CompletableFuture<>();

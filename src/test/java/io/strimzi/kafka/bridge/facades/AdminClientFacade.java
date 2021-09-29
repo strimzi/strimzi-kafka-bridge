@@ -9,6 +9,7 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DeleteTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.common.KafkaFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,11 +52,12 @@ public class AdminClientFacade {
      * @param partitions        number of partitions
      * @param replicationFactor number of replication factor
      */
-    public void createTopic(String topicName, int partitions, int replicationFactor) throws ExecutionException, InterruptedException {
+    public KafkaFuture<Void> createTopic(String topicName, int partitions, int replicationFactor) {
         CreateTopicsResult createTopicsResult = adminClient.createTopics(Collections.singletonList(new NewTopic(topicName, partitions, (short) replicationFactor)));
-        createTopicsResult.all().get();
 
         LOGGER.info("Topic with name " + topicName + " partitions " + partitions + " and replication factor " + replicationFactor + " is created.");
+
+        return createTopicsResult.all();
     }
 
     /**
@@ -63,8 +65,8 @@ public class AdminClientFacade {
      * with default values
      * @param topicName         name of the topic
      */
-    public void createTopic(String topicName) throws InterruptedException, ExecutionException {
-        createTopic(topicName, 1, 1);
+    public KafkaFuture<Void> createTopic(String topicName) {
+        return createTopic(topicName, 1, 1);
     }
 
     /**

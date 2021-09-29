@@ -89,8 +89,6 @@ public abstract class HttpBridgeITAbstract {
         config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
         config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
-
-        adminClientFacade = AdminClientFacade.create(kafkaUri);
     }
 
     protected static Vertx vertx;
@@ -122,6 +120,7 @@ public abstract class HttpBridgeITAbstract {
     @BeforeAll
     static void beforeAll(VertxTestContext context) {
         vertx = Vertx.vertx();
+        adminClientFacade = AdminClientFacade.create(kafkaUri);
 
         basicKafkaClient = new BasicKafkaClient(kafkaUri);
 
