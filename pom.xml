@@ -255,7 +255,24 @@
 			<artifactId>snakeyaml</artifactId>
 			<version>1.29</version>
 		</dependency>
-
+		<dependency>
+			<!-- transitive dep; override here to avoid version with CVE -->
+			<groupId>io.netty</groupId>
+			<artifactId>netty-codec</artifactId>
+			<version>4.1.68.Final</version>
+		</dependency>
+		<dependency>
+			<!-- transitive dep; override here to avoid version with CVE -->
+			<groupId>io.netty</groupId>
+			<artifactId>netty-handler</artifactId>
+			<version>4.1.68.Final</version>
+		</dependency>
+		<dependency>
+			<!-- transitive dep; override here to avoid version with CVE-->
+			<groupId>org.apache.tomcat.embed</groupId>
+			<artifactId>tomcat-embed-core</artifactId>
+			<version>8.5.68</version>
+		</dependency>
 		<!-- Testing -->
 		<dependency>
 			<groupId>io.vertx</groupId>
