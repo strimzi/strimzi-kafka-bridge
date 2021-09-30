@@ -472,8 +472,9 @@ public class ConsumerIT extends HttpBridgeITAbstract {
 
     @Test
     void receiveSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        adminClientFacade.createTopic(topic);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
 
+        future.get();
         String sentBody = "Simple message";
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
 
@@ -521,13 +522,16 @@ public class ConsumerIT extends HttpBridgeITAbstract {
 
     @Test
     void receiveSimpleMessageWithHeaders(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        adminClientFacade.createTopic(topic, 1, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
         List<KafkaHeader> headers = new ArrayList<>();
         headers.add(new KafkaHeaderImpl("key1", "value1"));
         headers.add(new KafkaHeaderImpl("key1", "value1"));
         headers.add(new KafkaHeaderImpl("key2", "value2"));
+
+        future.get();
+
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, headers, sentBody, true);
 
         // create consumer
@@ -719,8 +723,11 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         String topic1 = "receiveWithPattern-1";
         String topic2 = "receiveWithPattern-2";
 
-        adminClientFacade.createTopic(topic1);
-        adminClientFacade.createTopic(topic2);
+        KafkaFuture<Void> future1 = adminClientFacade.createTopic(topic1);
+        KafkaFuture<Void> future2 = adminClientFacade.createTopic(topic2);
+
+        future1.get();
+        future2.get();
 
         String message = "Simple message";
 
@@ -787,7 +794,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     void receiveSimpleMessageFromPartition(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         int partition = 1;
 
-        adminClientFacade.createTopic(topic, 2, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
+        future.get();
 
         String sentBody = "Simple message from partition";
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, partition, true);
@@ -838,7 +846,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     void receiveSimpleMessageFromMultiplePartitions(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "receiveSimpleMessageFromMultiplePartitions";
 
-        adminClientFacade.createTopic(topic, 2, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
+        future.get();
 
         String sentBody = "value";
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
@@ -1055,11 +1064,13 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     @Test
     void consumerAlreadyExistsTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "consumerAlreadyExistsTest";
-        adminClientFacade.createTopic(topic);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
 
         String name = "my-kafka-consumer4";
         JsonObject json = new JsonObject();
         json.put("name", name);
+
+        future.get();
 
         // create consumer
         consumerService()
@@ -1162,7 +1173,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     void doNotRespondTooLongMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "doNotRespondTooLongMessage";
 
-        adminClientFacade.createTopic(topic);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+        future.get();
 
         basicKafkaClient.sendStringMessagesPlain(topic, 1);
 
@@ -1208,7 +1220,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     void doNotReceiveMessageAfterUnsubscribe(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "doNotReceiveMessageAfterUnsubscribe";
 
-        adminClientFacade.createTopic(topic);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+        future.get();
 
         String message = "Simple message";
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, message, 0, true);
@@ -1284,7 +1297,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     void formatAndAcceptMismatch(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "formatAndAcceptMismatch";
 
-        adminClientFacade.createTopic(topic);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+        future.get();
 
         String sentBody = "Simple message";
         basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0);
@@ -1324,7 +1338,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     void sendReceiveJsonMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "sendReceiveJsonMessage";
 
-        adminClientFacade.createTopic(topic);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
 
         JsonObject sentKey = new JsonObject()
                 .put("f1", "v1")
@@ -1343,6 +1357,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
 
         JsonObject root = new JsonObject();
         root.put("records", records);
+
+        future.get();
 
         CompletableFuture<Boolean> produce = new CompletableFuture<>();
         producerService()
@@ -1416,7 +1432,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     void tryReceiveNotValidJsonMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic = "tryReceiveNotValidJsonMessage";
 
-        adminClientFacade.createTopic(topic);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+        future.get();
 
         // send a simple String which is not JSON encoded
         basicKafkaClient.sendStringMessagesPlain(topic, 1);

@@ -43,7 +43,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
 
@@ -155,7 +154,7 @@ public abstract class HttpBridgeITAbstract {
     }
 
     @BeforeEach
-    void tearDown() throws ExecutionException, InterruptedException, TimeoutException {
+    void setUpEach() throws ExecutionException, InterruptedException {
         topic = "my-topic-" + new Random().nextInt(Integer.MAX_VALUE);
 
         Collection<String> topics = adminClientFacade.listTopic();

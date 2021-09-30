@@ -6,7 +6,6 @@
 package io.strimzi.kafka.bridge.amqp;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.strimzi.StrimziKafkaContainer;
 import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpDefaultMessageConverter;
 import io.strimzi.kafka.bridge.amqp.converter.AmqpJsonMessageConverter;
@@ -19,6 +18,7 @@ import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.converter.DefaultDeserializer;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.facades.AdminClientFacade;
+import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxExtension;
@@ -49,7 +49,6 @@ import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
@@ -65,7 +64,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static io.strimzi.kafka.bridge.Constants.AMQP_BRIDGE;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -76,21 +74,18 @@ import static org.hamcrest.Matchers.nullValue;
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:ClassFanOutComplexity", "ClassDataAbstractionCoupling"})
 @Tag(AMQP_BRIDGE)
-class AmqpBridgeIT {
+class AmqpBridgeIT extends HttpBridgeITAbstract {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AmqpBridgeIT.class);
 
     private static Map<String, Object> config = new HashMap<>();
 
     private static Vertx vertx;
-    private static final StrimziKafkaContainer KAFKA_CONTAINER;
     private static AdminClientFacade adminClientFacade;
 
     static {
         config.put(AmqpConfig.AMQP_ENABLED, true);
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-
-        KAFKA_CONTAINER = new StrimziKafkaContainer();
     }
 
     private static final String BRIDGE_HOST = "localhost";
@@ -109,9 +104,8 @@ class AmqpBridgeIT {
 
     @BeforeAll
     public static void setUp(VertxTestContext context) {
-        KAFKA_CONTAINER.start();
-        adminClientFacade = AdminClientFacade.create(KAFKA_CONTAINER.getBootstrapServers());
-        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_CONTAINER.getBootstrapServers());
+        adminClientFacade = AdminClientFacade.create(kafkaContainer.getBootstrapServers());
+        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
 
         vertx = Vertx.vertx();
 
@@ -126,17 +120,6 @@ class AmqpBridgeIT {
         } else {
             context.completeNow();
             // else we create external bridge from the OS invoked by `.jar`
-        }
-    }
-
-    @AfterAll
-    public static void tearDown(VertxTestContext context) {
-        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
-            KAFKA_CONTAINER.stop();
-            vertx.close(context.succeeding(arg -> context.completeNow()));
-        } else {
-            // if we running external bridge
-            context.completeNow();
         }
     }
 
@@ -162,7 +145,7 @@ class AmqpBridgeIT {
                 String body = "Simple message from " + connection.getContainer();
                 Message message = ProtonHelper.message(topic, body);
 
-                Properties config = Consumer.fillProperties(KAFKA_CONTAINER.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
 
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -196,11 +179,10 @@ class AmqpBridgeIT {
         assertThat(context.awaitCompletion(60, TimeUnit.SECONDS), is(true));
     }
 
-    @Disabled
     @Test
     void sendSimpleMessageToPartition(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendSimpleMessageToPartition";
-        adminClientFacade.createTopic(topic, 2, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
 
         try {
             Thread.sleep(1000);
@@ -209,6 +191,7 @@ class AmqpBridgeIT {
         }
 
         Checkpoint consume = context.checkpoint();
+        future.get();
 
         ProtonClient client = ProtonClient.create(this.vertx);
 
@@ -224,11 +207,12 @@ class AmqpBridgeIT {
                 String body = "Simple message from " + connection.getContainer();
                 Message message = ProtonHelper.message(topic, body);
 
-                Properties config = Consumer.fillProperties(KAFKA_CONTAINER.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
                 KafkaConsumer<String, String> consumer = KafkaConsumer.create(this.vertx, config);
+
                 consumer.handler(record -> {
                     context.verify(() -> assertThat(record.value(), is(body)));
                     // checking the right partition which should not be just the first one (0)
@@ -267,9 +251,10 @@ class AmqpBridgeIT {
     @Test
     void sendSimpleMessageWithKey(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendSimpleMessageWithKey";
-        adminClientFacade.createTopic(topic, 1, 1);
+        KafkaFuture<Void> future =  adminClientFacade.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
+        future.get();
 
         Checkpoint consume = context.checkpoint();
         client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
@@ -284,7 +269,7 @@ class AmqpBridgeIT {
                 String body = "Simple message from " + connection.getContainer();
                 Message message = ProtonHelper.message(topic, body);
 
-                Properties config = Consumer.fillProperties(KAFKA_CONTAINER.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
 
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -327,9 +312,10 @@ class AmqpBridgeIT {
     @Test
     void sendBinaryMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendBinaryMessage";
-        adminClientFacade.createTopic(topic, 1, 1);
+        KafkaFuture<Void> future =  adminClientFacade.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
+        future.get();
 
         Checkpoint consume = context.checkpoint();
         client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
@@ -343,7 +329,7 @@ class AmqpBridgeIT {
 
                 String value = "Binary message from " + connection.getContainer();
 
-                Properties config = Consumer.fillProperties(KAFKA_CONTAINER.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
 
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class);
@@ -381,9 +367,10 @@ class AmqpBridgeIT {
     @Test
     void sendArrayMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendArrayMessage";
-        adminClientFacade.createTopic(topic, 1, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
+        future.get();
 
         Checkpoint consume = context.checkpoint();
         client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
@@ -398,7 +385,7 @@ class AmqpBridgeIT {
                 // send an array (i.e. integer values)
                 int[] array = {1, 2};
 
-                Properties config = Consumer.fillProperties(KAFKA_CONTAINER.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
 
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
@@ -435,9 +422,10 @@ class AmqpBridgeIT {
     @Test
     void sendListMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendListMessage";
-        adminClientFacade.createTopic(topic, 1, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
+        future.get();
 
         Checkpoint consume = context.checkpoint();
         client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
@@ -454,7 +442,7 @@ class AmqpBridgeIT {
                 list.add("item1");
                 list.add(2);
 
-                Properties config = Consumer.fillProperties(KAFKA_CONTAINER.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
 
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
@@ -491,9 +479,10 @@ class AmqpBridgeIT {
     @Test
     void sendMapMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendMapMessage";
-        adminClientFacade.createTopic(topic, 1, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
+        future.get();
 
         Checkpoint consume = context.checkpoint();
         client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
@@ -510,7 +499,7 @@ class AmqpBridgeIT {
                 map.put("1", 10);
                 map.put(2, "Hello");
 
-                Properties config = Consumer.fillProperties(KAFKA_CONTAINER.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
 
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
@@ -547,9 +536,10 @@ class AmqpBridgeIT {
     @Test
     void sendPeriodicMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendPeriodicMessage";
-        adminClientFacade.createTopic(topic, 1, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
+        future.get();
 
         Checkpoint consume = context.checkpoint();
         client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
@@ -561,7 +551,7 @@ class AmqpBridgeIT {
                 ProtonSender sender = connection.createSender(null);
                 sender.open();
 
-                Properties config = Consumer.fillProperties(KAFKA_CONTAINER.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
 
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -635,9 +625,10 @@ class AmqpBridgeIT {
     @Test
     void sendReceiveInMultiplexing(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendReceiveInMultiplexing";
-        adminClientFacade.createTopic(topic, 1, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
+        future.get();
 
         Checkpoint consume = context.checkpoint();
         client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
@@ -681,15 +672,16 @@ class AmqpBridgeIT {
     }
 
     @Test
-    void receiveSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void receiveSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "receiveSimpleMessage";
-        adminClientFacade.createTopic(topic, 1, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
 
         String sentBody = "Simple message";
 
         Checkpoint consume = context.checkpoint();
+        future.get();
 
-        BasicKafkaClient basicKafkaClient = new BasicKafkaClient(KAFKA_CONTAINER.getBootstrapServers());
+        BasicKafkaClient basicKafkaClient = new BasicKafkaClient(kafkaContainer.getBootstrapServers());
 
         basicKafkaClient.sendStringMessagesPlain(topic, sentBody, 1, 0);
         // topic, body, message-count, partition
@@ -742,18 +734,18 @@ class AmqpBridgeIT {
         assertThat(context.awaitCompletion(60, TimeUnit.SECONDS), is(true));
     }
 
-    @Disabled
     @Test
-    void receiveSimpleMessageFromPartition(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void receiveSimpleMessageFromPartition(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "receiveSimpleMessageFromPartition";
-        adminClientFacade.createTopic(topic, 2, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
 
         String sentBody = "Simple message";
+        future.get();
 
         // Futures for wait
         Checkpoint consume = context.checkpoint();
 
-        BasicKafkaClient basicKafkaClient = new BasicKafkaClient(KAFKA_CONTAINER.getBootstrapServers());
+        BasicKafkaClient basicKafkaClient = new BasicKafkaClient(kafkaContainer.getBootstrapServers());
         basicKafkaClient.sendStringMessagesPlain(topic, sentBody, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
@@ -815,12 +807,12 @@ class AmqpBridgeIT {
     void receiveSimpleMessageFromPartitionAndOffset(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "receiveSimpleMessageFromPartitionAndOffset";
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
+        future.get();
 
         // Futures for wait
         Checkpoint consume = context.checkpoint();
-        future.get();
 
-        BasicKafkaClient basicKafkaClient = new BasicKafkaClient(KAFKA_CONTAINER.getBootstrapServers());
+        BasicKafkaClient basicKafkaClient = new BasicKafkaClient(kafkaContainer.getBootstrapServers());
         basicKafkaClient.sendStringMessagesPlain(topic, "value", 11, 0, false);
 
         ProtonClient client = ProtonClient.create(this.vertx);
@@ -884,9 +876,11 @@ class AmqpBridgeIT {
     @Test
     void noPartitionsAvailable(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "noPartitionsAvailable";
-        adminClientFacade.createTopic(topic, 1, 1);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
+        future.get();
+
         Checkpoint noPartition = context.checkpoint();
         client.connect(AmqpBridgeIT.BRIDGE_HOST, AmqpBridgeIT.BRIDGE_PORT, ar -> {
             if (ar.succeeded()) {

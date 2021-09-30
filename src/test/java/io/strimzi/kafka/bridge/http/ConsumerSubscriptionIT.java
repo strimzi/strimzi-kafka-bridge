@@ -211,8 +211,6 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
         future1.get();
         future2.get();
 
-        assertThat(adminClientFacade.listTopic().size(), is(2));
-
         String name = "my-kafka-consumer-list";
 
         JsonObject json = new JsonObject();
@@ -306,10 +304,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
         String topic = "subscribe-and-assign-topic";
 
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 4, 1);
-
         future.get();
-
-        assertThat(adminClientFacade.listTopic().size(), is(1));
 
         String name = "my-kafka-consumer-assign";
 
@@ -361,5 +356,4 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
     void setUp() {
         groupId = generateRandomConsumerGroupName();
     }
-
 }
