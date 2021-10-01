@@ -101,4 +101,27 @@ public class Consumer extends ClientHandlerBase<Integer> implements AutoCloseabl
 
         return properties;
     }
+
+    @SuppressWarnings("Regexp") // for the `.toLowerCase()` because kafka needs this property as lower-case
+    @SuppressFBWarnings("DM_CONVERT_CASE")
+    public static Properties fillProperties(String brokerList, String groupId, String clientId, OffsetResetStrategy autoOffsetReset) {
+        if (groupId == null) {
+            throw new IllegalArgumentException("The groupId is required");
+        } else {
+            Properties props = new Properties();
+            props.setProperty("bootstrap.servers", brokerList);
+            props.setProperty("group.id", groupId);
+            props.setProperty("enable.auto.commit", Boolean.FALSE.toString());
+            if (autoOffsetReset != null) {
+                props.setProperty("auto.offset.reset", autoOffsetReset.toString().toLowerCase());
+            }
+
+            if (clientId != null) {
+                props.setProperty("client.id", clientId);
+            }
+
+            return props;
+        }
+    }
+
 }

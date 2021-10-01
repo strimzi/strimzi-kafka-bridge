@@ -86,6 +86,24 @@ public class BasicKafkaClient {
 
     /**
      * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
+     * @param topicName topic name where messages are send
+     * @param message content to be sent
+     * @param messageCount message count
+     * @param partition partition, which will be selected
+     * @return sent message count
+     */
+    public int sendStringMessagesPlain(String topicName, String message, int messageCount, int partition) {
+        return sendStringMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount,
+            Collections.EMPTY_LIST, message, partition, true);
+    }
+
+    public int sendStringMessagesPlain(String topicName, String message, int messageCount, int partition, boolean withNullKeyRecord) {
+        return sendStringMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount,
+            Collections.EMPTY_LIST, message, partition, withNullKeyRecord);
+    }
+
+    /**
+     * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
      * @param timeoutMs timeout for the sending messages
      * @param topicName topic name where messages are send
      * @param messageCount message count
