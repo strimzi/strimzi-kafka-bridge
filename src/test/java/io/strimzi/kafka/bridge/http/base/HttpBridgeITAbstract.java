@@ -43,7 +43,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
 
@@ -89,8 +88,6 @@ public abstract class HttpBridgeITAbstract {
         config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
         config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
-
-        adminClientFacade = AdminClientFacade.create(kafkaUri);
     }
 
     protected static Vertx vertx;
@@ -122,6 +119,7 @@ public abstract class HttpBridgeITAbstract {
     @BeforeAll
     static void beforeAll(VertxTestContext context) {
         vertx = Vertx.vertx();
+        adminClientFacade = AdminClientFacade.create(kafkaUri);
 
         basicKafkaClient = new BasicKafkaClient(kafkaUri);
 
@@ -156,7 +154,7 @@ public abstract class HttpBridgeITAbstract {
     }
 
     @BeforeEach
-    void tearDown() throws ExecutionException, InterruptedException, TimeoutException {
+    void setUpEach() throws ExecutionException, InterruptedException {
         topic = "my-topic-" + new Random().nextInt(Integer.MAX_VALUE);
 
         Collection<String> topics = adminClientFacade.listTopic();

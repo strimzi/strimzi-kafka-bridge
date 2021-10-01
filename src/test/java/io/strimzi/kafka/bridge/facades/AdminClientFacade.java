@@ -9,17 +9,15 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DeleteTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.common.KafkaFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * Class AdminClientFacade used for encapsulate complexity and asynchronous code of AdminClient.
@@ -29,6 +27,8 @@ public class AdminClientFacade {
     private static final Logger LOGGER = LogManager.getLogger(AdminClientFacade.class);
     private static AdminClient adminClient;
     private static AdminClientFacade adminClientFacade;
+
+    private AdminClientFacade() {}
 
     public static synchronized AdminClientFacade create(String bootstrapServer) {
 
@@ -49,11 +49,12 @@ public class AdminClientFacade {
      * @param partitions        number of partitions
      * @param replicationFactor number of replication factor
      */
-    public void createTopic(String topicName, int partitions, int replicationFactor) throws ExecutionException, InterruptedException {
+    public KafkaFuture<Void> createTopic(String topicName, int partitions, int replicationFactor) {
         CreateTopicsResult createTopicsResult = adminClient.createTopics(Collections.singletonList(new NewTopic(topicName, partitions, (short) replicationFactor)));
-        createTopicsResult.all().get();
 
         LOGGER.info("Topic with name " + topicName + " partitions " + partitions + " and replication factor " + replicationFactor + " is created.");
+
+        return createTopicsResult.all();
     }
 
     /**
@@ -61,8 +62,8 @@ public class AdminClientFacade {
      * with default values
      * @param topicName         name of the topic
      */
-    public void createTopic(String topicName) throws InterruptedException, ExecutionException {
-        createTopic(topicName, 1, 1);
+    public KafkaFuture<Void> createTopic(String topicName) {
+        return createTopic(topicName, 1, 1);
     }
 
     /**
@@ -88,9 +89,9 @@ public class AdminClientFacade {
      *
      * @param topics              collection of topics
      */
-    public void deleteTopics(Collection<String> topics) throws InterruptedException, ExecutionException, TimeoutException {
+    public void deleteTopics(Collection<String> topics) throws InterruptedException, ExecutionException {
         DeleteTopicsResult deleteTopicsResult = adminClient.deleteTopics(topics);
-        deleteTopicsResult.all().get(Duration.ofMinutes(1).toMillis(), TimeUnit.MILLISECONDS);
+        deleteTopicsResult.all().get();
         LOGGER.info("Topics with names " + topics + " is deleted.");
     }
 
