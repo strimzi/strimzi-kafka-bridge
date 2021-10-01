@@ -14,6 +14,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+import org.apache.kafka.common.KafkaFuture;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -131,7 +132,8 @@ public class SeekIT extends HttpBridgeITAbstract {
 
     @Test
     void seekToBeginningAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        adminClientFacade.createTopic(topic);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+        future.get();
 
         basicKafkaClient.sendStringMessagesPlain(topic, 10);
 
@@ -209,13 +211,16 @@ public class SeekIT extends HttpBridgeITAbstract {
 
     @Test
     void seekToEndAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        adminClientFacade.createTopic(topic);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
 
         JsonObject topics = new JsonObject();
         topics.put("topics", new JsonArray().add(topic));
 
         JsonObject jsonConsumer = new JsonObject();
         jsonConsumer.put("name", name);
+
+        future.get();
+
         // create consumer
         // subscribe to a topic
         consumerService()
@@ -290,7 +295,10 @@ public class SeekIT extends HttpBridgeITAbstract {
             .put("name", name)
             .put("format", "json");
 
-        adminClientFacade.createTopic(topic, 2, 1);
+        final String topic = "seekToOffsetAndReceive";
+
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
+        future.get();
 
         basicKafkaClient.sendJsonMessagesPlain(topic, 10, "value", 0);
         basicKafkaClient.sendJsonMessagesPlain(topic, 10, "value", 1);
@@ -353,8 +361,8 @@ public class SeekIT extends HttpBridgeITAbstract {
                         assertThat(metadata.size(), is(1));
 
                         assertThat(metadata.get(0).getString("topic"), is(topic));
-                        assertThat(metadata.get(0).getString("value"), is("value"));
-                        assertThat(metadata.get(0).getString("key"), is("key"));
+                        assertThat(metadata.get(0).getString("value"), is("value-9"));
+                        assertThat(metadata.get(0).getString("key"), is("key-9"));
 
                         // check it read from partition 1, starting from offset 5, the last 5 messages
                         metadata = body.stream()
@@ -366,8 +374,8 @@ public class SeekIT extends HttpBridgeITAbstract {
 
                         for (int i = 0; i < metadata.size(); i++) {
                             assertThat(metadata.get(i).getString("topic"), is(topic));
-                            assertThat(metadata.get(i).getString("value"), is("value"));
-                            assertThat(metadata.get(i).getString("key"), is("key"));
+                            assertThat(metadata.get(i).getString("value"), is("value-" + (i + metadata.size())));
+                            assertThat(metadata.get(i).getString("key"), is("key-" + (i + metadata.size())));
                         }
                     });
                     consume.complete(true);
@@ -389,8 +397,8 @@ public class SeekIT extends HttpBridgeITAbstract {
 
         LOGGER.info("Creating topics " + subscribedTopic + "," + notSubscribedTopic);
 
-        adminClientFacade.createTopic(subscribedTopic);
-        adminClientFacade.createTopic(notSubscribedTopic);
+        KafkaFuture<Void> future1 = adminClientFacade.createTopic(subscribedTopic);
+        KafkaFuture<Void> future2 = adminClientFacade.createTopic(notSubscribedTopic);
 
         JsonObject jsonConsumer = new JsonObject()
                                     .put("name", name)
@@ -398,6 +406,9 @@ public class SeekIT extends HttpBridgeITAbstract {
 
         JsonObject topics = new JsonObject()
                                     .put("topics", new JsonArray().add(subscribedTopic));
+
+        future1.get();
+        future2.get();
 
         // create consumer
         // subscribe to a topic
@@ -453,8 +464,8 @@ public class SeekIT extends HttpBridgeITAbstract {
 
         LOGGER.info("Creating topics " + subscribedTopic + "," + notSubscribedTopic);
 
-        adminClientFacade.createTopic(subscribedTopic);
-        adminClientFacade.createTopic(notSubscribedTopic);
+        KafkaFuture<Void> future1 = adminClientFacade.createTopic(subscribedTopic);
+        KafkaFuture<Void> future2 = adminClientFacade.createTopic(notSubscribedTopic);
 
         JsonObject jsonConsumer = new JsonObject()
                                     .put("name", name)
@@ -462,6 +473,9 @@ public class SeekIT extends HttpBridgeITAbstract {
 
         JsonObject topics = new JsonObject()
                                     .put("topics", new JsonArray().add(subscribedTopic));
+
+        future1.get();
+        future2.get();
 
         // create consumer
         // subscribe to a topic
