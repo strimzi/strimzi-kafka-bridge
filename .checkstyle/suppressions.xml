@@ -9,4 +9,8 @@
     <!-- Note that [/\\] must be used as the path separator for cross-platform support -->
     <suppress checks="JavaNCSS"
               files="io[/\\]strimzi[/\\]kafka[/\\]bridge[/\\]http[/\\]OtherServicesTest.java"/>
+
+    <!-- Suppressing unnecessary parentheses as in some cases it is better to use them for better code readilibity-->
+    <suppress checks="UnnecessaryParentheses"
+              files="io[/\\]strimzi[/\\].*"/>
 </suppressions>
