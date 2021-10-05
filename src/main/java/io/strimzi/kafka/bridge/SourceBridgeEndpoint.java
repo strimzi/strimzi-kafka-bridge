@@ -111,7 +111,6 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         // overrides for AMQP - Kafka settled producer mode
         props.put(ProducerConfig.ACKS_CONFIG, "0");
-        //tutady
         this.producerSettledMode = KafkaProducer.create(this.vertx, props, this.keySerializer, this.valueSerializer);
     }
 

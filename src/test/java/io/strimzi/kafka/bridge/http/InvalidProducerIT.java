@@ -26,6 +26,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -61,7 +63,9 @@ public class InvalidProducerIT extends HttpBridgeITAbstract {
 
     @BeforeAll
     static void beforeAll(VertxTestContext context) {
-        config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.ACKS_CONFIG, "5");
+        Map<String, Object> tmpCfg = new HashMap<>();
+        tmpCfg.putAll(config);
+        tmpCfg.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.ACKS_CONFIG, "5");
         vertx = Vertx.vertx();
         adminClientFacade = AdminClientFacade.create(kafkaUri);
 
@@ -70,7 +74,7 @@ public class InvalidProducerIT extends HttpBridgeITAbstract {
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
 
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
-            bridgeConfig = BridgeConfig.fromMap(config);
+            bridgeConfig = BridgeConfig.fromMap(tmpCfg);
             httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
             httpBridge.setHealthChecker(new HealthChecker());
 
