@@ -73,17 +73,13 @@ public class InvalidProducerIT extends HttpBridgeITAbstract {
 
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
 
-        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
-            bridgeConfig = BridgeConfig.fromMap(tmpCfg);
-            httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
-            httpBridge.setHealthChecker(new HealthChecker());
+        bridgeConfig = BridgeConfig.fromMap(tmpCfg);
+        httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
+        httpBridge.setHealthChecker(new HealthChecker());
 
-            LOGGER.info("Deploying in-memory bridge");
-            vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
-        } else {
-            context.completeNow();
-            // else we create external bridge from the OS invoked by `.jar`
-        }
+        LOGGER.info("Deploying in-memory bridge");
+        vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
+
 
         client = WebClient.create(vertx, new WebClientOptions()
                 .setDefaultHost(Urls.BRIDGE_HOST)
