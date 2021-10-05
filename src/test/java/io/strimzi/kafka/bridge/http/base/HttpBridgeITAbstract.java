@@ -97,8 +97,8 @@ public abstract class HttpBridgeITAbstract {
     protected static HttpBridge httpBridge;
     protected static BridgeConfig bridgeConfig;
 
-    static MeterRegistry meterRegistry = null;
-    static JmxCollectorRegistry jmxCollectorRegistry = null;
+    protected static MeterRegistry meterRegistry = null;
+    protected static JmxCollectorRegistry jmxCollectorRegistry = null;
 
     protected BaseService baseService() {
         return BaseService.getInstance(client);
