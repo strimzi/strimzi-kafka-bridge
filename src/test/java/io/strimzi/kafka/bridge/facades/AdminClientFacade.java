@@ -17,9 +17,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Class AdminClientFacade used for encapsulate complexity and asynchronous code of AdminClient.
@@ -82,15 +80,7 @@ public class AdminClientFacade {
      */
     public void deleteTopic(String topicName) throws InterruptedException, ExecutionException {
         DeleteTopicsResult deleteTopicsResult = adminClient.deleteTopics(Collections.singletonList(topicName));
-        CountDownLatch latch = new CountDownLatch(1);
-        deleteTopicsResult.all().whenComplete((i, e) -> {
-            if (e == null) {
-                latch.countDown();
-            } else {
-                throw new RuntimeException(e);
-            }
-        });
-        latch.await(30, TimeUnit.SECONDS);
+        deleteTopicsResult.all().get();
         LOGGER.info("Topic with name " + topicName + " is deleted.");
     }
 

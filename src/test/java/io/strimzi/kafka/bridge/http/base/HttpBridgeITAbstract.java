@@ -33,6 +33,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -154,10 +155,14 @@ public abstract class HttpBridgeITAbstract {
     }
 
     @BeforeEach
-    void setUpEach() throws ExecutionException, InterruptedException {
+    void setUpEach() {
         topic = "my-topic-" + new Random().nextInt(Integer.MAX_VALUE);
+    }
 
+    @AfterEach
+    void cleanUp() throws InterruptedException, ExecutionException {
         Collection<String> topics = adminClientFacade.listTopic();
+        LOGGER.info("Kafka still contains {}", topics);
         adminClientFacade.deleteTopics(topics);
     }
 
