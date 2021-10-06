@@ -17,7 +17,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Class AdminClientFacade used for encapsulate complexity and asynchronous code of AdminClient.
@@ -80,7 +82,15 @@ public class AdminClientFacade {
      */
     public void deleteTopic(String topicName) throws InterruptedException, ExecutionException {
         DeleteTopicsResult deleteTopicsResult = adminClient.deleteTopics(Collections.singletonList(topicName));
-        deleteTopicsResult.all().get();
+        CountDownLatch latch = new CountDownLatch(1);
+        deleteTopicsResult.all().whenComplete((i, e) -> {
+            if (e == null) {
+                latch.countDown();
+            } else {
+                throw new RuntimeException(e);
+            }
+        });
+        latch.await(30, TimeUnit.SECONDS);
         LOGGER.info("Topic with name " + topicName + " is deleted.");
     }
 
@@ -99,7 +109,12 @@ public class AdminClientFacade {
      * Method hasKafkaZeroTopics used for the race condition between in-memory kafka cluster and also encapsulate the get
      */
     public boolean hasKafkaZeroTopics() throws InterruptedException, ExecutionException {
-        return adminClient.listTopics().names().get().size() == 0;
+        Set<String> topicSet = adminClient.listTopics().names().get();
+        if (!topicSet.isEmpty()) {
+            LOGGER.error("Kafka should contain 0 topics but contains {}", topicSet.toString());
+            return false;
+        }
+        return true;
     }
 
     public void close() {
