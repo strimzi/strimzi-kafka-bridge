@@ -273,32 +273,42 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
         this.listOffsets(topicPartitionEndOffsets, getEndOffsetsPromise);
         Future<Map<TopicPartition, ListOffsetsResultInfo>> getBeginningOffsetsFuture = getBeginningOffsetsPromise.future();
         Future<Map<TopicPartition, ListOffsetsResultInfo>> getEndOffsetsFuture = getEndOffsetsPromise.future();
-        CompositeFuture.join(getBeginningOffsetsFuture, getEndOffsetsFuture).onComplete(done -> {
-            if (done.succeeded() && getBeginningOffsetsFuture.result() != null && getEndOffsetsFuture.result() != null) {
-                JsonObject root = new JsonObject();
-                ListOffsetsResultInfo beginningOffset = getBeginningOffsetsFuture.result().get(topicPartition);
-                if (beginningOffset != null) {
-                    root.put("beginning_offset", beginningOffset.getOffset());
-                }
-                ListOffsetsResultInfo endOffset = getEndOffsetsFuture.result().get(topicPartition);
-                if (endOffset != null) {
-                    root.put("end_offset", endOffset.getOffset());
-                }
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
-            } else if (done.cause() instanceof UnknownTopicOrPartitionException) {
-                HttpBridgeError error = new HttpBridgeError(
-                        HttpResponseStatus.NOT_FOUND.code(),
-                        done.cause().getMessage()
-                );
+        Promise<Map<String, TopicDescription>> topicExistenceCheck = Promise.promise();
+        this.describeTopics(Collections.singletonList(topicName), topicExistenceCheck);
+        topicExistenceCheck.future().onComplete(t -> {
+            Throwable e = null;
+            if (t.cause() instanceof UnknownTopicOrPartitionException) {
+                e = t.cause();
+            } else if (t.result().get(topicName).getPartitions().size() <= partitionId) {
+                e = new UnknownTopicOrPartitionException("Topic '" + topicName + "' does not have partition with id " + partitionId);
+            }
+            if (e != null) {
+                HttpBridgeError error = new HttpBridgeError(HttpResponseStatus.NOT_FOUND.code(), e.getMessage());
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                return;
             } else {
-                HttpBridgeError error = new HttpBridgeError(
-                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        done.cause().getMessage()
-                );
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                CompositeFuture.join(getBeginningOffsetsFuture, getEndOffsetsFuture).onComplete(done -> {
+                    if (done.succeeded() && getBeginningOffsetsFuture.result() != null && getEndOffsetsFuture.result() != null) {
+                        JsonObject root = new JsonObject();
+                        ListOffsetsResultInfo beginningOffset = getBeginningOffsetsFuture.result().get(topicPartition);
+                        if (beginningOffset != null) {
+                            root.put("beginning_offset", beginningOffset.getOffset());
+                        }
+                        ListOffsetsResultInfo endOffset = getEndOffsetsFuture.result().get(topicPartition);
+                        if (endOffset != null) {
+                            root.put("end_offset", endOffset.getOffset());
+                        }
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
+                    } else {
+                        HttpBridgeError error = new HttpBridgeError(
+                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                done.cause().getMessage()
+                        );
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                    }
+                });
             }
         });
     }
