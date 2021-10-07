@@ -29,6 +29,7 @@ certs_key_path=$6
 
 if [ -n "$trusted_certs" ]; then
     echo "Preparing truststore"
+    rm -f "$truststore_path"
     IFS=';' read -ra CERTS <<< ${trusted_certs}
     for cert in "${CERTS[@]}"
     do
@@ -39,6 +40,7 @@ fi
 
 if [ -n "$tls_auth_cert" ] && [ -n "$tls_auth_key" ]; then
     echo "Preparing keystore"
+    rm -f "$keystore_path"
     create_keystore $keystore_path $CERTS_STORE_PASSWORD $certs_key_path/$tls_auth_cert $certs_key_path/$tls_auth_key $tls_auth_cert
     echo "Preparing keystore is complete"
 fi
@@ -47,6 +49,7 @@ if [ -d /opt/strimzi/oauth-certs ]; then
   echo "Preparing truststore for OAuth"
   # Add each certificate to the trust store
   STORE=/tmp/strimzi/oauth.truststore.p12
+  rm -f "$STORE"
   declare -i INDEX=0
   for CRT in /opt/strimzi/oauth-certs/**/*; do
     ALIAS="oauth-${INDEX}"
