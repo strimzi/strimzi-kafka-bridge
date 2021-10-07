@@ -99,7 +99,12 @@ public class AdminClientFacade {
      * Method hasKafkaZeroTopics used for the race condition between in-memory kafka cluster and also encapsulate the get
      */
     public boolean hasKafkaZeroTopics() throws InterruptedException, ExecutionException {
-        return adminClient.listTopics().names().get().size() == 0;
+        Set<String> topicSet = adminClient.listTopics().names().get();
+        if (!topicSet.isEmpty()) {
+            LOGGER.error("Kafka should contain 0 topics but contains {}", topicSet.toString());
+            return false;
+        }
+        return true;
     }
 
     public void close() {
