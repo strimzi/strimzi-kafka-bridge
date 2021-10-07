@@ -82,8 +82,8 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<log4j.version>2.13.3</log4j.version>
-		<vertx.version>4.1.2</vertx.version>
-		<kafka.version>2.7.0</kafka.version>
+		<vertx.version>4.1.4</vertx.version>
+		<kafka.version>2.8.1</kafka.version>
 		<kafka-kubernetes-config-provider.version>0.1.1</kafka-kubernetes-config-provider.version>
 		<kafka-env-var-config-provider.version>0.1.1</kafka-env-var-config-provider.version>
 		<debezium.version>1.2.3.Final</debezium.version>
@@ -99,6 +99,8 @@
 		<sonatype.nexus.staging>1.6.3</sonatype.nexus.staging>
 		<swagger2markup.version>1.3.7</swagger2markup.version>
 		<jackson-core.version>2.11.3</jackson-core.version>
+		<netty.version>4.1.68.Final</netty.version>
+		<tomcat-embed-core.version>8.5.68</tomcat-embed-core.version>
 		<spotbugs.version>4.0.1</spotbugs.version>
 		<strimzi-oauth.version>0.8.1</strimzi-oauth.version>
 		<jaeger.version>1.6.0</jaeger.version>
@@ -255,7 +257,24 @@
 			<artifactId>snakeyaml</artifactId>
 			<version>1.29</version>
 		</dependency>
-
+		<!-- overriding version of netty-codec for Vert.x - Vulnerability -->
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-codec</artifactId>
+			<version>${netty.version}</version>
+		</dependency>
+		<!-- overriding version of netty-handler for Vert.x - Vulnerability -->
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-handler</artifactId>
+			<version>${netty.version}</version>
+		</dependency>
+		<!-- overriding version of tomcat-embed-core for jaegertracing - Vulnerability -->
+		<dependency>
+			<groupId>org.apache.tomcat.embed</groupId>
+			<artifactId>tomcat-embed-core</artifactId>
+			<version>${tomcat-embed-core.version}</version>
+		</dependency>
 		<!-- Testing -->
 		<dependency>
 			<groupId>io.vertx</groupId>

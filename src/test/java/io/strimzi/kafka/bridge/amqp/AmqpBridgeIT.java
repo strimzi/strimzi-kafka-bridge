@@ -411,6 +411,8 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
                     LOGGER.info("Message delivered {}", delivery.getRemoteState());
                     context.verify(() -> assertThat(Accepted.getInstance(), is(delivery.getRemoteState())));
+                    sender.close();
+                    connection.close();
                 });
             } else {
                 context.failNow(ar.cause());
@@ -468,6 +470,8 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
                     LOGGER.info("Message delivered {}", delivery.getRemoteState());
                     context.verify(() -> assertThat(Accepted.getInstance(), is(delivery.getRemoteState())));
+                    sender.close();
+                    connection.close();
                 });
             } else {
                 context.failNow(ar.cause());
@@ -525,6 +529,8 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                 sender.send(ProtonHelper.tag("my_tag"), message, delivery -> {
                     LOGGER.info("Message delivered {}", delivery.getRemoteState());
                     context.verify(() -> assertThat(Accepted.getInstance(), is(delivery.getRemoteState())));
+                    sender.close();
+                    connection.close();
                 });
             } else {
                 context.failNow(ar.cause());
@@ -571,6 +577,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                     });
 
                     consumer.close();
+                    connection.close();
                     consume.flag();
                 });
                 consumer.handler(record -> {
@@ -641,6 +648,14 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                 String sentBody = "Simple message from " + connection.getContainer();
                 Message sentMessage = ProtonHelper.message(topic, sentBody);
 
+                ProtonSender sender = connection.createSender(null);
+                sender.open();
+
+                sender.send(ProtonHelper.tag("my_tag"), sentMessage, delivery -> {
+                    LOGGER.info("Message delivered {}", delivery.getRemoteState());
+                    context.verify(() -> assertThat(Accepted.getInstance(), is(delivery.getRemoteState())));
+                });
+
                 ProtonReceiver receiver = connection.createReceiver(topic + "/group.id/my_group");
                 receiver.handler((delivery, receivedMessage) -> {
 
@@ -651,18 +666,13 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                         // default is AT_LEAST_ONCE QoS (unsettled) so we need to send disposition (settle) to sender
                         delivery.disposition(Accepted.getInstance(), true);
                         context.verify(() -> assertThat(sentBody, is(new String(value))));
+                        sender.close();
+                        receiver.close();
+                        connection.close();
                         consume.flag();
                     }
                 })
-                    .setPrefetch(bridgeConfig.getAmqpConfig().getFlowCredit()).open();
-
-                ProtonSender sender = connection.createSender(null);
-                sender.open();
-
-                sender.send(ProtonHelper.tag("my_tag"), sentMessage, delivery -> {
-                    LOGGER.info("Message delivered {}", delivery.getRemoteState());
-                    context.verify(() -> assertThat(Accepted.getInstance(), is(delivery.getRemoteState())));
-                });
+                        .setPrefetch(bridgeConfig.getAmqpConfig().getFlowCredit()).open();
 
             } else {
                 context.failNow(ar.cause());
@@ -722,6 +732,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                             assertThat(partitionAnnotation, is(0));
                             assertThat(offsetAnnotation, is(0L));
                             assertThat(sentBody, is(new String(value)));
+                            connection.close();
                         });
                         consume.flag();
                     }
@@ -792,6 +803,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                         assertThat(partitionAnnotation, is(1));
                         assertThat(offsetAnnotation, is(0L));
                         assertThat(sentBody, is(new String(value)));
+                        connection.close();
                         consume.flag();
                     }
                 })
@@ -861,6 +873,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                         assertThat(offsetAnnotation, is(10L));
                         assertThat(keyAnnotation, is("key-10"));
                         assertThat(new String(value), is("value-10"));
+                        connection.close();
                         consume.flag();
                     }
                 })
@@ -902,6 +915,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                             ErrorCondition condition = receiver1.getRemoteCondition();
                             LOGGER.info(condition.getDescription());
                             context.verify(() -> assertThat(condition.getCondition(), is(Symbol.getSymbol(AmqpBridge.AMQP_ERROR_NO_PARTITIONS))));
+                            connection.close();
                             noPartition.flag();
                         }
                     })
