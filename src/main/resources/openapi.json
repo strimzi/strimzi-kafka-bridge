@@ -1716,15 +1716,14 @@
                     "value": {
                         "oneOf": [
                             {
-                                "type": "object"
+                                "type": "object",
+                                "nullable": true
                             },
                             {
                                 "type": "string"
-                            },
-                            {
-                                "type": "null"
                             }
-                        ]
+                        ],
+                        "nullable" : true
                     },
                     "key": {
                         "oneOf": [
