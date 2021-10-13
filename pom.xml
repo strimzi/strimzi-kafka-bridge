@@ -103,7 +103,7 @@
 		<tomcat-embed-core.version>8.5.68</tomcat-embed-core.version>
 		<spotbugs.version>4.0.1</spotbugs.version>
 		<strimzi-oauth.version>0.9.0</strimzi-oauth.version>
-		<jaeger.version>1.6.0</jaeger.version>
+		<jaeger.version>1.5.0</jaeger.version>
 		<opentracing.version>0.33.0</opentracing.version>
 		<opentracing-kafka-client.version>0.1.15</opentracing-kafka-client.version>
 		<micrometer.version>1.3.9</micrometer.version>
