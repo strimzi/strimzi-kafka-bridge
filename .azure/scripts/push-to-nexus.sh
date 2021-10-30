@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+echo "Build reason: ${BUILD_REASON}"
+echo "Source branch: ${BRANCH}"
+
 GPG_TTY=$(tty)
 export GPG_TTY
 
