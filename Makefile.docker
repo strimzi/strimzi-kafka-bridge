@@ -23,6 +23,16 @@ docker_build:
 	# Also tag with $(BUILD_TAG)
 	docker tag strimzi/$(PROJECT_NAME):latest strimzi/$(PROJECT_NAME):$(BUILD_TAG)
 
+.PHONY: docker_save
+docker_save:
+	# Saves the container as TGZ file
+	docker save strimzi/$(PROJECT_NAME):$(BUILD_TAG) | gzip > kafka-bridge.tar.gz
+
+.PHONY: docker_load
+docker_load:
+	# Loads the container as TGZ file
+	docker load < kafka-bridge.tar.gz
+
 .PHONY: docker_tag
 docker_tag:
 	# Tag the $(BUILD_TAG) image we built with the given $(DOCKER_TAG) tag

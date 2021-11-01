@@ -2,6 +2,9 @@
 
 set -e
 
+echo "Build reason: ${BUILD_REASON}"
+echo "Source branch: ${BRANCH}"
+
 echo "$GITHUB_DEPLOY_KEY" | base64 -d > github_deploy_key
 chmod 600 github_deploy_key
 eval "$(ssh-agent -s)"

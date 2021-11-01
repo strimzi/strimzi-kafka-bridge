@@ -60,7 +60,7 @@ docu_htmlnoheader: docu_htmlnoheaderclean docu_check
 
 .PHONY: docu_api
 docu_api: 
-	mvn -P apidoc io.github.swagger2markup:swagger2markup-maven-plugin:convertSwagger2markup@generate-apidoc
+	mvn $(MVN_ARGS) -P apidoc io.github.swagger2markup:swagger2markup-maven-plugin:convertSwagger2markup@generate-apidoc
 
 .PHONY: docu_check
 docu_check: docu_api
@@ -78,5 +78,5 @@ docu_htmlnoheaderclean:
 	rm -rf documentation/htmlnoheader
 
 .PHONY: docu_pushtowebsite
-docu_pushtowebsite: docu_htmlnoheader docu_html
+docu_pushtowebsite:
 	./.azure/scripts/docu-push-to-website.sh
