@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.21.0
+
+* Multi-arch container image with support for x86_64 / AMD64 and AArch64 / ARM64 platforms
+  _(The support AArch64 is currently considered as experimental. We are not aware of any issues, but the AArch64 build doesn't at this point undergo the same level of testing as the AMD64 container images.)_
+
 ## 0.20.0
 
 * Added a new Admin Client feature to get begin/end offsets for topic partitions
@@ -17,7 +22,7 @@
 
 * Use Java 11 as the Java runtime
 * Renamed exposed HTTP server and Kafka consumer and producer metrics, using `strimzi_bridge` as prefix
-* Added topic-partition retrivial operation to the Admin Client endpoint
+* Added topic-partition retrieval operation to the Admin Client endpoint
 
 ## 0.17.0
 
