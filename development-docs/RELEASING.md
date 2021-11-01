@@ -31,7 +31,7 @@ Wait until the build pipeline is (successfully) finished for the last commit in 
 The regular pipeline will build the release ZIP / TAR.GZ files as well as the documentation and store them as artifacts.
 It will also stage the Maven artifacts.
 Then run the release pipeline manually from the Azure Pipelines UI.
-The release pipeline is names `kafka-bridge-release`.
+The release pipeline is named `kafka-bridge-release`.
 When starting the new run, it will ask for several parameters which you need to fill:
 
 * Release version (for example `1.2.0`)
