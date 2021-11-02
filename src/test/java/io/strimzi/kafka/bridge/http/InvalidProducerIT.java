@@ -63,9 +63,10 @@ public class InvalidProducerIT extends HttpBridgeITAbstract {
 
     @BeforeAll
     static void beforeAll(VertxTestContext context) {
-        Map<String, Object> tmpCfg = new HashMap<>();
-        tmpCfg.putAll(config);
-        tmpCfg.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.ACKS_CONFIG, "5");
+        Map<String, Object> cfg = new HashMap<>();
+        cfg.putAll(config);
+        // value 5 is not valid. Valid values are -1 (all), 0, 1
+        cfg.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.ACKS_CONFIG, "5");
         vertx = Vertx.vertx();
         adminClientFacade = AdminClientFacade.create(kafkaUri);
 
@@ -73,13 +74,12 @@ public class InvalidProducerIT extends HttpBridgeITAbstract {
 
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
 
-        bridgeConfig = BridgeConfig.fromMap(tmpCfg);
+        bridgeConfig = BridgeConfig.fromMap(cfg);
         httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
         httpBridge.setHealthChecker(new HealthChecker());
 
         LOGGER.info("Deploying in-memory bridge");
         vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
-
 
         client = WebClient.create(vertx, new WebClientOptions()
                 .setDefaultHost(Urls.BRIDGE_HOST)
