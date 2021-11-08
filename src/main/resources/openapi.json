@@ -1398,7 +1398,7 @@
                 "title": "KafkaHeaderList",
                 "type": "array",
                 "items": {
-                    "$ref": "#/definitions/KafkaHeader"
+                    "$ref": "#/components/schemas/KafkaHeader"
                 },
                 "example": [
                     {
@@ -1448,7 +1448,7 @@
                         "type": "string"
                     },
                     "headers": {
-                        "$ref": "#/definitions/KafkaHeaderList"
+                        "$ref": "#/components/schemas/KafkaHeaderList"
                     }
                 },
                 "title": "ConsumerRecord",
@@ -1716,15 +1716,14 @@
                     "value": {
                         "oneOf": [
                             {
-                                "type": "object"
+                                "type": "object",
+                                "nullable": true
                             },
                             {
                                 "type": "string"
-                            },
-                            {
-                                "type": "null"
                             }
-                        ]
+                        ],
+                        "nullable" : true
                     },
                     "key": {
                         "oneOf": [
@@ -1737,7 +1736,7 @@
                         ]
                     },
                     "headers": {
-                        "$ref": "#/definitions/KafkaHeaderList"
+                        "$ref": "#/components/schemas/KafkaHeaderList"
                     }
                 },
                 "additionalProperties": false,
