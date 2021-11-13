@@ -110,6 +110,7 @@
 		<jmx-prometheus-collector.version>0.12.0</jmx-prometheus-collector.version>
 		<commons-cli.version>1.4</commons-cli.version>
 		<test-container.version>0.25.0</test-container.version>
+		<jakarta.version>2.3.2</jakarta.version>
 		<!-- property to skip surefire tests during failsafe execution -->
 		<!--suppress UnresolvedMavenProperty -->
 		<skip.surefire.tests>${skipTests}</skip.surefire.tests>
@@ -133,7 +134,7 @@
 		</dependency>
 		<dependency>
 			<groupId>io.vertx</groupId>
-			<artifactId>vertx-web-api-contract</artifactId>
+			<artifactId>vertx-web-openapi</artifactId>
 			<version>${vertx.version}</version>
 		</dependency>
 		<dependency>
@@ -317,6 +318,11 @@
 			<artifactId>strimzi-test-container</artifactId>
 			<version>${test-container.version}</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>jakarta.xml.bind</groupId>
+			<artifactId>jakarta.xml.bind-api</artifactId>
+			<version>${jakarta.version}</version>
 		</dependency>
 	</dependencies>
 

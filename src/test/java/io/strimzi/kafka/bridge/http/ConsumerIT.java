@@ -150,7 +150,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                         assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.getMessage(), is("Validation error on: body.enable.auto.commit - $.enable.auto.commit: string found, boolean expected"));
+                        assertThat(error.getMessage(), is("Validation error on: /enable.auto.commit - input don't match type BOOLEAN"));
                     });
                     createBooleanAsString.complete(true);
                 });
@@ -171,7 +171,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                         assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.getMessage(), is("Validation error on: body.enable.auto.commit - $.enable.auto.commit: string found, boolean expected"));
+                        assertThat(error.getMessage(), is("Validation error on: /enable.auto.commit - input don't match type BOOLEAN"));
                     });
                     createGenericString.complete(true);
                 });
@@ -215,7 +215,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                         assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.getMessage(), is("Validation error on: body." + param + " - $." + param + ": string found, integer expected"));
+                        assertThat(error.getMessage(), is("Validation error on: /" + param + " - input don't match type INTEGER"));
                     });
                     createIntegerAsString.complete(true);
                 });
@@ -236,7 +236,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                         assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.getMessage(), is("Validation error on: body." + param + " - $." + param + ": string found, integer expected"));
+                        assertThat(error.getMessage(), is("Validation error on: /" + param + " - input don't match type INTEGER"));
                     });
                     createGenericString.complete(true);
                 });
@@ -446,7 +446,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     @Test
     void createConsumerWithWrongEnableAutoCommit(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         checkCreatingConsumer("enable.auto.commit", "foo", HttpResponseStatus.BAD_REQUEST,
-                "Validation error on: body.enable.auto.commit - $.enable.auto.commit: string found, boolean expected", context);
+                "Validation error on: /enable.auto.commit - input don't match type BOOLEAN", context);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -455,7 +455,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     @Test
     void createConsumerWithWrongFetchMinBytes(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         checkCreatingConsumer("fetch.min.bytes", "foo", HttpResponseStatus.BAD_REQUEST,
-                "Validation error on: body.fetch.min.bytes - $.fetch.min.bytes: string found, integer expected", context);
+                "Validation error on: /fetch.min.bytes - input don't match type INTEGER", context);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -464,7 +464,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     @Test
     void createConsumerWithNotExistingParameter(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         checkCreatingConsumer("foo", "bar", HttpResponseStatus.BAD_REQUEST,
-                "Validation error on: body - $.foo: is not defined in the schema and the schema does not allow additional properties", context);
+                "Validation error on:  - provided object should not contain additional properties", context);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));

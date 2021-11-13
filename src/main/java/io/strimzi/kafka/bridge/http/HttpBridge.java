@@ -32,10 +32,11 @@ import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
-import io.vertx.ext.web.api.validation.ValidationException;
 
 import io.vertx.ext.web.handler.CorsHandler;
+import io.vertx.ext.web.openapi.RouterBuilder;
+import io.vertx.ext.web.validation.ParameterProcessorException;
+import io.vertx.json.schema.ValidationException;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -142,36 +143,36 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     @Override
     public void start(Promise<Void> startPromise) {
 
-        OpenAPI3RouterFactory.create(vertx, "openapi.json", ar -> {
+        RouterBuilder.create(vertx, "openapi.json", ar -> {
             if (ar.succeeded()) {
-                OpenAPI3RouterFactory routerFactory = ar.result();
-                routerFactory.addHandlerByOperationId(this.SEND.getOperationId().toString(), this.SEND);
-                routerFactory.addHandlerByOperationId(this.SEND_TO_PARTITION.getOperationId().toString(), this.SEND_TO_PARTITION);
-                routerFactory.addHandlerByOperationId(this.CREATE_CONSUMER.getOperationId().toString(), this.CREATE_CONSUMER);
-                routerFactory.addHandlerByOperationId(this.DELETE_CONSUMER.getOperationId().toString(), this.DELETE_CONSUMER);
-                routerFactory.addHandlerByOperationId(this.SUBSCRIBE.getOperationId().toString(), this.SUBSCRIBE);
-                routerFactory.addHandlerByOperationId(this.UNSUBSCRIBE.getOperationId().toString(), this.UNSUBSCRIBE);
-                routerFactory.addHandlerByOperationId(this.LIST_SUBSCRIPTIONS.getOperationId().toString(), this.LIST_SUBSCRIPTIONS);
-                routerFactory.addHandlerByOperationId(this.ASSIGN.getOperationId().toString(), this.ASSIGN);
-                routerFactory.addHandlerByOperationId(this.POLL.getOperationId().toString(), this.POLL);
-                routerFactory.addHandlerByOperationId(this.COMMIT.getOperationId().toString(), this.COMMIT);
-                routerFactory.addHandlerByOperationId(this.SEEK.getOperationId().toString(), this.SEEK);
-                routerFactory.addHandlerByOperationId(this.SEEK_TO_BEGINNING.getOperationId().toString(), this.SEEK_TO_BEGINNING);
-                routerFactory.addHandlerByOperationId(this.SEEK_TO_END.getOperationId().toString(), this.SEEK_TO_END);
-                routerFactory.addHandlerByOperationId(this.LIST_TOPICS.getOperationId().toString(), this.LIST_TOPICS);
-                routerFactory.addHandlerByOperationId(this.GET_TOPIC.getOperationId().toString(), this.GET_TOPIC);
-                routerFactory.addHandlerByOperationId(this.LIST_PARTITIONS.getOperationId().toString(), this.LIST_PARTITIONS);
-                routerFactory.addHandlerByOperationId(this.GET_PARTITION.getOperationId().toString(), this.GET_PARTITION);
-                routerFactory.addHandlerByOperationId(this.GET_OFFSETS.getOperationId().toString(), this.GET_OFFSETS);
-                routerFactory.addHandlerByOperationId(this.HEALTHY.getOperationId().toString(), this.HEALTHY);
-                routerFactory.addHandlerByOperationId(this.READY.getOperationId().toString(), this.READY);
-                routerFactory.addHandlerByOperationId(this.OPENAPI.getOperationId().toString(), this.OPENAPI);
-                routerFactory.addHandlerByOperationId(this.INFO.getOperationId().toString(), this.INFO);
+                RouterBuilder routerBuilder = ar.result();
+                routerBuilder.operation(this.SEND.getOperationId().toString()).handler(this.SEND);
+                routerBuilder.operation(this.SEND_TO_PARTITION.getOperationId().toString()).handler(this.SEND_TO_PARTITION);
+                routerBuilder.operation(this.CREATE_CONSUMER.getOperationId().toString()).handler(this.CREATE_CONSUMER);
+                routerBuilder.operation(this.DELETE_CONSUMER.getOperationId().toString()).handler(this.DELETE_CONSUMER);
+                routerBuilder.operation(this.SUBSCRIBE.getOperationId().toString()).handler(this.SUBSCRIBE);
+                routerBuilder.operation(this.UNSUBSCRIBE.getOperationId().toString()).handler(this.UNSUBSCRIBE);
+                routerBuilder.operation(this.LIST_SUBSCRIPTIONS.getOperationId().toString()).handler(this.LIST_SUBSCRIPTIONS);
+                routerBuilder.operation(this.ASSIGN.getOperationId().toString()).handler(this.ASSIGN);
+                routerBuilder.operation(this.POLL.getOperationId().toString()).handler(this.POLL);
+                routerBuilder.operation(this.COMMIT.getOperationId().toString()).handler(this.COMMIT);
+                routerBuilder.operation(this.SEEK.getOperationId().toString()).handler(this.SEEK);
+                routerBuilder.operation(this.SEEK_TO_BEGINNING.getOperationId().toString()).handler(this.SEEK_TO_BEGINNING);
+                routerBuilder.operation(this.SEEK_TO_END.getOperationId().toString()).handler(this.SEEK_TO_END);
+                routerBuilder.operation(this.LIST_TOPICS.getOperationId().toString()).handler(this.LIST_TOPICS);
+                routerBuilder.operation(this.GET_TOPIC.getOperationId().toString()).handler(this.GET_TOPIC);
+                routerBuilder.operation(this.LIST_PARTITIONS.getOperationId().toString()).handler(this.LIST_PARTITIONS);
+                routerBuilder.operation(this.GET_PARTITION.getOperationId().toString()).handler(this.GET_PARTITION);
+                routerBuilder.operation(this.GET_OFFSETS.getOperationId().toString()).handler(this.GET_OFFSETS);
+                routerBuilder.operation(this.HEALTHY.getOperationId().toString()).handler(this.HEALTHY);
+                routerBuilder.operation(this.READY.getOperationId().toString()).handler(this.READY);
+                routerBuilder.operation(this.OPENAPI.getOperationId().toString()).handler(this.OPENAPI);
+                routerBuilder.operation(this.INFO.getOperationId().toString()).handler(this.INFO);
                 if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
-                    routerFactory.addGlobalHandler(getCorsHandler());
+                    routerBuilder.rootHandler(getCorsHandler());
                 }
 
-                this.router = routerFactory.getRouter();
+                this.router = routerBuilder.createRouter();
 
                 // handling validation errors and not existing endpoints
                 this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
@@ -547,11 +548,21 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         if (routingContext.statusCode() == HttpResponseStatus.BAD_REQUEST.code()) {
             message = HttpResponseStatus.BAD_REQUEST.reasonPhrase();
             // in case of validation exception, building a meaningful error message
-            if (routingContext.failure() != null && routingContext.failure() instanceof ValidationException) {
-                ValidationException validationException = (ValidationException) routingContext.failure();
+            if (routingContext.failure() != null && routingContext.failure().getCause() instanceof ValidationException) {
+                ValidationException validationException = (ValidationException) routingContext.failure().getCause();
                 StringBuilder sb = new StringBuilder();
-                if (validationException.parameterName() != null) {
-                    sb.append("Validation error on: " + validationException.parameterName() + " - ");
+                if (validationException.inputScope() != null) {
+                    sb.append("Validation error on: ").append(validationException.inputScope()).append(" - ");
+                }
+                sb.append(validationException.getMessage());
+                message = sb.toString();
+            }
+
+            if (routingContext.failure() != null && routingContext.failure() instanceof ParameterProcessorException) {
+                ParameterProcessorException validationException = (ParameterProcessorException) routingContext.failure();
+                StringBuilder sb = new StringBuilder();
+                if (validationException.getParameterName() != null) {
+                    sb.append("Validation error on: ").append(validationException.getParameterName()).append(" - ");
                 }
                 sb.append(validationException.getMessage());
                 message = sb.toString();
