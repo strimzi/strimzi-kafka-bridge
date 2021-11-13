@@ -648,7 +648,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: partitionid - Value is not a valid number"));
+            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: partitionid - [Bad Request] Parsing error for parameter partitionid in location PATH: java.lang.NumberFormatException: For input string: \"" + partition + "\""));
     }
 
     @Test
@@ -671,8 +671,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: body.records[0] - " +
-                    "$.records[0].partition: is not defined in the schema and the schema does not allow additional properties"));
+            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: /records/0 - provided object should not contain additional properties"));
     }
 
     @Test
@@ -693,7 +692,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: body.records[0] - $.records[0].value: is missing but it is required"));
+            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: /records/0 - provided object should contain property value"));
     }
 
     @Test
@@ -715,8 +714,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: body.records[0] - " +
-                "$.records[0].foo: is not defined in the schema and the schema does not allow additional properties"));
+            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: /records/0 - provided object should not contain additional properties"));
     }
 
     Handler<AsyncResult<HttpResponse<JsonObject>>> verifyBadRequest(VertxTestContext context, String message) {
@@ -818,8 +816,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsToPartitionRequest(topic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: body.records[0] - " +
-                "$.records[0].partition: is not defined in the schema and the schema does not allow additional properties"));
+            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: /records/0 - provided object should not contain additional properties"));
 
         records.remove(json);
         records.clear();
