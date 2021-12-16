@@ -55,6 +55,14 @@ function get_gc_opts {
 
 export JAVA_OPTS="${JAVA_OPTS} $(get_gc_opts)"
 
+if [ -n "$STRIMZI_JAVA_SYSTEM_PROPERTIES" ]; then
+    export JAVA_OPTS="${JAVA_OPTS} ${STRIMZI_JAVA_SYSTEM_PROPERTIES}"
+fi
+
+if [ -n "$STRIMZI_JAVA_OPTS" ]; then
+    export JAVA_OPTS="${JAVA_OPTS} ${STRIMZI_JAVA_OPTS}"
+fi
+
 # Deny illegal access option is supported only on Java 9 and higher
 JAVA_MAJOR_VERSION=$(java -version 2>&1 | sed -E -n 's/.* version "([0-9]*).*$/\1/p')
 if [ "$JAVA_MAJOR_VERSION" -ge "9" ] ; then
