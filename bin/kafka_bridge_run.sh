@@ -1,4 +1,5 @@
 #!/bin/sh
+set -x
 
 # Find my path to use when calling scripts
 MYPATH="$(dirname "$0")"
