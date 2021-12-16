@@ -3,7 +3,7 @@
 
 	<groupId>io.strimzi</groupId>
 	<artifactId>kafka-bridge</artifactId>
-	<version>0.21.0</version>
+	<version>0.21.1</version>
 
 	<name>Strimzi Kafka Bridge</name>
 	<description>Bridge that allows HTTP- or AMQP-based clients to interact with Apache Kafka clusters.</description>
@@ -591,6 +591,7 @@
 							<serverId>ossrh</serverId>
 							<nexusUrl>https://oss.sonatype.org/</nexusUrl>
 							<autoReleaseAfterClose>false</autoReleaseAfterClose>
+							<stagingProgressTimeoutMinutes>30</stagingProgressTimeoutMinutes>
 						</configuration>
 					</plugin>
 				</plugins>
