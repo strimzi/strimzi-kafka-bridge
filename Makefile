@@ -11,7 +11,7 @@ ifneq ($(RELEASE_VERSION),latest)
 endif
 
 .PHONY: all
-all: java_package docker_build docker_push
+all: java_verify docker_build docker_push
 
 .PHONY: clean
 clean: java_clean
