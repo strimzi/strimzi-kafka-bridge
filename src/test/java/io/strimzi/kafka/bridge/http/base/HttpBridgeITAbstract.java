@@ -5,7 +5,7 @@
 
 package io.strimzi.kafka.bridge.http.base;
 
-import io.strimzi.StrimziKafkaContainer;
+import io.strimzi.test.container.StrimziKafkaContainer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.JmxCollectorRegistry;
