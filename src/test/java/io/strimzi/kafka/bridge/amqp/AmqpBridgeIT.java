@@ -104,13 +104,12 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
 
     @BeforeAll
     public static void setUp(VertxTestContext context) {
-        adminClientFacade = AdminClientFacade.create(kafkaContainer.getBootstrapServers());
-        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
+        adminClientFacade = AdminClientFacade.create(kafkaUri);
+        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         vertx = Vertx.vertx();
 
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
-
             bridgeConfig = BridgeConfig.fromMap(config);
             bridge = new AmqpBridge(bridgeConfig, new MetricsReporter(null, meterRegistry));
 
@@ -145,7 +144,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                 String body = "Simple message from " + connection.getContainer();
                 Message message = ProtonHelper.message(topic, body);
 
-                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaUri, "groupId", null, OffsetResetStrategy.EARLIEST);
 
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -207,7 +206,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                 String body = "Simple message from " + connection.getContainer();
                 Message message = ProtonHelper.message(topic, body);
 
-                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaUri, "groupId", null, OffsetResetStrategy.EARLIEST);
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
@@ -269,7 +268,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                 String body = "Simple message from " + connection.getContainer();
                 Message message = ProtonHelper.message(topic, body);
 
-                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaUri, "groupId", null, OffsetResetStrategy.EARLIEST);
 
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -329,7 +328,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
 
                 String value = "Binary message from " + connection.getContainer();
 
-                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaUri, "groupId", null, OffsetResetStrategy.EARLIEST);
 
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class);
@@ -385,7 +384,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                 // send an array (i.e. integer values)
                 int[] array = {1, 2};
 
-                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaUri, "groupId", null, OffsetResetStrategy.EARLIEST);
 
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
@@ -444,7 +443,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                 list.add("item1");
                 list.add(2);
 
-                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaUri, "groupId", null, OffsetResetStrategy.EARLIEST);
 
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
@@ -503,7 +502,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                 map.put("1", 10);
                 map.put(2, "Hello");
 
-                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaUri, "groupId", null, OffsetResetStrategy.EARLIEST);
 
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, DefaultDeserializer.class);
@@ -557,7 +556,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
                 ProtonSender sender = connection.createSender(null);
                 sender.open();
 
-                Properties config = Consumer.fillProperties(kafkaContainer.getBootstrapServers(), "groupId", null, OffsetResetStrategy.EARLIEST);
+                Properties config = Consumer.fillProperties(kafkaUri, "groupId", null, OffsetResetStrategy.EARLIEST);
 
                 config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
                 config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -691,7 +690,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
         Checkpoint consume = context.checkpoint();
         future.get();
 
-        BasicKafkaClient basicKafkaClient = new BasicKafkaClient(kafkaContainer.getBootstrapServers());
+        BasicKafkaClient basicKafkaClient = new BasicKafkaClient(kafkaUri);
 
         basicKafkaClient.sendStringMessagesPlain(topic, sentBody, 1, 0);
         // topic, body, message-count, partition
@@ -756,7 +755,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
         // Futures for wait
         Checkpoint consume = context.checkpoint();
 
-        BasicKafkaClient basicKafkaClient = new BasicKafkaClient(kafkaContainer.getBootstrapServers());
+        BasicKafkaClient basicKafkaClient = new BasicKafkaClient(kafkaUri);
         basicKafkaClient.sendStringMessagesPlain(topic, sentBody, 1, 1);
 
         ProtonClient client = ProtonClient.create(this.vertx);
@@ -824,7 +823,7 @@ class AmqpBridgeIT extends HttpBridgeITAbstract {
         // Futures for wait
         Checkpoint consume = context.checkpoint();
 
-        BasicKafkaClient basicKafkaClient = new BasicKafkaClient(kafkaContainer.getBootstrapServers());
+        BasicKafkaClient basicKafkaClient = new BasicKafkaClient(kafkaUri);
         basicKafkaClient.sendStringMessagesPlain(topic, "value", 11, 0, false);
 
         ProtonClient client = ProtonClient.create(this.vertx);
