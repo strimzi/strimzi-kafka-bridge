@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -74,16 +75,20 @@ public class InvalidProducerIT extends HttpBridgeITAbstract {
 
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
 
-        bridgeConfig = BridgeConfig.fromMap(cfg);
-        httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
-        httpBridge.setHealthChecker(new HealthChecker());
+        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+            bridgeConfig = BridgeConfig.fromMap(cfg);
+            httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
+            httpBridge.setHealthChecker(new HealthChecker());
 
-        LOGGER.info("Deploying in-memory bridge");
-        vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
+            LOGGER.info("Deploying in-memory bridge");
+            vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
+        } else {
+            context.completeNow();
+        }
 
         client = WebClient.create(vertx, new WebClientOptions()
-                .setDefaultHost(Urls.BRIDGE_HOST)
-                .setDefaultPort(Urls.BRIDGE_PORT)
+            .setDefaultHost(Urls.BRIDGE_HOST)
+            .setDefaultPort(Urls.BRIDGE_PORT)
         );
     }
 }
