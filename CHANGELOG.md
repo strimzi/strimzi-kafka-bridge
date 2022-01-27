@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.22.0
+
+* Add support for disabling the FIPS mode in OpenJDK
+
 ## 0.21.0
 
 * Multi-arch container image with support for x86_64 / AMD64 and AArch64 / ARM64 platforms
