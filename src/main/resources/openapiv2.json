@@ -1439,6 +1439,10 @@
         "enable.auto.commit": {
           "description": "If set to `true`, message offsets are committed automatically for the consumer. If set to `false`, message offsets must be committed manually.",
           "type": "boolean"
+        },
+        "isolation.level": {
+          "description": "If set to `read_uncommitted`, all transaction records are retrieved. If set to `read_committed` , the records from committed transactions are retrieved.",
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -1448,7 +1452,8 @@
         "auto.offset.reset": "earliest",
         "enable.auto.commit": false,
         "fetch.min.bytes": 512,
-        "consumer.request.timeout.ms": 30000
+        "consumer.request.timeout.ms": 30000,
+        "isolation.level": "read_committed"
       }
     },
     "OffsetCommitSeek": {

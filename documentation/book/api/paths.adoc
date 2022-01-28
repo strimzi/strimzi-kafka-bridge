@@ -90,7 +90,8 @@ __required__|Name and configuration of the consumer. The name is unique within t
   "auto.offset.reset" : "earliest",
   "enable.auto.commit" : false,
   "fetch.min.bytes" : 512,
-  "consumer.request.timeout.ms" : 30000
+  "consumer.request.timeout.ms" : 30000,
+  "isolation.level" : "read_committed"
 }
 ----
 
