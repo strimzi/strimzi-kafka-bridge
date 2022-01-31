@@ -131,6 +131,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         addConfigParameter(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG,
             requestTimeoutMs != null ? String.valueOf(requestTimeoutMs) : null, config);
         addConfigParameter(ConsumerConfig.CLIENT_ID_CONFIG, this.name, config);
+        Object isolationLevel = bodyAsJson.getValue(ConsumerConfig.ISOLATION_LEVEL_CONFIG);
+        addConfigParameter(ConsumerConfig.ISOLATION_LEVEL_CONFIG,
+                isolationLevel != null ? String.valueOf(isolationLevel) : null, config);
 
         // create the consumer
         this.initConsumer(false, config);
