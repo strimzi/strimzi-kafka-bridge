@@ -435,6 +435,15 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     }
 
     @Test
+    void createConsumerWithWrongIsolationLevel(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        checkCreatingConsumer("isolation.level", "foo", HttpResponseStatus.UNPROCESSABLE_ENTITY,
+                "Invalid value foo for configuration isolation.level: String must be one of: read_committed, read_uncommitted", context);
+
+        context.completeNow();
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+
+    @Test
     void createConsumerWithWrongAutoOffsetReset(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         checkCreatingConsumer("auto.offset.reset", "foo", HttpResponseStatus.UNPROCESSABLE_ENTITY,
                 "Invalid value foo for configuration auto.offset.reset: String must be one of: latest, earliest, none", context);

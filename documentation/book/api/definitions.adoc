@@ -38,6 +38,8 @@ __optional__|If set to `true`, message offsets are committed automatically for t
 __optional__|Sets the minimum ammount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount.|integer
 |**format** +
 __optional__|The allowable message format for the consumer, which can be `binary` (default) or `json`. The messages are converted into a JSON format.|string
+|**isolation.level** +
+__optional__|If set to `read_uncommitted`, all transaction records are retrieved. If set to `read_committed` , the records from committed transactions are retrieved.|string
 |**name** +
 __optional__|The unique name for the consumer instance. The name is unique within the scope of the consumer group. The name is used in URLs.|string
 |===
