@@ -3,6 +3,7 @@
 ## 0.22.0
 
 * Add support for disabling the FIPS mode in OpenJDK
+* Add transactions `isolation.level` configuration parameter on consumer creation
 
 ## 0.21.0
 
