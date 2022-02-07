@@ -1,4 +1,3 @@
-
 [[_definitions]]
 == Definitions
 
@@ -312,6 +311,3 @@ __optional__|A regex topic pattern for matching multiple topics|string
 |**topics** +
 __optional__||< string > array
 |===
-
-
-

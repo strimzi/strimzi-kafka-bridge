@@ -1,17 +1,21 @@
 include::common/attributes.adoc[]
 
-:context: book
+:context: bridge
 
-= Strimzi Kafka Bridge API reference
+[id='using_book-{context}']
+= Using the Strimzi Kafka Bridge
+
+include::assemblies/assembly-kafka-bridge-concepts.adoc[leveloffset=+1]
 
 [id='api_reference-{context}']
+== Strimzi Kafka Bridge API reference
 
-include::api/overview.adoc[]
+include::api/overview.adoc[leveloffset=+1]
 
-include::api/definitions.adoc[]
+include::api/definitions.adoc[leveloffset=+1]
 
-include::api/paths.adoc[]
+include::api/paths.adoc[leveloffset=+1]
 
-include::api/security.adoc[]
+include::api/security.adoc[leveloffset=+1]
 
-include::common/revision-info.adoc[]
+include::common/revision-info.adoc[leveloffset=+1]
