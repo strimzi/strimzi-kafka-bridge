@@ -15,3 +15,6 @@
 
 //links to Strimzi docs
 :BookURLConfiguring: https://strimzi.io/documentation/[Strimzi configuration documentation^]
+
+//API versions
+:KafkaTopicApiVersion: kafka.strimzi.io/v1beta2
