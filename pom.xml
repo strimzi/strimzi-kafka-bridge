@@ -82,24 +82,28 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<log4j.version>2.17.1</log4j.version>
+		<slf4j.version>1.7.21</slf4j.version>
 		<vertx.version>4.2.4</vertx.version>
+		<netty.version>4.1.73.Final</netty.version>
 		<kafka.version>2.8.1</kafka.version>
+		<qpid-proton.version>0.33.10</qpid-proton.version>
 		<kafka-kubernetes-config-provider.version>1.0.0</kafka-kubernetes-config-provider.version>
 		<kafka-env-var-config-provider.version>1.0.0</kafka-env-var-config-provider.version>
 		<debezium.version>1.2.3.Final</debezium.version>
 		<maven.checkstyle.version>3.1.2</maven.checkstyle.version>
 		<hamcrest.version>2.2</hamcrest.version>
+		<junit.version>5.8.2</junit.version>
 		<maven-jar-plugin.version>3.1.2</maven-jar-plugin.version>
 		<maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.0.0-M5</maven-failsafe-plugin.version>
 		<maven.assembly.version>3.1.0</maven.assembly.version>
 		<maven.javadoc.version>3.1.0</maven.javadoc.version>
 		<maven.source.version>3.0.1</maven.source.version>
+		<maven.dependency.version>3.1.1</maven.dependency.version>
 		<maven.gpg.version>1.6</maven.gpg.version>
 		<sonatype.nexus.staging>1.6.3</sonatype.nexus.staging>
 		<swagger2markup.version>1.3.7</swagger2markup.version>
 		<jackson-core.version>2.13.1</jackson-core.version>
-		<netty.version>4.1.72.Final</netty.version>
 		<tomcat-embed-core.version>8.5.73</tomcat-embed-core.version>
 		<spotbugs.version>4.0.1</spotbugs.version>
 		<strimzi-oauth.version>0.9.0</strimzi-oauth.version>
@@ -108,6 +112,7 @@
 		<opentracing-kafka-client.version>0.1.15</opentracing-kafka-client.version>
 		<micrometer.version>1.3.9</micrometer.version>
 		<jmx-prometheus-collector.version>0.12.0</jmx-prometheus-collector.version>
+		<prometheus-simpleclient.version>0.7.0</prometheus-simpleclient.version>
 		<commons-cli.version>1.4</commons-cli.version>
 		<test-container.version>0.100.0</test-container.version>
 		<jakarta.version>2.3.2</jakarta.version>
@@ -117,6 +122,11 @@
 	</properties>
 
 	<dependencies>
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-core</artifactId>
+			<version>${vertx.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-proton</artifactId>
@@ -134,7 +144,22 @@
 		</dependency>
 		<dependency>
 			<groupId>io.vertx</groupId>
+			<artifactId>vertx-web-common</artifactId>
+			<version>${vertx.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.vertx</groupId>
 			<artifactId>vertx-web-openapi</artifactId>
+			<version>${vertx.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-web-validation</artifactId>
+			<version>${vertx.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-json-schema</artifactId>
 			<version>${vertx.version}</version>
 		</dependency>
 		<dependency>
@@ -153,9 +178,29 @@
 			<version>${kafka.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>org.apache.qpid</groupId>
+			<artifactId>proton-j</artifactId>
+			<version>${qpid-proton.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-codec-http</artifactId>
+			<version>${netty.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-common</artifactId>
+			<version>${netty.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-core</artifactId>
+			<artifactId>jackson-databind</artifactId>
 			<version>${jackson-core.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
@@ -184,6 +229,16 @@
 			<version>${strimzi-oauth.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>jakarta.xml.bind</groupId>
+			<artifactId>jakarta.xml.bind-api</artifactId>
+			<version>${jakarta.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jaegertracing</groupId>
+			<artifactId>jaeger-core</artifactId>
+			<version>${jaeger.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>io.jaegertracing</groupId>
 			<artifactId>jaeger-client</artifactId>
 			<version>${jaeger.version}</version>
@@ -205,8 +260,28 @@
 		</dependency>
 		<dependency>
 			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-core</artifactId>
+			<version>${micrometer.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-registry-prometheus</artifactId>
 			<version>${micrometer.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.prometheus.jmx</groupId>
+			<artifactId>collector</artifactId>
+			<version>${jmx-prometheus-collector.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.prometheus</groupId>
+			<artifactId>simpleclient</artifactId>
+			<version>${prometheus-simpleclient.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.prometheus</groupId>
+			<artifactId>simpleclient_common</artifactId>
+			<version>${prometheus-simpleclient.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.prometheus.jmx</groupId>
@@ -244,31 +319,12 @@
 			<artifactId>kafka-env-var-config-provider</artifactId>
 			<version>${kafka-env-var-config-provider.version}</version>
 		</dependency>
-
 		<!-- Transitive dependency version overrides for Vulnerabilities: -->
-		<!-- overriding version commons-io for Vert.x - Vulnerability -->
-		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>2.7</version>
-		</dependency>
 		<!-- overriding version of snakeyaml for prometheus.jmx.collector 0.12.0: Vulnerability: DOS -->
 		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
 			<version>1.29</version>
-		</dependency>
-		<!-- overriding version of netty-codec for Vert.x - Vulnerability -->
-		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-codec</artifactId>
-			<version>${netty.version}</version>
-		</dependency>
-		<!-- overriding version of netty-handler for Vert.x - Vulnerability -->
-		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-handler</artifactId>
-			<version>${netty.version}</version>
 		</dependency>
 		<!-- overriding version of tomcat-embed-core for jaegertracing - Vulnerability -->
 		<dependency>
@@ -278,9 +334,9 @@
 		</dependency>
 		<!-- Testing -->
 		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-unit</artifactId>
-			<version>${vertx.version}</version>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -303,14 +359,8 @@
 		</dependency>
 		<dependency>
 			<groupId>org.hamcrest</groupId>
-			<artifactId>hamcrest-library</artifactId>
+			<artifactId>hamcrest</artifactId>
 			<version>${hamcrest.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.kafka</groupId>
-			<artifactId>kafka_2.12</artifactId>
-			<version>${kafka.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -318,11 +368,6 @@
 			<artifactId>strimzi-test-container</artifactId>
 			<version>${test-container.version}</version>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>jakarta.xml.bind</groupId>
-			<artifactId>jakarta.xml.bind-api</artifactId>
-			<version>${jakarta.version}</version>
 		</dependency>
 	</dependencies>
 
@@ -431,6 +476,32 @@
 								<usePhrasedClassNameInRunning>false</usePhrasedClassNameInRunning>
 								<usePhrasedClassNameInTestCaseSummary>true</usePhrasedClassNameInTestCaseSummary>
 							</statelessTestsetInfoReporter>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>${maven.dependency.version}</version>
+				<executions>
+					<execution>
+						<id>analyze</id>
+						<goals>
+							<goal>analyze-only</goal>
+						</goals>
+						<configuration>
+							<failOnWarning>true</failOnWarning>
+								<ignoredUnusedDeclaredDependencies>
+									<ignoredUnusedDeclaredDependency>io.strimzi:kafka-env-var-config-provider</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>io.strimzi:kafka-kubernetes-config-provider</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>io.strimzi:kafka-oauth-client</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-core</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-slf4j-impl</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>io.jaegertracing:jaeger-client</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>org.yaml:snakeyaml</ignoredUnusedDeclaredDependency> <!-- CVE override -->
+									<ignoredUnusedDeclaredDependency>org.apache.tomcat.embed:tomcat-embed-core</ignoredUnusedDeclaredDependency>  <!-- CVE override -->
+								</ignoredUnusedDeclaredDependencies>
 						</configuration>
 					</execution>
 				</executions>
