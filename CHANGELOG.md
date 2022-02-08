@@ -2,11 +2,31 @@
 
 ## 0.22.0
 
+* n/a
+
+## 0.21.4
+
+* Dependency updates (Configuration providers, Vert.x, Netty, Oauth client and more)
 * Add support for disabling the FIPS mode in OpenJDK
 * Add transactions `isolation.level` configuration parameter on consumer creation
+* Support for s390x platform
+
+## 0.21.3
+
+* Dependency updates (Log4j2 [CVE-2021-44832](https://nvd.nist.gov/vuln/detail/CVE-2021-44832))
+
+## 0.21.2
+
+* Dependency updates (Log4j2 [CVE-2021-45105](https://nvd.nist.gov/vuln/detail/CVE-2021-45105))
+
+## 0.21.1
+
+* Dependency updates (Log4j2 [CVE-2021-45046](https://nvd.nist.gov/vuln/detail/CVE-2021-45046))
+* Fix parsing of provided JVM options when deployed by Strimzi Cluster Operator
 
 ## 0.21.0
 
+* Dependency updates (Log4j2 [CVE-2021-44228](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-44228))
 * Multi-arch container image with support for x86_64 / AMD64 and AArch64 / ARM64 platforms
   _(The support AArch64 is currently considered as experimental. We are not aware of any issues, but the AArch64 build doesn't at this point undergo the same level of testing as the AMD64 container images.)_
 
