@@ -35,6 +35,7 @@ import org.apache.qpid.proton.amqp.messaging.MessageAnnotations;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.ErrorCondition;
 import org.apache.qpid.proton.message.Message;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -48,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -600,7 +600,7 @@ class AmqpSinkBridgeEndpointMockTest {
 
             @Override
             public List<PartitionInfo> result() {
-                fail();
+                Assertions.fail();
                 return null;
             }
 
