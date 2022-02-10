@@ -8,25 +8,6 @@ The Strimzi HTTP Bridge for Apache Kafka provides a REST API for integrating HTT
 __Version__ : 0.1.0
 
 
-=== Contact information
-[%hardbreaks]
-__Contact Email__ : cncf-strimzi-dev@lists.cncf.io
-
-
-=== License information
-[%hardbreaks]
-__License__ : Apache 2.0
-__License URL__ : http://www.apache.org/licenses/LICENSE-2.0.html
-__Terms of service__ : http://swagger.io/terms/
-
-
-=== URI scheme
-[%hardbreaks]
-__Host__ : bridge.swagger.io
-__BasePath__ : /
-__Schemes__ : HTTP
-
-
 === Tags
 
 * Consumers : Consumer operations to create consumers in your Kafka cluster and perform common actions, such as subscribing to topics, retrieving processed records, and committing offsets.

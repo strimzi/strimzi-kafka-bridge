@@ -34,12 +34,12 @@ If the request is successful, the Kafka Bridge returns the consumer ID (`instanc
 +
 .Example response
 
-[source,json,subs=attributes+]
+[source,json,subs="+quotes"]
 ----
 #...
 {
   "instance_id": "bridge-quickstart-consumer",
-  "base_uri":"http://<bridge-name>-bridge-service:8080/consumers/bridge-quickstart-consumer-group/instances/bridge-quickstart-consumer"
+  "base_uri":"http://_<bridge_id>_-bridge-service:8080/consumers/bridge-quickstart-consumer-group/instances/bridge-quickstart-consumer"
 }
 ----
 

@@ -46,15 +46,14 @@ The embedded data format is the format of the Kafka messages that are transmitte
 
 When creating a consumer using the `/consumers/_groupid_` endpoint, the `POST` request body must specify an embedded data format of either JSON or binary. This is specified in the `format` field, for example:
 
-[source,json,subs=attributes+]
+[source,json,subs="attributes+"]
 ----
 {
   "name": "my-consumer",
-  "format": "binary", <1>
-...
+  "format": "binary", # <1>
+  # ...
 }
 ----
-
 <1> A binary embedded data format.
 
 The embedded data format specified when creating a consumer must match the data format of the Kafka messages it will consume.
@@ -134,13 +133,12 @@ Accept: application/vnd.kafka.json.v2+json
 Cross-Origin Resource Sharing (CORS) allows you to specify allowed methods and originating URLs for accessing the Kafka cluster in your Kafka Bridge HTTP configuration.
 
 .Example CORS configuration for Kafka Bridge
-[source,yaml,subs="attributes+"]
+[source,properties,subs="attributes+"]
 ----
 # ...
-cors:
-  allowedOrigins: "https://strimzi.io"
-  allowedMethods: "GET,POST,PUT,DELETE,OPTIONS,PATCH"
-  # ...
+http.cors.enabled=true
+http.cors.allowedOrigins=https://strimzi.io
+http.cors.allowedMethods=GET,POST,PUT,DELETE,OPTIONS,PATCH
 ----
 
 CORS allows for _simple_ and _preflighted_ requests between origin sources on different domains.
@@ -152,7 +150,7 @@ On confirmation, the actual request is sent.
 Preflight requests are suitable for methods that require greater safeguards, such as `PUT` and `DELETE`,
 and use non-standard headers.
 
-All requests require an `Origin` value in their header, which is the source of the HTTP request.
+All requests require an _origins_ value in their header, which is the source of the HTTP request.
 
 == Simple request
 
@@ -241,5 +239,4 @@ Access-Control-Allow-Origin: https://strimzi.io
 [role="_additional-resources"]
 .Additional resources
 
-* {BookURLConfiguring}
-* link:{external-cors-link}[Fetch CORS specification^]
+* link:{external-cors-link}

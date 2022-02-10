@@ -6,39 +6,37 @@
 = Producing messages to topics and partitions
 
 [role="_abstract"]
-After you exposed the service of your Kafka Bridge deployment, you can produce messages to topics in JSON format by using the xref:_send[topics] endpoint. You can specify destination partitions for messages in the request body, as shown here.
+Use the Kafka Bridge to produce messages to a Kafka topic in JSON format by using the topics endpoint.
+
+You can produce messages to topics in JSON format by using the xref:_send[topics] endpoint.
+You can specify destination partitions for messages in the request body.
 The xref:_sendtopartition[partitions] endpoint provides an alternative method for specifying a single destination partition for all messages as a path parameter.
 
-.Procedure
+In this procedure, messages are produced to a topic called `bridge-quickstart-topic`.
 
-. In a text editor, create a YAML definition for a Kafka topic with three partitions.
+.Prerequisites
+
+* The Kafka cluster has a topic with three partitions.
 +
-[source,yaml,subs=attributes+]
-----
-apiVersion: {KafkaTopicApiVersion}
-kind: KafkaTopic
-metadata:
-  name: bridge-quickstart-topic
-  labels:
-    strimzi.io/cluster: <kafka-cluster-name> <1>
-spec:
-  partitions: 3 <2>
-  replicas: 1
-  config:
-    retention.ms: 7200000
-    segment.bytes: 1073741824
-----
-<1> The name of the Kafka cluster in which the Kafka Bridge is deployed.
-<2> The number of partitions for the topic.
+--
+You can use the `kafka-topics.sh` utility to create topics.
 
-. Save the file to the `examples/topic` directory as `bridge-quickstart-topic.yaml`.
-
-. Create the topic in your Kubernetes cluster:
-+
+.Example topic creation with three partitions
 [source,shell,subs=attributes+]
 ----
-kubectl apply -f examples/topic/bridge-quickstart-topic.yaml
+bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --topic bridge-quickstart-topic --partitions 3 --replication-factor 1
 ----
+
+.Verifying the topic was created
+[source,shell,subs=attributes+]
+----
+bin/kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic bridge-quickstart-topic
+----
+--
+
+NOTE: If you deployed Strimzi on Kubernetes, you can create a topic using the `KafkaTopic` custom resource.
+
+.Procedure
 
 . Using the Kafka Bridge, produce three messages to the topic you created:
 +

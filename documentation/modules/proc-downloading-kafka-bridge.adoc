@@ -1,0 +1,14 @@
+// Module included in the following assemblies:
+//
+// assembly-kafka-bridge-quickstart.adoc
+
+[id='proc-downloading-kafka-bridge-{context}']
+
+= Downloading a Kafka Bridge archive
+
+[role="_abstract"]
+A zipped distribution of the Strimzi Kafka Bridge is available for download.
+
+.Procedure
+
+- Download the latest version of the Strimzi Kafka Bridge archive from the {ReleaseDownload}.
