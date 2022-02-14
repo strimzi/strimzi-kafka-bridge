@@ -22,6 +22,8 @@ include::modules/con-overview-components-kafka-bridge.adoc[leveloffset=+1]
 
 include::modules/con-securing-kafka-bridge.adoc[leveloffset=+1]
 
+include::modules/con-securing-http-interface.adoc[leveloffset=+1]
+
 include::modules/con-requests-kafka-bridge.adoc[leveloffset=+1]
 
 include::modules/con-loggers-kafka-bridge.adoc[leveloffset=+1]

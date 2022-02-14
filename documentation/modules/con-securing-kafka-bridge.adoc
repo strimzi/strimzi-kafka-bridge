@@ -3,13 +3,9 @@
 // assembly-kafka-bridge-overview.adoc
 
 [id='con-securing-kafka-bridge-{context}']
-= Securing the Kafka Bridge
+= Securing connectivity to the Kafka cluster
 
 [role="_abstract"]
-Authentication and encryption between HTTP clients and the Kafka Bridge is not supported.
-Requests sent from clients to the Kafka Bridge are sent without authentication or encryption.
-Requests must use HTTP rather than HTTPS.
-
 You can configure the following between the Kafka Bridge and your Kafka cluster:
 
 * TLS or SASL-based authentication
@@ -18,15 +14,6 @@ You can configure the following between the Kafka Bridge and your Kafka cluster:
 You configure the Kafka Bridge for authentication through its xref:proc-configuring-kafka-bridge-{context}[properties file].
 
 You can also use ACLs in Kafka brokers to restrict the topics that can be consumed and produced using the Kafka Bridge.
-
-== Securing the Kafka Bridge on Kubernetes
-
-If you have deployed the Kafka Bridge on a Kubernetes cluster, you can use the following methods to secure a Kafka Bridge deployment on a Kubernetes cluster.
-
-* Kubernetes network policies that define which pods can access the Kafka Bridge
-* Reverse proxies, such as OAuth 2.0
-* API gateways
-* Ingress or OpenShift routes with TLS termination
 
 [role="_additional-resources"]
 .Additional resources
