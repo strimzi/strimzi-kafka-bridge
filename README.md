@@ -37,7 +37,7 @@ Documentation to the current _main_ branch as well as all releases can be found 
 
 ## Getting help
 
-If you encounter any issues while using Strimzi Kafka Bridge, you can get help using trhe following:
+If you encounter any issues while using Strimzi Kafka Bridge, you can get help through the following methods:
 
 - [Strimzi Users mailing list](https://lists.cncf.io/g/cncf-strimzi-users/topics)
 - [#strimzi channel on CNCF Slack](https://slack.cncf.io/)
