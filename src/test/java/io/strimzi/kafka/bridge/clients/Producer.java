@@ -13,8 +13,8 @@ import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -24,8 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
 
 public class Producer extends ClientHandlerBase<Integer> implements AutoCloseable {
-
-    private static final Logger LOGGER = LogManager.getLogger(Producer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Producer.class);
     private Properties properties;
     private final AtomicInteger numSent = new AtomicInteger(0);
     private final String topic;

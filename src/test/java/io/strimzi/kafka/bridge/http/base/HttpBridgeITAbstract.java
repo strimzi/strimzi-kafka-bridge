@@ -30,14 +30,14 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -51,8 +51,7 @@ import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
 @SuppressWarnings({"checkstyle:JavaNCSS"})
 @Tag(HTTP_BRIDGE)
 public abstract class HttpBridgeITAbstract {
-
-    protected static final Logger LOGGER = LogManager.getLogger(HttpBridgeITAbstract.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpBridgeITAbstract.class);
     protected static Map<String, Object> config = new HashMap<>();
 
     // for periodic/multiple messages test
