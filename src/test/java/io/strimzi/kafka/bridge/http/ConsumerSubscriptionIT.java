@@ -18,6 +18,8 @@ import org.apache.kafka.common.KafkaFuture;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -28,6 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerSubscriptionIT.class);
 
     String groupId = "my-group";
 
@@ -235,7 +238,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     if (ar.succeeded()) {
-                        LOGGER.info(ar.result().body());
+                        LOGGER.info("Request result: {}", ar.result().body());
                         consume.complete(true);
                     }
                 });

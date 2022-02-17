@@ -15,8 +15,8 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -30,8 +30,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ConsumerService extends BaseService {
-
-    static final Logger LOGGER = LogManager.getLogger(ConsumerService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerService.class);
 
     private static final int POLL_TIMEOUT = 4000;
 
