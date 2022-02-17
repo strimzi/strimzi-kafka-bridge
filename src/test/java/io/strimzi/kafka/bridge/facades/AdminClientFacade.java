@@ -10,8 +10,8 @@ import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DeleteTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.KafkaFuture;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -23,8 +23,7 @@ import java.util.concurrent.ExecutionException;
  * Class AdminClientFacade used for encapsulate complexity and asynchronous code of AdminClient.
  */
 public class AdminClientFacade {
-
-    private static final Logger LOGGER = LogManager.getLogger(AdminClientFacade.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AdminClientFacade.class);
     private static AdminClient adminClient;
     private static AdminClientFacade adminClientFacade;
 
