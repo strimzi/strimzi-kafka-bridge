@@ -24,14 +24,14 @@ import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,8 +46,7 @@ import static org.hamcrest.Matchers.hasItem;
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
 public class HttpCorsIT {
-
-    static final Logger LOGGER = LogManager.getLogger(HttpCorsIT.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpCorsIT.class);
     static Map<String, Object> config = new HashMap<>();
     static long timeout = 5L;
 

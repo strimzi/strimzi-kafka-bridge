@@ -17,6 +17,8 @@ import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.common.KafkaFuture;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -30,6 +32,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class SeekIT extends HttpBridgeITAbstract {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SeekIT.class);
 
     private String name = "my-kafka-consumer";
     private String groupId = "my-group";
