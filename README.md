@@ -41,7 +41,6 @@ If you encounter any issues while using Strimzi Kafka Bridge, you can get help t
 
 - [Strimzi Users mailing list](https://lists.cncf.io/g/cncf-strimzi-users/topics)
 - [#strimzi channel on CNCF Slack](https://slack.cncf.io/)
-- [Contact email](mailto:cncf-strimzi-dev@lists.cncf.io)
 
 
 ## Contributing
@@ -63,9 +62,7 @@ If you want to get in touch with us first before contributing, you can use:
 
 - [Strimzi Dev mailing list](https://lists.cncf.io/g/cncf-strimzi-dev/topics)
 - [#strimzi channel on CNCF Slack](https://slack.cncf.io/)
-- [Contact email](mailto:cncf-strimzi-dev@lists.cncf.io)
 
 ## License
 
 Strimzi Kafka Bridge is licensed under the [Apache License](./LICENSE), Version 2.0
-[Terms of service](http://swagger.io/terms/)
