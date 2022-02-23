@@ -12,3 +12,15 @@
 :linkattrs:
 :toclevels: 3
 :sectlinks:
+
+//links to Strimzi docs
+:BookURLConfiguring: https://strimzi.io/documentation/[Strimzi documentation^]
+
+//API versions
+:KafkaTopicApiVersion: kafka.strimzi.io/v1beta2
+
+// Source and download links
+:ReleaseDownload: https://github.com/strimzi/strimzi-kafka-bridge/releases[GitHub release page^]
+
+//External links
+:external-cors-link: https://fetch.spec.whatwg.org/[Fetch CORS specification^]
