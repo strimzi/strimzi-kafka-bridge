@@ -1,0 +1,17 @@
+// This assembly is included in the following assemblies:
+//
+// assembly-kafka-bridge-overview.adoc
+
+[id='con-securing-http-interface-{context}']
+= Securing the Kafka Bridge HTTP interface
+
+[role="_abstract"]
+Authentication and encryption between HTTP clients and the Kafka Bridge is not supported directly by the Kafka Bridge.
+Requests sent from clients to the Kafka Bridge are sent without authentication or encryption.
+Requests must use HTTP rather than HTTPS.
+
+You can combine the Kafka Bridge with the following tools to secure it:
+
+* Network policies and firewalls that define which pods can access the Kafka Bridge
+* Reverse proxies (for example, OAuth 2.0)
+* API gateways

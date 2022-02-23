@@ -1,0 +1,50 @@
+// This assembly is included in the following assemblies:
+//
+// bridge.adoc
+
+:context: kafka-bridge-quickstart
+
+[id='assembly-kafka-bridge-quickstart-{context}']
+= Kafka Bridge quickstart
+
+[role="_abstract"]
+Use this quickstart to try out the Strimzi Kafka Bridge in your local development environment.
+
+You will learn how to do the following:
+
+* Produce messages to topics and partitions in your Kafka cluster
+* Create a Kafka Bridge consumer
+* Perform basic consumer operations, such as subscribing the consumer to topics and retrieving the messages that you produced
+
+In this quickstart, HTTP requests are formatted as curl commands that you can copy and paste to your terminal.
+
+Ensure you have the prerequisites and then follow the tasks in the order provided in this chapter.
+
+.About data formats
+
+In this quickstart, you will produce and consume messages in JSON format, not binary.
+For more information on the data formats and HTTP headers used in the example requests, see xref:con-requests-kafka-bridge-kafka-bridge-overview[].
+
+.Prerequisites for the quickstart
+
+* A Kafka cluster is running on the host machine.
+
+include::modules/proc-downloading-kafka-bridge.adoc[leveloffset=+1]
+
+include::modules/proc-configuring-kafka-bridge.adoc[leveloffset=+1]
+
+include::modules/proc-installing-kafka-bridge.adoc[leveloffset=+1]
+
+include::modules/proc-producing-messages-from-bridge-topics-partitions.adoc[leveloffset=+1]
+
+include::modules/proc-creating-kafka-bridge-consumer.adoc[leveloffset=+1]
+
+include::modules/proc-bridge-subscribing-consumer-topics.adoc[leveloffset=+1]
+
+include::modules/proc-bridge-retrieving-latest-messages-from-consumer.adoc[leveloffset=+1]
+
+include::modules/proc-bridge-committing-consumer-offsets-to-log.adoc[leveloffset=+1]
+
+include::modules/proc-bridge-seeking-offsets-for-partition.adoc[leveloffset=+1]
+
+include::modules/proc-bridge-deleting-consumer.adoc[leveloffset=+1]

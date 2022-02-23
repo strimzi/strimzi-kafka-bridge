@@ -1,0 +1,35 @@
+// Module included in the following assemblies:
+//
+// assembly-kafka-bridge-quickstart.adoc
+
+[id='proc-installing-kafka-bridge-{context}']
+= Installing the Kafka Bridge
+
+[role="_abstract"]
+Follow this procedure to install the Strimzi Kafka Bridge.
+
+.Prerequisites
+
+* xref:proc-downloading-kafka-bridge-{context}[The Kafka Bridge installation archive is downloaded]
+* xref:proc-configuring-kafka-bridge-{context}[The Kafka Bridge configuration properties are set]
+
+.Procedure
+
+. If you have not already done so, unzip the Kafka Bridge installation archive to any directory.
+
+. Run the Kafka Bridge script using the configuration properties as a parameter:
++
+For example:
++
+[source,shell,subs="+quotes,attributes"]
+----
+./bin/kafka_bridge_run.sh --config-file=_<path>_/configfile.properties
+----
+
+. Check to see that the installation was successful in the log.
++
+[source,shell]
+----
+HTTP-Kafka Bridge started and listening on port 8080
+HTTP-Kafka Bridge bootstrap servers localhost:9092
+----
