@@ -12,7 +12,7 @@ The available protocols are:
 * [AMQP 1.0 (Advanced Message Queuing Protocol)](https://www.amqp.org/)
 * [HTTP 1.1 (Hypertext Transfer Protocol)](https://tools.ietf.org/html/rfc2616)
 
-It provides a different way to interact with Apache Kafka because the latter natively supports only a custom (proprietary) protocol. 
+It provides a different way to interact with Apache Kafka because the latter natively supports only a custom (proprietary) protocol.
 Thanks to the bridge, all clients which can speak different standard protocols can connect to Apache Kafka cluster in order to send and receive messages to / from topics.
 
 ## Running the bridge
@@ -37,10 +37,11 @@ Documentation to the current _main_ branch as well as all releases can be found 
 
 ## Getting help
 
-If you encounter any issues while using Strimzi Kafka Bridge, you can get help using:
+If you encounter any issues while using Strimzi Kafka Bridge, you can get help through the following methods:
 
 - [Strimzi Users mailing list](https://lists.cncf.io/g/cncf-strimzi-users/topics)
 - [#strimzi channel on CNCF Slack](https://slack.cncf.io/)
+
 
 ## Contributing
 
@@ -50,7 +51,7 @@ You can contribute by:
 - Improving documentation
 - Talking about Strimzi Kafka Bridge
 
-All bugs, tasks or enhancements are tracked as [GitHub issues](https://github.com/strimzi/strimzi-kafka-bridge/issues). Issues which 
+All bugs, tasks or enhancements are tracked as [GitHub issues](https://github.com/strimzi/strimzi-kafka-bridge/issues). Issues which
 might be a good start for new contributors are marked with ["good-start"](https://github.com/strimzi/strimzi-kafka-bridge/labels/good-start) label.
 
 The [Hacking guide](https://github.com/strimzi/strimzi-kafka-bridge/blob/main/HACKING.md) describes how to build Strimzi Kafka Bridge and how to test your changes before submitting a patch or opening a PR.

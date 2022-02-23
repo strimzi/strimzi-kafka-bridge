@@ -1,0 +1,59 @@
+// Module included in the following assemblies:
+//
+// assembly-kafka-bridge-quickstart.adoc
+
+[id='proc-configuring-kafka-bridge-{context}']
+= Configuring Kafka Bridge properties
+
+[role="_abstract"]
+This procedure describes how to configure the Kafka and HTTP connection properties used by the Strimzi Kafka Bridge.
+
+You configure the Kafka Bridge, as any other Kafka client, using appropriate prefixes for Kafka-related properties.
+
+* `kafka.` for general configuration that applies to producers and consumers, such as server connection and security.
+* `kafka.consumer.` for consumer-specific configuration passed only to the consumer.
+* `kafka.producer.` for producer-specific configuration passed only to the producer.
+
+As well as enabling HTTP access to a Kafka cluster, HTTP properties provide the capability to enable and define access control for the Kafka Bridge through Cross-Origin Resource Sharing (CORS).
+CORS is a HTTP mechanism that allows browser access to selected resources from more than one origin.
+To configure CORS, you define a list of allowed resource origins and HTTP methods to access them.
+Additional HTTP headers in requests describe the CORS origins that are permitted access to the Kafka cluster.
+
+.Prerequisites
+
+* xref:proc-downloading-kafka-bridge-{context}[The Kafka Bridge installation archive is downloaded]
+
+.Procedure
+
+. Edit the `application.properties` file provided with the Strimzi Kafka Bridge installation archive.
++
+Use the properties file to specify Kafka and HTTP-related properties, and to enable distributed tracing.
+
+.. Configure standard Kafka-related properties, including properties specific to the Kafka consumers and producers.
++
+Use:
++
+* `kafka.bootstrap.servers` to define the host/port connections to the Kafka cluster
+* `kafka.producer.acks` to provide acknowledgments to the HTTP client
+* `kafka.consumer.auto.offset.reset` to determine how to manage reset of the offset in Kafka
++
+For more information on configuration of Kafka properties, see the http://kafka.apache.org[Apache Kafka website^]
+
+.. Configure HTTP-related properties to enable HTTP access to the Kafka cluster.
++
+For example:
++
+[source,properties]
+----
+bridge.id=my-bridge
+http.enabled=true
+http.host=0.0.0.0
+http.port=8080 <1>
+http.cors.enabled=true <2>
+http.cors.allowedOrigins=https://strimzi.io <3>
+http.cors.allowedMethods=GET,POST,PUT,DELETE,OPTIONS,PATCH <4>
+----
+<1> The default HTTP configuration for the Kafka Bridge to listen on port 8080.
+<2> Set to `true` to enable CORS.
+<3> Comma-separated list of allowed CORS origins. You can use a URL or a Java regular expression.
+<4> Comma-separated list of allowed HTTP methods for CORS.

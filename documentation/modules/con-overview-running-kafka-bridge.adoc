@@ -1,0 +1,20 @@
+// Module included in the following assemblies:
+//
+// assembly-kafka-bridge-overview.adoc
+
+[id="overview-components-running-kafka-bridge_{context}"]
+= Running the Kafka Bridge
+
+[role="_abstract"]
+Install the Strimzi Kafka Bridge to run in the same environment as your Kafka cluster.
+
+You can download and add the Kafka Bridge installation artifacts to your host machine.
+To try out the Kafka Bridge in your local environment, see the xref:assembly-kafka-bridge-quickstart-{context}[Kafka Bridge quickstart].
+
+If you deployed Strimzi on Kubernetes, you can use the Strimzi Cluster Operator to deploy the Kafka Bridge to the Kubernetes cluster.
+You'll need a running Kafka cluster that was deployed by the Cluster Operator in a Kubernetes namespace.
+You can configure your deployment to access the Kafka Bridge outside the Kubernetes cluster. 
+
+[role="_additional-resources"]
+.Additional resources
+* {BookURLConfiguring}

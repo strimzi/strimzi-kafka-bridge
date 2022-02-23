@@ -1,0 +1,33 @@
+// Module included in the following assemblies:
+//
+// assembly-kafka-bridge-quickstart.adoc
+
+[id='proc-deploying-kafka-bridge-quickstart-{context}']
+= Deploying the Kafka Bridge locally
+
+Deploy an instance of the Strimzi Kafka Bridge to the host.
+Use the `application.properties` file provided with the installation archive to apply the default configuration settings.
+
+.Procedure
+
+. Open the `application.properties` file and check that the default  `HTTP related settings` are defined:
++
+[source,shell,subs=attributes+]
+----
+http.enabled=true
+http.host=0.0.0.0
+http.port=8080
+----
++
+This configures the Kafka Bridge to listen for requests on port 8080.
+
+. Run the Kafka Bridge script using the configuration properties as a parameter:
++
+[source,shell,subs=attributes+]
+----
+./bin/kafka_bridge_run.sh --config-file=<path>/application.properties
+----
+
+.What to do next
+
+* xref:proc-producing-messages-from-bridge-topics-partitions-{context}[Produce messages to topics and partitions].

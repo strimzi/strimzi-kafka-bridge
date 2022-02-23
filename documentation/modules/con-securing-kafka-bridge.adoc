@@ -1,0 +1,21 @@
+// This assembly is included in the following assemblies:
+//
+// assembly-kafka-bridge-overview.adoc
+
+[id='con-securing-kafka-bridge-{context}']
+= Securing connectivity to the Kafka cluster
+
+[role="_abstract"]
+You can configure the following between the Kafka Bridge and your Kafka cluster:
+
+* TLS or SASL-based authentication
+* A TLS-encrypted connection
+
+You configure the Kafka Bridge for authentication through its xref:proc-configuring-kafka-bridge-{context}[properties file].
+
+You can also use ACLs in Kafka brokers to restrict the topics that can be consumed and produced using the Kafka Bridge.
+
+[role="_additional-resources"]
+.Additional resources
+
+* {BookURLConfiguring}
