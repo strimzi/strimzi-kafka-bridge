@@ -353,9 +353,8 @@
               }
             }
           }
-        }
-      },
-      "parameters": [
+        },
+        "parameters": [
         {
           "name": "groupid",
           "in": "path",
@@ -371,6 +370,7 @@
           "type": "string"
         }
       ]
+      }    
     },
     "/consumers/{groupid}/instances/{name}/positions": {
       "post": {
