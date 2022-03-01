@@ -234,7 +234,23 @@
           }
         },
         "operationId": "listSubscriptions",
-        "description": "Retrieves a list of the topics to which the consumer is subscribed."
+        "description": "Retrieves a list of the topics to which the consumer is subscribed.",
+        "parameters": [
+          {
+            "name": "groupid",
+            "in": "path",
+            "description": "ID of the consumer group to which the subscribed consumer belongs.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Name of the subscribed consumer.",
+            "required": true,
+            "type": "string"
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -257,6 +273,20 @@
             "schema": {
               "$ref": "#/definitions/Topics"
             }
+          },
+          {
+            "name": "groupid",
+            "in": "path",
+            "description": "ID of the consumer group to which the subscribed consumer belongs.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Name of the consumer to subscribe to topics.",
+            "required": true,
+            "type": "string"
           }
         ],
         "responses": {
@@ -323,9 +353,8 @@
               }
             }
           }
-        }
-      },
-      "parameters": [
+        },
+        "parameters": [
         {
           "name": "groupid",
           "in": "path",
@@ -341,6 +370,7 @@
           "type": "string"
         }
       ]
+      }    
     },
     "/consumers/{groupid}/instances/{name}/positions": {
       "post": {
