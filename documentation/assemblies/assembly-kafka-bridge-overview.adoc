@@ -2,8 +2,6 @@
 //
 // bridge.adoc
 
-:context: kafka-bridge-overview
-
 [id='assembly-kafka-bridge-overview-{context}']
 = Kafka Bridge overview
 

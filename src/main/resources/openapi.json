@@ -1,8 +1,8 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "Strimzi HTTP Bridge for Apache Kafka",
-        "description": "The Strimzi HTTP Bridge for Apache Kafka provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. ",
+      "title": "Strimzi Kafka Bridge API Reference",
+      "description": "The Strimzi Kafka Bridge provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. ",
         "version": "0.1.0"
     },
     "paths": {
@@ -2071,7 +2071,7 @@
         }
     ],
     "externalDocs": {
-        "description": "Find out more about the Strimzi HTTP Bridge",
+        "description": "Find out more about the Strimzi Kafka Bridge",
         "url": "https://strimzi.io/documentation/"
     }
 }
