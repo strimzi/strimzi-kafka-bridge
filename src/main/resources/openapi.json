@@ -2069,9 +2069,5 @@
             "name": "Producer",
             "description": "Producer operations to send records to a specified topic or topic partition."
         }
-    ],
-    "externalDocs": {
-        "description": "Find out more about the Strimzi Kafka Bridge",
-        "url": "https://strimzi.io/documentation/"
-    }
+    ]
 }
