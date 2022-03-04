@@ -2,8 +2,6 @@
 //
 // bridge.adoc
 
-:context: kafka-bridge-quickstart
-
 [id='assembly-kafka-bridge-quickstart-{context}']
 = Kafka Bridge quickstart
 
