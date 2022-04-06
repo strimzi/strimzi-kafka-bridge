@@ -32,6 +32,7 @@ export KAFKA_BRIDGE_LOG4J_OPTS="-Dlog4j2.configurationFile=file:$STRIMZI_HOME/cu
 
 MAX_HEAP=$(get_heap_size)
 if [ -n "$MAX_HEAP" ]; then
+  echo "Configuring Java heap: -Xms${MAX_HEAP}m -Xmx${MAX_HEAP}m"
   export JAVA_OPTS="-Xms${MAX_HEAP}m -Xmx${MAX_HEAP}m $JAVA_OPTS"
 fi
 
