@@ -8,7 +8,7 @@ jobs:
     os: linux
     arch: ppc64le
     jdk: openjdk11
-    script: mvn install -DskipTests -Dmaven.javadoc.skip=true
+    script: mvn install -Dmaven.javadoc.skip=true
     addons:
       apt:
         packages:
