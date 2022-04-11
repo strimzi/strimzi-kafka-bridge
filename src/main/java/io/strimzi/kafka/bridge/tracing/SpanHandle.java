@@ -12,6 +12,12 @@ import io.vertx.kafka.client.producer.KafkaProducerRecord;
  * Simple Span handle.
  */
 public interface SpanHandle<K, V> {
+    default void prepare(KafkaProducerRecord<K, V> record) {
+    }
+
+    default void clean(KafkaProducerRecord<K, V> record) {
+    }
+
     void inject(KafkaProducerRecord<K, V> record);
     void inject(RoutingContext routingContext);
     void finish(int code);

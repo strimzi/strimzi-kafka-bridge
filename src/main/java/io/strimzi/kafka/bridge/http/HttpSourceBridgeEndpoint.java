@@ -141,7 +141,9 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         List<Future> sendHandlers = new ArrayList<>(records.size());
         for (KafkaProducerRecord<K, V> record : records) {
             Promise<RecordMetadata> promise = Promise.promise();
-            sendHandlers.add(promise.future());
+            Future<RecordMetadata> future = promise.future().onComplete(ar -> span.clean(record));
+            sendHandlers.add(future);
+            span.prepare(record);
             this.send(record, promise);
         }
 

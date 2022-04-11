@@ -23,13 +23,21 @@ import io.opentelemetry.instrumentation.kafkaclients.TracingProducerInterceptor;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.kafka.client.producer.KafkaHeader;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.Header;
+import org.apache.kafka.common.header.Headers;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static io.strimzi.kafka.bridge.tracing.TracingConstants.COMPONENT;
 import static io.strimzi.kafka.bridge.tracing.TracingConstants.JAEGER;
@@ -178,7 +186,7 @@ class OpenTelemetryHandle implements TracingHandle {
 
     @Override
     public void kafkaProducerConfig(Properties props) {
-        props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, TracingProducerInterceptor.class.getName());
+        props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, ContextAwareTracingProducerInterceptor.class.getName());
     }
 
     private static final class OTelSpanHandle<K, V> implements SpanHandle<K, V> {
@@ -188,6 +196,22 @@ class OpenTelemetryHandle implements TracingHandle {
         public OTelSpanHandle(Span span) {
             this.span = span;
             this.scope = span.makeCurrent();
+        }
+
+        @Override
+        public void prepare(KafkaProducerRecord<K, V> record) {
+            String uuid = UUID.randomUUID().toString();
+            spans.put(uuid, span);
+            record.addHeader(_UUID, uuid);
+        }
+
+        @Override
+        public void clean(KafkaProducerRecord<K, V> record) {
+            Optional<KafkaHeader> oh = record.headers().stream().filter(h -> h.key().equals(_UUID)).findFirst();
+            oh.ifPresent(h -> {
+                String uuid = h.value().toString();
+                spans.remove(uuid);
+            });
         }
 
         @Override
@@ -208,6 +232,22 @@ class OpenTelemetryHandle implements TracingHandle {
                 scope.close();
             } finally {
                 span.end();
+            }
+        }
+    }
+
+    static final String _UUID = "_UUID";
+    static final Map<String, Span> spans = new ConcurrentHashMap<>();
+
+    public static class ContextAwareTracingProducerInterceptor<K, V> extends TracingProducerInterceptor<K, V> {
+        @Override
+        public ProducerRecord<K, V> onSend(ProducerRecord<K, V> record) {
+            Headers headers = record.headers();
+            String key = Buffer.buffer(headers.lastHeader(_UUID).value()).toString();
+            headers.remove(_UUID);
+            Span span = spans.remove(key);
+            try (Scope ignored = span.makeCurrent()) {
+                return super.onSend(record);
             }
         }
     }

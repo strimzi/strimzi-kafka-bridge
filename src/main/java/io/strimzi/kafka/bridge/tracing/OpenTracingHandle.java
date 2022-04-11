@@ -76,14 +76,8 @@ class OpenTracingHandle implements TracingHandle {
 
     private Tracer.SpanBuilder getSpanBuilder(RoutingContext rc, String operationName) {
         Tracer tracer = GlobalTracer.get();
-        Tracer.SpanBuilder spanBuilder;
         SpanContext parentSpan = tracer.extract(Format.Builtin.HTTP_HEADERS, new RequestTextMap(rc.request()));
-        if (parentSpan == null) {
-            spanBuilder = tracer.buildSpan(operationName);
-        } else {
-            spanBuilder = tracer.buildSpan(operationName).asChildOf(parentSpan);
-        }
-        return spanBuilder;
+        return tracer.buildSpan(operationName).asChildOf(parentSpan);
     }
 
     private static class RequestTextMap implements TextMap {
