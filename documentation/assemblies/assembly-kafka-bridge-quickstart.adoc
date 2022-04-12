@@ -18,10 +18,7 @@ In this quickstart, HTTP requests are formatted as curl commands that you can co
 
 Ensure you have the prerequisites and then follow the tasks in the order provided in this chapter.
 
-.About data formats
-
-In this quickstart, you will produce and consume messages in JSON format, not binary.
-For more information on the data formats and HTTP headers used in the example requests, see xref:con-requests-kafka-bridge-kafka-bridge-overview[].
+In this quickstart, you will produce and consume messages in JSON format.
 
 .Prerequisites for the quickstart
 
