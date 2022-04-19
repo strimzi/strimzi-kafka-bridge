@@ -2,7 +2,7 @@
 
 ## 0.22.0
 
-* n/a
+* Support for ppc64le platform
 
 ## 0.21.4
 
