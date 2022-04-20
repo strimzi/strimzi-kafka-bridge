@@ -1,8 +1,10 @@
 # CHANGELOG
 
-## 0.22.0
+## 0.21.5
 
 * Support for ppc64le platform
+* Documentation improvements
+* Dependency updates
 
 ## 0.21.4
 
