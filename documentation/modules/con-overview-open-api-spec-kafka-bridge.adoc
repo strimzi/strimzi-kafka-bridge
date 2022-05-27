@@ -1,0 +1,20 @@
+// This assembly is included in the following assemblies:
+//
+// assembly-kafka-bridge-overview.adoc
+
+[id='overview-open-api-spec-kafka-bridge-{context}']
+= Kafka Bridge OpenAPI specification
+
+[role="_abstract"]
+Kafka Bridge APIs use the OpenAPI Specification (OAS).
+OAS provides a standard framework for describing and implementing HTTP APIs.
+
+The Kafka Bridge OpenAPI specification is in JSON format.
+You can find the OpenAPI JSON files in the `src/main/resources/` folder of the Kafka Bridge source download files.
+The download files are available from the {ReleaseDownload}.
+
+You can also use the xref:_openapi[`GET /openapi` method] to retrieve the OpenAPI v2 specification in JSON format.
+
+[role="_additional-resources"]
+.Additional resources
+* {openapis}
