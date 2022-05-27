@@ -24,3 +24,4 @@
 
 //External links
 :external-cors-link: https://fetch.spec.whatwg.org/[Fetch CORS specification^]
+:openapis: https://www.openapis.org/[OpenAPI initiative^]
