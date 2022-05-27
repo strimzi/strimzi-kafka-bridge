@@ -5,6 +5,7 @@
 * Support for ppc64le platform
 * Documentation improvements
 * Dependency updates
+* Add `async` query parameter to publish endpoint to allow for immediate responses from the bridge (reduces latency)
 
 ## 0.21.4
 

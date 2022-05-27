@@ -874,4 +874,66 @@ public class ProducerIT extends HttpBridgeITAbstract {
                 });
             });
     }
+
+    @Test
+    void sendAsyncMessages(VertxTestContext context) throws InterruptedException, ExecutionException {
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+
+        String value = "message-value";
+
+        int numMessages = MULTIPLE_MAX_MESSAGE;
+
+        JsonArray records = new JsonArray();
+        for (int i = 0; i < numMessages; i++) {
+            JsonObject json = new JsonObject();
+            json.put("value", value + "-" + i);
+            records.add(json);
+        }
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        future.get();
+
+        producerService()
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .addQueryParam("async", "true")
+                .sendJsonObject(root, ar -> {
+                    context.verify(() -> assertThat(ar.succeeded(), is(true)));
+
+                    HttpResponse<JsonObject> response = ar.result();
+                    assertThat(response.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
+                });
+
+        Properties consumerProperties = Consumer.fillDefaultProperties();
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
+
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
+                new StringDeserializer(), new KafkaJsonDeserializer<String>(String.class));
+        this.count = 0;
+        consumer.handler(record -> {
+            context.verify(() -> {
+                assertThat(record.value(), is(value + "-" + this.count++));
+                assertThat(record.topic(), is(topic));
+                assertThat(record.partition(), notNullValue());
+                assertThat(record.offset(), notNullValue());
+                assertThat(record.key(), nullValue());
+            });
+
+            LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                    record.topic(), record.partition(), record.offset(), record.key(), record.value());
+
+            if (this.count == numMessages) {
+                consumer.close();
+                context.completeNow();
+            }
+        });
+
+        consumer.subscribe(topic, done -> {
+            if (!done.succeeded()) {
+                context.failNow(done.cause());
+            }
+        });
+
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
 }
