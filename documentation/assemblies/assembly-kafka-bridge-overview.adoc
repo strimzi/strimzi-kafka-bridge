@@ -18,6 +18,8 @@ include::modules/con-overview-running-kafka-bridge.adoc[leveloffset=+1]
 
 include::modules/con-overview-components-kafka-bridge.adoc[leveloffset=+1]
 
+include::modules/con-overview-open-api-spec-kafka-bridge.adoc[leveloffset=+1]
+
 include::modules/con-securing-kafka-bridge.adoc[leveloffset=+1]
 
 include::modules/con-securing-http-interface.adoc[leveloffset=+1]
