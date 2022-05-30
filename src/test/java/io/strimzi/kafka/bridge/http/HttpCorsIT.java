@@ -110,6 +110,7 @@ public class HttpCorsIT {
                         client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
                                 .putHeader("Origin", "https://evil.io")
                                 .send(ar2 -> context.verify(() -> {
+                                    System.out.println(ar2.result().body());
                                     assertThat(ar2.result().statusCode(), is(400));
                                     context.completeNow();
                                 }));
@@ -180,8 +181,8 @@ public class HttpCorsIT {
                                 .putHeader("Origin", "https://strimzi.io")
                                 .putHeader("content-type", BridgeContentType.KAFKA_JSON)
                                 .sendJsonObject(topicsRoot, ar2 -> context.verify(() -> {
-                                    //we are not creating a topic, so we will get a 404 status code
-                                    assertThat(ar2.result().statusCode(), is(404));
+                                    //we are not creating a topic, so we will get a 400 status code
+                                    assertThat(ar2.result().statusCode(), is(400));
                                     context.completeNow();
                                 }));
                     }))));

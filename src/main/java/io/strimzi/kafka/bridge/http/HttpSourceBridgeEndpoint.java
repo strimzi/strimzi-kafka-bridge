@@ -118,7 +118,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                 span.finish();
                 return;
             }
-            records = messageConverter.toKafkaRecords(topic, partition, routingContext.getBody());
+            records = messageConverter.toKafkaRecords(topic, partition, routingContext.body().buffer());
 
             for (KafkaProducerRecord<K, V> record :records)   {
                 tracer.inject(span.context(), Format.Builtin.TEXT_MAP, new TextMap() {

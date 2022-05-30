@@ -671,7 +671,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: /records/0 - provided object should not contain additional properties"));
+            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: partition"));
     }
 
     @Test
@@ -714,7 +714,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: /records/0 - provided object should not contain additional properties"));
+            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: foo"));
     }
 
     Handler<AsyncResult<HttpResponse<JsonObject>>> verifyBadRequest(VertxTestContext context, String message) {
@@ -816,7 +816,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsToPartitionRequest(topic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: /records/0 - provided object should not contain additional properties"));
+            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: partition"));
 
         records.remove(json);
         records.clear();
