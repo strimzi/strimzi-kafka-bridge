@@ -94,7 +94,6 @@ public class HttpCorsIT {
         }
     }
 
-
     @Test
     public void testCorsNotEnabled(VertxTestContext context) {
         createWebClient();
@@ -180,8 +179,8 @@ public class HttpCorsIT {
                                 .putHeader("Origin", "https://strimzi.io")
                                 .putHeader("content-type", BridgeContentType.KAFKA_JSON)
                                 .sendJsonObject(topicsRoot, ar2 -> context.verify(() -> {
-                                    //we are not creating a topic, so we will get a 404 status code
-                                    assertThat(ar2.result().statusCode(), is(404));
+                                    //we are not creating a topic, so we will get a 400 status code
+                                    assertThat(ar2.result().statusCode(), is(400));
                                     context.completeNow();
                                 }));
                     }))));

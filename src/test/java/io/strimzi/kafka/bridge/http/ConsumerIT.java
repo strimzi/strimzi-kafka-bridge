@@ -475,7 +475,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     @Test
     void createConsumerWithNotExistingParameter(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         checkCreatingConsumer("foo", "bar", HttpResponseStatus.BAD_REQUEST,
-                "Validation error on:  - provided object should not contain additional properties", context);
+                "Validation error on:  - Provided object contains unexpected additional property: foo", context);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));

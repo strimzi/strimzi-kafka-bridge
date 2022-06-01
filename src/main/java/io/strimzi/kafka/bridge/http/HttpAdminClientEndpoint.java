@@ -156,7 +156,7 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                 root.put("partitions", partitionsArray);
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
 
-            } else if (done.cause() instanceof UnknownTopicOrPartitionException) {
+            } else if (done.cause() != null && done.cause().getCause() instanceof UnknownTopicOrPartitionException) {
                 HttpBridgeError error = new HttpBridgeError(
                         HttpResponseStatus.NOT_FOUND.code(),
                         done.cause().getMessage()
@@ -187,7 +187,7 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                     });
                 }
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
-            } else if (describeTopicsResult.cause() instanceof UnknownTopicOrPartitionException) {
+            } else if (describeTopicsResult.cause() != null && describeTopicsResult.cause().getCause() instanceof UnknownTopicOrPartitionException) {
                 HttpBridgeError error = new HttpBridgeError(
                         HttpResponseStatus.NOT_FOUND.code(),
                         describeTopicsResult.cause().getMessage()
@@ -233,7 +233,7 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                     HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
                             BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                 }
-            } else if (describeTopicsResult.cause() instanceof UnknownTopicOrPartitionException) {
+            } else if (describeTopicsResult.cause() != null && describeTopicsResult.cause().getCause() instanceof UnknownTopicOrPartitionException) {
                 HttpBridgeError error = new HttpBridgeError(
                         HttpResponseStatus.NOT_FOUND.code(),
                         describeTopicsResult.cause().getMessage()
@@ -277,7 +277,7 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
         this.describeTopics(Collections.singletonList(topicName), topicExistenceCheck);
         topicExistenceCheck.future().onComplete(t -> {
             Throwable e = null;
-            if (t.cause() instanceof UnknownTopicOrPartitionException) {
+            if (t.cause() != null && t.cause().getCause() instanceof UnknownTopicOrPartitionException) {
                 e = t.cause();
             } else if (t.result().get(topicName).getPartitions().size() <= partitionId) {
                 e = new UnknownTopicOrPartitionException("Topic '" + topicName + "' does not have partition with id " + partitionId);
