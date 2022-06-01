@@ -502,7 +502,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         JsonObject bodyAsJson = EMPTY_JSON;
         try {
             // check for an empty body
-            if (routingContext.body().buffer() != null && routingContext.body().buffer().length() != 0) {
+            if (!routingContext.body().isEmpty()) {
                 bodyAsJson = routingContext.body().asJsonObject();
             }
             log.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
