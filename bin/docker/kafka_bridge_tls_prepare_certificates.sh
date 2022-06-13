@@ -24,7 +24,7 @@ function create_truststore {
 # $4: Private key to be imported
 # $5: Alias of the certificate
 function create_keystore {
-   RANDFILE=/tmp/.rnd openssl pkcs12 -export -in $3 -inkey $4 -name $5 -password pass:$2 -out $1
+   RANDFILE=/tmp/.rnd openssl pkcs12 -export -in $3 -inkey $4 -name $5 -password pass:$2 -out $1 -certpbe aes-128-cbc -keypbe aes-128-cbc -macalg sha256
 }
 
 # $1 = trusted certs, $2 = TLS auth cert, $3 = TLS auth key, $4 = truststore path, $5 = keystore path, $6 = certs and key path
