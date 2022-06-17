@@ -6,11 +6,12 @@
 package io.strimzi.kafka.bridge.tracing;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.vertx.ext.web.RoutingContext;
-import io.vertx.kafka.client.producer.KafkaProducerRecord;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.producer.KafkaHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -22,7 +23,7 @@ import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY;
  */
 public class TracingUtil {
     private static final Logger log = LoggerFactory.getLogger(TracingUtil.class);
-    private static TracingHandle tracing = new NoopTracing();
+    private static TracingHandle tracing = new NoopTracingHandle();
 
     public static TracingHandle getTracing() {
         return tracing;
@@ -49,62 +50,29 @@ public class TracingUtil {
         }
     }
 
-    private static final class NoopTracing implements TracingHandle {
-        @Override
-        public String envName() {
-            return null;
+    /**
+     * We are interested in tracing headers here,
+     * which are unique - single value per key.
+     *
+     * @param record Kafka consumer record
+     * @param <K> key type
+     * @param <V> value type
+     * @return map of headers
+     */
+    public static <K, V> Map<String, String> toHeaders(KafkaConsumerRecord<K, V> record) {
+        Map<String, String> headers = new HashMap<>();
+        for (KafkaHeader header : record.headers()) {
+            headers.put(header.key(), header.value().toString());
         }
-
-        @Override
-        public String serviceName(BridgeConfig config) {
-            return null;
-        }
-
-        @Override
-        public void initialize() {
-        }
-
-        @Override
-        public <K, V> SpanBuilderHandle<K, V> builder(RoutingContext routingContext, String operationName) {
-            return new NoopSpanBuilderHandle<>();
-        }
-
-        @Override
-        public <K, V> SpanHandle<K, V> span(RoutingContext routingContext, String operationName) {
-            return new NoopSpanHandle<>();
-        }
-
-        @Override
-        public void kafkaConsumerConfig(Properties props) {
-        }
-
-        @Override
-        public void kafkaProducerConfig(Properties props) {
-        }
+        return headers;
     }
 
-    private static final class NoopSpanBuilderHandle<K, V> implements SpanBuilderHandle<K, V> {
-        @Override
-        public void addRef(Map<String, String> headers) {
-        }
-
-        @Override
-        public SpanHandle<K, V> span(RoutingContext routingContext) {
-            return new NoopSpanHandle<>();
-        }
-    }
-
-    private static final class NoopSpanHandle<K, V> implements SpanHandle<K, V> {
-        @Override
-        public void inject(KafkaProducerRecord<K, V> record) {
-        }
-
-        @Override
-        public void inject(RoutingContext routingContext) {
-        }
-
-        @Override
-        public void finish(int code) {
+    static void addProperty(Properties props, String key, String value) {
+        String previous = props.getProperty(key);
+        if (previous != null) {
+            props.setProperty(key, previous + "," + value);
+        } else {
+            props.setProperty(key, value);
         }
     }
 }

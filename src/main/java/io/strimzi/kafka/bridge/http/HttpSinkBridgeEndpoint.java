@@ -35,7 +35,6 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.OffsetAndMetadata;
-import io.vertx.kafka.client.producer.KafkaHeader;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Deserializer;
 
@@ -272,18 +271,12 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
                     TracingHandle tracing = TracingUtil.getTracing();
                     SpanBuilderHandle<K, V> builder = tracing.builder(routingContext, HttpOpenApiOperations.POLL.toString());
+                    SpanHandle<K, V> span = builder.span(routingContext);
 
                     for (int i = 0; i < records.result().size(); i++) {
                         KafkaConsumerRecord<K, V> record = records.result().recordAt(i);
-
-                        Map<String, String> headers = new HashMap<>();
-                        for (KafkaHeader header : record.headers()) {
-                            headers.put(header.key(), header.value().toString());
-                        }
-
-                        builder.addRef(headers);
+                        tracing.handleRecordSpan(span, record);
                     }
-                    SpanHandle<K, V> span = builder.span(routingContext);
 
                     span.inject(routingContext);
 

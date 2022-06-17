@@ -90,8 +90,8 @@ public class Application {
                 .setConfig(new JsonObject().put("raw-data", true));
 
             ConfigRetrieverOptions options = new ConfigRetrieverOptions()
-                .addStore(fileStore)
-                .addStore(envStore);
+                    .addStore(fileStore)
+                    .addStore(envStore);
 
             ConfigRetriever retriever = ConfigRetriever.create(vertx, options);
             retriever.getConfig(ar -> {
@@ -125,14 +125,14 @@ public class Application {
                                 }
                             }
 
-                            // register Jaeger tracer - if set, etc
+                            // register tracing - if set, etc
                             TracingUtil.initialize(bridgeConfig);
 
                             // when HTTP protocol is enabled, it handles healthy/ready/metrics endpoints as well,
                             // so no need for a standalone embedded HTTP server
                             if (!bridgeConfig.getHttpConfig().isEnabled()) {
                                 EmbeddedHttpServer embeddedHttpServer =
-                                    new EmbeddedHttpServer(vertx, healthChecker, metricsReporter, embeddedHttpServerPort);
+                                        new EmbeddedHttpServer(vertx, healthChecker, metricsReporter, embeddedHttpServerPort);
                                 embeddedHttpServer.start();
                             }
                         }

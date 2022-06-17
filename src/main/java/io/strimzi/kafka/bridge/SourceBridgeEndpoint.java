@@ -106,7 +106,7 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
         props.putAll(kafkaConfig.getProducerConfig().getConfig());
 
         TracingHandle tracing = TracingUtil.getTracing();
-        tracing.kafkaProducerConfig(props);
+        tracing.addTracingPropsToProducerConfig(props);
 
         this.producerUnsettledMode = KafkaProducer.create(this.vertx, props, this.keySerializer, this.valueSerializer);
 

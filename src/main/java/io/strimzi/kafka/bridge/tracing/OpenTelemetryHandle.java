@@ -18,19 +18,18 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
-import io.opentelemetry.instrumentation.kafkaclients.TracingConsumerInterceptor;
+import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation;
 import io.opentelemetry.instrumentation.kafkaclients.TracingProducerInterceptor;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.producer.KafkaHeader;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
 
 import java.util.Map;
@@ -52,8 +51,9 @@ import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY_TRA
  */
 class OpenTelemetryHandle implements TracingHandle {
 
+    private Tracer tracer;
+
     static void setCommonAttributes(SpanBuilder builder, RoutingContext routingContext) {
-        builder.setAttribute("component", COMPONENT);
         builder.setAttribute(SemanticAttributes.PEER_SERVICE, KAFKA_SERVICE);
         builder.setAttribute(SemanticAttributes.HTTP_METHOD, routingContext.request().method().name());
         builder.setAttribute(SemanticAttributes.HTTP_URL, routingContext.request().uri());
@@ -70,9 +70,6 @@ class OpenTelemetryHandle implements TracingHandle {
         if (serviceName == null) {
             // legacy purpose, use previous JAEGER_SERVICE_NAME as OTEL_SERVICE_NAME (if not explicitly set)
             serviceName = System.getenv(Configuration.JAEGER_SERVICE_NAME);
-            if (serviceName == null) {
-                serviceName = config.getTracingServiceName();
-            }
             if (serviceName != null) {
                 System.setProperty(OPENTELEMETRY_SERVICE_NAME_PROPERTY_KEY, serviceName);
             }
@@ -90,14 +87,17 @@ class OpenTelemetryHandle implements TracingHandle {
         AutoConfiguredOpenTelemetrySdk.initialize();
     }
 
-    private static Tracer get() {
-        return GlobalOpenTelemetry.getTracer(COMPONENT);
+    private Tracer get() {
+        if (tracer == null) {
+            tracer = GlobalOpenTelemetry.getTracer(COMPONENT);
+        }
+        return tracer;
     }
 
     private SpanBuilder getSpanBuilder(RoutingContext routingContext, String operationName) {
         Tracer tracer = get();
         SpanBuilder spanBuilder;
-        Context parentContext = propagator().extract(Context.current(), routingContext, RCG);
+        Context parentContext = propagator().extract(Context.current(), routingContext, ROUTING_CONTEXT_GETTER);
         if (parentContext == null) {
             spanBuilder = tracer.spanBuilder(operationName);
         } else {
@@ -112,11 +112,30 @@ class OpenTelemetryHandle implements TracingHandle {
         return new OTelSpanBuilderHandle<>(spanBuilder);
     }
 
+    @Override
+    public <K, V> void handleRecordSpan(SpanHandle<K, V> parentSpanHandle, KafkaConsumerRecord<K, V> record) {
+        String operationName = String.format("%s %s", record.topic(), MessageOperation.RECEIVE);
+        SpanBuilder spanBuilder = get().spanBuilder(operationName);
+        Context parentContext = propagator().extract(Context.current(), TracingUtil.toHeaders(record), MG);
+        if (parentContext != null) {
+            Span parentSpan = Span.fromContext(parentContext);
+            SpanContext psc = parentSpan != null ? parentSpan.getSpanContext() : null;
+            if (psc != null) {
+                spanBuilder.addLink(psc);
+            }
+        }
+        spanBuilder
+            .setSpanKind(SpanKind.CONSUMER)
+            .setParent(Context.current())
+            .startSpan()
+            .end();
+    }
+
     private static TextMapPropagator propagator() {
         return GlobalOpenTelemetry.getPropagators().getTextMapPropagator();
     }
 
-    private static final TextMapGetter<RoutingContext> RCG = new TextMapGetter<RoutingContext>() {
+    private static final TextMapGetter<RoutingContext> ROUTING_CONTEXT_GETTER = new TextMapGetter<RoutingContext>() {
         @Override
         public Iterable<String> keys(RoutingContext rc) {
             return rc.request().headers().names();
@@ -162,31 +181,14 @@ class OpenTelemetryHandle implements TracingHandle {
         }
 
         @Override
-        public void addRef(Map<String, String> headers) {
-            Context parentContext = propagator().extract(Context.current(), headers, MG);
-            if (parentContext != null) {
-                Span parentSpan = Span.fromContext(parentContext);
-                SpanContext psc = parentSpan != null ? parentSpan.getSpanContext() : null;
-                if (psc != null) {
-                    spanBuilder.addLink(psc);
-                }
-            }
-        }
-
-        @Override
         public SpanHandle<K, V> span(RoutingContext routingContext) {
             return buildSpan(spanBuilder, routingContext);
         }
     }
 
     @Override
-    public void kafkaConsumerConfig(Properties props) {
-        props.put(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, TracingConsumerInterceptor.class.getName());
-    }
-
-    @Override
-    public void kafkaProducerConfig(Properties props) {
-        props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, ContextAwareTracingProducerInterceptor.class.getName());
+    public void addTracingPropsToProducerConfig(Properties props) {
+        TracingUtil.addProperty(props, ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, ContextAwareTracingProducerInterceptor.class.getName());
     }
 
     private static final class OTelSpanHandle<K, V> implements SpanHandle<K, V> {
@@ -198,19 +200,29 @@ class OpenTelemetryHandle implements TracingHandle {
             this.scope = span.makeCurrent();
         }
 
+        /**
+         * See ContextAwareTracingProducerInterceptor for more info.
+         *
+         * @param record Kafka producer record to use as payload
+         */
         @Override
         public void prepare(KafkaProducerRecord<K, V> record) {
             String uuid = UUID.randomUUID().toString();
-            spans.put(uuid, span);
-            record.addHeader(_UUID, uuid);
+            SPANS.put(uuid, span);
+            record.addHeader(X_UUID, uuid);
         }
 
+        /**
+         * See ContextAwareTracingProducerInterceptor for more info.
+         *
+         * @param record Kafka producer record to use as payload
+         */
         @Override
         public void clean(KafkaProducerRecord<K, V> record) {
-            Optional<KafkaHeader> oh = record.headers().stream().filter(h -> h.key().equals(_UUID)).findFirst();
+            Optional<KafkaHeader> oh = record.headers().stream().filter(h -> h.key().equals(X_UUID)).findFirst();
             oh.ifPresent(h -> {
                 String uuid = h.value().toString();
-                spans.remove(uuid);
+                SPANS.remove(uuid);
             });
         }
 
@@ -236,16 +248,27 @@ class OpenTelemetryHandle implements TracingHandle {
         }
     }
 
-    static final String _UUID = "_UUID";
-    static final Map<String, Span> spans = new ConcurrentHashMap<>();
+    static final String X_UUID = "_UUID";
+    static final Map<String, Span> SPANS = new ConcurrentHashMap<>();
 
+    /**
+     * This interceptor is a workaround for async message send.
+     * OpenTelemetry propagates current span via ThreadLocal,
+     * where we have an async send - different thread.
+     * So we need to pass-in the current span info via SPANS map.
+     * ProducerRecord is a bit abused as a payload / info carrier,
+     * it holds an unique UUID, which maps to current span in SPANS map.
+     *
+     * @param <K> key type
+     * @param <V> value type
+     */
     public static class ContextAwareTracingProducerInterceptor<K, V> extends TracingProducerInterceptor<K, V> {
         @Override
         public ProducerRecord<K, V> onSend(ProducerRecord<K, V> record) {
             Headers headers = record.headers();
-            String key = Buffer.buffer(headers.lastHeader(_UUID).value()).toString();
-            headers.remove(_UUID);
-            Span span = spans.remove(key);
+            String key = Buffer.buffer(headers.lastHeader(X_UUID).value()).toString();
+            headers.remove(X_UUID);
+            Span span = SPANS.remove(key);
             try (Scope ignored = span.makeCurrent()) {
                 return super.onSend(record);
             }

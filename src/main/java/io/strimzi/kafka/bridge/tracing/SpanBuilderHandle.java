@@ -7,12 +7,15 @@ package io.strimzi.kafka.bridge.tracing;
 
 import io.vertx.ext.web.RoutingContext;
 
-import java.util.Map;
-
 /**
- * Simple SpanBuilder handle.
+ * SpanBuilder handle - an abstraction over actual span builder implementation.
  */
 public interface SpanBuilderHandle<K, V> {
-    void addRef(Map<String, String> headers);
+    /**
+     * Build span handle from underlying span builder implementation.
+     *
+     * @param routingContext Vert.x routing context
+     * @return the span handle
+     */
     SpanHandle<K, V> span(RoutingContext routingContext);
 }

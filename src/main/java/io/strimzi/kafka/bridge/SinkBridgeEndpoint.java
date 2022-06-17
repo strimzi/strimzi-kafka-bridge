@@ -7,8 +7,6 @@ package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
-import io.strimzi.kafka.bridge.tracing.TracingHandle;
-import io.strimzi.kafka.bridge.tracing.TracingUtil;
 import io.strimzi.kafka.bridge.tracker.OffsetTracker;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
@@ -168,9 +166,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         props.putAll(kafkaConfig.getConfig());
         props.putAll(kafkaConfig.getConsumerConfig().getConfig());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
-
-        TracingHandle tracing = TracingUtil.getTracing();
-        tracing.kafkaConsumerConfig(props);
 
         if (config != null)
             props.putAll(config);
