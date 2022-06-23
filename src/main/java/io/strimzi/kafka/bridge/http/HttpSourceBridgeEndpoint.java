@@ -66,6 +66,12 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         super.open();
     }
 
+    public void maybeClose() {
+        if (this.closing) {
+            this.close();
+        }
+    }
+
     @Override
     @SuppressWarnings("checkstyle:NPathComplexity")
     public void handle(Endpoint<?> endpoint) {
@@ -87,6 +93,8 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                 return;
             }
         }
+
+        boolean isAsync = Boolean.parseBoolean(routingContext.queryParams().get("async"));
 
         Tracer tracer = GlobalTracer.get();
 
@@ -147,6 +155,17 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
 
         // start sending records asynchronously
+        if (isAsync) {
+            // if async is specified, return immediately once records are sent
+            this.sendAsyncRecords(records);
+            Tags.HTTP_STATUS.set(span, HttpResponseStatus.NO_CONTENT.code());
+            span.finish();
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(),
+                    BridgeContentType.KAFKA_JSON, null);
+            this.maybeClose();
+            return;
+        }
+
         List<Future> sendHandlers = new ArrayList<>(records.size());
         for (KafkaProducerRecord<K, V> record : records) {
             Promise<RecordMetadata> promise = Promise.promise();
@@ -171,15 +190,12 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                     results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                 }
             }
-            
+
             Tags.HTTP_STATUS.set(span, HttpResponseStatus.OK.code());
             span.finish();
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
                     BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
-            
-            if (this.closing) {
-                this.close();
-            }
+            this.maybeClose();
         });
     }
 
@@ -207,6 +223,12 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         }
         jsonResponse.put("offsets", offsets);
         return jsonResponse;
+    }
+
+    private void sendAsyncRecords(List<KafkaProducerRecord<K, V>> records) {
+        for (KafkaProducerRecord<K, V> record : records) {
+            this.send(record, null);
+        }
     }
 
     private int handleError(Throwable ex) {
