@@ -615,6 +615,13 @@
             "schema": {
               "$ref": "#/definitions/ProducerRecordList"
             }
+          },
+          {
+            "name": "async",
+            "in": "query",
+            "description": "Whether to return immediately upon sending records, instead of waiting for metadata. No offsets will be returned if specified. Defaults to false.",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "responses": {
