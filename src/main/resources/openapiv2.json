@@ -1440,7 +1440,7 @@
       "type": "object",
       "properties": {
         "name": {
-          "description": "The unique name for the consumer instance. The name is unique within the scope of the consumer group. The name is used in URLs. ",
+          "description": "The unique name for the consumer instance. The name is unique within the scope of the consumer group. The name is used in URLs. If a name is not specified, a randomly generated name is assigned.",
           "type": "string"
         },
         "format": {
@@ -1448,23 +1448,23 @@
           "type": "string"
         },
         "auto.offset.reset": {
-          "description": "Resets the offset position for the consumer. \nIf set to `earliest`, messages are read from the first offset. \nIf set to `latest`, messages are read from the latest offset.",
+          "description": "Resets the offset position for the consumer. If set to `latest` (default), messages are read from the latest offset. If set to `earliest`, messages are read from the first offset.",
           "type": "string"
         },
         "fetch.min.bytes": {
-          "description": "Sets the minimum ammount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount.",
+          "description": "Sets the minimum amount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount. Default is `1` byte.",
           "type": "integer"
         },
         "consumer.request.timeout.ms": {
-          "description": "Sets the maximum amount of time, in milliseconds, for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned.",
+          "description": "Sets the maximum amount of time, in milliseconds, for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned. Default is `30000` (30 seconds).",
           "type": "integer"
         },
         "enable.auto.commit": {
-          "description": "If set to `true`, message offsets are committed automatically for the consumer. If set to `false`, message offsets must be committed manually.",
+          "description": "If set to `true` (default), message offsets are committed automatically for the consumer. If set to `false`, message offsets must be committed manually.",
           "type": "boolean"
         },
         "isolation.level": {
-          "description": "If set to `read_uncommitted`, all transaction records are retrieved. If set to `read_committed` , the records from committed transactions are retrieved.",
+          "description": "If set to `read_uncommitted` (default), all transaction records are retrieved, indpendent of any transaction outcome. If set to `read_committed`, the records from committed transactions are retrieved.",
           "type": "string"
         }
       },
