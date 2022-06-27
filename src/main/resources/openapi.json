@@ -1568,7 +1568,7 @@
                         "type": "string"
                     },
                     "auto.offset.reset": {
-                        "description": "Resets the offset position for the consumer. If set to `latest` (default), messages are read from the latest offset. If set to `earliest`, messages are read from the first offset. ",
+                        "description": "Resets the offset position for the consumer. If set to `latest` (default), messages are read from the latest offset. If set to `earliest`, messages are read from the first offset.",
                         "type": "string"
                     },
                     "fetch.min.bytes": {
