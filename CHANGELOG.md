@@ -1,11 +1,16 @@
 # CHANGELOG
 
+## 0.22.0
+
+* Add `async` query parameter to publish endpoint to allow for immediate responses from the bridge (reduces latency)
+* Dependency updates (Vert.x 4.3.1, Apache Kafka 3.2.0, etc.)
+* Documentation improvements
+
 ## 0.21.5
 
 * Support for ppc64le platform
 * Documentation improvements
 * Dependency updates
-* Add `async` query parameter to publish endpoint to allow for immediate responses from the bridge (reduces latency)
 
 ## 0.21.4
 
