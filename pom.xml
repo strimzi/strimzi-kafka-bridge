@@ -115,7 +115,7 @@
 		<jmx-prometheus-collector.version>0.12.0</jmx-prometheus-collector.version>
 		<prometheus-simpleclient.version>0.7.0</prometheus-simpleclient.version>
 		<commons-cli.version>1.4</commons-cli.version>
-		<test-container.version>0.101.0</test-container.version>
+		<test-container.version>0.102.0</test-container.version>
 		<jakarta.version>2.3.2</jakarta.version>
 		<!-- property to skip surefire tests during failsafe execution -->
 		<!--suppress UnresolvedMavenProperty -->
