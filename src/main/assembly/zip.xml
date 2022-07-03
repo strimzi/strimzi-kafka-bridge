@@ -35,6 +35,7 @@
             <scope>runtime</scope>
             <outputDirectory>/libs</outputDirectory>
             <fileMode>0644</fileMode>
+            <outputFileNameMapping>${artifact.groupId}.${artifact.artifactId}-${artifact.version}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
         </dependencySet>
     </dependencySets>
 </assembly>
