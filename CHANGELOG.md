@@ -2,6 +2,10 @@
 
 ## 0.22.0
 
+* n/a
+
+## 0.21.6
+
 * Add `async` query parameter to publish endpoint to allow for immediate responses from the bridge (reduces latency)
 * Dependency updates (Vert.x 4.3.1, Apache Kafka 3.2.0, etc.)
 * Documentation improvements
