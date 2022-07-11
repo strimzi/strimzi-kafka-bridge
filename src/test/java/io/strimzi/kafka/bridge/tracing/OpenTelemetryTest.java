@@ -20,6 +20,7 @@ public class OpenTelemetryTest extends TracingTestBase {
     protected TracingOptions tracingOptions() {
         System.setProperty(OPENTELEMETRY_TRACES_EXPORTER_PROPERTY_KEY, JAEGER);
         System.setProperty(OPENTELEMETRY_SERVICE_NAME_PROPERTY_KEY, "strimzi-kafka-bridge-test");
+        System.setProperty("otel.metrics.exporter", "none"); // disable metrics
         return new OpenTelemetryOptions();
     }
 }

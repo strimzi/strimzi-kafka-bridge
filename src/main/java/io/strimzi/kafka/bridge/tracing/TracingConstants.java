@@ -13,8 +13,6 @@ public final class TracingConstants {
     public static final String KAFKA_SERVICE = "kafka";
 
     public static final String JAEGER = "jaeger";
-
-    public static final String JAEGER_OPENTRACING = JAEGER;
     public static final String OPENTELEMETRY = "opentelemetry";
 
     public static final String OPENTELEMETRY_SERVICE_NAME_ENV_KEY = "OTEL_SERVICE_NAME";

@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import static io.strimzi.kafka.bridge.tracing.TracingConstants.JAEGER_OPENTRACING;
+import static io.strimzi.kafka.bridge.tracing.TracingConstants.JAEGER;
 import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY;
 
 /**
@@ -31,7 +31,7 @@ public class TracingUtil {
 
     public static void initialize(BridgeConfig config) {
         String tracingConfig = config.getTracing();
-        if (tracingConfig != null && (tracingConfig.equals(JAEGER_OPENTRACING) || tracingConfig.equals(OPENTELEMETRY))) {
+        if (tracingConfig != null && (tracingConfig.equals(JAEGER) || tracingConfig.equals(OPENTELEMETRY))) {
             boolean isOpenTelemetry = OPENTELEMETRY.equals(tracingConfig);
             TracingHandle instance = isOpenTelemetry ? new OpenTelemetryHandle() : new OpenTracingHandle();
 
@@ -45,7 +45,7 @@ public class TracingUtil {
                 instance.initialize();
                 tracing = instance;
             } else {
-                log.error("Tracing config cannot be initialized because {} environment variable is not defined", instance.envName());
+                log.error("Tracing config cannot be initialized because {} environment variable is not defined", instance.envServiceName());
             }
         }
     }

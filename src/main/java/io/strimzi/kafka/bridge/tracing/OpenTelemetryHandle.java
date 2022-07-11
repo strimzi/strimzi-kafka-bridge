@@ -23,20 +23,14 @@ import io.opentelemetry.instrumentation.kafkaclients.TracingProducerInterceptor;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
-import io.vertx.kafka.client.producer.KafkaHeader;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.header.Headers;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 
 import static io.strimzi.kafka.bridge.tracing.TracingConstants.COMPONENT;
 import static io.strimzi.kafka.bridge.tracing.TracingConstants.JAEGER;
@@ -52,6 +46,7 @@ import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY_TRA
 class OpenTelemetryHandle implements TracingHandle {
 
     private Tracer tracer;
+    private ExecutorService service;
 
     static void setCommonAttributes(SpanBuilder builder, RoutingContext routingContext) {
         builder.setAttribute(SemanticAttributes.PEER_SERVICE, KAFKA_SERVICE);
@@ -60,13 +55,13 @@ class OpenTelemetryHandle implements TracingHandle {
     }
 
     @Override
-    public String envName() {
+    public String envServiceName() {
         return OPENTELEMETRY_SERVICE_NAME_ENV_KEY;
     }
 
     @Override
     public String serviceName(BridgeConfig config) {
-        String serviceName = System.getenv(envName());
+        String serviceName = System.getenv(envServiceName());
         if (serviceName == null) {
             // legacy purpose, use previous JAEGER_SERVICE_NAME as OTEL_SERVICE_NAME (if not explicitly set)
             serviceName = System.getenv(Configuration.JAEGER_SERVICE_NAME);
@@ -84,7 +79,16 @@ class OpenTelemetryHandle implements TracingHandle {
 
     @Override
     public void initialize() {
+        System.setProperty("otel.metrics.exporter", "none"); // disable metrics
         AutoConfiguredOpenTelemetrySdk.initialize();
+    }
+
+    @Override
+    public synchronized ExecutorService adapt(ExecutorService provided) {
+        if (service == null) {
+            service = Context.taskWrapping(provided);
+        }
+        return service;
     }
 
     private Tracer get() {
@@ -188,7 +192,7 @@ class OpenTelemetryHandle implements TracingHandle {
 
     @Override
     public void addTracingPropsToProducerConfig(Properties props) {
-        TracingUtil.addProperty(props, ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, ContextAwareTracingProducerInterceptor.class.getName());
+        TracingUtil.addProperty(props, ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, TracingProducerInterceptor.class.getName());
     }
 
     private static final class OTelSpanHandle<K, V> implements SpanHandle<K, V> {
@@ -198,32 +202,6 @@ class OpenTelemetryHandle implements TracingHandle {
         public OTelSpanHandle(Span span) {
             this.span = span;
             this.scope = span.makeCurrent();
-        }
-
-        /**
-         * See ContextAwareTracingProducerInterceptor for more info.
-         *
-         * @param record Kafka producer record to use as payload
-         */
-        @Override
-        public void prepare(KafkaProducerRecord<K, V> record) {
-            String uuid = UUID.randomUUID().toString();
-            SPANS.put(uuid, span);
-            record.addHeader(X_UUID, uuid);
-        }
-
-        /**
-         * See ContextAwareTracingProducerInterceptor for more info.
-         *
-         * @param record Kafka producer record to use as payload
-         */
-        @Override
-        public void clean(KafkaProducerRecord<K, V> record) {
-            Optional<KafkaHeader> oh = record.headers().stream().filter(h -> h.key().equals(X_UUID)).findFirst();
-            oh.ifPresent(h -> {
-                String uuid = h.value().toString();
-                SPANS.remove(uuid);
-            });
         }
 
         @Override
@@ -244,33 +222,6 @@ class OpenTelemetryHandle implements TracingHandle {
                 scope.close();
             } finally {
                 span.end();
-            }
-        }
-    }
-
-    static final String X_UUID = "_UUID";
-    static final Map<String, Span> SPANS = new ConcurrentHashMap<>();
-
-    /**
-     * This interceptor is a workaround for async message send.
-     * OpenTelemetry propagates current span via ThreadLocal,
-     * where we have an async send - different thread.
-     * So we need to pass-in the current span info via SPANS map.
-     * ProducerRecord is a bit abused as a payload / info carrier,
-     * it holds an unique UUID, which maps to current span in SPANS map.
-     *
-     * @param <K> key type
-     * @param <V> value type
-     */
-    public static class ContextAwareTracingProducerInterceptor<K, V> extends TracingProducerInterceptor<K, V> {
-        @Override
-        public ProducerRecord<K, V> onSend(ProducerRecord<K, V> record) {
-            Headers headers = record.headers();
-            String key = Buffer.buffer(headers.lastHeader(X_UUID).value()).toString();
-            headers.remove(X_UUID);
-            Span span = SPANS.remove(key);
-            try (Scope ignored = span.makeCurrent()) {
-                return super.onSend(record);
             }
         }
     }

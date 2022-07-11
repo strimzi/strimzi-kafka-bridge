@@ -13,22 +13,6 @@ import io.vertx.kafka.client.producer.KafkaProducerRecord;
  */
 public interface SpanHandle<K, V> {
     /**
-     * Prepare Kafka producer record before async send.
-     *
-     * @param record Kafka producer record to use as payload
-     */
-    default void prepare(KafkaProducerRecord<K, V> record) {
-    }
-
-    /**
-     * Clean Kafka producer record after async send.
-     *
-     * @param record Kafka producer record used as payload
-     */
-    default void clean(KafkaProducerRecord<K, V> record) {
-    }
-
-    /**
      * Inject tracing info into underlying span from Kafka producer record.
      *
      * @param record Kafka producer record to extract tracing info

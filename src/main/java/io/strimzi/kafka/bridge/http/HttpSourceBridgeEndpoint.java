@@ -121,10 +121,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         if (isAsync) {
             // if async is specified, return immediately once records are sent
             for (KafkaProducerRecord<K, V> record : records) {
-                span.prepare(record);
-                Promise<RecordMetadata> promise = Promise.promise();
-                promise.future().onComplete(ar -> span.clean(record));
-                this.send(record, promise);
+                this.send(record, null);
             }
             span.finish(HttpResponseStatus.NO_CONTENT.code());
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(),
@@ -136,9 +133,8 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         List<Future> sendHandlers = new ArrayList<>(records.size());
         for (KafkaProducerRecord<K, V> record : records) {
             Promise<RecordMetadata> promise = Promise.promise();
-            Future<RecordMetadata> future = promise.future().onComplete(ar -> span.clean(record));
+            Future<RecordMetadata> future = promise.future();
             sendHandlers.add(future);
-            span.prepare(record);
             this.send(record, promise);
         }
 

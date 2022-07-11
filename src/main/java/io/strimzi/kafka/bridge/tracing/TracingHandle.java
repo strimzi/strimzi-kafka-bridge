@@ -10,17 +10,18 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Simple interface to abstract tracing between legacy OpenTracing and new OpenTelemetry.
  */
 public interface TracingHandle {
     /**
-     * Tracing env var name.
+     * Tracing env var service name.
      *
-     * @return tracing env var name
+     * @return tracing env var service name
      */
-    String envName();
+    String envServiceName();
 
     /**
      * Extract service name from bridge confing.
@@ -34,6 +35,17 @@ public interface TracingHandle {
      * Initialize tracing.
      */
     void initialize();
+
+    /**
+     * Adapt executor service if needed.
+     * Else return service parameter instance.
+     *
+     * @param service current executor service
+     * @return adapted executor service or service parameter instance
+     */
+    default ExecutorService adapt(ExecutorService service) {
+        return service;
+    }
 
     /**
      * Build span builder handle.

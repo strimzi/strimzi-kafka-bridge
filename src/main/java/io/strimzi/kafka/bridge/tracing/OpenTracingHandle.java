@@ -53,13 +53,13 @@ class OpenTracingHandle implements TracingHandle {
     }
 
     @Override
-    public String envName() {
+    public String envServiceName() {
         return Configuration.JAEGER_SERVICE_NAME;
     }
 
     @Override
     public String serviceName(BridgeConfig config) {
-        return System.getenv(envName());
+        return System.getenv(envServiceName());
     }
 
     @Override

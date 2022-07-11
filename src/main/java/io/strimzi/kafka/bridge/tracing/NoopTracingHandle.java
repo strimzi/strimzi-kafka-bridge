@@ -14,7 +14,7 @@ import java.util.Properties;
 
 final class NoopTracingHandle implements TracingHandle {
     @Override
-    public String envName() {
+    public String envServiceName() {
         return null;
     }
 
