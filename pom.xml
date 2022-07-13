@@ -315,6 +315,11 @@
 			<artifactId>opentelemetry-exporter-jaeger</artifactId>
 			<version>${opentelemetry.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-opentelemetry</artifactId>
+			<version>${vertx.version}</version>
+		</dependency>
 		<!-- Use gRPC as the transport -->
 		<dependency>
 			<groupId>io.grpc</groupId>
@@ -406,12 +411,6 @@
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-opentracing</artifactId>
-			<version>${vertx.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-opentelemetry</artifactId>
 			<version>${vertx.version}</version>
 			<scope>test</scope>
 		</dependency>

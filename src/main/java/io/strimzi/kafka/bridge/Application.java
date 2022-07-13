@@ -8,7 +8,6 @@ package io.strimzi.kafka.bridge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.kafka.bridge.amqp.AmqpBridge;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.strimzi.kafka.bridge.config.BridgeExecutorServiceFactory;
 import io.strimzi.kafka.bridge.http.HttpBridge;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
 import io.vertx.config.ConfigRetriever;
@@ -19,7 +18,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.core.impl.VertxBuilder;
 import io.vertx.core.json.JsonObject;
 import io.vertx.micrometer.Label;
 import io.vertx.micrometer.MetricsDomain;
@@ -74,9 +72,7 @@ public class Application {
                 vertxOptions.setMetricsOptions(metricsOptions());
                 jmxCollectorRegistry = getJmxCollectorRegistry();
             }
-            VertxBuilder vertxBuilder = new VertxBuilder(vertxOptions)
-                .executorServiceFactory(new BridgeExecutorServiceFactory());
-            Vertx vertx = vertxBuilder.init().vertx();
+            Vertx vertx = Vertx.vertx(vertxOptions);
             // MeterRegistry default instance is just null if metrics are not enabled in the VertxOptions instance
             MeterRegistry meterRegistry = BackendRegistries.getDefaultNow();
             MetricsReporter metricsReporter = new MetricsReporter(jmxCollectorRegistry, meterRegistry);
