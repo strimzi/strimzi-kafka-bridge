@@ -5,7 +5,6 @@
 
 package io.strimzi.kafka.bridge.tracing;
 
-import io.jaegertracing.Configuration;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
@@ -33,12 +32,8 @@ import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 
 import static io.strimzi.kafka.bridge.tracing.TracingConstants.COMPONENT;
-import static io.strimzi.kafka.bridge.tracing.TracingConstants.JAEGER;
 import static io.strimzi.kafka.bridge.tracing.TracingConstants.KAFKA_SERVICE;
 import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY_SERVICE_NAME_ENV_KEY;
-import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY_SERVICE_NAME_PROPERTY_KEY;
-import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY_TRACES_EXPORTER_ENV_KEY;
-import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY_TRACES_EXPORTER_PROPERTY_KEY;
 
 /**
  * OpenTelemetry implementation of Tracing.
@@ -64,20 +59,7 @@ class OpenTelemetryHandle implements TracingHandle {
 
     @Override
     public String serviceName(BridgeConfig config) {
-        String serviceName = System.getenv(envServiceName());
-        if (serviceName == null) {
-            // legacy purpose, use previous JAEGER_SERVICE_NAME as OTEL_SERVICE_NAME (if not explicitly set)
-            serviceName = System.getenv(Configuration.JAEGER_SERVICE_NAME);
-            if (serviceName != null) {
-                System.setProperty(OPENTELEMETRY_SERVICE_NAME_PROPERTY_KEY, serviceName);
-            }
-        }
-        if (serviceName != null) {
-            if (System.getenv(OPENTELEMETRY_TRACES_EXPORTER_ENV_KEY) == null && System.getProperty(OPENTELEMETRY_TRACES_EXPORTER_PROPERTY_KEY) == null) {
-                System.setProperty(OPENTELEMETRY_TRACES_EXPORTER_PROPERTY_KEY, JAEGER); // it wasn't set in script
-            }
-        }
-        return serviceName;
+        return System.getenv(envServiceName());
     }
 
     @Override
