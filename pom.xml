@@ -320,12 +320,6 @@
 			<artifactId>vertx-opentelemetry</artifactId>
 			<version>${vertx.version}</version>
 		</dependency>
-		<!-- Use gRPC as the transport -->
-		<dependency>
-			<groupId>io.grpc</groupId>
-			<artifactId>grpc-netty-shaded</artifactId>
-			<version>${grpc.version}</version>
-		</dependency>
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-core</artifactId>
@@ -569,7 +563,6 @@
 									<ignoredUnusedDeclaredDependency>io.opentelemetry.instrumentation:opentelemetry-kafka-clients-common</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>io.opentelemetry.instrumentation:opentelemetry-instrumentation-api</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>io.opentelemetry:opentelemetry-exporter-jaeger</ignoredUnusedDeclaredDependency>
-									<ignoredUnusedDeclaredDependency>io.grpc:grpc-netty-shaded</ignoredUnusedDeclaredDependency>
 								</ignoredUnusedDeclaredDependencies>
 						</configuration>
 					</execution>
