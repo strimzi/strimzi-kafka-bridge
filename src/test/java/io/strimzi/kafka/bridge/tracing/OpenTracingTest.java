@@ -19,6 +19,7 @@ import io.vertx.tracing.opentracing.OpenTracingOptions;
 public class OpenTracingTest extends TracingTestBase {
     @Override
     protected TracingOptions tracingOptions() {
+        System.setProperty("otel.metrics.exporter", "none"); // disable OTel metrics -- they slip in via ServiceLoader
         return new OpenTracingOptions();
     }
 }
