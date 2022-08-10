@@ -155,9 +155,9 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                     results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                 }
             }
-            span.finish(HttpResponseStatus.OK.code());
-            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
-                    BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
+            int code = done.succeeded() ? HttpResponseStatus.OK.code() : HttpResponseStatus.INTERNAL_SERVER_ERROR.code();
+            span.finish(code);
+            HttpUtils.sendResponse(routingContext, code, BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
             this.maybeClose();
         });
     }

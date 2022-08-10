@@ -28,11 +28,6 @@ final class NoopTracingHandle implements TracingHandle {
     }
 
     @Override
-    public <K, V> SpanBuilderHandle<K, V> builder(RoutingContext routingContext, String operationName) {
-        return new NoopSpanBuilderHandle<>();
-    }
-
-    @Override
     public <K, V> SpanHandle<K, V> span(RoutingContext routingContext, String operationName) {
         return new NoopSpanHandle<>();
     }
@@ -43,13 +38,6 @@ final class NoopTracingHandle implements TracingHandle {
 
     @Override
     public void addTracingPropsToProducerConfig(Properties props) {
-    }
-
-    private static final class NoopSpanBuilderHandle<K, V> implements SpanBuilderHandle<K, V> {
-        @Override
-        public SpanHandle<K, V> span(RoutingContext routingContext) {
-            return new NoopSpanHandle<>();
-        }
     }
 
     private static final class NoopSpanHandle<K, V> implements SpanHandle<K, V> {

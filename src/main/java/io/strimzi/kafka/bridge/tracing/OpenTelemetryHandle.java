@@ -29,7 +29,6 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
 
 import static io.strimzi.kafka.bridge.tracing.TracingConstants.COMPONENT;
 import static io.strimzi.kafka.bridge.tracing.TracingConstants.KAFKA_SERVICE;
@@ -44,7 +43,6 @@ import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY_SER
 class OpenTelemetryHandle implements TracingHandle {
 
     private Tracer tracer;
-    private ExecutorService service;
 
     static void setCommonAttributes(SpanBuilder builder, RoutingContext routingContext) {
         builder.setAttribute(SemanticAttributes.PEER_SERVICE, KAFKA_SERVICE);
@@ -68,14 +66,6 @@ class OpenTelemetryHandle implements TracingHandle {
         AutoConfiguredOpenTelemetrySdk.initialize();
     }
 
-    @Override
-    public synchronized ExecutorService adapt(ExecutorService provided) {
-        if (service == null) {
-            service = Context.taskWrapping(provided);
-        }
-        return service;
-    }
-
     private Tracer get() {
         if (tracer == null) {
             tracer = GlobalOpenTelemetry.getTracer(COMPONENT);
@@ -96,14 +86,8 @@ class OpenTelemetryHandle implements TracingHandle {
     }
 
     @Override
-    public <K, V> SpanBuilderHandle<K, V> builder(RoutingContext routingContext, String operationName) {
-        SpanBuilder spanBuilder = getSpanBuilder(routingContext, operationName);
-        return new OTelSpanBuilderHandle<>(spanBuilder);
-    }
-
-    @Override
     public <K, V> void handleRecordSpan(SpanHandle<K, V> parentSpanHandle, KafkaConsumerRecord<K, V> record) {
-        String operationName = String.format("%s %s", record.topic(), MessageOperation.RECEIVE);
+        String operationName = record.topic() + " " + MessageOperation.RECEIVE;
         SpanBuilder spanBuilder = get().spanBuilder(operationName);
         Context parentContext = propagator().extract(Context.current(), TracingUtil.toHeaders(record), MG);
         if (parentContext != null) {
@@ -160,19 +144,6 @@ class OpenTelemetryHandle implements TracingHandle {
         spanBuilder.setSpanKind(SpanKind.SERVER);
         setCommonAttributes(spanBuilder, routingContext);
         return new OTelSpanHandle<>(spanBuilder.startSpan());
-    }
-
-    private static class OTelSpanBuilderHandle<K, V> implements SpanBuilderHandle<K, V> {
-        private final SpanBuilder spanBuilder;
-
-        public OTelSpanBuilderHandle(SpanBuilder spanBuilder) {
-            this.spanBuilder = spanBuilder;
-        }
-
-        @Override
-        public SpanHandle<K, V> span(RoutingContext routingContext) {
-            return buildSpan(spanBuilder, routingContext);
-        }
     }
 
     @Override

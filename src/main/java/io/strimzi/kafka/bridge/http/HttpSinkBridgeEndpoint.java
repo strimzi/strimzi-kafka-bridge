@@ -17,7 +17,6 @@ import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
-import io.strimzi.kafka.bridge.tracing.SpanBuilderHandle;
 import io.strimzi.kafka.bridge.tracing.SpanHandle;
 import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
@@ -34,6 +33,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import io.vertx.kafka.client.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -241,7 +241,61 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
     }
 
-    @SuppressWarnings("checkstyle:NPathComplexity") // tracing abstraction adds new npath complexity ...
+    private Handler<AsyncResult<KafkaConsumerRecords<K, V>>> pollHandler(RoutingContext routingContext) {
+        return records -> {
+            if (records.succeeded()) {
+
+                TracingHandle tracing = TracingUtil.getTracing();
+                SpanHandle<K, V> span = tracing.span(routingContext, HttpOpenApiOperations.POLL.toString());
+
+                for (int i = 0; i < records.result().size(); i++) {
+                    KafkaConsumerRecord<K, V> record = records.result().recordAt(i);
+                    tracing.handleRecordSpan(span, record);
+                }
+
+                span.inject(routingContext);
+
+                HttpResponseStatus responseStatus = HttpResponseStatus.INTERNAL_SERVER_ERROR;
+                try {
+                    Buffer buffer = messageConverter.toMessages(records.result());
+                    if (buffer.getBytes().length > this.maxBytes) {
+                        responseStatus = HttpResponseStatus.UNPROCESSABLE_ENTITY;
+                        HttpBridgeError error = new HttpBridgeError(
+                            responseStatus.code(),
+                            "Response exceeds the maximum number of bytes the consumer can receive"
+                        );
+                        HttpUtils.sendResponse(routingContext, responseStatus.code(),
+                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                    } else {
+                        responseStatus = HttpResponseStatus.OK;
+                        HttpUtils.sendResponse(routingContext, responseStatus.code(),
+                            this.format == EmbeddedFormat.BINARY ? BridgeContentType.KAFKA_JSON_BINARY : BridgeContentType.KAFKA_JSON_JSON,
+                            buffer);
+                    }
+                } catch (DecodeException e) {
+                    log.error("Error decoding records as JSON", e);
+                    responseStatus = HttpResponseStatus.NOT_ACCEPTABLE;
+                    HttpBridgeError error = new HttpBridgeError(
+                        responseStatus.code(),
+                        e.getMessage()
+                    );
+                    HttpUtils.sendResponse(routingContext, responseStatus.code(),
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                } finally {
+                    span.finish(responseStatus.code());
+                }
+
+            } else {
+                HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    records.cause().getMessage()
+                );
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            }
+        };
+    }
+
     private void doPoll(RoutingContext routingContext) {
         if (topicSubscriptionsPattern == null && topicSubscriptions.isEmpty()) {
             HttpBridgeError error = new HttpBridgeError(
@@ -266,58 +320,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 this.maxBytes = Long.parseLong(routingContext.request().getParam("max_bytes"));
             }
 
-            this.consume(records -> {
-                if (records.succeeded()) {
-
-                    TracingHandle tracing = TracingUtil.getTracing();
-                    SpanBuilderHandle<K, V> builder = tracing.builder(routingContext, HttpOpenApiOperations.POLL.toString());
-                    SpanHandle<K, V> span = builder.span(routingContext);
-
-                    for (int i = 0; i < records.result().size(); i++) {
-                        KafkaConsumerRecord<K, V> record = records.result().recordAt(i);
-                        tracing.handleRecordSpan(span, record);
-                    }
-
-                    span.inject(routingContext);
-
-                    HttpResponseStatus responseStatus;
-                    try {
-                        Buffer buffer = messageConverter.toMessages(records.result());
-                        if (buffer.getBytes().length > this.maxBytes) {
-                            responseStatus = HttpResponseStatus.UNPROCESSABLE_ENTITY;
-                            HttpBridgeError error = new HttpBridgeError(
-                                    responseStatus.code(),
-                                    "Response exceeds the maximum number of bytes the consumer can receive"
-                            );
-                            HttpUtils.sendResponse(routingContext, responseStatus.code(),
-                                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
-                        } else {
-                            responseStatus = HttpResponseStatus.OK;
-                            HttpUtils.sendResponse(routingContext, responseStatus.code(),
-                                    this.format == EmbeddedFormat.BINARY ? BridgeContentType.KAFKA_JSON_BINARY : BridgeContentType.KAFKA_JSON_JSON,
-                                    buffer);
-                        }    
-                    } catch (DecodeException e) {
-                        log.error("Error decoding records as JSON", e);
-                        responseStatus = HttpResponseStatus.NOT_ACCEPTABLE;
-                        HttpBridgeError error = new HttpBridgeError(
-                            responseStatus.code(),
-                            e.getMessage()
-                        );
-                        HttpUtils.sendResponse(routingContext, responseStatus.code(),
-                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
-                    }
-                    span.finish(responseStatus.code());
-
-                } else {
-                    HttpBridgeError error = new HttpBridgeError(
-                            HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                            records.cause().getMessage()
-                    );
-                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
-                }
-            });
+            this.consume(pollHandler(routingContext));
         } else {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.NOT_ACCEPTABLE.code(),

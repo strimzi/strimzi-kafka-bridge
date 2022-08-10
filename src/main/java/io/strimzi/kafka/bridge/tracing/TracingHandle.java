@@ -10,7 +10,6 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
 
 /**
  * Simple interface to abstract tracing between legacy OpenTracing and new OpenTelemetry.
@@ -35,28 +34,6 @@ public interface TracingHandle {
      * Initialize tracing.
      */
     void initialize();
-
-    /**
-     * Adapt executor service if needed.
-     * Else return service parameter instance.
-     *
-     * @param service current executor service
-     * @return adapted executor service or service parameter instance
-     */
-    default ExecutorService adapt(ExecutorService service) {
-        return service;
-    }
-
-    /**
-     * Build span builder handle.
-     *
-     * @param <K> key type
-     * @param <V> value type
-     * @param routingContext Vert.x rounting context
-     * @param operationName current operation name
-     * @return span builder handle
-     */
-    <K, V> SpanBuilderHandle<K, V> builder(RoutingContext routingContext, String operationName);
 
     /**
      * Build span handle.
