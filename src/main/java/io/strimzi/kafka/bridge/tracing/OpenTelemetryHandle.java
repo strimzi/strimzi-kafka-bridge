@@ -39,6 +39,8 @@ import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY_SER
  *
  * Note: we use Vert.x OpenTelemetry extension to setup custom ContextStorageProvider:
  * @see io.vertx.tracing.opentelemetry.VertxContextStorageProvider
+ * @see io.opentelemetry.context.LazyStorage looks up all ContextStorageProviders via service-loader pattern,
+ * since Vert.x OpenTelemetry support is on the classpath with VertxContextStorageProvider, that one is used.
  */
 class OpenTelemetryHandle implements TracingHandle {
 

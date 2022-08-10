@@ -133,8 +133,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         List<Future> sendHandlers = new ArrayList<>(records.size());
         for (KafkaProducerRecord<K, V> record : records) {
             Promise<RecordMetadata> promise = Promise.promise();
-            Future<RecordMetadata> future = promise.future();
-            sendHandlers.add(future);
+            sendHandlers.add(promise.future());
             this.send(record, promise);
         }
 
@@ -155,9 +154,10 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                     results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                 }
             }
-            int code = done.succeeded() ? HttpResponseStatus.OK.code() : HttpResponseStatus.INTERNAL_SERVER_ERROR.code();
-            span.finish(code);
-            HttpUtils.sendResponse(routingContext, code, BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
+            // always return OK, since failure cause is in the response, per message
+            span.finish(HttpResponseStatus.OK.code());
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
+                BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
             this.maybeClose();
         });
     }
