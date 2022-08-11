@@ -2,7 +2,12 @@
 
 ## 0.22.0
 
-* n/a
+* Add OpenTelemetry support for tracing
+  * Enabling Jaeger exporter by default for backward compatibility with OpenTracing support
+
+### Changes, deprecations and removals
+
+* Since the OpenTracing project was archived, the related support in the bridge is now deprecated.
 
 ## 0.21.6
 
