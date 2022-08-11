@@ -5,7 +5,6 @@
 
 package io.strimzi.kafka.bridge;
 
-import io.opentracing.contrib.kafka.TracingConsumerInterceptor;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.tracker.OffsetTracker;
@@ -167,9 +166,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         props.putAll(kafkaConfig.getConfig());
         props.putAll(kafkaConfig.getConsumerConfig().getConfig());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
-        if (this.bridgeConfig.getTracing() != null) {
-            props.put(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, TracingConsumerInterceptor.class.getName());
-        }
 
         if (config != null)
             props.putAll(config);
@@ -200,7 +196,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.subscribed = true;
         this.setPartitionsAssignmentHandlers();
 
-        Set<String> topics = this.topicSubscriptions.stream().map(ts -> ts.getTopic()).collect(Collectors.toSet());
+        Set<String> topics = this.topicSubscriptions.stream().map(SinkTopicSubscription::getTopic).collect(Collectors.toSet());
         this.consumer.subscribe(topics, this::subscribeHandler);
     }
 
@@ -710,7 +706,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.consumer.poll(Duration.ofMillis(this.pollTimeOut), consumeHandler);
     }
 
-    protected void commit(Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata> offsetsData, 
+    protected void commit(Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata> offsetsData,
         Handler<AsyncResult<Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata>>> commitOffsetsHandler) {
         this.consumer.commit(offsetsData, commitOffsetsHandler);
     }
