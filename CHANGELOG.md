@@ -2,7 +2,9 @@
 
 ## 0.22.0
 
-* n/a
+* Add OpenTelemetry support for tracing
+  * Deprecating OpenTracing which will be removed in the future
+  * Enabling Jaeger exporter by default for backward compatibility
 
 ## 0.21.6
 
