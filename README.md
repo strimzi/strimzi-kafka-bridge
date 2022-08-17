@@ -35,10 +35,10 @@ bin/kafka_bridge_run.sh --config-file config/application.properties
 
 Documentation can be found on our website:
 
-* for the [latest stable release](https://strimzi.io/docs/bridge/latest/)
-* for the "in development" [_main_ branch](https://strimzi.io/docs/bridge/in-development/)
+* [Documentation for the latest stable release](https://strimzi.io/docs/bridge/latest/)
+* [Documentation that's _in development_ for the `main` branch](https://strimzi.io/docs/bridge/in-development/)
 
-All releases are also available in the [downloads](https://strimzi.io/downloads/) section.
+Strimzi bridge releases are also available in the [downloads](https://strimzi.io/downloads/) section.
 
 ## Getting help
 
