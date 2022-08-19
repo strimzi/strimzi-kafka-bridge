@@ -87,7 +87,7 @@
 		<netty.version>4.1.77.Final</netty.version>
 		<kafka.version>3.2.0</kafka.version>
 		<qpid-proton.version>0.33.10</qpid-proton.version>
-		<kafka-kubernetes-config-provider.version>1.0.0</kafka-kubernetes-config-provider.version>
+		<kafka-kubernetes-config-provider.version>1.0.1</kafka-kubernetes-config-provider.version>
 		<kafka-env-var-config-provider.version>1.0.0</kafka-env-var-config-provider.version>
 		<maven.checkstyle.version>3.1.2</maven.checkstyle.version>
 		<hamcrest.version>2.2</hamcrest.version>
