@@ -9,6 +9,8 @@ include::assemblies/assembly-kafka-bridge-overview.adoc[leveloffset=+1]
 
 include::assemblies/assembly-kafka-bridge-quickstart.adoc[leveloffset=+1]
 
+include::assemblies/assembly-kafka-bridge-config.adoc[leveloffset=+1]
+
 [id='api_reference-{context}']
 include::api/overview.adoc[leveloffset=+1]
 

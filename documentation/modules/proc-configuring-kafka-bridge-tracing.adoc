@@ -1,0 +1,103 @@
+// Module included in the following assemblies:
+//
+// assembly-kafka-bridge-config.adoc
+
+[id='proc-configuring-kafka-bridge-tracing-{context}']
+= Configuring distributed tracing
+
+[role="_abstract"]
+Enable distributed tracing to trace messages consumed and produced by the Kafka Bridge, and HTTP requests from client applications.
+
+Properties to enable tracing are present in the `application.properties` file.
+To enable distributed tracing, do the following:
+
+* Uncomment the required tracing properties in the properties file
+* Set environment variables for tracing
+
+With the default configuration, you can introduce a Jaeger tracing system based on OpenTelemetry or OpenTracing.
+
+OpenTelemetry and OpenTracing are API specifications for collecting tracing data as _spans_ of metrics data.
+Spans represent a specific operation.
+A trace is a collection of one or more spans.
+
+Traces are generated when:
+
+* The Kafka Bridge sends messages to HTTP clients and consumes messages from HTTP clients
+* HTTP clients send HTTP requests to send and receive messages through the Kafka Bridge
+
+Jaeger implements the required APIs and presents visualizations of the trace data in its user interface for analysis. 
+
+To have end-to-end tracing, you must configure tracing in your HTTP clients.
+
+NOTE: The OpenTracing project is now archived, so Strimzi has deprecated support for OpenTracing.
+
+.Prerequisites
+
+* xref:proc-downloading-kafka-bridge-{context}[The Kafka Bridge installation archive is downloaded].
+
+.Procedure
+
+. Edit the `application.properties` file provided with the Kafka Bridge installation archive.
++
+Use the properties file to uncomment the relevant tracing property.
++
+.Example configuration to enable OpeTelemetry
+[source,properties]
+----
+#bridge.tracing=jaeger # <1>
+bridge.tracing=opentelemetry # <2>
+----
+<1> The property for enabling OpenTracing (deprecated). Here left commented.
+<2> The property for enabling OpenTelemetry is uncommented. 
++
+With tracing enabled, you initialize tracing when you run the Kafka Bridge script.
+
+. Save the configuration file.
+. Set the environment variables for tracing.
++
+.Environment variables for OpenTelemetry 
+[source,env]
+----
+OTEL_SERVICE_NAME=my-jaeger-service # <1>
+----
+<1> The name of the OpenTelemetry Jaeger tracer service.
++
+.Environment variables for OpenTracing
+[source,env]
+----
+JAEGER_SERVICE_NAME=my-jaeger-service # <1>
+JAEGER_AGENT_HOST=localhost # <2>
+JAEGER_AGENT_PORT=6831 # <3>
+----
+<1> The name of the OpenTracing Jaeger tracer service.
+<2> The hostname for communicating with the Jaeger agent that listens for spans.
+<3> The port for communicating with the Jaeger agent. Port 6831 is exposed by the Jaeger agent. 
+
+. Run the Kafka Bridge script with the property enabled for tracing:
++
+.Running the Kafka Bridge with OpenTelementry enabled 
+[source,shell,subs="+quotes,attributes"]
+----
+./bin/kafka_bridge_run.sh --config-file=_<path>_/application.properties
+----
++
+The internal consumers and producers of the Kafka Bridge are now enabled for tracing.
+
+== Specifying tracing systems with OpenTelemetry
+
+Instead of the default Jaeger system, you can specify other tracing systems that are supported by OpenTelemetry.
+
+If you want to use another tracing system with OpenTelemetry, do the following: 
+
+. Add the library of the tracing system to the Kafka classpath.
+. Add the name of the tracing system as an additional environment variable.
++
+.Additional environment variable when not using Jaeger 
+[source,env]
+----
+OTEL_SERVICE_NAME=my-jaeger-service
+OTEL_TRACES_EXPORTER=zipkin # <1>
+----
+<1> The name of the tracing system. In this example, Zipkin is specified.
+
+
