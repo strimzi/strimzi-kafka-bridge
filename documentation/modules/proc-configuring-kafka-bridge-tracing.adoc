@@ -11,8 +11,8 @@ Enable distributed tracing to trace messages consumed and produced by the Kafka 
 Properties to enable tracing are present in the `application.properties` file.
 To enable distributed tracing, do the following:
 
-* Uncomment the required tracing properties in the properties file
-* Set environment variables for tracing
+* Uncomment the required tracing properties in the properties file.
+* Set environment variables for tracing.
 
 With the default configuration, you can introduce a Jaeger tracing system based on OpenTelemetry or OpenTracing.
 
