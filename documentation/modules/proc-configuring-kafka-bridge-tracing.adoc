@@ -58,9 +58,9 @@ With tracing enabled, you initialize tracing when you run the Kafka Bridge scrip
 .Environment variables for OpenTelemetry 
 [source,env]
 ----
-OTEL_SERVICE_NAME=my-jaeger-service # <1>
+OTEL_SERVICE_NAME=my-tracing-service # <1>
 ----
-<1> The name of the OpenTelemetry Jaeger tracer service.
+<1> The name of the OpenTelemetry tracer service.
 +
 .Environment variables for OpenTracing
 [source,env]
@@ -95,7 +95,7 @@ If you want to use another tracing system with OpenTelemetry, do the following:
 .Additional environment variable when not using Jaeger 
 [source,env]
 ----
-OTEL_SERVICE_NAME=my-jaeger-service
+OTEL_SERVICE_NAME=my-tracing-service
 OTEL_TRACES_EXPORTER=zipkin # <1>
 ----
 <1> The name of the tracing system. In this example, Zipkin is specified.
