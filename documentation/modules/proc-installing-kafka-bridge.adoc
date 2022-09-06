@@ -6,7 +6,7 @@
 = Installing the Kafka Bridge
 
 [role="_abstract"]
-Use the script provided with the Kafka Bridge archive to install the Strimzi Kafka Bridge.
+Use the script provided with the Kafka Bridge archive to install the Kafka Bridge.
 The `application.properties` file provided with the installation archive provides default configuration settings.
 
 The following default property values configure the Kafka Bridge to listen for requests on port 8080.

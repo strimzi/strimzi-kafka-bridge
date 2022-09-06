@@ -11,10 +11,10 @@ Enable distributed tracing to trace messages consumed and produced by the Kafka 
 Properties to enable tracing are present in the `application.properties` file.
 To enable distributed tracing, do the following:
 
-* Uncomment the required tracing properties in the properties file.
+* Set the `bridge.tracing` property value to enable the tracing you want to use. Possible values are `jaeger` and `opentelemetry`.
 * Set environment variables for tracing.
 
-With the default configuration, you can introduce a Jaeger tracing system based on OpenTelemetry or OpenTracing.
+With the default configuration, you can implement a Jaeger tracing system based on OpenTelemetry or OpenTracing.
 
 OpenTelemetry and OpenTracing are API specifications for collecting tracing data as _spans_ of metrics data.
 Spans represent a specific operation.
@@ -23,13 +23,13 @@ A trace is a collection of one or more spans.
 Traces are generated when:
 
 * The Kafka Bridge sends messages to HTTP clients and consumes messages from HTTP clients
-* HTTP clients send HTTP requests to send and receive messages through the Kafka Bridge
+* HTTP clients send HTTP requests to the Kafka Bridge and receive messages from the Kafka Bridge 
 
 Jaeger implements the required APIs and presents visualizations of the trace data in its user interface for analysis. 
 
 To have end-to-end tracing, you must configure tracing in your HTTP clients.
 
-NOTE: The OpenTracing project is now archived, so Strimzi has deprecated support for OpenTracing.
+CAUTION: The OpenTracing project is now archived, so Strimzi has deprecated support for OpenTracing.
 
 .Prerequisites
 
@@ -39,7 +39,7 @@ NOTE: The OpenTracing project is now archived, so Strimzi has deprecated support
 
 . Edit the `application.properties` file provided with the Kafka Bridge installation archive.
 +
-Use the properties file to uncomment the relevant tracing property.
+Use the `bridge.tracing` property to enable the tracing you want to use. 
 +
 .Example configuration to enable OpeTelemetry
 [source,properties]
@@ -90,9 +90,9 @@ Instead of the default Jaeger system, you can specify other tracing systems that
 If you want to use another tracing system with OpenTelemetry, do the following: 
 
 . Add the library of the tracing system to the Kafka classpath.
-. Add the name of the tracing system as an additional environment variable.
+. Add the name of the tracing system as an additional exporter environment variable.
 +
-.Additional environment variable when not using Jaeger 
+.Additional exporter environment variable when not using Jaeger 
 [source,env]
 ----
 OTEL_SERVICE_NAME=my-tracing-service
@@ -100,4 +100,7 @@ OTEL_TRACES_EXPORTER=zipkin # <1>
 ----
 <1> The name of the tracing system. In this example, Zipkin is specified.
 
+[role="_additional-resources"]
+.Additional resources
 
+* {otel-exporters}
