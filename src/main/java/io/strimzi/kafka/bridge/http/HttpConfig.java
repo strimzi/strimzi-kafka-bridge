@@ -30,6 +30,9 @@ public class HttpConfig extends AbstractConfig {
     public static final int DEFAULT_PORT = 8080;
     public static final long DEFAULT_CONSUMER_TIMEOUT = -1L;
 
+    public static final String HTTP_CONSUMER_ENABLED = HTTP_CONFIG_PREFIX + "consumer.enabled";
+
+    public static final String HTTP_PRODUCER_ENABLED = HTTP_CONFIG_PREFIX + "producer.enabled";
     /**
      * Constructor
      *
@@ -87,6 +90,19 @@ public class HttpConfig extends AbstractConfig {
     public String getCorsAllowedMethods() {
         return (String) this.config.getOrDefault(HTTP_CORS_ALLOWED_METHODS, "GET,POST,PUT,DELETE,OPTIONS,PATCH");
     }
+    /**
+     * @return if consumer is enabled
+     */
+    public boolean isConsumerEnabled() {
+        return (boolean) Boolean.parseBoolean(this.config.getOrDefault(HTTP_CONSUMER_ENABLED, "true").toString());
+    }
+
+    /**
+     * @return if producer is enabled
+     */
+    public boolean isProducerEnabled() {
+        return (boolean) Boolean.parseBoolean(this.config.getOrDefault(HTTP_PRODUCER_ENABLED, "true").toString());
+    }
 
     /**
      * Loads HTTP related configuration parameters from a related map
@@ -100,6 +116,7 @@ public class HttpConfig extends AbstractConfig {
                 .filter(e -> e.getKey().startsWith(HttpConfig.HTTP_CONFIG_PREFIX))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
+
 
     @Override
     public String toString() {
