@@ -20,10 +20,10 @@ OpenTelemetry and OpenTracing are API specifications for collecting tracing data
 Spans represent a specific operation.
 A trace is a collection of one or more spans.
 
-Traces are generated when:
+Traces are generated when the Kafka Bridge does the following:
 
-* The Kafka Bridge sends messages to HTTP clients and consumes messages from HTTP clients
-* HTTP clients send HTTP requests to the Kafka Bridge and receive messages from the Kafka Bridge 
+* Sends messages to HTTP clients
+* Consumes messages from HTTP clients
 
 Jaeger implements the required APIs and presents visualizations of the trace data in its user interface for analysis. 
 
@@ -92,7 +92,7 @@ If you want to use another tracing system with OpenTelemetry, do the following:
 . Add the library of the tracing system to the Kafka classpath.
 . Add the name of the tracing system as an additional exporter environment variable.
 +
-.Additional exporter environment variable when not using Jaeger 
+.Additional environment variable when not using Jaeger 
 [source,env]
 ----
 OTEL_SERVICE_NAME=my-tracing-service
