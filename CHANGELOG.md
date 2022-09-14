@@ -3,6 +3,7 @@
 ## 0.22.1
 
 * Dependency updates (snakeYAML [CVE-2022-38752](https://nvd.nist.gov/vuln/detail/CVE-2022-38752))
+* Dependency updates (Kubernetes configuration provider)
 
 ## 0.22.0
 
