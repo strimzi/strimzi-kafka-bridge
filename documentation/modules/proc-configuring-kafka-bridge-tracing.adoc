@@ -22,8 +22,8 @@ A trace is a collection of one or more spans.
 
 Traces are generated when the Kafka Bridge does the following:
 
-* Sends messages to HTTP clients
-* Consumes messages from HTTP clients
+* Sends messages from Kafka to consumer HTTP clients 
+* Receives messages from producer HTTP clients to send to Kafka
 
 Jaeger implements the required APIs and presents visualizations of the trace data in its user interface for analysis. 
 
