@@ -26,8 +26,6 @@ In this quickstart, you will produce and consume messages in JSON format.
 
 include::modules/proc-downloading-kafka-bridge.adoc[leveloffset=+1]
 
-include::modules/proc-configuring-kafka-bridge.adoc[leveloffset=+1]
-
 include::modules/proc-installing-kafka-bridge.adoc[leveloffset=+1]
 
 include::modules/proc-producing-messages-from-bridge-topics-partitions.adoc[leveloffset=+1]

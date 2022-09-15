@@ -6,12 +6,22 @@
 = Installing the Kafka Bridge
 
 [role="_abstract"]
-Follow this procedure to install the Strimzi Kafka Bridge.
+Use the script provided with the Kafka Bridge archive to install the Kafka Bridge.
+The `application.properties` file provided with the installation archive provides default configuration settings.
+
+The following default property values configure the Kafka Bridge to listen for requests on port 8080.
+
+.Default configuration properties
+[source,shell,subs=attributes+]
+----
+http.enabled=true
+http.host=0.0.0.0
+http.port=8080
+----
 
 .Prerequisites
 
 * xref:proc-downloading-kafka-bridge-{context}[The Kafka Bridge installation archive is downloaded]
-* xref:proc-configuring-kafka-bridge-{context}[The Kafka Bridge configuration properties are set]
 
 .Procedure
 
@@ -23,7 +33,7 @@ For example:
 +
 [source,shell,subs="+quotes,attributes"]
 ----
-./bin/kafka_bridge_run.sh --config-file=_<path>_/configfile.properties
+./bin/kafka_bridge_run.sh --config-file=_<path>_/application.properties
 ----
 
 . Check to see that the installation was successful in the log.
@@ -33,3 +43,7 @@ For example:
 HTTP-Kafka Bridge started and listening on port 8080
 HTTP-Kafka Bridge bootstrap servers localhost:9092
 ----
+
+.What to do next
+
+* xref:proc-producing-messages-from-bridge-topics-partitions-{context}[Produce messages to topics and partitions].
