@@ -15,7 +15,4 @@ You configure the Kafka Bridge for authentication through its xref:proc-configur
 
 You can also use ACLs in Kafka brokers to restrict the topics that can be consumed and produced using the Kafka Bridge.
 
-[role="_additional-resources"]
-.Additional resources
-
-* {BookURLConfiguring}
+NOTE: Use the `KafkaBridge` resource to configure authentication when you are xref:overview-components-running-kafka-bridge-cluster-{context}[running the Kafka Bridge on Kubernetes].
