@@ -1,12 +1,12 @@
 // Module included in the following assemblies:
 //
-// assembly-kafka-bridge-quickstart.adoc
+// assembly-kafka-bridge-config.adoc
 
 [id='proc-configuring-kafka-bridge-{context}']
 = Configuring Kafka Bridge properties
 
 [role="_abstract"]
-This procedure describes how to configure the Kafka and HTTP connection properties used by the Strimzi Kafka Bridge.
+This procedure describes how to configure the Kafka and HTTP connection properties used by the Kafka Bridge.
 
 You configure the Kafka Bridge, as any other Kafka client, using appropriate prefixes for Kafka-related properties.
 
@@ -25,9 +25,9 @@ Additional HTTP headers in requests describe the CORS origins that are permitted
 
 .Procedure
 
-. Edit the `application.properties` file provided with the Strimzi Kafka Bridge installation archive.
+. Edit the `application.properties` file provided with the Kafka Bridge installation archive.
 +
-Use the properties file to specify Kafka and HTTP-related properties, and to enable distributed tracing.
+Use the properties file to specify Kafka and HTTP-related properties.
 
 .. Configure standard Kafka-related properties, including properties specific to the Kafka consumers and producers.
 +
@@ -57,3 +57,5 @@ http.cors.allowedMethods=GET,POST,PUT,DELETE,OPTIONS,PATCH <4>
 <2> Set to `true` to enable CORS.
 <3> Comma-separated list of allowed CORS origins. You can use a URL or a Java regular expression.
 <4> Comma-separated list of allowed HTTP methods for CORS.
+
+. Save the configuration file.

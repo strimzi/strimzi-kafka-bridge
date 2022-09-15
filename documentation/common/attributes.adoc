@@ -25,3 +25,4 @@
 //External links
 :external-cors-link: https://fetch.spec.whatwg.org/[Fetch CORS specification^]
 :openapis: https://www.openapis.org/[OpenAPI initiative^]
+:otel-exporters: https://github.com/open-telemetry/opentelemetry-java/tree/main/sdk-extensions/autoconfigure#exporters[OpenTelemetry exporter values^]
