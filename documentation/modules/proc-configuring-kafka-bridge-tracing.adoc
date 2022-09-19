@@ -59,8 +59,10 @@ With tracing enabled, you initialize tracing when you run the Kafka Bridge scrip
 [source,env]
 ----
 OTEL_SERVICE_NAME=my-tracing-service # <1>
+OTEL_EXPORTER_JAEGER_ENDPOINT=http://localhost:14250 # <2>
 ----
 <1> The name of the OpenTelemetry tracer service.
+<2> The Jaeger collector endpoint that listens for spans on port 14250.
 +
 .Environment variables for OpenTracing
 [source,env]
@@ -97,8 +99,10 @@ If you want to use another tracing system with OpenTelemetry, do the following:
 ----
 OTEL_SERVICE_NAME=my-tracing-service
 OTEL_TRACES_EXPORTER=zipkin # <1>
+OTEL_EXPORTER_ZIPKIN_ENDPOINT=http://localhost:9411/api/v2/spans <2>
 ----
 <1> The name of the tracing system. In this example, Zipkin is specified.
+<2> The endpoint of the specific selected exporter that listens for spans. In this example, a Zipkin endpoint is specified.
 
 [role="_additional-resources"]
 .Additional resources
