@@ -41,7 +41,7 @@ CAUTION: The OpenTracing project is now archived, so Strimzi has deprecated supp
 +
 Use the `bridge.tracing` property to enable the tracing you want to use. 
 +
-.Example configuration to enable OpeTelemetry
+.Example configuration to enable OpenTelemetry
 [source,properties]
 ----
 #bridge.tracing=jaeger # <1>
