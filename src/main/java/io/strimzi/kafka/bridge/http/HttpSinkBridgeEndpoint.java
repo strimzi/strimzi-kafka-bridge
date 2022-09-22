@@ -109,18 +109,18 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         // get supported consumer configuration parameters
         Properties config = new Properties();
         addConfigParameter(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
-            bodyAsJson.getString(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, null), config);
+                bodyAsJson.getString(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, null), config);
         // OpenAPI validation handles boolean and integer, quoted or not as string, in the same way
         // instead of raising a validation error due to this: https://github.com/vert-x3/vertx-web/issues/1375
         Object enableAutoCommit = bodyAsJson.getValue(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG);
-        addConfigParameter(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, 
-            enableAutoCommit != null ? String.valueOf(enableAutoCommit) : null, config);
+        addConfigParameter(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,
+                enableAutoCommit != null ? String.valueOf(enableAutoCommit) : null, config);
         Object fetchMinBytes = bodyAsJson.getValue(ConsumerConfig.FETCH_MIN_BYTES_CONFIG);
-        addConfigParameter(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, 
-            fetchMinBytes != null ? String.valueOf(fetchMinBytes) : null, config);
+        addConfigParameter(ConsumerConfig.FETCH_MIN_BYTES_CONFIG,
+                fetchMinBytes != null ? String.valueOf(fetchMinBytes) : null, config);
         Object requestTimeoutMs = bodyAsJson.getValue("consumer." + ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG);
         addConfigParameter(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG,
-            requestTimeoutMs != null ? String.valueOf(requestTimeoutMs) : null, config);
+                requestTimeoutMs != null ? String.valueOf(requestTimeoutMs) : null, config);
         addConfigParameter(ConsumerConfig.CLIENT_ID_CONFIG, this.name, config);
         Object isolationLevel = bodyAsJson.getValue(ConsumerConfig.ISOLATION_LEVEL_CONFIG);
         addConfigParameter(ConsumerConfig.ISOLATION_LEVEL_CONFIG,
@@ -158,8 +158,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             } else {
                 int code = handleError(done.cause());
                 HttpBridgeError error = new HttpBridgeError(
-                    code,
-                    done.cause().getMessage()
+                        code,
+                        done.cause().getMessage()
                 );
                 HttpUtils.sendResponse(routingContext, code,
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
@@ -181,8 +181,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             } else {
                 int code = handleError(done.cause());
                 HttpBridgeError error = new HttpBridgeError(
-                    code,
-                    done.cause().getMessage()
+                        code,
+                        done.cause().getMessage()
                 );
                 HttpUtils.sendResponse(routingContext, code,
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
@@ -261,37 +261,37 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                     if (buffer.getBytes().length > this.maxBytes) {
                         responseStatus = HttpResponseStatus.UNPROCESSABLE_ENTITY;
                         HttpBridgeError error = new HttpBridgeError(
-                            responseStatus.code(),
-                            "Response exceeds the maximum number of bytes the consumer can receive"
+                                responseStatus.code(),
+                                "Response exceeds the maximum number of bytes the consumer can receive"
                         );
                         HttpUtils.sendResponse(routingContext, responseStatus.code(),
-                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                     } else {
                         responseStatus = HttpResponseStatus.OK;
                         HttpUtils.sendResponse(routingContext, responseStatus.code(),
-                            this.format == EmbeddedFormat.BINARY ? BridgeContentType.KAFKA_JSON_BINARY : BridgeContentType.KAFKA_JSON_JSON,
-                            buffer);
+                                this.format == EmbeddedFormat.BINARY ? BridgeContentType.KAFKA_JSON_BINARY : BridgeContentType.KAFKA_JSON_JSON,
+                                buffer);
                     }
                 } catch (DecodeException e) {
                     log.error("Error decoding records as JSON", e);
                     responseStatus = HttpResponseStatus.NOT_ACCEPTABLE;
                     HttpBridgeError error = new HttpBridgeError(
-                        responseStatus.code(),
-                        e.getMessage()
+                            responseStatus.code(),
+                            e.getMessage()
                     );
                     HttpUtils.sendResponse(routingContext, responseStatus.code(),
-                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                 } finally {
                     span.finish(responseStatus.code());
                 }
 
             } else {
                 HttpBridgeError error = new HttpBridgeError(
-                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                    records.cause().getMessage()
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        records.cause().getMessage()
                 );
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         };
     }
@@ -389,10 +389,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         if (bodyAsJson.containsKey("topics")) {
             JsonArray topicsList = bodyAsJson.getJsonArray("topics");
             this.topicSubscriptions.addAll(
-                topicsList.stream()
-                        .map(String.class::cast)
-                        .map(topic -> new SinkTopicSubscription(topic))
-                        .collect(Collectors.toList())
+                    topicsList.stream()
+                            .map(String.class::cast)
+                            .map(topic -> new SinkTopicSubscription(topic))
+                            .collect(Collectors.toList())
             );
             this.subscribe(false);
         } else if (bodyAsJson.containsKey("topic_pattern")) {
@@ -483,8 +483,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         } catch (DecodeException ex) {
             int code = handleError(ex);
             HttpBridgeError error = new HttpBridgeError(
-                code,
-                ex.getMessage()
+                    code,
+                    ex.getMessage()
             );
             HttpUtils.sendResponse(routingContext, code,
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
@@ -571,7 +571,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         // eventually get the request path from "X-Forwarded-Path" if set by a gateway/proxy
         String xForwardedPath = routingContext.request().getHeader("x-forwarded-path");
         String path = (xForwardedPath != null && !xForwardedPath.isEmpty()) ? xForwardedPath : routingContext.request().path();
-        
+
         // if a gateway/proxy has set "Forwarded" related headers to use to get scheme/proto and host
         String forwarded = routingContext.request().getHeader("forwarded");
         if (forwarded != null && !forwarded.isEmpty()) {
@@ -588,7 +588,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             String xForwardedHost = routingContext.request().getHeader("x-forwarded-host");
             String xForwardedProto = routingContext.request().getHeader("x-forwarded-proto");
             if (xForwardedHost != null && !xForwardedHost.isEmpty() &&
-                xForwardedProto != null && !xForwardedProto.isEmpty()) {
+                    xForwardedProto != null && !xForwardedProto.isEmpty()) {
                 log.debug("Getting base URI from HTTP headers: X-Forwarded-Host '{}' and X-Forwarded-Proto '{}'",
                         xForwardedHost, xForwardedProto);
                 scheme = xForwardedProto;
@@ -602,7 +602,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     /**
      * Format the request URI based on provided scheme, host and path
-     * 
+     *
      * @param scheme request scheme/proto (HTTP or HTTPS)
      * @param host request host
      * @param path request path
@@ -625,7 +625,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     private int handleError(Throwable ex) {
         if (ex instanceof IllegalStateException && ex.getMessage() != null &&
-            ex.getMessage().contains("No current assignment for partition")) {
+                ex.getMessage().contains("No current assignment for partition")) {
             return HttpResponseStatus.NOT_FOUND.code();
         } else if (ex instanceof DecodeException) {
             return HttpResponseStatus.UNPROCESSABLE_ENTITY.code();

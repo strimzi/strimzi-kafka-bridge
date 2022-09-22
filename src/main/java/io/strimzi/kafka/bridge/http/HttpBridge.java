@@ -85,13 +85,12 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     /**
      * Constructor
      *
-     * @param bridgeConfig    bridge configuration
+     * @param bridgeConfig bridge configuration
      * @param metricsReporter MetricsReporter instance for scraping metrics from different registries
      */
     public HttpBridge(BridgeConfig bridgeConfig, MetricsReporter metricsReporter) {
         this.bridgeConfig = bridgeConfig;
         this.metricsReporter = metricsReporter;
-        System.out.println(this.bridgeConfig.getHttpConfig().isConsumerEnabled());
     }
 
     private void bindHttpServer(Promise<Void> startPromise) {
@@ -147,25 +146,19 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         RouterBuilder.create(vertx, "openapi.json", ar -> {
             if (ar.succeeded()) {
                 RouterBuilder routerBuilder = ar.result();
-                if (this.bridgeConfig.getHttpConfig().isProducerEnabled()) {
-                    routerBuilder.operation(this.SEND.getOperationId().toString()).handler(this.SEND);
-                }
+                routerBuilder.operation(this.SEND.getOperationId().toString()).handler(this.SEND);
                 routerBuilder.operation(this.SEND_TO_PARTITION.getOperationId().toString()).handler(this.SEND_TO_PARTITION);
-                if (this.bridgeConfig.getHttpConfig().isConsumerEnabled()) {
-                    routerBuilder.operation(this.CREATE_CONSUMER.getOperationId().toString()).handler(this.CREATE_CONSUMER);
-                    routerBuilder.operation(this.DELETE_CONSUMER.getOperationId().toString()).handler(this.DELETE_CONSUMER);
-                    routerBuilder.operation(this.SUBSCRIBE.getOperationId().toString()).handler(this.SUBSCRIBE);
-                    routerBuilder.operation(this.UNSUBSCRIBE.getOperationId().toString()).handler(this.UNSUBSCRIBE);
-                    routerBuilder.operation(this.LIST_SUBSCRIPTIONS.getOperationId().toString()).handler(this.LIST_SUBSCRIPTIONS);
-                    routerBuilder.operation(this.ASSIGN.getOperationId().toString()).handler(this.ASSIGN);
-                    routerBuilder.operation(this.POLL.getOperationId().toString()).handler(this.POLL);
-                    routerBuilder.operation(this.COMMIT.getOperationId().toString()).handler(this.COMMIT);
-                    routerBuilder.operation(this.SEEK.getOperationId().toString()).handler(this.SEEK);
-                    routerBuilder.operation(this.SEEK_TO_BEGINNING.getOperationId().toString()).handler(this.SEEK_TO_BEGINNING);
-                    routerBuilder.operation(this.SEEK_TO_END.getOperationId().toString()).handler(this.SEEK_TO_END);
-                }
-
-
+                routerBuilder.operation(this.CREATE_CONSUMER.getOperationId().toString()).handler(this.CREATE_CONSUMER);
+                routerBuilder.operation(this.DELETE_CONSUMER.getOperationId().toString()).handler(this.DELETE_CONSUMER);
+                routerBuilder.operation(this.SUBSCRIBE.getOperationId().toString()).handler(this.SUBSCRIBE);
+                routerBuilder.operation(this.UNSUBSCRIBE.getOperationId().toString()).handler(this.UNSUBSCRIBE);
+                routerBuilder.operation(this.LIST_SUBSCRIPTIONS.getOperationId().toString()).handler(this.LIST_SUBSCRIPTIONS);
+                routerBuilder.operation(this.ASSIGN.getOperationId().toString()).handler(this.ASSIGN);
+                routerBuilder.operation(this.POLL.getOperationId().toString()).handler(this.POLL);
+                routerBuilder.operation(this.COMMIT.getOperationId().toString()).handler(this.COMMIT);
+                routerBuilder.operation(this.SEEK.getOperationId().toString()).handler(this.SEEK);
+                routerBuilder.operation(this.SEEK_TO_BEGINNING.getOperationId().toString()).handler(this.SEEK_TO_BEGINNING);
+                routerBuilder.operation(this.SEEK_TO_END.getOperationId().toString()).handler(this.SEEK_TO_END);
                 routerBuilder.operation(this.LIST_TOPICS.getOperationId().toString()).handler(this.LIST_TOPICS);
                 routerBuilder.operation(this.GET_TOPIC.getOperationId().toString()).handler(this.GET_TOPIC);
                 routerBuilder.operation(this.LIST_PARTITIONS.getOperationId().toString()).handler(this.LIST_PARTITIONS);
@@ -184,15 +177,6 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 // handling validation errors and not existing endpoints
                 this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
                 this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
-                this.router.errorHandler(HttpResponseStatus.NOT_IMPLEMENTED.code(), this::errorHandler);
-
-                if (this.bridgeConfig.getHttpConfig().isConsumerEnabled())
-                    this.router.errorHandler(HttpResponseStatus.NOT_IMPLEMENTED.code(), this::errorHandler);
-
-                if (!this.bridgeConfig.getHttpConfig().isProducerEnabled())
-                    log.info("producer is disabled.");
-                this.router.errorHandler(HttpResponseStatus.METHOD_NOT_ALLOWED.code(), this::errorHandler);
-
 
                 this.router.route("/metrics").handler(this::metricsHandler);
 
@@ -226,7 +210,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         Set<HttpMethod> allowedMethods = new HashSet<>();
         String configAllowedMethods = this.bridgeConfig.getHttpConfig().getCorsAllowedMethods();
         String[] configAllowedMethodsArray = configAllowedMethods.split(",");
-        for (String method : configAllowedMethodsArray)
+        for (String method: configAllowedMethodsArray)
             allowedMethods.add(HttpMethod.valueOf(method));
 
         //set allowed origins from property http.cors.allowedOrigins
@@ -428,6 +412,12 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
      * @param routingContext RoutingContext instance
      */
     private void processConsumer(RoutingContext routingContext) {
+
+        if(!bridgeConfig.getHttpConfig().isConsumerEnabled()) {
+            JsonObject message = new JsonObject();
+            message.put("message", "Consumer is disabled in config. To enable consumer update http.consumer.enabled to true");
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, message.toBuffer());
+        }
         String groupId = routingContext.pathParam("groupid");
         String instanceId = routingContext.pathParam("name");
         ConsumerInstanceId kafkaConsumerInstanceId = new ConsumerInstanceId(groupId, instanceId);
@@ -453,6 +443,11 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
      * @param routingContext RoutingContext instance
      */
     private void processProducer(RoutingContext routingContext) {
+        if(!bridgeConfig.getHttpConfig().isProducerEnabled()) {
+            JsonObject message = new JsonObject();
+            message.put("message", "Producer is disabled in config. To enable producer update http.producer.enabled to true");
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, message.toBuffer());
+        }
         HttpServerRequest httpServerRequest = routingContext.request();
         String contentType = httpServerRequest.getHeader("Content-Type") != null ?
                 httpServerRequest.getHeader("Content-Type") : BridgeContentType.KAFKA_JSON_BINARY;
@@ -552,7 +547,6 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
     private void errorHandler(RoutingContext routingContext) {
         int requestId = System.identityHashCode(routingContext.request());
-        System.out.println(routingContext.request());
         routingContext.put("request-id", requestId);
 
         log.error("[{}] Request: from {}, method = {}, path = {}",
@@ -586,10 +580,6 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             }
         } else if (routingContext.statusCode() == HttpResponseStatus.NOT_FOUND.code()) {
             message = HttpResponseStatus.NOT_FOUND.reasonPhrase();
-        } else if (routingContext.statusCode() == HttpResponseStatus.NOT_IMPLEMENTED.code() && !bridgeConfig.getHttpConfig().isConsumerEnabled()) {
-            message = "Consumer is disabled in config.";
-        } else if (routingContext.statusCode() == HttpResponseStatus.METHOD_NOT_ALLOWED.code() && !bridgeConfig.getHttpConfig().isProducerEnabled()){
-            message = "Producer is disabled in config.";
         }
 
         HttpBridgeError error = new HttpBridgeError(routingContext.statusCode(), message);
