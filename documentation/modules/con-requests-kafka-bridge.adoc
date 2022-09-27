@@ -130,16 +130,14 @@ Accept: application/vnd.kafka.json.v2+json
 [id='con-requests-kafka-bridge-cors-{context}']
 = CORS
 
-Cross-Origin Resource Sharing (CORS) allows you to specify allowed methods and originating URLs for accessing the Kafka cluster in your Kafka Bridge HTTP configuration.
+In general, it is not possible for an HTTP client to issue requests across different domains.
 
-.Example CORS configuration for Kafka Bridge
-[source,properties,subs="attributes+"]
-----
-# ...
-http.cors.enabled=true
-http.cors.allowedOrigins=https://strimzi.io
-http.cors.allowedMethods=GET,POST,PUT,DELETE,OPTIONS,PATCH
-----
+For example, let's assume to have the Strimzi bridge to be deployed alongside an Apache Kafka cluster and being accessible at the http://my-strimzi-bridge.io domain.
+HTTP clients can issue requests to that URL in order to interact with the bridge and exchange messages through the Apache Kafka cluster.
+The same cannot easily happen if the client is, for example, JavaScript based and running as part of a web application in the http://my-web-application.io domain.
+The source domain, from where the HTTP client issues requests, is different from the target domain, where the Strimzi bridge is running.
+In this scenario, the same-origin policy restriction applies and such a request will fail.
+The Cross-Origin Resource Sharing (CORS) comes into the picture to enable this scenario.
 
 CORS allows for _simple_ and _preflighted_ requests between origin sources on different domains.
 
@@ -152,25 +150,37 @@ and use non-standard headers.
 
 All requests require an _origins_ value in their header, which is the source of the HTTP request.
 
+CORS allows you to specify allowed methods and originating URLs for accessing the Kafka cluster in your Kafka Bridge HTTP configuration.
+
+.Example CORS configuration for Kafka Bridge
+[source,properties,subs="attributes+"]
+----
+# ...
+http.cors.enabled=true
+http.cors.allowedOrigins=http://my-web-application.io
+http.cors.allowedMethods=GET,POST,PUT,DELETE,OPTIONS,PATCH
+----
+
 == Simple request
 
-For example, this simple request header specifies the origin as `\https://strimzi.io`.
+For example, this simple request header specifies the origin as `\http://my-web-application.io`.
 
 [source,http,subs=+quotes]
 ----
-Origin: https://strimzi.io
+Origin: http://my-web-application.io
 ----
 
-The header information is added to the request.
+The header information is added to the request (i.e. to consume records)
 
 [source,http,subs=+quotes]
 ----
-curl -v -X GET _HTTP-ADDRESS_/bridge-consumer/records \
--H 'Origin: https://strimzi.io'\
+curl -v -X GET _HTTP-BRIDGE-ADDRESS_/consumers/my-group/instances/my-consumer/records \
+-H 'Origin: http://my-web-application.io'\
 -H 'content-type: application/vnd.kafka.v2+json'
 ----
 
 In the response from the Kafka Bridge, an `Access-Control-Allow-Origin` header is returned.
+It contains the list of domains from where HTTP requests can be issued to the bridge.
 
 [source,http,subs=+quotes]
 ----
@@ -184,12 +194,12 @@ Access-Control-Allow-Origin: * <1>
 An initial preflight request is sent to Kafka Bridge using an `OPTIONS` method.
 The _HTTP OPTIONS_ request sends header information to check that Kafka Bridge will allow the actual request.
 
-Here the preflight request checks that a `POST` request is valid from `\https://strimzi.io`.
+Here the preflight request checks that a `POST` request is valid from `\http://my-web-application.io`.
 
 [source,http,subs=+quotes]
 ----
-OPTIONS /my-group/instances/my-user/subscription HTTP/1.1
-Origin: https://strimzi.io
+OPTIONS /my-group/instances/my-consumer/subscription HTTP/1.1
+Origin: http://my-web-application.io
 Access-Control-Request-Method: POST <1>
 Access-Control-Request-Headers: Content-Type <2>
 ----
@@ -200,7 +210,7 @@ Access-Control-Request-Headers: Content-Type <2>
 
 [source,http,subs=+quotes]
 ----
-curl -v -X OPTIONS -H 'Origin: https://strimzi.io' \
+curl -v -X OPTIONS -H 'Origin: http://my-web-application.io' \
 -H 'Access-Control-Request-Method: POST' \
 -H 'content-type: application/vnd.kafka.v2+json'
 ----
@@ -211,7 +221,7 @@ The response header returns allowed origins, methods and headers.
 [source,http,subs=+quotes]
 ----
 HTTP/1.1 200 OK
-Access-Control-Allow-Origin: https://strimzi.io
+Access-Control-Allow-Origin: http://my-web-application.io
 Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS,PATCH
 Access-Control-Allow-Headers: content-type
 ----
@@ -223,8 +233,8 @@ but it does require the origin header.
 
 [source,http,subs=+quotes]
 ----
-curl -v -X POST _HTTP-ADDRESS_/topics/bridge-topic \
--H 'Origin: https://strimzi.io' \
+curl -v -X POST _HTTP-BRIDGE-ADDRESS_/topics/bridge-topic \
+-H 'Origin: http://my-web-application.io' \
 -H 'content-type: application/vnd.kafka.v2+json'
 ----
 
@@ -233,7 +243,7 @@ The response shows the originating URL is allowed.
 [source,http,subs=+quotes]
 ----
 HTTP/1.1 200 OK
-Access-Control-Allow-Origin: https://strimzi.io
+Access-Control-Allow-Origin: http://my-web-application.io
 ----
 
 [role="_additional-resources"]
