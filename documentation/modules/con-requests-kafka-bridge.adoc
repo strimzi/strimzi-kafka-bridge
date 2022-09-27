@@ -132,12 +132,12 @@ Accept: application/vnd.kafka.json.v2+json
 
 In general, it is not possible for an HTTP client to issue requests across different domains.
 
-For example, let's assume to have the Strimzi bridge to be deployed alongside an Apache Kafka cluster and being accessible at the http://my-strimzi-bridge.io domain.
-HTTP clients can issue requests to that URL in order to interact with the bridge and exchange messages through the Apache Kafka cluster.
-The same cannot easily happen if the client is, for example, JavaScript based and running as part of a web application in the http://my-web-application.io domain.
-The source domain, from where the HTTP client issues requests, is different from the target domain, where the Strimzi bridge is running.
-In this scenario, the same-origin policy restriction applies and such a request will fail.
-The Cross-Origin Resource Sharing (CORS) comes into the picture to enable this scenario.
+For example, suppose the Kafka Bridge you deployed alongside a Kafka cluster is accessible using the `\http://my-bridge.io` domain.
+HTTP clients can use the URL to interact with the Kafka Bridge and exchange messages through the Kafka cluster.
+However, your client is running as a web application in the `\http://my-web-application.io` domain.
+The client (source) domain is different from the Kafka Bridge (target) domain.
+Because of same-origin policy restrictions, requests from the client fail.  
+You can avoid this situation by using Cross-Origin Resource Sharing (CORS).
 
 CORS allows for _simple_ and _preflighted_ requests between origin sources on different domains.
 
@@ -170,7 +170,7 @@ For example, this simple request header specifies the origin as `\http://my-web-
 Origin: http://my-web-application.io
 ----
 
-The header information is added to the request (i.e. to consume records)
+The header information is added to the request to consume records.
 
 [source,http,subs=+quotes]
 ----
