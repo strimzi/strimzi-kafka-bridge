@@ -255,7 +255,6 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                     KafkaConsumerRecord<K, V> record = records.result().recordAt(i);
                     tracing.handleRecordSpan(span, record);
                 }
-
                 span.inject(routingContext);
 
                 HttpResponseStatus responseStatus = HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -295,7 +294,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 );
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
-                span.finish(HttpResponseStatus.INTERNAL_SERVER_ERROR.code());
+                span.finish(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), records.cause());
             }
         };
     }

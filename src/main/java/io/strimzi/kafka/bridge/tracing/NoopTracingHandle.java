@@ -52,5 +52,9 @@ final class NoopTracingHandle implements TracingHandle {
         @Override
         public void finish(int code) {
         }
+
+        @Override
+        public void finish(int code, Throwable cause) {
+        }
     }
 }
