@@ -37,7 +37,6 @@ public interface SpanHandle<K, V> {
      * Finish underlying span.
      *
      * @param code response code
-     *
      * @param cause exception cause
      */
     void finish(int code, Throwable cause);

@@ -242,9 +242,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     }
 
     private Handler<AsyncResult<KafkaConsumerRecords<K, V>>> pollHandler(RoutingContext routingContext) {
-
         return records -> {
-
             TracingHandle tracing = TracingUtil.getTracing();
 
             SpanHandle<K, V> span = tracing.span(routingContext, HttpOpenApiOperations.POLL.toString());

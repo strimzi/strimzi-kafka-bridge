@@ -172,7 +172,6 @@ class OpenTelemetryHandle implements TracingHandle {
             propagator().inject(Context.current(), routingContext, (rc, key, value) -> rc.response().headers().add(key, value));
         }
 
-
         @Override
         public void finish(int code) {
             try {
@@ -183,6 +182,7 @@ class OpenTelemetryHandle implements TracingHandle {
                 span.end();
             }
         }
+
         @Override
         public void finish(int code, Throwable cause) {
             try {
