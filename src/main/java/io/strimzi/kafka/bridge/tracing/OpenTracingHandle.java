@@ -26,6 +26,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
@@ -166,7 +167,7 @@ class OpenTracingHandle implements TracingHandle {
             cause.printStackTrace(new PrintWriter(exceptionCause));
             Tags.HTTP_STATUS.set(span, code);
             Tags.ERROR.set(span, true);
-            span.log(Map.of("exception.cause", exceptionCause));
+            span.log(Collections.singletonMap("exception.stacktrace", exceptionCause));
             span.finish();
         }
     }
