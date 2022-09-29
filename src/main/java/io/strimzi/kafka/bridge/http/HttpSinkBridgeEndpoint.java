@@ -243,16 +243,16 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     private Handler<AsyncResult<KafkaConsumerRecords<K, V>>> pollHandler(RoutingContext routingContext) {
         return records -> {
-            if (records.succeeded()) {
+            TracingHandle tracing = TracingUtil.getTracing();
 
-                TracingHandle tracing = TracingUtil.getTracing();
-                SpanHandle<K, V> span = tracing.span(routingContext, HttpOpenApiOperations.POLL.toString());
+            SpanHandle<K, V> span = tracing.span(routingContext, HttpOpenApiOperations.POLL.toString());
+
+            if (records.succeeded()) {
 
                 for (int i = 0; i < records.result().size(); i++) {
                     KafkaConsumerRecord<K, V> record = records.result().recordAt(i);
                     tracing.handleRecordSpan(span, record);
                 }
-
                 span.inject(routingContext);
 
                 HttpResponseStatus responseStatus = HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -292,6 +292,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 );
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                span.finish(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), records.cause());
             }
         };
     }

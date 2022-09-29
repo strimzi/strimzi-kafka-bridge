@@ -32,4 +32,12 @@ public interface SpanHandle<K, V> {
      * @param code response code
      */
     void finish(int code);
+
+    /**
+     * Finish underlying span.
+     *
+     * @param code response code
+     * @param cause exception cause
+     */
+    void finish(int code, Throwable cause);
 }
