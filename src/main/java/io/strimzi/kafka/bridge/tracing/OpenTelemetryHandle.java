@@ -182,5 +182,17 @@ class OpenTelemetryHandle implements TracingHandle {
                 span.end();
             }
         }
+
+        @Override
+        public void finish(int code, Throwable cause) {
+            try {
+                span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, code);
+                span.setStatus(code == HttpResponseStatus.OK.code() ? StatusCode.OK : StatusCode.ERROR);
+                span.recordException(cause);
+                scope.close();
+            } finally {
+                span.end();
+            }
+        }
     }
 }
