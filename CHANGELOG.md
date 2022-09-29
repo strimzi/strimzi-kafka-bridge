@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.22.2
+
+* Enable rack-awareness when the bridge is deployed by the Strimzi operator
+* Documentation improvements
+  * How to enable distributed tracing
+  * More details about using Cross-Origin Resource Sharing (CORS)
+* Dependency updates (Kafka [CVE-2022-34917](https://nvd.nist.gov/vuln/detail/CVE-2022-34917))
+* Dependency updates (Netty)
+
 ## 0.22.1
 
 * Dependency updates (snakeYAML [CVE-2022-38752](https://nvd.nist.gov/vuln/detail/CVE-2022-38752))
