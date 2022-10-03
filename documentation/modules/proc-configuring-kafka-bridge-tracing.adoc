@@ -62,7 +62,7 @@ OTEL_SERVICE_NAME=my-tracing-service # <1>
 OTEL_EXPORTER_JAEGER_ENDPOINT=http://localhost:14250 # <2>
 ----
 <1> The name of the OpenTelemetry tracer service.
-<2> The Jaeger collector endpoint that listens for spans on port 14250.
+<2> The Jaeger collector gRPC based endpoint that listens for spans on port 14250.
 +
 .Environment variables for OpenTracing
 [source,env]
