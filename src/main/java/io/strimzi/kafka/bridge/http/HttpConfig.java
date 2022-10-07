@@ -31,8 +31,8 @@ public class HttpConfig extends AbstractConfig {
     public static final long DEFAULT_CONSUMER_TIMEOUT = -1L;
 
     public static final String HTTP_CONSUMER_ENABLED = HTTP_CONFIG_PREFIX + "consumer.enabled";
-
     public static final String HTTP_PRODUCER_ENABLED = HTTP_CONFIG_PREFIX + "producer.enabled";
+
     /**
      * Constructor
      *
@@ -116,7 +116,6 @@ public class HttpConfig extends AbstractConfig {
                 .filter(e -> e.getKey().startsWith(HttpConfig.HTTP_CONFIG_PREFIX))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
-
 
     @Override
     public String toString() {

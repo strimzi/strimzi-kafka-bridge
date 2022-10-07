@@ -288,7 +288,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             sink.closeHandler(endpoint -> {
                 HttpSinkBridgeEndpoint<byte[], byte[]> httpEndpoint = (HttpSinkBridgeEndpoint<byte[], byte[]>) endpoint;
                 httpBridgeContext.getHttpSinkEndpoints().remove(httpEndpoint.consumerInstanceId());
-            });
+            });        
             sink.open();
 
             sink.handle(new HttpEndpoint(routingContext), endpoint -> {
@@ -301,12 +301,12 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
                 sink.close();
             }
             HttpResponseStatus responseStatus = (ex instanceof IllegalEmbeddedFormatException) || (ex instanceof ConfigException) ?
-                    HttpResponseStatus.UNPROCESSABLE_ENTITY :
-                    HttpResponseStatus.INTERNAL_SERVER_ERROR;
-
+                                                HttpResponseStatus.UNPROCESSABLE_ENTITY : 
+                                                HttpResponseStatus.INTERNAL_SERVER_ERROR;
+            
             HttpBridgeError error = new HttpBridgeError(
-                    responseStatus.code(),
-                    ex.getMessage()
+                responseStatus.code(),
+                ex.getMessage()
             );
             HttpUtils.sendResponse(routingContext, error.getCode(),
                     BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
@@ -408,7 +408,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     /**
      * Process an HTTP request related to the consumer
-     *
+     * 
      * @param routingContext RoutingContext instance
      */
     private void processConsumer(RoutingContext routingContext) {
@@ -439,7 +439,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
 
     /**
      * Process an HTTP request related to the producer
-     *
+     * 
      * @param routingContext RoutingContext instance
      */
     private void processProducer(RoutingContext routingContext) {
@@ -527,8 +527,8 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
             } else {
                 log.error("Failed to read OpenAPI JSON file", readFile.cause());
                 HttpBridgeError error = new HttpBridgeError(
-                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        readFile.cause().getMessage());
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    readFile.cause().getMessage());
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                         BridgeContentType.JSON, error.toJson().toBuffer());
             }
@@ -548,12 +548,12 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     private void errorHandler(RoutingContext routingContext) {
         int requestId = System.identityHashCode(routingContext.request());
         routingContext.put("request-id", requestId);
-
+        
         log.error("[{}] Request: from {}, method = {}, path = {}",
-                requestId,
-                routingContext.request().remoteAddress(),
-                routingContext.request().method(),
-                routingContext.request().path());
+            requestId,
+            routingContext.request().remoteAddress(), 
+            routingContext.request().method(),
+            routingContext.request().path());
 
         String message = null;
         if (routingContext.statusCode() == HttpResponseStatus.BAD_REQUEST.code()) {
@@ -586,10 +586,10 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         HttpUtils.sendResponse(routingContext, routingContext.statusCode(),
                 BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
 
-        log.error("[{}] Response: statusCode = {}, message = {} ",
-                requestId,
-                routingContext.statusCode(),
-                message);
+        log.error("[{}] Response: statusCode = {}, message = {} ", 
+            requestId,
+            routingContext.statusCode(),
+            message);
     }
 
     private void metricsHandler(RoutingContext routingContext) {
@@ -644,7 +644,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     }
 
     HttpOpenApiOperation SEND = new HttpOpenApiOperation(HttpOpenApiOperations.SEND) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             send(routingContext);
@@ -652,7 +652,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation SEND_TO_PARTITION = new HttpOpenApiOperation(HttpOpenApiOperations.SEND_TO_PARTITION) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             sendToPartition(routingContext);
@@ -660,7 +660,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation CREATE_CONSUMER = new HttpOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             createConsumer(routingContext);
@@ -668,7 +668,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation DELETE_CONSUMER = new HttpOpenApiOperation(HttpOpenApiOperations.DELETE_CONSUMER) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             deleteConsumer(routingContext);
@@ -676,7 +676,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation SUBSCRIBE = new HttpOpenApiOperation(HttpOpenApiOperations.SUBSCRIBE) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             subscribe(routingContext);
@@ -684,7 +684,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation UNSUBSCRIBE = new HttpOpenApiOperation(HttpOpenApiOperations.UNSUBSCRIBE) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             unsubscribe(routingContext);
@@ -740,7 +740,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation ASSIGN = new HttpOpenApiOperation(HttpOpenApiOperations.ASSIGN) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             assign(routingContext);
@@ -748,7 +748,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation POLL = new HttpOpenApiOperation(HttpOpenApiOperations.POLL) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             poll(routingContext);
@@ -756,7 +756,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation COMMIT = new HttpOpenApiOperation(HttpOpenApiOperations.COMMIT) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             commit(routingContext);
@@ -764,7 +764,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation SEEK = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             seek(routingContext);
@@ -772,7 +772,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation SEEK_TO_BEGINNING = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK_TO_BEGINNING) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             seekToBeginning(routingContext);
@@ -780,7 +780,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation SEEK_TO_END = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK_TO_END) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             seekToEnd(routingContext);
@@ -788,7 +788,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation HEALTHY = new HttpOpenApiOperation(HttpOpenApiOperations.HEALTHY) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             healthy(routingContext);
@@ -796,7 +796,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation READY = new HttpOpenApiOperation(HttpOpenApiOperations.READY) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             ready(routingContext);
@@ -804,7 +804,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     };
 
     HttpOpenApiOperation OPENAPI = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPI) {
-
+    
         @Override
         public void process(RoutingContext routingContext) {
             openapi(routingContext);
