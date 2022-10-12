@@ -13,6 +13,7 @@ jobs:
       apt:
         packages:
         - maven
+        - curl
   - build: s390x
     os: linux
     arch: s390x
@@ -22,10 +23,12 @@ jobs:
       apt:
         packages:
         - maven
+        - curl
 services:
 - docker
 before_install:
-- gem install asciidoctor
+- curl -s https://rubygems.org/downloads/asciidoctor-2.0.17.gem -o asciidoctor-2.0.17.gem
+- gem install --local asciidoctor
 script:
 - "./.travis/build.sh"
 env:
