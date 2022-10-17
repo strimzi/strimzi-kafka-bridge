@@ -415,6 +415,14 @@
 			<version>${test-container.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<!-- Required to be able to use the Test Container on different platforms such as Arm based Macs -->
+		<!-- Can be removed once the Strimzi Test Container is using new Test Container version (should be in Strimzi Test Container 0.103) -->
+		<dependency>
+			<groupId>net.java.dev.jna</groupId>
+			<artifactId>jna</artifactId>
+			<version>5.8.0</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<pluginRepositories>
@@ -549,6 +557,9 @@
 									<ignoredUnusedDeclaredDependency>org.apache.tomcat.embed:tomcat-embed-core</ignoredUnusedDeclaredDependency>  <!-- CVE override -->
 									<!-- OpenTelemetry - used via classpath configuration -->
 									<ignoredUnusedDeclaredDependency>io.opentelemetry:opentelemetry-exporter-jaeger</ignoredUnusedDeclaredDependency>
+									<!-- Required to be able to use the Test Container on different platforms such as Arm based Macs -->
+									<!-- Can be removed once the Strimzi Test Container is using new Test Container version (should be in Strimzi Test Container 0.103) -->
+									<ignoredUnusedDeclaredDependency>net.java.dev.jna:jna:jar:5.8.0</ignoredUnusedDeclaredDependency>
 								</ignoredUnusedDeclaredDependencies>
 						</configuration>
 					</execution>
