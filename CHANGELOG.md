@@ -5,8 +5,7 @@
 * Fixed bug about tracing span creation missing when the consumer poll operation fails
 * OpenTelemetry updated to 1.18.0
 * Dependency updates (Jackson Databind) 
-  * [CVE-2022-42004](https://github.com/advisories/GHSA-rgv9-q543-rqg4)
-  * [CVE-2022-42003](https://github.com/advisories/GHSA-jjjh-jjxp-wpff)
+  * [CVE-2022-42003](https://nvd.nist.gov/vuln/detail/CVE-2022-42003)
   * [CVE-2022-42004](https://nvd.nist.gov/vuln/detail/CVE-2022-42004))
 
 ## 0.22.2
