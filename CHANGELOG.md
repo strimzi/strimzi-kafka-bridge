@@ -6,7 +6,7 @@
 * OpenTelemetry updated to 1.18.0
 * Dependency updates (Jackson Databind) 
   * [CVE-2022-42003](https://nvd.nist.gov/vuln/detail/CVE-2022-42003)
-  * [CVE-2022-42004](https://nvd.nist.gov/vuln/detail/CVE-2022-42004))
+  * [CVE-2022-42004](https://nvd.nist.gov/vuln/detail/CVE-2022-42004)
 
 ## 0.22.2
 
