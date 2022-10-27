@@ -2,6 +2,7 @@
 
 ## 0.22.3
 
+* Strimzi OAuth updated to 0.11.0 bringing support for password grants and OAuth metrics
 * Fixed bug about tracing span creation missing when the consumer poll operation fails
 * OpenTelemetry updated to 1.18.0
 * Dependency updates (Jackson Databind) 

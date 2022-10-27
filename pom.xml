@@ -106,7 +106,7 @@
 		<jackson-core.version>2.13.4</jackson-core.version>
 		<jackson-databind.version>2.13.4.2</jackson-databind.version>
 		<spotbugs.version>4.0.1</spotbugs.version>
-		<strimzi-oauth.version>0.10.0</strimzi-oauth.version>
+		<strimzi-oauth.version>0.11.0</strimzi-oauth.version>
 		<jaeger.version>1.8.1</jaeger.version>
 		<opentracing.version>0.33.0</opentracing.version>
 		<opentracing-kafka-client.version>0.1.15</opentracing-kafka-client.version>
