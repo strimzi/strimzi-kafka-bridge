@@ -413,7 +413,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
      */
     private void processConsumer(RoutingContext routingContext) {
 
-        if(!bridgeConfig.getHttpConfig().isConsumerEnabled()) {
+        if (!bridgeConfig.getHttpConfig().isConsumerEnabled()) {
             JsonObject message = new JsonObject();
             message.put("message", "Consumer is disabled in config. To enable consumer update http.consumer.enabled to true");
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, message.toBuffer());
@@ -443,7 +443,7 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
      * @param routingContext RoutingContext instance
      */
     private void processProducer(RoutingContext routingContext) {
-        if(!bridgeConfig.getHttpConfig().isProducerEnabled()) {
+        if (!bridgeConfig.getHttpConfig().isProducerEnabled()) {
             JsonObject message = new JsonObject();
             message.put("message", "Producer is disabled in config. To enable producer update http.producer.enabled to true");
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, message.toBuffer());
