@@ -412,6 +412,12 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
      * @param routingContext RoutingContext instance
      */
     private void processConsumer(RoutingContext routingContext) {
+
+        if(!bridgeConfig.getHttpConfig().isConsumerEnabled()) {
+            JsonObject message = new JsonObject();
+            message.put("message", "Consumer is disabled in config. To enable consumer update http.consumer.enabled to true");
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, message.toBuffer());
+        }
         String groupId = routingContext.pathParam("groupid");
         String instanceId = routingContext.pathParam("name");
         ConsumerInstanceId kafkaConsumerInstanceId = new ConsumerInstanceId(groupId, instanceId);
@@ -437,6 +443,11 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
      * @param routingContext RoutingContext instance
      */
     private void processProducer(RoutingContext routingContext) {
+        if(!bridgeConfig.getHttpConfig().isProducerEnabled()) {
+            JsonObject message = new JsonObject();
+            message.put("message", "Producer is disabled in config. To enable producer update http.producer.enabled to true");
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, message.toBuffer());
+        }
         HttpServerRequest httpServerRequest = routingContext.request();
         String contentType = httpServerRequest.getHeader("Content-Type") != null ?
                 httpServerRequest.getHeader("Content-Type") : BridgeContentType.KAFKA_JSON_BINARY;
