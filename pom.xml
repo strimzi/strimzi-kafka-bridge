@@ -112,7 +112,7 @@
 		<opentracing-kafka-client.version>0.1.15</opentracing-kafka-client.version>
 		<opentelemetry.alpha-version>1.18.0-alpha</opentelemetry.alpha-version>
 		<opentelemetry.version>1.18.0</opentelemetry.version>
-		<micrometer.version>1.3.9</micrometer.version>
+		<micrometer.version>1.9.5</micrometer.version>
 		<jmx-prometheus-collector.version>0.12.0</jmx-prometheus-collector.version>
 		<prometheus-simpleclient.version>0.7.0</prometheus-simpleclient.version>
 		<commons-cli.version>1.4</commons-cli.version>
