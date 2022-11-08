@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.23.0
+
+* Moved from using the Jaeger exporter to OTLP exporter by default
+
 ## 0.22.3
 
 * Strimzi OAuth updated to 0.11.0 bringing support for password grants and OAuth metrics
