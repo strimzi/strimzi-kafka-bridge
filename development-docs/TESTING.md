@@ -22,6 +22,10 @@ in root directory of the project.
 The next requirement is to have [docker](https://docs.docker.com/get-docker/) installed, because we use [test-containers](https://www.testcontainers.org/). 
 In case of interest you can check our implementation of Strimzi `Kafka` container [here](https://github.com/strimzi/strimzi-kafka-operator/tree/main/test-container).
 
+> The test-containers project uses [Moby Ryuk](https://github.com/testcontainers/moby-ryuk) to automatic cleanup of containers after the execution. Ryuk must be started as a privileged container.
+Running in privileged mode could not apply for all environments by default. If you get any error running Ryuk, you can set `TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED=true`
+or disable Ryuk by setting `TESTCONTAINERS_RYUK_DISABLED=true`.
+
 ## Package Structure
 
 You can find tests inside `src.test.java` package. Moreover we have the auxiliary classes and the most notable one are:
