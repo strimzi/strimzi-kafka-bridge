@@ -13,9 +13,9 @@ fi
 # Make sure that we use /dev/urandom
 JAVA_OPTS="${JAVA_OPTS} -Dvertx.cacheDirBase=/tmp/vertx-cache -Djava.security.egd=file:/dev/./urandom"
 
-# enabling OpenTelemetry with Jaeger by default
+# enabling OpenTelemetry with OTLP by default
 if [ -n "$OTEL_SERVICE_NAME" ] && [ -z "$OTEL_TRACES_EXPORTER" ]; then
-  export OTEL_TRACES_EXPORTER="jaeger"
+  export OTEL_TRACES_EXPORTER="otlp"
 fi
 
 exec java $JAVA_OPTS $KAFKA_BRIDGE_LOG4J_OPTS -classpath "${MYPATH}/../libs/*" io.strimzi.kafka.bridge.Application "$@"
