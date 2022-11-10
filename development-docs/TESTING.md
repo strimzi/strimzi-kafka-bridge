@@ -22,9 +22,9 @@ in root directory of the project.
 The next requirement is to have [docker](https://docs.docker.com/get-docker/) installed, because we use [test-containers](https://www.testcontainers.org/). 
 In case of interest you can check our implementation of Strimzi `Kafka` container [here](https://github.com/strimzi/strimzi-kafka-operator/tree/main/test-container).
 
-> The test-containers project uses [Moby Ryuk](https://github.com/testcontainers/moby-ryuk) to automatic cleanup of containers after the execution. Ryuk must be started as a privileged container.
-Running in privileged mode could not apply for all environments by default.  If you get an error like this `java.lang.IllegalArgumentException: Requested port (8080) is not mapped` 
-when test-containers tries to start, then you can set `TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED=true` or disable Ryuk by setting `TESTCONTAINERS_RYUK_DISABLED=true`. 
+> The `test-containers` project uses [Moby Ryuk](https://github.com/testcontainers/moby-ryuk) to automatic cleanup of containers after the execution. Ryuk must be started as a privileged container.
+Running in privileged mode might not apply for all environments by default.  If you get an error like `java.lang.IllegalArgumentException: Requested port (8080) is not mapped` 
+when `test-containers` tries to start, you can set `TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED=true` or disable Ryuk by setting `TESTCONTAINERS_RYUK_DISABLED=true`. 
 
 ## Package Structure
 
