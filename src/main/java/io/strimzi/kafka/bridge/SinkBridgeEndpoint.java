@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.tracker.OffsetTracker;
@@ -44,6 +45,8 @@ import java.util.stream.Collectors;
  * @param <K>   type of Kafka message key
  * @param <V>   type of Kafka message payload
  */
+// TODO: to remove when offsetTracker and QoS handling (used by AMQP 1.0 support) will be removed as well
+@SuppressFBWarnings({"UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD"})
 public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());

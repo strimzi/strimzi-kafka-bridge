@@ -149,19 +149,8 @@ http.cors.allowedOrigins=${KAFKA_BRIDGE_CORS_ALLOWED_ORIGINS}
 http.cors.allowedMethods=${KAFKA_BRIDGE_CORS_ALLOWED_METHODS}
 EOF
 )
-AMQP_PROPERTIES=$(cat <<-EOF
-#AMQP configuration
-amqp.enabled=${KAFKA_BRIDGE_AMQP_ENABLED}
-amqp.host=${KAFKA_BRIDGE_AMQP_HOST}
-amqp.port=${KAFKA_BRIDGE_AMQP_PORT}
-amqp.mode=${KAFKA_BRIDGE_AMQP_MODE}
-amqp.flowCredit=${KAFKA_BRIDGE_AMQP_FLOW_CREDIT}
-amqp.certDir=${KAFKA_BRIDGE_AMQP_CERT_DIR}
-amqp.messageConverter=${KAFKA_BRIDGE_AMQP_MESSAGE_CONVERTER}
-EOF
-)
 
-# if http/amqp is disabled, do not print its configuration
+# if http is disabled, do not print its configuration
 PROPERTIES=$(cat <<EOF
 $BRIDGE_PROPERTIES
 
@@ -179,15 +168,6 @@ if [[ -n "$KAFKA_BRIDGE_HTTP_ENABLED" && "$KAFKA_BRIDGE_HTTP_ENABLED" = "true" ]
 $PROPERTIES
 
 $HTTP_PROPERTIES
-EOF
-)
-fi
-
-if [[ -n "$KAFKA_BRIDGE_AMQP_ENABLED" && "$KAFKA_BRIDGE_AMQP_ENABLED" = "true" ]]; then
-	PROPERTIES=$(cat <<EOF
-$PROPERTIES
-
-$AMQP_PROPERTIES
 EOF
 )
 fi

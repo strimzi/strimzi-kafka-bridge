@@ -34,10 +34,7 @@ You can find tests inside `src.test.java` package. Moreover we have the auxiliar
 - `Clients` clients for testing overall communication of the `Kafka Bridge`
 - `Facades` encapsulation of the standalone `Kafka` and `AdminClient` instance
 
-Furthermore we divide our test suite on two separate parts:
-
-1. `Http`package, where you can find all test cases related to the `Http Kafka Bridge`
-2. `Amqp`package, where you can find all tests cases related to the `Amqp Kafka Bridge`
+The test suite has provides a `Http` package, where you can find all test cases related to the `Http Kafka Bridge`.
 
 ## Approaches
 
@@ -47,10 +44,9 @@ the following  terminology is needed.
 #### In-memory 
 `Kafka` = 
 - for `Http Kafka Bridge` we use [Strimzi Kafka container]([here](https://github.com/strimzi/strimzi-kafka-operator/tree/main/test-container).)
-- for `Amqp Kafka Bridge` we use [KafkaFacade](https://github.com/strimzi/strimzi-kafka-bridge/blob/main/src/test/java/io/strimzi/kafka/bridge/facades/KafkaFacade.java) 
 
 `Kafka Bridge` =
- - for deployment of the `Http Kafka Bridge` and `Amqp Kafka Bridge` we are using [Vert.x](https://vertx.io/) 
+ - for deployment of the `Http Kafka Bridge` we are using [Vert.x](https://vertx.io/) 
 
 #### Standalone 
 `Kafka` 
@@ -77,8 +73,7 @@ to add the second option. Rest of these approaches are not so essential.
 ## Test Phases
 
 In general, we use classic test phases: `setup`, `exercise`, `verify` and `teardown`. Every phase will be described for the
-`src.test.java.io.strimzi.kafka.bridge.http` package. It is very similar with `src.test.java.io.strimzi.kafka.bridge.amqp` only
-one difference is that `http` package using Strimzi `Kafka` container by `test-containers` and `amqp` package using KafkaFacade.
+`io.strimzi.kafka.bridge.http` package as part of the tests.
 
 ### Setup
 
@@ -160,7 +155,6 @@ Teardown is triggered in `@AfterAll` of `HttpBridgeTestBase`:
 You need to use the `groups` system property in order to execute a group of tests. For example with the following values:
 
 `-Dgroups=httpbridge` — to execute one test group
-`-Dgroups=httpbridge,amqpbridge` — to execute many test groups
 `-Dgroups=all` — to execute all test groups
 
 If `-Dgroups` system property isn't defined, all tests without an explicitly declared test group will be executed.
@@ -169,9 +163,8 @@ The following table shows currently used tags:
 | Name               | Description                                                                        |
 | :----------------: | :--------------------------------------------------------------------------------: |
 | httpbridge         | Http Bridge tests, which guarantee, that functionality of Http Bridge is working.  |
-| amqpbridge         | Amqp Bridge tests, which guarantee, that functionality of Amqp Bridge is working.  |
 
-There is also a mvn profile for the main groups - `httpbridge`, `amqpbridge` and `all`, but we suggest to use profile with id `all` (default) and then include or exclude specific groups.
+There is also a mvn profile for the main groups - `httpbridge` and `all`, but we suggest to use profile with id `all` (default) and then include or exclude specific groups.
 If you want specify the profile, use the `-P` flag - for example `-Phttpbridge`.
 
 All available test groups are listed in [Constants](https://github.com/strimzi/strimzi-kafka-bridge/blob/main/src/test/java/io/strimzi/kafka/bridge/Constants.java) class.

@@ -4,16 +4,12 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Twitter Follow](https://img.shields.io/twitter/follow/strimziio.svg?style=social&label=Follow&style=for-the-badge)](https://twitter.com/strimziio)
 
-# HTTP & AMQP bridge for Apache Kafka®
+# HTTP bridge for Apache Kafka®
 
-This project provides a software component which acts as a bridge between different standard protocols and an [Apache Kafka®](https://kafka.apache.org/) cluster.
-The available protocols are:
-
-* [AMQP 1.0 (Advanced Message Queuing Protocol)](https://www.amqp.org/)
-* [HTTP 1.1 (Hypertext Transfer Protocol)](https://tools.ietf.org/html/rfc2616)
+This project provides a software component which acts as a bridge between [HTTP 1.1 (Hypertext Transfer Protocol)](https://tools.ietf.org/html/rfc2616) and an [Apache Kafka®](https://kafka.apache.org/) cluster.
 
 It provides a different way to interact with Apache Kafka because the latter natively supports only a custom (proprietary) protocol.
-Thanks to the bridge, all clients which can speak different standard protocols can connect to Apache Kafka cluster in order to send and receive messages to / from topics.
+Thanks to the bridge, all clients which can speak HTTP 1.1 protocol can connect to Apache Kafka cluster in order to send and receive messages to / from topics.
 
 ## Running the bridge
 
