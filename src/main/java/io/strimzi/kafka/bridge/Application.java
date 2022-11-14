@@ -108,14 +108,6 @@ public class Application {
 
                             // register tracing - if set, etc
                             TracingUtil.initialize(bridgeConfig);
-
-                            // when HTTP protocol is enabled, it handles healthy/ready/metrics endpoints as well,
-                            // so no need for a standalone embedded HTTP server
-                            if (!bridgeConfig.getHttpConfig().isEnabled()) {
-                                EmbeddedHttpServer embeddedHttpServer =
-                                        new EmbeddedHttpServer(vertx, healthChecker, metricsReporter, embeddedHttpServerPort);
-                                embeddedHttpServer.start();
-                            }
                         }
                     });
                 } else {
