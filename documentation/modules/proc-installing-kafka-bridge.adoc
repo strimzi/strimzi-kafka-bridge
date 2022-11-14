@@ -14,7 +14,6 @@ The following default property values configure the Kafka Bridge to listen for r
 .Default configuration properties
 [source,shell,subs=attributes+]
 ----
-http.enabled=true
 http.host=0.0.0.0
 http.port=8080
 ----

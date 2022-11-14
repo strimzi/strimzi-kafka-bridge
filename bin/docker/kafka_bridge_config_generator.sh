@@ -141,7 +141,6 @@ done
 
 HTTP_PROPERTIES=$(cat <<-EOF
 #HTTP configuration
-http.enabled=${KAFKA_BRIDGE_HTTP_ENABLED}
 http.host=${KAFKA_BRIDGE_HTTP_HOST}
 http.port=${KAFKA_BRIDGE_HTTP_PORT}
 http.cors.enabled=${KAFKA_BRIDGE_CORS_ENABLED}
@@ -150,7 +149,6 @@ http.cors.allowedMethods=${KAFKA_BRIDGE_CORS_ALLOWED_METHODS}
 EOF
 )
 
-# if http is disabled, do not print its configuration
 PROPERTIES=$(cat <<EOF
 $BRIDGE_PROPERTIES
 
@@ -161,16 +159,10 @@ $ADMIN_CLIENT_PROPERTIES
 $PRODUCER_PROPERTIES
 
 $CONSUMER_PROPERTIES
-EOF
-)
-if [[ -n "$KAFKA_BRIDGE_HTTP_ENABLED" && "$KAFKA_BRIDGE_HTTP_ENABLED" = "true" ]]; then
-	PROPERTIES=$(cat <<EOF
-$PROPERTIES
 
 $HTTP_PROPERTIES
 EOF
 )
-fi
 
 cat <<EOF
 $PROPERTIES
