@@ -100,12 +100,6 @@ public class Application {
 
                     deployHttpBridge(vertx, bridgeConfig, metricsReporter).onComplete(done -> {
                         if (done.succeeded()) {
-                            HealthChecker healthChecker = new HealthChecker();
-                            healthChecker.addHealthCheckable(done.result());
-                            // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
-                            // so it needs the checker for asking other protocols bridges status
-                            done.result().setHealthChecker(healthChecker);
-
                             // register tracing - if set, etc
                             TracingUtil.initialize(bridgeConfig);
                         }

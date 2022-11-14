@@ -7,7 +7,6 @@ package io.strimzi.kafka.bridge.http.base;
 
 import io.strimzi.test.container.StrimziKafkaContainer;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.JmxCollectorRegistry;
 import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.clients.BasicKafkaClient;
@@ -128,7 +127,6 @@ public abstract class HttpBridgeITAbstract {
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
             bridgeConfig = BridgeConfig.fromMap(config);
             httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
-            httpBridge.setHealthChecker(new HealthChecker());
 
             LOGGER.info("Deploying in-memory bridge");
             vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));

@@ -5,7 +5,6 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.clients.BasicKafkaClient;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
@@ -78,7 +77,6 @@ public class InvalidProducerIT extends HttpBridgeITAbstract {
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
             bridgeConfig = BridgeConfig.fromMap(cfg);
             httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
-            httpBridge.setHealthChecker(new HealthChecker());
 
             LOGGER.info("Deploying in-memory bridge");
             vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));

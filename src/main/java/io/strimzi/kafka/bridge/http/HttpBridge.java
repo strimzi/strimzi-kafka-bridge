@@ -11,8 +11,6 @@ import io.strimzi.kafka.bridge.AdminClientEndpoint;
 import io.strimzi.kafka.bridge.Application;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
-import io.strimzi.kafka.bridge.HealthCheckable;
-import io.strimzi.kafka.bridge.HealthChecker;
 import io.strimzi.kafka.bridge.IllegalEmbeddedFormatException;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.MetricsReporter;
@@ -61,7 +59,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.ACCESS_CONTROL_ALLOW_M
  * Main bridge class listening for connections and handling HTTP requests.
  */
 @SuppressWarnings({"checkstyle:MemberName", "checkstyle:ClassFanOutComplexity"})
-public class HttpBridge extends AbstractVerticle implements HealthCheckable {
+public class HttpBridge extends AbstractVerticle {
 
     private static final Logger log = LoggerFactory.getLogger(HttpBridge.class);
 
@@ -75,8 +73,6 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     private boolean isReady = false;
 
     private Router router;
-
-    private HealthChecker healthChecker;
 
     private Map<ConsumerInstanceId, Long> timestampMap = new HashMap<>();
 
@@ -484,12 +480,12 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     }
 
     private void healthy(RoutingContext routingContext) {
-        HttpResponseStatus httpResponseStatus = this.healthChecker.isAlive() ? HttpResponseStatus.OK : HttpResponseStatus.NOT_FOUND;
+        HttpResponseStatus httpResponseStatus = this.isAlive() ? HttpResponseStatus.OK : HttpResponseStatus.NOT_FOUND;
         HttpUtils.sendResponse(routingContext, httpResponseStatus.code(), null, null);
     }
 
     private void ready(RoutingContext routingContext) {
-        HttpResponseStatus httpResponseStatus = this.healthChecker.isReady() ? HttpResponseStatus.OK : HttpResponseStatus.NOT_FOUND;
+        HttpResponseStatus httpResponseStatus = this.isReady() ? HttpResponseStatus.OK : HttpResponseStatus.NOT_FOUND;
         HttpUtils.sendResponse(routingContext, httpResponseStatus.code(), null, null);
     }
 
@@ -618,18 +614,12 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
         throw new IllegalArgumentException(contentType);
     }
 
-    @Override
-    public boolean isAlive() {
+    private boolean isAlive() {
         return this.isReady;
     }
 
-    @Override
-    public boolean isReady() {
+    private boolean isReady() {
         return this.isReady;
-    }
-
-    public void setHealthChecker(HealthChecker healthChecker) {
-        this.healthChecker = healthChecker;
     }
 
     HttpOpenApiOperation SEND = new HttpOpenApiOperation(HttpOpenApiOperations.SEND) {
