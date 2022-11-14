@@ -34,7 +34,7 @@ You can find tests inside `src.test.java` package. Moreover we have the auxiliar
 - `Clients` clients for testing overall communication of the `Kafka Bridge`
 - `Facades` encapsulation of the standalone `Kafka` and `AdminClient` instance
 
-The test suite has provides a `Http`package, where you can find all test cases related to the `Http Kafka Bridge`.
+The test suite has provides a `Http` package, where you can find all test cases related to the `Http Kafka Bridge`.
 
 ## Approaches
 
@@ -73,7 +73,7 @@ to add the second option. Rest of these approaches are not so essential.
 ## Test Phases
 
 In general, we use classic test phases: `setup`, `exercise`, `verify` and `teardown`. Every phase will be described for the
-`src.test.java.io.strimzi.kafka.bridge.http` package.
+`io.strimzi.kafka.bridge.http` package as part of the tests.
 
 ### Setup
 
