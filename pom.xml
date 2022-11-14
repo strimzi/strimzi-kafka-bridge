@@ -6,7 +6,7 @@
 	<version>0.23.0-SNAPSHOT</version>
 
 	<name>Strimzi Kafka Bridge</name>
-	<description>Bridge that allows HTTP- or AMQP-based clients to interact with Apache Kafka clusters.</description>
+	<description>Bridge that allows HTTP clients to interact with Apache Kafka clusters.</description>
 	<url>https://strimzi.io/</url>
 
 	<scm>
@@ -86,7 +86,6 @@
 		<vertx.version>4.3.3</vertx.version>
 		<netty.version>4.1.78.Final</netty.version>
 		<kafka.version>3.2.3</kafka.version>
-		<qpid-proton.version>0.33.10</qpid-proton.version>
 		<kafka-kubernetes-config-provider.version>1.0.1</kafka-kubernetes-config-provider.version>
 		<kafka-env-var-config-provider.version>1.0.0</kafka-env-var-config-provider.version>
 		<maven.checkstyle.version>3.1.2</maven.checkstyle.version>
@@ -127,11 +126,6 @@
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-core</artifactId>
-			<version>${vertx.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-proton</artifactId>
 			<version>${vertx.version}</version>
 		</dependency>
 		<dependency>
@@ -178,11 +172,6 @@
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-clients</artifactId>
 			<version>${kafka.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.qpid</groupId>
-			<artifactId>proton-j</artifactId>
-			<version>${qpid-proton.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.netty</groupId>
@@ -406,12 +395,6 @@
 			<artifactId>vertx-opentracing</artifactId>
 			<version>${vertx.version}</version>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-		  <groupId>org.mockito</groupId>
-		  <artifactId>mockito-core</artifactId>
-		  <version>2.28.2</version>
-		  <scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.hamcrest</groupId>
@@ -688,13 +671,6 @@
 			<properties>
 				<skipTests>false</skipTests>
 				<groups>httpbridge</groups>
-			</properties>
-		</profile>
-		<profile>
-			<id>amqptbridge</id>
-			<properties>
-				<skipTests>false</skipTests>
-				<groups>amqptbridge</groups>
 			</properties>
 		</profile>
 		<profile>

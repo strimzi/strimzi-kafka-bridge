@@ -6,14 +6,12 @@
 package io.strimzi.kafka.bridge;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.strimzi.kafka.bridge.amqp.AmqpBridge;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.HttpBridge;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -39,10 +37,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -102,28 +98,13 @@ public class Application {
 
                     int embeddedHttpServerPort = Integer.parseInt(config.getOrDefault(EMBEDDED_HTTP_SERVER_PORT, DEFAULT_EMBEDDED_HTTP_SERVER_PORT).toString());
 
-                    if (bridgeConfig.getAmqpConfig().isEnabled() && bridgeConfig.getAmqpConfig().getPort() == embeddedHttpServerPort) {
-                        log.error("Embedded HTTP server port {} conflicts with configured AMQP port", embeddedHttpServerPort);
-                        System.exit(1);
-                    }
-
-                    List<Future> futures = new ArrayList<>();
-                    futures.add(deployAmqpBridge(vertx, bridgeConfig, metricsReporter));
-                    futures.add(deployHttpBridge(vertx, bridgeConfig, metricsReporter));
-
-                    CompositeFuture.join(futures).onComplete(done -> {
+                    deployHttpBridge(vertx, bridgeConfig, metricsReporter).onComplete(done -> {
                         if (done.succeeded()) {
                             HealthChecker healthChecker = new HealthChecker();
-                            for (int i = 0; i < futures.size(); i++) {
-                                if (done.result().succeeded(i) && done.result().resultAt(i) != null) {
-                                    healthChecker.addHealthCheckable(done.result().resultAt(i));
-                                    // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
-                                    // so it needs the checker for asking other protocols bridges status
-                                    if (done.result().resultAt(i) instanceof HttpBridge) {
-                                        ((HttpBridge) done.result().resultAt(i)).setHealthChecker(healthChecker);
-                                    }
-                                }
-                            }
+                            healthChecker.addHealthCheckable(done.result());
+                            // when HTTP protocol is enabled, it handles healthy/ready endpoints as well,
+                            // so it needs the checker for asking other protocols bridges status
+                            done.result().setHealthChecker(healthChecker);
 
                             // register tracing - if set, etc
                             TracingUtil.initialize(bridgeConfig);
@@ -165,36 +146,6 @@ public class Application {
                 .setDisabledMetricsCategories(set)
                 .setJvmMetricsEnabled(true)
                 .setEnabled(true);
-    }
-
-    /**
-     * Deploys the AMQP bridge into a new verticle
-     *
-     * @param vertx                 Vertx instance
-     * @param bridgeConfig          Bridge configuration
-     * @param metricsReporter       MetricsReporter instance for scraping metrics from different registries
-     * @return                      Future for the bridge startup
-     */
-    private static Future<AmqpBridge> deployAmqpBridge(Vertx vertx, BridgeConfig bridgeConfig, MetricsReporter metricsReporter)  {
-        Promise<AmqpBridge> amqpPromise = Promise.promise();
-
-        if (bridgeConfig.getAmqpConfig().isEnabled()) {
-            AmqpBridge amqpBridge = new AmqpBridge(bridgeConfig, metricsReporter);
-
-            vertx.deployVerticle(amqpBridge, done -> {
-                if (done.succeeded()) {
-                    log.info("AMQP verticle instance deployed [{}]", done.result());
-                    amqpPromise.complete(amqpBridge);
-                } else {
-                    log.error("Failed to deploy AMQP verticle instance", done.cause());
-                    amqpPromise.fail(done.cause());
-                }
-            });
-        } else {
-            amqpPromise.complete();
-        }
-
-        return amqpPromise.future();
     }
 
     /**

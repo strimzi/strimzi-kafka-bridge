@@ -8,7 +8,6 @@ package io.strimzi.kafka.bridge.config;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import io.strimzi.kafka.bridge.amqp.AmqpConfig;
 import io.strimzi.kafka.bridge.http.HttpConfig;
 
 /**
@@ -22,7 +21,6 @@ public class BridgeConfig extends AbstractConfig {
     public static final String TRACING_TYPE = BRIDGE_CONFIG_PREFIX + "tracing";
 
     private KafkaConfig kafkaConfig;
-    private AmqpConfig amqpConfig;
     private HttpConfig httpConfig;
 
     /**
@@ -30,13 +28,11 @@ public class BridgeConfig extends AbstractConfig {
      *
      * @param config bridge common configuration parameters map
      * @param kafkaConfig Kafka related configuration
-     * @param amqpConfig AMQP endpoint related configuration
      * @param httpConfig HTTP endpoint related configuration
      */
-    private BridgeConfig(Map<String, Object> config, KafkaConfig kafkaConfig, AmqpConfig amqpConfig, HttpConfig httpConfig) {
+    private BridgeConfig(Map<String, Object> config, KafkaConfig kafkaConfig, HttpConfig httpConfig) {
         super(config);
         this.kafkaConfig = kafkaConfig;
-        this.amqpConfig = amqpConfig;
         this.httpConfig = httpConfig;
     }
 
@@ -45,13 +41,6 @@ public class BridgeConfig extends AbstractConfig {
      */
     public KafkaConfig getKafkaConfig() {
         return this.kafkaConfig;
-    }
-
-    /**
-     * @return the AMQP endpoint related configuration
-     */
-    public AmqpConfig getAmqpConfig() {
-        return this.amqpConfig;
     }
 
     /**
@@ -69,13 +58,12 @@ public class BridgeConfig extends AbstractConfig {
      */
     public static BridgeConfig fromMap(Map<String, Object> map) {
         KafkaConfig kafkaConfig = KafkaConfig.fromMap(map);
-        AmqpConfig amqpConfig = AmqpConfig.fromMap(map);
         HttpConfig httpConfig = HttpConfig.fromMap(map);
 
         return new BridgeConfig(map.entrySet().stream()
                 .filter(e -> e.getKey().startsWith(BridgeConfig.BRIDGE_CONFIG_PREFIX))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
-                kafkaConfig, amqpConfig, httpConfig);
+                kafkaConfig, httpConfig);
     }
 
     @Override
@@ -83,7 +71,6 @@ public class BridgeConfig extends AbstractConfig {
         return "BridgeConfig(" +
                 "config=" + this.config +
                 ",kafkaConfig=" + this.kafkaConfig +
-                ",amqpConfig=" + this.amqpConfig +
                 ",httpConfig=" + this.httpConfig +
                 ")";
     }
