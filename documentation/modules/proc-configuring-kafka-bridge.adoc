@@ -46,7 +46,6 @@ For example:
 [source,properties]
 ----
 bridge.id=my-bridge
-http.enabled=true
 http.host=0.0.0.0
 http.port=8080 <1>
 http.cors.enabled=true <2>

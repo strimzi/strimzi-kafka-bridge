@@ -51,10 +51,7 @@ public class Application {
 
     private static final Logger log = LoggerFactory.getLogger(Application.class);
 
-    private static final String EMBEDDED_HTTP_SERVER_PORT = "EMBEDDED_HTTP_SERVER_PORT";
     private static final String KAFKA_BRIDGE_METRICS_ENABLED = "KAFKA_BRIDGE_METRICS_ENABLED";
-
-    private static final int DEFAULT_EMBEDDED_HTTP_SERVER_PORT = 8080;
 
     @SuppressWarnings({"checkstyle:NPathComplexity"})
     public static void main(String[] args) {
@@ -95,8 +92,6 @@ public class Application {
                 if (ar.succeeded()) {
                     Map<String, Object> config = ar.result().getMap();
                     BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
-
-                    int embeddedHttpServerPort = Integer.parseInt(config.getOrDefault(EMBEDDED_HTTP_SERVER_PORT, DEFAULT_EMBEDDED_HTTP_SERVER_PORT).toString());
 
                     deployHttpBridge(vertx, bridgeConfig, metricsReporter).onComplete(done -> {
                         if (done.succeeded()) {
@@ -145,21 +140,16 @@ public class Application {
     private static Future<HttpBridge> deployHttpBridge(Vertx vertx, BridgeConfig bridgeConfig, MetricsReporter metricsReporter)  {
         Promise<HttpBridge> httpPromise = Promise.promise();
 
-        if (bridgeConfig.getHttpConfig().isEnabled()) {
-            HttpBridge httpBridge = new HttpBridge(bridgeConfig, metricsReporter);
-
-            vertx.deployVerticle(httpBridge, done -> {
-                if (done.succeeded()) {
-                    log.info("HTTP verticle instance deployed [{}]", done.result());
-                    httpPromise.complete(httpBridge);
-                } else {
-                    log.error("Failed to deploy HTTP verticle instance", done.cause());
-                    httpPromise.fail(done.cause());
-                }
-            });
-        } else {
-            httpPromise.complete();
-        }
+        HttpBridge httpBridge = new HttpBridge(bridgeConfig, metricsReporter);
+        vertx.deployVerticle(httpBridge, done -> {
+            if (done.succeeded()) {
+                log.info("HTTP verticle instance deployed [{}]", done.result());
+                httpPromise.complete(httpBridge);
+            } else {
+                log.error("Failed to deploy HTTP verticle instance", done.cause());
+                httpPromise.fail(done.cause());
+            }
+        });
 
         return httpPromise.future();
     }
