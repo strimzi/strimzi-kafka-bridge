@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.tracing;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.producer.KafkaHeader;
@@ -21,6 +22,7 @@ import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY;
 /**
  * Tracing util to hold app's Tracing instance.
  */
+@SuppressFBWarnings({"MS_EXPOSE_REP"})
 public class TracingUtil {
     private static final Logger log = LoggerFactory.getLogger(TracingUtil.class);
     private static TracingHandle tracing = new NoopTracingHandle();

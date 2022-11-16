@@ -13,8 +13,8 @@ if [ ${JAVA_MAJOR_VERSION} -eq 11 ] && [ ${TRAVIS_CPU_ARCH} = "amd64" ] ; then
 fi
 
 if [ "${MAIN_BUILD}" = "TRUE" ] ; then
-    echo "Run Findbugs ..."
-    make findbugs
+    echo "Run Spotbugs ..."
+    make spotbugs
 fi
 
 echo "Run docu check ..."
