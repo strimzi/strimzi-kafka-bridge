@@ -35,10 +35,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Implementation of the admin client endpoint based on HTTP
+ */
 public class HttpAdminClientEndpoint extends AdminClientEndpoint {
 
     private HttpBridgeContext httpBridgeContext;
 
+    /**
+     *
+     * @param vertx the Vert.x instance
+     * @param bridgeConfig the bridge configuration
+     * @param context the HTTP bridge context
+     */
     public HttpAdminClientEndpoint(Vertx vertx, BridgeConfig bridgeConfig, HttpBridgeContext context) {
         super(vertx, bridgeConfig);
         this.httpBridgeContext = context;
@@ -84,6 +93,11 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
         }
     }
 
+    /**
+     * List all the topics
+     *
+     * @param routingContext the routing context
+     */
     public void doListTopics(RoutingContext routingContext) {
         listTopics(listTopicsResult -> {
             if (listTopicsResult.succeeded()) {
@@ -104,6 +118,11 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
         });
     }
 
+    /**
+     * Get information about the topic in the HTTP request
+     *
+     * @param routingContext the routing context
+     */
     public void doGetTopic(RoutingContext routingContext) {
         String topicName = routingContext.pathParam("topicname");
 
@@ -174,6 +193,11 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
         });
     }
 
+    /**
+     * Get partitions information related to the topic in the HTTP request
+     *
+     * @param routingContext the routing context
+     */
     public void doListPartitions(RoutingContext routingContext) {
         String topicName = routingContext.pathParam("topicname");
         describeTopics(Collections.singletonList(topicName), describeTopicsResult -> {
@@ -205,6 +229,11 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
         });
     }
 
+    /**
+     * Get information about a specific topic partition in the HTTP request
+     *
+     * @param routingContext the routing context
+     */
     public void doGetPartition(RoutingContext routingContext) {
         String topicName = routingContext.pathParam("topicname");
         final int partitionId;
@@ -251,6 +280,11 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
         });
     }
 
+    /**
+     * Get offsets information about a specific topic partition in the HTTP request
+     *
+     * @param routingContext the routing context
+     */
     public void doGetOffsets(RoutingContext routingContext) {
         String topicName = routingContext.pathParam("topicname");
         final int partitionId;

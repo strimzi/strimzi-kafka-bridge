@@ -144,6 +144,9 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.handleClose();
     }
 
+    /**
+     * @return the consumer instance id
+     */
     public ConsumerInstanceId consumerInstanceId() {
         return this.consumerInstanceId;
     }

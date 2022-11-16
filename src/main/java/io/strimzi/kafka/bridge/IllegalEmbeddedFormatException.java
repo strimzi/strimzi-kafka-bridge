@@ -12,6 +12,11 @@ public class IllegalEmbeddedFormatException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * Constructor
+     *
+     * @param message message to set in the exception
+     */
     public IllegalEmbeddedFormatException(String message) {
         super(message);
     }

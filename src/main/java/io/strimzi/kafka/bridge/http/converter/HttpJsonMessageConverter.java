@@ -20,6 +20,9 @@ import javax.xml.bind.DatatypeConverter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Implementation of a message converter to deal with the "json" embedded data format
+ */
 public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[], Buffer, Buffer> {
 
     @Override

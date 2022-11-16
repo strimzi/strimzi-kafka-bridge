@@ -75,6 +75,9 @@ public class HttpBridgeContext<K, V> {
         return this.openApiOperation;
     }
 
+    /**
+     * Close all the sink endpoints
+     */
     public void closeAllSinkBridgeEndpoints() {
         for (Map.Entry<ConsumerInstanceId, SinkBridgeEndpoint<K, V>> sink: getHttpSinkEndpoints().entrySet()) {
             if (sink.getValue() != null)
@@ -83,6 +86,9 @@ public class HttpBridgeContext<K, V> {
         getHttpSinkEndpoints().clear();
     }
 
+    /**
+     * Close all the source endpoints
+     */
     public void closeAllSourceBridgeEndpoints() {
         for (Map.Entry<HttpConnection, SourceBridgeEndpoint<K, V>> source: getHttpSourceEndpoints().entrySet()) {
             if (source.getValue() != null)
@@ -91,6 +97,9 @@ public class HttpBridgeContext<K, V> {
         getHttpSourceEndpoints().clear();
     }
 
+    /**
+     * Close the admin client endpoint
+     */
     public void closeAdminClientEndpoint() {
         if (this.adminClientEndpoint != null)
             this.adminClientEndpoint.close();

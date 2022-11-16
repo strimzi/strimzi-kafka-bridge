@@ -10,6 +10,8 @@ package io.strimzi.kafka.bridge;
  */
 public enum QoSEndpoint {
 
+    /** at most once delivery */
     AT_MOST_ONCE,
+    /** at least once delivery */
     AT_LEAST_ONCE
 }

@@ -5,10 +5,23 @@
 
 package io.strimzi.kafka.bridge;
 
+/**
+ * Define the data format inside the HTTP messages
+ */
 public enum EmbeddedFormat {
+
+    /** Define "binary" data as embedded format */
     BINARY,
+
+    /** Define "json" data as embedded format */
     JSON;
 
+    /**
+     * Convert the String value in the corresponding enum
+     *
+     * @param value value to be converted
+     * @return corresponding enum
+     */
     public static EmbeddedFormat from(String value) {
         switch (value) {
             case "json":

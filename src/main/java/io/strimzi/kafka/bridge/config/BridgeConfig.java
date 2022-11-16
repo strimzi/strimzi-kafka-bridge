@@ -15,9 +15,13 @@ import io.strimzi.kafka.bridge.http.HttpConfig;
  */
 public class BridgeConfig extends AbstractConfig {
 
+    /** Prefix for all the specific bridge configuration parameters */
     public static final String BRIDGE_CONFIG_PREFIX = "bridge.";
 
+    /** Bridge identification number */
     public static final String BRIDGE_ID = BRIDGE_CONFIG_PREFIX + "id";
+
+    /** Tracing system to be used in the bridge */
     public static final String TRACING_TYPE = BRIDGE_CONFIG_PREFIX + "tracing";
 
     private KafkaConfig kafkaConfig;
@@ -75,6 +79,9 @@ public class BridgeConfig extends AbstractConfig {
                 ")";
     }
 
+    /**
+     * @return the bridge identification number
+     */
     public String getBridgeID() {
         if (config.get(BridgeConfig.BRIDGE_ID) == null) {
             return null;
@@ -83,6 +90,9 @@ public class BridgeConfig extends AbstractConfig {
         }
     }
 
+    /**
+     * @return the tracing system to be used in the bridge
+     */
     public String getTracing() {
         if (config.get(BridgeConfig.TRACING_TYPE) == null) {
             return null;

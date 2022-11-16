@@ -8,10 +8,18 @@ package io.strimzi.kafka.bridge.http;
 import io.strimzi.kafka.bridge.Endpoint;
 import io.vertx.ext.web.RoutingContext;
 
+/**
+ * HTTP implementation for an endpoint
+ */
 public class HttpEndpoint implements Endpoint<RoutingContext> {
 
     private RoutingContext routingContext;
 
+    /**
+     * Constructor
+     *
+     * @param routingContext the routing context
+     */
     public HttpEndpoint(RoutingContext routingContext) {
         this.routingContext = routingContext;
     }

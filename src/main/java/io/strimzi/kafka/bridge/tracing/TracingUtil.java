@@ -27,10 +27,18 @@ public class TracingUtil {
     private static final Logger log = LoggerFactory.getLogger(TracingUtil.class);
     private static TracingHandle tracing = new NoopTracingHandle();
 
+    /**
+     * @return the current tracing instance
+     */
     public static TracingHandle getTracing() {
         return tracing;
     }
 
+    /**
+     * Initialize the proper tracing system based on the bridge configuration
+     *
+     * @param config bridge configuration
+     */
     public static void initialize(BridgeConfig config) {
         String tracingConfig = config.getTracing();
         if (tracingConfig != null && (tracingConfig.equals(JAEGER) || tracingConfig.equals(OPENTELEMETRY))) {

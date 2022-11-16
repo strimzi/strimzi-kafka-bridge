@@ -20,12 +20,22 @@ public abstract class HttpOpenApiOperation implements Handler<RoutingContext> {
 
     protected Logger log;
     protected final HttpOpenApiOperations operationId;
-    
+
+    /**
+     * Constructor
+     *
+     * @param operationId operation ID
+     */
     public HttpOpenApiOperation(HttpOpenApiOperations operationId) {
         this.operationId = operationId;
         this.log = LoggerFactory.getLogger(LOGGER_NAME_PREFIX + operationId.toString());
     }
 
+    /**
+     * Process to run for a specific OpenAPI operation
+     *
+     * @param routingContext the routing context
+     */
     public abstract void process(RoutingContext routingContext);
 
     @Override

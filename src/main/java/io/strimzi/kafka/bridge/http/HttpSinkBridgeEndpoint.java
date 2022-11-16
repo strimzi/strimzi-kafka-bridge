@@ -49,6 +49,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of an HTTP based sink endpoint
+ *
+ * @param <K> type of Kafka message key
+ * @param <V> type of Kafka message payload
+ */
 @SuppressWarnings({"checkstyle:ClassFanOutComplexity"})
 public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
@@ -78,6 +84,13 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         this.handle(endpoint, null);
     }
 
+    /**
+     * Create a Kafka consumer
+     *
+     * @param routingContext the routing context
+     * @param bodyAsJson HTTP request body bringing consumer settings
+     * @param handler handler for the request
+     */
     public void doCreateConsumer(RoutingContext routingContext, JsonObject bodyAsJson, Handler<SinkBridgeEndpoint<K, V>> handler) {
         // get the consumer group-id
         this.groupId = routingContext.pathParam("groupid");
@@ -402,6 +415,11 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         }
     }
 
+    /**
+     * Run list subscriptions operation for the Kafka consumer
+     *
+     * @param routingContext the routing context
+     */
     public void doListSubscriptions(RoutingContext routingContext) {
         this.listSubscriptions(listSubscriptionsResult -> {
 
@@ -440,6 +458,11 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         });
     }
 
+    /**
+     * Run the topic unsubscribe operation for the Kafka consumer
+     *
+     * @param routingContext the routing context
+     */
     public void doUnsubscribe(RoutingContext routingContext) {
         this.setUnsubscribeHandler(unsubscribeResult -> {
             if (unsubscribeResult.succeeded()) {
