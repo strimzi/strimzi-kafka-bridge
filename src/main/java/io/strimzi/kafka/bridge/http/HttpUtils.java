@@ -12,10 +12,21 @@ import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Provides some utility methods for HTTP request/response
+ */
 public class HttpUtils {
 
     private static final Logger log = LoggerFactory.getLogger(HttpUtils.class);
 
+    /**
+     * Send an HTTP response
+     *
+     * @param routingContext the routing context used to send the HTTP response
+     * @param statusCode the HTTP status code
+     * @param contentType the content-type to set in the HTTP response
+     * @param body the body to set in the HTTP response
+     */
     public static void sendResponse(RoutingContext routingContext, int statusCode, String contentType, Buffer body) {
         if (!routingContext.response().closed() && !routingContext.response().ended()) {
             routingContext.response().setStatusCode(statusCode);
@@ -31,6 +42,14 @@ public class HttpUtils {
         }
     }
 
+    /**
+     * Send a file over an HTTP response
+     *
+     * @param routingContext the routing context used to send the HTTP response
+     * @param statusCode the HTTP status code
+     * @param contentType the content-type to set in the HTTP response
+     * @param filename path to the file to send
+     */
     public static void sendFile(RoutingContext routingContext, int statusCode, String contentType, String filename) {
         if (!routingContext.response().closed() && !routingContext.response().ended()) {
             routingContext.response().setStatusCode(statusCode);

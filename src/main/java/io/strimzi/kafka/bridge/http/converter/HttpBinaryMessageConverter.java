@@ -19,6 +19,9 @@ import javax.xml.bind.DatatypeConverter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Implementation of a message converter to deal with the "binary" embedded data format
+ */
 public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte[], Buffer, Buffer> {
 
 

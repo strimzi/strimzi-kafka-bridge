@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
  */
 public class KafkaConsumerConfig extends AbstractConfig {
 
+    /** Prefix for consumer related configuration parameters */
     public static final String KAFKA_CONSUMER_CONFIG_PREFIX = KafkaConfig.KAFKA_CONFIG_PREFIX + "consumer.";
 
     /**

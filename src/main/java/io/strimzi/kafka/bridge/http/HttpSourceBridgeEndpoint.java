@@ -37,12 +37,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Implementation of an HTTP based source endpoint
+ *
+ * @param <K> type of Kafka message key
+ * @param <V> type of Kafka message payload
+ */
 public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
     private boolean closing;
 
-    public HttpSourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
+    HttpSourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
                                     EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
         super(vertx, bridgeConfig, format, keySerializer, valueSerializer);
     }
@@ -55,6 +61,9 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         super.open();
     }
 
+    /**
+     * Close the source endpoint
+     */
     public void maybeClose() {
         if (this.closing) {
             this.close();

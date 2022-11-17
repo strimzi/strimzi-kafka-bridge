@@ -15,17 +15,34 @@ import java.util.stream.Collectors;
  */
 public class HttpConfig extends AbstractConfig {
 
+    /** Prefix for the HTTP protocol related configuration */
     public static final String HTTP_CONFIG_PREFIX = "http.";
 
+    /** Enable CORS on HTTP */
     public static final String HTTP_CORS_ENABLED = HTTP_CONFIG_PREFIX + "cors.enabled";
+
+    /** Allowed origins with CORS */
     public static final String HTTP_CORS_ALLOWED_ORIGINS = HTTP_CONFIG_PREFIX + "cors.allowedOrigins";
+
+    /** Allowed methods with CORS */
     public static final String HTTP_CORS_ALLOWED_METHODS = HTTP_CONFIG_PREFIX + "cors.allowedMethods";
+
+    /** HTTP bridge host address */
     public static final String HTTP_HOST = HTTP_CONFIG_PREFIX + "host";
+
+    /** HTTP bridge port */
     public static final String HTTP_PORT = HTTP_CONFIG_PREFIX + "port";
+
+    /** HTTP consumer timeouts */
     public static final String HTTP_CONSUMER_TIMEOUT = HTTP_CONFIG_PREFIX + "timeoutSeconds";
 
+    /** Default HTTP host address if not specified */
     public static final String DEFAULT_HOST = "0.0.0.0";
+
+    /** Default HTTP port if not specified */
     public static final int DEFAULT_PORT = 8080;
+
+    /** Default HTTP consumer timeout if not specified (no timeout) */
     public static final long DEFAULT_CONSUMER_TIMEOUT = -1L;
 
     /**

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
  */
 public class KafkaProducerConfig extends AbstractConfig {
 
+    /** Prefix for producer related configuration parameters */
     public static final String KAFKA_PRODUCER_CONFIG_PREFIX = KafkaConfig.KAFKA_CONFIG_PREFIX + "producer.";
 
     /**

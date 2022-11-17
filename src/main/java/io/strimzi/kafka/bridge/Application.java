@@ -53,6 +53,11 @@ public class Application {
 
     private static final String KAFKA_BRIDGE_METRICS_ENABLED = "KAFKA_BRIDGE_METRICS_ENABLED";
 
+    /**
+     * Bridge entrypoint
+     *
+     * @param args command line arguments
+     */
     @SuppressWarnings({"checkstyle:NPathComplexity"})
     public static void main(String[] args) {
         log.info("Strimzi Kafka Bridge {} is starting", Application.class.getPackage().getImplementationVersion());

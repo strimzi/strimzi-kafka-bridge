@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
  */
 public class KafkaAdminConfig extends AbstractConfig {
 
+    /** Prefix for administration related configuration parameters */
     public static final String KAFKA_ADMIN_CONFIG_PREFIX = KafkaConfig.KAFKA_CONFIG_PREFIX + "admin.";
 
     /**

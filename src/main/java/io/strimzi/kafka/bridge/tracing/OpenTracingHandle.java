@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.tracing;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.jaegertracing.Configuration;
 import io.opentracing.References;
 import io.opentracing.Span;
@@ -68,6 +69,7 @@ class OpenTracingHandle implements TracingHandle {
         return buildSpan(spanBuilder, routingContext);
     }
 
+    @SuppressFBWarnings({"BC_UNCONFIRMED_CAST"})
     @Override
     public <K, V> void handleRecordSpan(SpanHandle<K, V> parentSpanHandle, KafkaConsumerRecord<K, V> record) {
         Tracer tracer = GlobalTracer.get();

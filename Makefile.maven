@@ -26,6 +26,6 @@ java_clean:
 	echo "Cleaning Maven build ..."
 	mvn clean
 
-.PHONY: findbugs
-findbugs: java_compile
-	mvn $(MVN_ARGS) org.codehaus.mojo:findbugs-maven-plugin:check
+.PHONY: spotbugs
+spotbugs: java_compile
+	mvn $(MVN_ARGS) spotbugs:check

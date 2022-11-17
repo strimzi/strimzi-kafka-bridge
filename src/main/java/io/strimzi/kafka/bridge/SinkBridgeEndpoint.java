@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
  * @param <V>   type of Kafka message payload
  */
 // TODO: to remove when offsetTracker and QoS handling (used by AMQP 1.0 support) will be removed as well
-@SuppressFBWarnings({"UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD"})
+@SuppressFBWarnings({"NP_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD", "UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD"})
 public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
@@ -144,6 +144,9 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.handleClose();
     }
 
+    /**
+     * @return the consumer instance id
+     */
     public ConsumerInstanceId consumerInstanceId() {
         return this.consumerInstanceId;
     }
