@@ -567,6 +567,8 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         }
     }
 
+    // TODO: to remove when figuring out if handleCommit is really not needed anymore
+    @SuppressFBWarnings({"UPM_UNCALLED_PRIVATE_METHOD"})
     private void handleCommit(AsyncResult<Void> commitResult) {
         if (this.commitHandler != null) {
             this.commitHandler.handle(commitResult);
