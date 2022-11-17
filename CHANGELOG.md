@@ -5,6 +5,11 @@
 * Moved from using the Jaeger exporter to OTLP exporter by default
 * Moved to Java 11 at language level, dropped Java 8 and use Java 17 as the runtime for all containers
 
+### Changes, deprecations and removals
+
+* Since this version there is no support for AMQP 1.0 protocol anymore. 
+  This was discussed and approved with the proposal [#42](https://github.com/strimzi/proposals/blob/main/042-remove-bridge-amqp-support.md)
+
 ## 0.22.3
 
 * Strimzi OAuth updated to 0.11.0 bringing support for password grants and OAuth metrics
