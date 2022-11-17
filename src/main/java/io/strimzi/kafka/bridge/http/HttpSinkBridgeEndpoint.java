@@ -140,7 +140,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 isolationLevel != null ? String.valueOf(isolationLevel) : null, config);
 
         // create the consumer
-        this.initConsumer(false, config);
+        this.initConsumer(config);
 
         handler.handle(this);
 
@@ -368,7 +368,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             }
         });
 
-        this.assign(false);
+        this.assign();
     }
 
     private void doSubscribe(RoutingContext routingContext, JsonObject bodyAsJson) {
@@ -408,10 +408,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                         .map(topic -> new SinkTopicSubscription(topic))
                         .collect(Collectors.toList())
             );
-            this.subscribe(false);
+            this.subscribe();
         } else if (bodyAsJson.containsKey("topic_pattern")) {
             Pattern pattern = Pattern.compile(bodyAsJson.getString("topic_pattern"));
-            this.subscribe(pattern, false);
+            this.subscribe(pattern);
         }
     }
 

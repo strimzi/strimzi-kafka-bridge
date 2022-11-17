@@ -18,7 +18,6 @@ import io.vertx.core.Vertx;
 import io.vertx.kafka.client.common.PartitionInfo;
 import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
-import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -74,16 +73,10 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected boolean subscribed;
     protected boolean assigned;
 
-
-    private int recordIndex;
-    private int batchSize;
-
     protected QoSEndpoint qos;
 
     protected long pollTimeOut = 100;
     protected long maxBytes = Long.MAX_VALUE;
-
-    private boolean shouldAttachSubscriberHandler;
 
     // handlers called when partitions are revoked/assigned on rebalancing
     private Handler<Set<TopicPartition>> partitionsRevokedHandler;
@@ -98,8 +91,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     private Handler<AsyncResult<Void>> assignHandler;
     // handler called after a seek request on a topic partition
     private Handler<AsyncResult<Void>> seekHandler;
-    // handler called when a Kafka record is received
-    private Handler<KafkaConsumerRecord<K, V>> receivedHandler;
     // handler called after a commit request
     private Handler<AsyncResult<Void>> commitHandler;
 
@@ -164,7 +155,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     /**
      * Kafka consumer initialization. It should be the first call for preparing the Kafka consumer.
      */
-    protected void initConsumer(boolean shouldAttachBatchHandler, Properties config) {
+    protected void initConsumer(Properties config) {
 
         // create a consumer
         KafkaConfig kafkaConfig = this.bridgeConfig.getKafkaConfig();
@@ -177,26 +168,20 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
             props.putAll(config);
 
         this.consumer = KafkaConsumer.create(this.vertx, props, keyDeserializer, valueDeserializer);
-
-        if (shouldAttachBatchHandler)
-            this.consumer.batchHandler(this::handleKafkaBatch);
     }
 
     /**
      * Subscribe to the topics specified in the related {@link #topicSubscriptions} list
      *
-     * It should be the next call after the {@link #initConsumer(boolean shoudlAttachHandler, Properties config)} after getting
+     * It should be the next call after the {@link #initConsumer(Properties config)} after getting
      * the topics information in order to subscribe to them.
      *
-     * @param shouldAttachHandler if the handler for getting messages should be set up
      */
-    protected void subscribe(boolean shouldAttachHandler) {
+    protected void subscribe() {
 
         if (this.topicSubscriptions.isEmpty()) {
             throw new IllegalArgumentException("At least one topic to subscribe has to be specified!");
         }
-
-        this.shouldAttachSubscriberHandler = shouldAttachHandler;
 
         log.info("Subscribe to topics {}", this.topicSubscriptions);
         this.subscribed = true;
@@ -230,12 +215,10 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
      * Subscribe to topics via the provided pattern represented by a Java regex
      *
      * @param pattern Java regex for topics subscription
-     * @param shouldAttachHandler if the handler for getting messages should be set up
      */
-    protected void subscribe(Pattern pattern, boolean shouldAttachHandler) {
+    protected void subscribe(Pattern pattern) {
 
         topicSubscriptionsPattern = pattern;
-        this.shouldAttachSubscriberHandler = shouldAttachHandler;
 
         log.info("Subscribe to topics with pattern {}", pattern);
         this.setPartitionsAssignmentHandlers();
@@ -255,9 +238,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         if (subscribeResult.failed()) {
             return;
         }
-
-        if (shouldAttachSubscriberHandler)
-            this.consumer.handler(this::handleKafkaRecord);
     }
 
     /**
@@ -276,16 +256,12 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     /**
      * Request for assignment of topics partitions specified in the related {@link #topicSubscriptions} list
-     *
-     * @param shouldAttachHandler if the handler for getting messages should be set up
      */
-    protected void assign(boolean shouldAttachHandler) {
+    protected void assign() {
 
         if (this.topicSubscriptions.isEmpty()) {
             throw new IllegalArgumentException("At least one topic to subscribe has to be specified!");
         }
-
-        this.shouldAttachSubscriberHandler = shouldAttachHandler;
 
         log.info("Assigning to topics partitions {}", this.topicSubscriptions);
         this.assigned = true;
@@ -438,71 +414,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
      * When partitions are assigned, start handling records from the Kafka consumer
      */
     private void partitionsAssigned(Set<TopicPartition> partitions) {
-
         this.handlePartitionsAssigned(partitions);
-
-        if (shouldAttachSubscriberHandler)
-            this.consumer.handler(this::handleKafkaRecord);
-    }
-
-    /**
-     * Callback to process a kafka record
-     *
-     * @param record The record
-     */
-    private void handleKafkaRecord(KafkaConsumerRecord<K, V> record) {
-        log.debug("Processing key {} value {} partition {} offset {}",
-                record.key(), record.value(), record.partition(), record.offset());
-
-        switch (this.qos) {
-
-            case AT_MOST_ONCE:
-                // Sender QoS settled (AT_MOST_ONCE) : commit immediately and start message sending
-                if (startOfBatch()) {
-                    log.debug("Start of batch in {} mode => commit()", this.qos);
-                    // when start of batch we need to commit, but need to prevent processing any
-                    // more messages while we do, so...
-                    // 1. pause()
-                    this.consumer.pause();
-                    // 2. do the commit()
-                    this.consumer.commit(ar -> {
-                        if (ar.failed()) {
-                            log.error("Error committing ... {}", ar.cause().getMessage());
-                            this.handleCommit(ar);
-                        } else {
-                            // 3. start message sending
-                            this.handleReceived(record);
-                            // 4 resume processing messages
-                            this.consumer.resume();
-                        }
-                    });
-                } else {
-                    // Otherwise: immediate send because the record's already committed
-                    this.handleReceived(record);
-                }
-                break;
-
-            case AT_LEAST_ONCE:
-                // Sender QoS unsettled (AT_LEAST_ONCE) : start message sending, wait end and commit
-
-                log.debug("Received from Kafka partition {} [{}], key = {}, value = {}",
-                        record.partition(), record.offset(), record.key(), record.value());
-
-                // 1. start message sending
-                this.handleReceived(record);
-
-                if (endOfBatch()) {
-                    log.debug("End of batch in {} mode => commitOffsets()", this.qos);
-                    try {
-                        // 2. commit all tracked offsets for partitions
-                        commitOffsets(false);
-                    } catch (Exception e) {
-                        log.error("Error committing ... {}", e.getMessage());
-                    }
-                }
-                break;
-        }
-        this.recordIndex++;
     }
 
     /**
@@ -539,38 +451,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                 }
             });
         }
-    }
-
-    /**
-     * Pause the underlying Kafka consumer
-     */
-    protected void pause() {
-        this.consumer.pause();
-    }
-
-    /**
-     * Resume the underlying Kafka consumer
-     */
-    protected void resume() {
-        this.consumer.resume();
-    }
-
-    private boolean endOfBatch() {
-        return this.recordIndex == this.batchSize - 1;
-    }
-
-    private boolean startOfBatch() {
-        return this.recordIndex == 0;
-    }
-
-    /**
-     * Callback to process a kafka records batch
-     *
-     * @param records The records batch
-     */
-    private void handleKafkaBatch(KafkaConsumerRecords<K, V> records) {
-        this.recordIndex = 0;
-        this.batchSize = records.size();
     }
 
     /**
@@ -637,15 +517,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
-     * Set the handler called when a new message is received from the Kafka topic
-     *
-     * @param handler   the handler providing the received Kafka record/message
-     */
-    protected void setReceivedHandler(Handler<KafkaConsumerRecord<K, V>> handler) {
-        this.receivedHandler = handler;
-    }
-
-    /**
      * Set the handler called when a commit offsets request is executed
      *
      * @param handler   the handler
@@ -693,12 +564,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     private void handleSeek(AsyncResult<Void> seekResult) {
         if (this.seekHandler != null) {
             this.seekHandler.handle(seekResult);
-        }
-    }
-
-    private void handleReceived(KafkaConsumerRecord<K, V> record) {
-        if (this.receivedHandler != null) {
-            this.receivedHandler.handle(record);
         }
     }
 
