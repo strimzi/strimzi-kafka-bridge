@@ -81,7 +81,7 @@ public class BasicKafkaClient {
      */
     public int sendStringMessagesPlain(String topicName, int messageCount) {
         return sendStringMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount,
-            Collections.EMPTY_LIST, "\"Hello\" : \"World\"", 0, false);
+            Collections.emptyList(), "\"Hello\" : \"World\"", 0, false);
     }
 
     /**
@@ -94,12 +94,12 @@ public class BasicKafkaClient {
      */
     public int sendStringMessagesPlain(String topicName, String message, int messageCount, int partition) {
         return sendStringMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount,
-            Collections.EMPTY_LIST, message, partition, true);
+            Collections.emptyList(), message, partition, true);
     }
 
     public int sendStringMessagesPlain(String topicName, String message, int messageCount, int partition, boolean withNullKeyRecord) {
         return sendStringMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount,
-            Collections.EMPTY_LIST, message, partition, withNullKeyRecord);
+            Collections.emptyList(), message, partition, withNullKeyRecord);
     }
 
     /**
@@ -149,7 +149,7 @@ public class BasicKafkaClient {
      * @return sent message count
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message, int partition, boolean withNullKeyRecord) {
-        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, Collections.EMPTY_LIST,
+        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, Collections.emptyList(),
             message, partition, withNullKeyRecord);
     }
 
@@ -177,7 +177,7 @@ public class BasicKafkaClient {
      * @return sent message count
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message, int partition) {
-        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, Collections.EMPTY_LIST,
+        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, Collections.emptyList(),
             message, partition, false);
     }
 
@@ -189,7 +189,7 @@ public class BasicKafkaClient {
      * @return sent message count
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message) {
-        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, Collections.EMPTY_LIST,
+        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, Collections.emptyList(),
             message, 0, false);
     }
 
@@ -200,7 +200,7 @@ public class BasicKafkaClient {
      * @return sent message count
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount) {
-        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, Collections.EMPTY_LIST,
+        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, Collections.emptyList(),
             "{\"Hello\" : \"World\"}", 0, false);
     }
 

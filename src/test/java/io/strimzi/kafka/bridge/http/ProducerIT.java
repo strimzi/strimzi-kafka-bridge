@@ -250,7 +250,6 @@ public class ProducerIT extends HttpBridgeITAbstract {
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
-        String sentBody = "Simple message";
         List<KafkaHeader> headers = new ArrayList<>();
         headers.add(new KafkaHeaderImpl("key1", DatatypeConverter.printBase64Binary("value1".getBytes())));
         headers.add(new KafkaHeaderImpl("key2", DatatypeConverter.printBase64Binary("value2".getBytes())));
