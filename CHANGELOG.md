@@ -4,7 +4,7 @@
 
 * Moved from using the Jaeger exporter to OTLP exporter by default
 * Moved to Java 11 at language level, dropped Java 8 and use Java 17 as the runtime for all containers
-* Dependency updates (Vert.x 4.3.4)
+* Dependency updates (Vert.x 4.3.5)
 
 ### Changes, deprecations and removals
 
