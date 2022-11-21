@@ -7,7 +7,6 @@ package io.strimzi.kafka.bridge.tracing;
 
 import io.vertx.core.tracing.TracingOptions;
 import io.vertx.tracing.opentracing.OpenTracingOptions;
-import io.vertx.tracing.opentracing.OpenTracingTracerFactory;
 
 /**
  * OpenTracing tests
@@ -23,6 +22,6 @@ public class OpenTracingTest extends TracingTestBase {
         System.setProperty("JAEGER_SERVICE_NAME", "my-jaeger-service");
         System.setProperty("JAEGER_SAMPLER_TYPE", "const");
         System.setProperty("JAEGER_SAMPLER_PARAM", "1");
-        return new OpenTracingOptions().setFactory(new OpenTracingTracerFactory());
+        return new OpenTracingOptions();
     }
 }
