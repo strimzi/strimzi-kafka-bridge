@@ -15,7 +15,6 @@ import io.vertx.core.Vertx;
 import io.vertx.kafka.client.producer.KafkaProducer;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import io.vertx.kafka.client.producer.RecordMetadata;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,8 +38,7 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     private Handler<BridgeEndpoint> closeHandler;
 
-    private KafkaProducer<K, V> producerUnsettledMode;
-    private KafkaProducer<K, V> producerSettledMode;
+    private KafkaProducer<K, V> producer;
 
     /**
      * Constructor
@@ -91,9 +89,9 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         log.debug("Sending record {}", krecord);
         if (handler == null) {
-            this.producerSettledMode.send(krecord);
+            this.producer.send(krecord);
         } else {
-            this.producerUnsettledMode.send(krecord, handler);
+            this.producer.send(krecord, handler);
         }
     }
 
@@ -108,21 +106,13 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
         TracingHandle tracing = TracingUtil.getTracing();
         tracing.addTracingPropsToProducerConfig(props);
 
-        this.producerUnsettledMode = KafkaProducer.create(this.vertx, props, this.keySerializer, this.valueSerializer);
-
-        // overrides for AMQP - Kafka settled producer mode
-        props.put(ProducerConfig.ACKS_CONFIG, "0");
-        this.producerSettledMode = KafkaProducer.create(this.vertx, props, this.keySerializer, this.valueSerializer);
+        this.producer = KafkaProducer.create(this.vertx, props, this.keySerializer, this.valueSerializer);
     }
 
     @Override
     public void close() {
-
-        if (this.producerSettledMode != null)
-            this.producerSettledMode.close();
-
-        if (this.producerUnsettledMode != null)
-            this.producerUnsettledMode.close();
+        if (this.producer != null)
+            this.producer.close();
 
         this.handleClose();
     }
