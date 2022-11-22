@@ -10,7 +10,6 @@ import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.tracker.OffsetTracker;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.common.PartitionInfo;
@@ -282,40 +281,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
-     * Returns the topic partitions to which is possible to ask assignment related to which
-     * partitions are available for the topic subscriptions requested
-     *
-     * @param availablePartitions available topics partitions
-     * @return topic partitions to which is possible to ask assignment
-     */
-    private Set<TopicPartition> topicPartitionsToAssign(List<PartitionInfo> availablePartitions) {
-        Set<TopicPartition> topicPartitions = new HashSet<>();
-
-        for (SinkTopicSubscription topicSubscription : this.topicSubscriptions) {
-
-            // check if a requested partition for a topic exists in the available partitions for that topic
-            Optional<PartitionInfo> requestedPartitionInfo =
-                    availablePartitions.stream()
-                            .filter(p -> p.getTopic().equals(topicSubscription.getTopic()) &&
-                                    topicSubscription.getPartition() != null &&
-                                    p.getPartition() == topicSubscription.getPartition())
-                            .findFirst();
-
-            this.handlePartition(Future.succeededFuture(requestedPartitionInfo));
-
-            if (requestedPartitionInfo.isPresent()) {
-                log.debug("Requested partition {} for topic {} does exist",
-                        topicSubscription.getPartition(), topicSubscription.getTopic());
-                topicPartitions.add(new TopicPartition(topicSubscription.getTopic(), topicSubscription.getPartition()));
-            } else {
-                log.warn("Requested partition {} for topic {} doesn't exist",
-                        topicSubscription.getPartition(), topicSubscription.getTopic());
-            }
-        }
-        return topicPartitions;
-    }
-
-    /**
      * Set up the handlers for automatic revoke and assignment partitions (due to rebalancing) for the consumer
      */
     private void setPartitionsAssignmentHandlers() {
@@ -497,6 +462,8 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         }
     }
 
+    // TODO: to remove when figuring out if handlePartition is really not needed anymore
+    @SuppressFBWarnings({"UPM_UNCALLED_PRIVATE_METHOD"})
     private void handlePartition(AsyncResult<Optional<PartitionInfo>> partitionResult) {
         if (this.partitionHandler != null) {
             this.partitionHandler.handle(partitionResult);
@@ -509,6 +476,8 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         }
     }
 
+    // TODO: to remove when figuring out if handleSeek is really not needed anymore
+    @SuppressFBWarnings({"UPM_UNCALLED_PRIVATE_METHOD"})
     private void handleSeek(AsyncResult<Void> seekResult) {
         if (this.seekHandler != null) {
             this.seekHandler.handle(seekResult);
