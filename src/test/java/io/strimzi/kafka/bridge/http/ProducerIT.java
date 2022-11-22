@@ -904,6 +904,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
                     HttpResponse<JsonObject> response = ar.result();
                     assertThat(response.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
+                    assertThat(response.body(), nullValue());
                 });
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
