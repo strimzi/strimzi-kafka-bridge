@@ -75,16 +75,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     // handlers called when partitions are revoked/assigned on rebalancing
     private Handler<Set<TopicPartition>> partitionsRevokedHandler;
     private Handler<Set<TopicPartition>> partitionsAssignedHandler;
-    // handler called after a topic subscription request
-    private Handler<AsyncResult<Void>> subscribeHandler;
-    // handler called after an unsubscription request
-    private Handler<AsyncResult<Void>> unsubscribeHandler;
-    // handler called after a topic partition assign request
-    private Handler<AsyncResult<Void>> assignHandler;
-    // handler called after a seek request on a topic partition
-    private Handler<AsyncResult<Void>> seekHandler;
-    // handler called after a commit request
-    private Handler<AsyncResult<Void>> commitHandler;
 
     /**
      * Constructor
@@ -168,8 +158,9 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
      * It should be the next call after the {@link #initConsumer(Properties config)} after getting
      * the topics information in order to subscribe to them.
      *
+     * @param subscribeHandler handler to be executed when subscribe operation is done
      */
-    protected void subscribe() {
+    protected void subscribe(Handler<AsyncResult<Void>> subscribeHandler) {
 
         if (this.topicSubscriptions.isEmpty()) {
             throw new IllegalArgumentException("At least one topic to subscribe has to be specified!");
@@ -180,19 +171,29 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.setPartitionsAssignmentHandlers();
 
         Set<String> topics = this.topicSubscriptions.stream().map(SinkTopicSubscription::getTopic).collect(Collectors.toSet());
-        this.consumer.subscribe(topics, this::subscribeHandler);
+        this.consumer.subscribe(topics, subscribeResult -> {
+            if (subscribeHandler != null) {
+                subscribeHandler.handle(subscribeResult);
+            }
+        });
     }
 
     /**
      * Unsubscribe all the topics which the consumer currently subscribes
+     *
+     * @param unsubscribeHandler handler to be executed when unsubscribe operation is done
      */
-    protected void unsubscribe() {
+    protected void unsubscribe(Handler<AsyncResult<Void>> unsubscribeHandler) {
         log.info("Unsubscribe from topics {}", this.topicSubscriptions);
         topicSubscriptions.clear();
         topicSubscriptionsPattern = null;
         this.subscribed = false;
         this.assigned = false;
-        this.consumer.unsubscribe(this::unsubscribeHandler);
+        this.consumer.unsubscribe(unsubscribeResult -> {
+            if (unsubscribeHandler != null) {
+                unsubscribeHandler.handle(unsubscribeResult);
+            }
+        });
     }
 
     /**
@@ -207,49 +208,28 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
      * Subscribe to topics via the provided pattern represented by a Java regex
      *
      * @param pattern Java regex for topics subscription
+     * @param subscribeHandler handler to be executed when subscribe operation is done
      */
-    protected void subscribe(Pattern pattern) {
+    protected void subscribe(Pattern pattern, Handler<AsyncResult<Void>> subscribeHandler) {
 
         topicSubscriptionsPattern = pattern;
 
         log.info("Subscribe to topics with pattern {}", pattern);
         this.setPartitionsAssignmentHandlers();
         this.subscribed = true;
-        this.consumer.subscribe(pattern, this::subscribeHandler);
-    }
-
-    /**
-     * Handler of the subscription request (via multiple topics or pattern)
-     *
-     * @param subscribeResult result of subscription request
-     */
-    private void subscribeHandler(AsyncResult<Void> subscribeResult) {
-
-        this.handleSubscribe(subscribeResult);
-
-        if (subscribeResult.failed()) {
-            return;
-        }
-    }
-
-    /**
-     * Handler of the unsubscription request
-     *
-     * @param unsubscribeResult result of unsubscription request
-     */
-    private void unsubscribeHandler(AsyncResult<Void> unsubscribeResult) {
-
-        this.handleUnsubscribe(unsubscribeResult);
-
-        if (unsubscribeResult.failed()) {
-            return;
-        }
+        this.consumer.subscribe(pattern, subscribeResult -> {
+            if (subscribeHandler != null) {
+                subscribeHandler.handle(subscribeResult);
+            }
+        });
     }
 
     /**
      * Request for assignment of topics partitions specified in the related {@link #topicSubscriptions} list
+     *
+     * @param assignHandler handler to be executed when assign operation is done
      */
-    protected void assign() {
+    protected void assign(Handler<AsyncResult<Void>> assignHandler) {
 
         if (this.topicSubscriptions.isEmpty()) {
             throw new IllegalArgumentException("At least one topic to subscribe has to be specified!");
@@ -265,7 +245,9 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         }
 
         this.consumer.assign(topicPartitions, assignResult -> {
-            this.handleAssign(assignResult);
+            if (assignHandler != null) {
+                assignHandler.handle(assignResult);
+            }
             if (assignResult.failed()) {
                 return;
             }
@@ -312,15 +294,8 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
                 }
             }
 
-            partitionsAssigned(partitions);
+            this.handlePartitionsAssigned(partitions);
         });
-    }
-
-    /**
-     * When partitions are assigned, start handling records from the Kafka consumer
-     */
-    private void partitionsAssigned(Set<TopicPartition> partitions) {
-        this.handlePartitionsAssigned(partitions);
     }
 
     /**
@@ -377,51 +352,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         this.partitionsAssignedHandler = handler;
     }
 
-    /**
-     * Set the handler called when a subscription request is executed
-     *
-     * @param handler   the handler
-     */
-    protected void setSubscribeHandler(Handler<AsyncResult<Void>> handler) {
-        this.subscribeHandler = handler;
-    }
-
-    /**
-     * Set the handler called when an unsubscription request is executed
-     *
-     * @param handler   the handler
-     */
-    protected void setUnsubscribeHandler(Handler<AsyncResult<Void>> handler) {
-        this.unsubscribeHandler = handler;
-    }
-
-    /**
-     * Set the handler called when an assign for a specific partition request is executed
-     *
-     * @param handler   the handler
-     */
-    protected void setAssignHandler(Handler<AsyncResult<Void>> handler) {
-        this.assignHandler = handler;
-    }
-
-    /**
-     * Set the handler called when a seek request to a specific offset into a partition is executed
-     *
-     * @param handler
-     */
-    protected void setSeekHandler(Handler<AsyncResult<Void>> handler) {
-        this.seekHandler = handler;
-    }
-
-    /**
-     * Set the handler called when a commit offsets request is executed
-     *
-     * @param handler   the handler
-     */
-    protected void setCommitHandler(Handler<AsyncResult<Void>> handler) {
-        this.commitHandler = handler;
-    }
-
     private void handlePartitionsRevoked(Set<TopicPartition> partitions) {
         if (this.partitionsRevokedHandler != null) {
             this.partitionsRevokedHandler.handle(partitions);
@@ -431,40 +361,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     private void handlePartitionsAssigned(Set<TopicPartition> partitions) {
         if (this.partitionsAssignedHandler != null) {
             this.partitionsAssignedHandler.handle(partitions);
-        }
-    }
-
-    private void handleSubscribe(AsyncResult<Void> subscribeResult) {
-        if (this.subscribeHandler != null) {
-            this.subscribeHandler.handle(subscribeResult);
-        }
-    }
-
-    private void handleUnsubscribe(AsyncResult<Void> unsubscribeResult) {
-        if (this.unsubscribeHandler != null) {
-            this.unsubscribeHandler.handle(unsubscribeResult);
-        }
-    }
-
-    private void handleAssign(AsyncResult<Void> assignResult) {
-        if (this.assignHandler != null) {
-            this.assignHandler.handle(assignResult);
-        }
-    }
-
-    // TODO: to remove when figuring out if handleSeek is really not needed anymore
-    @SuppressFBWarnings({"UPM_UNCALLED_PRIVATE_METHOD"})
-    private void handleSeek(AsyncResult<Void> seekResult) {
-        if (this.seekHandler != null) {
-            this.seekHandler.handle(seekResult);
-        }
-    }
-
-    // TODO: to remove when figuring out if handleCommit is really not needed anymore
-    @SuppressFBWarnings({"UPM_UNCALLED_PRIVATE_METHOD"})
-    private void handleCommit(AsyncResult<Void> commitResult) {
-        if (this.commitHandler != null) {
-            this.commitHandler.handle(commitResult);
         }
     }
 
