@@ -12,7 +12,6 @@ import io.strimzi.kafka.bridge.tracker.OffsetTracker;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.kafka.client.common.PartitionInfo;
 import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
@@ -28,7 +27,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -81,8 +79,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     private Handler<AsyncResult<Void>> subscribeHandler;
     // handler called after an unsubscription request
     private Handler<AsyncResult<Void>> unsubscribeHandler;
-    // handler called after a request for a specific partition
-    private Handler<AsyncResult<Optional<PartitionInfo>>> partitionHandler;
     // handler called after a topic partition assign request
     private Handler<AsyncResult<Void>> assignHandler;
     // handler called after a seek request on a topic partition
@@ -400,15 +396,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
-     * Set the handler called after a request for a specific partition is executed
-     *
-     * @param handler   the handler providing the info about the requested specific partition
-     */
-    protected void setPartitionHandler(Handler<AsyncResult<Optional<PartitionInfo>>> handler) {
-        this.partitionHandler = handler;
-    }
-
-    /**
      * Set the handler called when an assign for a specific partition request is executed
      *
      * @param handler   the handler
@@ -456,14 +443,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     private void handleUnsubscribe(AsyncResult<Void> unsubscribeResult) {
         if (this.unsubscribeHandler != null) {
             this.unsubscribeHandler.handle(unsubscribeResult);
-        }
-    }
-
-    // TODO: to remove when figuring out if handlePartition is really not needed anymore
-    @SuppressFBWarnings({"UPM_UNCALLED_PRIVATE_METHOD"})
-    private void handlePartition(AsyncResult<Optional<PartitionInfo>> partitionResult) {
-        if (this.partitionHandler != null) {
-            this.partitionHandler.handle(partitionResult);
         }
     }
 
