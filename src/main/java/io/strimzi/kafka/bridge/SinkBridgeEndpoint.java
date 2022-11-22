@@ -261,10 +261,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         log.info("Assigning to topics partitions {}", this.topicSubscriptions);
         this.assigned = true;
-        this.partitionsAssignment();
-    }
 
-    private void partitionsAssignment() {
         // TODO: maybe we don't need the SinkTopicSubscription class anymore? Removing "offset" field, it's now the same as TopicPartition class?
         Set<TopicPartition> topicPartitions = new HashSet<>();
         for (SinkTopicSubscription topicSubscription : this.topicSubscriptions) {
