@@ -355,10 +355,12 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             return;
         }
         JsonArray partitionsList = bodyAsJson.getJsonArray("partitions");
+        // clear current subscriptions because assign works by replacing them in the native Kafka client
+        this.topicSubscriptions.clear();
         this.topicSubscriptions.addAll(
                 partitionsList.stream()
                         .map(JsonObject.class::cast)
-                        .map(json -> new SinkTopicSubscription(json.getString("topic"), json.getInteger("partition"), json.getLong("offset")))
+                        .map(json -> new SinkTopicSubscription(json.getString("topic"), json.getInteger("partition")))
                         .collect(Collectors.toList())
         );
 

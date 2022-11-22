@@ -10,10 +10,8 @@ import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.tracker.OffsetTracker;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.common.PartitionInfo;
 import io.vertx.kafka.client.common.TopicPartition;
@@ -27,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -265,71 +262,22 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         log.info("Assigning to topics partitions {}", this.topicSubscriptions);
         this.assigned = true;
-        this.partitionsAssignmentAndSeek();
+        this.partitionsAssignment();
     }
 
-    private void partitionsAssignmentAndSeek() {
-
-        List<Future> partitionsForHandlers = new ArrayList<>();
-        // ask about partitions for all the requested topic subscriptions
+    private void partitionsAssignment() {
+        // TODO: maybe we don't need the SinkTopicSubscription class anymore? Removing "offset" field, it's now the same as TopicPartition class?
+        Set<TopicPartition> topicPartitions = new HashSet<>();
         for (SinkTopicSubscription topicSubscription : this.topicSubscriptions) {
-            Promise<List<PartitionInfo>> promise = Promise.promise();
-            partitionsForHandlers.add(promise.future());
-            this.consumer.partitionsFor(topicSubscription.getTopic(), promise);
+            topicPartitions.add(new TopicPartition(topicSubscription.getTopic(), topicSubscription.getPartition()));
         }
 
-        CompositeFuture.join(partitionsForHandlers).onComplete(partitionsResult -> {
-
-            if (partitionsResult.failed()) {
-                this.handlePartition(Future.failedFuture(partitionsResult.cause()));
+        this.consumer.assign(topicPartitions, assignResult -> {
+            this.handleAssign(assignResult);
+            if (assignResult.failed()) {
                 return;
             }
-
-
-            // fill a list with all available partitions as result of the partitionsFor for all topic subscriptions
-            List<PartitionInfo> availablePartitions = new ArrayList<>();
-            for (int i = 0; i < partitionsForHandlers.size(); i++) {
-                // check if, for each future, the partitionsFor operation is completed successfully or failed
-                if (partitionsResult.result() != null && partitionsResult.result().succeeded(i)) {
-                    availablePartitions.addAll(partitionsResult.result().resultAt(i));
-                } else {
-                    // TODO: what to do?
-                    //  it seems cannot be failed ones. The native Kafka client doesn't raise exceptions
-                    //  for not existing partitions
-                }
-            }
-
-
-            // get the topic partitions on which it's possible to ask assignment
-            Set<TopicPartition> topicPartitions = this.topicPartitionsToAssign(availablePartitions);
-
-            this.consumer.assign(topicPartitions, assignResult -> {
-
-                this.handleAssign(assignResult);
-                if (assignResult.failed()) {
-                    return;
-                }
-                log.debug("Assigned to topic partitions {}", topicPartitions);
-
-                for (SinkTopicSubscription topicSubscription : this.topicSubscriptions) {
-                    TopicPartition topicPartition = new TopicPartition(topicSubscription.getTopic(), topicSubscription.getPartition());
-                    // start reading from specified offset inside partition
-                    if (topicSubscription.getOffset() != null) {
-
-                        log.debug("Seeking to offset {}", topicSubscription.getOffset());
-                        this.consumer.seek(topicPartition, topicSubscription.getOffset(), seekResult -> {
-
-                            this.handleSeek(seekResult);
-                            if (seekResult.failed()) {
-                                return;
-                            }
-                            partitionsAssigned(Collections.singleton(topicPartition));
-                        });
-                    } else {
-                        partitionsAssigned(Collections.singleton(topicPartition));
-                    }
-                }
-            });
+            log.debug("Assigned to topic partitions {}", topicPartitions);
         });
     }
 
