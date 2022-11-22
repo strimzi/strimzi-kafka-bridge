@@ -20,6 +20,8 @@ import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.client.producer.KafkaHeader;
 import io.vertx.kafka.client.producer.impl.KafkaHeaderImpl;
 import org.apache.kafka.common.KafkaFuture;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -1657,6 +1659,156 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         consumerService()
             .deleteConsumer(context, groupId, consumerInstanceId[0]);
+        context.completeNow();
+    }
+
+    @Test
+    void receiveSimpleMessageOnAssignTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "assign-topic";
+
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
+        future.get();
+
+        String sentBody = "Simple message";
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
+
+        String name = "my-kafka-consumer-assign";
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("format", "json");
+
+        JsonObject partitionsRoot = new JsonObject();
+        JsonArray partitions = new JsonArray();
+        JsonObject part0 = new JsonObject();
+        part0.put("topic", topic);
+        part0.put("partition", 0);
+        partitions.add(part0);
+        partitionsRoot.put("partitions", partitions);
+
+        consumerService()
+                .createConsumer(context, groupId, json);
+
+        CompletableFuture<Boolean> assign = new CompletableFuture<>();
+        consumerService()
+                .assignRequest(groupId, name, partitionsRoot)
+                .sendJsonObject(partitionsRoot, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), Matchers.is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), Matchers.is(HttpResponseStatus.NO_CONTENT.code()));
+                    });
+                    assign.complete(true);
+                });
+
+        assign.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+        // consume records
+        consumerService()
+                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), CoreMatchers.is(true));
+                        HttpResponse<JsonArray> response = ar.result();
+                        assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.OK.code()));
+                        JsonObject jsonResponse = response.body().getJsonObject(0);
+
+                        String kafkaTopic = jsonResponse.getString("topic");
+                        int kafkaPartition = jsonResponse.getInteger("partition");
+                        String key = jsonResponse.getString("key");
+                        String value = jsonResponse.getString("value");
+                        long offset = jsonResponse.getLong("offset");
+
+                        assertThat(kafkaTopic, CoreMatchers.is(topic));
+                        assertThat(value, CoreMatchers.is(sentBody));
+                        assertThat(offset, CoreMatchers.is(0L));
+                        assertThat(kafkaPartition, CoreMatchers.is(0));
+                        assertThat(key, nullValue());
+                    });
+                    consume.complete(true);
+                });
+
+        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        consumerService()
+                .deleteConsumer(context, groupId, name);
+        context.completeNow();
+    }
+
+    @Test
+    void receiveSimpleMessageTopicCreatedAfterAssignTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "assign-topic";
+
+        String name = "my-kafka-consumer-assign";
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("format", "json");
+
+        JsonObject partitionsRoot = new JsonObject();
+        JsonArray partitions = new JsonArray();
+        JsonObject part0 = new JsonObject();
+        part0.put("topic", topic);
+        part0.put("partition", 0);
+        partitions.add(part0);
+        partitionsRoot.put("partitions", partitions);
+
+        consumerService()
+                .createConsumer(context, groupId, json);
+
+        CompletableFuture<Boolean> assign = new CompletableFuture<>();
+        consumerService()
+                .assignRequest(groupId, name, partitionsRoot)
+                .sendJsonObject(partitionsRoot, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), Matchers.is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), Matchers.is(HttpResponseStatus.NO_CONTENT.code()));
+                    });
+                    assign.complete(true);
+                });
+
+        assign.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
+        future.get();
+
+        String sentBody = "Simple message";
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
+
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+        // consume records
+        consumerService()
+                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), CoreMatchers.is(true));
+                        HttpResponse<JsonArray> response = ar.result();
+                        assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.OK.code()));
+                        JsonObject jsonResponse = response.body().getJsonObject(0);
+
+                        String kafkaTopic = jsonResponse.getString("topic");
+                        int kafkaPartition = jsonResponse.getInteger("partition");
+                        String key = jsonResponse.getString("key");
+                        String value = jsonResponse.getString("value");
+                        long offset = jsonResponse.getLong("offset");
+
+                        assertThat(kafkaTopic, CoreMatchers.is(topic));
+                        assertThat(value, CoreMatchers.is(sentBody));
+                        assertThat(offset, CoreMatchers.is(0L));
+                        assertThat(kafkaPartition, CoreMatchers.is(0));
+                        assertThat(key, nullValue());
+                    });
+                    consume.complete(true);
+                });
+
+        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        consumerService()
+                .deleteConsumer(context, groupId, name);
         context.completeNow();
     }
 

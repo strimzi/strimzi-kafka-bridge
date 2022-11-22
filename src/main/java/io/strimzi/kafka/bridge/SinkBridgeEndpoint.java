@@ -10,12 +10,8 @@ import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.tracker.OffsetTracker;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.kafka.client.common.PartitionInfo;
 import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
@@ -27,12 +23,10 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -85,8 +79,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     private Handler<AsyncResult<Void>> subscribeHandler;
     // handler called after an unsubscription request
     private Handler<AsyncResult<Void>> unsubscribeHandler;
-    // handler called after a request for a specific partition
-    private Handler<AsyncResult<Optional<PartitionInfo>>> partitionHandler;
     // handler called after a topic partition assign request
     private Handler<AsyncResult<Void>> assignHandler;
     // handler called after a seek request on a topic partition
@@ -265,106 +257,20 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         log.info("Assigning to topics partitions {}", this.topicSubscriptions);
         this.assigned = true;
-        this.partitionsAssignmentAndSeek();
-    }
 
-    private void partitionsAssignmentAndSeek() {
-
-        List<Future> partitionsForHandlers = new ArrayList<>();
-        // ask about partitions for all the requested topic subscriptions
+        // TODO: maybe we don't need the SinkTopicSubscription class anymore? Removing "offset" field, it's now the same as TopicPartition class?
+        Set<TopicPartition> topicPartitions = new HashSet<>();
         for (SinkTopicSubscription topicSubscription : this.topicSubscriptions) {
-            Promise<List<PartitionInfo>> promise = Promise.promise();
-            partitionsForHandlers.add(promise.future());
-            this.consumer.partitionsFor(topicSubscription.getTopic(), promise);
+            topicPartitions.add(new TopicPartition(topicSubscription.getTopic(), topicSubscription.getPartition()));
         }
 
-        CompositeFuture.join(partitionsForHandlers).onComplete(partitionsResult -> {
-
-            if (partitionsResult.failed()) {
-                this.handlePartition(Future.failedFuture(partitionsResult.cause()));
+        this.consumer.assign(topicPartitions, assignResult -> {
+            this.handleAssign(assignResult);
+            if (assignResult.failed()) {
                 return;
             }
-
-
-            // fill a list with all available partitions as result of the partitionsFor for all topic subscriptions
-            List<PartitionInfo> availablePartitions = new ArrayList<>();
-            for (int i = 0; i < partitionsForHandlers.size(); i++) {
-                // check if, for each future, the partitionsFor operation is completed successfully or failed
-                if (partitionsResult.result() != null && partitionsResult.result().succeeded(i)) {
-                    availablePartitions.addAll(partitionsResult.result().resultAt(i));
-                } else {
-                    // TODO: what to do?
-                    //  it seems cannot be failed ones. The native Kafka client doesn't raise exceptions
-                    //  for not existing partitions
-                }
-            }
-
-
-            // get the topic partitions on which it's possible to ask assignment
-            Set<TopicPartition> topicPartitions = this.topicPartitionsToAssign(availablePartitions);
-
-            this.consumer.assign(topicPartitions, assignResult -> {
-
-                this.handleAssign(assignResult);
-                if (assignResult.failed()) {
-                    return;
-                }
-                log.debug("Assigned to topic partitions {}", topicPartitions);
-
-                for (SinkTopicSubscription topicSubscription : this.topicSubscriptions) {
-                    TopicPartition topicPartition = new TopicPartition(topicSubscription.getTopic(), topicSubscription.getPartition());
-                    // start reading from specified offset inside partition
-                    if (topicSubscription.getOffset() != null) {
-
-                        log.debug("Seeking to offset {}", topicSubscription.getOffset());
-                        this.consumer.seek(topicPartition, topicSubscription.getOffset(), seekResult -> {
-
-                            this.handleSeek(seekResult);
-                            if (seekResult.failed()) {
-                                return;
-                            }
-                            partitionsAssigned(Collections.singleton(topicPartition));
-                        });
-                    } else {
-                        partitionsAssigned(Collections.singleton(topicPartition));
-                    }
-                }
-            });
+            log.debug("Assigned to topic partitions {}", topicPartitions);
         });
-    }
-
-    /**
-     * Returns the topic partitions to which is possible to ask assignment related to which
-     * partitions are available for the topic subscriptions requested
-     *
-     * @param availablePartitions available topics partitions
-     * @return topic partitions to which is possible to ask assignment
-     */
-    private Set<TopicPartition> topicPartitionsToAssign(List<PartitionInfo> availablePartitions) {
-        Set<TopicPartition> topicPartitions = new HashSet<>();
-
-        for (SinkTopicSubscription topicSubscription : this.topicSubscriptions) {
-
-            // check if a requested partition for a topic exists in the available partitions for that topic
-            Optional<PartitionInfo> requestedPartitionInfo =
-                    availablePartitions.stream()
-                            .filter(p -> p.getTopic().equals(topicSubscription.getTopic()) &&
-                                    topicSubscription.getPartition() != null &&
-                                    p.getPartition() == topicSubscription.getPartition())
-                            .findFirst();
-
-            this.handlePartition(Future.succeededFuture(requestedPartitionInfo));
-
-            if (requestedPartitionInfo.isPresent()) {
-                log.debug("Requested partition {} for topic {} does exist",
-                        topicSubscription.getPartition(), topicSubscription.getTopic());
-                topicPartitions.add(new TopicPartition(topicSubscription.getTopic(), topicSubscription.getPartition()));
-            } else {
-                log.warn("Requested partition {} for topic {} doesn't exist",
-                        topicSubscription.getPartition(), topicSubscription.getTopic());
-            }
-        }
-        return topicPartitions;
     }
 
     /**
@@ -490,15 +396,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
-     * Set the handler called after a request for a specific partition is executed
-     *
-     * @param handler   the handler providing the info about the requested specific partition
-     */
-    protected void setPartitionHandler(Handler<AsyncResult<Optional<PartitionInfo>>> handler) {
-        this.partitionHandler = handler;
-    }
-
-    /**
      * Set the handler called when an assign for a specific partition request is executed
      *
      * @param handler   the handler
@@ -549,18 +446,14 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         }
     }
 
-    private void handlePartition(AsyncResult<Optional<PartitionInfo>> partitionResult) {
-        if (this.partitionHandler != null) {
-            this.partitionHandler.handle(partitionResult);
-        }
-    }
-
     private void handleAssign(AsyncResult<Void> assignResult) {
         if (this.assignHandler != null) {
             this.assignHandler.handle(assignResult);
         }
     }
 
+    // TODO: to remove when figuring out if handleSeek is really not needed anymore
+    @SuppressFBWarnings({"UPM_UNCALLED_PRIVATE_METHOD"})
     private void handleSeek(AsyncResult<Void> seekResult) {
         if (this.seekHandler != null) {
             this.seekHandler.handle(seekResult);
