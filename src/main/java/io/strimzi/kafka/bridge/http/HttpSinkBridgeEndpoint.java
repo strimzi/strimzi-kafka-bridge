@@ -79,11 +79,6 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         this.messageConverter = this.buildMessageConverter();
     }
 
-    @Override
-    public void handle(Endpoint<?> endpoint) {
-        this.handle(endpoint, null);
-    }
-
     /**
      * Create a Kafka consumer
      *
@@ -91,6 +86,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
      * @param bodyAsJson HTTP request body bringing consumer settings
      * @param handler handler for the request
      */
+    @SuppressWarnings("checkstyle:NPathComplexity")
     public void doCreateConsumer(RoutingContext routingContext, JsonObject bodyAsJson, Handler<SinkBridgeEndpoint<K, V>> handler) {
         // get the consumer group-id
         this.groupId = routingContext.pathParam("groupid");
@@ -142,7 +138,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         // create the consumer
         this.initConsumer(config);
 
-        handler.handle(this);
+        if (handler != null) {
+            handler.handle(this);
+        }
 
         log.info("Created consumer {} in group {}", this.name, this.groupId);
         // send consumer instance id(name) and base URI as response

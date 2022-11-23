@@ -72,7 +72,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
     @Override
     @SuppressWarnings("checkstyle:NPathComplexity")
-    public void handle(Endpoint<?> endpoint) {
+    public void handle(Endpoint<?> endpoint, Handler<?> handler) {
         RoutingContext routingContext = (RoutingContext) endpoint.get();
 
         String topic = routingContext.pathParam("topicname");
@@ -169,11 +169,6 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                 BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
             this.maybeClose();
         });
-    }
-
-    @Override
-    public void handle(Endpoint<?> endpoint, Handler<?> handler) {
-
     }
 
     private JsonObject buildOffsets(List<HttpBridgeResult<?>> results) {
