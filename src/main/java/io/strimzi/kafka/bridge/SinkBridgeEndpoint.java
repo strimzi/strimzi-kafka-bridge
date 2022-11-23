@@ -5,10 +5,8 @@
 
 package io.strimzi.kafka.bridge;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
-import io.strimzi.kafka.bridge.tracker.OffsetTracker;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -16,14 +14,12 @@ import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -38,8 +34,6 @@ import java.util.stream.Collectors;
  * @param <K>   type of Kafka message key
  * @param <V>   type of Kafka message payload
  */
-// TODO: to remove when offsetTracker and QoS handling (used by AMQP 1.0 support) will be removed as well
-@SuppressFBWarnings({"NP_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD", "UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD"})
 public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
@@ -54,9 +48,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     private Handler<BridgeEndpoint> closeHandler;
 
-    // used for tracking partitions and related offset for AT_LEAST_ONCE QoS delivery
-    protected OffsetTracker offsetTracker;
-
     private KafkaConsumer<K, V> consumer;
     protected ConsumerInstanceId consumerInstanceId;
 
@@ -67,14 +58,11 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected boolean subscribed;
     protected boolean assigned;
 
-    protected QoSEndpoint qos;
-
     protected long pollTimeOut = 100;
     protected long maxBytes = Long.MAX_VALUE;
 
     // handlers called when partitions are revoked/assigned on rebalancing
-    private Handler<Set<TopicPartition>> partitionsRevokedHandler;
-    private Handler<Set<TopicPartition>> partitionsAssignedHandler;
+    private PartitionsAssignmentHandle partitionsAssignmentHandle = new NoopPartitionsAssignmentHandle();
 
     /**
      * Constructor
@@ -263,105 +251,31 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
             log.debug("Partitions revoked {}", partitions.size());
 
-            if (!partitions.isEmpty()) {
-
-                if (log.isDebugEnabled()) {
-                    for (TopicPartition partition : partitions) {
-                        log.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
-                    }
-                }
-
-                // sender QoS unsettled (AT_LEAST_ONCE), need to commit offsets before partitions are revoked
-                if (this.qos == QoSEndpoint.AT_LEAST_ONCE) {
-                    // commit all tracked offsets for partitions
-                    this.commitOffsets(true);
+            if (log.isDebugEnabled() && !partitions.isEmpty()) {
+                for (TopicPartition partition : partitions) {
+                    log.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
                 }
             }
 
-            this.handlePartitionsRevoked(partitions);
+            if (this.partitionsAssignmentHandle != null) {
+                this.partitionsAssignmentHandle.handleRevokedPartitions(partitions);
+            }
         });
 
         this.consumer.partitionsAssignedHandler(partitions -> {
 
             log.debug("Partitions assigned {}", partitions.size());
 
-            if (!partitions.isEmpty()) {
-
-                if (log.isDebugEnabled()) {
-                    for (TopicPartition partition : partitions) {
-                        log.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
-                    }
+            if (log.isDebugEnabled() && !partitions.isEmpty()) {
+                for (TopicPartition partition : partitions) {
+                    log.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
                 }
             }
 
-            this.handlePartitionsAssigned(partitions);
+            if (this.partitionsAssignmentHandle != null) {
+                this.partitionsAssignmentHandle.handleAssignedPartitions(partitions);
+            }
         });
-    }
-
-    /**
-     * Commit the offsets in the offset tracker to Kafka.
-     *
-     * @param clear Whether to clear the offset tracker after committing.
-     */
-    private void commitOffsets(boolean clear) {
-        Map<org.apache.kafka.common.TopicPartition, OffsetAndMetadata> offsets = this.offsetTracker.getOffsets();
-
-        // as Kafka documentation says, the committed offset should always be the offset of the next message
-        // that your application will read. Thus, when calling commitSync(offsets) you should
-        // add one to the offset of the last message processed.
-        Map<TopicPartition, io.vertx.kafka.client.consumer.OffsetAndMetadata> kafkaOffsets = new HashMap<>();
-        offsets.forEach((topicPartition, offsetAndMetadata) -> {
-            kafkaOffsets.put(new TopicPartition(topicPartition.topic(), topicPartition.partition()),
-                    new io.vertx.kafka.client.consumer.OffsetAndMetadata(offsetAndMetadata.offset() + 1, offsetAndMetadata.metadata()));
-        });
-
-        if (!offsets.isEmpty()) {
-            this.consumer.commit(kafkaOffsets, ar -> {
-                if (ar.succeeded()) {
-                    this.offsetTracker.commit(offsets);
-                    if (clear) {
-                        this.offsetTracker.clear();
-                    }
-                    if (log.isDebugEnabled()) {
-                        for (Map.Entry<org.apache.kafka.common.TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
-                            log.debug("Committed {} - {} [{}]", entry.getKey().topic(), entry.getKey().partition(), entry.getValue().offset());
-                        }
-                    }
-                } else {
-                    log.error("Error committing", ar.cause());
-                }
-            });
-        }
-    }
-
-    /**
-     * Set the handler called when partitions are revoked after a rebalancing
-     *
-     * @param handler   the handler providing the set of revoked partitions
-     */
-    protected void setPartitionsRevokedHandler(Handler<Set<TopicPartition>> handler) {
-        this.partitionsRevokedHandler = handler;
-    }
-
-    /**
-     * Set the handler called when partitions are assigned after a rebalancing
-     *
-     * @param handler   the handler providing the set of assigned partitions
-     */
-    protected void setPartitionsAssignedHandler(Handler<Set<TopicPartition>> handler) {
-        this.partitionsAssignedHandler = handler;
-    }
-
-    private void handlePartitionsRevoked(Set<TopicPartition> partitions) {
-        if (this.partitionsRevokedHandler != null) {
-            this.partitionsRevokedHandler.handle(partitions);
-        }
-    }
-
-    private void handlePartitionsAssigned(Set<TopicPartition> partitions) {
-        if (this.partitionsAssignedHandler != null) {
-            this.partitionsAssignedHandler.handle(partitions);
-        }
     }
 
     protected void consume(Handler<AsyncResult<KafkaConsumerRecords<K, V>>> consumeHandler) {
