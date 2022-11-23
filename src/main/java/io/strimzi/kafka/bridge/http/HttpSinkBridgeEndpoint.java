@@ -364,13 +364,11 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                         .collect(Collectors.toList())
         );
 
-        this.setAssignHandler(assignResult -> {
+        this.assign(assignResult -> {
             if (assignResult.succeeded()) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             }
         });
-
-        this.assign();
     }
 
     private void doSubscribe(RoutingContext routingContext, JsonObject bodyAsJson) {
@@ -396,11 +394,11 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             return;
         }
 
-        this.setSubscribeHandler(subscribeResult -> {
+        Handler<AsyncResult<Void>> subscribeHandler = subscribeResult -> {
             if (subscribeResult.succeeded()) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             }
-        });
+        };
 
         if (bodyAsJson.containsKey("topics")) {
             JsonArray topicsList = bodyAsJson.getJsonArray("topics");
@@ -410,10 +408,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                         .map(topic -> new SinkTopicSubscription(topic))
                         .collect(Collectors.toList())
             );
-            this.subscribe();
+            this.subscribe(subscribeHandler);
         } else if (bodyAsJson.containsKey("topic_pattern")) {
             Pattern pattern = Pattern.compile(bodyAsJson.getString("topic_pattern"));
-            this.subscribe(pattern);
+            this.subscribe(pattern, subscribeHandler);
         }
     }
 
@@ -466,7 +464,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
      * @param routingContext the routing context
      */
     public void doUnsubscribe(RoutingContext routingContext) {
-        this.setUnsubscribeHandler(unsubscribeResult -> {
+        this.unsubscribe(unsubscribeResult -> {
             if (unsubscribeResult.succeeded()) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
@@ -478,7 +476,6 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         });
-        this.unsubscribe();
     }
 
     /**
