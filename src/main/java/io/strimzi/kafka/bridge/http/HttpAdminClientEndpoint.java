@@ -59,11 +59,6 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
     }
 
     @Override
-    public void handle(Endpoint<?> endpoint) {
-        this.handle(endpoint, null);
-    }
-
-    @Override
     public void handle(Endpoint<?> endpoint, Handler<?> handler) {
         RoutingContext routingContext = (RoutingContext) endpoint.get();
         switch (this.httpBridgeContext.getOpenApiOperation()) {

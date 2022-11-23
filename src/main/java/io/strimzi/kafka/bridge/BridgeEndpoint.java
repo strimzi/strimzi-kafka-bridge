@@ -34,7 +34,9 @@ public interface BridgeEndpoint {
      * Handler for the remote protocol endpoint
      * @param endpoint Remote protocol endpoint to handle
      */
-    void handle(Endpoint<?> endpoint);
+    default void handle(Endpoint<?> endpoint) {
+        this.handle(endpoint, null);
+    }
 
     /**
      * Handler for the remote protocol endpoint
