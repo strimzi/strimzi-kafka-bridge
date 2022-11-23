@@ -24,7 +24,9 @@ public class HttpConfig extends AbstractConfig {
     public static final String HTTP_HOST = HTTP_CONFIG_PREFIX + "host";
     public static final String HTTP_PORT = HTTP_CONFIG_PREFIX + "port";
     public static final String HTTP_CONSUMER_TIMEOUT = HTTP_CONFIG_PREFIX + "timeoutSeconds";
+    /** Enable consumer part of the bridge */
     public static final String HTTP_CONSUMER_ENABLED = HTTP_CONFIG_PREFIX + "consumer.enabled";
+    /** Enable producer part of the bridge */
     public static final String HTTP_PRODUCER_ENABLED = HTTP_CONFIG_PREFIX + "producer.enabled";
 
     public static final boolean DEFAULT_HTTP_ENABLED = true;
