@@ -269,6 +269,16 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void createConsumer(RoutingContext routingContext) {
+        if (!bridgeConfig.getHttpConfig().isConsumerEnabled()) {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
+                    "Consumer is disabled in config. To enable consumer update http.consumer.enabled to true"
+            );
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            return;
+        }
+
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
 
         // check for an empty body
@@ -433,6 +443,15 @@ public class HttpBridge extends AbstractVerticle {
      * @param routingContext RoutingContext instance
      */
     private void processProducer(RoutingContext routingContext) {
+        if (!bridgeConfig.getHttpConfig().isProducerEnabled()) {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
+                    "Producer is disabled in config. To enable producer update http.producer.enabled to true"
+            );
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            return;
+        }
         HttpServerRequest httpServerRequest = routingContext.request();
         String contentType = httpServerRequest.getHeader("Content-Type") != null ?
                 httpServerRequest.getHeader("Content-Type") : BridgeContentType.KAFKA_JSON_BINARY;

@@ -35,6 +35,10 @@ public class HttpConfig extends AbstractConfig {
 
     /** HTTP consumer timeouts */
     public static final String HTTP_CONSUMER_TIMEOUT = HTTP_CONFIG_PREFIX + "timeoutSeconds";
+    /** Enable consumer part of the bridge */
+    public static final String HTTP_CONSUMER_ENABLED = HTTP_CONFIG_PREFIX + "consumer.enabled";
+    /** Enable producer part of the bridge */
+    public static final String HTTP_PRODUCER_ENABLED = HTTP_CONFIG_PREFIX + "producer.enabled";
 
     /** Default HTTP host address if not specified */
     public static final String DEFAULT_HOST = "0.0.0.0";
@@ -94,6 +98,20 @@ public class HttpConfig extends AbstractConfig {
      */
     public String getCorsAllowedMethods() {
         return (String) this.config.getOrDefault(HTTP_CORS_ALLOWED_METHODS, "GET,POST,PUT,DELETE,OPTIONS,PATCH");
+    }
+
+    /**
+     * @return if consumer is enabled
+     */
+    public boolean isConsumerEnabled() {
+        return Boolean.parseBoolean(this.config.getOrDefault(HTTP_CONSUMER_ENABLED, "true").toString());
+    }
+
+    /**
+     * @return if producer is enabled
+     */
+    public boolean isProducerEnabled() {
+        return Boolean.parseBoolean(this.config.getOrDefault(HTTP_PRODUCER_ENABLED, "true").toString());
     }
 
     /**
