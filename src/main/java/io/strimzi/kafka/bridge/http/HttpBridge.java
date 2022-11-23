@@ -273,6 +273,16 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
     }
 
     private void createConsumer(RoutingContext routingContext) {
+        if (!bridgeConfig.getHttpConfig().isConsumerEnabled()) {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
+                    "Consumer is disabled in config. To enable consumer update http.consumer.enabled to true"
+            );
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            return;
+        }
+
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
 
         // check for an empty body
@@ -412,12 +422,6 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
      * @param routingContext RoutingContext instance
      */
     private void processConsumer(RoutingContext routingContext) {
-
-        if (!bridgeConfig.getHttpConfig().isConsumerEnabled()) {
-            JsonObject message = new JsonObject();
-            message.put("message", "Consumer is disabled in config. To enable consumer update http.consumer.enabled to true");
-            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, message.toBuffer());
-        }
         String groupId = routingContext.pathParam("groupid");
         String instanceId = routingContext.pathParam("name");
         ConsumerInstanceId kafkaConsumerInstanceId = new ConsumerInstanceId(groupId, instanceId);
@@ -444,9 +448,13 @@ public class HttpBridge extends AbstractVerticle implements HealthCheckable {
      */
     private void processProducer(RoutingContext routingContext) {
         if (!bridgeConfig.getHttpConfig().isProducerEnabled()) {
-            JsonObject message = new JsonObject();
-            message.put("message", "Producer is disabled in config. To enable producer update http.producer.enabled to true");
-            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, message.toBuffer());
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
+                    "Producer is disabled in config. To enable producer update http.producer.enabled to true"
+            );
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
+                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+            return;
         }
         HttpServerRequest httpServerRequest = routingContext.request();
         String contentType = httpServerRequest.getHeader("Content-Type") != null ?
