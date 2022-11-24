@@ -66,6 +66,10 @@ if [ -n "$KAFKA_BRIDGE_SASL_MECHANISM" ]; then
             OAUTH_CLIENT_SECRET="oauth.client.secret=\"$KAFKA_BRIDGE_OAUTH_CLIENT_SECRET\""
         fi
 
+        if [ ! -z "$KAFKA_BRIDGE_OAUTH_PASSWORD_GRANT_PASSWORD" ]; then
+            OAUTH_PASSWORD_GRANT_PASSWORD="oauth.password.grant.password=\"$KAFKA_BRIDGE_OAUTH_PASSWORD_GRANT_PASSWORD\""
+        fi
+
         if [ -f "/tmp/strimzi/oauth.truststore.p12" ]; then
             OAUTH_TRUSTSTORE="oauth.ssl.truststore.location=\"/tmp/strimzi/oauth.truststore.p12\" oauth.ssl.truststore.password=\"${CERTS_STORE_PASSWORD}\" oauth.ssl.truststore.type=\"PKCS12\""
         fi
