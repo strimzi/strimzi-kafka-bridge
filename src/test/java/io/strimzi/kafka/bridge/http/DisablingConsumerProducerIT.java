@@ -56,7 +56,7 @@ public class DisablingConsumerProducerIT {
     private static Vertx vertx;
     private static WebClient client;
 
-    private static final Map<String, Object> config = new HashMap<>();
+    private static Map<String, Object> config = new HashMap<>();
     private static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
     private static final int TEST_TIMEOUT = 60;
 
