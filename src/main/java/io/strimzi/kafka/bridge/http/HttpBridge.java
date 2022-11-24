@@ -33,6 +33,7 @@ import io.vertx.ext.web.RoutingContext;
 
 import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.openapi.RouterBuilder;
+import io.vertx.ext.web.validation.BodyProcessorException;
 import io.vertx.ext.web.validation.ParameterProcessorException;
 import io.vertx.json.schema.ValidationException;
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -574,13 +575,20 @@ public class HttpBridge extends AbstractVerticle {
             }
 
             if (routingContext.failure() != null && routingContext.failure() instanceof ParameterProcessorException) {
-                ParameterProcessorException validationException = (ParameterProcessorException) routingContext.failure();
+                ParameterProcessorException parameterException = (ParameterProcessorException) routingContext.failure();
                 StringBuilder sb = new StringBuilder();
-                if (validationException.getParameterName() != null) {
-                    sb.append("Validation error on: ").append(validationException.getParameterName()).append(" - ");
+                if (parameterException.getParameterName() != null) {
+                    sb.append("Parameter error on: ").append(parameterException.getParameterName()).append(" - ");
                 }
-                sb.append(validationException.getMessage());
+                sb.append(parameterException.getMessage());
                 message = sb.toString();
+            }
+
+            if (routingContext.failure() != null && routingContext.failure() instanceof BodyProcessorException) {
+                BodyProcessorException bodyProcessorException = (BodyProcessorException) routingContext.failure();
+                if (bodyProcessorException.getMessage() != null) {
+                    message = bodyProcessorException.getMessage();
+                }
             }
         } else if (routingContext.statusCode() == HttpResponseStatus.NOT_FOUND.code()) {
             message = HttpResponseStatus.NOT_FOUND.reasonPhrase();

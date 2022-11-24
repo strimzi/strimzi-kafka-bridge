@@ -939,4 +939,37 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
+
+    @Test
+    void sendSimpleMessageWithWrongContentType(VertxTestContext context) throws InterruptedException, ExecutionException {
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+
+        String value = "message-value";
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        future.get();
+
+        producerService()
+                .sendRecordsRequest(topic, root, "bad-content-type")
+                .sendJsonObject(root, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+                        assertThat(error.getMessage(), containsString("Cannot find body processor for content type"));
+                    });
+                    context.completeNow();
+                });
+
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
 }
