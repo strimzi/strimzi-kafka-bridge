@@ -564,31 +564,25 @@ public class HttpBridge extends AbstractVerticle {
         if (routingContext.statusCode() == HttpResponseStatus.BAD_REQUEST.code()) {
             message = HttpResponseStatus.BAD_REQUEST.reasonPhrase();
             // in case of validation exception, building a meaningful error message
-            if (routingContext.failure() != null && routingContext.failure().getCause() instanceof ValidationException) {
-                ValidationException validationException = (ValidationException) routingContext.failure().getCause();
+            if (routingContext.failure() != null) {
                 StringBuilder sb = new StringBuilder();
-                if (validationException.inputScope() != null) {
-                    sb.append("Validation error on: ").append(validationException.inputScope()).append(" - ");
+                if (routingContext.failure().getCause() instanceof ValidationException) {
+                    ValidationException validationException = (ValidationException) routingContext.failure().getCause();
+                    if (validationException.inputScope() != null) {
+                        sb.append("Validation error on: ").append(validationException.inputScope()).append(" - ");
+                    }
+                    sb.append(validationException.getMessage());
+                } else if (routingContext.failure() instanceof ParameterProcessorException) {
+                    ParameterProcessorException parameterException = (ParameterProcessorException) routingContext.failure();
+                    if (parameterException.getParameterName() != null) {
+                        sb.append("Parameter error on: ").append(parameterException.getParameterName()).append(" - ");
+                    }
+                    sb.append(parameterException.getMessage());
+                } else if (routingContext.failure() instanceof BodyProcessorException) {
+                    BodyProcessorException bodyProcessorException = (BodyProcessorException) routingContext.failure();
+                    sb.append(bodyProcessorException.getMessage());
                 }
-                sb.append(validationException.getMessage());
                 message = sb.toString();
-            }
-
-            if (routingContext.failure() != null && routingContext.failure() instanceof ParameterProcessorException) {
-                ParameterProcessorException parameterException = (ParameterProcessorException) routingContext.failure();
-                StringBuilder sb = new StringBuilder();
-                if (parameterException.getParameterName() != null) {
-                    sb.append("Parameter error on: ").append(parameterException.getParameterName()).append(" - ");
-                }
-                sb.append(parameterException.getMessage());
-                message = sb.toString();
-            }
-
-            if (routingContext.failure() != null && routingContext.failure() instanceof BodyProcessorException) {
-                BodyProcessorException bodyProcessorException = (BodyProcessorException) routingContext.failure();
-                if (bodyProcessorException.getMessage() != null) {
-                    message = bodyProcessorException.getMessage();
-                }
             }
         } else if (routingContext.statusCode() == HttpResponseStatus.NOT_FOUND.code()) {
             message = HttpResponseStatus.NOT_FOUND.reasonPhrase();
