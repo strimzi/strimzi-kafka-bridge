@@ -33,6 +33,7 @@ import io.vertx.ext.web.RoutingContext;
 
 import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.openapi.RouterBuilder;
+import io.vertx.ext.web.validation.BodyProcessorException;
 import io.vertx.ext.web.validation.ParameterProcessorException;
 import io.vertx.json.schema.ValidationException;
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -563,23 +564,24 @@ public class HttpBridge extends AbstractVerticle {
         if (routingContext.statusCode() == HttpResponseStatus.BAD_REQUEST.code()) {
             message = HttpResponseStatus.BAD_REQUEST.reasonPhrase();
             // in case of validation exception, building a meaningful error message
-            if (routingContext.failure() != null && routingContext.failure().getCause() instanceof ValidationException) {
-                ValidationException validationException = (ValidationException) routingContext.failure().getCause();
+            if (routingContext.failure() != null) {
                 StringBuilder sb = new StringBuilder();
-                if (validationException.inputScope() != null) {
-                    sb.append("Validation error on: ").append(validationException.inputScope()).append(" - ");
+                if (routingContext.failure().getCause() instanceof ValidationException) {
+                    ValidationException validationException = (ValidationException) routingContext.failure().getCause();
+                    if (validationException.inputScope() != null) {
+                        sb.append("Validation error on: ").append(validationException.inputScope()).append(" - ");
+                    }
+                    sb.append(validationException.getMessage());
+                } else if (routingContext.failure() instanceof ParameterProcessorException) {
+                    ParameterProcessorException parameterException = (ParameterProcessorException) routingContext.failure();
+                    if (parameterException.getParameterName() != null) {
+                        sb.append("Parameter error on: ").append(parameterException.getParameterName()).append(" - ");
+                    }
+                    sb.append(parameterException.getMessage());
+                } else if (routingContext.failure() instanceof BodyProcessorException) {
+                    BodyProcessorException bodyProcessorException = (BodyProcessorException) routingContext.failure();
+                    sb.append(bodyProcessorException.getMessage());
                 }
-                sb.append(validationException.getMessage());
-                message = sb.toString();
-            }
-
-            if (routingContext.failure() != null && routingContext.failure() instanceof ParameterProcessorException) {
-                ParameterProcessorException validationException = (ParameterProcessorException) routingContext.failure();
-                StringBuilder sb = new StringBuilder();
-                if (validationException.getParameterName() != null) {
-                    sb.append("Validation error on: ").append(validationException.getParameterName()).append(" - ");
-                }
-                sb.append(validationException.getMessage());
                 message = sb.toString();
             }
         } else if (routingContext.statusCode() == HttpResponseStatus.NOT_FOUND.code()) {
