@@ -58,7 +58,7 @@ public class DisablingConsumerProducerIT {
 
     private static final Map<String, Object> config = new HashMap<>();
     private static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
-    private static final int TEST_TIMEOUT = 600000000;
+    private static final int TEST_TIMEOUT = 60;
 
     static {
         // NOTE: despite other tests, these not need the Kafka container because the requests should not need it to be successful
