@@ -66,11 +66,15 @@ if [ -n "$KAFKA_BRIDGE_SASL_MECHANISM" ]; then
             OAUTH_CLIENT_SECRET="oauth.client.secret=\"$KAFKA_BRIDGE_OAUTH_CLIENT_SECRET\""
         fi
 
+        if [ ! -z "$KAFKA_BRIDGE_OAUTH_PASSWORD_GRANT_PASSWORD" ]; then
+            OAUTH_PASSWORD_GRANT_PASSWORD="oauth.password.grant.password=\"$KAFKA_BRIDGE_OAUTH_PASSWORD_GRANT_PASSWORD\""
+        fi
+
         if [ -f "/tmp/strimzi/oauth.truststore.p12" ]; then
             OAUTH_TRUSTSTORE="oauth.ssl.truststore.location=\"/tmp/strimzi/oauth.truststore.p12\" oauth.ssl.truststore.password=\"${CERTS_STORE_PASSWORD}\" oauth.ssl.truststore.type=\"PKCS12\""
         fi
 
-        JAAS_CONFIG="org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required ${KAFKA_BRIDGE_OAUTH_CONFIG} ${OAUTH_CLIENT_SECRET} ${OAUTH_REFRESH_TOKEN} ${OAUTH_ACCESS_TOKEN} ${OAUTH_TRUSTSTORE};"
+        JAAS_CONFIG="org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required ${KAFKA_BRIDGE_OAUTH_CONFIG} ${OAUTH_CLIENT_SECRET} ${OAUTH_REFRESH_TOKEN} ${OAUTH_ACCESS_TOKEN} ${OAUTH_PASSWORD_GRANT_PASSWORD} ${OAUTH_TRUSTSTORE};"
         OAUTH_CALLBACK_CLASS="kafka.sasl.login.callback.handler.class=io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler"
     fi
 

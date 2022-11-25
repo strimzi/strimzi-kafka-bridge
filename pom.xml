@@ -363,13 +363,13 @@
 			<artifactId>snakeyaml</artifactId>
 			<version>${snakeyaml.version}</version>
 		</dependency>
-		<!-- Testing -->
+		<!-- Used only for test in the bridge, but needs to be here because OAuth brings it but a potential Maven bug remove it as runtime if only for test -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
 			<version>${jackson-databind.version}</version>
-			<scope>test</scope>
 		</dependency>
+		<!-- Testing -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
@@ -546,6 +546,8 @@
 								<ignoredNonTestScopedDependencies>
 									<!-- OpenTelemetry - The SDK is using this at runtime to load the Vert.x “context storage provider”. To ignore because it is detected as used for test only. -->
 									<ignoredNonTestScopedDependency>io.vertx:vertx-opentelemetry</ignoredNonTestScopedDependency>
+									<!-- Used only for test in the bridge but needed by OAuth. If left "test" scoped, a potential Maven bug remove it from the runtime -->
+									<ignoredNonTestScopedDependencies>com.fasterxml.jackson.core:jackson-databind</ignoredNonTestScopedDependencies>
 								</ignoredNonTestScopedDependencies>
 								<ignoredUnusedDeclaredDependencies>
 									<ignoredUnusedDeclaredDependency>io.strimzi:kafka-env-var-config-provider</ignoredUnusedDeclaredDependency>
