@@ -33,7 +33,7 @@ Kafka Bridge releases are also available to [download](https://strimzi.io/downlo
 
 The [Kafka Bridge documentation](https://strimzi.io/docs/bridge/latest/) provides information on getting started with the Kafka Bridge.
 
-The source files for the Kafka Bridge documentation are maintained in the [`quickstarts`](/documentation) folder.
+The source files for the Kafka Bridge documentation are maintained in the [`documentation`](/documentation) folder.
 The documentation is maintained in `.adoc` files.
 The `.adoc` files for the API reference section (`documentation/book/api`) are generated from descriptions in the source OpenAPI JSON file (`src/main/resources/openapiv2.json`), so they must not be edited directly.
 
