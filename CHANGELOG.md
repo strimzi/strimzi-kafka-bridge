@@ -7,6 +7,7 @@
 * Fixed bug about missing OAuth password grants configuration   
 * Dependency updates (Vert.x 4.3.5)
 * Dependency updates (snakeYAML [CVE-2022-41854](https://nvd.nist.gov/vuln/detail/CVE-2022-41854))
+* Add Oauth metrics into the `jmx_metrics_config.yaml`
 
 ### Changes, deprecations and removals
 
