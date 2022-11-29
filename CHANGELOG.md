@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.23.1
+
+* Dependency updates (Netty 4.1.85.Final)
+
 ## 0.23.0
 
 * Moved from using the Jaeger exporter to OTLP exporter by default
