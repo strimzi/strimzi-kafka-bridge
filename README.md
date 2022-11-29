@@ -15,7 +15,7 @@ Thanks to the bridge, all clients which can speak HTTP 1.1 protocol can connect 
 
 ### On Kubernetes and OpenShift
 
-You can use the [Strimzi Kafka operator](https://strimzi.io/) to deploy the Kafka Bridge with HTTP support on Kubernetes and OpenShift.
+Use the [Strimzi Kafka operator](https://strimzi.io/docs/operators/latest/deploying.html) to deploy the Kafka Bridge with HTTP support on Kubernetes and OpenShift.
 
 ### On bare-metal / VM
 
@@ -27,14 +27,19 @@ Once your configuration is ready, start the bridge using:
 bin/kafka_bridge_run.sh --config-file config/application.properties
 ```
 
-## Documentation
+Kafka Bridge releases are also available to [download](https://strimzi.io/downloads/) from the Strimzi website.
 
-Documentation can be found on our website:
+## Kafka Bridge documentation
 
-* [Documentation for the latest stable release](https://strimzi.io/docs/bridge/latest/)
-* [Documentation that's _in development_ for the `main` branch](https://strimzi.io/docs/bridge/in-development/)
+The [Kafka Bridge documentation](https://strimzi.io/docs/bridge/latest/) provides information on getting started with the Kafka Bridge.
 
-Strimzi bridge releases are also available in the [downloads](https://strimzi.io/downloads/) section.
+The source files for the Kafka Bridge documentation are maintained in the [`documentation`](/documentation) folder.
+The documentation is maintained in `.adoc` files.
+The `.adoc` files for the API reference section (`documentation/book/api`) are generated from descriptions in the source OpenAPI JSON file (`src/main/resources/openapiv2.json`), so they must not be edited directly.
+
+If you spot something that needs updating or changing in the Kafka Bridge documentation, you can open an issue or open a PR and contribute directly. 
+
+For more information on contributing to the Strimzi documentation, see the [Strimzi Documentation Contributor Guide](https://strimzi.io/contributing/guide/).
 
 ## Getting help
 
@@ -42,7 +47,6 @@ If you encounter any issues while using Strimzi Kafka Bridge, you can get help t
 
 - [Strimzi Users mailing list](https://lists.cncf.io/g/cncf-strimzi-users/topics)
 - [#strimzi channel on CNCF Slack](https://slack.cncf.io/)
-
 
 ## Contributing
 
@@ -55,14 +59,14 @@ You can contribute by:
 All bugs, tasks or enhancements are tracked as [GitHub issues](https://github.com/strimzi/strimzi-kafka-bridge/issues). Issues which
 might be a good start for new contributors are marked with ["good-start"](https://github.com/strimzi/strimzi-kafka-bridge/labels/good-start) label.
 
-The [Hacking guide](https://github.com/strimzi/strimzi-kafka-bridge/blob/main/HACKING.md) describes how to build Strimzi Kafka Bridge and how to test your changes before submitting a patch or opening a PR.
-
-The [Documentation Contributor Guide](http://strimzi.io/contributing/guide/) describes how to contribute to Strimzi documentation.
+The [Building Strimzi Kafka Bridge](BUILDING.md) guide describes how to build Strimzi Kafka Bridge and how to test your changes before submitting a patch or opening a PR.
 
 If you want to get in touch with us first before contributing, you can use:
 
 - [Strimzi Dev mailing list](https://lists.cncf.io/g/cncf-strimzi-dev/topics)
 - [#strimzi channel on CNCF Slack](https://slack.cncf.io/)
+
+Learn more on how you can contribute on our [Join Us](https://strimzi.io/join-us/) page.
 
 ## License
 
