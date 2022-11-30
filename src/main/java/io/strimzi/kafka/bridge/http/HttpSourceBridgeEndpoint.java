@@ -19,11 +19,7 @@ import io.strimzi.kafka.bridge.http.model.HttpBridgeResult;
 import io.strimzi.kafka.bridge.tracing.SpanHandle;
 import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -36,6 +32,8 @@ import org.apache.kafka.common.serialization.Serializer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Implementation of an HTTP based source endpoint
@@ -48,9 +46,9 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
     private boolean closing;
 
-    HttpSourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
-                                    EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
-        super(vertx, bridgeConfig, format, keySerializer, valueSerializer);
+    HttpSourceBridgeEndpoint(BridgeConfig bridgeConfig, EmbeddedFormat format,
+                             Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+        super(bridgeConfig, format, keySerializer, valueSerializer);
     }
 
     @Override
@@ -126,11 +124,10 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         }
         List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
 
-        // start sending records asynchronously
         if (isAsync) {
             // if async is specified, return immediately once records are sent
             for (KafkaProducerRecord<K, V> record : records) {
-                this.send(record, null);
+                this.send(record.record(), true);
             }
             span.finish(HttpResponseStatus.NO_CONTENT.code());
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(),
@@ -139,36 +136,37 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             return;
         }
 
-        List<Future> sendHandlers = new ArrayList<>(records.size());
+        //@SuppressWarnings({ "rawtypes" })
+        List<CompletableFuture> promises = new ArrayList<>(records.size());
         for (KafkaProducerRecord<K, V> record : records) {
-            Promise<RecordMetadata> promise = Promise.promise();
-            sendHandlers.add(promise.future());
-            this.send(record, promise);
+            CompletionStage<org.apache.kafka.clients.producer.RecordMetadata> sendHandler =
+                    // inside send method, the callback which completes the promise is executed in the kafka-producer-network-thread
+                    // let's do the result handling async to free the network thread for more sends in parallel
+                    this.send(record.record(), false).handleAsync((metadata, ex) -> {
+                        log.info("Handle thread: " + Thread.currentThread());
+                        if (ex == null) {
+                            log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", record.record(), metadata.topic(), metadata.partition(), metadata.offset());
+                            results.add(new HttpBridgeResult<>(metadata));
+                        } else {
+                            String msg = ex.getMessage();
+                            int code = handleError(ex);
+                            log.error("Failed to deliver record {}", record.record(), ex);
+                            results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
+                        }
+                        return metadata;
+                    });
+            promises.add(sendHandler.toCompletableFuture());
         }
 
-        // wait for ALL futures completed
-        List<KafkaProducerRecord<K, V>> finalRecords = records;
-        CompositeFuture.join(sendHandlers).onComplete(done -> {
-
-            for (int i = 0; i < sendHandlers.size(); i++) {
-                // check if, for each future, the sending operation is completed successfully or failed
-                if (sendHandlers.get(i).succeeded() && sendHandlers.get(i).result() != null) {
-                    RecordMetadata metadata = (RecordMetadata) sendHandlers.get(i).result();
-                    log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", finalRecords.get(i), metadata.getTopic(), metadata.getPartition(), metadata.getOffset());
-                    results.add(new HttpBridgeResult<>(metadata));
-                } else {
-                    String msg = sendHandlers.get(i).cause().getMessage();
-                    int code = handleError(sendHandlers.get(i).cause());
-                    log.error("Failed to deliver record {}", finalRecords.get(i), done.cause());
-                    results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
-                }
-            }
-            // always return OK, since failure cause is in the response, per message
-            span.finish(HttpResponseStatus.OK.code());
-            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
-                BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
-            this.maybeClose();
-        });
+        CompletableFuture.allOf(promises.toArray(new CompletableFuture[0]))
+                .whenCompleteAsync((v, t) -> {
+                    log.info("All sent thread: " + Thread.currentThread());
+                    // always return OK, since failure cause is in the response, per message
+                    span.finish(HttpResponseStatus.OK.code());
+                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
+                            BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
+                    this.maybeClose();
+                });
     }
 
     private JsonObject buildOffsets(List<HttpBridgeResult<?>> results) {
@@ -182,6 +180,11 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                 offset = new JsonObject()
                         .put("partition", metadata.getPartition())
                         .put("offset", metadata.getOffset());
+            } else if (result.getResult() instanceof org.apache.kafka.clients.producer.RecordMetadata) {
+                    org.apache.kafka.clients.producer.RecordMetadata metadata = (org.apache.kafka.clients.producer.RecordMetadata) result.getResult();
+                    offset = new JsonObject()
+                            .put("partition", metadata.partition())
+                            .put("offset", metadata.offset());
             } else if (result.getResult() instanceof HttpBridgeError) {
                 HttpBridgeError error = (HttpBridgeError) result.getResult();
                 offset = error.toJson();

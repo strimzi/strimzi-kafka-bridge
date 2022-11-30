@@ -9,17 +9,18 @@ import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.kafka.client.producer.KafkaProducer;
-import io.vertx.kafka.client.producer.KafkaProducerRecord;
-import io.vertx.kafka.client.producer.RecordMetadata;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Base class for source bridge endpoints
@@ -32,26 +33,23 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected final EmbeddedFormat format;
     protected final Serializer<K> keySerializer;
     protected final Serializer<V> valueSerializer;
-    protected final Vertx vertx;
 
     protected final BridgeConfig bridgeConfig;
 
     private Handler<BridgeEndpoint> closeHandler;
 
-    private KafkaProducer<K, V> producer;
+    private Producer<K, V> producer;
 
     /**
      * Constructor
      *
-     * @param vertx Vert.x instance
      * @param bridgeConfig Bridge configuration
      * @param format embedded format for the key/value in the Kafka message
      * @param keySerializer Kafka serializer for the message key
      * @param valueSerializer Kafka serializer for the message value
      */
-    public SourceBridgeEndpoint(Vertx vertx, BridgeConfig bridgeConfig,
-                                EmbeddedFormat format, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
-        this.vertx = vertx;
+    public SourceBridgeEndpoint(BridgeConfig bridgeConfig, EmbeddedFormat format,
+                                Serializer<K> keySerializer, Serializer<V> valueSerializer) {
         this.bridgeConfig = bridgeConfig;
         this.format = format;
         this.keySerializer = keySerializer;
@@ -73,7 +71,6 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
      * Raise close event
      */
     protected void handleClose() {
-
         if (this.closeHandler != null) {
             this.closeHandler.handle(this);
         }
@@ -82,22 +79,36 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
     /**
      * Send a record to Kafka
      *
-     * @param krecord   Kafka record to send
-     * @param handler   handler to call if producer with unsettled is used
+     * @param record Kafka record to send
+     * @param isAsync if the send doesn't need to get metadata via the Kafka related callback
+     * @return a CompletionStage bringing the metadata
      */
-    protected void send(KafkaProducerRecord<K, V> krecord, Handler<AsyncResult<RecordMetadata>> handler) {
-
-        log.debug("Sending record {}", krecord);
-        if (handler == null) {
-            this.producer.send(krecord);
-        } else {
-            this.producer.send(krecord, handler);
-        }
+    protected CompletionStage<RecordMetadata> send(ProducerRecord<K, V> record, boolean isAsync) {
+        CompletableFuture<RecordMetadata> promise = new CompletableFuture<>();
+        // running async to not blocking the Vert.x main event loop if the callback isn't called soon due to issues
+        // i.e. see not existing topic/partition waiting for a TimeoutException
+        CompletableFuture.runAsync(() -> {
+            log.debug("Sending record {}", record);
+            log.trace("Send thread {}", Thread.currentThread());
+            if (isAsync) {
+                this.producer.send(record);
+                promise.complete(null);
+            } else {
+                this.producer.send(record, (metadata, exception) ->{
+                    log.trace("Callback thread {}", Thread.currentThread());
+                    if (exception == null) {
+                        promise.complete(metadata);
+                    } else {
+                        promise.completeExceptionally(exception);
+                    }
+                });
+            }
+        });
+        return promise;
     }
 
     @Override
     public void open() {
-
         KafkaConfig kafkaConfig = this.bridgeConfig.getKafkaConfig();
         Properties props = new Properties();
         props.putAll(kafkaConfig.getConfig());
@@ -106,7 +117,7 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
         TracingHandle tracing = TracingUtil.getTracing();
         tracing.addTracingPropsToProducerConfig(props);
 
-        this.producer = KafkaProducer.create(this.vertx, props, this.keySerializer, this.valueSerializer);
+        this.producer = new KafkaProducer<>(props, this.keySerializer, this.valueSerializer);
     }
 
     @Override
