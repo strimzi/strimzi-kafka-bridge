@@ -14,10 +14,10 @@ To enable distributed tracing, do the following:
 * Set the `bridge.tracing` property value to enable the tracing you want to use. Possible values are `jaeger` and `opentelemetry`.
 * Set environment variables for tracing.
 
-With the default configuration, the OpenTelemetry tracing uses OTLP as exporter protocol.
-You can still use your Jaeger backend instance to get the traces, by configuring the OTLP endpoint properly.
+With the default configuration, OpenTelemetry tracing uses OTLP as the exporter protocol.
+By configuring the OTLP endpoint, you can still use a Jaeger backend instance to get traces.
 
-NOTE: Jaeger added the support for OTLP protocol since 1.35 release. Older releases cannot get traces via OLTP protocol.
+NOTE: Jaeger has supported the OTLP protocol since version 1.35. Older Jaeger versions cannot get traces using the OTLP protocol.
 
 OpenTelemetry and OpenTracing are API specifications for collecting tracing data as _spans_ of metrics data.
 Spans represent a specific operation.
