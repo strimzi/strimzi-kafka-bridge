@@ -24,8 +24,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.kafka.client.producer.KafkaProducerRecord;
-import io.vertx.kafka.client.producer.RecordMetadata;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.kafka.common.serialization.Serializer;
 
@@ -75,7 +75,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
         String topic = routingContext.pathParam("topicname");
 
-        List<KafkaProducerRecord<K, V>> records;
+        List<ProducerRecord<K, V>> records;
         Integer partition = null;
         if (routingContext.pathParam("partitionid") != null) {
             try {
@@ -109,7 +109,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             }
             records = messageConverter.toKafkaRecords(topic, partition, routingContext.body().buffer());
 
-            for (KafkaProducerRecord<K, V> record :records)   {
+            for (ProducerRecord<K, V> record :records)   {
                 span.inject(record);
             }
         } catch (Exception e) {
@@ -124,49 +124,53 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         }
         List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
 
-        if (isAsync) {
-            // if async is specified, return immediately once records are sent
-            for (KafkaProducerRecord<K, V> record : records) {
-                this.send(record.record(), true);
+        // fulfilling the request of sending (multiple) record(s) sequentially but in a separate thread
+        // this will free the Vert.x event loop still in place
+        CompletableFuture.runAsync(() -> {
+            if (isAsync) {
+                // if async is specified, return immediately once records are sent
+                for (ProducerRecord<K, V> record : records) {
+                    this.send(record, true);
+                }
+                span.finish(HttpResponseStatus.NO_CONTENT.code());
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(),
+                        BridgeContentType.KAFKA_JSON, null);
+                this.maybeClose();
+                return;
             }
-            span.finish(HttpResponseStatus.NO_CONTENT.code());
-            HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(),
-                    BridgeContentType.KAFKA_JSON, null);
-            this.maybeClose();
-            return;
-        }
 
-        //@SuppressWarnings({ "rawtypes" })
-        List<CompletableFuture> promises = new ArrayList<>(records.size());
-        for (KafkaProducerRecord<K, V> record : records) {
-            CompletionStage<org.apache.kafka.clients.producer.RecordMetadata> sendHandler =
-                    // inside send method, the callback which completes the promise is executed in the kafka-producer-network-thread
-                    // let's do the result handling async to free the network thread for more sends in parallel
-                    this.send(record.record(), false).handleAsync((metadata, ex) -> {
-                        log.info("Handle thread: " + Thread.currentThread());
-                        if (ex == null) {
-                            log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", record.record(), metadata.topic(), metadata.partition(), metadata.offset());
-                            results.add(new HttpBridgeResult<>(metadata));
-                        } else {
-                            String msg = ex.getMessage();
-                            int code = handleError(ex);
-                            log.error("Failed to deliver record {}", record.record(), ex);
-                            results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
-                        }
-                        return metadata;
+            @SuppressWarnings({ "rawtypes" })
+            List<CompletableFuture> promises = new ArrayList<>(records.size());
+            for (ProducerRecord<K, V> record : records) {
+                CompletionStage<RecordMetadata> sendHandler =
+                        // inside send method, the callback which completes the promise is executed in the kafka-producer-network-thread
+                        // let's do the result handling async to free the network thread for more sends in parallel
+                        this.send(record, false).handle((metadata, ex) -> {
+                            log.trace("Handle thread {}", Thread.currentThread());
+                            if (ex == null) {
+                                log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", record, metadata.topic(), metadata.partition(), metadata.offset());
+                                results.add(new HttpBridgeResult<>(metadata));
+                            } else {
+                                String msg = ex.getMessage();
+                                int code = handleError(ex);
+                                log.error("Failed to deliver record {}", record, ex);
+                                results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
+                            }
+                            return metadata;
+                        });
+                promises.add(sendHandler.toCompletableFuture());
+            }
+
+            CompletableFuture.allOf(promises.toArray(new CompletableFuture[0]))
+                    .whenCompleteAsync((v, t) -> {
+                        log.trace("All sent thread {}", Thread.currentThread());
+                        // always return OK, since failure cause is in the response, per message
+                        span.finish(HttpResponseStatus.OK.code());
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
+                                BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
+                        this.maybeClose();
                     });
-            promises.add(sendHandler.toCompletableFuture());
-        }
-
-        CompletableFuture.allOf(promises.toArray(new CompletableFuture[0]))
-                .whenCompleteAsync((v, t) -> {
-                    log.info("All sent thread: " + Thread.currentThread());
-                    // always return OK, since failure cause is in the response, per message
-                    span.finish(HttpResponseStatus.OK.code());
-                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
-                            BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
-                    this.maybeClose();
-                });
+        });
     }
 
     private JsonObject buildOffsets(List<HttpBridgeResult<?>> results) {
@@ -178,13 +182,8 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             if (result.getResult() instanceof RecordMetadata) {
                 RecordMetadata metadata = (RecordMetadata) result.getResult();
                 offset = new JsonObject()
-                        .put("partition", metadata.getPartition())
-                        .put("offset", metadata.getOffset());
-            } else if (result.getResult() instanceof org.apache.kafka.clients.producer.RecordMetadata) {
-                    org.apache.kafka.clients.producer.RecordMetadata metadata = (org.apache.kafka.clients.producer.RecordMetadata) result.getResult();
-                    offset = new JsonObject()
-                            .put("partition", metadata.partition())
-                            .put("offset", metadata.offset());
+                        .put("partition", metadata.partition())
+                        .put("offset", metadata.offset());
             } else if (result.getResult() instanceof HttpBridgeError) {
                 HttpBridgeError error = (HttpBridgeError) result.getResult();
                 offset = error.toJson();

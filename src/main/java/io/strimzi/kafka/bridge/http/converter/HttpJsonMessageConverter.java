@@ -13,8 +13,10 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
 import io.vertx.kafka.client.producer.KafkaHeader;
-import io.vertx.kafka.client.producer.KafkaProducerRecord;
-import io.vertx.kafka.client.producer.impl.KafkaHeaderImpl;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.common.header.internals.RecordHeader;
+import org.apache.kafka.common.header.internals.RecordHeaders;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.ArrayList;
@@ -26,12 +28,12 @@ import java.util.List;
 public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[], Buffer, Buffer> {
 
     @Override
-    public KafkaProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, Buffer message) {
+    public ProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, Buffer message) {
 
         Integer partitionFromBody = null;
         byte[] key = null;
         byte[] value = null;
-        List<KafkaHeader> headers = new ArrayList<>();
+        Headers headers = new RecordHeaders();
 
         JsonObject json = message.toJsonObject();
 
@@ -45,10 +47,7 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
             if (json.containsKey("headers")) {
                 for (Object obj: json.getJsonArray("headers")) {
                     JsonObject jsonObject = (JsonObject) obj;
-                    headers.add(new KafkaHeaderImpl(
-                        jsonObject.getString("key"),
-                        Buffer.buffer(
-                            DatatypeConverter.parseBase64Binary(jsonObject.getString("value")))));
+                    headers.add(new RecordHeader(jsonObject.getString("key"), DatatypeConverter.parseBase64Binary(jsonObject.getString("value"))));
                 }
             }
             if (json.containsKey("partition")) {
@@ -61,17 +60,13 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
                 partitionFromBody = partition;
             }
         }
-
-        KafkaProducerRecord<byte[], byte[]> record = KafkaProducerRecord.create(kafkaTopic, key, value, partitionFromBody);
-        record.addHeaders(headers);
-
-        return record;
+        return new ProducerRecord<>(kafkaTopic, partitionFromBody, key, value, headers);
     }
 
     @Override
-    public List<KafkaProducerRecord<byte[], byte[]>> toKafkaRecords(String kafkaTopic, Integer partition, Buffer messages) {
+    public List<ProducerRecord<byte[], byte[]>> toKafkaRecords(String kafkaTopic, Integer partition, Buffer messages) {
 
-        List<KafkaProducerRecord<byte[], byte[]>> records = new ArrayList<>();
+        List<ProducerRecord<byte[], byte[]>> records = new ArrayList<>();
 
         JsonObject json = messages.toJsonObject();
         JsonArray jsonArray = json.getJsonArray("records");

@@ -6,7 +6,7 @@
 package io.strimzi.kafka.bridge.tracing;
 
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.kafka.client.producer.KafkaProducerRecord;
+import org.apache.kafka.clients.producer.ProducerRecord;
 
 /**
  * Span handle, an abstraction over actual span implementation.
@@ -17,7 +17,7 @@ public interface SpanHandle<K, V> {
      *
      * @param record Kafka producer record to extract tracing info
      */
-    void inject(KafkaProducerRecord<K, V> record);
+    void inject(ProducerRecord<K, V> record);
 
     /**
      * Inject tracing info into underlying span from Vert.x routing context.

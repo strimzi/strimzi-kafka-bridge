@@ -22,11 +22,12 @@ import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
-import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
@@ -126,12 +127,12 @@ class OpenTracingHandle implements TracingHandle {
         }
 
         @Override
-        public void inject(KafkaProducerRecord<K, V> record) {
+        public void inject(ProducerRecord<K, V> record) {
             Tracer tracer = GlobalTracer.get();
             tracer.inject(span.context(), Format.Builtin.TEXT_MAP, new TextMap() {
                 @Override
                 public void put(String key, String value) {
-                    record.addHeader(key, value);
+                    record.headers().add(key, value.getBytes(StandardCharsets.UTF_8));
                 }
 
                 @Override

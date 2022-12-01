@@ -85,25 +85,22 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
      */
     protected CompletionStage<RecordMetadata> send(ProducerRecord<K, V> record, boolean isAsync) {
         CompletableFuture<RecordMetadata> promise = new CompletableFuture<>();
-        // running async to not blocking the Vert.x main event loop if the callback isn't called soon due to issues
-        // i.e. see not existing topic/partition waiting for a TimeoutException
-        CompletableFuture.runAsync(() -> {
-            log.debug("Sending record {}", record);
-            log.trace("Send thread {}", Thread.currentThread());
-            if (isAsync) {
-                this.producer.send(record);
-                promise.complete(null);
-            } else {
-                this.producer.send(record, (metadata, exception) ->{
-                    log.trace("Callback thread {}", Thread.currentThread());
-                    if (exception == null) {
-                        promise.complete(metadata);
-                    } else {
-                        promise.completeExceptionally(exception);
-                    }
-                });
-            }
-        });
+        log.trace("Send thread {}", Thread.currentThread());
+        log.debug("Sending record {}", record);
+        if (isAsync) {
+            this.producer.send(record);
+            promise.complete(null);
+        } else {
+            this.producer.send(record, (metadata, exception) -> {
+                log.trace("Kafka client callback thread {}", Thread.currentThread());
+                log.debug("Sent record {} at offset {}", record, metadata.offset());
+                if (exception == null) {
+                    promise.complete(metadata);
+                } else {
+                    promise.completeExceptionally(exception);
+                }
+            });
+        }
         return promise;
     }
 

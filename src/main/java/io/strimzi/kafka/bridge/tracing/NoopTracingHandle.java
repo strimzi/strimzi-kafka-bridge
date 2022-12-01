@@ -8,7 +8,7 @@ package io.strimzi.kafka.bridge.tracing;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
-import io.vertx.kafka.client.producer.KafkaProducerRecord;
+import org.apache.kafka.clients.producer.ProducerRecord;
 
 import java.util.Properties;
 
@@ -42,7 +42,7 @@ final class NoopTracingHandle implements TracingHandle {
 
     private static final class NoopSpanHandle<K, V> implements SpanHandle<K, V> {
         @Override
-        public void inject(KafkaProducerRecord<K, V> record) {
+        public void inject(ProducerRecord<K, V> record) {
         }
 
         @Override
