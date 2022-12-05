@@ -33,6 +33,8 @@ Jaeger implements the required APIs and presents visualizations of the trace dat
 To have end-to-end tracing, you must configure tracing in your HTTP clients.
 
 CAUTION: The OpenTracing project is now archived, so Strimzi has deprecated support for OpenTracing.
+If possible, we will maintain the support for `bridge.tracing=jaeger` tracing until June 2023 and remove it afterwards.
+Please migrate to OpenTelemetry as soon as possible.
 
 .Prerequisites
 
