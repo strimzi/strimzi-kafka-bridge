@@ -6,8 +6,8 @@
 
 ### Changes, deprecations and removals
 
-The `bridge.tracing=jaeger` tracing support based on Jaeger clients and OpenTracing API was deprecated in 0.22.0 release.
-The Jaeger clients are retired and the OpenTracing project is archived, we cannot guarantee their support for future versions anymore.
+Support for `bridge.tracing=jaeger` tracing based on Jaeger clients and OpenTracing API was deprecated in the 0.22.0 release.
+As the Jaeger clients are retired and the OpenTracing project is archived, we cannot guarantee their support for future versions.
 In the 0.22.0 release, we added support for OpenTelemetry tracing as a replacement.
 If possible, we will maintain the support for `bridge.tracing=jaeger` tracing until June 2023 and remove it afterwards.
 Please migrate to OpenTelemetry as soon as possible.
