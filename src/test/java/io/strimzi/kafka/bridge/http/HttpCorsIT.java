@@ -6,6 +6,7 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.strimzi.kafka.bridge.facades.AdminClientFacade;
 import io.strimzi.test.container.StrimziKafkaContainer;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.JmxCollectorRegistry;
@@ -23,6 +24,7 @@ import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.KafkaFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -36,6 +38,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -48,11 +51,11 @@ public class HttpCorsIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpCorsIT.class);
     static Map<String, Object> config = new HashMap<>();
     static long timeout = 5L;
+    static String kafkaUri;
 
     static {
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
         config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
-        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
     }
 
     private static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
@@ -65,12 +68,17 @@ public class HttpCorsIT {
     static StrimziKafkaContainer kafkaContainer;
     static MeterRegistry meterRegistry = null;
     static JmxCollectorRegistry jmxCollectorRegistry = null;
+    static AdminClientFacade adminClientFacade;
 
     @BeforeAll
     static void beforeAll() {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
             kafkaContainer = new StrimziKafkaContainer();
             kafkaContainer.start();
+
+            kafkaUri = kafkaContainer.getBootstrapServers();
+
+            adminClientFacade = AdminClientFacade.create(kafkaUri);
         } // else use external kafka
     }
 
@@ -178,8 +186,56 @@ public class HttpCorsIT {
                                 .putHeader("Origin", "https://strimzi.io")
                                 .putHeader("content-type", BridgeContentType.KAFKA_JSON)
                                 .sendJsonObject(topicsRoot, ar2 -> context.verify(() -> {
-                                    //we are not creating a topic, so we will get a 400 status code
-                                    assertThat(ar2.result().statusCode(), is(400));
+                                    // we don't have created a consumer, so the address for the subscription doesn't exist
+                                    assertThat(ar2.result().statusCode(), is(404));
+                                    context.completeNow();
+                                }));
+                    }))));
+        } else {
+            context.completeNow();
+        }
+    }
+
+    /**
+     * Real requests (GET, POST, PUT, DELETE) for domains trusted are allowed
+     */
+    @Test
+    public void testCorsOriginAllowedProducer(VertxTestContext context) throws ExecutionException, InterruptedException {
+        createWebClient();
+        configureBridge(true, null);
+
+        KafkaFuture<Void> future = adminClientFacade.createTopic("my-topic");
+
+        String value = "message-value";
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        future.get();
+
+        final String origin = "https://strimzi.io";
+
+        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
+            vertx.deployVerticle(httpBridge, context.succeeding(id -> client
+                    .request(HttpMethod.OPTIONS, 8080, "localhost", "/topics/my-topic")
+                    .putHeader("Origin", "https://strimzi.io")
+                    .putHeader("Access-Control-Request-Method", "POST")
+                    .send(ar -> context.verify(() -> {
+                        assertThat(ar.result().statusCode(), is(204));
+                        assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
+                        assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,content-length,x-forwarded-proto,x-forwarded-host,origin,x-requested-with,content-type,access-control-allow-methods,accept"));
+                        List<String> list = Arrays.asList(ar.result().getHeader("access-control-allow-methods").split(","));
+                        assertThat(list, hasItem("POST"));
+                        client.request(HttpMethod.POST, 8080, "localhost", "/topics/my-topic")
+                                .putHeader("Origin", "https://strimzi.io")
+                                .putHeader("content-type", BridgeContentType.KAFKA_JSON_JSON)
+                                .sendJsonObject(root, ar2 -> context.verify(() -> {
+                                    assertThat(ar2.result().statusCode(), is(200));
                                     context.completeNow();
                                 }));
                     }))));
@@ -227,6 +283,7 @@ public class HttpCorsIT {
 
     private void configureBridge(boolean corsEnabled, String methodsAllowed) {
         if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
+            config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
             config.put(HttpConfig.HTTP_CORS_ENABLED, String.valueOf(corsEnabled));
             config.put(HttpConfig.HTTP_CORS_ALLOWED_ORIGINS, "https://strimzi.io");
             config.put(HttpConfig.HTTP_CORS_ALLOWED_METHODS, methodsAllowed != null ? methodsAllowed : "GET,POST,PUT,DELETE,OPTIONS,PATCH");
