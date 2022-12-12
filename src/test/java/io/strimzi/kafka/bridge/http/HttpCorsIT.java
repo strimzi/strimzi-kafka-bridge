@@ -6,6 +6,7 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.facades.AdminClientFacade;
 import io.strimzi.test.container.StrimziKafkaContainer;
 import io.strimzi.kafka.bridge.BridgeContentType;
@@ -53,11 +54,6 @@ public class HttpCorsIT {
     static long timeout = 5L;
     static String kafkaUri;
 
-    static {
-        config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
-        config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
-    }
-
     private static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
 
     static Vertx vertx;
@@ -70,8 +66,7 @@ public class HttpCorsIT {
     static JmxCollectorRegistry jmxCollectorRegistry = null;
     static AdminClientFacade adminClientFacade;
 
-    @BeforeAll
-    static void beforeAll() {
+    static {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
             kafkaContainer = new StrimziKafkaContainer();
             kafkaContainer.start();
@@ -79,7 +74,13 @@ public class HttpCorsIT {
             kafkaUri = kafkaContainer.getBootstrapServers();
 
             adminClientFacade = AdminClientFacade.create(kafkaUri);
-        } // else use external kafka
+        } else {
+            // else use external kafka
+            kafkaUri = "localhost:9092";
+        }
+
+        config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
+        config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
     }
 
     @BeforeEach
@@ -112,11 +113,11 @@ public class HttpCorsIT {
                     .putHeader("Origin", "https://evil.io")
                     .putHeader("Access-Control-Request-Method", "POST")
                     .send(ar -> context.verify(() -> {
-                        assertThat(ar.result().statusCode(), is(405));
+                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.METHOD_NOT_ALLOWED.code()));
                         client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
                                 .putHeader("Origin", "https://evil.io")
                                 .send(ar2 -> context.verify(() -> {
-                                    assertThat(ar2.result().statusCode(), is(400));
+                                    assertThat(ar2.result().statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                                     context.completeNow();
                                 }));
                     }))));
@@ -139,12 +140,12 @@ public class HttpCorsIT {
                     .putHeader("Origin", "https://evil.io")
                     .putHeader("Access-Control-Request-Method", "POST")
                     .send(ar -> context.verify(() -> {
-                        assertThat(ar.result().statusCode(), is(403));
+                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.FORBIDDEN.code()));
                         assertThat(ar.result().statusMessage(), is("CORS Rejected - Invalid origin"));
                         client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
                                 .putHeader("Origin", "https://evil.io")
                                 .send(ar2 -> context.verify(() -> {
-                                    assertThat(ar2.result().statusCode(), is(403));
+                                    assertThat(ar2.result().statusCode(), is(HttpResponseStatus.FORBIDDEN.code()));
                                     assertThat(ar2.result().statusMessage(), is("CORS Rejected - Invalid origin"));
                                     context.completeNow();
                                 }));
@@ -177,7 +178,7 @@ public class HttpCorsIT {
                     .putHeader("Origin", "https://strimzi.io")
                     .putHeader("Access-Control-Request-Method", "POST")
                     .send(ar -> context.verify(() -> {
-                        assertThat(ar.result().statusCode(), is(204));
+                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
                         assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,content-length,x-forwarded-proto,x-forwarded-host,origin,x-requested-with,content-type,access-control-allow-methods,accept"));
                         List<String> list = Arrays.asList(ar.result().getHeader("access-control-allow-methods").split(","));
@@ -187,7 +188,7 @@ public class HttpCorsIT {
                                 .putHeader("content-type", BridgeContentType.KAFKA_JSON)
                                 .sendJsonObject(topicsRoot, ar2 -> context.verify(() -> {
                                     // we don't have created a consumer, so the address for the subscription doesn't exist
-                                    assertThat(ar2.result().statusCode(), is(404));
+                                    assertThat(ar2.result().statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
                                     context.completeNow();
                                 }));
                     }))));
@@ -226,7 +227,7 @@ public class HttpCorsIT {
                     .putHeader("Origin", "https://strimzi.io")
                     .putHeader("Access-Control-Request-Method", "POST")
                     .send(ar -> context.verify(() -> {
-                        assertThat(ar.result().statusCode(), is(204));
+                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
                         assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,content-length,x-forwarded-proto,x-forwarded-host,origin,x-requested-with,content-type,access-control-allow-methods,accept"));
                         List<String> list = Arrays.asList(ar.result().getHeader("access-control-allow-methods").split(","));
@@ -235,7 +236,7 @@ public class HttpCorsIT {
                                 .putHeader("Origin", "https://strimzi.io")
                                 .putHeader("content-type", BridgeContentType.KAFKA_JSON_JSON)
                                 .sendJsonObject(root, ar2 -> context.verify(() -> {
-                                    assertThat(ar2.result().statusCode(), is(200));
+                                    assertThat(ar2.result().statusCode(), is(HttpResponseStatus.OK.code()));
                                     context.completeNow();
                                 }));
                     }))));
@@ -261,7 +262,7 @@ public class HttpCorsIT {
                     .putHeader("Origin", "https://strimzi.io")
                     .putHeader("Access-Control-Request-Method", "POST")
                     .send(ar -> context.verify(() -> {
-                        assertThat(ar.result().statusCode(), is(204));
+                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
                         assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,content-length,x-forwarded-proto,x-forwarded-host,origin,x-requested-with,content-type,access-control-allow-methods,accept"));
                         List<String> list = Arrays.asList(ar.result().getHeader("access-control-allow-methods").split(","));
