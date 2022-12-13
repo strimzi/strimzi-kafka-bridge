@@ -168,8 +168,8 @@ public class HttpBridge extends AbstractVerticle {
                 routerBuilder.operation(this.INFO.getOperationId().toString()).handler(this.INFO);
                 if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
                     routerBuilder.rootHandler(getCorsHandler());
-                    // body handler is added automatically when the global handlers in the OpenAPI builder is empty, no CORS
-                    // in this case we have to add it explicitly instead
+                    // body handler is added automatically when the global handlers in the OpenAPI builder is empty
+                    // when adding the CORS handler, we have to add the body handler explicitly instead
                     routerBuilder.rootHandler(BodyHandler.create());
                 }
 
