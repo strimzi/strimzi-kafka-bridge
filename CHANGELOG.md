@@ -2,7 +2,8 @@
 
 ## 0.24.0
 
-* TBD
+* Fixed regression about producing messages not working when CORS is enabled
+* Dependency updates (Netty 4.1.86.Final)
 
 ### Changes, deprecations and removals
 

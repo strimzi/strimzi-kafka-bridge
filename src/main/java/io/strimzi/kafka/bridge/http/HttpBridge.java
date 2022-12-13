@@ -31,6 +31,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
+import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.openapi.RouterBuilder;
 import io.vertx.ext.web.validation.BodyProcessorException;
@@ -167,6 +168,9 @@ public class HttpBridge extends AbstractVerticle {
                 routerBuilder.operation(this.INFO.getOperationId().toString()).handler(this.INFO);
                 if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
                     routerBuilder.rootHandler(getCorsHandler());
+                    // body handler is added automatically when the global handlers in the OpenAPI builder is empty
+                    // when adding the CORS handler, we have to add the body handler explicitly instead
+                    routerBuilder.rootHandler(BodyHandler.create());
                 }
 
                 this.router = routerBuilder.createRouter();
