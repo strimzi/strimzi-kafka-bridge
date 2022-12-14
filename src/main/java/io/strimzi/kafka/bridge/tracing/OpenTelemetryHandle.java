@@ -176,7 +176,7 @@ class OpenTelemetryHandle implements TracingHandle {
         public void finish(int code) {
             try {
                 span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, code);
-                span.setStatus(code == HttpResponseStatus.OK.code() ? StatusCode.OK : StatusCode.ERROR);
+                span.setStatus(code == HttpResponseStatus.OK.code() || code == HttpResponseStatus.NO_CONTENT.code() ? StatusCode.OK : StatusCode.ERROR);
                 scope.close();
             } finally {
                 span.end();
