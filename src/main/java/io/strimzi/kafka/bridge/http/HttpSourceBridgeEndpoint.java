@@ -128,9 +128,9 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         // this will free the Vert.x event loop still in place
         CompletableFuture.runAsync(() -> {
             if (isAsync) {
-                // if async is specified, return immediately once records are sent
+                // if async is specified, using the ignoring result send, and return immediately once records are sent
                 for (ProducerRecord<K, V> record : records) {
-                    this.send(record, true);
+                    this.sendIgnoreResult(record);
                 }
                 span.finish(HttpResponseStatus.NO_CONTENT.code());
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(),
@@ -144,8 +144,8 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             for (ProducerRecord<K, V> record : records) {
                 CompletionStage<RecordMetadata> sendHandler =
                         // inside send method, the callback which completes the promise is executed in the kafka-producer-network-thread
-                        // let's do the result handling async to free the network thread for more sends in parallel
-                        this.send(record, false).handle((metadata, ex) -> {
+                        // let's do the result handling in the same thread to keep the messages order delivery execution
+                        this.send(record).handle((metadata, ex) -> {
                             log.trace("Handle thread {}", Thread.currentThread());
                             if (ex == null) {
                                 log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", record, metadata.topic(), metadata.partition(), metadata.offset());
@@ -162,6 +162,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             }
 
             CompletableFuture.allOf(promises.toArray(new CompletableFuture[0]))
+                    // sending HTTP response asynchronously to free the kafka-producer-network-thread
                     .whenCompleteAsync((v, t) -> {
                         log.trace("All sent thread {}", Thread.currentThread());
                         // always return OK, since failure cause is in the response, per message

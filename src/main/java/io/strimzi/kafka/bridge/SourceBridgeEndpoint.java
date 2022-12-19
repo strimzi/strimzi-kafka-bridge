@@ -77,31 +77,38 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     /**
-     * Send a record to Kafka
+     * Send a record to Kafka, completing the returned CompletionStage when the Kafka producer callback is invoked.
+     * The returned CompletionStage can be completed with metadata if the sending operation is successful or
+     * it is completed exceptionally if the sending operation fails with any exception.
      *
      * @param record Kafka record to send
-     * @param isAsync if the send doesn't need to get metadata via the Kafka related callback
      * @return a CompletionStage bringing the metadata
      */
-    protected CompletionStage<RecordMetadata> send(ProducerRecord<K, V> record, boolean isAsync) {
+    protected CompletionStage<RecordMetadata> send(ProducerRecord<K, V> record) {
         CompletableFuture<RecordMetadata> promise = new CompletableFuture<>();
         log.trace("Send thread {}", Thread.currentThread());
         log.debug("Sending record {}", record);
-        if (isAsync) {
-            this.producer.send(record);
-            promise.complete(null);
-        } else {
-            this.producer.send(record, (metadata, exception) -> {
-                log.trace("Kafka client callback thread {}", Thread.currentThread());
-                log.debug("Sent record {} at offset {}", record, metadata.offset());
-                if (exception == null) {
-                    promise.complete(metadata);
-                } else {
-                    promise.completeExceptionally(exception);
-                }
-            });
-        }
+        this.producer.send(record, (metadata, exception) -> {
+            log.info("Kafka client callback thread {}", Thread.currentThread());
+            log.debug("Sent record {} at offset {}", record, metadata.offset());
+            if (exception == null) {
+                promise.complete(metadata);
+            } else {
+                promise.completeExceptionally(exception);
+            }
+        });
         return promise;
+    }
+
+    /**
+     * Send a record to Kafka, ignoring the outcome and metadata in case of success
+     *
+     * @param record Kafka record to send
+     */
+    protected void sendIgnoreResult(ProducerRecord<K, V> record) {
+        log.trace("Send ignore result thread {}", Thread.currentThread());
+        log.debug("Sending record {}", record);
+        this.producer.send(record);
     }
 
     @Override
