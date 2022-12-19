@@ -89,7 +89,7 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
         log.trace("Send thread {}", Thread.currentThread());
         log.debug("Sending record {}", record);
         this.producer.send(record, (metadata, exception) -> {
-            log.info("Kafka client callback thread {}", Thread.currentThread());
+            log.trace("Kafka client callback thread {}", Thread.currentThread());
             log.debug("Sent record {} at offset {}", record, metadata.offset());
             if (exception == null) {
                 promise.complete(metadata);
