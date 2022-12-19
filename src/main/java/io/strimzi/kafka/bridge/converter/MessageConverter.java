@@ -7,7 +7,7 @@ package io.strimzi.kafka.bridge.converter;
 
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
-import io.vertx.kafka.client.producer.KafkaProducerRecord;
+import org.apache.kafka.clients.producer.ProducerRecord;
 
 import java.util.List;
 
@@ -24,7 +24,7 @@ public interface MessageConverter<K, V, M, C> {
      * @param message message to convert
      * @return Kafka record
      */
-    KafkaProducerRecord<K, V> toKafkaRecord(String kafkaTopic, Integer partition, M message);
+    ProducerRecord<K, V> toKafkaRecord(String kafkaTopic, Integer partition, M message);
 
     /**
      * Convert a collection of messages to Kafka records
@@ -34,7 +34,7 @@ public interface MessageConverter<K, V, M, C> {
      * @param messages collection of messages to convert
      * @return Kafka records
      */
-    List<KafkaProducerRecord<K, V>> toKafkaRecords(String kafkaTopic, Integer partition, C messages);
+    List<ProducerRecord<K, V>> toKafkaRecords(String kafkaTopic, Integer partition, C messages);
 
     /**
      * Converts a Kafka record to a message

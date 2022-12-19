@@ -24,9 +24,10 @@ import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
-import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Properties;
 
@@ -37,10 +38,8 @@ import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY_SER
 /**
  * OpenTelemetry implementation of Tracing.
  *
- * Note: we use Vert.x OpenTelemetry extension to setup custom ContextStorageProvider:
- * @see io.vertx.tracing.opentelemetry.VertxContextStorageProvider
+ * @see io.strimzi.kafka.bridge.tracing.BridgeContextStorageProvider provides a custom OpenTelemetry context storage
  * @see io.opentelemetry.context.LazyStorage looks up all ContextStorageProviders via service-loader pattern,
- * since Vert.x OpenTelemetry support is on the classpath with VertxContextStorageProvider, that one is used.
  */
 class OpenTelemetryHandle implements TracingHandle {
 
@@ -65,6 +64,8 @@ class OpenTelemetryHandle implements TracingHandle {
     @Override
     public void initialize() {
         System.setProperty("otel.metrics.exporter", "none"); // disable metrics
+        // TODO: to remove when Vert.x won't be used anymore and the ThreadLocalContextStorage could be used again
+        System.setProperty("io.opentelemetry.context.contextStorageProvider", "io.strimzi.kafka.bridge.tracing.BridgeContextStorageProvider");
         AutoConfiguredOpenTelemetrySdk.initialize();
     }
 
@@ -163,8 +164,8 @@ class OpenTelemetryHandle implements TracingHandle {
         }
 
         @Override
-        public void inject(KafkaProducerRecord<K, V> record) {
-            propagator().inject(Context.current(), record, KafkaProducerRecord::addHeader);
+        public void inject(ProducerRecord<K, V> record) {
+            propagator().inject(Context.current(), record, (r, key, value) -> r.headers().add(key, value.getBytes(StandardCharsets.UTF_8)));
         }
 
         @Override

@@ -299,6 +299,7 @@
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-opentelemetry</artifactId>
 			<version>${vertx.version}</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.micrometer</groupId>
