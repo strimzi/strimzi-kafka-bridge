@@ -61,7 +61,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected long maxBytes = Long.MAX_VALUE;
 
     // handlers called when partitions are revoked/assigned on rebalancing
-    private PartitionsAssignmentHandle partitionsAssignmentHandle = new NoopPartitionsAssignmentHandle();
+    //private PartitionsAssignmentHandle partitionsAssignmentHandle = new NoopPartitionsAssignmentHandle();
 
     /**
      * Constructor
@@ -224,6 +224,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
      * Set up the handlers for automatic revoke and assignment partitions (due to rebalancing) for the consumer
      */
     private void setPartitionsAssignmentHandlers() {
+        // TODO: check what to do with this. Could be used just for logging.
         /*
         this.consumer.partitionsRevokedHandler(partitions -> {
 

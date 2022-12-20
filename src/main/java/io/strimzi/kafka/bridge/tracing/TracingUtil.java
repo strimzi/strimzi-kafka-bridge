@@ -12,6 +12,7 @@ import org.apache.kafka.common.header.Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -72,7 +73,7 @@ public class TracingUtil {
     public static <K, V> Map<String, String> toHeaders(ConsumerRecord<K, V> record) {
         Map<String, String> headers = new HashMap<>();
         for (Header header : record.headers()) {
-            headers.put(header.key(), header.value().toString());
+            headers.put(header.key(), new String(header.value(), StandardCharsets.UTF_8));
         }
         return headers;
     }
