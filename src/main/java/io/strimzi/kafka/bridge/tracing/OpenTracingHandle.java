@@ -21,7 +21,7 @@ import io.opentracing.util.GlobalTracer;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
@@ -72,7 +72,7 @@ class OpenTracingHandle implements TracingHandle {
 
     @SuppressFBWarnings({"BC_UNCONFIRMED_CAST"})
     @Override
-    public <K, V> void handleRecordSpan(SpanHandle<K, V> parentSpanHandle, KafkaConsumerRecord<K, V> record) {
+    public <K, V> void handleRecordSpan(SpanHandle<K, V> parentSpanHandle, ConsumerRecord<K, V> record) {
         Tracer tracer = GlobalTracer.get();
         Span span = ((OTSpanHandle<?, ?>) parentSpanHandle).span;
         Tracer.SpanBuilder spanBuilder = tracer.buildSpan(TracingKafkaUtils.FROM_PREFIX + record.topic())

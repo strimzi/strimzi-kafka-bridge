@@ -7,8 +7,8 @@ package io.strimzi.kafka.bridge.tracing;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
-import io.vertx.kafka.client.producer.KafkaHeader;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.header.Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,9 +69,9 @@ public class TracingUtil {
      * @param <V> value type
      * @return map of headers
      */
-    public static <K, V> Map<String, String> toHeaders(KafkaConsumerRecord<K, V> record) {
+    public static <K, V> Map<String, String> toHeaders(ConsumerRecord<K, V> record) {
         Map<String, String> headers = new HashMap<>();
-        for (KafkaHeader header : record.headers()) {
+        for (Header header : record.headers()) {
             headers.put(header.key(), header.value().toString());
         }
         return headers;

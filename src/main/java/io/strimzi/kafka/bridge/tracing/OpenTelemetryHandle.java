@@ -23,7 +23,7 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
@@ -89,7 +89,7 @@ class OpenTelemetryHandle implements TracingHandle {
     }
 
     @Override
-    public <K, V> void handleRecordSpan(SpanHandle<K, V> parentSpanHandle, KafkaConsumerRecord<K, V> record) {
+    public <K, V> void handleRecordSpan(SpanHandle<K, V> parentSpanHandle, ConsumerRecord<K, V> record) {
         String operationName = record.topic() + " " + MessageOperation.RECEIVE;
         SpanBuilder spanBuilder = get().spanBuilder(operationName);
         Context parentContext = propagator().extract(Context.current(), TracingUtil.toHeaders(record), MG);

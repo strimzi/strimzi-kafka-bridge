@@ -7,7 +7,7 @@ package io.strimzi.kafka.bridge.tracing;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.util.Properties;
 
@@ -54,7 +54,7 @@ public interface TracingHandle {
      * @param parentSpanHandle parent span handle
      * @param record Kafka consumer record
      */
-    <K, V>  void handleRecordSpan(SpanHandle<K, V> parentSpanHandle, KafkaConsumerRecord<K, V> record);
+    <K, V>  void handleRecordSpan(SpanHandle<K, V> parentSpanHandle, ConsumerRecord<K, V> record);
 
     /**
      * Add producer properties, if any.
