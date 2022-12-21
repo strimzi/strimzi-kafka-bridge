@@ -125,6 +125,7 @@ public class SeekIT extends HttpBridgeITAbstract {
                     });
                     consumerInstanceDontHaveTopic.complete(true);
                 });
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
 
         // consumer deletion
         consumerService()
