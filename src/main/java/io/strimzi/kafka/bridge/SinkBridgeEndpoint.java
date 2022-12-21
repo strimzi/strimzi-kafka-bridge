@@ -10,6 +10,7 @@ import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.vertx.core.Handler;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -61,7 +62,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected long maxBytes = Long.MAX_VALUE;
 
     // handlers called when partitions are revoked/assigned on rebalancing
-    //private PartitionsAssignmentHandle partitionsAssignmentHandle = new NoopPartitionsAssignmentHandle();
+    private ConsumerRebalanceListener noopPartitionsRebalance = new NoopPartitionsRebalance();
 
     /**
      * Constructor
@@ -151,11 +152,10 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         log.info("Subscribe to topics {}", this.topicSubscriptions);
         this.subscribed = true;
-        this.setPartitionsAssignmentHandlers();
 
         Set<String> topics = this.topicSubscriptions.stream().map(SinkTopicSubscription::getTopic).collect(Collectors.toSet());
         log.trace("Subscribe thread {}", Thread.currentThread());
-        this.consumer.subscribe(topics);
+        this.consumer.subscribe(topics, noopPartitionsRebalance);
     }
 
     /**
@@ -192,10 +192,9 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         topicSubscriptionsPattern = pattern;
 
         log.info("Subscribe to topics with pattern {}", pattern);
-        this.setPartitionsAssignmentHandlers();
         this.subscribed = true;
         log.trace("Subscribe thread {}", Thread.currentThread());
-        this.consumer.subscribe(pattern);
+        this.consumer.subscribe(pattern, noopPartitionsRebalance);
     }
 
     /**
@@ -218,44 +217,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         log.trace("Assign thread {}", Thread.currentThread());
         this.consumer.assign(topicPartitions);
-    }
-
-    /**
-     * Set up the handlers for automatic revoke and assignment partitions (due to rebalancing) for the consumer
-     */
-    private void setPartitionsAssignmentHandlers() {
-        // TODO: check what to do with this. Could be used just for logging.
-        /*
-        this.consumer.partitionsRevokedHandler(partitions -> {
-
-            log.debug("Partitions revoked {}", partitions.size());
-
-            if (log.isDebugEnabled() && !partitions.isEmpty()) {
-                for (TopicPartition partition : partitions) {
-                    log.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
-                }
-            }
-
-            if (this.partitionsAssignmentHandle != null) {
-                this.partitionsAssignmentHandle.handleRevokedPartitions(partitions);
-            }
-        });
-
-        this.consumer.partitionsAssignedHandler(partitions -> {
-
-            log.debug("Partitions assigned {}", partitions.size());
-
-            if (log.isDebugEnabled() && !partitions.isEmpty()) {
-                for (TopicPartition partition : partitions) {
-                    log.debug("topic {} partition {}", partition.getTopic(), partition.getPartition());
-                }
-            }
-
-            if (this.partitionsAssignmentHandle != null) {
-                this.partitionsAssignmentHandle.handleAssignedPartitions(partitions);
-            }
-        });
-        */
     }
 
     /**
