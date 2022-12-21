@@ -40,7 +40,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -178,7 +177,13 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 .map(json -> new TopicPartition(json.getString("topic"), json.getInteger("partition")))
                 .collect(Collectors.toSet());
 
-        BiConsumer<Void, Throwable> seekHandler = (v, ex) -> {
+        CompletableFuture.runAsync(() -> {
+            if (seekToType == HttpOpenApiOperations.SEEK_TO_BEGINNING) {
+                this.seekToBeginning(set);
+            } else {
+                this.seekToEnd(set);
+            }
+        }).whenComplete((v, ex) -> {
             log.trace("SeekTo handler thread {}", Thread.currentThread());
             if (ex == null) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
@@ -187,15 +192,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 HttpUtils.sendResponse(routingContext, error.getCode(),
                         BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
-        };
-
-        CompletableFuture.runAsync(() -> {
-            if (seekToType == HttpOpenApiOperations.SEEK_TO_BEGINNING) {
-                this.seekToBeginning(set);
-            } else {
-                this.seekToEnd(set);
-            }
-        }).whenComplete(seekHandler);
+        });
     }
 
     private void doCommit(RoutingContext routingContext, JsonObject bodyAsJson) {
@@ -211,34 +208,36 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 offsetData.put(topicPartition, offsetAndMetadata);
             }
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-            CompletableFuture.supplyAsync(() -> this.commit(offsetData)).whenComplete((data, ex) -> {
-                log.trace("Commit handler thread {}", Thread.currentThread());
-                if (ex == null) {
-                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
-                } else {
-                    HttpBridgeError error = new HttpBridgeError(
-                            HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                            ex.getMessage()
-                    );
-                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
-                }
-            });
+            CompletableFuture.supplyAsync(() -> this.commit(offsetData))
+                    .whenComplete((data, ex) -> {
+                        log.trace("Commit handler thread {}", Thread.currentThread());
+                        if (ex == null) {
+                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+                        } else {
+                            HttpBridgeError error = new HttpBridgeError(
+                                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                    ex.getMessage()
+                            );
+                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                        }
+                    });
         } else {
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-            CompletableFuture.runAsync(() -> this.commit()).whenComplete((v, ex) -> {
-                log.trace("Commit handler thread {}", Thread.currentThread());
-                if (ex == null) {
-                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
-                } else {
-                    HttpBridgeError error = new HttpBridgeError(
-                            HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                            ex.getMessage()
-                    );
-                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                            BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
-                }
-            });
+            CompletableFuture.runAsync(() -> this.commit())
+                    .whenComplete((v, ex) -> {
+                        log.trace("Commit handler thread {}", Thread.currentThread());
+                        if (ex == null) {
+                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+                        } else {
+                            HttpBridgeError error = new HttpBridgeError(
+                                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                    ex.getMessage()
+                            );
+                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                        }
+                    });
         }
     }
 
@@ -326,10 +325,11 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             }
 
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-            CompletableFuture.supplyAsync(() -> this.consume()).whenComplete((records, ex) -> {
-                log.trace("Poll handler thread {}", Thread.currentThread());
-                this.pollHandler(records, ex, routingContext);
-            });
+            CompletableFuture.supplyAsync(() -> this.consume())
+                    .whenComplete((records, ex) -> {
+                        log.trace("Poll handler thread {}", Thread.currentThread());
+                        this.pollHandler(records, ex, routingContext);
+                    });
         } else {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.NOT_ACCEPTABLE.code(),
@@ -360,14 +360,15 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         );
 
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-        CompletableFuture.runAsync(() -> this.assign()).whenComplete((v, ex) -> {
-            log.trace("Assign handler thread {}", Thread.currentThread());
-            if (ex == null) {
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
-            } else {
-                // TODO: with Vert.x we did nothing, are we sure? when assign can fail?
-            }
-        });
+        CompletableFuture.runAsync(() -> this.assign())
+                .whenComplete((v, ex) -> {
+                    log.trace("Assign handler thread {}", Thread.currentThread());
+                    if (ex == null) {
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+                    } else {
+                        // TODO: with Vert.x we did nothing, are we sure? when assign can fail?
+                    }
+                });
     }
 
     private void doSubscribe(RoutingContext routingContext, JsonObject bodyAsJson) {
@@ -393,15 +394,6 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             return;
         }
 
-        BiConsumer<Void, Throwable> subscribeHandler = (v, ex) -> {
-            log.trace("Subscribe handler thread {}", Thread.currentThread());
-            if (ex == null) {
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
-            } else {
-                // TODO: with Vert.x we did nothing, are we sure? when subscribe can fail?
-            }
-        };
-
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
         CompletableFuture.runAsync(() -> {
             if (bodyAsJson.containsKey("topics")) {
@@ -417,7 +409,14 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 Pattern pattern = Pattern.compile(bodyAsJson.getString("topic_pattern"));
                 this.subscribe(pattern);
             }
-        }).whenComplete(subscribeHandler);
+        }).whenComplete((v, ex) -> {
+            log.trace("Subscribe handler thread {}", Thread.currentThread());
+            if (ex == null) {
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+            } else {
+                // TODO: with Vert.x we did nothing, are we sure? when subscribe can fail?
+            }
+        });
     }
 
     /**
@@ -427,41 +426,42 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
      */
     public void doListSubscriptions(RoutingContext routingContext) {
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-        CompletableFuture.supplyAsync(() -> this.listSubscriptions()).whenComplete((subscriptions, ex) -> {
-            log.trace("ListSubscriptions handler thread {}", Thread.currentThread());
-            if (ex == null) {
-                JsonObject root = new JsonObject();
-                JsonArray topicsArray = new JsonArray();
-                JsonArray partitionsArray = new JsonArray();
+        CompletableFuture.supplyAsync(() -> this.listSubscriptions())
+                .whenComplete((subscriptions, ex) -> {
+                    log.trace("ListSubscriptions handler thread {}", Thread.currentThread());
+                    if (ex == null) {
+                        JsonObject root = new JsonObject();
+                        JsonArray topicsArray = new JsonArray();
+                        JsonArray partitionsArray = new JsonArray();
 
-                HashMap<String, JsonArray> partitions = new HashMap<>();
-                for (TopicPartition topicPartition: subscriptions) {
-                    if (!topicsArray.contains(topicPartition.topic())) {
-                        topicsArray.add(topicPartition.topic());
-                    }
-                    if (!partitions.containsKey(topicPartition.topic())) {
-                        partitions.put(topicPartition.topic(), new JsonArray());
-                    }
-                    partitions.put(topicPartition.topic(), partitions.get(topicPartition.topic()).add(topicPartition.partition()));
-                }
-                for (Map.Entry<String, JsonArray> part: partitions.entrySet()) {
-                    JsonObject topic = new JsonObject();
-                    topic.put(part.getKey(), part.getValue());
-                    partitionsArray.add(topic);
-                }
-                root.put("topics", topicsArray);
-                root.put("partitions", partitionsArray);
+                        HashMap<String, JsonArray> partitions = new HashMap<>();
+                        for (TopicPartition topicPartition: subscriptions) {
+                            if (!topicsArray.contains(topicPartition.topic())) {
+                                topicsArray.add(topicPartition.topic());
+                            }
+                            if (!partitions.containsKey(topicPartition.topic())) {
+                                partitions.put(topicPartition.topic(), new JsonArray());
+                            }
+                            partitions.put(topicPartition.topic(), partitions.get(topicPartition.topic()).add(topicPartition.partition()));
+                        }
+                        for (Map.Entry<String, JsonArray> part: partitions.entrySet()) {
+                            JsonObject topic = new JsonObject();
+                            topic.put(part.getKey(), part.getValue());
+                            partitionsArray.add(topic);
+                        }
+                        root.put("topics", topicsArray);
+                        root.put("partitions", partitionsArray);
 
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
-            } else {
-                HttpBridgeError error = new HttpBridgeError(
-                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        ex.getMessage()
-                );
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
-            }
-        });
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
+                    } else {
+                        HttpBridgeError error = new HttpBridgeError(
+                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                ex.getMessage()
+                        );
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                    }
+                });
     }
 
     /**
@@ -471,19 +471,20 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
      */
     public void doUnsubscribe(RoutingContext routingContext) {
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-        CompletableFuture.runAsync(() -> this.unsubscribe()).whenComplete((v, ex) -> {
-            log.trace("Unsubscribe handler thread {}", Thread.currentThread());
-            if (ex == null) {
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
-            } else {
-                HttpBridgeError error = new HttpBridgeError(
-                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        ex.getMessage()
-                );
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
-            }
-        });
+        CompletableFuture.runAsync(() -> this.unsubscribe())
+                .whenComplete((v, ex) -> {
+                    log.trace("Unsubscribe handler thread {}", Thread.currentThread());
+                    if (ex == null) {
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+                    } else {
+                        HttpBridgeError error = new HttpBridgeError(
+                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                ex.getMessage()
+                        );
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                    }
+                });
     }
 
     /**

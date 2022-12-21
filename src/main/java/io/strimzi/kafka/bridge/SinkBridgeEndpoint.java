@@ -62,7 +62,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     protected long maxBytes = Long.MAX_VALUE;
 
     // handlers called when partitions are revoked/assigned on rebalancing
-    private ConsumerRebalanceListener noopPartitionsRebalance = new NoopPartitionsRebalance();
+    private ConsumerRebalanceListener loggingPartitionsRebalance = new LoggingPartitionsRebalance();
 
     /**
      * Constructor
@@ -155,7 +155,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
         Set<String> topics = this.topicSubscriptions.stream().map(SinkTopicSubscription::getTopic).collect(Collectors.toSet());
         log.trace("Subscribe thread {}", Thread.currentThread());
-        this.consumer.subscribe(topics, noopPartitionsRebalance);
+        this.consumer.subscribe(topics, loggingPartitionsRebalance);
     }
 
     /**
@@ -194,7 +194,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
         log.info("Subscribe to topics with pattern {}", pattern);
         this.subscribed = true;
         log.trace("Subscribe thread {}", Thread.currentThread());
-        this.consumer.subscribe(pattern, noopPartitionsRebalance);
+        this.consumer.subscribe(pattern, loggingPartitionsRebalance);
     }
 
     /**

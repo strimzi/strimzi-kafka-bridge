@@ -16,7 +16,7 @@ import java.util.Collection;
  * No operations implementation about handling partitions being assigned on revoked on rebalancing
  * It just logs partitions if enabled
  */
-public class NoopPartitionsRebalance implements ConsumerRebalanceListener {
+public class LoggingPartitionsRebalance implements ConsumerRebalanceListener {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
