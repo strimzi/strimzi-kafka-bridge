@@ -394,7 +394,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         }
 
         BiConsumer<Void, Throwable> subscribeHandler = (v, ex) -> {
-            log.info("Subscribe handler thread {}", Thread.currentThread());
+            log.trace("Subscribe handler thread {}", Thread.currentThread());
             if (ex == null) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
@@ -518,7 +518,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             return;
         }
 
-        log.info("HttpSinkBridgeEndpoint handle thread {}", Thread.currentThread());
+        log.trace("HttpSinkBridgeEndpoint handle thread {}", Thread.currentThread());
         switch (this.httpBridgeContext.getOpenApiOperation()) {
 
             case CREATE_CONSUMER:
