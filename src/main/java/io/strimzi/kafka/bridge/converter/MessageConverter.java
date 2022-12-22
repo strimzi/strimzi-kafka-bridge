@@ -5,8 +5,8 @@
 
 package io.strimzi.kafka.bridge.converter;
 
-import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
-import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
 import java.util.List;
@@ -43,7 +43,7 @@ public interface MessageConverter<K, V, M, C> {
      * @param record Kafka record to convert
      * @return message
      */
-    M toMessage(String address, KafkaConsumerRecord<K, V> record);
+    M toMessage(String address, ConsumerRecord<K, V> record);
 
     /**
      * Converts Kafka records to a collection of messages
@@ -51,5 +51,5 @@ public interface MessageConverter<K, V, M, C> {
      * @param records Kafka records to convert
      * @return a collection of messages
      */
-    C toMessages(KafkaConsumerRecords<K, V> records);
+    C toMessages(ConsumerRecords<K, V> records);
 }

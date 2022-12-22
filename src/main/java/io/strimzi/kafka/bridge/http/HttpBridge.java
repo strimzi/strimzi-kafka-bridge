@@ -293,8 +293,8 @@ public class HttpBridge extends AbstractVerticle {
         try {
             EmbeddedFormat format = EmbeddedFormat.from(body.getString("format", "binary"));
 
-            sink = new HttpSinkBridgeEndpoint<>(this.vertx, this.bridgeConfig, this.httpBridgeContext,
-                    format, new ByteArrayDeserializer(), new ByteArrayDeserializer());
+            sink = new HttpSinkBridgeEndpoint<>(this.bridgeConfig, this.httpBridgeContext, format,
+                                                new ByteArrayDeserializer(), new ByteArrayDeserializer());
 
             sink.closeHandler(endpoint -> {
                 HttpSinkBridgeEndpoint<byte[], byte[]> httpEndpoint = (HttpSinkBridgeEndpoint<byte[], byte[]>) endpoint;

@@ -9,10 +9,10 @@ import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
-import io.vertx.kafka.client.consumer.KafkaConsumerRecords;
-import io.vertx.kafka.client.producer.KafkaHeader;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
@@ -80,39 +80,38 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
     }
 
     @Override
-    public Buffer toMessage(String address, KafkaConsumerRecord<byte[], byte[]> record) {
+    public Buffer toMessage(String address, ConsumerRecord<byte[], byte[]> record) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Buffer toMessages(KafkaConsumerRecords<byte[], byte[]> records) {
+    public Buffer toMessages(ConsumerRecords<byte[], byte[]> records) {
 
         JsonArray jsonArray = new JsonArray();
 
-        for (int i = 0; i < records.size(); i++) {
+        for (ConsumerRecord<byte[], byte[]> record : records) {
 
             JsonObject jsonObject = new JsonObject();
-            KafkaConsumerRecord<byte[], byte[]> record = records.recordAt(i);
 
             jsonObject.put("topic", record.topic());
             jsonObject.put("key", record.key() != null ?
-                    DatatypeConverter.printBase64Binary(records.recordAt(i).key()) : null);
+                    DatatypeConverter.printBase64Binary(record.key()) : null);
             jsonObject.put("value", record.value() != null ?
-                    DatatypeConverter.printBase64Binary(records.recordAt(i).value()) : null);
+                    DatatypeConverter.printBase64Binary(record.value()) : null);
             jsonObject.put("partition", record.partition());
             jsonObject.put("offset", record.offset());
 
-            if (!record.headers().isEmpty()) {
-                JsonArray headers = new JsonArray();
+            JsonArray headers = new JsonArray();
 
-                for (KafkaHeader kafkaHeader: record.headers()) {
-                    JsonObject header = new JsonObject();
+            for (Header kafkaHeader: record.headers()) {
+                JsonObject header = new JsonObject();
 
-                    header.put("key", kafkaHeader.key());
-                    header.put("value", DatatypeConverter.printBase64Binary(kafkaHeader.value().getBytes()));
+                header.put("key", kafkaHeader.key());
+                header.put("value", DatatypeConverter.printBase64Binary(kafkaHeader.value()));
 
-                    headers.add(header);
-                }
+                headers.add(header);
+            }
+            if (!headers.isEmpty()) {
                 jsonObject.put("headers", headers);
             }
             jsonArray.add(jsonObject);

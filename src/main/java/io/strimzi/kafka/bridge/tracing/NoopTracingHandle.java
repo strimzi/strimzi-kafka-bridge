@@ -7,7 +7,7 @@ package io.strimzi.kafka.bridge.tracing;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.kafka.client.consumer.KafkaConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
 import java.util.Properties;
@@ -33,7 +33,7 @@ final class NoopTracingHandle implements TracingHandle {
     }
 
     @Override
-    public <K, V> void handleRecordSpan(SpanHandle<K, V> parentSpanHandle, KafkaConsumerRecord<K, V> record) {
+    public <K, V> void handleRecordSpan(SpanHandle<K, V> parentSpanHandle, ConsumerRecord<K, V> record) {
     }
 
     @Override
