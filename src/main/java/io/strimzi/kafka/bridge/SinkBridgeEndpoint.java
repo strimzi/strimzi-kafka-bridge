@@ -246,7 +246,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     /**
      * Commit offsets returned on the last poll() for all the subscribed list of topics and partitions
      */
-    protected void commit() {
+    protected void commitLastPolledOffsets() {
         log.trace("Commit thread {}", Thread.currentThread());
         // TODO: doesn't it make sense to change using the commitAsync?
         this.consumer.commitSync();

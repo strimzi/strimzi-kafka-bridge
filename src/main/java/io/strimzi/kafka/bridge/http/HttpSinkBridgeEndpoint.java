@@ -224,7 +224,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                     });
         } else {
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-            CompletableFuture.runAsync(() -> this.commit())
+            CompletableFuture.runAsync(() -> this.commitLastPolledOffsets())
                     .whenComplete((v, ex) -> {
                         log.trace("Commit handler thread {}", Thread.currentThread());
                         if (ex == null) {
@@ -366,7 +366,12 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                     if (ex == null) {
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
                     } else {
-                        // TODO: with Vert.x we did nothing, are we sure? when assign can fail?
+                        HttpBridgeError error = new HttpBridgeError(
+                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                ex.getMessage()
+                        );
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
                     }
                 });
     }
@@ -414,7 +419,12 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             if (ex == null) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
-                // TODO: with Vert.x we did nothing, are we sure? when subscribe can fail?
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        ex.getMessage()
+                );
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
             }
         });
     }
