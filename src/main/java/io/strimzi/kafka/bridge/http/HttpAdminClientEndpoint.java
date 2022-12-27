@@ -59,7 +59,7 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
     @Override
     public void handle(Endpoint<?> endpoint, Handler<?> handler) {
         RoutingContext routingContext = (RoutingContext) endpoint.get();
-        log.info("HttpAdminClientEndpoint handle thread {}", Thread.currentThread());
+        log.trace("HttpAdminClientEndpoint handle thread {}", Thread.currentThread());
         switch (this.httpBridgeContext.getOpenApiOperation()) {
             case LIST_TOPICS:
                 doListTopics(routingContext);
