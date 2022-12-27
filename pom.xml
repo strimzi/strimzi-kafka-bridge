@@ -132,11 +132,6 @@
 		</dependency>
 		<dependency>
 			<groupId>io.vertx</groupId>
-			<artifactId>vertx-kafka-client</artifactId>
-			<version>${vertx.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>io.vertx</groupId>
 			<artifactId>vertx-web</artifactId>
 			<version>${vertx.version}</version>
 		</dependency>
@@ -375,6 +370,12 @@
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
 			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-kafka-client</artifactId>
+			<version>${vertx.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
