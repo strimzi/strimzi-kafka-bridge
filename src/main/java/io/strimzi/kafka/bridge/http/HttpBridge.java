@@ -183,7 +183,7 @@ public class HttpBridge extends AbstractVerticle {
 
                 log.info("Starting HTTP-Kafka bridge verticle...");
                 this.httpBridgeContext = new HttpBridgeContext<>();
-                AdminClientEndpoint adminClientEndpoint = new HttpAdminClientEndpoint(this.vertx, this.bridgeConfig, this.httpBridgeContext);
+                AdminClientEndpoint adminClientEndpoint = new HttpAdminClientEndpoint(this.bridgeConfig, this.httpBridgeContext);
                 this.httpBridgeContext.setAdminClientEndpoint(adminClientEndpoint);
                 adminClientEndpoint.open();
                 this.bindHttpServer(startPromise);

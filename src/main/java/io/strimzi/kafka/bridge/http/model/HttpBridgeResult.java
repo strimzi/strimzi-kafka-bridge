@@ -8,7 +8,7 @@ package io.strimzi.kafka.bridge.http.model;
 /**
  * This class represents a result of an HTTP bridging operation
  *
- * @param <T> the class bringing the actual result as {@link HttpBridgeError} or {@link io.vertx.kafka.client.producer.RecordMetadata}
+ * @param <T> the class bringing the actual result as {@link HttpBridgeError} or {@link org.apache.kafka.clients.producer.RecordMetadata}
  */
 public class HttpBridgeResult<T> {
 

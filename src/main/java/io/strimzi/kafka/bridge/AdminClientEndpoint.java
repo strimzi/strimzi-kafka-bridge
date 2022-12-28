@@ -7,16 +7,14 @@ package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.kafka.admin.Config;
-import io.vertx.kafka.admin.KafkaAdminClient;
-import io.vertx.kafka.admin.ListOffsetsResultInfo;
-import io.vertx.kafka.admin.OffsetSpec;
-import io.vertx.kafka.admin.TopicDescription;
-import io.vertx.kafka.client.common.ConfigResource;
-import io.vertx.kafka.client.common.TopicPartition;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.Config;
+import org.apache.kafka.clients.admin.ListOffsetsResult;
+import org.apache.kafka.clients.admin.OffsetSpec;
+import org.apache.kafka.clients.admin.TopicDescription;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.config.ConfigResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Base class for admin client endpoint
@@ -32,21 +32,18 @@ public abstract class AdminClientEndpoint implements BridgeEndpoint {
     protected final Logger log = LoggerFactory.getLogger(AdminClientEndpoint.class);
 
     protected String name;
-    protected final Vertx vertx;
     protected final BridgeConfig bridgeConfig;
 
     private Handler<BridgeEndpoint> closeHandler;
 
-    private KafkaAdminClient adminClient;
+    private AdminClient kAdminClient;
 
     /**
      * Constructor
      *
-     * @param vertx Vert.x instance
      * @param bridgeConfig Bridge configuration
      */
-    public AdminClientEndpoint(Vertx vertx, BridgeConfig bridgeConfig) {
-        this.vertx = vertx;
+    public AdminClientEndpoint(BridgeConfig bridgeConfig) {
         this.name = "kafka-bridge-admin";
         this.bridgeConfig = bridgeConfig;
     }
@@ -70,47 +67,103 @@ public abstract class AdminClientEndpoint implements BridgeEndpoint {
         props.putAll(kafkaConfig.getConfig());
         props.putAll(kafkaConfig.getAdminConfig().getConfig());
 
-        this.adminClient = KafkaAdminClient.create(this.vertx, props);
+        this.kAdminClient = AdminClient.create(props);
     }
 
     @Override
     public void close() {
-        if (this.adminClient != null) {
-            this.adminClient.close();
+        if (this.kAdminClient != null) {
+            this.kAdminClient.close();
         }
         this.handleClose();
     }
 
     /**
      * Returns all the topics.
+     *
+     * @return a CompletionStage bringing the set of topics
      */
-    protected void listTopics(Handler<AsyncResult<Set<String>>> handler) {
+    protected CompletionStage<Set<String>> listTopics() {
+        log.trace("List topics thread {}", Thread.currentThread());
         log.info("List topics");
-        this.adminClient.listTopics(handler);
+        CompletableFuture<Set<String>> promise = new CompletableFuture<>();
+        this.kAdminClient.listTopics()
+                .names()
+                .whenComplete((topics, exception) -> {
+                    log.trace("List topics callback thread {}", Thread.currentThread());
+                    if (exception == null) {
+                        promise.complete(topics);
+                    } else {
+                        promise.completeExceptionally(exception);
+                    }
+                });
+        return promise;
     }
 
     /**
      * Returns the description of the specified topics.
+     *
+     * @return a CompletionStage bringing the description of the specified topics.
      */
-    protected void describeTopics(List<String> topicNames, Handler<AsyncResult<Map<String, TopicDescription>>> handler) {
+    protected CompletionStage<Map<String, TopicDescription>> describeTopics(List<String> topicNames) {
+        log.trace("Describe topics thread {}", Thread.currentThread());
         log.info("Describe topics {}", topicNames);
-        this.adminClient.describeTopics(topicNames, handler);
+        CompletableFuture<Map<String, TopicDescription>> promise = new CompletableFuture<>();
+        this.kAdminClient.describeTopics(topicNames)
+                .allTopicNames()
+                .whenComplete((topics, exception) -> {
+                    log.trace("Describe topics callback thread {}", Thread.currentThread());
+                    if (exception == null) {
+                        promise.complete(topics);
+                    } else {
+                        promise.completeExceptionally(exception);
+                    }
+                });
+        return promise;
     }
 
     /**
      * Returns the configuration of the specified resources.
+     *
+     * @return a CompletionStage bringing the configuration of the specified resources.
      */
-    protected void describeConfigs(List<ConfigResource> configResources, Handler<AsyncResult<Map<ConfigResource, Config>>> handler) {
+    protected CompletionStage<Map<ConfigResource, Config>> describeConfigs(List<ConfigResource> configResources) {
+        log.trace("Describe configs thread {}", Thread.currentThread());
         log.info("Describe configs {}", configResources);
-        this.adminClient.describeConfigs(configResources, handler);
+        CompletableFuture<Map<ConfigResource, Config>> promise = new CompletableFuture<>();
+        this.kAdminClient.describeConfigs(configResources)
+                .all()
+                .whenComplete((configs, exception) -> {
+                    log.trace("Describe configs callback thread {}", Thread.currentThread());
+                    if (exception == null) {
+                        promise.complete(configs);
+                    } else {
+                        promise.completeExceptionally(exception);
+                    }
+                });
+        return promise;
     }
 
     /**
      * Returns the offset spec for the given partition.
+     *
+     * @return a CompletionStage bringing the offset spec for the given partition.
      */
-    protected void listOffsets(Map<TopicPartition, OffsetSpec> topicPartitionOffsets, Handler<AsyncResult<Map<TopicPartition, ListOffsetsResultInfo>>> handler) {
+    protected CompletionStage<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> listOffsets(Map<TopicPartition, OffsetSpec> topicPartitionOffsets) {
+        log.trace("Get offsets thread {}", Thread.currentThread());
         log.info("Get the offset spec for partition {}", topicPartitionOffsets);
-        this.adminClient.listOffsets(topicPartitionOffsets, handler);
+        CompletableFuture<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> promise = new CompletableFuture<>();
+        this.kAdminClient.listOffsets(topicPartitionOffsets)
+                .all()
+                .whenComplete((offsets, exception) -> {
+                    log.trace("Get offsets callback thread {}", Thread.currentThread());
+                    if (exception == null) {
+                        promise.complete(offsets);
+                    } else {
+                        promise.completeExceptionally(exception);
+                    }
+                });
+        return promise;
     }
 
     /**
