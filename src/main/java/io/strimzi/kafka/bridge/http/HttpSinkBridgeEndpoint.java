@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import com.google.gson.JsonSyntaxException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
@@ -276,7 +277,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                             this.format == EmbeddedFormat.BINARY ? BridgeContentType.KAFKA_JSON_BINARY : BridgeContentType.KAFKA_JSON_JSON,
                             buffer);
                 }
-            } catch (DecodeException e) {
+            } catch (DecodeException | JsonSyntaxException e) {
                 log.error("Error decoding records as JSON", e);
                 responseStatus = HttpResponseStatus.NOT_ACCEPTABLE;
                 HttpBridgeError error = new HttpBridgeError(

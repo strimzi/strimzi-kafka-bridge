@@ -10,7 +10,6 @@ import io.strimzi.kafka.bridge.clients.Consumer;
 import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
-import io.strimzi.kafka.bridge.utils.KafkaJsonDeserializer;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
@@ -74,7 +73,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
-                new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
+                new StringDeserializer(), new StringDeserializer());
         consumer.handler(record -> {
             context.verify(() -> {
                 assertThat(record.value(), is(value));
@@ -124,7 +123,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
-                new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
+                new StringDeserializer(), new StringDeserializer());
         consumer.handler(record -> {
             context.verify(() -> {
                 assertThat(record.value(), is(value));
@@ -174,7 +173,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
-                new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
+                new StringDeserializer(), new StringDeserializer());
         consumer.handler(record -> {
             context.verify(() -> {
                 assertThat(record.value(), is(value));
@@ -281,7 +280,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
-            new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
+                new StringDeserializer(), new StringDeserializer());
         consumer.handler(record -> {
             context.verify(() -> {
                 assertThat(record.value(), is(value));
@@ -411,7 +410,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
-                new StringDeserializer(), new KafkaJsonDeserializer<String>(String.class));
+                new StringDeserializer(), new StringDeserializer());
         this.count = 0;
         consumer.handler(record -> {
             context.verify(() -> {
@@ -488,7 +487,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
-                new KafkaJsonDeserializer<>(String.class), new KafkaJsonDeserializer<>(String.class));
+                new StringDeserializer(), new StringDeserializer());
         consumer.handler(record -> {
             context.verify(() -> {
                 assertThat(record.value(), is(nullValue()));
@@ -911,7 +910,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
-                new StringDeserializer(), new KafkaJsonDeserializer<String>(String.class));
+                new StringDeserializer(), new StringDeserializer());
         this.count = 0;
         consumer.handler(record -> {
             context.verify(() -> {

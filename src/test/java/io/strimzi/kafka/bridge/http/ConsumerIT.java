@@ -1475,7 +1475,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
                         assertThat(error.getCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
-                        assertThat(error.getMessage().startsWith("Failed to decode"), is(true));
+                        assertThat(error.getMessage().contains("malformed JSON"), is(true));
                     });
                     consume.complete(true);
                 });

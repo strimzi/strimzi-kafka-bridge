@@ -119,12 +119,18 @@
 		<test-container.version>0.102.0</test-container.version>
 		<jakarta.version>2.3.2</jakarta.version>
 		<snakeyaml.version>1.33</snakeyaml.version>
+		<gson.version>2.9.1</gson.version>
 		<!-- property to skip surefire tests during failsafe execution -->
 		<!--suppress UnresolvedMavenProperty -->
 		<skip.surefire.tests>${skipTests}</skip.surefire.tests>
 	</properties>
 
 	<dependencies>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>${gson.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-core</artifactId>
@@ -173,6 +179,11 @@
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-common</artifactId>
+			<version>${netty.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-buffer</artifactId>
 			<version>${netty.version}</version>
 		</dependency>
 		<dependency>
