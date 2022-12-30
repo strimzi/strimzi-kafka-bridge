@@ -10,6 +10,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.buffer.Buffer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -123,6 +124,8 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
         return Buffer.buffer(GSON.toJson(jsonArray).getBytes(StandardCharsets.UTF_8));
     }
 
+    // suppressing this warning, because for the JSON serialization null is needed here
+    @SuppressFBWarnings("PZLA_PREFER_ZERO_LENGTH_ARRAYS")
     private byte[] jsonToBytes(JsonElement json) {
         if (json.isJsonNull())
             return null;
