@@ -5,6 +5,8 @@
 
 package io.strimzi.kafka.bridge.http.model;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -43,8 +45,8 @@ public class HttpBridgeError {
     /**
      * @return a JSON representation of the error with code and message
      */
-    public JsonObject toJson() {
-        JsonObject json = new JsonObject();
+    public ObjectNode toJson() {
+        ObjectNode json = JsonUtils.createObjectNode();
         json.put("error_code", this.code);
         json.put("message", this.message);
         return json;

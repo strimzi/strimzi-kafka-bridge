@@ -5,6 +5,8 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
@@ -14,6 +16,7 @@ import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
+import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeResult;
 import io.strimzi.kafka.bridge.tracing.SpanHandle;
@@ -21,8 +24,6 @@ import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -85,7 +86,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                         HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                         "Specified partition is not a valid number");
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
-                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
                 return;
             }
         }
@@ -103,7 +104,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                 HttpBridgeError error = new HttpBridgeError(
                         HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), HttpResponseStatus.INTERNAL_SERVER_ERROR.reasonPhrase());
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
 
                 return;
             }
@@ -118,7 +119,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     e.getMessage());
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
-                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
 
             return;
         }
@@ -168,21 +169,21 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                         // always return OK, since failure cause is in the response, per message
                         span.finish(HttpResponseStatus.OK.code());
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
-                                BridgeContentType.KAFKA_JSON, buildOffsets(results).toBuffer());
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(buildOffsets(results)));
                         this.maybeClose();
                     });
         });
     }
 
-    private JsonObject buildOffsets(List<HttpBridgeResult<?>> results) {
-        JsonObject jsonResponse = new JsonObject();
-        JsonArray offsets = new JsonArray();
+    private ObjectNode buildOffsets(List<HttpBridgeResult<?>> results) {
+        ObjectNode jsonResponse = JsonUtils.createObjectNode();
+        ArrayNode offsets = JsonUtils.createArrayNode();
 
         for (HttpBridgeResult<?> result : results) {
-            JsonObject offset = null;
+            ObjectNode offset = null;
             if (result.getResult() instanceof RecordMetadata) {
                 RecordMetadata metadata = (RecordMetadata) result.getResult();
-                offset = new JsonObject()
+                offset = JsonUtils.createObjectNode()
                         .put("partition", metadata.partition())
                         .put("offset", metadata.offset());
             } else if (result.getResult() instanceof HttpBridgeError) {

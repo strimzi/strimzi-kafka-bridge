@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.vertx.core.buffer.Buffer;
 
 import java.io.IOException;
+import java.util.Collection;
 
 /**
  * Provides some utility methods for JSON encoding/decoding
@@ -63,5 +64,65 @@ public class JsonUtils {
      */
     public static ObjectNode createObjectNode() {
         return MAPPER.createObjectNode();
+    }
+
+    /**
+     * Create an array node filled with the items in the provided collection
+     *
+     * @param collection collection used to initialize the array node
+     * @return a JSON array node already filled with the provided collection items
+     * @param <T> the type of the collection items
+     */
+    public static <T> ArrayNode createArrayNode(Collection<T> collection) {
+        return MAPPER.valueToTree(collection);
+    }
+
+    /**
+     * Return the String value for the child node of the provided JSON node
+     * or null if it doesn't exist
+     *
+     * @param json JSON node on which accessing the child node
+     * @param field name of the field representing the child node
+     * @return String value of the child node or null if it doesn't exist
+     */
+    public static String getString(JsonNode json, String field) {
+        return json.path(field).isMissingNode() ? null : json.get(field).asText();
+    }
+
+    /**
+     * Return the String value for the child node of the provided JSON node
+     * or the provided default value if it doesn't exist
+     *
+     * @param json JSON node on which accessing the child node
+     * @param field name of the field representing the child node
+     * @param def default value to return if the child node doesn't exist
+     * @return String value of the child node or the default value if it doesn't exist
+     */
+    public static String getString(JsonNode json, String field, String def) {
+        return json.path(field).isMissingNode() ? def : json.get(field).asText();
+    }
+
+    /**
+     * Return the Integer value for the child node of the provided JSON node
+     * or null if it doesn't exist
+     *
+     * @param json JSON node on which accessing the child node
+     * @param field name of the field representing the child node
+     * @return int value of the child node or null if it doesn't exist
+     */
+    public static int getInt(JsonNode json, String field) {
+        return json.path(field).isMissingNode() ? null : json.get(field).asInt();
+    }
+
+    /**
+     * Return the Long value for the child node of the provided JSON node
+     * or null if it doesn't exist
+     *
+     * @param json JSON node on which accessing the child node
+     * @param field name of the field representing the child node
+     * @return long value of the child node or null if it doesn't exist
+     */
+    public static long getLong(JsonNode json, String field) {
+        return json.path(field).isMissingNode() ? null : json.get(field).asLong();
     }
 }

@@ -5,6 +5,8 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.AdminClientEndpoint;
@@ -17,6 +19,7 @@ import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
@@ -26,8 +29,6 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpConnection;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
@@ -280,18 +281,18 @@ public class HttpBridge extends AbstractVerticle {
                     "Consumer is disabled in config. To enable consumer update http.consumer.enabled to true"
             );
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
-                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
             return;
         }
 
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
 
         // check for an empty body
-        JsonObject body = !routingContext.body().isEmpty() ? routingContext.body().asJsonObject() : new JsonObject();
+        JsonNode body = !routingContext.body().isEmpty() ? JsonUtils.bufferToJson(routingContext.body().buffer()) : JsonUtils.createObjectNode();
         SinkBridgeEndpoint<byte[], byte[]> sink = null;
 
         try {
-            EmbeddedFormat format = EmbeddedFormat.from(body.getString("format", "binary"));
+            EmbeddedFormat format = EmbeddedFormat.from(JsonUtils.getString(body, "format", "binary"));
 
             sink = new HttpSinkBridgeEndpoint<>(this.bridgeConfig, this.httpBridgeContext, format,
                                                 new ByteArrayDeserializer(), new ByteArrayDeserializer());
@@ -320,7 +321,7 @@ public class HttpBridge extends AbstractVerticle {
                 ex.getMessage()
             );
             HttpUtils.sendResponse(routingContext, error.getCode(),
-                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
         }
     }
 
@@ -343,7 +344,7 @@ public class HttpBridge extends AbstractVerticle {
                     "The specified consumer instance was not found."
             );
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
-                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
         }
     }
 
@@ -438,7 +439,7 @@ public class HttpBridge extends AbstractVerticle {
                     "The specified consumer instance was not found."
             );
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
-                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
         }
     }
 
@@ -454,7 +455,7 @@ public class HttpBridge extends AbstractVerticle {
                     "Producer is disabled in config. To enable producer update http.producer.enabled to true"
             );
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
-                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
             return;
         }
         HttpServerRequest httpServerRequest = routingContext.request();
@@ -485,7 +486,7 @@ public class HttpBridge extends AbstractVerticle {
                     ex.getMessage()
             );
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
         }
     }
 
@@ -499,7 +500,7 @@ public class HttpBridge extends AbstractVerticle {
                     "The AdminClient was not found."
             );
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
         }
     }
 
@@ -529,9 +530,9 @@ public class HttpBridge extends AbstractVerticle {
                     if (xForwardedPath != null) {
                         path = xForwardedPath;
                     }
-                    JsonObject json = (JsonObject) Json.decodeValue(readFile.result());
+                    ObjectNode json = (ObjectNode) JsonUtils.bufferToJson(readFile.result());
                     json.put("basePath", path);
-                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, json.toBuffer());
+                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, JsonUtils.jsonToBuffer(json));
                 }
             } else {
                 log.error("Failed to read OpenAPI JSON file", readFile.cause());
@@ -539,7 +540,7 @@ public class HttpBridge extends AbstractVerticle {
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     readFile.cause().getMessage());
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        BridgeContentType.JSON, error.toJson().toBuffer());
+                        BridgeContentType.JSON, JsonUtils.jsonToBuffer(error.toJson()));
             }
         });
     }
@@ -547,10 +548,10 @@ public class HttpBridge extends AbstractVerticle {
     private void information(RoutingContext routingContext) {
         // Only maven built binary has this value set.
         String version = Application.class.getPackage().getImplementationVersion();
-        JsonObject versionJson = new JsonObject();
+        ObjectNode versionJson = JsonUtils.createObjectNode();
         versionJson.put("bridge_version", version == null ? "null" : version);
         HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
-                BridgeContentType.JSON, versionJson.toBuffer());
+                BridgeContentType.JSON, JsonUtils.jsonToBuffer(versionJson));
     }
 
     @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
@@ -594,7 +595,7 @@ public class HttpBridge extends AbstractVerticle {
 
         HttpBridgeError error = new HttpBridgeError(routingContext.statusCode(), message);
         HttpUtils.sendResponse(routingContext, routingContext.statusCode(),
-                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
 
         log.error("[{}] Response: statusCode = {}, message = {} ", 
             requestId,
