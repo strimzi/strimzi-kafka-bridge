@@ -21,7 +21,7 @@ public class JsonUtils {
     /**
      * ObjectMapper instance used for JSON encoding/decoding
      */
-    public static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**
      * Get the JSON representation of the provided buffer content
