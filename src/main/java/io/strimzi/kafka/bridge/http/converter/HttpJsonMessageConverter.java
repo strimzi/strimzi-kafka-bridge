@@ -5,12 +5,9 @@
 
 package io.strimzi.kafka.bridge.http.converter;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.buffer.Buffer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -22,7 +19,6 @@ import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 
 import javax.xml.bind.DatatypeConverter;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,8 +26,6 @@ import java.util.List;
  * Implementation of a message converter to deal with the "json" embedded data format
  */
 public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[], Buffer, Buffer> {
-
-    private static final Gson GSON = new Gson();
 
     @Override
     public ProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, Buffer message) {
@@ -41,23 +35,23 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
         byte[] value = null;
         Headers headers = new RecordHeaders();
 
-        JsonObject json = (JsonObject) JsonParser.parseString(message.getByteBuf().toString(StandardCharsets.UTF_8));
+        JsonNode json = JsonUtils.bufferToJson(message);
 
-        if (!json.entrySet().isEmpty()) {
+        if (!json.isEmpty()) {
             if (json.has("key")) {
-                key = jsonToBytes(json.get("key"));
+                key = JsonUtils.jsonToBuffer(json.get("key")).getBytes();
             }
             if (json.has("value")) {
-                value = jsonToBytes(json.get("value"));
+                value = JsonUtils.jsonToBuffer(json.get("value")).getBytes();
             }
             if (json.has("headers")) {
-                for (JsonElement obj: json.getAsJsonArray("headers")) {
-                    JsonObject jsonObject = (JsonObject) obj;
-                    headers.add(new RecordHeader(jsonObject.get("key").getAsString(), DatatypeConverter.parseBase64Binary(jsonObject.get("value").getAsString())));
+                ArrayNode jsonArray = (ArrayNode) json.get("headers");
+                for (JsonNode jsonObject: jsonArray) {
+                    headers.add(new RecordHeader(jsonObject.get("key").asText(), DatatypeConverter.parseBase64Binary(jsonObject.get("value").asText())));
                 }
             }
             if (json.has("partition")) {
-                partitionFromBody = json.get("partition").getAsInt();
+                partitionFromBody = json.get("partition").asInt();
             }
             if (partition != null && partitionFromBody != null) {
                 throw new IllegalStateException("Partition specified in body and in request path");
@@ -74,14 +68,12 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
 
         List<ProducerRecord<byte[], byte[]>> records = new ArrayList<>();
 
-        JsonElement json = JsonParser.parseString(messages.getByteBuf().toString(StandardCharsets.UTF_8));
-        JsonArray jsonArray = json.getAsJsonObject().getAsJsonArray("records");
+        JsonNode json = JsonUtils.bufferToJson(messages);
+        ArrayNode jsonArray = (ArrayNode) json.get("records");
 
-        for (JsonElement obj : jsonArray) {
-            JsonObject jsonObj = (JsonObject) obj;
-            records.add(toKafkaRecord(kafkaTopic, partition, Buffer.buffer(jsonObj.toString())));
+        for (JsonNode jsonObj : jsonArray) {
+            records.add(toKafkaRecord(kafkaTopic, partition, JsonUtils.jsonToBuffer(jsonObj)));
         }
-
         return records;
     }
 
@@ -93,59 +85,36 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
     @Override
     public Buffer toMessages(ConsumerRecords<byte[], byte[]> records) {
 
-        JsonArray jsonArray = new JsonArray();
+        ArrayNode jsonArray = JsonUtils.createArrayNode();
 
         for (ConsumerRecord<byte[], byte[]> record : records) {
 
-            JsonObject jsonObject = new JsonObject();
+            ObjectNode jsonObject = JsonUtils.createObjectNode();
 
-            jsonObject.addProperty("topic", record.topic());
-            this.addBytesToJson(jsonObject, "key", record.key());
-            this.addBytesToJson(jsonObject, "value", record.value());
-            jsonObject.addProperty("partition", record.partition());
-            jsonObject.addProperty("offset", record.offset());
+            jsonObject.put("topic", record.topic());
+            jsonObject.put("key", record.key() != null ?
+                    JsonUtils.bufferToJson(Buffer.buffer(record.key())) : null);
+            jsonObject.put("value", record.value() != null ?
+                    JsonUtils.bufferToJson(Buffer.buffer(record.value())) : null);
+            jsonObject.put("partition", record.partition());
+            jsonObject.put("offset", record.offset());
 
-            JsonArray headers = new JsonArray();
+            ArrayNode headers = JsonUtils.createArrayNode();
 
             for (Header kafkaHeader: record.headers()) {
-                JsonObject header = new JsonObject();
+                ObjectNode header = JsonUtils.createObjectNode();
 
-                header.addProperty("key", kafkaHeader.key());
-                header.addProperty("value", DatatypeConverter.printBase64Binary(kafkaHeader.value()));
+                header.put("key", kafkaHeader.key());
+                header.put("value", DatatypeConverter.printBase64Binary(kafkaHeader.value()));
 
                 headers.add(header);
             }
             if (!headers.isEmpty()) {
-                jsonObject.add("headers", headers);
+                jsonObject.put("headers", headers);
             }
             jsonArray.add(jsonObject);
         }
 
-        return Buffer.buffer(GSON.toJson(jsonArray).getBytes(StandardCharsets.UTF_8));
-    }
-
-    // suppressing this warning, because for the JSON serialization null is needed here
-    @SuppressFBWarnings("PZLA_PREFER_ZERO_LENGTH_ARRAYS")
-    private byte[] jsonToBytes(JsonElement json) {
-        if (json.isJsonNull())
-            return null;
-
-        String tmp = !json.isJsonPrimitive() ?
-                GSON.toJson(json) :
-                json.getAsString();
-        return tmp.getBytes(StandardCharsets.UTF_8);
-    }
-
-    private void addBytesToJson(JsonObject jsonObject, String key, byte[] bytes) {
-        if (bytes != null) {
-            JsonElement json = JsonParser.parseString(new String(bytes, StandardCharsets.UTF_8));
-            if (!json.isJsonPrimitive()) {
-                jsonObject.add(key, json);
-            } else {
-                jsonObject.addProperty(key, json.getAsString());
-            }
-        } else {
-            jsonObject.add(key, null);
-        }
+        return JsonUtils.jsonToBuffer(jsonArray);
     }
 }
