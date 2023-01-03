@@ -110,7 +110,7 @@ public class JsonUtils {
      * @param field name of the field representing the child node
      * @return int value of the child node or null if it doesn't exist
      */
-    public static int getInt(JsonNode json, String field) {
+    public static Integer getInt(JsonNode json, String field) {
         return json.path(field).isMissingNode() ? null : json.get(field).asInt();
     }
 
@@ -122,7 +122,7 @@ public class JsonUtils {
      * @param field name of the field representing the child node
      * @return long value of the child node or null if it doesn't exist
      */
-    public static long getLong(JsonNode json, String field) {
+    public static Long getLong(JsonNode json, String field) {
         return json.path(field).isMissingNode() ? null : json.get(field).asLong();
     }
 }
