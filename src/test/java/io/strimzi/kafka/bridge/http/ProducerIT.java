@@ -411,7 +411,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
-                new StringDeserializer(), new KafkaJsonDeserializer<String>(String.class));
+                new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
         this.count = 0;
         consumer.handler(record -> {
             context.verify(() -> {
@@ -911,7 +911,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
-                new StringDeserializer(), new KafkaJsonDeserializer<String>(String.class));
+                new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
         this.count = 0;
         consumer.handler(record -> {
             context.verify(() -> {

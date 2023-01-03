@@ -5,11 +5,11 @@
 
 package io.strimzi.kafka.bridge.http.converter;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -35,23 +35,23 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
         byte[] value = null;
         Headers headers = new RecordHeaders();
 
-        JsonObject json = message.toJsonObject();
+        JsonNode json = JsonUtils.bufferToJson(message);
 
         if (!json.isEmpty()) {
-            if (json.containsKey("key")) {
-                key = Json.encodeToBuffer(json.getValue("key")).getBytes();
+            if (json.has("key")) {
+                key = JsonUtils.jsonToBuffer(json.get("key")).getBytes();
             }
-            if (json.containsKey("value")) {
-                value = Json.encodeToBuffer(json.getValue("value")).getBytes();
+            if (json.has("value")) {
+                value = JsonUtils.jsonToBuffer(json.get("value")).getBytes();
             }
-            if (json.containsKey("headers")) {
-                for (Object obj: json.getJsonArray("headers")) {
-                    JsonObject jsonObject = (JsonObject) obj;
-                    headers.add(new RecordHeader(jsonObject.getString("key"), DatatypeConverter.parseBase64Binary(jsonObject.getString("value"))));
+            if (json.has("headers")) {
+                ArrayNode jsonArray = (ArrayNode) json.get("headers");
+                for (JsonNode jsonObject: jsonArray) {
+                    headers.add(new RecordHeader(jsonObject.get("key").asText(), DatatypeConverter.parseBase64Binary(jsonObject.get("value").asText())));
                 }
             }
-            if (json.containsKey("partition")) {
-                partitionFromBody = json.getInteger("partition");
+            if (json.has("partition")) {
+                partitionFromBody = json.get("partition").asInt();
             }
             if (partition != null && partitionFromBody != null) {
                 throw new IllegalStateException("Partition specified in body and in request path");
@@ -68,14 +68,12 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
 
         List<ProducerRecord<byte[], byte[]>> records = new ArrayList<>();
 
-        JsonObject json = messages.toJsonObject();
-        JsonArray jsonArray = json.getJsonArray("records");
+        JsonNode json = JsonUtils.bufferToJson(messages);
+        ArrayNode jsonArray = (ArrayNode) json.get("records");
 
-        for (Object obj : jsonArray) {
-            JsonObject jsonObj = (JsonObject) obj;
-            records.add(toKafkaRecord(kafkaTopic, partition, jsonObj.toBuffer()));
+        for (JsonNode jsonObj : jsonArray) {
+            records.add(toKafkaRecord(kafkaTopic, partition, JsonUtils.jsonToBuffer(jsonObj)));
         }
-
         return records;
     }
 
@@ -87,24 +85,24 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
     @Override
     public Buffer toMessages(ConsumerRecords<byte[], byte[]> records) {
 
-        JsonArray jsonArray = new JsonArray();
+        ArrayNode jsonArray = JsonUtils.createArrayNode();
 
         for (ConsumerRecord<byte[], byte[]> record : records) {
 
-            JsonObject jsonObject = new JsonObject();
+            ObjectNode jsonObject = JsonUtils.createObjectNode();
 
             jsonObject.put("topic", record.topic());
             jsonObject.put("key", record.key() != null ?
-                    Json.decodeValue(Buffer.buffer(record.key())) : null);
+                    JsonUtils.bufferToJson(Buffer.buffer(record.key())) : null);
             jsonObject.put("value", record.value() != null ?
-                    Json.decodeValue(Buffer.buffer(record.value())) : null);
+                    JsonUtils.bufferToJson(Buffer.buffer(record.value())) : null);
             jsonObject.put("partition", record.partition());
             jsonObject.put("offset", record.offset());
 
-            JsonArray headers = new JsonArray();
+            ArrayNode headers = JsonUtils.createArrayNode();
 
             for (Header kafkaHeader: record.headers()) {
-                JsonObject header = new JsonObject();
+                ObjectNode header = JsonUtils.createObjectNode();
 
                 header.put("key", kafkaHeader.key());
                 header.put("value", DatatypeConverter.printBase64Binary(kafkaHeader.value()));
@@ -117,6 +115,6 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
             jsonArray.add(jsonObject);
         }
 
-        return jsonArray.toBuffer();
+        return JsonUtils.jsonToBuffer(jsonArray);
     }
 }

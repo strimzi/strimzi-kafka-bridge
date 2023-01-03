@@ -5,15 +5,17 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.AdminClientEndpoint;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.Endpoint;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.Handler;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.ConfigEntry;
@@ -97,16 +99,16 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                 .whenComplete((topics, ex) -> {
                     log.trace("List topics handler thread {}", Thread.currentThread());
                     if (ex == null) {
-                        JsonArray root = new JsonArray();
+                        ArrayNode root = JsonUtils.createArrayNode();
                         topics.forEach(topic -> root.add(topic));
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(root));
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
                     }
                 });
     }
@@ -128,12 +130,12 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                     if (ex == null) {
                         Map<String, TopicDescription> topicDescriptions = describeTopicsPromise.toCompletableFuture().getNow(Map.of());
                         Map<ConfigResource, Config> configDescriptions = describeConfigsPromise.toCompletableFuture().getNow(Map.of());
-                        JsonObject root = new JsonObject();
-                        JsonArray partitionsArray = new JsonArray();
+                        ObjectNode root = JsonUtils.createObjectNode();
+                        ArrayNode partitionsArray = JsonUtils.createArrayNode();
                         root.put("name", topicName);
                         Collection<ConfigEntry> configEntries = configDescriptions.values().iterator().next().entries();
                         if (configEntries.size() > 0) {
-                            JsonObject configs = new JsonObject();
+                            ObjectNode configs = JsonUtils.createObjectNode();
                             configEntries.forEach(configEntry -> configs.put(configEntry.name(), configEntry.value()));
                             root.put("configs", configs);
                         }
@@ -141,14 +143,14 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                         if (description != null) {
                             description.partitions().forEach(partitionInfo -> {
                                 int leaderId = partitionInfo.leader().id();
-                                JsonObject partition = new JsonObject();
+                                ObjectNode partition = JsonUtils.createObjectNode();
                                 partition.put("partition", partitionInfo.partition());
                                 partition.put("leader", leaderId);
-                                JsonArray replicasArray = new JsonArray();
+                                ArrayNode replicasArray = JsonUtils.createArrayNode();
                                 Set<Integer> insyncSet = new HashSet<Integer>();
                                 partitionInfo.isr().forEach(node -> insyncSet.add(node.id()));
                                 partitionInfo.replicas().forEach(node -> {
-                                    JsonObject replica = new JsonObject();
+                                    ObjectNode replica = JsonUtils.createObjectNode();
                                     replica.put("broker", node.id());
                                     replica.put("leader", leaderId == node.id());
                                     replica.put("in_sync", insyncSet.contains(node.id()));
@@ -159,21 +161,21 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                             });
                         }
                         root.put("partitions", partitionsArray);
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(root));
                     } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.NOT_FOUND.code(),
                                 ex.getMessage()
                         );
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
-                                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
                     }
                 });
     }
@@ -189,26 +191,26 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                 .whenComplete((topicDescriptions, ex) -> {
                     log.trace("List partitions handler thread {}", Thread.currentThread());
                     if (ex == null) {
-                        JsonArray root = new JsonArray();
+                        ArrayNode root = JsonUtils.createArrayNode();
                         TopicDescription description = topicDescriptions.get(topicName);
                         if (description != null) {
                             description.partitions().forEach(partitionInfo -> root.add(createPartitionMetadata(partitionInfo)));
                         }
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(root));
                     } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.NOT_FOUND.code(),
                                 ex.getMessage()
                         );
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
-                                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
                     }
                 });
     }
@@ -228,7 +230,7 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     "Specified partition is not a valid number");
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
-                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
             return;
         }
         this.describeTopics(List.of(topicName))
@@ -237,15 +239,15 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                     if (ex == null) {
                         TopicDescription description = topicDescriptions.get(topicName);
                         if (description != null && partitionId < description.partitions().size()) {
-                            JsonObject root = createPartitionMetadata(description.partitions().get(partitionId));
-                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
+                            JsonNode root = createPartitionMetadata(description.partitions().get(partitionId));
+                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(root));
                         } else {
                             HttpBridgeError error = new HttpBridgeError(
                                     HttpResponseStatus.NOT_FOUND.code(),
                                     "Specified partition does not exist."
                             );
                             HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
-                                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
                         }
                     } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
                         HttpBridgeError error = new HttpBridgeError(
@@ -253,14 +255,14 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                                 ex.getMessage()
                         );
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
-                                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
                     }
                 });
     }
@@ -280,7 +282,7 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     "Specified partition is not a valid number");
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
-                    BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
             return;
         }
         TopicPartition topicPartition = new TopicPartition(topicName, partitionId);
@@ -296,7 +298,7 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
             if (e != null) {
                 HttpBridgeError error = new HttpBridgeError(HttpResponseStatus.NOT_FOUND.code(), e.getMessage());
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
-                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
             } else {
                 Map<TopicPartition, OffsetSpec> topicPartitionBeginOffsets = Map.of(topicPartition, OffsetSpec.earliest());
                 CompletionStage<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> getBeginningOffsetsPromise = this.listOffsets(topicPartitionBeginOffsets);
@@ -307,7 +309,7 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                         .whenComplete((v, ex) -> {
                             log.trace("Get offsets handler thread {}", Thread.currentThread());
                             if (ex == null) {
-                                JsonObject root = new JsonObject();
+                                ObjectNode root = JsonUtils.createObjectNode();
                                 ListOffsetsResult.ListOffsetsResultInfo beginningOffset = getBeginningOffsetsPromise.toCompletableFuture().getNow(Map.of()).get(topicPartition);
                                 if (beginningOffset != null) {
                                     root.put("beginning_offset", beginningOffset.offset());
@@ -316,30 +318,30 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                                 if (endOffset != null) {
                                     root.put("end_offset", endOffset.offset());
                                 }
-                                HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, root.toBuffer());
+                                HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(root));
                             } else {
                                 HttpBridgeError error = new HttpBridgeError(
                                         HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                         ex.getMessage()
                                 );
                                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                        BridgeContentType.KAFKA_JSON, error.toJson().toBuffer());
+                                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
                             }
                         });
             }
         });
     }
 
-    private static JsonObject createPartitionMetadata(TopicPartitionInfo partitionInfo) {
+    private static ObjectNode createPartitionMetadata(TopicPartitionInfo partitionInfo) {
         int leaderId = partitionInfo.leader().id();
-        JsonObject root = new JsonObject();
+        ObjectNode root = JsonUtils.createObjectNode();
         root.put("partition", partitionInfo.partition());
         root.put("leader", leaderId);
-        JsonArray replicasArray = new JsonArray();
+        ArrayNode replicasArray = JsonUtils.createArrayNode();
         Set<Integer> insyncSet = new HashSet<>();
         partitionInfo.isr().forEach(node -> insyncSet.add(node.id()));
         partitionInfo.replicas().forEach(node -> {
-            JsonObject replica = new JsonObject();
+            ObjectNode replica = JsonUtils.createObjectNode();
             replica.put("broker", node.id());
             replica.put("leader", leaderId == node.id());
             replica.put("in_sync", insyncSet.contains(node.id()));
