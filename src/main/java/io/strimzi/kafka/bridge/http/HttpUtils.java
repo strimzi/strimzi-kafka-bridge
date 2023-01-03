@@ -6,8 +6,8 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ public class HttpUtils {
         if (!routingContext.response().closed() && !routingContext.response().ended()) {
             routingContext.response().setStatusCode(statusCode);
             if (body != null) {
-                log.debug("[{}] Response: body = {}", routingContext.get("request-id"), Json.decodeValue(body));
+                log.debug("[{}] Response: body = {}", routingContext.get("request-id"), JsonUtils.bufferToJson(body));
                 routingContext.response().putHeader(HttpHeaderNames.CONTENT_TYPE, contentType);
                 routingContext.response().putHeader(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(body.length()));
                 routingContext.response().write(body);

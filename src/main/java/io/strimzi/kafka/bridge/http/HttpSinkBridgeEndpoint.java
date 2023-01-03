@@ -28,7 +28,6 @@ import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.DecodeException;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -526,7 +525,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 bodyAsJson = JsonUtils.bufferToJson(routingContext.body().buffer());
             }
             log.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
-        } catch (DecodeException ex) {
+        } catch (JsonDecodeException ex) {
             HttpBridgeError error = handleError(ex);
             HttpUtils.sendResponse(routingContext, error.getCode(),
                     BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
@@ -673,7 +672,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         if (ex instanceof IllegalStateException && ex.getMessage() != null &&
             ex.getMessage().contains("No current assignment for partition")) {
             code = HttpResponseStatus.NOT_FOUND.code();
-        } else if (ex instanceof DecodeException) {
+        } else if (ex instanceof JsonDecodeException) {
             code = HttpResponseStatus.UNPROCESSABLE_ENTITY.code();
         }
         return new HttpBridgeError(code, ex.getMessage());
