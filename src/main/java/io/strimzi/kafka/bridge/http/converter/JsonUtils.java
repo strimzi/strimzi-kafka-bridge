@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.vertx.core.buffer.Buffer;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -25,28 +24,28 @@ public class JsonUtils {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**
-     * Get the JSON representation of the provided buffer content
+     * Get the JSON representation of the provided bytes array
      *
-     * @param buffer buffer containing JSON data
-     * @return JSON representation of the buffer data
+     * @param bytes bytes array containing JSON data
+     * @return JSON representation of the bytes array
      */
-    public static JsonNode bufferToJson(Buffer buffer) {
+    public static JsonNode bytesToJson(byte[] bytes) {
         try {
-            return MAPPER.readTree(buffer.getByteBuf().array());
+            return MAPPER.readTree(bytes);
         } catch (IOException e) {
             throw new JsonDecodeException("Failed to decode:" + e.getMessage(), e);
         }
     }
 
     /**
-     * Get the bytes representation within a buffer of the provided JSON
+     * Get the bytes representation of the provided JSON
      *
      * @param json JSON representation
-     * @return bytes buffer representing the JSON data
+     * @return bytes representing the JSON data
      */
-    public static Buffer jsonToBuffer(JsonNode json) {
+    public static byte[] jsonToBytes(JsonNode json) {
         try {
-            return Buffer.buffer(MAPPER.writeValueAsBytes(json));
+            return MAPPER.writeValueAsBytes(json);
         } catch (Exception e) {
             throw new JsonEncodeException("Failed to encode as JSON: " + e.getMessage());
         }

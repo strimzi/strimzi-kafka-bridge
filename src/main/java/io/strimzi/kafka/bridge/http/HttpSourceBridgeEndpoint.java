@@ -23,7 +23,6 @@ import io.strimzi.kafka.bridge.tracing.SpanHandle;
 import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
 import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -44,7 +43,7 @@ import java.util.concurrent.CompletionStage;
  */
 public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
-    private MessageConverter<K, V, Buffer, Buffer> messageConverter;
+    private MessageConverter<K, V, byte[], byte[]> messageConverter;
     private boolean closing;
 
     HttpSourceBridgeEndpoint(BridgeConfig bridgeConfig, EmbeddedFormat format,
@@ -86,7 +85,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                         HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                         "Specified partition is not a valid number");
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
-                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
+                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
                 return;
             }
         }
@@ -104,11 +103,11 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                 HttpBridgeError error = new HttpBridgeError(
                         HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), HttpResponseStatus.INTERNAL_SERVER_ERROR.reasonPhrase());
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
+                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
 
                 return;
             }
-            records = messageConverter.toKafkaRecords(topic, partition, routingContext.body().buffer());
+            records = messageConverter.toKafkaRecords(topic, partition, routingContext.body().buffer().getBytes());
 
             for (ProducerRecord<K, V> record :records)   {
                 span.inject(record);
@@ -119,7 +118,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     e.getMessage());
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
-                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
 
             return;
         }
@@ -169,7 +168,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                         // always return OK, since failure cause is in the response, per message
                         span.finish(HttpResponseStatus.OK.code());
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(buildOffsets(results)));
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(buildOffsets(results)));
                         this.maybeClose();
                     });
         });
@@ -206,12 +205,12 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         }
     }
 
-    private MessageConverter<K, V, Buffer, Buffer> buildMessageConverter() {
+    private MessageConverter<K, V, byte[], byte[]> buildMessageConverter() {
         switch (this.format) {
             case JSON:
-                return (MessageConverter<K, V, Buffer, Buffer>) new HttpJsonMessageConverter();
+                return (MessageConverter<K, V, byte[], byte[]>) new HttpJsonMessageConverter();
             case BINARY:
-                return (MessageConverter<K, V, Buffer, Buffer>) new HttpBinaryMessageConverter();
+                return (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
         }
         return null;
     }

@@ -27,14 +27,14 @@ public class HttpUtils {
      * @param contentType the content-type to set in the HTTP response
      * @param body the body to set in the HTTP response
      */
-    public static void sendResponse(RoutingContext routingContext, int statusCode, String contentType, Buffer body) {
+    public static void sendResponse(RoutingContext routingContext, int statusCode, String contentType, byte[] body) {
         if (!routingContext.response().closed() && !routingContext.response().ended()) {
             routingContext.response().setStatusCode(statusCode);
             if (body != null) {
-                log.debug("[{}] Response: body = {}", routingContext.get("request-id"), JsonUtils.bufferToJson(body));
+                log.debug("[{}] Response: body = {}", routingContext.get("request-id"), JsonUtils.bytesToJson(body));
                 routingContext.response().putHeader(HttpHeaderNames.CONTENT_TYPE, contentType);
-                routingContext.response().putHeader(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(body.length()));
-                routingContext.response().write(body);
+                routingContext.response().putHeader(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(body.length));
+                routingContext.response().write(Buffer.buffer(body));
             }
             routingContext.response().end();
         } else if (routingContext.response().ended()) {
