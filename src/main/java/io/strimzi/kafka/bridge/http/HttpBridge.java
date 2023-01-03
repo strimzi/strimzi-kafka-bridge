@@ -303,7 +303,7 @@ public class HttpBridge extends AbstractVerticle {
             });        
             sink.open();
 
-            sink.handle(new HttpEndpoint(routingContext), endpoint -> {
+            sink.handle(routingContext, endpoint -> {
                 HttpSinkBridgeEndpoint<byte[], byte[]> httpEndpoint = (HttpSinkBridgeEndpoint<byte[], byte[]>) endpoint;
                 httpBridgeContext.getHttpSinkEndpoints().put(httpEndpoint.consumerInstanceId(), httpEndpoint);
                 timestampMap.put(httpEndpoint.consumerInstanceId(), System.currentTimeMillis());
@@ -334,7 +334,7 @@ public class HttpBridge extends AbstractVerticle {
         SinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(kafkaConsumerInstanceId);
 
         if (deleteSinkEndpoint != null) {
-            deleteSinkEndpoint.handle(new HttpEndpoint(routingContext));
+            deleteSinkEndpoint.handle(routingContext);
 
             this.httpBridgeContext.getHttpSinkEndpoints().remove(kafkaConsumerInstanceId);
             timestampMap.remove(kafkaConsumerInstanceId);
@@ -432,7 +432,7 @@ public class HttpBridge extends AbstractVerticle {
 
         if (sinkEndpoint != null) {
             timestampMap.replace(kafkaConsumerInstanceId, System.currentTimeMillis());
-            sinkEndpoint.handle(new HttpEndpoint(routingContext));
+            sinkEndpoint.handle(routingContext);
         } else {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.NOT_FOUND.code(),
@@ -475,7 +475,7 @@ public class HttpBridge extends AbstractVerticle {
                 source.open();
                 this.httpBridgeContext.getHttpSourceEndpoints().put(httpServerRequest.connection(), source);
             }
-            source.handle(new HttpEndpoint(routingContext));
+            source.handle(routingContext);
 
         } catch (Exception ex) {
             if (source != null) {
@@ -493,7 +493,7 @@ public class HttpBridge extends AbstractVerticle {
     private void processAdminClient(RoutingContext routingContext) {
         AdminClientEndpoint adminClientEndpoint = this.httpBridgeContext.getAdminClientEndpoint();
         if (adminClientEndpoint != null) {
-            adminClientEndpoint.handle(new HttpEndpoint(routingContext));
+            adminClientEndpoint.handle(routingContext);
         } else {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),

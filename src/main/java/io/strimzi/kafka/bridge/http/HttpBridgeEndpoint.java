@@ -3,15 +3,16 @@
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
 
-package io.strimzi.kafka.bridge;
+package io.strimzi.kafka.bridge.http;
 
-import io.vertx.core.Handler;
+import io.strimzi.kafka.bridge.Handler;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * Interface for classes which acts as endpoints
  * bridging traffic between a protocol and Apache Kafka
  */
-public interface BridgeEndpoint {
+public interface HttpBridgeEndpoint {
 
     /**
      * Name of the bridge endpoint
@@ -31,19 +32,19 @@ public interface BridgeEndpoint {
     void close();
 
     /**
-     * Handler for the remote protocol endpoint
-     * @param endpoint Remote protocol endpoint to handle
+     * Handler for the HTTP routing context
+     * @param routingContext HTTP routing context to handle
      */
-    default void handle(Endpoint<?> endpoint) {
-        this.handle(endpoint, null);
+    default void handle(RoutingContext routingContext) {
+        this.handle(routingContext, null);
     }
 
     /**
-     * Handler for the remote protocol endpoint
-     * @param endpoint Remote protocol endpoint to handle
-     * @param handler handler for result
+     * Handler for the HTTP routing context
+     * @param routingContext HTTP routing context to handle
+     * @param handler handler for the corresponding bridge endpoint
      */
-    void handle(Endpoint<?> endpoint, Handler<?> handler);
+    void handle(RoutingContext routingContext, Handler<HttpBridgeEndpoint> handler);
 
     /**
      * Sets an handler called when a bridge endpoint is closed due to internal processing
@@ -51,5 +52,5 @@ public interface BridgeEndpoint {
      * @param endpointCloseHandler The handler
      * @return The bridge endpoint
      */
-    BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler);
+    HttpBridgeEndpoint closeHandler(Handler<HttpBridgeEndpoint> endpointCloseHandler);
 }

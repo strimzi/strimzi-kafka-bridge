@@ -7,7 +7,7 @@ package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
-import io.vertx.core.Handler;
+import io.strimzi.kafka.bridge.http.HttpBridgeEndpoint;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
  * @param <K>   type of Kafka message key
  * @param <V>   type of Kafka message payload
  */
-public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
+public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -46,7 +46,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected final BridgeConfig bridgeConfig;
 
-    private Handler<BridgeEndpoint> closeHandler;
+    private Handler<HttpBridgeEndpoint> closeHandler;
 
     private Consumer<K, V> consumer;
     protected ConsumerInstanceId consumerInstanceId;
@@ -90,7 +90,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     @Override
-    public BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler) {
+    public HttpBridgeEndpoint closeHandler(Handler<HttpBridgeEndpoint> endpointCloseHandler) {
         this.closeHandler = endpointCloseHandler;
         return this;
     }

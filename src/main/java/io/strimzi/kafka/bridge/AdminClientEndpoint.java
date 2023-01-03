@@ -7,7 +7,7 @@ package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
-import io.vertx.core.Handler;
+import io.strimzi.kafka.bridge.http.HttpBridgeEndpoint;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
@@ -28,13 +28,13 @@ import java.util.concurrent.CompletionStage;
 /**
  * Base class for admin client endpoint
  */
-public abstract class AdminClientEndpoint implements BridgeEndpoint {
+public abstract class AdminClientEndpoint implements HttpBridgeEndpoint {
     protected final Logger log = LoggerFactory.getLogger(AdminClientEndpoint.class);
 
     protected String name;
     protected final BridgeConfig bridgeConfig;
 
-    private Handler<BridgeEndpoint> closeHandler;
+    private Handler<HttpBridgeEndpoint> closeHandler;
 
     private AdminClient kAdminClient;
 
@@ -54,7 +54,7 @@ public abstract class AdminClientEndpoint implements BridgeEndpoint {
     }
 
     @Override
-    public BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler) {
+    public HttpBridgeEndpoint closeHandler(Handler<HttpBridgeEndpoint> endpointCloseHandler) {
         this.closeHandler = endpointCloseHandler;
         return this;
     }

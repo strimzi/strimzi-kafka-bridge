@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
-import io.strimzi.kafka.bridge.Endpoint;
+import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
@@ -22,7 +22,6 @@ import io.strimzi.kafka.bridge.http.model.HttpBridgeResult;
 import io.strimzi.kafka.bridge.tracing.SpanHandle;
 import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
-import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -71,9 +70,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
 
     @Override
     @SuppressWarnings("checkstyle:NPathComplexity")
-    public void handle(Endpoint<?> endpoint, Handler<?> handler) {
-        RoutingContext routingContext = (RoutingContext) endpoint.get();
-
+    public void handle(RoutingContext routingContext, Handler<HttpBridgeEndpoint> handler) {
         String topic = routingContext.pathParam("topicname");
 
         List<ProducerRecord<K, V>> records;
