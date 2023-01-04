@@ -10,6 +10,7 @@ package io.strimzi.kafka.bridge;
  *
  * @param <T> type of the data to be handled
  */
+@FunctionalInterface
 public interface Handler<T> {
 
     /**
