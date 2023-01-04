@@ -7,16 +7,13 @@ package io.strimzi.kafka.bridge;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.strimzi.kafka.bridge.config.ConfigRetriever;
 import io.strimzi.kafka.bridge.http.HttpBridge;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
-import io.vertx.config.ConfigRetriever;
-import io.vertx.config.ConfigRetrieverOptions;
-import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.core.json.JsonObject;
 import io.vertx.micrometer.Label;
 import io.vertx.micrometer.MetricsDomain;
 import io.vertx.micrometer.MicrometerMetricsOptions;
@@ -78,35 +75,14 @@ public class Application {
 
             CommandLine commandLine = new DefaultParser().parse(generateOptions(), args);
 
-            ConfigStoreOptions fileStore = new ConfigStoreOptions()
-                .setType("file")
-                .setFormat("properties")
-                .setConfig(new JsonObject().put("path", absoluteFilePath(commandLine.getOptionValue("config-file"))).put("raw-data", true));
+            Map<String, Object> config = ConfigRetriever.getConfig(absoluteFilePath(commandLine.getOptionValue("config-file")));
+            BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
+            log.info("Bridge configuration {}", bridgeConfig);
 
-            ConfigStoreOptions envStore = new ConfigStoreOptions()
-                .setType("env")
-                .setConfig(new JsonObject().put("raw-data", true));
-
-            ConfigRetrieverOptions options = new ConfigRetrieverOptions()
-                    .addStore(fileStore)
-                    .addStore(envStore);
-
-            ConfigRetriever retriever = ConfigRetriever.create(vertx, options);
-            retriever.getConfig(ar -> {
-
-                if (ar.succeeded()) {
-                    Map<String, Object> config = ar.result().getMap();
-                    BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
-
-                    deployHttpBridge(vertx, bridgeConfig, metricsReporter).onComplete(done -> {
-                        if (done.succeeded()) {
-                            // register tracing - if set, etc
-                            TracingUtil.initialize(bridgeConfig);
-                        }
-                    });
-                } else {
-                    log.error("Error starting the bridge", ar.cause());
-                    System.exit(1);
+            deployHttpBridge(vertx, bridgeConfig, metricsReporter).onComplete(done -> {
+                if (done.succeeded()) {
+                    // register tracing - if set, etc
+                    TracingUtil.initialize(bridgeConfig);
                 }
             });
         } catch (RuntimeException | MalformedObjectNameException | IOException | ParseException e) {
