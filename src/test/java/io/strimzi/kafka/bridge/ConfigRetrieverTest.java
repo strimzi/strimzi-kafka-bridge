@@ -18,11 +18,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static io.strimzi.kafka.bridge.config.BridgeConfig.BRIDGE_ID;
-import static io.strimzi.kafka.bridge.config.KafkaConfig.KAFKA_CONFIG_PREFIX;
-import static io.strimzi.kafka.bridge.config.KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX;
-import static io.strimzi.kafka.bridge.config.KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX;
-import static io.strimzi.kafka.bridge.http.HttpConfig.HTTP_HOST;
-import static io.strimzi.kafka.bridge.http.HttpConfig.HTTP_PORT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,27 +32,23 @@ public class ConfigRetrieverTest {
         String path = getClass().getClassLoader().getResource("application.properties").getPath();
         Map<String, Object> config = ConfigRetriever.getConfig(path);
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
-        assertThat(bridgeConfig.getBridgeID(), is(config.get(BRIDGE_ID)));
+
+        assertThat(bridgeConfig.getBridgeID(), is("my-bridge"));
 
         assertThat(bridgeConfig.getKafkaConfig().getConfig().size(), is(1));
-        assertThat(bridgeConfig.getKafkaConfig().getConfig().get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG),
-                is(config.get(KAFKA_CONFIG_PREFIX + CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)));
+        assertThat(bridgeConfig.getKafkaConfig().getConfig().get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG), is("localhost:9092"));
 
         assertThat(bridgeConfig.getKafkaConfig().getAdminConfig().getConfig().size(), is(0));
-        assertThat(bridgeConfig.getKafkaConfig().getConfig().get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG),
-                is(config.get(KAFKA_CONFIG_PREFIX + CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)));
 
         assertThat(bridgeConfig.getKafkaConfig().getProducerConfig().getConfig().size(), is(1));
-        assertThat(bridgeConfig.getKafkaConfig().getProducerConfig().getConfig().get(ProducerConfig.ACKS_CONFIG),
-                is(config.get(KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.ACKS_CONFIG)));
+        assertThat(bridgeConfig.getKafkaConfig().getProducerConfig().getConfig().get(ProducerConfig.ACKS_CONFIG), is("1"));
 
         assertThat(bridgeConfig.getKafkaConfig().getConsumerConfig().getConfig().size(), is(1));
-        assertThat(bridgeConfig.getKafkaConfig().getConsumerConfig().getConfig().get(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG),
-                is(config.get(KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG)));
+        assertThat(bridgeConfig.getKafkaConfig().getConsumerConfig().getConfig().get(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG), is("earliest"));
 
         assertThat(bridgeConfig.getHttpConfig().getConfig().size(), is(2));
-        assertThat(bridgeConfig.getHttpConfig().getConfig().get(HTTP_HOST), is(config.get(HTTP_HOST)));
-        assertThat(bridgeConfig.getHttpConfig().getConfig().get(HTTP_PORT), is(config.get(HTTP_PORT)));
+        assertThat(bridgeConfig.getHttpConfig().getHost(), is("0.0.0.0"));
+        assertThat(bridgeConfig.getHttpConfig().getPort(), is(8080));
     }
 
     @Test
