@@ -7,9 +7,9 @@ package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
+import io.strimzi.kafka.bridge.http.HttpBridgeEndpoint;
 import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
-import io.vertx.core.Handler;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -25,7 +25,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * Base class for source bridge endpoints
  */
-public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
+public abstract class SourceBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -36,7 +36,7 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
 
     protected final BridgeConfig bridgeConfig;
 
-    private Handler<BridgeEndpoint> closeHandler;
+    private Handler<HttpBridgeEndpoint> closeHandler;
 
     private Producer<K, V> producer;
 
@@ -62,7 +62,7 @@ public abstract class SourceBridgeEndpoint<K, V> implements BridgeEndpoint {
     }
 
     @Override
-    public BridgeEndpoint closeHandler(Handler<BridgeEndpoint> endpointCloseHandler) {
+    public HttpBridgeEndpoint closeHandler(Handler<HttpBridgeEndpoint> endpointCloseHandler) {
         this.closeHandler = endpointCloseHandler;
         return this;
     }

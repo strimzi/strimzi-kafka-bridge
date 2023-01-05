@@ -13,7 +13,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
-import io.strimzi.kafka.bridge.Endpoint;
+import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
@@ -26,7 +26,6 @@ import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.tracing.SpanHandle;
 import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
-import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -88,7 +87,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
      * @param handler handler for the request
      */
     @SuppressWarnings("checkstyle:NPathComplexity")
-    public void doCreateConsumer(RoutingContext routingContext, JsonNode bodyAsJson, Handler<SinkBridgeEndpoint<K, V>> handler) {
+    public void doCreateConsumer(RoutingContext routingContext, JsonNode bodyAsJson, Handler<HttpBridgeEndpoint> handler) {
         // get the consumer group-id
         this.groupId = routingContext.pathParam("groupid");
 
@@ -515,9 +514,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
     @SuppressWarnings({"checkstyle:CyclomaticComplexity"})
     @Override
-    public void handle(Endpoint<?> endpoint, Handler<?> handler) {
-        RoutingContext routingContext = (RoutingContext) endpoint.get();
-
+    public void handle(RoutingContext routingContext, Handler<HttpBridgeEndpoint> handler) {
         JsonNode bodyAsJson = EMPTY_JSON;
         try {
             // check for an empty body
@@ -536,7 +533,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         switch (this.httpBridgeContext.getOpenApiOperation()) {
 
             case CREATE_CONSUMER:
-                doCreateConsumer(routingContext, bodyAsJson, (Handler<SinkBridgeEndpoint<K, V>>) handler);
+                doCreateConsumer(routingContext, bodyAsJson, handler);
                 break;
 
             case SUBSCRIBE:

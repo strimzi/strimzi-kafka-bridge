@@ -11,11 +11,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.AdminClientEndpoint;
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.Endpoint;
+import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
-import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.ConfigEntry;
@@ -59,8 +58,7 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
     }
 
     @Override
-    public void handle(Endpoint<?> endpoint, Handler<?> handler) {
-        RoutingContext routingContext = (RoutingContext) endpoint.get();
+    public void handle(RoutingContext routingContext, Handler<HttpBridgeEndpoint> handler) {
         log.trace("HttpAdminClientEndpoint handle thread {}", Thread.currentThread());
         switch (this.httpBridgeContext.getOpenApiOperation()) {
             case LIST_TOPICS:
