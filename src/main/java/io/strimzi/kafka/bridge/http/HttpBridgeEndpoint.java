@@ -10,7 +10,7 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * Interface for classes which acts as endpoints
- * bridging traffic between a protocol and Apache Kafka
+ * bridging traffic between HTTP and Apache Kafka
  */
 public interface HttpBridgeEndpoint {
 
@@ -33,6 +33,7 @@ public interface HttpBridgeEndpoint {
 
     /**
      * Handler for the HTTP routing context
+     *
      * @param routingContext HTTP routing context to handle
      */
     default void handle(RoutingContext routingContext) {
@@ -41,13 +42,14 @@ public interface HttpBridgeEndpoint {
 
     /**
      * Handler for the HTTP routing context
+     *
      * @param routingContext HTTP routing context to handle
      * @param handler handler for the corresponding bridge endpoint
      */
     void handle(RoutingContext routingContext, Handler<HttpBridgeEndpoint> handler);
 
     /**
-     * Sets an handler called when a bridge endpoint is closed due to internal processing
+     * Sets a handler called when a bridge endpoint is closed due to internal processing
      *
      * @param endpointCloseHandler The handler
      * @return The bridge endpoint

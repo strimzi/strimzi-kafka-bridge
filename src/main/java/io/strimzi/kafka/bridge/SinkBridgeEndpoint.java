@@ -62,7 +62,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
     protected long maxBytes = Long.MAX_VALUE;
 
     // handlers called when partitions are revoked/assigned on rebalancing
-    private ConsumerRebalanceListener loggingPartitionsRebalance = new LoggingPartitionsRebalance();
+    private final ConsumerRebalanceListener loggingPartitionsRebalance = new LoggingPartitionsRebalance();
 
     /**
      * Constructor
@@ -140,7 +140,6 @@ public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
 
     /**
      * Subscribe to the topics specified in the related {@link #topicSubscriptions} list
-     *
      * It should be the next call after the {@link #initConsumer(Properties config)} after getting
      * the topics information in order to subscribe to them.
      */
@@ -174,7 +173,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
     /**
      * Returns all the topics which the consumer currently subscribes
      *
-     * @return list of topic partitions to which the consumer is subscribed
+     * @return set of topic partitions to which the consumer is subscribed
      */
     protected Set<TopicPartition> listSubscriptions() {
         log.info("Listing subscribed topics {}", this.topicSubscriptions);

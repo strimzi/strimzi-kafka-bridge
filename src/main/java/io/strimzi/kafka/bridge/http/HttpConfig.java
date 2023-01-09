@@ -83,7 +83,7 @@ public class HttpConfig extends AbstractConfig {
      * @return if CORS is enabled
      */
     public boolean isCorsEnabled() {
-        return Boolean.valueOf(this.config.getOrDefault(HTTP_CORS_ENABLED, false).toString());
+        return Boolean.parseBoolean(this.config.getOrDefault(HTTP_CORS_ENABLED, false).toString());
     }
 
     /**
