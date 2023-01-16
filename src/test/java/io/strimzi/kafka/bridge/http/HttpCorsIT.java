@@ -97,6 +97,7 @@ public class HttpCorsIT {
     @AfterAll
     static void afterAll() {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
+            adminClientFacade.close();
             kafkaContainer.stop();
         }
     }

@@ -109,6 +109,7 @@ public class AdminClientFacade {
     public void close() {
         if (adminClient != null) {
             adminClient.close();
+            adminClientFacade = null;
         }
     }
 }
