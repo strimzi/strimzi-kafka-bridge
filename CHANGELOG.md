@@ -4,6 +4,9 @@
 
 * Fixed regression about producing messages not working when CORS is enabled
 * Dependency updates (Netty 4.1.86.Final)
+* Refactored producer, consumer and admin endpoints by using the Apache Kafka client API instead of the Vert.x one
+* Removed the usage of the Vert.x Config component for reading the bridge configuration
+* Replaced the Vert.x JSON handling with Jackson
 
 ### Changes, deprecations and removals
 

@@ -90,13 +90,14 @@ public class HttpCorsIT {
     }
 
     @AfterEach
-    void cleanup() {
-        vertx.close();
+    void cleanup(VertxTestContext context) {
+        vertx.close(context.succeeding(arg -> context.completeNow()));
     }
 
     @AfterAll
     static void afterAll() {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
+            adminClientFacade.close();
             kafkaContainer.stop();
         }
     }
