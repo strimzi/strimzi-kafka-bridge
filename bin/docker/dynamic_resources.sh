@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 
+mem_file_cgroups_v1="/sys/fs/cgroup/memory/memory.limit_in_bytes"
+mem_file_cgroups_v2="/sys/fs/cgroup/memory.max"
+
 function get_heap_size {
-  CONTAINER_MEMORY_IN_BYTES=`cat /sys/fs/cgroup/memory/memory.limit_in_bytes`
+  CONTAINER_MEMORY_IN_BYTES=""
+
+  if [ -f "$mem_file_cgroups_v1" ]; then
+    CONTAINER_MEMORY_IN_BYTES = $(cat "$mem_file_cgroups_v1")
+  else
+    CONTAINER_MEMORY_IN_BYTES = $(cat "$mem_file_cgroups_v2")
+  fi
+
    # use max of 31G memory, java performs much better with Compressed Ordinary Object Pointers
   DEFAULT_MEMORY_CEILING=$((31 * 2**30))
   if [ "${CONTAINER_MEMORY_IN_BYTES}" -lt "${DEFAULT_MEMORY_CEILING}" ]; then
