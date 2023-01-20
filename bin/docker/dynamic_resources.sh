@@ -1,18 +1,13 @@
 #!/usr/bin/env bash
-
-mem_file_cgroups_v1="/sys/fs/cgroup/memory/memory.limit_in_bytes"
-mem_file_cgroups_v2="/sys/fs/cgroup/memory.max"
+set -e
 
 function get_heap_size {
-  CONTAINER_MEMORY_IN_BYTES=""
+  # Get the max heap used by a jvm which used all the ram available to the container
+  CONTAINER_MEMORY_IN_BYTES=$(java -XshowSettings:vm -version \
+    |& awk '/Max\. Heap Size \(Estimated\): [0-9KMG]+/{ print $5}' \
+    | gawk -f to_bytes.gawk)
 
-  if [ -f "$mem_file_cgroups_v1" ]; then
-    CONTAINER_MEMORY_IN_BYTES = $(cat "$mem_file_cgroups_v1")
-  else
-    CONTAINER_MEMORY_IN_BYTES = $(cat "$mem_file_cgroups_v2")
-  fi
-
-   # use max of 31G memory, java performs much better with Compressed Ordinary Object Pointers
+  # use max of 31G memory, java performs much better with Compressed Ordinary Object Pointers
   DEFAULT_MEMORY_CEILING=$((31 * 2**30))
   if [ "${CONTAINER_MEMORY_IN_BYTES}" -lt "${DEFAULT_MEMORY_CEILING}" ]; then
     if [ -z $CONTAINER_HEAP_PERCENT ]; then
