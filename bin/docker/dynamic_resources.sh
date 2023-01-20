@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
+MYPATH="$(dirname "$0")"
+
 function get_heap_size {
   # Get the max heap used by a jvm which used all the ram available to the container
   CONTAINER_MEMORY_IN_BYTES=$(java -XshowSettings:vm -version \
     |& awk '/Max\. Heap Size \(Estimated\): [0-9KMG]+/{ print $5}' \
-    | gawk -f to_bytes.gawk)
+    | gawk -f "${MYPATH}"/to_bytes.gawk)
 
   # use max of 31G memory, java performs much better with Compressed Ordinary Object Pointers
   DEFAULT_MEMORY_CEILING=$((31 * 2**30))
