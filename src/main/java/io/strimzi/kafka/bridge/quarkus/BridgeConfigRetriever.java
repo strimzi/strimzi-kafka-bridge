@@ -6,7 +6,8 @@
 package io.strimzi.kafka.bridge.quarkus;
 
 import io.quarkus.runtime.Quarkus;
-import io.quarkus.runtime.annotations.QuarkusMain;
+import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.annotations.CommandLineArguments;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.ConfigRetriever;
 import org.apache.commons.cli.CommandLine;
@@ -14,31 +15,47 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.jboss.logging.Logger;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-@QuarkusMain
-public class Main {
+/**
+ * Retriever of the bridge configuration on startup from the provided configuration file
+ */
+@ApplicationScoped
+public class BridgeConfigRetriever {
 
-    public static void main(String... args) {
-        System.out.println("Running main method with " + args.length + " args = " +  args);
+    @Inject
+    Logger log;
 
+    @Inject
+    @CommandLineArguments
+    String[] args;
+
+    private BridgeConfig bridgeConfig;
+
+    public void onStart(@Observes StartupEvent ev) {
         try {
             CommandLine commandLine = new DefaultParser().parse(generateOptions(), args);
-            String absoluteFilePath = absoluteFilePath(commandLine.getOptionValue("config-file"));
-            System.out.println("absoluteFilePath = " + absoluteFilePath);
-
             Map<String, Object> config = ConfigRetriever.getConfig(absoluteFilePath(commandLine.getOptionValue("config-file")));
-            BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
-            System.out.println("bridgeConfig = " + bridgeConfig);
-
+            bridgeConfig = BridgeConfig.fromMap(config);
+            log.infof("Bridge configuration %s", bridgeConfig);
         } catch (ParseException | IOException e) {
-            System.exit(1);
+            log.error("Error starting the bridge", e);
+            Quarkus.asyncExit();
         }
+    }
 
-        Quarkus.run(args);
+    /**
+     * @return the bridge configuration
+     */
+    public BridgeConfig config() {
+        return bridgeConfig;
     }
 
     /**

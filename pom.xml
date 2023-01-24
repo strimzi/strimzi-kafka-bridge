@@ -108,7 +108,7 @@
 		<kafka-env-var-config-provider.version>1.1.0</kafka-env-var-config-provider.version>
 		<maven.checkstyle.version>3.2.0</maven.checkstyle.version>
 		<hamcrest.version>2.2</hamcrest.version>
-		<junit.version>5.8.2</junit.version>
+		<junit.version>5.9.1</junit.version>
 		<maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
 		<maven-surefire-plugin.version>3.0.0-M7</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.0.0-M7</maven-failsafe-plugin.version>
@@ -448,6 +448,17 @@
 			<groupId>net.java.dev.jna</groupId>
 			<artifactId>jna</artifactId>
 			<version>5.8.0</version>
+			<scope>test</scope>
+		</dependency>
+		<!--
+			when adding the Quarkus BOM, they have the junit exclusion in the strimzi-test-container (!???)
+			https://github.com/quarkusio/quarkus/blob/main/bom/application/pom.xml#L4142
+			need to re-add it to avoid "cannot access org.junit.rules.TestRule" error on compiling
+		-->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.13.2</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

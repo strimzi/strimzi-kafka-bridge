@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.quarkus;
 
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -13,6 +14,9 @@ import javax.ws.rs.core.Response;
 
 @Path("/")
 public class RestOperations {
+
+    @Inject
+    BridgeConfigRetriever configRetriever;
 
     @Path("/topics/{topicname}")
     @GET
