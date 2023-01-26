@@ -55,7 +55,6 @@ import java.util.stream.StreamSupport;
  * @param <K> type of Kafka message key
  * @param <V> type of Kafka message payload
  */
-@SuppressWarnings({"checkstyle:ClassFanOutComplexity"})
 public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
     private static final ObjectNode EMPTY_JSON = JsonUtils.createObjectNode();
@@ -116,7 +115,6 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
      * @param bodyAsJson HTTP request body bringing consumer settings
      * @param handler handler for the request
      */
-    @SuppressWarnings("checkstyle:NPathComplexity")
     private void doCreateConsumer(RoutingContext routingContext, JsonNode bodyAsJson, Handler<HttpBridgeEndpoint> handler) {
         // get the consumer group-id
         String groupId = routingContext.pathParam("groupid");
@@ -541,7 +539,6 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         }
     }
 
-    @SuppressWarnings({"checkstyle:CyclomaticComplexity"})
     @Override
     public void handle(RoutingContext routingContext, Handler<HttpBridgeEndpoint> handler) {
         JsonNode bodyAsJson = EMPTY_JSON;
