@@ -45,7 +45,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
     private boolean closing;
-    private KafkaBridgeProducer<K, V> kafkaBridgeProducer;
+    private final KafkaBridgeProducer<K, V> kafkaBridgeProducer;
 
     HttpSourceBridgeEndpoint(BridgeConfig bridgeConfig, EmbeddedFormat format,
                              Serializer<K> keySerializer, Serializer<V> valueSerializer) {

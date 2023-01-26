@@ -39,8 +39,8 @@ import java.util.concurrent.CompletionStage;
  */
 public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
 
-    private HttpBridgeContext httpBridgeContext;
-    private KafkaBridgeAdmin kafkaBridgeAdmin;
+    private final HttpBridgeContext httpBridgeContext;
+    private final KafkaBridgeAdmin kafkaBridgeAdmin;
 
     /**
      * Constructor

@@ -66,11 +66,11 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     Pattern hostPortPattern = Pattern.compile("^.*:[0-9]+$");
 
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
-    private HttpBridgeContext<K, V> httpBridgeContext;
-    private KafkaBridgeConsumer<K, V> kafkaBridgeConsumer;
+    private final HttpBridgeContext<K, V> httpBridgeContext;
+    private final KafkaBridgeConsumer<K, V> kafkaBridgeConsumer;
     private ConsumerInstanceId consumerInstanceId;
     private boolean subscribed;
-    protected boolean assigned;
+    private boolean assigned;
 
     /**
      * Constructor
