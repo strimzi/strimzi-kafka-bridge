@@ -11,7 +11,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Handler;
-import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
+import io.strimzi.kafka.bridge.KafkaBridgeProducer;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
@@ -36,19 +36,21 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Implementation of an HTTP based source endpoint
+ * Represents an HTTP bridge source endpoint for the Kafka producer operations
  *
  * @param <K> type of Kafka message key
  * @param <V> type of Kafka message payload
  */
-public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
+public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
     private boolean closing;
+    private KafkaBridgeProducer<K, V> kafkaBridgeProducer;
 
     HttpSourceBridgeEndpoint(BridgeConfig bridgeConfig, EmbeddedFormat format,
                              Serializer<K> keySerializer, Serializer<V> valueSerializer) {
-        super(bridgeConfig, format, keySerializer, valueSerializer);
+        super(bridgeConfig, format);
+        this.kafkaBridgeProducer = new KafkaBridgeProducer<>(bridgeConfig.getKafkaConfig(), keySerializer, valueSerializer);
     }
 
     @Override
@@ -56,7 +58,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
         this.name = this.bridgeConfig.getBridgeID() == null ? "kafka-bridge-producer-" + UUID.randomUUID() : this.bridgeConfig.getBridgeID() + "-" + UUID.randomUUID();
         this.closing = false;
         this.messageConverter = this.buildMessageConverter();
-        super.open();
+        this.kafkaBridgeProducer.create();
     }
 
     /**
@@ -64,6 +66,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
      */
     public void maybeClose() {
         if (this.closing) {
+            this.kafkaBridgeProducer.close();
             this.close();
         }
     }
@@ -128,7 +131,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
             if (isAsync) {
                 // if async is specified, using the ignoring result send, and return immediately once records are sent
                 for (ProducerRecord<K, V> record : records) {
-                    this.sendIgnoreResult(record);
+                    this.kafkaBridgeProducer.sendIgnoreResult(record);
                 }
                 span.finish(HttpResponseStatus.NO_CONTENT.code());
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(),
@@ -143,7 +146,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends SourceBridgeEndpoint<K, V> {
                 CompletionStage<RecordMetadata> sendHandler =
                         // inside send method, the callback which completes the promise is executed in the kafka-producer-network-thread
                         // let's do the result handling in the same thread to keep the messages order delivery execution
-                        this.send(record).handle((metadata, ex) -> {
+                        this.kafkaBridgeProducer.send(record).handle((metadata, ex) -> {
                             log.trace("Handle thread {}", Thread.currentThread());
                             if (ex == null) {
                                 log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", record, metadata.topic(), metadata.partition(), metadata.offset());

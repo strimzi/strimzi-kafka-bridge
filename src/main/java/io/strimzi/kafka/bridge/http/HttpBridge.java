@@ -9,15 +9,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.strimzi.kafka.bridge.AdminClientEndpoint;
 import io.strimzi.kafka.bridge.Application;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.IllegalEmbeddedFormatException;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.MetricsReporter;
-import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
-import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
@@ -127,7 +124,7 @@ public class HttpBridge extends AbstractVerticle {
             while (it.hasNext()) {
                 Map.Entry<ConsumerInstanceId, Long> item = it.next();
                 if (item.getValue() + timeoutInMs < System.currentTimeMillis()) {
-                    SinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(item.getKey());
+                    HttpSinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(item.getKey());
                     if (deleteSinkEndpoint != null) {
                         deleteSinkEndpoint.close();
                         this.httpBridgeContext.getHttpSinkEndpoints().remove(item.getKey());
@@ -184,8 +181,8 @@ public class HttpBridge extends AbstractVerticle {
 
                 log.info("Starting HTTP-Kafka bridge verticle...");
                 this.httpBridgeContext = new HttpBridgeContext<>();
-                AdminClientEndpoint adminClientEndpoint = new HttpAdminClientEndpoint(this.bridgeConfig, this.httpBridgeContext);
-                this.httpBridgeContext.setAdminClientEndpoint(adminClientEndpoint);
+                HttpAdminBridgeEndpoint adminClientEndpoint = new HttpAdminBridgeEndpoint(this.bridgeConfig, this.httpBridgeContext);
+                this.httpBridgeContext.setHttpAdminEndpoint(adminClientEndpoint);
                 adminClientEndpoint.open();
                 this.bindHttpServer(startPromise);
             } else {
@@ -232,15 +229,15 @@ public class HttpBridge extends AbstractVerticle {
         this.isReady = false;
 
         // Consumers cleanup
-        this.httpBridgeContext.closeAllSinkBridgeEndpoints();
+        this.httpBridgeContext.closeAllHttpSinkBridgeEndpoints();
 
         // producer cleanup
         // for each connection, we have to close the connection itself but before that
         // all the sink/source endpoints (so the related links inside each of them)
-        this.httpBridgeContext.closeAllSourceBridgeEndpoints();
+        this.httpBridgeContext.closeAllHttpSourceBridgeEndpoints();
 
         // admin client cleanup
-        this.httpBridgeContext.closeAdminClientEndpoint();
+        this.httpBridgeContext.closeHttpAdminClientEndpoint();
 
         if (this.httpServer != null) {
 
@@ -289,7 +286,7 @@ public class HttpBridge extends AbstractVerticle {
 
         // check for an empty body
         JsonNode body = !routingContext.body().isEmpty() ? JsonUtils.bufferToJson(routingContext.body().buffer()) : JsonUtils.createObjectNode();
-        SinkBridgeEndpoint<byte[], byte[]> sink = null;
+        HttpSinkBridgeEndpoint<byte[], byte[]> sink = null;
 
         try {
             EmbeddedFormat format = EmbeddedFormat.from(JsonUtils.getString(body, "format", "binary"));
@@ -331,7 +328,7 @@ public class HttpBridge extends AbstractVerticle {
         String instanceId = routingContext.pathParam("name");
         ConsumerInstanceId kafkaConsumerInstanceId = new ConsumerInstanceId(groupId, instanceId);
 
-        SinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(kafkaConsumerInstanceId);
+        HttpSinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(kafkaConsumerInstanceId);
 
         if (deleteSinkEndpoint != null) {
             deleteSinkEndpoint.handle(routingContext);
@@ -428,7 +425,7 @@ public class HttpBridge extends AbstractVerticle {
         String instanceId = routingContext.pathParam("name");
         ConsumerInstanceId kafkaConsumerInstanceId = new ConsumerInstanceId(groupId, instanceId);
 
-        SinkBridgeEndpoint<byte[], byte[]> sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(kafkaConsumerInstanceId);
+        HttpSinkBridgeEndpoint<byte[], byte[]> sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(kafkaConsumerInstanceId);
 
         if (sinkEndpoint != null) {
             timestampMap.replace(kafkaConsumerInstanceId, System.currentTimeMillis());
@@ -462,7 +459,7 @@ public class HttpBridge extends AbstractVerticle {
         String contentType = httpServerRequest.getHeader("Content-Type") != null ?
                 httpServerRequest.getHeader("Content-Type") : BridgeContentType.KAFKA_JSON_BINARY;
 
-        SourceBridgeEndpoint<byte[], byte[]> source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
+        HttpSourceBridgeEndpoint<byte[], byte[]> source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
 
         try {
             if (source == null) {
@@ -491,7 +488,7 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void processAdminClient(RoutingContext routingContext) {
-        AdminClientEndpoint adminClientEndpoint = this.httpBridgeContext.getAdminClientEndpoint();
+        HttpAdminBridgeEndpoint adminClientEndpoint = this.httpBridgeContext.getHttpAdminEndpoint();
         if (adminClientEndpoint != null) {
             adminClientEndpoint.handle(routingContext);
         } else {
@@ -622,7 +619,7 @@ public class HttpBridge extends AbstractVerticle {
 
         // closing connection, but before closing all sink/source endpoints
         if (this.httpBridgeContext.getHttpSourceEndpoints().containsKey(connection)) {
-            SourceBridgeEndpoint<byte[], byte[]> sourceEndpoint = this.httpBridgeContext.getHttpSourceEndpoints().get(connection);
+            HttpSourceBridgeEndpoint<byte[], byte[]> sourceEndpoint = this.httpBridgeContext.getHttpSourceEndpoints().get(connection);
             if (sourceEndpoint != null) {
                 sourceEndpoint.close();
             }

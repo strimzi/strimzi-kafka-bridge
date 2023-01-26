@@ -5,9 +5,7 @@
 
 package io.strimzi.kafka.bridge;
 
-import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
-import io.strimzi.kafka.bridge.http.HttpBridgeEndpoint;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
@@ -26,56 +24,42 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Base class for admin client endpoint
+ * Represents a Kafka bridge admin client
  */
-public abstract class AdminClientEndpoint implements HttpBridgeEndpoint {
-    protected final Logger log = LoggerFactory.getLogger(AdminClientEndpoint.class);
+public class KafkaBridgeAdmin {
+    private final Logger log = LoggerFactory.getLogger(KafkaBridgeAdmin.class);
 
-    protected String name;
-    protected final BridgeConfig bridgeConfig;
-
-    private Handler<HttpBridgeEndpoint> closeHandler;
-
-    private AdminClient kAdminClient;
+    private final KafkaConfig kafkaConfig;
+    private AdminClient adminClient;
 
     /**
      * Constructor
      *
-     * @param bridgeConfig Bridge configuration
+     * @param kafkaConfig Kafka configuration
      */
-    public AdminClientEndpoint(BridgeConfig bridgeConfig) {
-        this.name = "kafka-bridge-admin";
-        this.bridgeConfig = bridgeConfig;
+    public KafkaBridgeAdmin(KafkaConfig kafkaConfig) {
+        this.kafkaConfig = kafkaConfig;
     }
 
-    @Override
-    public String name() {
-        return this.name;
-    }
-
-    @Override
-    public HttpBridgeEndpoint closeHandler(Handler<HttpBridgeEndpoint> endpointCloseHandler) {
-        this.closeHandler = endpointCloseHandler;
-        return this;
-    }
-
-    @Override
-    public void open() {
+    /**
+     * Create the internal Kafka Admin client instance with the Kafka admin related configuration
+     */
+    public void create() {
         // create an admin client
-        KafkaConfig kafkaConfig = this.bridgeConfig.getKafkaConfig();
         Properties props = new Properties();
-        props.putAll(kafkaConfig.getConfig());
-        props.putAll(kafkaConfig.getAdminConfig().getConfig());
+        props.putAll(this.kafkaConfig.getConfig());
+        props.putAll(this.kafkaConfig.getAdminConfig().getConfig());
 
-        this.kAdminClient = AdminClient.create(props);
+        this.adminClient = AdminClient.create(props);
     }
 
-    @Override
+    /**
+     * Close the Kafka Admin client instance
+     */
     public void close() {
-        if (this.kAdminClient != null) {
-            this.kAdminClient.close();
+        if (this.adminClient != null) {
+            this.adminClient.close();
         }
-        this.handleClose();
     }
 
     /**
@@ -83,11 +67,11 @@ public abstract class AdminClientEndpoint implements HttpBridgeEndpoint {
      *
      * @return a CompletionStage bringing the set of topics
      */
-    protected CompletionStage<Set<String>> listTopics() {
+    public CompletionStage<Set<String>> listTopics() {
         log.trace("List topics thread {}", Thread.currentThread());
         log.info("List topics");
         CompletableFuture<Set<String>> promise = new CompletableFuture<>();
-        this.kAdminClient.listTopics()
+        this.adminClient.listTopics()
                 .names()
                 .whenComplete((topics, exception) -> {
                     log.trace("List topics callback thread {}", Thread.currentThread());
@@ -103,13 +87,14 @@ public abstract class AdminClientEndpoint implements HttpBridgeEndpoint {
     /**
      * Returns the description of the specified topics.
      *
+     * @param topicNames topics to describe
      * @return a CompletionStage bringing the description of the specified topics.
      */
-    protected CompletionStage<Map<String, TopicDescription>> describeTopics(List<String> topicNames) {
+    public CompletionStage<Map<String, TopicDescription>> describeTopics(List<String> topicNames) {
         log.trace("Describe topics thread {}", Thread.currentThread());
         log.info("Describe topics {}", topicNames);
         CompletableFuture<Map<String, TopicDescription>> promise = new CompletableFuture<>();
-        this.kAdminClient.describeTopics(topicNames)
+        this.adminClient.describeTopics(topicNames)
                 .allTopicNames()
                 .whenComplete((topics, exception) -> {
                     log.trace("Describe topics callback thread {}", Thread.currentThread());
@@ -125,13 +110,14 @@ public abstract class AdminClientEndpoint implements HttpBridgeEndpoint {
     /**
      * Returns the configuration of the specified resources.
      *
+     * @param configResources resource configuration to describe
      * @return a CompletionStage bringing the configuration of the specified resources.
      */
-    protected CompletionStage<Map<ConfigResource, Config>> describeConfigs(List<ConfigResource> configResources) {
+    public CompletionStage<Map<ConfigResource, Config>> describeConfigs(List<ConfigResource> configResources) {
         log.trace("Describe configs thread {}", Thread.currentThread());
         log.info("Describe configs {}", configResources);
         CompletableFuture<Map<ConfigResource, Config>> promise = new CompletableFuture<>();
-        this.kAdminClient.describeConfigs(configResources)
+        this.adminClient.describeConfigs(configResources)
                 .all()
                 .whenComplete((configs, exception) -> {
                     log.trace("Describe configs callback thread {}", Thread.currentThread());
@@ -147,13 +133,14 @@ public abstract class AdminClientEndpoint implements HttpBridgeEndpoint {
     /**
      * Returns the offset spec for the given partition.
      *
+     * @param topicPartitionOffsets topics and related partitions for which listing the offsets
      * @return a CompletionStage bringing the offset spec for the given partition.
      */
-    protected CompletionStage<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> listOffsets(Map<TopicPartition, OffsetSpec> topicPartitionOffsets) {
+    public CompletionStage<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> listOffsets(Map<TopicPartition, OffsetSpec> topicPartitionOffsets) {
         log.trace("Get offsets thread {}", Thread.currentThread());
         log.info("Get the offset spec for partition {}", topicPartitionOffsets);
         CompletableFuture<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> promise = new CompletableFuture<>();
-        this.kAdminClient.listOffsets(topicPartitionOffsets)
+        this.adminClient.listOffsets(topicPartitionOffsets)
                 .all()
                 .whenComplete((offsets, exception) -> {
                     log.trace("Get offsets callback thread {}", Thread.currentThread());
@@ -164,15 +151,5 @@ public abstract class AdminClientEndpoint implements HttpBridgeEndpoint {
                     }
                 });
         return promise;
-    }
-
-    /**
-     * Raise close event
-     */
-    protected void handleClose() {
-
-        if (this.closeHandler != null) {
-            this.closeHandler.handle(this);
-        }
     }
 }

@@ -14,7 +14,7 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Handler;
-import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
+import io.strimzi.kafka.bridge.KafkaBridgeConsumer;
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
@@ -50,33 +50,63 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
- * Implementation of an HTTP based sink endpoint
+ * Represents an HTTP bridge sink endpoint for the Kafka consumer operations
  *
  * @param <K> type of Kafka message key
  * @param <V> type of Kafka message payload
  */
 @SuppressWarnings({"checkstyle:ClassFanOutComplexity"})
-public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
+public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
     private static final ObjectNode EMPTY_JSON = JsonUtils.createObjectNode();
+    private long pollTimeOut = 100;
+    private long maxBytes = Long.MAX_VALUE;
 
     Pattern forwardedHostPattern = Pattern.compile("host=([^;]+)", Pattern.CASE_INSENSITIVE);
     Pattern forwardedProtoPattern = Pattern.compile("proto=([^;]+)", Pattern.CASE_INSENSITIVE);
     Pattern hostPortPattern = Pattern.compile("^.*:[0-9]+$");
 
     private MessageConverter<K, V, Buffer, Buffer> messageConverter;
-
     private HttpBridgeContext<K, V> httpBridgeContext;
+    private KafkaBridgeConsumer<K, V> kafkaBridgeConsumer;
+    private ConsumerInstanceId consumerInstanceId;
+    private boolean subscribed;
+    protected boolean assigned;
 
-    HttpSinkBridgeEndpoint(BridgeConfig bridgeConfig, HttpBridgeContext<K, V> context, EmbeddedFormat format,
-                           Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
-        super(bridgeConfig, format, keyDeserializer, valueDeserializer);
+    /**
+     * Constructor
+     *
+     * @param bridgeConfig the bridge configuration
+     * @param context the HTTP bridge context
+     * @param format the embedded format for consumed messages
+     * @param keyDeserializer key deserializer for consumed messages
+     * @param valueDeserializer value deserializer for consumed messages
+     */
+    public HttpSinkBridgeEndpoint(BridgeConfig bridgeConfig, HttpBridgeContext<K, V> context, EmbeddedFormat format,
+                                  Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
+        super(bridgeConfig, format);
         this.httpBridgeContext = context;
+        this.kafkaBridgeConsumer = new KafkaBridgeConsumer<>(bridgeConfig.getKafkaConfig(), keyDeserializer, valueDeserializer);
+        this.subscribed = false;
+        this.assigned = false;
+    }
+
+    /**
+     * @return the consumer instance id
+     */
+    public ConsumerInstanceId consumerInstanceId() {
+        return this.consumerInstanceId;
     }
 
     @Override
     public void open() {
         this.messageConverter = this.buildMessageConverter();
+    }
+
+    @Override
+    public void close() {
+        this.kafkaBridgeConsumer.close();
+        super.close();
     }
 
     /**
@@ -87,16 +117,16 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
      * @param handler handler for the request
      */
     @SuppressWarnings("checkstyle:NPathComplexity")
-    public void doCreateConsumer(RoutingContext routingContext, JsonNode bodyAsJson, Handler<HttpBridgeEndpoint> handler) {
+    private void doCreateConsumer(RoutingContext routingContext, JsonNode bodyAsJson, Handler<HttpBridgeEndpoint> handler) {
         // get the consumer group-id
-        this.groupId = routingContext.pathParam("groupid");
+        String groupId = routingContext.pathParam("groupid");
 
         // if no name, a random one is assigned
         this.name = JsonUtils.getString(bodyAsJson, "name", bridgeConfig.getBridgeID() == null
                 ? "kafka-bridge-consumer-" + UUID.randomUUID()
                 : bridgeConfig.getBridgeID() + "-" + UUID.randomUUID());
 
-        this.consumerInstanceId = new ConsumerInstanceId(this.groupId, this.name);
+        this.consumerInstanceId = new ConsumerInstanceId(groupId, this.name);
 
         if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(this.consumerInstanceId)) {
             HttpBridgeError error = new HttpBridgeError(
@@ -132,13 +162,13 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 JsonUtils.getString(bodyAsJson, ConsumerConfig.ISOLATION_LEVEL_CONFIG), config);
 
         // create the consumer
-        this.initConsumer(config);
+        this.kafkaBridgeConsumer.create(config, groupId);
 
         if (handler != null) {
             handler.handle(this);
         }
 
-        log.info("Created consumer {} in group {}", this.name, this.groupId);
+        log.info("Created consumer {} in group {}", this.name, groupId);
         // send consumer instance id(name) and base URI as response
         ObjectNode body = JsonUtils.createObjectNode()
                 .put("instance_id", this.name)
@@ -155,7 +185,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 JsonNode json = seekOffsetsList.get(i);
                 TopicPartition topicPartition = new TopicPartition(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition"));
                 long offset = JsonUtils.getLong(json, "offset");
-                this.seek(topicPartition, offset);
+                this.kafkaBridgeConsumer.seek(topicPartition, offset);
             }
 
         }).whenComplete((v, ex) -> {
@@ -180,9 +210,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
 
         CompletableFuture.runAsync(() -> {
             if (seekToType == HttpOpenApiOperations.SEEK_TO_BEGINNING) {
-                this.seekToBeginning(set);
+                this.kafkaBridgeConsumer.seekToBeginning(set);
             } else {
-                this.seekToEnd(set);
+                this.kafkaBridgeConsumer.seekToEnd(set);
             }
         }).whenComplete((v, ex) -> {
             log.trace("SeekTo handler thread {}", Thread.currentThread());
@@ -209,7 +239,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                 offsetData.put(topicPartition, offsetAndMetadata);
             }
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-            CompletableFuture.supplyAsync(() -> this.commit(offsetData))
+            CompletableFuture.supplyAsync(() -> this.kafkaBridgeConsumer.commit(offsetData))
                     .whenComplete((data, ex) -> {
                         log.trace("Commit handler thread {}", Thread.currentThread());
                         if (ex == null) {
@@ -225,7 +255,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
                     });
         } else {
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-            CompletableFuture.runAsync(() -> this.commitLastPolledOffsets())
+            CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.commitLastPolledOffsets())
                     .whenComplete((v, ex) -> {
                         log.trace("Commit handler thread {}", Thread.currentThread());
                         if (ex == null) {
@@ -302,7 +332,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     }
 
     private void doPoll(RoutingContext routingContext) {
-        if (topicSubscriptionsPattern == null && topicSubscriptions.isEmpty()) {
+        if (!this.subscribed && !this.assigned) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     "Consumer is not subscribed to any topics or assigned any partitions"
@@ -326,7 +356,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             }
 
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-            CompletableFuture.supplyAsync(() -> this.consume())
+            CompletableFuture.supplyAsync(() -> this.kafkaBridgeConsumer.poll(this.pollTimeOut))
                     .whenComplete((records, ex) -> {
                         log.trace("Poll handler thread {}", Thread.currentThread());
                         this.pollHandler(records, ex, routingContext);
@@ -342,7 +372,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
     }
 
     private void doAssign(RoutingContext routingContext, JsonNode bodyAsJson) {
-        if (subscribed) {
+        if (this.subscribed) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.CONFLICT.code(), "Subscriptions to topics, partitions, and patterns are mutually exclusive."
             );
@@ -351,20 +381,20 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
             return;
         }
         ArrayNode partitionsList = (ArrayNode) bodyAsJson.get("partitions");
-        // clear current subscriptions because assign works by replacing them in the native Kafka client
-        this.topicSubscriptions.clear();
-        this.topicSubscriptions.addAll(
-                StreamSupport.stream(partitionsList.spliterator(), false)
-                        .map(JsonNode.class::cast)
-                        .map(json -> new SinkTopicSubscription(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition")))
-                        .collect(Collectors.toList())
+        List<SinkTopicSubscription> topicSubscriptions = new ArrayList<>();
+        topicSubscriptions.addAll(
+            StreamSupport.stream(partitionsList.spliterator(), false)
+                    .map(JsonNode.class::cast)
+                    .map(json -> new SinkTopicSubscription(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition")))
+                    .collect(Collectors.toList())
         );
 
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-        CompletableFuture.runAsync(() -> this.assign())
+        CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.assign(topicSubscriptions))
                 .whenComplete((v, ex) -> {
                     log.trace("Assign handler thread {}", Thread.currentThread());
                     if (ex == null) {
+                        this.assigned = true;
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
@@ -404,20 +434,22 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         CompletableFuture.runAsync(() -> {
             if (bodyAsJson.has("topics")) {
                 ArrayNode topicsList = (ArrayNode) bodyAsJson.get("topics");
-                this.topicSubscriptions.addAll(
-                        StreamSupport.stream(topicsList.spliterator(), false)
-                                .map(TextNode.class::cast)
-                                .map(topic -> new SinkTopicSubscription(topic.asText()))
-                                .collect(Collectors.toList())
+                List<SinkTopicSubscription> topicSubscriptions = new ArrayList<>();
+                topicSubscriptions.addAll(
+                    StreamSupport.stream(topicsList.spliterator(), false)
+                            .map(TextNode.class::cast)
+                            .map(topic -> new SinkTopicSubscription(topic.asText()))
+                            .collect(Collectors.toList())
                 );
-                this.subscribe();
+                this.kafkaBridgeConsumer.subscribe(topicSubscriptions);
             } else if (bodyAsJson.has("topic_pattern")) {
                 Pattern pattern = Pattern.compile(JsonUtils.getString(bodyAsJson, "topic_pattern"));
-                this.subscribe(pattern);
+                this.kafkaBridgeConsumer.subscribe(pattern);
             }
         }).whenComplete((v, ex) -> {
             log.trace("Subscribe handler thread {}", Thread.currentThread());
             if (ex == null) {
+                this.subscribed = true;
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
                 HttpBridgeError error = new HttpBridgeError(
@@ -430,14 +462,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
         });
     }
 
-    /**
-     * Run list subscriptions operation for the Kafka consumer
-     *
-     * @param routingContext the routing context
-     */
-    public void doListSubscriptions(RoutingContext routingContext) {
+    private void doListSubscriptions(RoutingContext routingContext) {
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-        CompletableFuture.supplyAsync(() -> this.listSubscriptions())
+        CompletableFuture.supplyAsync(() -> this.kafkaBridgeConsumer.listSubscriptions())
                 .whenComplete((subscriptions, ex) -> {
                     log.trace("ListSubscriptions handler thread {}", Thread.currentThread());
                     if (ex == null) {
@@ -483,10 +510,12 @@ public class HttpSinkBridgeEndpoint<K, V> extends SinkBridgeEndpoint<K, V> {
      */
     public void doUnsubscribe(RoutingContext routingContext) {
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-        CompletableFuture.runAsync(() -> this.unsubscribe())
+        CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.unsubscribe())
                 .whenComplete((v, ex) -> {
                     log.trace("Unsubscribe handler thread {}", Thread.currentThread());
                     if (ex == null) {
+                        this.subscribed = false;
+                        this.assigned = false;
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
