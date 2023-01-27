@@ -5,9 +5,7 @@
 
 package io.strimzi.kafka.bridge;
 
-import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
-import io.strimzi.kafka.bridge.http.HttpBridgeEndpoint;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
@@ -20,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,107 +27,57 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Base class for sink bridge endpoints
+ * Represents a Kafka bridge consumer client
  *
  * @param <K>   type of Kafka message key
  * @param <V>   type of Kafka message payload
  */
-public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
+public class KafkaBridgeConsumer<K, V> {
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
+    private final Logger log = LoggerFactory.getLogger(KafkaBridgeConsumer.class);
 
-    protected String name;
-    protected final EmbeddedFormat format;
-    protected final Deserializer<K> keyDeserializer;
-    protected final Deserializer<V> valueDeserializer;
-
-    protected final BridgeConfig bridgeConfig;
-
-    private Handler<HttpBridgeEndpoint> closeHandler;
-
+    private final KafkaConfig kafkaConfig;
+    private final Deserializer<K> keyDeserializer;
+    private final Deserializer<V> valueDeserializer;
     private Consumer<K, V> consumer;
-    protected ConsumerInstanceId consumerInstanceId;
-
-    protected String groupId;
-    protected List<SinkTopicSubscription> topicSubscriptions;
-    protected Pattern topicSubscriptionsPattern;
-
-    protected boolean subscribed;
-    protected boolean assigned;
-
-    protected long pollTimeOut = 100;
-    protected long maxBytes = Long.MAX_VALUE;
-
     // handlers called when partitions are revoked/assigned on rebalancing
     private final ConsumerRebalanceListener loggingPartitionsRebalance = new LoggingPartitionsRebalance();
 
     /**
      * Constructor
      *
-     * @param bridgeConfig Bridge configuration
-     * @param format embedded format for the key/value in the Kafka message
+     * @param kafkaConfig Kafka configuration
      * @param keyDeserializer Kafka deserializer for the message key
      * @param valueDeserializer Kafka deserializer for the message value
      */
-    public SinkBridgeEndpoint(BridgeConfig bridgeConfig, EmbeddedFormat format,
-                              Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
-        this.bridgeConfig = bridgeConfig;
-        this.topicSubscriptions = new ArrayList<>();
-        this.topicSubscriptionsPattern = null;
-        this.format = format;
+    public KafkaBridgeConsumer(KafkaConfig kafkaConfig, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
+        this.kafkaConfig = kafkaConfig;
         this.keyDeserializer = keyDeserializer;
         this.valueDeserializer = valueDeserializer;
-        this.subscribed = false;
-        this.assigned = false;
     }
 
-    @Override
-    public String name() {
-        return this.name;
-    }
-
-    @Override
-    public HttpBridgeEndpoint closeHandler(Handler<HttpBridgeEndpoint> endpointCloseHandler) {
-        this.closeHandler = endpointCloseHandler;
-        return this;
-    }
-
-    @Override
+    /**
+     * Close the Kafka Consumer client instance
+     */
     public void close() {
         if (this.consumer != null) {
             this.consumer.close();
         }
-        this.handleClose();
     }
 
     /**
-     * @return the consumer instance id
+     * Create the internal Kafka Consumer client instance with the Kafka consumer related configuration.
+     * It should be the first call for preparing the Kafka consumer.
+     *
+     * @param config consumer configuration coming from the HTTP request (JSON body)
+     * @param groupId consumer group coming as query parameter from the HTTP request
      */
-    public ConsumerInstanceId consumerInstanceId() {
-        return this.consumerInstanceId;
-    }
-
-    /**
-     * Raise close event
-     */
-    protected void handleClose() {
-
-        if (this.closeHandler != null) {
-            this.closeHandler.handle(this);
-        }
-    }
-
-    /**
-     * Kafka consumer initialization. It should be the first call for preparing the Kafka consumer.
-     */
-    protected void initConsumer(Properties config) {
-
+    public void create(Properties config, String groupId) {
         // create a consumer
-        KafkaConfig kafkaConfig = this.bridgeConfig.getKafkaConfig();
         Properties props = new Properties();
-        props.putAll(kafkaConfig.getConfig());
-        props.putAll(kafkaConfig.getConsumerConfig().getConfig());
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
+        props.putAll(this.kafkaConfig.getConfig());
+        props.putAll(this.kafkaConfig.getConsumerConfig().getConfig());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
 
         if (config != null)
             props.putAll(config);
@@ -139,20 +86,19 @@ public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
     }
 
     /**
-     * Subscribe to the topics specified in the related {@link #topicSubscriptions} list
-     * It should be the next call after the {@link #initConsumer(Properties config)} after getting
+     * Subscribe to the topics specified in the related topicSubscriptions list
+     * It should be the next call after the {@link #create(Properties config, String groupId)} after getting
      * the topics information in order to subscribe to them.
+     *
+     * @param topicSubscriptions topics to subscribe to
      */
-    protected void subscribe() {
-
-        if (this.topicSubscriptions.isEmpty()) {
+    public void subscribe(List<SinkTopicSubscription> topicSubscriptions) {
+        if (topicSubscriptions.isEmpty()) {
             throw new IllegalArgumentException("At least one topic to subscribe has to be specified!");
         }
 
-        log.info("Subscribe to topics {}", this.topicSubscriptions);
-        this.subscribed = true;
-
-        Set<String> topics = this.topicSubscriptions.stream().map(SinkTopicSubscription::getTopic).collect(Collectors.toSet());
+        log.info("Subscribe to topics {}", topicSubscriptions);
+        Set<String> topics = topicSubscriptions.stream().map(SinkTopicSubscription::getTopic).collect(Collectors.toSet());
         log.trace("Subscribe thread {}", Thread.currentThread());
         this.consumer.subscribe(topics, loggingPartitionsRebalance);
     }
@@ -160,12 +106,8 @@ public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
     /**
      * Unsubscribe all the topics which the consumer currently subscribes
      */
-    protected void unsubscribe() {
-        log.info("Unsubscribe from topics {}", this.topicSubscriptions);
-        topicSubscriptions.clear();
-        topicSubscriptionsPattern = null;
-        this.subscribed = false;
-        this.assigned = false;
+    public void unsubscribe() {
+        log.info("Unsubscribe from topics");
         log.trace("Unsubscribe thread {}", Thread.currentThread());
         this.consumer.unsubscribe();
     }
@@ -175,8 +117,8 @@ public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
      *
      * @return set of topic partitions to which the consumer is subscribed
      */
-    protected Set<TopicPartition> listSubscriptions() {
-        log.info("Listing subscribed topics {}", this.topicSubscriptions);
+    public Set<TopicPartition> listSubscriptions() {
+        log.info("Listing subscribed topics");
         log.trace("ListSubscriptions thread {}", Thread.currentThread());
         return this.consumer.assignment();
     }
@@ -186,31 +128,26 @@ public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
      *
      * @param pattern Java regex for topics subscription
      */
-    protected void subscribe(Pattern pattern) {
-
-        topicSubscriptionsPattern = pattern;
-
+    public void subscribe(Pattern pattern) {
         log.info("Subscribe to topics with pattern {}", pattern);
-        this.subscribed = true;
         log.trace("Subscribe thread {}", Thread.currentThread());
         this.consumer.subscribe(pattern, loggingPartitionsRebalance);
     }
 
     /**
-     * Request for assignment of topics partitions specified in the related {@link #topicSubscriptions} list
+     * Request for assignment of topics partitions specified in the related topicSubscriptions list
+     *
+     * @param topicSubscriptions topics to be assigned
      */
-    protected void assign() {
-
-        if (this.topicSubscriptions.isEmpty()) {
+    public void assign(List<SinkTopicSubscription> topicSubscriptions) {
+        if (topicSubscriptions.isEmpty()) {
             throw new IllegalArgumentException("At least one topic to subscribe has to be specified!");
         }
 
-        log.info("Assigning to topics partitions {}", this.topicSubscriptions);
-        this.assigned = true;
-
+        log.info("Assigning to topics partitions {}", topicSubscriptions);
         // TODO: maybe we don't need the SinkTopicSubscription class anymore? Removing "offset" field, it's now the same as TopicPartition class?
         Set<TopicPartition> topicPartitions = new HashSet<>();
-        for (SinkTopicSubscription topicSubscription : this.topicSubscriptions) {
+        for (SinkTopicSubscription topicSubscription : topicSubscriptions) {
             topicPartitions.add(new TopicPartition(topicSubscription.getTopic(), topicSubscription.getPartition()));
         }
 
@@ -221,11 +158,12 @@ public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
     /**
      * Poll in order to get records from the subscribed topic partitions
      *
+     * @param timeout polling operation timeout
      * @return records polled from the Kafka cluster
      */
-    protected ConsumerRecords<K, V> consume() {
+    public ConsumerRecords<K, V> poll(long timeout) {
         log.trace("Poll thread {}", Thread.currentThread());
-        return this.consumer.poll(Duration.ofMillis(this.pollTimeOut));
+        return this.consumer.poll(Duration.ofMillis(timeout));
     }
 
     /**
@@ -234,7 +172,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
      * @param offsetsData map containing topic partitions and corresponding offsets to commit
      * @return map containing topic partitions and corresponding committed offsets
      */
-    protected Map<TopicPartition, OffsetAndMetadata> commit(Map<TopicPartition, OffsetAndMetadata> offsetsData) {
+    public Map<TopicPartition, OffsetAndMetadata> commit(Map<TopicPartition, OffsetAndMetadata> offsetsData) {
         log.trace("Commit thread {}", Thread.currentThread());
         // TODO: doesn't it make sense to change using the commitAsync?
         //       does it still make sense to return the offsets we get as parameter?
@@ -245,7 +183,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
     /**
      * Commit offsets returned on the last poll() for all the subscribed list of topics and partitions
      */
-    protected void commitLastPolledOffsets() {
+    public void commitLastPolledOffsets() {
         log.trace("Commit thread {}", Thread.currentThread());
         // TODO: doesn't it make sense to change using the commitAsync?
         this.consumer.commitSync();
@@ -257,7 +195,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
      * @param topicPartition topic partition on which to seek to
      * @param offset offset to seek to on the topic partition
      */
-    protected void seek(TopicPartition topicPartition, long offset) {
+    public void seek(TopicPartition topicPartition, long offset) {
         log.trace("Seek thread {}", Thread.currentThread());
         this.consumer.seek(topicPartition, offset);
     }
@@ -267,7 +205,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
      *
      * @param topicPartitionSet set of topic partition on which to seek at the beginning
      */
-    protected void seekToBeginning(Set<TopicPartition> topicPartitionSet) {
+    public void seekToBeginning(Set<TopicPartition> topicPartitionSet) {
         log.trace("SeekToBeginning thread {}", Thread.currentThread());
         this.consumer.seekToBeginning(topicPartitionSet);
     }
@@ -277,7 +215,7 @@ public abstract class SinkBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
      *
      * @param topicPartitionSet set of topic partition on which to seek at the end
      */
-    protected void seekToEnd(Set<TopicPartition> topicPartitionSet) {
+    public void seekToEnd(Set<TopicPartition> topicPartitionSet) {
         log.trace("SeekToEnd thread {}", Thread.currentThread());
         this.consumer.seekToEnd(topicPartitionSet);
     }

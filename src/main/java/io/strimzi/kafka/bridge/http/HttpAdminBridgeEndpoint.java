@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.strimzi.kafka.bridge.AdminClientEndpoint;
+import io.strimzi.kafka.bridge.KafkaBridgeAdmin;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
@@ -35,26 +35,35 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Implementation of the admin client endpoint based on HTTP
+ * Represents an HTTP bridge endpoint for the Kafka administration operations
  */
-public class HttpAdminClientEndpoint extends AdminClientEndpoint {
+public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
 
-    private HttpBridgeContext httpBridgeContext;
+    private final HttpBridgeContext httpBridgeContext;
+    private final KafkaBridgeAdmin kafkaBridgeAdmin;
 
     /**
-     * Create a Kafka admin client
+     * Constructor
      *
      * @param bridgeConfig the bridge configuration
      * @param context the HTTP bridge context
      */
-    public HttpAdminClientEndpoint(BridgeConfig bridgeConfig, HttpBridgeContext context) {
-        super(bridgeConfig);
+    public HttpAdminBridgeEndpoint(BridgeConfig bridgeConfig, HttpBridgeContext context) {
+        super(bridgeConfig, null);
+        this.name = "kafka-bridge-admin";
         this.httpBridgeContext = context;
+        this.kafkaBridgeAdmin = new KafkaBridgeAdmin(bridgeConfig.getKafkaConfig());
     }
 
     @Override
     public void open() {
-        super.open();
+        this.kafkaBridgeAdmin.create();
+    }
+
+    @Override
+    public void close() {
+        this.kafkaBridgeAdmin.close();
+        super.close();
     }
 
     @Override
@@ -93,7 +102,7 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
      * @param routingContext the routing context
      */
     public void doListTopics(RoutingContext routingContext) {
-        this.listTopics()
+        this.kafkaBridgeAdmin.listTopics()
                 .whenComplete((topics, ex) -> {
                     log.trace("List topics handler thread {}", Thread.currentThread());
                     if (ex == null) {
@@ -119,8 +128,8 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
     public void doGetTopic(RoutingContext routingContext) {
         String topicName = routingContext.pathParam("topicname");
 
-        CompletionStage<Map<String, TopicDescription>> describeTopicsPromise = this.describeTopics(List.of(topicName));
-        CompletionStage<Map<ConfigResource, Config>> describeConfigsPromise = this.describeConfigs(List.of(new ConfigResource(ConfigResource.Type.TOPIC, topicName)));
+        CompletionStage<Map<String, TopicDescription>> describeTopicsPromise = this.kafkaBridgeAdmin.describeTopics(List.of(topicName));
+        CompletionStage<Map<ConfigResource, Config>> describeConfigsPromise = this.kafkaBridgeAdmin.describeConfigs(List.of(new ConfigResource(ConfigResource.Type.TOPIC, topicName)));
 
         CompletableFuture.allOf(describeTopicsPromise.toCompletableFuture(), describeConfigsPromise.toCompletableFuture())
                 .whenComplete((v, ex) -> {
@@ -185,7 +194,7 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
      */
     public void doListPartitions(RoutingContext routingContext) {
         String topicName = routingContext.pathParam("topicname");
-        this.describeTopics(List.of(topicName))
+        this.kafkaBridgeAdmin.describeTopics(List.of(topicName))
                 .whenComplete((topicDescriptions, ex) -> {
                     log.trace("List partitions handler thread {}", Thread.currentThread());
                     if (ex == null) {
@@ -231,7 +240,7 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                     BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
             return;
         }
-        this.describeTopics(List.of(topicName))
+        this.kafkaBridgeAdmin.describeTopics(List.of(topicName))
                 .whenComplete((topicDescriptions, ex) -> {
                     log.trace("Get partition handler thread {}", Thread.currentThread());
                     if (ex == null) {
@@ -285,7 +294,7 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
         }
         TopicPartition topicPartition = new TopicPartition(topicName, partitionId);
 
-        CompletionStage<Map<String, TopicDescription>> topicExistenceCheckPromise = this.describeTopics(List.of(topicName));
+        CompletionStage<Map<String, TopicDescription>> topicExistenceCheckPromise = this.kafkaBridgeAdmin.describeTopics(List.of(topicName));
         topicExistenceCheckPromise.whenComplete((topicDescriptions, t) -> {
             Throwable e = null;
             if (t != null && t.getCause() instanceof UnknownTopicOrPartitionException) {
@@ -299,9 +308,9 @@ public class HttpAdminClientEndpoint extends AdminClientEndpoint {
                         BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
             } else {
                 Map<TopicPartition, OffsetSpec> topicPartitionBeginOffsets = Map.of(topicPartition, OffsetSpec.earliest());
-                CompletionStage<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> getBeginningOffsetsPromise = this.listOffsets(topicPartitionBeginOffsets);
+                CompletionStage<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> getBeginningOffsetsPromise = this.kafkaBridgeAdmin.listOffsets(topicPartitionBeginOffsets);
                 Map<TopicPartition, OffsetSpec> topicPartitionEndOffsets = Map.of(topicPartition, OffsetSpec.latest());
-                CompletionStage<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> getEndOffsetsPromise = this.listOffsets(topicPartitionEndOffsets);
+                CompletionStage<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> getEndOffsetsPromise = this.kafkaBridgeAdmin.listOffsets(topicPartitionEndOffsets);
 
                 CompletableFuture.allOf(getBeginningOffsetsPromise.toCompletableFuture(), getEndOffsetsPromise.toCompletableFuture())
                         .whenComplete((v, ex) -> {

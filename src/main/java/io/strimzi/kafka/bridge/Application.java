@@ -43,7 +43,6 @@ import java.util.stream.Collectors;
 /**
  * Apache Kafka bridge main application class
  */
-@SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
 public class Application {
 
     private static final Logger log = LoggerFactory.getLogger(Application.class);
@@ -55,7 +54,6 @@ public class Application {
      *
      * @param args command line arguments
      */
-    @SuppressWarnings({"checkstyle:NPathComplexity"})
     public static void main(String[] args) {
         log.info("Strimzi Kafka Bridge {} is starting", Application.class.getPackage().getImplementationVersion());
         try {

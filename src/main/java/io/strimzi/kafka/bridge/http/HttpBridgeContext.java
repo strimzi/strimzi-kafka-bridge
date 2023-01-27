@@ -5,10 +5,7 @@
 
 package io.strimzi.kafka.bridge.http;
 
-import io.strimzi.kafka.bridge.AdminClientEndpoint;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
-import io.strimzi.kafka.bridge.SinkBridgeEndpoint;
-import io.strimzi.kafka.bridge.SourceBridgeEndpoint;
 import io.vertx.core.http.HttpConnection;
 
 import java.util.HashMap;
@@ -23,40 +20,39 @@ import java.util.Map;
  */
 public class HttpBridgeContext<K, V> {
 
-    private Map<ConsumerInstanceId, SinkBridgeEndpoint<K, V>> httpSinkEndpoints = new HashMap<>();
-    private Map<HttpConnection, SourceBridgeEndpoint<K, V>> httpSourceEndpoints = new HashMap<>();
-    private AdminClientEndpoint adminClientEndpoint;
-
+    private Map<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> httpSinkEndpoints = new HashMap<>();
+    private Map<HttpConnection, HttpSourceBridgeEndpoint<K, V>> httpSourceEndpoints = new HashMap<>();
+    private HttpAdminBridgeEndpoint httpAdminBridgeEndpoint;
     private HttpOpenApiOperations openApiOperation;
 
     /**
-     * @return map of sink endpoints
+     * @return map of the HTTP sink endpoints
      */
-    public Map<ConsumerInstanceId, SinkBridgeEndpoint<K, V>> getHttpSinkEndpoints() {
+    public Map<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> getHttpSinkEndpoints() {
         return this.httpSinkEndpoints;
     }
 
     /**
-     * @return map of source endpoints
+     * @return map of the HTTP source endpoints
      */
-    public Map<HttpConnection, SourceBridgeEndpoint<K, V>> getHttpSourceEndpoints() {
+    public Map<HttpConnection, HttpSourceBridgeEndpoint<K, V>> getHttpSourceEndpoints() {
         return this.httpSourceEndpoints;
     }
 
     /**
-     * @return the admin endpoint
+     * @return the HTTP admin endpoint
      */
-    public AdminClientEndpoint getAdminClientEndpoint() {
-        return this.adminClientEndpoint;
+    public HttpAdminBridgeEndpoint getHttpAdminEndpoint() {
+        return this.httpAdminBridgeEndpoint;
     }
 
     /**
-     * Sets the admin endpoint
+     * Sets the HTTP admin endpoint
      *
-     * @param adminClientEndpoint the admin endpoint
+     * @param httpAdminBridgeEndpoint the HTTP admin endpoint
      */
-    void setAdminClientEndpoint(AdminClientEndpoint adminClientEndpoint) {
-        this.adminClientEndpoint = adminClientEndpoint;
+    void setHttpAdminEndpoint(HttpAdminBridgeEndpoint httpAdminBridgeEndpoint) {
+        this.httpAdminBridgeEndpoint = httpAdminBridgeEndpoint;
     }
 
     /**
@@ -76,10 +72,10 @@ public class HttpBridgeContext<K, V> {
     }
 
     /**
-     * Close all the sink endpoints
+     * Close all the HTTP sink endpoints
      */
-    public void closeAllSinkBridgeEndpoints() {
-        for (Map.Entry<ConsumerInstanceId, SinkBridgeEndpoint<K, V>> sink: getHttpSinkEndpoints().entrySet()) {
+    public void closeAllHttpSinkBridgeEndpoints() {
+        for (Map.Entry<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> sink: getHttpSinkEndpoints().entrySet()) {
             if (sink.getValue() != null)
                 sink.getValue().close();
         }
@@ -87,10 +83,10 @@ public class HttpBridgeContext<K, V> {
     }
 
     /**
-     * Close all the source endpoints
+     * Close all the HTTP source endpoints
      */
-    public void closeAllSourceBridgeEndpoints() {
-        for (Map.Entry<HttpConnection, SourceBridgeEndpoint<K, V>> source: getHttpSourceEndpoints().entrySet()) {
+    public void closeAllHttpSourceBridgeEndpoints() {
+        for (Map.Entry<HttpConnection, HttpSourceBridgeEndpoint<K, V>> source: getHttpSourceEndpoints().entrySet()) {
             if (source.getValue() != null)
                 source.getValue().close();
         }
@@ -98,10 +94,10 @@ public class HttpBridgeContext<K, V> {
     }
 
     /**
-     * Close the admin client endpoint
+     * Close the HTTP admin client endpoint
      */
-    public void closeAdminClientEndpoint() {
-        if (this.adminClientEndpoint != null)
-            this.adminClientEndpoint.close();
+    public void closeHttpAdminClientEndpoint() {
+        if (this.httpAdminBridgeEndpoint != null)
+            this.httpAdminBridgeEndpoint.close();
     }
 }

@@ -5,38 +5,61 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Handler;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.ext.web.RoutingContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Interface for classes which acts as endpoints
- * bridging traffic between HTTP and Apache Kafka
+ * Abstract class for an endpoint bridging traffic between HTTP and Apache Kafka
  */
-public interface HttpBridgeEndpoint {
+public abstract class HttpBridgeEndpoint {
+
+    protected final Logger log = LoggerFactory.getLogger(getClass());
+
+    protected String name;
+    protected EmbeddedFormat format;
+    protected BridgeConfig bridgeConfig;
+    private Handler<HttpBridgeEndpoint> closeHandler;
 
     /**
-     * Name of the bridge endpoint
+     * Constructor
      *
-     * @return Returns the name of the bridge endpoint
+     * @param bridgeConfig the bridge configuration
+     * @param format the embedded format for consumed messages
      */
-    String name();
+    public HttpBridgeEndpoint(BridgeConfig bridgeConfig, EmbeddedFormat format) {
+        this.bridgeConfig = bridgeConfig;
+        this.format = format;
+    }
 
     /**
-     * Open the bridge endpoint
+     * @return the name of the HTTP bridge endpoint
      */
-    void open();
+    public String name() {
+        return this.name;
+    }
 
     /**
-     * Close the bridge endpoint
+     * Open the HTTP bridge endpoint
      */
-    void close();
+    public abstract void open();
+
+    /**
+     * Close the HTTP bridge endpoint calling the {@code closeHandler} as well
+     */
+    public void close() {
+        this.handleClose();
+    }
 
     /**
      * Handler for the HTTP routing context
      *
      * @param routingContext HTTP routing context to handle
      */
-    default void handle(RoutingContext routingContext) {
+    public void handle(RoutingContext routingContext) {
         this.handle(routingContext, null);
     }
 
@@ -46,13 +69,25 @@ public interface HttpBridgeEndpoint {
      * @param routingContext HTTP routing context to handle
      * @param handler handler for the corresponding bridge endpoint
      */
-    void handle(RoutingContext routingContext, Handler<HttpBridgeEndpoint> handler);
+    public abstract void handle(RoutingContext routingContext, Handler<HttpBridgeEndpoint> handler);
 
     /**
-     * Sets a handler called when a bridge endpoint is closed due to internal processing
+     * Sets a handler called when an HTTP bridge endpoint is closed due to internal processing
      *
      * @param endpointCloseHandler The handler
-     * @return The bridge endpoint
+     * @return The HTTP bridge endpoint itself
      */
-    HttpBridgeEndpoint closeHandler(Handler<HttpBridgeEndpoint> endpointCloseHandler);
+    public HttpBridgeEndpoint closeHandler(Handler<HttpBridgeEndpoint> endpointCloseHandler) {
+        this.closeHandler = endpointCloseHandler;
+        return this;
+    }
+
+    /**
+     * Raise close event
+     */
+    protected void handleClose() {
+        if (this.closeHandler != null) {
+            this.closeHandler.handle(this);
+        }
+    }
 }

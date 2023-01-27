@@ -5,9 +5,7 @@
 
 package io.strimzi.kafka.bridge;
 
-import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
-import io.strimzi.kafka.bridge.http.HttpBridgeEndpoint;
 import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -23,68 +21,40 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Base class for source bridge endpoints
+ * Represents a Kafka bridge producer client
  */
-public abstract class SourceBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
+public class KafkaBridgeProducer<K, V> {
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
+    private final Logger log = LoggerFactory.getLogger(KafkaBridgeConsumer.class);
 
-    protected String name;
-    protected final EmbeddedFormat format;
-    protected final Serializer<K> keySerializer;
-    protected final Serializer<V> valueSerializer;
-
-    protected final BridgeConfig bridgeConfig;
-
-    private Handler<HttpBridgeEndpoint> closeHandler;
-
+    private final KafkaConfig kafkaConfig;
+    private final Serializer<K> keySerializer;
+    private final Serializer<V> valueSerializer;
     private Producer<K, V> producer;
 
     /**
      * Constructor
      *
-     * @param bridgeConfig Bridge configuration
-     * @param format embedded format for the key/value in the Kafka message
+     * @param kafkaConfig Kafka configuration
      * @param keySerializer Kafka serializer for the message key
      * @param valueSerializer Kafka serializer for the message value
      */
-    public SourceBridgeEndpoint(BridgeConfig bridgeConfig, EmbeddedFormat format,
-                                Serializer<K> keySerializer, Serializer<V> valueSerializer) {
-        this.bridgeConfig = bridgeConfig;
-        this.format = format;
+    public KafkaBridgeProducer(KafkaConfig kafkaConfig, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+        this.kafkaConfig = kafkaConfig;
         this.keySerializer = keySerializer;
         this.valueSerializer = valueSerializer;
-    }
-
-    @Override
-    public String name() {
-        return this.name;
-    }
-
-    @Override
-    public HttpBridgeEndpoint closeHandler(Handler<HttpBridgeEndpoint> endpointCloseHandler) {
-        this.closeHandler = endpointCloseHandler;
-        return this;
-    }
-
-    /**
-     * Raise close event
-     */
-    protected void handleClose() {
-        if (this.closeHandler != null) {
-            this.closeHandler.handle(this);
-        }
     }
 
     /**
      * Send a record to Kafka, completing the returned CompletionStage when the Kafka producer callback is invoked.
      * The returned CompletionStage can be completed with metadata if the sending operation is successful or
      * it is completed exceptionally if the sending operation fails with any exception.
+     * The internal Kafka Producer send call could block for "max.block.ms" when metadata are not available.
      *
      * @param record Kafka record to send
      * @return a CompletionStage bringing the metadata
      */
-    protected CompletionStage<RecordMetadata> send(ProducerRecord<K, V> record) {
+    public CompletionStage<RecordMetadata> send(ProducerRecord<K, V> record) {
         CompletableFuture<RecordMetadata> promise = new CompletableFuture<>();
         log.trace("Send thread {}", Thread.currentThread());
         log.debug("Sending record {}", record);
@@ -105,18 +75,19 @@ public abstract class SourceBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
      *
      * @param record Kafka record to send
      */
-    protected void sendIgnoreResult(ProducerRecord<K, V> record) {
+    public void sendIgnoreResult(ProducerRecord<K, V> record) {
         log.trace("Send ignore result thread {}", Thread.currentThread());
         log.debug("Sending record {}", record);
         this.producer.send(record);
     }
 
-    @Override
-    public void open() {
-        KafkaConfig kafkaConfig = this.bridgeConfig.getKafkaConfig();
+    /**
+     * Create the internal Kafka Producer client instance with the Kafka producer related configuration.
+     */
+    public void create() {
         Properties props = new Properties();
-        props.putAll(kafkaConfig.getConfig());
-        props.putAll(kafkaConfig.getProducerConfig().getConfig());
+        props.putAll(this.kafkaConfig.getConfig());
+        props.putAll(this.kafkaConfig.getProducerConfig().getConfig());
 
         TracingHandle tracing = TracingUtil.getTracing();
         tracing.addTracingPropsToProducerConfig(props);
@@ -124,11 +95,11 @@ public abstract class SourceBridgeEndpoint<K, V> implements HttpBridgeEndpoint {
         this.producer = new KafkaProducer<>(props, this.keySerializer, this.valueSerializer);
     }
 
-    @Override
+    /**
+     * Close the Kafka Producer client instance
+     */
     public void close() {
         if (this.producer != null)
             this.producer.close();
-
-        this.handleClose();
     }
 }
