@@ -8,6 +8,7 @@ package io.strimzi.kafka.bridge.quarkus;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.HttpBridgeContext;
+import io.strimzi.kafka.bridge.http.HttpOpenApiOperations;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.http.HttpServerRequest;
@@ -26,7 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 @Path("/")
-public class RestOperations {
+public class RestBridge {
 
     @Inject
     Logger log;
@@ -45,7 +46,20 @@ public class RestOperations {
     @POST
     public CompletionStage<Response> send(@Context RoutingContext routingContext, @PathParam("topicname") String topicName, @QueryParam("async") boolean async) {
         log.infof("send thread %s", Thread.currentThread());
-        return processProducer(routingContext);
+        return SEND.process(routingContext);
+    }
+
+    RestOpenApiOperation SEND = new RestOpenApiOperation(HttpOpenApiOperations.SEND) {
+
+        @Override
+        public CompletionStage<Response> process(RoutingContext routingContext) {
+            return send(routingContext);
+        }
+    };
+
+    private CompletionStage<Response> send(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SEND);
+        return this.processProducer(routingContext);
     }
 
     /**
@@ -59,7 +73,7 @@ public class RestOperations {
                     HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
                     "Producer is disabled in config. To enable producer update http.producer.enabled to true"
             );
-            Response response = RestUtils.buildResponse(HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
+            Response response = RestUtils.buildResponse(routingContext, HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
                     BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
             return CompletableFuture.completedStage(response);
         }
