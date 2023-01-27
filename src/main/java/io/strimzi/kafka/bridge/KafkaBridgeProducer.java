@@ -49,6 +49,7 @@ public class KafkaBridgeProducer<K, V> {
      * Send a record to Kafka, completing the returned CompletionStage when the Kafka producer callback is invoked.
      * The returned CompletionStage can be completed with metadata if the sending operation is successful or
      * it is completed exceptionally if the sending operation fails with any exception.
+     * The internal Kafka Producer send call could block for "max.block.ms" when metadata are not available.
      *
      * @param record Kafka record to send
      * @return a CompletionStage bringing the metadata
