@@ -61,12 +61,17 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         this.kafkaBridgeProducer.create();
     }
 
+    @Override
+    public void close() {
+        this.kafkaBridgeProducer.close();
+        super.close();
+    }
+
     /**
      * Close the source endpoint
      */
     public void maybeClose() {
         if (this.closing) {
-            this.kafkaBridgeProducer.close();
             this.close();
         }
     }
