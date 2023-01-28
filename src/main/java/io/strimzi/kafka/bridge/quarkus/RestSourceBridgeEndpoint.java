@@ -63,12 +63,17 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         this.kafkaBridgeProducer.create();
     }
 
+    @Override
+    public void close() {
+        this.kafkaBridgeProducer.close();
+        super.close();
+    }
+
     /**
      * Close the source endpoint
      */
     public void maybeClose() {
         if (this.closing) {
-            this.kafkaBridgeProducer.close();
             this.close();
         }
     }
