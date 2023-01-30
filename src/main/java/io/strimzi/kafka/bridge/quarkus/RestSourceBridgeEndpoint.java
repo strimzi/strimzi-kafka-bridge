@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
-import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.KafkaBridgeProducer;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
@@ -78,28 +77,46 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         }
     }
 
-    @Override
-    @SuppressWarnings("checkstyle:NPathComplexity")
-    public CompletionStage<Response> handle(RoutingContext routingContext, Handler<RestBridgeEndpoint> handler) {
-        String topic = routingContext.pathParam("topicname");
+    /**
+     * Send records contained in the provided body to the specified topic
+     *
+     * @param routingContext RoutingContext instance
+     * @param body body containing the JSON representation of the records to send
+     * @param topic topic to send the records to
+     * @param isAsync defines if it is needed to wait for the callback on the Kafka Producer send
+     * @return a ComplationStage brinding the Response to send back to the client
+     * @throws RestBridgeException
+     */
+    public CompletionStage<Response> send(RoutingContext routingContext, byte[] body, String topic, boolean isAsync) throws RestBridgeException {
+        return this.send(routingContext, body, topic, null, isAsync);
+    }
 
+    /**
+     * Send records contained in the provided body to the specified topic partition
+     *
+     * @param routingContext RoutingContext instance
+     * @param body body containing the JSON representation of the records to send
+     * @param topic topic to send the records to
+     * @param partitionId partition to send the records to
+     * @param isAsync defines if it is needed to wait for the callback on the Kafka Producer send
+     * @return a ComplationStage brinding the Response to send back to the client
+     * @throws RestBridgeException
+     */
+    @SuppressWarnings("checkstyle:NPathComplexity")
+    public CompletionStage<Response> send(RoutingContext routingContext, byte[] body, String topic, String partitionId, boolean isAsync) throws RestBridgeException {
         List<ProducerRecord<K, V>> records;
+
         Integer partition = null;
-        if (routingContext.pathParam("partitionid") != null) {
+        if (partitionId != null) {
             try {
-                partition = Integer.parseInt(routingContext.pathParam("partitionid"));
+                partition = Integer.parseInt(partitionId);
             } catch (NumberFormatException ne) {
                 HttpBridgeError error = new HttpBridgeError(
                         HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                         "Specified partition is not a valid number");
-                Response response = RestUtils.buildResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
-                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
-                return CompletableFuture.completedStage(response);
+                throw new RestBridgeException(error);
             }
         }
-
-        boolean isAsync = Boolean.parseBoolean(routingContext.queryParams().get("async"));
-
         String operationName = partition == null ? HttpOpenApiOperations.SEND.toString() : HttpOpenApiOperations.SEND_TO_PARTITION.toString();
 
         TracingHandle tracing = TracingUtil.getTracing();
@@ -109,12 +126,11 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
             if (messageConverter == null) {
                 span.finish(HttpResponseStatus.INTERNAL_SERVER_ERROR.code());
                 HttpBridgeError error = new HttpBridgeError(
-                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), HttpResponseStatus.INTERNAL_SERVER_ERROR.reasonPhrase());
-                Response response = RestUtils.buildResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
-                return CompletableFuture.completedStage(response);
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.reasonPhrase());
+                throw new RestBridgeException(error);
             }
-            records = messageConverter.toKafkaRecords(topic, partition, routingContext.body().buffer());
+            records = messageConverter.toKafkaRecords(topic, partition, Buffer.buffer(body));
 
             for (ProducerRecord<K, V> record :records)   {
                 span.inject(record);
@@ -124,9 +140,7 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     e.getMessage());
-            Response response = RestUtils.buildResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
-                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
-            return CompletableFuture.completedStage(response);
+            throw new RestBridgeException(error);
         }
         List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
 
@@ -140,7 +154,7 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                     this.kafkaBridgeProducer.sendIgnoreResult(record);
                 }
                 span.finish(HttpResponseStatus.NO_CONTENT.code());
-                Response response = RestUtils.buildResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(),
+                Response response = RestUtils.buildResponse(HttpResponseStatus.NO_CONTENT.code(),
                         BridgeContentType.KAFKA_JSON, null);
                 this.maybeClose();
                 return response;
@@ -153,14 +167,14 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                         // inside send method, the callback which completes the promise is executed in the kafka-producer-network-thread
                         // let's do the result handling in the same thread to keep the messages order delivery execution
                         this.kafkaBridgeProducer.send(record).handle((metadata, ex) -> {
-                            log.trace("Handle thread {}", Thread.currentThread());
+                            log.tracef("Handle thread %s", Thread.currentThread());
                             if (ex == null) {
-                                log.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", record, metadata.topic(), metadata.partition(), metadata.offset());
+                                log.debugf("Delivered record %s to Kafka on topic %s at partition %s [%s]", record, metadata.topic(), metadata.partition(), metadata.offset());
                                 results.add(new HttpBridgeResult<>(metadata));
                             } else {
                                 String msg = ex.getMessage();
                                 int code = handleError(ex);
-                                log.error("Failed to deliver record {}", record, ex);
+                                log.errorf("Failed to deliver record %s", record, ex);
                                 results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
                             }
                             return metadata;
@@ -168,20 +182,18 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                 promises.add(sendHandler.toCompletableFuture());
             }
 
-            return
-            CompletableFuture.allOf(promises.toArray(new CompletableFuture[0]))
+            return CompletableFuture.allOf(promises.toArray(new CompletableFuture[0]))
                     // sending HTTP response asynchronously to free the kafka-producer-network-thread
                     .thenApplyAsync(v -> {
-                        log.trace("All sent thread {}", Thread.currentThread());
+                        log.tracef("All sent thread %s", Thread.currentThread());
                         // always return OK, since failure cause is in the response, per message
                         span.finish(HttpResponseStatus.OK.code());
-                        Response response = RestUtils.buildResponse(routingContext, HttpResponseStatus.OK.code(),
+                        Response response = RestUtils.buildResponse(HttpResponseStatus.OK.code(),
                                 BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(buildOffsets(results)));
                         this.maybeClose();
                         return response;
                     })
-                    .getNow(null);
-
+                    .join();
         });
     }
 

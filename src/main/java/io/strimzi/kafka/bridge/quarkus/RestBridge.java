@@ -8,27 +8,23 @@ package io.strimzi.kafka.bridge.quarkus;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
-import io.strimzi.kafka.bridge.http.HttpBridgeContext;
-import io.strimzi.kafka.bridge.http.HttpOpenApiOperations;
-import io.strimzi.kafka.bridge.http.HttpSourceBridgeEndpoint;
-import io.strimzi.kafka.bridge.http.HttpUtils;
-import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.http.HttpConnection;
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.jboss.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 @Path("/")
@@ -49,44 +45,37 @@ public class RestBridge {
 
     @Path("/topics/{topicname}")
     @POST
-    public CompletionStage<Response> send(@Context RoutingContext routingContext, @PathParam("topicname") String topicName, @QueryParam("async") boolean async) {
+    @Consumes({BridgeContentType.KAFKA_JSON_JSON,BridgeContentType.KAFKA_JSON_BINARY})
+    @Produces(BridgeContentType.KAFKA_JSON)
+    public CompletionStage<Response> send(@Context RoutingContext routingContext, byte[] body, @HeaderParam("Content-Type") String contentType,
+                                          @PathParam("topicname") String topicName, @QueryParam("async") boolean async) throws RestBridgeException {
         log.infof("send thread %s", Thread.currentThread());
-        return SEND.process(routingContext);
+        RestSourceBridgeEndpoint<byte[], byte[]> source = this.getRestSourceBridgeEndpoint(routingContext, contentType);
+        return source.send(routingContext, body, topicName, async);
     }
 
-    RestOpenApiOperation SEND = new RestOpenApiOperation(HttpOpenApiOperations.SEND) {
-
-        @Override
-        public CompletionStage<Response> process(RoutingContext routingContext) {
-            return send(routingContext);
-        }
-    };
-
-    private CompletionStage<Response> send(RoutingContext routingContext) {
-        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.SEND);
-        return this.processProducer(routingContext);
+    @Path("/topics/{topicname}/partitions/{partitionid}")
+    @POST
+    @Consumes({BridgeContentType.KAFKA_JSON_JSON,BridgeContentType.KAFKA_JSON_BINARY})
+    @Produces(BridgeContentType.KAFKA_JSON)
+    public CompletionStage<Response> send(@Context RoutingContext routingContext, byte[] body, @HeaderParam("Content-Type") String contentType,
+                                          @PathParam("topicname") String topicName, @PathParam("partitionid") String partitionId, @QueryParam("async") boolean async) throws RestBridgeException {
+        log.infof("send thread %s", Thread.currentThread());
+        RestSourceBridgeEndpoint<byte[], byte[]> source = this.getRestSourceBridgeEndpoint(routingContext, contentType);
+        return source.send(routingContext, body, topicName, partitionId, async);
     }
 
-    /**
-     * Process an HTTP request related to the producer
-     *
-     * @param routingContext RoutingContext instance
-     */
-    private CompletionStage<Response> processProducer(RoutingContext routingContext) {
+    private RestSourceBridgeEndpoint<byte[], byte[]> getRestSourceBridgeEndpoint(RoutingContext routingContext, String contentType) throws RestBridgeException {
         if (!this.configRetriever.config().getHttpConfig().isProducerEnabled()) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
                     "Producer is disabled in config. To enable producer update http.producer.enabled to true"
             );
-            Response response = RestUtils.buildResponse(routingContext, HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
-                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
-            return CompletableFuture.completedStage(response);
+            throw new RestBridgeException(error);
         }
-        HttpServerRequest httpServerRequest = routingContext.request();
-        String contentType = httpServerRequest.getHeader("Content-Type") != null ?
-                httpServerRequest.getHeader("Content-Type") : BridgeContentType.KAFKA_JSON_BINARY;
 
-        RestSourceBridgeEndpoint<byte[], byte[]> source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
+        HttpConnection httpConnection = routingContext.request().connection();
+        RestSourceBridgeEndpoint<byte[], byte[]> source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpConnection);
 
         try {
             if (source == null) {
@@ -94,17 +83,15 @@ public class RestBridge {
                         new ByteArraySerializer(), new ByteArraySerializer());
 
                 source.closeHandler(s -> {
-                    this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
+                    this.httpBridgeContext.getHttpSourceEndpoints().remove(httpConnection);
                 });
                 source.open();
-                // TODO: check if this addition works
-                httpServerRequest.connection().closeHandler(v -> {
-                    closeConnectionEndpoint(httpServerRequest.connection());
+                httpConnection.closeHandler(v -> {
+                    closeConnectionEndpoint(httpConnection);
                 });
-                this.httpBridgeContext.getHttpSourceEndpoints().put(httpServerRequest.connection(), source);
+                this.httpBridgeContext.getHttpSourceEndpoints().put(httpConnection, source);
             }
-            return source.handle(routingContext);
-
+            return source;
         } catch (Exception ex) {
             if (source != null) {
                 source.close();
@@ -113,9 +100,7 @@ public class RestBridge {
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     ex.getMessage()
             );
-            Response response = RestUtils.buildResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
-            return CompletableFuture.completedStage(response);
+            throw new RestBridgeException(error);
         }
     }
 

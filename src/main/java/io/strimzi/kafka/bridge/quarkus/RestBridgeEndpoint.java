@@ -8,19 +8,14 @@ package io.strimzi.kafka.bridge.quarkus;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.vertx.ext.web.RoutingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.ws.rs.core.Response;
-import java.util.concurrent.CompletionStage;
+import org.jboss.logging.Logger;
 
 /**
  * Abstract class for an endpoint bridging traffic between HTTP and Apache Kafka
  */
 public abstract class RestBridgeEndpoint {
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
+    protected final Logger log = Logger.getLogger(getClass());
 
     protected String name;
     protected EmbeddedFormat format;
@@ -56,23 +51,6 @@ public abstract class RestBridgeEndpoint {
     public void close() {
         this.handleClose();
     }
-
-    /**
-     * Handler for the HTTP routing context
-     *
-     * @param routingContext HTTP routing context to handle
-     */
-    public CompletionStage<Response> handle(RoutingContext routingContext) {
-        return this.handle(routingContext, null);
-    }
-
-    /**
-     * Handler for the HTTP routing context
-     *
-     * @param routingContext HTTP routing context to handle
-     * @param handler handler for the corresponding bridge endpoint
-     */
-    public abstract CompletionStage<Response> handle(RoutingContext routingContext, Handler<RestBridgeEndpoint> handler);
 
     /**
      * Sets a handler called when an HTTP bridge endpoint is closed due to internal processing
