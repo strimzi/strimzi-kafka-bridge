@@ -79,8 +79,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
-                        // TODO: throwing a RestBridgeException that could be handled by the corresponding mapper instead
-                        return RestUtils.buildResponseFromError(error);
+                        throw new RestBridgeException(error);
                     }
                 });
     }
@@ -138,15 +137,13 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                                 HttpResponseStatus.NOT_FOUND.code(),
                                 ex.getMessage()
                         );
-                        // TODO: throwing a RestBridgeException that could be handled by the corresponding mapper instead
-                        return RestUtils.buildResponseFromError(error);
+                        throw new RestBridgeException(error);
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
-                        // TODO: throwing a RestBridgeException that could be handled by the corresponding mapper instead
-                        return RestUtils.buildResponseFromError(error);
+                        throw new RestBridgeException(error);
                     }
                 });
     }
@@ -173,15 +170,13 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                                 HttpResponseStatus.NOT_FOUND.code(),
                                 ex.getMessage()
                         );
-                        // TODO: throwing a RestBridgeException that could be handled by the corresponding mapper instead
-                        return RestUtils.buildResponseFromError(error);
+                        throw new RestBridgeException(error);
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
-                        // TODO: throwing a RestBridgeException that could be handled by the corresponding mapper instead
-                        return RestUtils.buildResponseFromError(error);
+                        throw new RestBridgeException(error);
                     }
                 });
     }
@@ -216,23 +211,20 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                                     HttpResponseStatus.NOT_FOUND.code(),
                                     "Specified partition does not exist."
                             );
-                            // TODO: throwing a RestBridgeException that could be handled by the corresponding mapper instead
-                            return RestUtils.buildResponseFromError(error);
+                            throw new RestBridgeException(error);
                         }
                     } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.NOT_FOUND.code(),
                                 ex.getMessage()
                         );
-                        // TODO: throwing a RestBridgeException that could be handled by the corresponding mapper instead
-                        return RestUtils.buildResponseFromError(error);
+                        throw new RestBridgeException(error);
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
-                        // TODO: throwing a RestBridgeException that could be handled by the corresponding mapper instead
-                        return RestUtils.buildResponseFromError(error);
+                        throw new RestBridgeException(error);
                     }
                 });
     }
@@ -269,8 +261,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                         HttpResponseStatus.NOT_FOUND.code(),
                         e.getMessage()
                 );
-                // TODO: throwing a RestBridgeException that could be handled by the corresponding mapper instead
-                return RestUtils.buildResponseFromError(error);
+                throw new RestBridgeException(error);
             } else {
                 Map<TopicPartition, OffsetSpec> topicPartitionBeginOffsets = Map.of(topicPartition, OffsetSpec.earliest());
                 CompletionStage<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> getBeginningOffsetsPromise = this.kafkaBridgeAdmin.listOffsets(topicPartitionBeginOffsets);
@@ -297,8 +288,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                                         HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                         ex.getMessage()
                                 );
-                                // TODO: throwing a RestBridgeException that could be handled by the corresponding mapper instead
-                                return RestUtils.buildResponseFromError(error);
+                                throw new RestBridgeException(error);
                             }
                         })
                         .join();

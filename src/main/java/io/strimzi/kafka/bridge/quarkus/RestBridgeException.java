@@ -10,7 +10,7 @@ import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 /**
  * A bridge exception bringing and HTTP bridge error
  */
-public class RestBridgeException extends Throwable {
+public class RestBridgeException extends RuntimeException {
 
     private final HttpBridgeError httpBridgeError;
 

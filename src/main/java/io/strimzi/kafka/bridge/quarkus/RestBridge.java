@@ -114,6 +114,16 @@ public class RestBridge {
         return adminBridgeEndpoint.getOffsets(topicName, partitionId);
     }
 
+    /**
+     * Retrieves the source endpoint based on the HTTP connection, provided by the {@link RoutingContext}.
+     * It returns an already existing source endpoint, if the HTTP request comes from an alive HTTP connection.
+     * It creates and returns a new source endpoint, if the HTTP request comes from a new HTTP connection.
+     *
+     * @param routingContext RoutingContext instance used for getting the HTTP connection and attaching a close handler to it
+     * @param contentType Content-Type header from the HTTP request to be mapped to the corresponding embedded content type
+     * @return a source endpoint instance
+     * @throws RestBridgeException
+     */
     private RestSourceBridgeEndpoint<byte[], byte[]> getRestSourceBridgeEndpoint(RoutingContext routingContext, String contentType) throws RestBridgeException {
         if (!this.configRetriever.config().getHttpConfig().isProducerEnabled()) {
             HttpBridgeError error = new HttpBridgeError(
@@ -123,6 +133,8 @@ public class RestBridge {
             throw new RestBridgeException(error);
         }
 
+        // The RoutingContext is really needed just only for getting the HTTP connection and attaching a close handler.
+        // This is needed in order to close the Kafka Producer when the HTTP client disconnects from the bridge.
         HttpConnection httpConnection = routingContext.request().connection();
         RestSourceBridgeEndpoint<byte[], byte[]> source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpConnection);
 
@@ -153,8 +165,15 @@ public class RestBridge {
         }
     }
 
+    /**
+     * Retrieves the admin client endpoint
+     *
+     * @return the admin client endpoint instance
+     * @throws RestBridgeException
+     */
     private RestAdminBridgeEndpoint getAdminClientEndpoint() throws RestBridgeException {
         RestAdminBridgeEndpoint adminClientEndpoint = this.httpBridgeContext.getHttpAdminEndpoint();
+        // TODO: can this be really true? The admin client endpoint is created in the init() so maybe failures happen there?
         if (adminClientEndpoint == null) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
