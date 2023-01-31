@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.25.0
+
+* Fixed sending messages with headers to the `sendToPartition` endpoint.
+* Added missing validation on the `async` query parameter for sending operations in the OpenAPI v3 specification.
+* Fixed memory calculation by using JVM so taking cgroupv2 into account.
+
 ## 0.24.0
 
 * Fixed regression about producing messages not working when CORS is enabled
