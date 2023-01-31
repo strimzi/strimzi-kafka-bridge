@@ -1671,6 +1671,9 @@
             "object",
             "string"
           ]
+        },
+        "headers": {
+          "$ref": "#/definitions/KafkaHeaderList"
         }
       },
       "additionalProperties": false,
