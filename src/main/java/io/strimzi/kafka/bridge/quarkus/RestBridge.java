@@ -17,6 +17,7 @@ import org.jboss.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -41,6 +42,9 @@ public class RestBridge {
     @PostConstruct
     public void init() {
         httpBridgeContext = new RestBridgeContext<>();
+        RestAdminBridgeEndpoint adminClientEndpoint = new RestAdminBridgeEndpoint(this.configRetriever.config());
+        this.httpBridgeContext.setHttpAdminEndpoint(adminClientEndpoint);
+        adminClientEndpoint.open();
     }
 
     @Path("/topics/{topicname}")
@@ -63,6 +67,51 @@ public class RestBridge {
         log.infof("send thread %s", Thread.currentThread());
         RestSourceBridgeEndpoint<byte[], byte[]> source = this.getRestSourceBridgeEndpoint(routingContext, contentType);
         return source.send(routingContext, body, topicName, partitionId, async);
+    }
+
+    @Path("/topics")
+    @GET
+    @Produces(BridgeContentType.KAFKA_JSON)
+    public CompletionStage<Response> listTopics() throws RestBridgeException {
+        log.infof("listTopics thread %s", Thread.currentThread());
+        RestAdminBridgeEndpoint adminBridgeEndpoint = this.getAdminClientEndpoint();
+        return adminBridgeEndpoint.listTopics();
+    }
+
+    @Path("/topics/{topicname}")
+    @GET
+    @Produces(BridgeContentType.KAFKA_JSON)
+    public CompletionStage<Response> getTopic(@PathParam("topicname") String topicName) throws RestBridgeException {
+        log.infof("getTopic thread %s", Thread.currentThread());
+        RestAdminBridgeEndpoint adminBridgeEndpoint = this.getAdminClientEndpoint();
+        return adminBridgeEndpoint.getTopic(topicName);
+    }
+
+    @Path("/topics/{topicname}/partitions")
+    @GET
+    @Produces(BridgeContentType.KAFKA_JSON)
+    public CompletionStage<Response> listPartitions(@PathParam("topicname") String topicName) throws RestBridgeException {
+        log.infof("listPartitions thread %s", Thread.currentThread());
+        RestAdminBridgeEndpoint adminBridgeEndpoint = this.getAdminClientEndpoint();
+        return adminBridgeEndpoint.listPartitions(topicName);
+    }
+
+    @Path("/topics/{topicname}/partitions/{partitionid}")
+    @GET
+    @Produces(BridgeContentType.KAFKA_JSON)
+    public CompletionStage<Response> getPartition(@PathParam("topicname") String topicName, @PathParam("partitionid") String partitionId) throws RestBridgeException {
+        log.infof("getPartition thread %s", Thread.currentThread());
+        RestAdminBridgeEndpoint adminBridgeEndpoint = this.getAdminClientEndpoint();
+        return adminBridgeEndpoint.getPartition(topicName, partitionId);
+    }
+
+    @Path("/topics/{topicname}/partitions/{partitionid}/offsets")
+    @GET
+    @Produces(BridgeContentType.KAFKA_JSON)
+    public CompletionStage<Response> getOffsets(@PathParam("topicname") String topicName, @PathParam("partitionid") String partitionId) throws RestBridgeException {
+        log.infof("getOffsets thread %s", Thread.currentThread());
+        RestAdminBridgeEndpoint adminBridgeEndpoint = this.getAdminClientEndpoint();
+        return adminBridgeEndpoint.getOffsets(topicName, partitionId);
     }
 
     private RestSourceBridgeEndpoint<byte[], byte[]> getRestSourceBridgeEndpoint(RoutingContext routingContext, String contentType) throws RestBridgeException {
@@ -102,6 +151,18 @@ public class RestBridge {
             );
             throw new RestBridgeException(error);
         }
+    }
+
+    private RestAdminBridgeEndpoint getAdminClientEndpoint() throws RestBridgeException {
+        RestAdminBridgeEndpoint adminClientEndpoint = this.httpBridgeContext.getHttpAdminEndpoint();
+        if (adminClientEndpoint == null) {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    "The AdminClient was not found."
+            );
+            throw new RestBridgeException(error);
+        }
+        return adminClientEndpoint;
     }
 
     private EmbeddedFormat contentTypeToFormat(String contentType) {

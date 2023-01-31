@@ -25,7 +25,7 @@ public class RestBridgeContext<K, V> {
 
     private Map<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> httpSinkEndpoints = new HashMap<>();
     private Map<HttpConnection, RestSourceBridgeEndpoint<K, V>> httpSourceEndpoints = new HashMap<>();
-    private HttpAdminBridgeEndpoint httpAdminBridgeEndpoint;
+    private RestAdminBridgeEndpoint httpAdminBridgeEndpoint;
     private HttpOpenApiOperations openApiOperation;
 
     /**
@@ -45,7 +45,7 @@ public class RestBridgeContext<K, V> {
     /**
      * @return the HTTP admin endpoint
      */
-    public HttpAdminBridgeEndpoint getHttpAdminEndpoint() {
+    public RestAdminBridgeEndpoint getHttpAdminEndpoint() {
         return this.httpAdminBridgeEndpoint;
     }
 
@@ -54,7 +54,7 @@ public class RestBridgeContext<K, V> {
      *
      * @param httpAdminBridgeEndpoint the HTTP admin endpoint
      */
-    void setHttpAdminEndpoint(HttpAdminBridgeEndpoint httpAdminBridgeEndpoint) {
+    void setHttpAdminEndpoint(RestAdminBridgeEndpoint httpAdminBridgeEndpoint) {
         this.httpAdminBridgeEndpoint = httpAdminBridgeEndpoint;
     }
 

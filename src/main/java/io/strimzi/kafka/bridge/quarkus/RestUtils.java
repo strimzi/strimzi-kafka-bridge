@@ -6,7 +6,9 @@
 package io.strimzi.kafka.bridge.quarkus;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
+import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.buffer.Buffer;
 import org.jboss.logging.Logger;
 
@@ -25,6 +27,7 @@ public class RestUtils {
      * @param statusCode the HTTP status code
      * @param contentType the content-type to set in the HTTP response
      * @param body the body to set in the HTTP response
+     * @return HTTP response
      */
     public static Response buildResponse(int statusCode, String contentType, Buffer body) {
         Response.ResponseBuilder builder = Response.status(statusCode);
@@ -35,5 +38,16 @@ public class RestUtils {
             builder.entity(body);
         }
         return builder.build();
+    }
+
+    /**
+     * Build an HTTP response containing a bridge error
+     *
+     * @param error representation of the bridge error send as HTTP response body
+     * @return HTTP response describing the bridge error
+     */
+    public static Response buildResponseFromError(HttpBridgeError error) {
+        return RestUtils.buildResponse(error.getCode(),
+                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(error.toJson()));
     }
 }
