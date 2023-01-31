@@ -1267,6 +1267,8 @@ Sends one or more records to a given topic partition, optionally specifying a ke
 __required__|ID of the partition to send records to or retrieve metadata from.|integer
 |**Path**|**topicname** +
 __required__|Name of the topic to send records to or retrieve metadata from.|string
+|**Query**|**async** +
+__optional__|Whether to return immediately upon sending records, instead of waiting for metadata. No offsets will be returned if specified. Defaults to false.|boolean
 |**Body**|**body** +
 __required__|List of records to send to a given topic partition, including a value (required) and a key (optional).|<<_producerrecordtopartitionlist,ProducerRecordToPartitionList>>
 |===

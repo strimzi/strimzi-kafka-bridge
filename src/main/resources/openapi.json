@@ -734,6 +734,15 @@
                     "schema": {
                         "type": "string"
                     }
+                },
+                {
+                    "name": "async",
+                    "in": "query",
+                    "description": "Ignore metadata as result of the sending operation, not returning them to the client. If not specified it is false, metadata returned.",
+                    "required": false,
+                    "schema": {
+                        "type": "boolean"
+                    }
                 }
             ]
         },
@@ -1120,6 +1129,15 @@
                     "required": true,
                     "schema": {
                         "type": "integer"
+                    }
+                },
+                {
+                    "name": "async",
+                    "in": "query",
+                    "description": "Whether to return immediately upon sending records, instead of waiting for metadata. No offsets will be returned if specified. Defaults to false.",
+                    "required": false,
+                    "schema": {
+                        "type": "boolean"
                     }
                 }
             ]
