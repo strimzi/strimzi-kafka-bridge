@@ -242,7 +242,13 @@ __optional__|< <<_producerrecord,ProducerRecord>> > array
 
 [[_producerrecordtopartition]]
 === ProducerRecordToPartition
-__Type__ : object
+
+[options="header", cols=".^3a,.^4a"]
+|===
+|Name|Schema
+|**headers** +
+__optional__|<<_kafkaheaderlist,KafkaHeaderList>>
+|===
 
 
 [[_producerrecordtopartitionlist]]

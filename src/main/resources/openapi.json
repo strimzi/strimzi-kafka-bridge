@@ -1819,6 +1819,9 @@
                                 "type": "string"
                             }
                         ]
+                    },
+                    "headers": {
+                        "$ref": "#/components/schemas/KafkaHeaderList"
                     }
                 },
                 "additionalProperties": false,
