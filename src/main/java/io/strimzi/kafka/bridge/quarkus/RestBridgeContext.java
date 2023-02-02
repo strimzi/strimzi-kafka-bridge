@@ -6,9 +6,7 @@
 package io.strimzi.kafka.bridge.quarkus;
 
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
-import io.strimzi.kafka.bridge.http.HttpAdminBridgeEndpoint;
 import io.strimzi.kafka.bridge.http.HttpOpenApiOperations;
-import io.strimzi.kafka.bridge.http.HttpSinkBridgeEndpoint;
 import io.vertx.core.http.HttpConnection;
 
 import java.util.HashMap;
@@ -23,7 +21,7 @@ import java.util.Map;
  */
 public class RestBridgeContext<K, V> {
 
-    private Map<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> httpSinkEndpoints = new HashMap<>();
+    private Map<ConsumerInstanceId, RestSinkBridgeEndpoint<K, V>> httpSinkEndpoints = new HashMap<>();
     private Map<HttpConnection, RestSourceBridgeEndpoint<K, V>> httpSourceEndpoints = new HashMap<>();
     private RestAdminBridgeEndpoint httpAdminBridgeEndpoint;
     private HttpOpenApiOperations openApiOperation;
@@ -31,7 +29,7 @@ public class RestBridgeContext<K, V> {
     /**
      * @return map of the HTTP sink endpoints
      */
-    public Map<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> getHttpSinkEndpoints() {
+    public Map<ConsumerInstanceId, RestSinkBridgeEndpoint<K, V>> getHttpSinkEndpoints() {
         return this.httpSinkEndpoints;
     }
 
@@ -78,7 +76,7 @@ public class RestBridgeContext<K, V> {
      * Close all the HTTP sink endpoints
      */
     public void closeAllHttpSinkBridgeEndpoints() {
-        for (Map.Entry<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> sink: getHttpSinkEndpoints().entrySet()) {
+        for (Map.Entry<ConsumerInstanceId, RestSinkBridgeEndpoint<K, V>> sink: getHttpSinkEndpoints().entrySet()) {
             if (sink.getValue() != null)
                 sink.getValue().close();
         }

@@ -84,7 +84,7 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * @param body body containing the JSON representation of the records to send
      * @param topic topic to send the records to
      * @param isAsync defines if it is needed to wait for the callback on the Kafka Producer send
-     * @return a ComplationStage brinding the Response to send back to the client
+     * @return a CompletionStage brinding the Response to send back to the client
      * @throws RestBridgeException
      */
     public CompletionStage<Response> send(RoutingContext routingContext, byte[] body, String topic, boolean isAsync) throws RestBridgeException {
@@ -99,7 +99,7 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * @param topic topic to send the records to
      * @param partitionId partition to send the records to
      * @param isAsync defines if it is needed to wait for the callback on the Kafka Producer send
-     * @return a ComplationStage brinding the Response to send back to the client
+     * @return a CompletionStage brinding the Response to send back to the client
      * @throws RestBridgeException
      */
     @SuppressWarnings("checkstyle:NPathComplexity")
@@ -146,7 +146,6 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
 
         // fulfilling the request of sending (multiple) record(s) sequentially but in a separate thread
         // this will free the Vert.x event loop still in place
-
         return CompletableFuture.supplyAsync(() -> {
             if (isAsync) {
                 // if async is specified, using the ignoring result send, and return immediately once records are sent
