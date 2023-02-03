@@ -28,9 +28,9 @@ The `topics` array can contain a single topic (as shown here) or multiple topics
 +
 If the request is successful, the Kafka Bridge returns a `204` (No Content) code only.
 
-As it happens with using an Apache Kafka client, the HTTP subscribe operation just adds the topics in the local Kafka consumer subscriptions list.
-In order to join the consumer group and getting partitions assigned, the client has to run multiple poll operations for starting the partitions rebalance.
-It means that after the HTTP subscribe operation, the first few HTTP poll operations could return no records but will start the partitions rebalance and the join-group.
+When using an Apache Kafka client, the HTTP subscribe operation adds topics to the local consumer's subscriptions.
+Joining a consumer group and obtaining partition assignments occur after running multiple HTTP poll operations, starting the partition rebalance and join-group process.
+It's important to note that the initial HTTP poll operations may not return any records.
 
 .What to do next
 
