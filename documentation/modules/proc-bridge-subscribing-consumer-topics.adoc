@@ -28,6 +28,10 @@ The `topics` array can contain a single topic (as shown here) or multiple topics
 +
 If the request is successful, the Kafka Bridge returns a `204` (No Content) code only.
 
+As it happens with using an Apache Kafka client, the HTTP subscribe operation just adds the topics in the local Kafka consumer subscriptions list.
+In order to join the consumer group and getting partitions assigned, the client has to run multiple poll operations for starting the partitions rebalance.
+It means that after the HTTP subscribe operation, the first few HTTP poll operations could return no records but will start the partitions rebalance and the join-group.
+
 .What to do next
 
 After subscribing a Kafka Bridge consumer to topics, you can xref:proc-bridge-retrieving-latest-messages-from-consumer-{context}[retrieve messages from the consumer].
