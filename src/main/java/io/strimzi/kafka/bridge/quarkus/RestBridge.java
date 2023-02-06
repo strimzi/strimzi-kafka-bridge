@@ -8,6 +8,7 @@ package io.strimzi.kafka.bridge.quarkus;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.quarkus.runtime.Startup;
 import io.strimzi.kafka.bridge.Application;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
@@ -20,9 +21,11 @@ import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.ext.web.RoutingContext;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import javax.annotation.PostConstruct;
@@ -44,6 +47,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+@Startup
 @Path("/")
 public class RestBridge {
 
@@ -54,6 +58,9 @@ public class RestBridge {
 
     @Inject
     BridgeConfigRetriever configRetriever;
+
+    @ConfigProperty(name = "quarkus.http.port")
+    Integer httpPort;
 
     private RestBridgeContext<byte[], byte[]> httpBridgeContext;
 
@@ -73,10 +80,18 @@ public class RestBridge {
             startInactiveConsumerDeletionTimer(this.configRetriever.config().getHttpConfig().getConsumerTimeout());
         }
         this.isReady = true;
+
+        log.infof("HTTP-Kafka Bridge started and listening on port %s", this.httpPort);
+        log.infof("HTTP-Kafka Bridge bootstrap servers %s",
+                this.configRetriever.config().getKafkaConfig().getConfig()
+                        .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
+        );
     }
 
     @PreDestroy
     public void close() {
+        log.info("Stopping HTTP-Kafka bridge ...");
+
         this.isReady = false;
 
         // Consumers cleanup
