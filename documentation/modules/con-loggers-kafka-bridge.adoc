@@ -13,13 +13,13 @@ You can set a different log level for each operation that is defined by the Kafk
 Each operation has a corresponding API endpoint through which the bridge receives requests from HTTP clients.
 You can change the log level on each endpoint to produce more or less fine-grained logging information about the incoming and outgoing HTTP requests.
 
-Loggers are defined in the `log4j.properties` file, which has the following default configuration for `healthy` and `ready` endpoints:
+Loggers are defined in the `log4j2.properties` file, which has the following default configuration for `healthy` and `ready` endpoints:
 
 ```
-log4j.logger.http.openapi.operation.healthy=WARN, out
-log4j.additivity.http.openapi.operation.healthy=false
-log4j.logger.http.openapi.operation.ready=WARN, out
-log4j.additivity.http.openapi.operation.ready=false
+logger.healthy.name = http.openapi.operation.healthy
+logger.healthy.level = WARN
+logger.ready.name = http.openapi.operation.ready
+logger.ready.level = WARN
 ```
 
 The log level of all other operations is set to `INFO` by default.
@@ -27,7 +27,8 @@ Loggers are formatted as follows:
 
 [source,properties,subs=+quotes]
 ----
-log4j.logger.http.openapi.operation._<operation_id>_
+logger._<operation_id>_.name = http.openapi.operation._<operation_id>_
+logger._<operation_id>_level = _<LOG_LEVEL>_
 ----
 
 Where `_<operation_id>_` is the identifier of the specific operation.
@@ -48,3 +49,5 @@ Where `_<operation_id>_` is the identifier of the specific operation.
 * `healthy`
 * `ready`
 * `openapi`
+
+Where _<LOG_LEVEL>_ is the logging level as defined by log4j2 (i.e. `INFO`, `DEBUG`, ...).
