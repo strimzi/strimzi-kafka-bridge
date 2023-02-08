@@ -99,6 +99,7 @@ public class KafkaBridgeConsumer<K, V> {
 
         if (topicSubscriptions.isEmpty()) {
             this.unsubscribe();
+            return;
         }
 
         log.info("Subscribe to topics {}", topicSubscriptions);
@@ -157,6 +158,7 @@ public class KafkaBridgeConsumer<K, V> {
 
         if (topicPartitions.isEmpty()) {
             this.unsubscribe();
+            return;
         }
 
         log.trace("Assign thread {}", Thread.currentThread());
