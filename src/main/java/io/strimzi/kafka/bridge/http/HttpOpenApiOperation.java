@@ -46,54 +46,25 @@ public abstract class HttpOpenApiOperation implements Handler<RoutingContext> {
     }
 
     protected void logRequest(RoutingContext routingContext) {
-        int requestId = System.identityHashCode(routingContext.request());
-        routingContext.put("request-id", requestId);
-        String msg = logRequestMessage(routingContext);
-        log(msg);
+        String requestLogHeader = this.requestLogHeader(routingContext);
+        log.info("{} Request: from {}, method = {}, path = {}",
+                requestLogHeader, routingContext.request().remoteAddress(),
+                routingContext.request().method(),
+                routingContext.request().path());
+        log.debug("{} Request: headers = {}", requestLogHeader, routingContext.request().headers());
     }
 
     protected void logResponse(RoutingContext routingContext) {
-        String msg = logResponseMessage(routingContext);
-        log(msg);
+        String requestLogHeader = this.requestLogHeader(routingContext);
+        log.info("{} Response: statusCode = {}, message = {}",
+                requestLogHeader, routingContext.response().getStatusCode(),
+                routingContext.response().getStatusMessage());
+        log.debug("{} Response: headers = {}", requestLogHeader, routingContext.response().headers());
     }
 
-    protected String logRequestMessage(RoutingContext routingContext) {
-        int requestId = System.identityHashCode(routingContext.request());
-        StringBuilder sb = new StringBuilder();
-        if (log.isInfoEnabled()) {
-            sb.append("[").append(requestId).append("] ").append(operationId.name())
-                .append(" Request: from ")
-                .append(routingContext.request().remoteAddress())
-                .append(", method = ").append(routingContext.request().method())
-                .append(", path = ").append(routingContext.request().path());
-
-            if (log.isDebugEnabled()) {
-                sb.append(", headers = ").append(routingContext.request().headers());
-            }
-        }
-        return sb.toString();
-    }
-
-    protected String logResponseMessage(RoutingContext routingContext) {
-        int requestId = routingContext.get("request-id");
-        StringBuilder sb = new StringBuilder();
-        if (log.isInfoEnabled()) {
-            sb.append("[").append(requestId).append("] ").append(operationId.name())
-                .append(" Response: ")
-                .append(" statusCode = ").append(routingContext.response().getStatusCode())
-                .append(", message = ").append(routingContext.response().getStatusMessage());
-
-            if (log.isDebugEnabled()) {
-                sb.append(", headers = ").append(routingContext.response().headers());
-            }
-        }
-        return sb.toString();
-    }
-
-    private void log(String msg) {
-        if (msg != null && !msg.isEmpty()) {
-            log.info(msg);
-        }
+    private String requestLogHeader(RoutingContext routingContext) {
+        int requestId = (int) routingContext.data().computeIfAbsent("request-id", key -> System.identityHashCode(routingContext.request()));
+        return String.format("[%s] %s", requestId, operationId.name());
     }
 
     /**

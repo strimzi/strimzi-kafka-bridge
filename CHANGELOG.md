@@ -2,6 +2,7 @@
 
 ## 0.25.0
 
+* Fixed printing operation log at the proper logging level.
 * Fixed sending messages with headers to the `sendToPartition` endpoint.
 * Added missing validation on the `async` query parameter for sending operations in the OpenAPI v3 specification.
 * Fixed memory calculation by using JVM so taking cgroupv2 into account.
