@@ -63,7 +63,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
     }
 
     /**
-     * List all the topics
+     * @return List all the topics
      */
     public CompletionStage<Response> listTopics() {
         return this.kafkaBridgeAdmin.listTopics()
@@ -88,6 +88,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
      * Get information about the topic in the HTTP request
      *
      * @param topicName the topic for which to retrieve information
+     * @return a CompletionStage bringing the Response to send back to the client
      */
     public CompletionStage<Response> getTopic(String topicName) {
         CompletionStage<Map<String, TopicDescription>> describeTopicsPromise = this.kafkaBridgeAdmin.describeTopics(List.of(topicName));
@@ -152,6 +153,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
      * Get partitions information related to the topic in the HTTP request
      *
      * @param topicName the topic for which to list partitions
+     * @return a CompletionStage bringing the Response to send back to the client
      */
     public CompletionStage<Response> listPartitions(String topicName) {
         return this.kafkaBridgeAdmin.describeTopics(List.of(topicName))
@@ -186,6 +188,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
      *
      * @param topicName the topic for which to retrieve partition information
      * @param partitionId the partition for which to retrieve information
+     * @return a CompletionStage bringing the Response to send back to the client
      */
     public CompletionStage<Response> getPartition(String topicName, String partitionId) throws RestBridgeException {
         final int partition;
@@ -234,6 +237,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
      *
      * @param topicName the topic for which to retrieve offests
      * @param partitionId the partition for which to retrieve offsets
+     * @return a CompletionStage bringing the Response to send back to the client
      */
     public CompletionStage<Response> getOffsets(String topicName, String partitionId) throws RestBridgeException {
         final int partition;

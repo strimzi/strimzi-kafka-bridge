@@ -108,7 +108,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * @param groupId consumer group
      * @param bodyAsJson request body bringing consumer settings
      * @param handler handler for the request
-     * @return a CompletionStage brinding the Response to send back to the client
+     * @return a CompletionStage bringing the Response to send back to the client
      */
     public CompletionStage<Response> createConsumer(RoutingContext routingContext, String groupId, JsonNode bodyAsJson, Handler<RestBridgeEndpoint> handler) {
         // if no name, a random one is assigned
@@ -172,7 +172,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      *
      * @param groupId consumer group
      * @param name name of sink instance
-     * @return a CompletionStage brinding the Response to send back to the client
+     * @return a CompletionStage bringing the Response to send back to the client
      */
     public CompletionStage<Response> deleteConsumer(String groupId, String name) {
         this.close();
@@ -186,7 +186,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * Subscribe to topics described as a list or a regex in the provided JSON body
      *
      * @param bodyAsJson request body bringing the list of topics or the regex
-     * @return a CompletionStage brinding the Response to send back to the client
+     * @return a CompletionStage bringing the Response to send back to the client
      */
     public CompletionStage<Response> subscribe(JsonNode bodyAsJson) {
         // cannot specify both topics list and topic pattern
@@ -241,7 +241,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     /**
      * Unsubscribe from all topics
      *
-     * @return a CompletionStage brinding the Response to send back to the client
+     * @return a CompletionStage bringing the Response to send back to the client
      */
     public CompletionStage<Response> unsubscribe() {
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
@@ -266,7 +266,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * Assing topic partitions as described by the provided JSON representation
      *
      * @param bodyAsJson request body bringing the list of topics partitions to be assigned
-     * @return a CompletionStage brinding the Response to send back to the client
+     * @return a CompletionStage bringing the Response to send back to the client
      */
     public CompletionStage<Response> assign(JsonNode bodyAsJson) {
         if (this.subscribed) {
@@ -308,7 +308,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * @param accept the "Accept" header coming from the HTTP request
      * @param timeout the timeout query parameter for the polling operation
      * @param maxBytes the maximum bytes query parameter for the polling operation
-     * @return a CompletionStage brinding the Response to send back to the client
+     * @return a CompletionStage bringing the Response to send back to the client
      */
     public CompletionStage<Response> poll(RoutingContext routingContext, String accept, Integer timeout, Integer maxBytes) {
         if (!this.subscribed && !this.assigned) {
@@ -395,7 +395,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     /**
      * List all subscribed topics partitions
      *
-     * @return a CompletionStage brinding the Response to send back to the client
+     * @return a CompletionStage bringing the Response to send back to the client
      */
     public CompletionStage<Response> listSubscriptions() {
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
@@ -441,7 +441,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * Commit offsets on topics partitions provided by the JSON representation or the last polled offsets if no offsets are provided
      *
      * @param bodyAsJson request body bringing the list of offsets for topics partitions to commit
-     * @return a CompletionStage brinding the Response to send back to the client
+     * @return a CompletionStage bringing the Response to send back to the client
      */
     public CompletionStage<Response> commit(JsonNode bodyAsJson) {
         if (!bodyAsJson.isEmpty()) {
@@ -490,7 +490,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * Seek to offsets on topics partitions provided by the JSON representation
      *
      * @param bodyAsJson request body bringing the list of offsets for topics partitions to seek to
-     * @return a CompletionStage brinding the Response to send back to the client
+     * @return a CompletionStage bringing the Response to send back to the client
      */
     public CompletionStage<Response> seek(JsonNode bodyAsJson) {
         return CompletableFuture.runAsync(() -> {
@@ -519,7 +519,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      *
      * @param bodyAsJson request body bringing the list of offsets for topics partitions to seek to
      * @param seekToType define if to seek at the beginning or the end of the provided topics partitions
-     * @return a CompletionStage brinding the Response to send back to the client
+     * @return a CompletionStage bringing the Response to send back to the client
      */
     public CompletionStage<Response> seekTo(JsonNode bodyAsJson, HttpOpenApiOperations seekToType) {
         ArrayNode seekPartitionsList = (ArrayNode) bodyAsJson.get("partitions");

@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+@SuppressWarnings("checkstyle:ClassFanOutComplexity")
 @Startup
 @Path("/")
 public class RestBridge {
@@ -108,7 +109,7 @@ public class RestBridge {
 
     @Path("/topics/{topicname}")
     @POST
-    @Consumes({BridgeContentType.KAFKA_JSON_JSON,BridgeContentType.KAFKA_JSON_BINARY})
+    @Consumes({BridgeContentType.KAFKA_JSON_JSON, BridgeContentType.KAFKA_JSON_BINARY})
     @Produces(BridgeContentType.KAFKA_JSON)
     public CompletionStage<Response> send(@Context RoutingContext routingContext, byte[] body, @HeaderParam("Content-Type") String contentType,
                                           @PathParam("topicname") String topicName, @QueryParam("async") boolean async) {
@@ -119,7 +120,7 @@ public class RestBridge {
 
     @Path("/topics/{topicname}/partitions/{partitionid}")
     @POST
-    @Consumes({BridgeContentType.KAFKA_JSON_JSON,BridgeContentType.KAFKA_JSON_BINARY})
+    @Consumes({BridgeContentType.KAFKA_JSON_JSON, BridgeContentType.KAFKA_JSON_BINARY})
     @Produces(BridgeContentType.KAFKA_JSON)
     public CompletionStage<Response> send(@Context RoutingContext routingContext, byte[] body, @HeaderParam("Content-Type") String contentType,
                                           @PathParam("topicname") String topicName, @PathParam("partitionid") String partitionId, @QueryParam("async") boolean async) {
@@ -230,7 +231,7 @@ public class RestBridge {
 
     @Path("/consumers/{groupid}/instances/{name}/records")
     @GET
-    @Produces({BridgeContentType.KAFKA_JSON_JSON,BridgeContentType.KAFKA_JSON_BINARY,BridgeContentType.KAFKA_JSON})
+    @Produces({BridgeContentType.KAFKA_JSON_JSON, BridgeContentType.KAFKA_JSON_BINARY, BridgeContentType.KAFKA_JSON})
     public CompletionStage<Response> poll(@Context RoutingContext routingContext, @PathParam("groupid") String groupId, @PathParam("name") String name,
                                           @HeaderParam("Accept") String accept,
                                           @QueryParam("timeout") Integer timeout, @QueryParam("max_bytes") Integer maxBytes) {

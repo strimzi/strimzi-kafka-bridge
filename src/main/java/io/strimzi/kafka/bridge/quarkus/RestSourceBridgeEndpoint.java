@@ -84,8 +84,8 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * @param body body containing the JSON representation of the records to send
      * @param topic topic to send the records to
      * @param isAsync defines if it is needed to wait for the callback on the Kafka Producer send
-     * @return a CompletionStage brinding the Response to send back to the client
-     * @throws RestBridgeException
+     * @return a CompletionStage bringing the Response to send back to the client
+     * @throws RestBridgeException bringing HTTP status error code and message
      */
     public CompletionStage<Response> send(RoutingContext routingContext, byte[] body, String topic, boolean isAsync) throws RestBridgeException {
         return this.send(routingContext, body, topic, null, isAsync);
@@ -99,8 +99,8 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * @param topic topic to send the records to
      * @param partitionId partition to send the records to
      * @param isAsync defines if it is needed to wait for the callback on the Kafka Producer send
-     * @return a CompletionStage brinding the Response to send back to the client
-     * @throws RestBridgeException
+     * @return a CompletionStage bringing the Response to send back to the client
+     * @throws RestBridgeException bringing HTTP status error code and message
      */
     @SuppressWarnings("checkstyle:NPathComplexity")
     public CompletionStage<Response> send(RoutingContext routingContext, byte[] body, String topic, String partitionId, boolean isAsync) throws RestBridgeException {
