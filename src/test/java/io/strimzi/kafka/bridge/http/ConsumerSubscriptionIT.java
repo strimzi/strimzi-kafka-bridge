@@ -28,6 +28,7 @@ import java.util.concurrent.TimeoutException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerSubscriptionIT.class);
@@ -157,6 +158,61 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                     subscribe.complete(true);
                 });
         subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        context.completeNow();
+    }
+
+    @Test
+    void subscriptionConsumerEmptyTopics(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String name = "my-kafka-consumer-empty-subscription";
+        adminClientFacade.createTopic(topic);
+
+        JsonArray topics = new JsonArray();
+        topics.add(topic);
+
+        JsonObject topicsRoot = new JsonObject();
+        topicsRoot.put("topics", topics);
+
+        // Create consumer and subscribe to the topic
+        JsonObject consumerJson = new JsonObject();
+        consumerJson.put("name", name);
+        consumerJson.put("format", "json");
+        consumerService()
+                .createConsumer(context, groupId, consumerJson)
+                .subscribeConsumer(context, groupId, name, topicsRoot);
+
+        // Subscribe to an empty topic list, expect return null response body
+        JsonObject unsubscribeTopicRoot = new JsonObject();
+        unsubscribeTopicRoot.put("topics", new JsonArray());
+        CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
+        consumerService()
+                .subscribeConsumerRequest(groupId, name, unsubscribeTopicRoot)
+                .sendJsonObject(unsubscribeTopicRoot, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
+                        assertThat(response.body(), is(nullValue()));
+                    });
+                    subscribe.complete(true);
+                });
+
+        // Validate the existing consumer list
+        CompletableFuture<Boolean> listSubscriptions = new CompletableFuture<>();
+        consumerService()
+                .listSubscriptionsConsumerRequest(groupId, name)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        assertThat(response.body().getJsonArray("topics").size(), is(0));
+                    });
+                    listSubscriptions.complete(true);
+                });
+        subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+                .deleteConsumer(context, groupId, name);
         context.completeNow();
     }
 
@@ -352,6 +408,59 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
 
         consumerService()
                 .deleteConsumer(context, groupId, name);
+        context.completeNow();
+    }
+
+    @Test
+    void assignEmptyAfterSubscriptionTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "subscribe-and-assign-topic";
+
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 4, 1);
+        future.get();
+
+        String consumerName = "my-kafka-consumer-assign";
+
+        JsonObject consumerJson = new JsonObject();
+        consumerJson.put("name", consumerName);
+        consumerJson.put("format", "json");
+
+        JsonObject partitionsRoot = new JsonObject();
+        JsonArray partitions = new JsonArray();
+
+        partitionsRoot.put("partitions", partitions);
+        consumerService()
+                .createConsumer(context, groupId, consumerJson);
+
+        CompletableFuture<Boolean> assignCF = new CompletableFuture<>();
+        consumerService()
+                .assignRequest(groupId, consumerName, partitionsRoot)
+                .sendJsonObject(partitionsRoot, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
+                        assertThat(response.body(), is(nullValue()));
+                    });
+                    assignCF.complete(true);
+                });
+
+        // Validate the existing consumer list
+        CompletableFuture<Boolean> listSubscriptions = new CompletableFuture<>();
+        consumerService()
+                .listSubscriptionsConsumerRequest(groupId, consumerName)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        assertThat(response.body().getJsonArray("topics").size(), is(0));
+                    });
+                    listSubscriptions.complete(true);
+                });
+        assignCF.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        consumerService()
+                .deleteConsumer(context, groupId, consumerName);
         context.completeNow();
     }
 
