@@ -413,12 +413,12 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
 
     @Test
     void assignEmptyAfterSubscriptionTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "subscribe-and-assign-topic";
+        String topic = "subscribe-and-assign-empty-topic";
 
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 4, 1);
         future.get();
 
-        String consumerName = "my-kafka-consumer-assign";
+        String consumerName = "my-kafka-consumer-assign-empty";
 
         JsonObject consumerJson = new JsonObject();
         consumerJson.put("name", consumerName);
