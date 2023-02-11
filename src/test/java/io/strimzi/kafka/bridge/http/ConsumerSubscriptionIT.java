@@ -196,6 +196,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                     subscribe.complete(true);
                 });
 
+        subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);            
         // Validate the existing consumer list
         CompletableFuture<Boolean> listSubscriptions = new CompletableFuture<>();
         consumerService()
@@ -444,6 +445,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                     assignCF.complete(true);
                 });
 
+        assignCF.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         // Validate the existing consumer list
         CompletableFuture<Boolean> listSubscriptions = new CompletableFuture<>();
         consumerService()
