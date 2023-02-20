@@ -10,8 +10,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
-import io.strimzi.kafka.bridge.KafkaBridgeProducer;
-import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.HttpOpenApiOperations;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
@@ -19,6 +17,8 @@ import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeResult;
+import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
+import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
 import io.strimzi.kafka.bridge.tracing.SpanHandle;
 import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
@@ -48,15 +48,15 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     private boolean closing;
     private final KafkaBridgeProducer<K, V> kafkaBridgeProducer;
 
-    RestSourceBridgeEndpoint(BridgeConfig bridgeConfig, EmbeddedFormat format,
+    RestSourceBridgeEndpoint(BridgeConfig bridgeConfig, KafkaConfig kafkaConfig, EmbeddedFormat format,
                              Serializer<K> keySerializer, Serializer<V> valueSerializer) {
-        super(bridgeConfig, format);
-        this.kafkaBridgeProducer = new KafkaBridgeProducer<>(bridgeConfig.getKafkaConfig(), keySerializer, valueSerializer);
+        super(bridgeConfig, kafkaConfig, format);
+        this.kafkaBridgeProducer = new KafkaBridgeProducer<>(kafkaConfig, keySerializer, valueSerializer);
     }
 
     @Override
     public void open() {
-        this.name = this.bridgeConfig.getBridgeID() == null ? "kafka-bridge-producer-" + UUID.randomUUID() : this.bridgeConfig.getBridgeID() + "-" + UUID.randomUUID();
+        this.name = this.bridgeConfig.id().isEmpty() ? "kafka-bridge-producer-" + UUID.randomUUID() : this.bridgeConfig.id().get() + "-" + UUID.randomUUID();
         this.closing = false;
         this.messageConverter = this.buildMessageConverter();
         this.kafkaBridgeProducer.create();

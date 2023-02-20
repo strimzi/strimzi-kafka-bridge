@@ -15,6 +15,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -23,6 +24,7 @@ import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Retriever of the bridge configuration on startup from the provided configuration file
@@ -39,12 +41,21 @@ public class BridgeConfigRetriever {
 
     private BridgeConfig bridgeConfig;
 
+    @ConfigProperty(name = "quarkus.config.locations")
+    Optional<String> quarkusConfigFile;
+
     public void onStart(@Observes StartupEvent ev) {
         try {
             CommandLine commandLine = new DefaultParser().parse(generateOptions(), args);
-            Map<String, Object> config = ConfigRetriever.getConfig(absoluteFilePath(commandLine.getOptionValue("config-file")));
-            bridgeConfig = BridgeConfig.fromMap(config);
-            log.infof("Bridge configuration %s", bridgeConfig);
+            String configFile = commandLine.hasOption("config-file") ? commandLine.getOptionValue("config-file") : quarkusConfigFile.orElse(null);
+            if (configFile != null) {
+                Map<String, Object> config = ConfigRetriever.getConfig(absoluteFilePath(configFile));
+                bridgeConfig = BridgeConfig.fromMap(config);
+                log.infof("Bridge configuration %s", bridgeConfig);
+            } else {
+                log.error("Error starting the bridge: no '--config-file' option or 'quarkus.config.locations' system property set");
+                Quarkus.asyncExit();
+            }
         } catch (ParseException | IOException e) {
             log.error("Error starting the bridge", e);
             Quarkus.asyncExit();
@@ -66,7 +77,7 @@ public class BridgeConfigRetriever {
     private static Options generateOptions() {
 
         Option configFileOption = Option.builder()
-                .required(true)
+                .required(false)
                 .hasArg(true)
                 .longOpt("config-file")
                 .desc("Configuration file with bridge parameters")

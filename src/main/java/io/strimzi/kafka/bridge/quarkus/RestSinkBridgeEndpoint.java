@@ -14,9 +14,7 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Handler;
-import io.strimzi.kafka.bridge.KafkaBridgeConsumer;
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
-import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.HttpOpenApiOperations;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
@@ -24,6 +22,8 @@ import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.JsonDecodeException;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
+import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
 import io.strimzi.kafka.bridge.tracing.SpanHandle;
 import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
@@ -74,11 +74,11 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     private boolean subscribed;
     private boolean assigned;
 
-    public RestSinkBridgeEndpoint(BridgeConfig bridgeConfig, RestBridgeContext<K, V> context, EmbeddedFormat format,
+    public RestSinkBridgeEndpoint(BridgeConfig bridgeConfig, KafkaConfig kafkaConfig, RestBridgeContext<K, V> context, EmbeddedFormat format,
                                   Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
-        super(bridgeConfig, format);
+        super(bridgeConfig, kafkaConfig, format);
         this.httpBridgeContext = context;
-        this.kafkaBridgeConsumer = new KafkaBridgeConsumer<>(bridgeConfig.getKafkaConfig(), keyDeserializer, valueDeserializer);
+        this.kafkaBridgeConsumer = new KafkaBridgeConsumer<>(kafkaConfig, keyDeserializer, valueDeserializer);
         this.subscribed = false;
         this.assigned = false;
     }
@@ -112,9 +112,9 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      */
     public CompletionStage<Response> createConsumer(RoutingContext routingContext, String groupId, JsonNode bodyAsJson, Handler<RestBridgeEndpoint> handler) {
         // if no name, a random one is assigned
-        this.name = JsonUtils.getString(bodyAsJson, "name", bridgeConfig.getBridgeID() == null
+        this.name = JsonUtils.getString(bodyAsJson, "name", bridgeConfig.id().isEmpty()
                 ? "kafka-bridge-consumer-" + UUID.randomUUID()
-                : bridgeConfig.getBridgeID() + "-" + UUID.randomUUID());
+                : bridgeConfig.id().get() + "-" + UUID.randomUUID());
 
         this.consumerInstanceId = new ConsumerInstanceId(groupId, this.name);
 

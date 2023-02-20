@@ -7,7 +7,8 @@ package io.strimzi.kafka.bridge.quarkus;
 
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Handler;
-import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
+import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
 import org.jboss.logging.Logger;
 
 /**
@@ -20,16 +21,19 @@ public abstract class RestBridgeEndpoint {
     protected String name;
     protected EmbeddedFormat format;
     protected BridgeConfig bridgeConfig;
+    protected KafkaConfig kafkaConfig;
     private Handler<RestBridgeEndpoint> closeHandler;
 
     /**
      * Constructor
      *
      * @param bridgeConfig the bridge configuration
+     * @param kafkaConfig the Kafka related configuration
      * @param format the embedded format for consumed messages
      */
-    public RestBridgeEndpoint(BridgeConfig bridgeConfig, EmbeddedFormat format) {
+    public RestBridgeEndpoint(BridgeConfig bridgeConfig, KafkaConfig kafkaConfig, EmbeddedFormat format) {
         this.bridgeConfig = bridgeConfig;
+        this.kafkaConfig = kafkaConfig;
         this.format = format;
     }
 

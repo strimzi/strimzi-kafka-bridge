@@ -10,10 +10,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.KafkaBridgeAdmin;
-import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
+import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.ConfigEntry;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
@@ -44,11 +44,12 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
      * Constructor
      *
      * @param bridgeConfig the bridge configuration
+     * @param kafkaConfig the Kafka related configuration
      */
-    public RestAdminBridgeEndpoint(BridgeConfig bridgeConfig) {
-        super(bridgeConfig, null);
+    public RestAdminBridgeEndpoint(BridgeConfig bridgeConfig, KafkaConfig kafkaConfig) {
+        super(bridgeConfig, kafkaConfig, null);
         this.name = "kafka-bridge-admin";
-        this.kafkaBridgeAdmin = new KafkaBridgeAdmin(bridgeConfig.getKafkaConfig());
+        this.kafkaBridgeAdmin = new KafkaBridgeAdmin(kafkaConfig);
     }
 
     @Override

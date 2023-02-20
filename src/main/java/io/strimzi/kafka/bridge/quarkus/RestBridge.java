@@ -18,6 +18,9 @@ import io.strimzi.kafka.bridge.http.HttpOpenApiOperations;
 import io.strimzi.kafka.bridge.http.converter.JsonDecodeException;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
+import io.strimzi.kafka.bridge.quarkus.config.HttpConfig;
+import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.ext.web.RoutingContext;
@@ -57,11 +60,17 @@ public class RestBridge {
     @Inject
     Logger log;
 
-    @Inject
-    BridgeConfigRetriever configRetriever;
-
     @ConfigProperty(name = "quarkus.http.port")
     Integer httpPort;
+
+    @Inject
+    BridgeConfig bridgeConfig;
+
+    @Inject
+    KafkaConfig kafkaConfig;
+
+    @Inject
+    HttpConfig httpConfig;
 
     private RestBridgeContext<byte[], byte[]> httpBridgeContext;
 
@@ -73,20 +82,18 @@ public class RestBridge {
     public void init() {
         this.timestampMap = new HashMap<>();
         this.httpBridgeContext = new RestBridgeContext<>();
-        RestAdminBridgeEndpoint adminClientEndpoint = new RestAdminBridgeEndpoint(this.configRetriever.config());
+        RestAdminBridgeEndpoint adminClientEndpoint = new RestAdminBridgeEndpoint(this.bridgeConfig, this.kafkaConfig);
         this.httpBridgeContext.setHttpAdminEndpoint(adminClientEndpoint);
         adminClientEndpoint.open();
 
-        if (this.configRetriever.config().getHttpConfig().getConsumerTimeout() > -1) {
-            startInactiveConsumerDeletionTimer(this.configRetriever.config().getHttpConfig().getConsumerTimeout());
+        if (this.httpConfig.timeoutSeconds() > -1) {
+            startInactiveConsumerDeletionTimer(this.httpConfig.timeoutSeconds());
         }
         this.isReady = true;
 
         log.infof("HTTP-Kafka Bridge started and listening on port %s", this.httpPort);
         log.infof("HTTP-Kafka Bridge bootstrap servers %s",
-                this.configRetriever.config().getKafkaConfig().getConfig()
-                        .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
-        );
+                this.kafkaConfig.common().get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG));
     }
 
     @PreDestroy
@@ -356,7 +363,7 @@ public class RestBridge {
      * @throws RestBridgeException
      */
     private RestSourceBridgeEndpoint<byte[], byte[]> getRestSourceBridgeEndpoint(RoutingContext routingContext, String contentType) {
-        if (!this.configRetriever.config().getHttpConfig().isProducerEnabled()) {
+        if (!this.httpConfig.producer().enabled()) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
                     "Producer is disabled in config. To enable producer update http.producer.enabled to true"
@@ -371,7 +378,7 @@ public class RestBridge {
 
         try {
             if (source == null) {
-                source = new RestSourceBridgeEndpoint<>(this.configRetriever.config(), contentTypeToFormat(contentType),
+                source = new RestSourceBridgeEndpoint<>(this.bridgeConfig, this.kafkaConfig, contentTypeToFormat(contentType),
                         new ByteArraySerializer(), new ByteArraySerializer());
 
                 source.closeHandler(s -> {
@@ -422,7 +429,7 @@ public class RestBridge {
      * @return the sink endpoint instance
      */
     private RestSinkBridgeEndpoint<byte[], byte[]> doCreateConsumer(JsonNode jsonBody) {
-        if (!this.configRetriever.config().getHttpConfig().isConsumerEnabled()) {
+        if (!this.httpConfig.consumer().enabled()) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
                     "Consumer is disabled in config. To enable consumer update http.consumer.enabled to true"
@@ -437,7 +444,7 @@ public class RestBridge {
         try {
             EmbeddedFormat format = EmbeddedFormat.from(JsonUtils.getString(jsonBody, "format", "binary"));
 
-            sink = new RestSinkBridgeEndpoint<>(this.configRetriever.config(), this.httpBridgeContext, format,
+            sink = new RestSinkBridgeEndpoint<>(this.bridgeConfig, this.kafkaConfig, this.httpBridgeContext, format,
                     new ByteArrayDeserializer(), new ByteArrayDeserializer());
 
             sink.closeHandler(endpoint -> {
