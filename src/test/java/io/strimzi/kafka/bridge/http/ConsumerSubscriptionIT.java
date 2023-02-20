@@ -164,7 +164,8 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
     @Test
     void subscriptionConsumerEmptyTopics(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String name = "my-kafka-consumer-empty-subscription";
-        adminClientFacade.createTopic(topic);
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+        future.get();
 
         JsonArray topics = new JsonArray();
         topics.add(topic);
@@ -180,10 +181,39 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                 .createConsumer(context, groupId, consumerJson)
                 .subscribeConsumer(context, groupId, name, topicsRoot);
 
+        // poll to subscribe
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+        consumerService()
+                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    if (ar.succeeded()) {
+                        LOGGER.info("Request result: {}", ar.result().body());
+                        consume.complete(true);
+                    }
+                });
+        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
+        // Validate the existing consumer list
+        CompletableFuture<Boolean> listSubscriptions = new CompletableFuture<>();
+        consumerService()
+                .listSubscriptionsConsumerRequest(groupId, name)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        assertThat(response.body().getJsonArray("topics").size(), is(1));
+                    });
+                    listSubscriptions.complete(true);
+                });
+        listSubscriptions.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
         // Subscribe to an empty topic list, expect return null response body
         JsonObject unsubscribeTopicRoot = new JsonObject();
         unsubscribeTopicRoot.put("topics", new JsonArray());
-        CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
         consumerService()
                 .subscribeConsumerRequest(groupId, name, unsubscribeTopicRoot)
                 .sendJsonObject(unsubscribeTopicRoot, ar -> {
@@ -198,7 +228,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
 
         subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);            
         // Validate the existing consumer list
-        CompletableFuture<Boolean> listSubscriptions = new CompletableFuture<>();
+        CompletableFuture<Boolean> listSubscriptionsAfter = new CompletableFuture<>();
         consumerService()
                 .listSubscriptionsConsumerRequest(groupId, name)
                 .as(BodyCodec.jsonObject())
@@ -209,9 +239,9 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                         assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         assertThat(response.body().getJsonArray("topics").size(), is(0));
                     });
-                    listSubscriptions.complete(true);
+                    listSubscriptionsAfter.complete(true);
                 });
-        subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        listSubscriptionsAfter.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         consumerService()
                 .deleteConsumer(context, groupId, name);
         context.completeNow();
@@ -460,7 +490,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                     });
                     listSubscriptions.complete(true);
                 });
-        assignCF.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        listSubscriptions.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         consumerService()
                 .deleteConsumer(context, groupId, consumerName);
         context.completeNow();
