@@ -7,6 +7,7 @@
 * Added missing validation on the `async` query parameter for sending operations in the OpenAPI v3 specification.
 * Fixed memory calculation by using JVM so taking cgroupv2 into account.
 * Dependency updates (Vert.x 4.3.8)
+* OpenTelemetry updated to 1.19.0
 
 ## 0.24.0
 
