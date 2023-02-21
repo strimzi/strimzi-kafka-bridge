@@ -361,20 +361,23 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
             try {
                 Buffer buffer = messageConverter.toMessages(records);
                 if (buffer.getBytes().length > this.maxBytes) {
+                    responseStatus = HttpResponseStatus.UNPROCESSABLE_ENTITY;
                     HttpBridgeError error = new HttpBridgeError(
-                            HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                            responseStatus.code(),
                             "Response exceeds the maximum number of bytes the consumer can receive"
                     );
                     throw new RestBridgeException(error);
                 } else {
-                    return RestUtils.buildResponse(HttpResponseStatus.OK.code(),
+                    responseStatus = HttpResponseStatus.OK;
+                    return RestUtils.buildResponse(responseStatus.code(),
                             this.format == EmbeddedFormat.BINARY ? BridgeContentType.KAFKA_JSON_BINARY : BridgeContentType.KAFKA_JSON_JSON,
                             buffer);
                 }
             } catch (JsonDecodeException e) {
                 log.error("Error decoding records as JSON", e);
+                responseStatus = HttpResponseStatus.NOT_ACCEPTABLE;
                 HttpBridgeError error = new HttpBridgeError(
-                        HttpResponseStatus.NOT_ACCEPTABLE.code(),
+                        responseStatus.code(),
                         e.getMessage()
                 );
                 throw new RestBridgeException(error);
