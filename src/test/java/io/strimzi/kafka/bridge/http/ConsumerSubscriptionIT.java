@@ -193,8 +193,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                     }
                 });
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
+        
         // Validate the existing consumer list
         CompletableFuture<Boolean> listSubscriptions = new CompletableFuture<>();
         consumerService()
@@ -214,6 +213,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
         // Subscribe to an empty topic list, expect return null response body
         JsonObject unsubscribeTopicRoot = new JsonObject();
         unsubscribeTopicRoot.put("topics", new JsonArray());
+        CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
         consumerService()
                 .subscribeConsumerRequest(groupId, name, unsubscribeTopicRoot)
                 .sendJsonObject(unsubscribeTopicRoot, ar -> {
