@@ -49,7 +49,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
 
         CompletableFuture<Boolean> unsubscribe = new CompletableFuture<>();
         consumerService()
-            .deleteRequest(Urls.consumerInstanceSubscription(groupId, name + "consumer-invalidation"))
+                .deleteRequest(Urls.consumerInstanceSubscription(groupId, name + "consumer-invalidation"))
                 .putHeader("Content-length", String.valueOf(topicsRoot.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(topicsRoot, ar -> {
@@ -78,7 +78,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
 
         // create consumer
         consumerService()
-            .createConsumer(context, groupId, json);
+                .createConsumer(context, groupId, json);
 
         // cannot subscribe setting both topics list and topic_pattern
         JsonArray topics = new JsonArray();
@@ -90,7 +90,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
 
         CompletableFuture<Boolean> subscribeConflict = new CompletableFuture<>();
         consumerService()
-            .subscribeConsumerRequest(groupId, name, topicsRoot)
+                .subscribeConsumerRequest(groupId, name, topicsRoot)
                 .sendJsonObject(topicsRoot, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
@@ -110,7 +110,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
         topicsRoot = new JsonObject();
         CompletableFuture<Boolean> subscribeEmpty = new CompletableFuture<>();
         consumerService()
-            .subscribeConsumerRequest(groupId, name, topicsRoot)
+                .subscribeConsumerRequest(groupId, name, topicsRoot)
                 .sendJsonObject(topicsRoot, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
@@ -129,7 +129,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
         consumerService()
-            .deleteConsumer(context, groupId, name);
+                .deleteConsumer(context, groupId, name);
     }
 
     @Test
@@ -145,7 +145,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
 
         CompletableFuture<Boolean> subscribe = new CompletableFuture<>();
         consumerService()
-            .subscribeConsumerRequest(groupId, name, topicsRoot)
+                .subscribeConsumerRequest(groupId, name, topicsRoot)
                 .sendJsonObject(topicsRoot, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
@@ -226,7 +226,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                     subscribe.complete(true);
                 });
 
-        subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);            
+        subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         // Validate the existing consumer list
         CompletableFuture<Boolean> listSubscriptionsAfter = new CompletableFuture<>();
         consumerService()
@@ -285,7 +285,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
         subscribe.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         consumerService()
-            .deleteConsumer(context, groupId, name);
+                .deleteConsumer(context, groupId, name);
 
         context.completeNow();
     }
@@ -353,7 +353,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
         listSubscriptions.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
         consumerService()
-            .deleteConsumer(context, groupId, name);
+                .deleteConsumer(context, groupId, name);
         context.completeNow();
     }
 
@@ -385,7 +385,7 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                 });
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         consumerService()
-            .deleteConsumer(context, groupId, name);
+                .deleteConsumer(context, groupId, name);
         context.completeNow();
     }
 
@@ -449,37 +449,81 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 4, 1);
         future.get();
 
-        String consumerName = "my-kafka-consumer-assign-empty";
+        String name = "my-kafka-consumer-assign";
 
-        JsonObject consumerJson = new JsonObject();
-        consumerJson.put("name", consumerName);
-        consumerJson.put("format", "json");
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("format", "json");
 
         JsonObject partitionsRoot = new JsonObject();
         JsonArray partitions = new JsonArray();
+        JsonObject part0 = new JsonObject();
+        part0.put("topic", topic);
+        part0.put("partition", 0);
+
+        JsonObject part1 = new JsonObject();
+        part1.put("topic", topic);
+        part1.put("partition", 1);
+        partitions.add(part0);
+        partitions.add(part1);
 
         partitionsRoot.put("partitions", partitions);
+
         consumerService()
-                .createConsumer(context, groupId, consumerJson);
+                .createConsumer(context, groupId, json);
 
         CompletableFuture<Boolean> assignCF = new CompletableFuture<>();
         consumerService()
-                .assignRequest(groupId, consumerName, partitionsRoot)
+                .assignRequest(groupId, name, partitionsRoot)
                 .sendJsonObject(partitionsRoot, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         assertThat(response.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
-                        assertThat(response.body(), is(nullValue()));
                     });
                     assignCF.complete(true);
                 });
 
         assignCF.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
         // Validate the existing consumer list
-        CompletableFuture<Boolean> listSubscriptions = new CompletableFuture<>();
+        CompletableFuture<Boolean> listSubscriptionsBefore = new CompletableFuture<>();
         consumerService()
-                .listSubscriptionsConsumerRequest(groupId, consumerName)
+                .listSubscriptionsConsumerRequest(groupId, name)
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        assertThat(response.body().getJsonArray("topics").size(), is(1));
+                    });
+                    listSubscriptionsBefore.complete(true);
+                });
+        listSubscriptionsBefore.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        JsonObject emptyPartitionsRoot = new JsonObject();
+        JsonArray emptyPartitions = new JsonArray();
+        emptyPartitionsRoot.put("partitions", emptyPartitions);
+
+        CompletableFuture<Boolean> assignEmptyCF = new CompletableFuture<>();
+        consumerService()
+                .assignRequest(groupId, name, emptyPartitionsRoot)
+                .sendJsonObject(emptyPartitionsRoot, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
+                    });
+                    assignEmptyCF.complete(true);
+                });
+
+        assignEmptyCF.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        // Validate the existing consumer list
+        CompletableFuture<Boolean> listSubscriptionsAfter = new CompletableFuture<>();
+        consumerService()
+                .listSubscriptionsConsumerRequest(groupId, name)
                 .as(BodyCodec.jsonObject())
                 .send(ar -> {
                     context.verify(() -> {
@@ -488,11 +532,12 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                         assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         assertThat(response.body().getJsonArray("topics").size(), is(0));
                     });
-                    listSubscriptions.complete(true);
+                    listSubscriptionsAfter.complete(true);
                 });
-        listSubscriptions.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        listSubscriptionsAfter.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
         consumerService()
-                .deleteConsumer(context, groupId, consumerName);
+                .deleteConsumer(context, groupId, name);
         context.completeNow();
     }
 
