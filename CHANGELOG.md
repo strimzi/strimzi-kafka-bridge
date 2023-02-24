@@ -8,6 +8,7 @@
 * Fixed memory calculation by using JVM so taking cgroupv2 into account.
 * Dependency updates (Vert.x 4.3.8)
 * OpenTelemetry updated to 1.19.0
+* Added feature to unsubscribe topics by executing a subscribe or assign request with an empty topics list.
 
 ## 0.24.0
 
