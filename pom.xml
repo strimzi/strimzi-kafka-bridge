@@ -84,8 +84,8 @@
 		<log4j.version>2.17.2</log4j.version>
 		<slf4j.version>1.7.21</slf4j.version>
 		<vertx.version>4.3.8</vertx.version>
-		<netty.version>4.1.86.Final</netty.version>
-		<kafka.version>3.2.3</kafka.version>
+		<netty.version>4.1.87.Final</netty.version>
+		<kafka.version>3.4.0</kafka.version>
 		<kafka-kubernetes-config-provider.version>1.1.0</kafka-kubernetes-config-provider.version>
 		<kafka-env-var-config-provider.version>1.1.0</kafka-env-var-config-provider.version>
 		<maven.checkstyle.version>3.2.0</maven.checkstyle.version>

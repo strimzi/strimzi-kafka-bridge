@@ -6,8 +6,7 @@
 * Fixed sending messages with headers to the `sendToPartition` endpoint.
 * Added missing validation on the `async` query parameter for sending operations in the OpenAPI v3 specification.
 * Fixed memory calculation by using JVM so taking cgroupv2 into account.
-* Dependency updates (Vert.x 4.3.8)
-* OpenTelemetry updated to 1.19.0
+* Dependency updates (Vert.x 4.3.8, Netty 4.1.87 to align with Vert.x, Kafka 3.4.0, OpenTelemetry 1.19.0)
 * Added feature to unsubscribe topics by executing a subscribe or assign request with an empty topics list.
 
 ## 0.24.0
