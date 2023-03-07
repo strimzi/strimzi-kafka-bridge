@@ -118,7 +118,7 @@
 		<commons-cli.version>1.4</commons-cli.version>
 		<test-container.version>0.103.0</test-container.version>
 		<jakarta.version>2.3.2</jakarta.version>
-		<snakeyaml.version>1.33</snakeyaml.version>
+		<snakeyaml.version>2.0</snakeyaml.version>
 		<!-- property to skip surefire tests during failsafe execution -->
 		<!--suppress UnresolvedMavenProperty -->
 		<skip.surefire.tests>${skipTests}</skip.surefire.tests>
