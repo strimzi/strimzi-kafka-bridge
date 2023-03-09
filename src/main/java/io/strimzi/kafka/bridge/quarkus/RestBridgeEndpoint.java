@@ -11,6 +11,8 @@ import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
 import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
 import org.jboss.logging.Logger;
 
+import java.util.concurrent.ExecutorService;
+
 /**
  * Abstract class for an endpoint bridging traffic between HTTP and Apache Kafka
  */
@@ -22,6 +24,7 @@ public abstract class RestBridgeEndpoint {
     protected EmbeddedFormat format;
     protected BridgeConfig bridgeConfig;
     protected KafkaConfig kafkaConfig;
+    protected ExecutorService executorService;
     private Handler<RestBridgeEndpoint> closeHandler;
 
     /**
@@ -30,11 +33,13 @@ public abstract class RestBridgeEndpoint {
      * @param bridgeConfig the bridge configuration
      * @param kafkaConfig the Kafka related configuration
      * @param format the embedded format for consumed messages
+     * @param executorService executor service for running asynchronous operations
      */
-    public RestBridgeEndpoint(BridgeConfig bridgeConfig, KafkaConfig kafkaConfig, EmbeddedFormat format) {
+    public RestBridgeEndpoint(BridgeConfig bridgeConfig, KafkaConfig kafkaConfig, EmbeddedFormat format, ExecutorService executorService) {
         this.bridgeConfig = bridgeConfig;
         this.kafkaConfig = kafkaConfig;
         this.format = format;
+        this.executorService = executorService;
     }
 
     /**

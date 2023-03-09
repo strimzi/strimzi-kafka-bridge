@@ -5,12 +5,13 @@
 
 package io.strimzi.kafka.bridge.quarkus;
 
+import io.opentelemetry.instrumentation.kafkaclients.TracingProducerInterceptor;
 import io.strimzi.kafka.bridge.KafkaBridgeConsumer;
 import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
-import io.strimzi.kafka.bridge.tracing.TracingHandle;
-import io.strimzi.kafka.bridge.tracing.TracingUtil;
+import io.strimzi.kafka.bridge.quarkus.tracing.TracingUtil;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.Serializer;
@@ -90,8 +91,9 @@ public class KafkaBridgeProducer<K, V> {
         props.putAll(this.kafkaConfig.common());
         props.putAll(this.kafkaConfig.producer());
 
-        TracingHandle tracing = TracingUtil.getTracing();
-        tracing.addTracingPropsToProducerConfig(props);
+        if (TracingUtil.getTracer() != null) {
+            TracingUtil.addProperty(props, ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, TracingProducerInterceptor.class.getName());
+        }
 
         this.producer = new KafkaProducer<>(props, this.keySerializer, this.valueSerializer);
     }

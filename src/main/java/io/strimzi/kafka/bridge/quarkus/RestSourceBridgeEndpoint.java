@@ -11,7 +11,6 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
-import io.strimzi.kafka.bridge.http.HttpOpenApiOperations;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
@@ -19,11 +18,7 @@ import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeResult;
 import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
 import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
-import io.strimzi.kafka.bridge.tracing.SpanHandle;
-import io.strimzi.kafka.bridge.tracing.TracingHandle;
-import io.strimzi.kafka.bridge.tracing.TracingUtil;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
@@ -35,6 +30,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Represents an HTTP bridge source endpoint for the Kafka producer operations
@@ -49,8 +45,8 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     private final KafkaBridgeProducer<K, V> kafkaBridgeProducer;
 
     RestSourceBridgeEndpoint(BridgeConfig bridgeConfig, KafkaConfig kafkaConfig, EmbeddedFormat format,
-                             Serializer<K> keySerializer, Serializer<V> valueSerializer) {
-        super(bridgeConfig, kafkaConfig, format);
+                             ExecutorService executorService, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+        super(bridgeConfig, kafkaConfig, format, executorService);
         this.kafkaBridgeProducer = new KafkaBridgeProducer<>(kafkaConfig, keySerializer, valueSerializer);
     }
 
@@ -80,21 +76,19 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     /**
      * Send records contained in the provided body to the specified topic
      *
-     * @param routingContext RoutingContext instance
      * @param body body containing the JSON representation of the records to send
      * @param topic topic to send the records to
      * @param isAsync defines if it is needed to wait for the callback on the Kafka Producer send
      * @return a CompletionStage bringing the Response to send back to the client
      * @throws RestBridgeException bringing HTTP status error code and message
      */
-    public CompletionStage<Response> send(RoutingContext routingContext, byte[] body, String topic, boolean isAsync) throws RestBridgeException {
-        return this.send(routingContext, body, topic, null, isAsync);
+    public CompletionStage<Response> send(byte[] body, String topic, boolean isAsync) throws RestBridgeException {
+        return this.send(body, topic, null, isAsync);
     }
 
     /**
      * Send records contained in the provided body to the specified topic partition
      *
-     * @param routingContext RoutingContext instance
      * @param body body containing the JSON representation of the records to send
      * @param topic topic to send the records to
      * @param partitionId partition to send the records to
@@ -103,7 +97,7 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * @throws RestBridgeException bringing HTTP status error code and message
      */
     @SuppressWarnings("checkstyle:NPathComplexity")
-    public CompletionStage<Response> send(RoutingContext routingContext, byte[] body, String topic, String partitionId, boolean isAsync) throws RestBridgeException {
+    public CompletionStage<Response> send(byte[] body, String topic, String partitionId, boolean isAsync) throws RestBridgeException {
         List<ProducerRecord<K, V>> records;
 
         Integer partition = null;
@@ -117,26 +111,17 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                 throw new RestBridgeException(error);
             }
         }
-        String operationName = partition == null ? HttpOpenApiOperations.SEND.toString() : HttpOpenApiOperations.SEND_TO_PARTITION.toString();
 
-        TracingHandle tracing = TracingUtil.getTracing();
-        SpanHandle<K, V> span = tracing.span(routingContext, operationName);
+        if (messageConverter == null) {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR.reasonPhrase());
+            throw new RestBridgeException(error);
+        }
 
         try {
-            if (messageConverter == null) {
-                span.finish(HttpResponseStatus.INTERNAL_SERVER_ERROR.code());
-                HttpBridgeError error = new HttpBridgeError(
-                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        HttpResponseStatus.INTERNAL_SERVER_ERROR.reasonPhrase());
-                throw new RestBridgeException(error);
-            }
             records = messageConverter.toKafkaRecords(topic, partition, Buffer.buffer(body));
-
-            for (ProducerRecord<K, V> record :records)   {
-                span.inject(record);
-            }
         } catch (Exception e) {
-            span.finish(HttpResponseStatus.UNPROCESSABLE_ENTITY.code());
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     e.getMessage());
@@ -152,7 +137,6 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                 for (ProducerRecord<K, V> record : records) {
                     this.kafkaBridgeProducer.sendIgnoreResult(record);
                 }
-                span.finish(HttpResponseStatus.NO_CONTENT.code());
                 Response response = RestUtils.buildResponse(HttpResponseStatus.NO_CONTENT.code(),
                         BridgeContentType.KAFKA_JSON, null);
                 this.maybeClose();
@@ -185,15 +169,13 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                     // sending HTTP response asynchronously to free the kafka-producer-network-thread
                     .thenApplyAsync(v -> {
                         log.tracef("All sent thread %s", Thread.currentThread());
-                        // always return OK, since failure cause is in the response, per message
-                        span.finish(HttpResponseStatus.OK.code());
                         Response response = RestUtils.buildResponse(HttpResponseStatus.OK.code(),
                                 BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(buildOffsets(results)));
                         this.maybeClose();
                         return response;
                     })
                     .join();
-        });
+        }, this.executorService);
     }
 
     private ObjectNode buildOffsets(List<HttpBridgeResult<?>> results) {

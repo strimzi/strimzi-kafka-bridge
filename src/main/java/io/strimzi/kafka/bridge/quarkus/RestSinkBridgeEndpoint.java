@@ -10,6 +10,14 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
@@ -24,9 +32,7 @@ import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
 import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
-import io.strimzi.kafka.bridge.tracing.SpanHandle;
-import io.strimzi.kafka.bridge.tracing.TracingHandle;
-import io.strimzi.kafka.bridge.tracing.TracingUtil;
+import io.strimzi.kafka.bridge.quarkus.tracing.TracingUtil;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -47,6 +53,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -58,6 +65,7 @@ import java.util.stream.StreamSupport;
  * @param <K> type of Kafka message key
  * @param <V> type of Kafka message payload
  */
+@SuppressWarnings("ClassFanOutComplexity")
 public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
 
     private long pollTimeOut = 100;
@@ -75,8 +83,8 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     private boolean assigned;
 
     public RestSinkBridgeEndpoint(BridgeConfig bridgeConfig, KafkaConfig kafkaConfig, RestBridgeContext<K, V> context, EmbeddedFormat format,
-                                  Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
-        super(bridgeConfig, kafkaConfig, format);
+                                  ExecutorService executorService, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
+        super(bridgeConfig, kafkaConfig, format, executorService);
         this.httpBridgeContext = context;
         this.kafkaBridgeConsumer = new KafkaBridgeConsumer<>(kafkaConfig, keyDeserializer, valueDeserializer);
         this.subscribed = false;
@@ -304,13 +312,12 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     /**
      * Poll for records from the subscribed topics partitions
      *
-     * @param routingContext RoutingContext instance
      * @param accept the "Accept" header coming from the HTTP request
      * @param timeout the timeout query parameter for the polling operation
      * @param maxBytes the maximum bytes query parameter for the polling operation
      * @return a CompletionStage bringing the Response to send back to the client
      */
-    public CompletionStage<Response> poll(RoutingContext routingContext, String accept, Integer timeout, Integer maxBytes) {
+    public CompletionStage<Response> poll(String accept, Integer timeout, Integer maxBytes) {
         if (!this.subscribed && !this.assigned) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
@@ -331,10 +338,10 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
             }
 
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-            return CompletableFuture.supplyAsync(() -> this.kafkaBridgeConsumer.poll(this.pollTimeOut))
+            return CompletableFuture.supplyAsync(() -> this.kafkaBridgeConsumer.poll(this.pollTimeOut), this.executorService)
                     .handle((records, ex) -> {
                         log.tracef("Poll handler thread %s", Thread.currentThread());
-                        return this.pollHandler(records, ex, routingContext);
+                        return this.pollHandler(records, ex);
                     });
         } else {
             HttpBridgeError error = new HttpBridgeError(
@@ -345,17 +352,11 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         }
     }
 
-    private Response pollHandler(ConsumerRecords<K, V> records, Throwable ex, RoutingContext routingContext) {
-        TracingHandle tracing = TracingUtil.getTracing();
-
-        SpanHandle<K, V> span = tracing.span(routingContext, HttpOpenApiOperations.POLL.toString());
-
+    private Response pollHandler(ConsumerRecords<K, V> records, Throwable ex) {
         if (ex == null) {
-
             for (ConsumerRecord<K, V> record : records) {
-                tracing.handleRecordSpan(span, record);
+                handleRecordSpan(record);
             }
-            span.inject(routingContext);
 
             HttpResponseStatus responseStatus = HttpResponseStatus.INTERNAL_SERVER_ERROR;
             try {
@@ -381,16 +382,12 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                         e.getMessage()
                 );
                 throw new RestBridgeException(error);
-            } finally {
-                span.finish(responseStatus.code());
             }
-
         } else {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     ex.getMessage()
             );
-            span.finish(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), ex);
             throw new RestBridgeException(error);
         }
     }
@@ -658,5 +655,37 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
             code = HttpResponseStatus.UNPROCESSABLE_ENTITY.code();
         }
         return new HttpBridgeError(code, ex.getMessage());
+    }
+
+    private static final TextMapGetter<Map<String, String>> TEXT_MAP_GETTER = new TextMapGetter<>() {
+        @Override
+        public Iterable<String> keys(Map<String, String> map) {
+            return map.keySet();
+        }
+
+        @Override
+        public String get(Map<String, String> map, String key) {
+            return map != null ? map.get(key) : null;
+        }
+    };
+
+    private <K, V> void handleRecordSpan(ConsumerRecord<K, V> record) {
+        if (TracingUtil.getTracer() != null) {
+            String operationName = record.topic() + " " + MessageOperation.RECEIVE;
+            SpanBuilder spanBuilder = TracingUtil.getTracer().spanBuilder(operationName);
+            Context parentContext = GlobalOpenTelemetry.getPropagators().getTextMapPropagator().extract(Context.current(), TracingUtil.toHeaders(record), TEXT_MAP_GETTER);
+            if (parentContext != null) {
+                Span parentSpan = Span.fromContext(parentContext);
+                SpanContext psc = parentSpan != null ? parentSpan.getSpanContext() : null;
+                if (psc != null) {
+                    spanBuilder.addLink(psc);
+                }
+            }
+            spanBuilder
+                    .setSpanKind(SpanKind.CONSUMER)
+                    .setParent(Context.current())
+                    .startSpan()
+                    .end();
+        }
     }
 }

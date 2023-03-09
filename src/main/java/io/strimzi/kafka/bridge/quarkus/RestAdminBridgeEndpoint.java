@@ -47,7 +47,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
      * @param kafkaConfig the Kafka related configuration
      */
     public RestAdminBridgeEndpoint(BridgeConfig bridgeConfig, KafkaConfig kafkaConfig) {
-        super(bridgeConfig, kafkaConfig, null);
+        super(bridgeConfig, kafkaConfig, null, null);
         this.name = "kafka-bridge-admin";
         this.kafkaBridgeAdmin = new KafkaBridgeAdmin(kafkaConfig);
     }
