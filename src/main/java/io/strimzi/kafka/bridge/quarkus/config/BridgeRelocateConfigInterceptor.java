@@ -79,8 +79,35 @@ public class BridgeRelocateConfigInterceptor extends RelocateConfigSourceInterce
         //       on the value of the "bridge.tracing"
         if (name.equals("quarkus.opentelemetry.tracer.sampler")) {
             ConfigValue bridgeTracing = context.proceed("bridge.tracing");
-            ConfigValue sampler = context.proceed("quarkus.opentelemetry.tracer.sampler")
-                    .withValue(bridgeTracing != null && bridgeTracing.getValue().equals(TracingUtil.OPENTELEMETRY) ? "on" : "off");
+
+            String value = bridgeTracing != null && bridgeTracing.getValue().equals(TracingUtil.OPENTELEMETRY) ? "on" : "off";
+            ConfigValue sampler;
+            // creating a new ConfigValue respecting the data from the referring one.
+            // Using the bridge.tracing one if enabled otherwise the original quarkus.opentelemetry.tracer.sampler.
+            // No way to easy close, so creating from scratch. Opened issue: https://github.com/smallrye/smallrye-config/issues/902
+            if (value.equals("on")) {
+                sampler = ConfigValue.builder()
+                        .withName("quarkus.opentelemetry.tracer.sampler")
+                        .withValue(value)
+                        .withRawValue(value)
+                        .withConfigSourceName(bridgeTracing.getConfigSourceName())
+                        .withConfigSourceOrdinal(bridgeTracing.getConfigSourceOrdinal())
+                        .withConfigSourcePosition(bridgeTracing.getConfigSourcePosition())
+                        .withProfile(bridgeTracing.getProfile())
+                        .build();
+            } else {
+                ConfigValue original = context.proceed("quarkus.opentelemetry.tracer.sampler");
+                sampler = ConfigValue.builder()
+                        .withName(original.getName())
+                        .withValue(value)
+                        .withRawValue(value)
+                        .withConfigSourceName(original.getConfigSourceName())
+                        .withConfigSourceOrdinal(original.getConfigSourceOrdinal())
+                        .withConfigSourcePosition(original.getConfigSourcePosition())
+                        .withProfile(original.getProfile())
+                        .withLineNumber(original.getLineNumber())
+                        .build();
+            }
             return sampler;
         }
         return super.getValue(context, name);
