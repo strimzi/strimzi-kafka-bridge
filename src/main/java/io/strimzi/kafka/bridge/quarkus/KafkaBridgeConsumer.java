@@ -95,8 +95,13 @@ public class KafkaBridgeConsumer<K, V> {
      * @param topicSubscriptions topics to subscribe to
      */
     public void subscribe(List<SinkTopicSubscription> topicSubscriptions) {
+        if (topicSubscriptions == null) {
+            throw new IllegalArgumentException("Topic subscriptions cannot be null");
+        }
+
         if (topicSubscriptions.isEmpty()) {
-            throw new IllegalArgumentException("At least one topic to subscribe has to be specified!");
+            this.unsubscribe();
+            return;
         }
 
         log.info("Subscribe to topics {}", topicSubscriptions);
@@ -142,8 +147,8 @@ public class KafkaBridgeConsumer<K, V> {
      * @param topicSubscriptions topics to be assigned
      */
     public void assign(List<SinkTopicSubscription> topicSubscriptions) {
-        if (topicSubscriptions.isEmpty()) {
-            throw new IllegalArgumentException("At least one topic to subscribe has to be specified!");
+        if (topicSubscriptions == null) {
+            throw new IllegalArgumentException("Topic subscriptions cannot be null");
         }
 
         log.info("Assigning to topics partitions {}", topicSubscriptions);
@@ -151,6 +156,11 @@ public class KafkaBridgeConsumer<K, V> {
         Set<TopicPartition> topicPartitions = new HashSet<>();
         for (SinkTopicSubscription topicSubscription : topicSubscriptions) {
             topicPartitions.add(new TopicPartition(topicSubscription.getTopic(), topicSubscription.getPartition()));
+        }
+
+        if (topicPartitions.isEmpty()) {
+            this.unsubscribe();
+            return;
         }
 
         log.trace("Assign thread {}", Thread.currentThread());
