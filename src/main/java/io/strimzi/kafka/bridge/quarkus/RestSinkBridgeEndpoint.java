@@ -33,7 +33,6 @@ import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
 import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
 import io.strimzi.kafka.bridge.quarkus.tracing.TracingUtil;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -75,7 +74,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     Pattern forwardedProtoPattern = Pattern.compile("proto=([^;]+)", Pattern.CASE_INSENSITIVE);
     Pattern hostPortPattern = Pattern.compile("^.*:[0-9]+$");
 
-    private MessageConverter<K, V, Buffer, Buffer> messageConverter;
+    private MessageConverter<K, V, byte[], byte[]> messageConverter;
     private final RestBridgeContext<K, V> httpBridgeContext;
     private final KafkaBridgeConsumer<K, V> kafkaBridgeConsumer;
     private ConsumerInstanceId consumerInstanceId;
@@ -171,7 +170,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                 .put("base_uri", consumerBaseUri);
 
         Response response = RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(body));
+                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(body));
         return CompletableFuture.completedStage(response);
     }
 
@@ -360,8 +359,8 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
 
             HttpResponseStatus responseStatus = HttpResponseStatus.INTERNAL_SERVER_ERROR;
             try {
-                Buffer buffer = messageConverter.toMessages(records);
-                if (buffer.getBytes().length > this.maxBytes) {
+                byte[] buffer = messageConverter.toMessages(records);
+                if (buffer.length > this.maxBytes) {
                     responseStatus = HttpResponseStatus.UNPROCESSABLE_ENTITY;
                     HttpBridgeError error = new HttpBridgeError(
                             responseStatus.code(),
@@ -426,7 +425,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                         root.put("topics", topicsArray);
                         root.put("partitions", partitionsArray);
 
-                        return RestUtils.buildResponse(HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(root));
+                        return RestUtils.buildResponse(HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
@@ -559,12 +558,12 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         }
     }
 
-    private MessageConverter<K, V, Buffer, Buffer> buildMessageConverter() {
+    private MessageConverter<K, V, byte[], byte[]> buildMessageConverter() {
         switch (this.format) {
             case JSON:
-                return (MessageConverter<K, V, Buffer, Buffer>) new HttpJsonMessageConverter();
+                return (MessageConverter<K, V, byte[], byte[]>) new HttpJsonMessageConverter();
             case BINARY:
-                return (MessageConverter<K, V, Buffer, Buffer>) new HttpBinaryMessageConverter();
+                return (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
         }
         return null;
     }

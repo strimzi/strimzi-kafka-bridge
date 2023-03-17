@@ -18,7 +18,6 @@ import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeResult;
 import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
 import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
-import io.vertx.core.buffer.Buffer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
@@ -40,7 +39,7 @@ import java.util.concurrent.ExecutorService;
  */
 public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
 
-    private MessageConverter<K, V, Buffer, Buffer> messageConverter;
+    private MessageConverter<K, V, byte[], byte[]> messageConverter;
     private boolean closing;
     private final KafkaBridgeProducer<K, V> kafkaBridgeProducer;
 
@@ -120,7 +119,7 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         }
 
         try {
-            records = messageConverter.toKafkaRecords(topic, partition, Buffer.buffer(body));
+            records = messageConverter.toKafkaRecords(topic, partition, body);
         } catch (Exception e) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
@@ -170,7 +169,7 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                     .thenApplyAsync(v -> {
                         log.tracef("All sent thread %s", Thread.currentThread());
                         Response response = RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(buildOffsets(results)));
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(buildOffsets(results)));
                         this.maybeClose();
                         return response;
                     })
@@ -209,12 +208,12 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         }
     }
 
-    private MessageConverter<K, V, Buffer, Buffer> buildMessageConverter() {
+    private MessageConverter<K, V, byte[], byte[]> buildMessageConverter() {
         switch (this.format) {
             case JSON:
-                return (MessageConverter<K, V, Buffer, Buffer>) new HttpJsonMessageConverter();
+                return (MessageConverter<K, V, byte[], byte[]>) new HttpJsonMessageConverter();
             case BINARY:
-                return (MessageConverter<K, V, Buffer, Buffer>) new HttpBinaryMessageConverter();
+                return (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
         }
         return null;
     }

@@ -21,7 +21,6 @@ import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
 import io.strimzi.kafka.bridge.quarkus.config.HttpConfig;
 import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -307,7 +306,7 @@ public class RestBridge {
         ObjectNode versionJson = JsonUtils.createObjectNode();
         versionJson.put("bridge_version", version == null ? "null" : version);
         Response response = RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                BridgeContentType.JSON, JsonUtils.jsonToBuffer(versionJson));
+                BridgeContentType.JSON, JsonUtils.jsonToBytes(versionJson));
         return CompletableFuture.completedStage(response);
     }
 
@@ -504,7 +503,7 @@ public class RestBridge {
         try {
             // check for an empty body
             return !(body == null || body.length == 0) ?
-                    JsonUtils.bufferToJson(Buffer.buffer(body)) :
+                    JsonUtils.bytesToJson(body) :
                     EMPTY_JSON;
         } catch (JsonDecodeException ex) {
             HttpBridgeError error = new HttpBridgeError(

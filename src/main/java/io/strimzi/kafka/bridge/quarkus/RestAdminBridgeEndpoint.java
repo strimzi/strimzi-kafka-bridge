@@ -74,7 +74,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                         ArrayNode root = JsonUtils.createArrayNode();
                         topics.forEach(topic -> root.add(topic));
                         return RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(root));
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
@@ -133,7 +133,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                         }
                         root.put("partitions", partitionsArray);
                         return RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(root));
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
                     } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.NOT_FOUND.code(),
@@ -167,7 +167,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                             description.partitions().forEach(partitionInfo -> root.add(createPartitionMetadata(partitionInfo)));
                         }
                         return RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(root));
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
                     } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.NOT_FOUND.code(),
@@ -209,7 +209,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                         if (description != null && partition < description.partitions().size()) {
                             JsonNode root = createPartitionMetadata(description.partitions().get(partition));
                             return RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(root));
+                                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
                         } else {
                             HttpBridgeError error = new HttpBridgeError(
                                     HttpResponseStatus.NOT_FOUND.code(),
@@ -287,7 +287,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                                     root.put("end_offset", endOffset.offset());
                                 }
                                 return RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBuffer(root));
+                                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
                             } else {
                                 HttpBridgeError error = new HttpBridgeError(
                                         HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
