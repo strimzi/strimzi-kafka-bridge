@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
-import io.vertx.core.buffer.Buffer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -25,17 +24,17 @@ import java.util.List;
 /**
  * Implementation of a message converter to deal with the "binary" embedded data format
  */
-public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte[], Buffer, Buffer> {
+public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte[], byte[], byte[]> {
 
     @Override
-    public ProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, Buffer message) {
+    public ProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, byte[] message) {
 
         Integer partitionFromBody = null;
         byte[] key = null;
         byte[] value = null;
         Headers headers = new RecordHeaders();
 
-        JsonNode json = JsonUtils.bufferToJson(message);
+        JsonNode json = JsonUtils.bytesToJson(message);
 
         if (!json.isEmpty()) {
             if (json.has("key")) {
@@ -64,27 +63,27 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
     }
 
     @Override
-    public List<ProducerRecord<byte[], byte[]>> toKafkaRecords(String kafkaTopic, Integer partition, Buffer messages) {
+    public List<ProducerRecord<byte[], byte[]>> toKafkaRecords(String kafkaTopic, Integer partition, byte[] messages) {
 
         List<ProducerRecord<byte[], byte[]>> records = new ArrayList<>();
 
-        JsonNode json = JsonUtils.bufferToJson(messages);
+        JsonNode json = JsonUtils.bytesToJson(messages);
         ArrayNode jsonArray = (ArrayNode) json.get("records");
 
         for (JsonNode jsonObj : jsonArray) {
-            records.add(toKafkaRecord(kafkaTopic, partition, JsonUtils.jsonToBuffer(jsonObj)));
+            records.add(toKafkaRecord(kafkaTopic, partition, JsonUtils.jsonToBytes(jsonObj)));
         }
 
         return records;
     }
 
     @Override
-    public Buffer toMessage(String address, ConsumerRecord<byte[], byte[]> record) {
+    public byte[] toMessage(String address, ConsumerRecord<byte[], byte[]> record) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Buffer toMessages(ConsumerRecords<byte[], byte[]> records) {
+    public byte[] toMessages(ConsumerRecords<byte[], byte[]> records) {
 
         ArrayNode jsonArray = JsonUtils.createArrayNode();
 
@@ -116,6 +115,6 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
             jsonArray.add(jsonObject);
         }
 
-        return JsonUtils.jsonToBuffer(jsonArray);
+        return JsonUtils.jsonToBytes(jsonArray);
     }
 }

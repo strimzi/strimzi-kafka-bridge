@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
-import io.vertx.core.buffer.Buffer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -25,24 +24,24 @@ import java.util.List;
 /**
  * Implementation of a message converter to deal with the "json" embedded data format
  */
-public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[], Buffer, Buffer> {
+public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[], byte[], byte[]> {
 
     @Override
-    public ProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, Buffer message) {
+    public ProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, byte[] message) {
 
         Integer partitionFromBody = null;
         byte[] key = null;
         byte[] value = null;
         Headers headers = new RecordHeaders();
 
-        JsonNode json = JsonUtils.bufferToJson(message);
+        JsonNode json = JsonUtils.bytesToJson(message);
 
         if (!json.isEmpty()) {
             if (json.has("key")) {
-                key = JsonUtils.jsonToBuffer(json.get("key")).getBytes();
+                key = JsonUtils.jsonToBytes(json.get("key"));
             }
             if (json.has("value")) {
-                value = JsonUtils.jsonToBuffer(json.get("value")).getBytes();
+                value = JsonUtils.jsonToBytes(json.get("value"));
             }
             if (json.has("headers")) {
                 ArrayNode jsonArray = (ArrayNode) json.get("headers");
@@ -64,26 +63,26 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
     }
 
     @Override
-    public List<ProducerRecord<byte[], byte[]>> toKafkaRecords(String kafkaTopic, Integer partition, Buffer messages) {
+    public List<ProducerRecord<byte[], byte[]>> toKafkaRecords(String kafkaTopic, Integer partition, byte[] messages) {
 
         List<ProducerRecord<byte[], byte[]>> records = new ArrayList<>();
 
-        JsonNode json = JsonUtils.bufferToJson(messages);
+        JsonNode json = JsonUtils.bytesToJson(messages);
         ArrayNode jsonArray = (ArrayNode) json.get("records");
 
         for (JsonNode jsonObj : jsonArray) {
-            records.add(toKafkaRecord(kafkaTopic, partition, JsonUtils.jsonToBuffer(jsonObj)));
+            records.add(toKafkaRecord(kafkaTopic, partition, JsonUtils.jsonToBytes(jsonObj)));
         }
         return records;
     }
 
     @Override
-    public Buffer toMessage(String address, ConsumerRecord<byte[], byte[]> record) {
+    public byte[] toMessage(String address, ConsumerRecord<byte[], byte[]> record) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Buffer toMessages(ConsumerRecords<byte[], byte[]> records) {
+    public byte[] toMessages(ConsumerRecords<byte[], byte[]> records) {
 
         ArrayNode jsonArray = JsonUtils.createArrayNode();
 
@@ -93,9 +92,9 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
 
             jsonObject.put("topic", record.topic());
             jsonObject.put("key", record.key() != null ?
-                    JsonUtils.bufferToJson(Buffer.buffer(record.key())) : null);
+                    JsonUtils.bytesToJson(record.key()) : null);
             jsonObject.put("value", record.value() != null ?
-                    JsonUtils.bufferToJson(Buffer.buffer(record.value())) : null);
+                    JsonUtils.bytesToJson(record.value()) : null);
             jsonObject.put("partition", record.partition());
             jsonObject.put("offset", record.offset());
 
@@ -115,6 +114,6 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
             jsonArray.add(jsonObject);
         }
 
-        return JsonUtils.jsonToBuffer(jsonArray);
+        return JsonUtils.jsonToBytes(jsonArray);
     }
 }
