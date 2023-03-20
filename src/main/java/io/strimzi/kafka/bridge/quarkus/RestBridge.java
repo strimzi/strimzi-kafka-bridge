@@ -29,6 +29,15 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.jboss.logging.Logger;
+import org.quartz.Scheduler;
+import org.quartz.Job;
+import org.quartz.JobBuilder;
+import org.quartz.JobExecutionContext;
+import org.quartz.SchedulerException;
+import org.quartz.Trigger;
+import org.quartz.TriggerBuilder;
+import org.quartz.SimpleScheduleBuilder;
+import org.quartz.JobDetail;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -45,6 +54,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -58,6 +68,9 @@ public class RestBridge {
 
     @Inject
     Logger log;
+
+    @Inject
+    Scheduler quartz;
 
     @Inject
     BridgeConfig bridgeConfig;
@@ -86,7 +99,11 @@ public class RestBridge {
         adminClientEndpoint.open();
 
         if (this.httpConfig.timeoutSeconds() > -1) {
-            startInactiveConsumerDeletionTimer(this.httpConfig.timeoutSeconds());
+            try {
+                scheduleInactiveConsumersDeletionJob(this.httpConfig.timeoutSeconds());
+            } catch (SchedulerException e) {
+                throw new RuntimeException(e);
+            }
         }
         this.isReady = true;
 
@@ -548,7 +565,53 @@ public class RestBridge {
         return this.isReady;
     }
 
-    private void startInactiveConsumerDeletionTimer(Long timeout) {
-        // TODO: to be used a Quarkus timer for scheduling the task
+    private void scheduleInactiveConsumersDeletionJob(long timeout) throws SchedulerException {
+        long timeInMs = timeout * 1000L;
+        JobDetail job = JobBuilder.newJob(InactiveConsumerDeletionJob.class).build();
+        Trigger trigger = TriggerBuilder.newTrigger()
+                .withIdentity("inactiveConsumersDeletion", "inactiveConsumers")
+                .startNow()
+                .withSchedule(
+                        SimpleScheduleBuilder.simpleSchedule()
+                                .withIntervalInMilliseconds(timeInMs / 2)
+                                .repeatForever())
+                .build();
+        quartz.scheduleJob(job, trigger);
+    }
+
+    /**
+     * Looks up for the inactive consumers and remove them if they have passed the timeout
+     */
+    void deleteInactiveConsumers() {
+        long timeoutInMs = httpConfig.timeoutSeconds() * 1000L;
+
+        log.debugf("Looking for inactive consumers in %s entries", timestampMap.size());
+        Iterator<Map.Entry<ConsumerInstanceId, Long>> it = timestampMap.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<ConsumerInstanceId, Long> item = it.next();
+            if (item.getValue() + timeoutInMs < System.currentTimeMillis()) {
+                RestSinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = httpBridgeContext.getHttpSinkEndpoints().get(item.getKey());
+                if (deleteSinkEndpoint != null) {
+                    deleteSinkEndpoint.close();
+                    httpBridgeContext.getHttpSinkEndpoints().remove(item.getKey());
+                    log.warnf("Consumer %s deleted after inactivity timeout.", item.getKey());
+                    timestampMap.remove(item.getKey());
+                }
+            }
+        }
+    }
+
+    /**
+     * Job class which contains the task for deleting the inactive consumers
+     */
+    public static class InactiveConsumerDeletionJob implements Job {
+
+        @Inject
+        RestBridge restBridge;
+
+        @Override
+        public void execute(JobExecutionContext context) {
+            restBridge.deleteInactiveConsumers();
+        }
     }
 }
