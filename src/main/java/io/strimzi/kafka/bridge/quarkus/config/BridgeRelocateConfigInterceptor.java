@@ -50,14 +50,14 @@ public class BridgeRelocateConfigInterceptor extends RelocateConfigSourceInterce
                 if (name.equals("quarkus.http.host")) {
                     return "http.host";
                 }
-                if (name.equals("quarkus.http.cors.enabled")) {
-                    return "http.cors";
+                if (name.equals("quarkus.http.cors")) {
+                    return "http.cors.enabled";
                 }
-                if (name.equals("quarkus.http.cors.allowedOrigins")) {
-                    return "http.cors.origins";
+                if (name.equals("quarkus.http.cors.origins")) {
+                    return "http.cors.allowedOrigins";
                 }
-                if (name.equals("quarkus.http.cors.allowedMethods")) {
-                    return "http.cors.methods";
+                if (name.equals("quarkus.http.cors.methods")) {
+                    return "http.cors.allowedMethods";
                 }
                 return name;
             }
