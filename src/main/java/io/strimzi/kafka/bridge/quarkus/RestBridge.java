@@ -145,7 +145,7 @@ public class RestBridge {
     @POST
     @Consumes({BridgeContentType.KAFKA_JSON_JSON, BridgeContentType.KAFKA_JSON_BINARY})
     @Produces(BridgeContentType.KAFKA_JSON)
-    public CompletionStage<Response> send(@Context RoutingContext routingContext, byte[] body, @HeaderParam("Content-Type") String contentType,
+    public CompletionStage<Response> sendToPartition(@Context RoutingContext routingContext, byte[] body, @HeaderParam("Content-Type") String contentType,
                                           @PathParam("topicname") String topicName, @PathParam("partitionid") String partitionId, @QueryParam("async") boolean async) {
         log.tracef("send thread %s", Thread.currentThread());
         RestSourceBridgeEndpoint<byte[], byte[]> source = this.getRestSourceBridgeEndpoint(routingContext, contentType);

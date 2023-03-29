@@ -9,7 +9,6 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
-import org.jboss.logging.Logger;
 
 import javax.ws.rs.core.Response;
 
@@ -17,8 +16,6 @@ import javax.ws.rs.core.Response;
  * Provides some utility methods for HTTP request/response
  */
 public class RestUtils {
-
-    private static final Logger log = Logger.getLogger(RestUtils.class);
 
     /**
      * Build an HTTP response
@@ -31,7 +28,6 @@ public class RestUtils {
     public static Response buildResponse(int statusCode, String contentType, byte[] body) {
         Response.ResponseBuilder builder = Response.status(statusCode);
         if (body != null) {
-            log.debugf("Response: body = %s", JsonUtils.bytesToJson(body));
             builder.header(HttpHeaderNames.CONTENT_TYPE.toString(), contentType);
             builder.header(HttpHeaderNames.CONTENT_LENGTH.toString(), String.valueOf(body.length));
             builder.entity(body);
