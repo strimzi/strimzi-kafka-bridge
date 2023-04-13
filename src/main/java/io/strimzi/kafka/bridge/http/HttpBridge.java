@@ -186,8 +186,8 @@ public class HttpBridge extends AbstractVerticle {
                 if (meterRegistry != null) {
                     // exclude to report the HTTP server metrics for the /metrics endpoint itself
                     meterRegistry.config().meterFilter(
-                            MeterFilter.deny(meter -> meter.getTag(Label.HTTP_PATH.toString()) != null &&
-                                    meter.getTag(Label.HTTP_PATH.toString()).equals("/metrics")));
+                            MeterFilter.deny(meter -> "/metrics".equals(meter.getTag(Label.HTTP_PATH.toString())))
+                    );
                 }
 
                 log.info("Starting HTTP-Kafka bridge verticle...");
