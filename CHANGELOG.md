@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.26.0
+
+* Removed "remote" and "local" labels from HTTP server related metrics to avoid a big growth of time series samples.
+
 ## 0.25.0
 
 * Fixed printing operation log at the proper logging level.
