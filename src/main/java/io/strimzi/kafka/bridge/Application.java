@@ -101,7 +101,7 @@ public class Application {
         return new MicrometerMetricsOptions()
                 .setPrometheusOptions(new VertxPrometheusOptions().setEnabled(true))
                 // define the labels on the HTTP server related metrics
-                .setLabels(EnumSet.of(Label.REMOTE, Label.LOCAL, Label.HTTP_PATH, Label.HTTP_METHOD, Label.HTTP_CODE))
+                .setLabels(EnumSet.of(Label.HTTP_PATH, Label.HTTP_METHOD, Label.HTTP_CODE))
                 // disable metrics about pool and verticles
                 .setDisabledMetricsCategories(set)
                 .setJvmMetricsEnabled(true)
