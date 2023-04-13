@@ -3,6 +3,7 @@
 ## 0.26.0
 
 * Removed "remote" and "local" labels from HTTP server related metrics to avoid a big growth of time series samples.
+* Removed accounting HTTP server metrics for requests on the `/metrics` endpoint.
 
 ## 0.25.0
 

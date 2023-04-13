@@ -8,6 +8,7 @@ package io.strimzi.kafka.bridge.http;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.micrometer.core.instrument.config.MeterFilter;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.Application;
 import io.strimzi.kafka.bridge.BridgeContentType;
@@ -35,6 +36,7 @@ import io.vertx.ext.web.openapi.RouterBuilder;
 import io.vertx.ext.web.validation.BodyProcessorException;
 import io.vertx.ext.web.validation.ParameterProcessorException;
 import io.vertx.json.schema.ValidationException;
+import io.vertx.micrometer.Label;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -178,6 +180,12 @@ public class HttpBridge extends AbstractVerticle {
                 this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
 
                 this.router.route("/metrics").handler(this::metricsHandler);
+                if (this.metricsReporter.getMeterRegistry() != null) {
+                    // exclude to report the HTTP server metrics for the /metrics endpoint itself
+                    this.metricsReporter.getMeterRegistry().config().meterFilter(
+                            MeterFilter.deny(meter -> "/metrics".equals(meter.getTag(Label.HTTP_PATH.toString())))
+                    );
+                }
 
                 log.info("Starting HTTP-Kafka bridge verticle...");
                 this.httpBridgeContext = new HttpBridgeContext<>();
