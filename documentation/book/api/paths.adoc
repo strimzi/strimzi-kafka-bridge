@@ -915,6 +915,27 @@ Check if the bridge is running. This does not necessarily imply that it is ready
 |===
 
 
+[[_metrics]]
+=== GET /metrics
+
+==== Description
+Retrieves the bridge metrics in Prometheus format.
+
+
+==== Responses
+
+[options="header", cols=".^2a,.^14a,.^4a"]
+|===
+|HTTP Code|Description|Schema
+|**200**|Metrics in Prometheus format retrieved successfully.|string
+|===
+
+
+==== Produces
+
+* `text/plain`
+
+
 [[_openapi]]
 === GET /openapi
 
