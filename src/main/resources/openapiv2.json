@@ -1226,6 +1226,23 @@
         "description": "Retrieves the OpenAPI v2 specification in JSON format."
       }
     },
+    "/metrics": {
+      "get": {
+        "produces": [
+          "text/plain"
+        ],
+        "responses": {
+          "200": {
+            "description": "Metrics in Prometheus format retrieved successfully.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "operationId": "metrics",
+        "description": "Retrieves the bridge metrics in Prometheus format."
+      }
+    },
     "/": {
       "get": {
         "produces": [
