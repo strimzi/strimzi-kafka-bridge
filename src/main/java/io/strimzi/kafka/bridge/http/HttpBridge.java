@@ -165,6 +165,7 @@ public class HttpBridge extends AbstractVerticle {
                 routerBuilder.operation(this.HEALTHY.getOperationId().toString()).handler(this.HEALTHY);
                 routerBuilder.operation(this.READY.getOperationId().toString()).handler(this.READY);
                 routerBuilder.operation(this.OPENAPI.getOperationId().toString()).handler(this.OPENAPI);
+                routerBuilder.operation(this.METRICS.getOperationId().toString()).handler(this.METRICS);
                 routerBuilder.operation(this.INFO.getOperationId().toString()).handler(this.INFO);
                 if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
                     routerBuilder.rootHandler(getCorsHandler());
@@ -179,7 +180,6 @@ public class HttpBridge extends AbstractVerticle {
                 this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
                 this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
 
-                this.router.route("/metrics").handler(this::metricsHandler);
                 if (this.metricsReporter.getMeterRegistry() != null) {
                     // exclude to report the HTTP server metrics for the /metrics endpoint itself
                     this.metricsReporter.getMeterRegistry().config().meterFilter(
@@ -550,6 +550,10 @@ public class HttpBridge extends AbstractVerticle {
         });
     }
 
+    private void metrics(RoutingContext routingContext) {
+        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(metricsReporter.scrape());
+    }
+
     private void information(RoutingContext routingContext) {
         // Only maven built binary has this value set.
         String version = Application.class.getPackage().getImplementationVersion();
@@ -606,10 +610,6 @@ public class HttpBridge extends AbstractVerticle {
             requestId,
             routingContext.statusCode(),
             message);
-    }
-
-    private void metricsHandler(RoutingContext routingContext) {
-        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(metricsReporter.scrape());
     }
 
     private void processConnection(HttpConnection httpConnection) {
@@ -818,6 +818,14 @@ public class HttpBridge extends AbstractVerticle {
         @Override
         public void process(RoutingContext routingContext) {
             openapi(routingContext);
+        }
+    };
+
+    HttpOpenApiOperation METRICS = new HttpOpenApiOperation(HttpOpenApiOperations.METRICS) {
+
+        @Override
+        public void process(RoutingContext routingContext) {
+            metrics(routingContext);
         }
     };
 

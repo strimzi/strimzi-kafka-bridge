@@ -53,7 +53,9 @@ public enum HttpOpenApiOperations {
     /** get the OpenAPI specification */
     OPENAPI("openapi"),
     /** get general information (i.e. version) about the bridge */
-    INFO("info");
+    INFO("info"),
+    /** get metrics (if enabled) in Prometheus format */
+    METRICS("metrics");
 
     private final String text;
 
