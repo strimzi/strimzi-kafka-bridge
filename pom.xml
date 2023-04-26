@@ -280,22 +280,6 @@
 			<artifactId>opentelemetry-exporter-otlp</artifactId>
 			<version>${opentelemetry.version}</version>
 		</dependency>
-		<!--
-		Not used directly in the bridge code but brought by Vert.x which is using a pretty old version (1.13.0)
-		OpenTelemetry also introduced a breaking change in the API (SdkTraceBuilder.build() method) starting from 1.17.0
-		Need to override to a more recent version
-		-->
-		<dependency>
-			<groupId>io.opentelemetry</groupId>
-			<artifactId>opentelemetry-sdk-trace</artifactId>
-			<version>${opentelemetry.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-opentelemetry</artifactId>
-			<version>${vertx.version}</version>
-			<scope>test</scope>
-		</dependency>
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-core</artifactId>
@@ -393,6 +377,12 @@
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-opentracing</artifactId>
+			<version>${vertx.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-opentelemetry</artifactId>
 			<version>${vertx.version}</version>
 			<scope>test</scope>
 		</dependency>
