@@ -33,7 +33,6 @@ import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
 import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
 import io.strimzi.kafka.bridge.quarkus.tracing.TracingUtil;
-import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -41,6 +40,8 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Deserializer;
 
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -111,13 +112,14 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     /**
      * Create a Kafka consumer
      *
-     * @param routingContext the routing context
+     * @param uriInfo  Contains information regarding the uri
+     * @param httpHeaders Contains information regarding the http headers
      * @param groupId consumer group
      * @param bodyAsJson request body bringing consumer settings
      * @param handler handler for the request
      * @return a CompletionStage bringing the Response to send back to the client
      */
-    public CompletionStage<Response> createConsumer(RoutingContext routingContext, String groupId, JsonNode bodyAsJson, Handler<RestBridgeEndpoint> handler) {
+    public CompletionStage<Response> createConsumer(UriInfo uriInfo, HttpHeaders httpHeaders, String groupId, JsonNode bodyAsJson, Handler<RestBridgeEndpoint> handler) {
         // if no name, a random one is assigned
         this.name = JsonUtils.getString(bodyAsJson, "name", bridgeConfig.id().isEmpty()
                 ? "kafka-bridge-consumer-" + UUID.randomUUID()
@@ -134,8 +136,8 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         }
 
         // construct base URI for consumer
-        String requestUri = this.buildRequestUri(routingContext);
-        if (!routingContext.request().path().endsWith("/")) {
+        String requestUri = this.buildRequestUri(uriInfo, httpHeaders);
+        if (!uriInfo.getPath().endsWith("/")) {
             requestUri += "/";
         }
         String consumerBaseUri = requestUri + "instances/" + this.name;
@@ -571,19 +573,22 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     /**
      * Build the request URI for the future consumer requests
      *
-     * @param routingContext context of the current HTTP request
+     * @param uriInfo  Contains information regarding the uri
+     * @param httpHeaders Contains information regarding the http headers
+     *
      * @return the request URI for the future consumer requests
      */
-    private String buildRequestUri(RoutingContext routingContext) {
+    private String buildRequestUri(UriInfo uriInfo, HttpHeaders httpHeaders) {
         // by default schema/proto and host comes from the base request information (i.e. "Host" header)
-        String scheme = routingContext.request().scheme();
-        String host = routingContext.request().host();
+        String scheme = uriInfo.getBaseUri().getScheme();
+        String host = uriInfo.getBaseUri().getAuthority();
+
         // eventually get the request path from "X-Forwarded-Path" if set by a gateway/proxy
-        String xForwardedPath = routingContext.request().getHeader("x-forwarded-path");
-        String path = (xForwardedPath != null && !xForwardedPath.isEmpty()) ? xForwardedPath : routingContext.request().path();
+        String xForwardedPath = httpHeaders.getHeaderString("x-forwarded-path");
+        String path = (xForwardedPath != null && !xForwardedPath.isEmpty()) ? xForwardedPath : uriInfo.getPath();
 
         // if a gateway/proxy has set "Forwarded" related headers to use to get scheme/proto and host
-        String forwarded = routingContext.request().getHeader("forwarded");
+        String forwarded = httpHeaders.getHeaderString("forwarded");
         if (forwarded != null && !forwarded.isEmpty()) {
             Matcher hostMatcher = forwardedHostPattern.matcher(forwarded);
             Matcher protoMatcher = forwardedProtoPattern.matcher(forwarded);
@@ -595,8 +600,8 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                 log.debugf("Forwarded HTTP header '%s' lacked 'host' and/or 'proto' pair; ignoring header", forwarded);
             }
         } else {
-            String xForwardedHost = routingContext.request().getHeader("x-forwarded-host");
-            String xForwardedProto = routingContext.request().getHeader("x-forwarded-proto");
+            String xForwardedHost = httpHeaders.getHeaderString("x-forwarded-host");
+            String xForwardedProto = httpHeaders.getHeaderString("x-forwarded-proto");
             if (xForwardedHost != null && !xForwardedHost.isEmpty() &&
                     xForwardedProto != null && !xForwardedProto.isEmpty()) {
                 log.debugf("Getting base URI from HTTP headers: X-Forwarded-Host '%s' and X-Forwarded-Proto '%s'",
