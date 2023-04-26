@@ -1542,7 +1542,14 @@
                     "offsets": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/OffsetRecordSent"
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/OffsetRecordSent"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            ]
                         }
                     }
                 },
@@ -1551,6 +1558,10 @@
                         {
                             "partition": 92,
                             "offset": 98
+                        },
+                        {
+                            "error_code": 404,
+                            "message": "Topic my-topic not present in metadata after 60000 ms."
                         },
                         {
                             "partition": 65,

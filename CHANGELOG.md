@@ -5,6 +5,7 @@
 * Removed "remote" and "local" labels from HTTP server related metrics to avoid a big growth of time series samples.
 * Removed accounting HTTP server metrics for requests on the `/metrics` endpoint.
 * Exposed the `/metrics` endpoint through the OpenAPI specification.
+* Fixed OpenAPI 3.0 `OffsetRecordSentList` component schema returning proper record offsets or error.
 
 ## 0.25.0
 
