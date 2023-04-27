@@ -23,7 +23,7 @@ import java.util.Properties;
 
 @Startup
 @ApplicationScoped
-public class TracingUtil {
+public class TracingManager {
 
     /** OpenTelemetry tracing type */
     public static final String OPENTELEMETRY = "opentelemetry";
@@ -37,7 +37,7 @@ public class TracingUtil {
     @Inject
     BridgeConfig bridgeConfig;
 
-    private static Tracer tracer;
+    private Tracer tracer;
 
     @PostConstruct
     public void init() {
@@ -66,7 +66,7 @@ public class TracingUtil {
     /**
      * @return the OpenTelemetry tracer instance, or null if not enabled
      */
-    public static Tracer getTracer() {
+    public Tracer getTracer() {
         return tracer;
     }
 

@@ -8,7 +8,6 @@ package io.strimzi.kafka.bridge.quarkus;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
-import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
 import org.jboss.logging.Logger;
 
 import java.util.concurrent.ExecutorService;
@@ -23,7 +22,6 @@ public abstract class RestBridgeEndpoint {
     protected String name;
     protected EmbeddedFormat format;
     protected BridgeConfig bridgeConfig;
-    protected KafkaConfig kafkaConfig;
     protected ExecutorService executorService;
     private Handler<RestBridgeEndpoint> closeHandler;
 
@@ -31,13 +29,11 @@ public abstract class RestBridgeEndpoint {
      * Constructor
      *
      * @param bridgeConfig the bridge configuration
-     * @param kafkaConfig the Kafka related configuration
      * @param format the embedded format for consumed messages
      * @param executorService executor service for running asynchronous operations
      */
-    public RestBridgeEndpoint(BridgeConfig bridgeConfig, KafkaConfig kafkaConfig, EmbeddedFormat format, ExecutorService executorService) {
+    public RestBridgeEndpoint(BridgeConfig bridgeConfig, EmbeddedFormat format, ExecutorService executorService) {
         this.bridgeConfig = bridgeConfig;
-        this.kafkaConfig = kafkaConfig;
         this.format = format;
         this.executorService = executorService;
     }

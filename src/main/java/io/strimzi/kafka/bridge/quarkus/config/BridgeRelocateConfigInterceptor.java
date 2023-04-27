@@ -8,7 +8,7 @@ package io.strimzi.kafka.bridge.quarkus.config;
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
-import io.strimzi.kafka.bridge.quarkus.tracing.TracingUtil;
+import io.strimzi.kafka.bridge.quarkus.tracing.TracingManager;
 
 import java.util.function.Function;
 
@@ -24,6 +24,9 @@ import java.util.function.Function;
  */
 @SuppressWarnings("NPathComplexity")
 public class BridgeRelocateConfigInterceptor extends RelocateConfigSourceInterceptor {
+
+    private static final long serialVersionUID = 1L;
+
     public BridgeRelocateConfigInterceptor() {
         super(new Function<String, String>() {
             @Override
@@ -76,7 +79,7 @@ public class BridgeRelocateConfigInterceptor extends RelocateConfigSourceInterce
         if (name.equals("quarkus.opentelemetry.tracer.sampler")) {
             ConfigValue bridgeTracing = context.proceed("bridge.tracing");
 
-            String value = bridgeTracing != null && bridgeTracing.getValue().equals(TracingUtil.OPENTELEMETRY) ? "on" : "off";
+            String value = bridgeTracing != null && bridgeTracing.getValue().equals(TracingManager.OPENTELEMETRY) ? "on" : "off";
             ConfigValue sampler;
             // creating a new ConfigValue respecting the data from the referring one.
             // Using the bridge.tracing one if enabled otherwise the original quarkus.opentelemetry.tracer.sampler.

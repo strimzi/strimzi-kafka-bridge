@@ -19,6 +19,9 @@ import java.util.function.Function;
  * looking for a value this property doesn't exist so we fallback to kafka.foo.bar, get the value from the application.properties and fill the Map.
  */
 public class BridgeFallbackConfigInterceptor extends FallbackConfigSourceInterceptor {
+
+    private static final long serialVersionUID = 1L;
+
     public BridgeFallbackConfigInterceptor() {
         super(new Function<String, String>() {
             @Override

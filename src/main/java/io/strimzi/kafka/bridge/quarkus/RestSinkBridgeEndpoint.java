@@ -15,9 +15,11 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation;
+import io.quarkus.arc.Arc;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
@@ -32,7 +34,7 @@ import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
 import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
-import io.strimzi.kafka.bridge.quarkus.tracing.TracingUtil;
+import io.strimzi.kafka.bridge.quarkus.tracing.TracingManager;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -81,14 +83,17 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     private ConsumerInstanceId consumerInstanceId;
     private boolean subscribed;
     private boolean assigned;
+    private Tracer tracer;
 
     public RestSinkBridgeEndpoint(BridgeConfig bridgeConfig, KafkaConfig kafkaConfig, RestBridgeContext<K, V> context, EmbeddedFormat format,
                                   ExecutorService executorService, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
-        super(bridgeConfig, kafkaConfig, format, executorService);
+        super(bridgeConfig, format, executorService);
         this.httpBridgeContext = context;
         this.kafkaBridgeConsumer = new KafkaBridgeConsumer<>(kafkaConfig, keyDeserializer, valueDeserializer);
         this.subscribed = false;
         this.assigned = false;
+        // get the tracer from the TracingManager bean
+        this.tracer = Arc.container().instance(TracingManager.class).get().getTracer();
     }
 
     /**
@@ -674,10 +679,10 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     };
 
     private <K, V> void handleRecordSpan(ConsumerRecord<K, V> record) {
-        if (TracingUtil.getTracer() != null) {
+        if (this.tracer != null) {
             String operationName = record.topic() + " " + MessageOperation.RECEIVE;
-            SpanBuilder spanBuilder = TracingUtil.getTracer().spanBuilder(operationName);
-            Context parentContext = GlobalOpenTelemetry.getPropagators().getTextMapPropagator().extract(Context.current(), TracingUtil.toHeaders(record), TEXT_MAP_GETTER);
+            SpanBuilder spanBuilder = this.tracer.spanBuilder(operationName);
+            Context parentContext = GlobalOpenTelemetry.getPropagators().getTextMapPropagator().extract(Context.current(), TracingManager.toHeaders(record), TEXT_MAP_GETTER);
             if (parentContext != null) {
                 Span parentSpan = Span.fromContext(parentContext);
                 SpanContext psc = parentSpan != null ? parentSpan.getSpanContext() : null;

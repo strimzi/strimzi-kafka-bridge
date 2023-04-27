@@ -5,9 +5,11 @@
 
 package io.strimzi.kafka.bridge.quarkus;
 
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.instrumentation.kafkaclients.TracingProducerInterceptor;
+import io.quarkus.arc.Arc;
 import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
-import io.strimzi.kafka.bridge.quarkus.tracing.TracingUtil;
+import io.strimzi.kafka.bridge.quarkus.tracing.TracingManager;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -32,6 +34,7 @@ public class KafkaBridgeProducer<K, V> {
     private final Serializer<K> keySerializer;
     private final Serializer<V> valueSerializer;
     private Producer<K, V> producer;
+    private Tracer tracer;
 
     /**
      * Constructor
@@ -44,6 +47,8 @@ public class KafkaBridgeProducer<K, V> {
         this.kafkaConfig = kafkaConfig;
         this.keySerializer = keySerializer;
         this.valueSerializer = valueSerializer;
+        // get the tracer from the TracingManager bean
+        this.tracer = Arc.container().instance(TracingManager.class).get().getTracer();
     }
 
     /**
@@ -90,8 +95,8 @@ public class KafkaBridgeProducer<K, V> {
         props.putAll(this.kafkaConfig.common());
         props.putAll(this.kafkaConfig.producer());
 
-        if (TracingUtil.getTracer() != null) {
-            TracingUtil.addProperty(props, ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, TracingProducerInterceptor.class.getName());
+        if (this.tracer != null) {
+            TracingManager.addProperty(props, ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, TracingProducerInterceptor.class.getName());
         }
 
         this.producer = new KafkaProducer<>(props, this.keySerializer, this.valueSerializer);

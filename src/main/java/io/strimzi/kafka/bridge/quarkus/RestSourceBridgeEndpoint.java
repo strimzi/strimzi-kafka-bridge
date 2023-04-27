@@ -45,7 +45,7 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
 
     RestSourceBridgeEndpoint(BridgeConfig bridgeConfig, KafkaConfig kafkaConfig, EmbeddedFormat format,
                              ExecutorService executorService, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
-        super(bridgeConfig, kafkaConfig, format, executorService);
+        super(bridgeConfig, format, executorService);
         this.kafkaBridgeProducer = new KafkaBridgeProducer<>(kafkaConfig, keySerializer, valueSerializer);
     }
 
