@@ -16,6 +16,18 @@ import java.util.Map;
 @ConfigMapping(prefix = "kafka")
 public interface KafkaConfig {
 
+    /** Prefix for Kafka related configuration parameters */
+    String KAFKA_CONFIG_PREFIX = "kafka.";
+
+    /** Prefix for administration related configuration parameters */
+    String KAFKA_ADMIN_CONFIG_PREFIX = KAFKA_CONFIG_PREFIX + "admin.";
+
+    /** Prefix for consumer related configuration parameters */
+    String KAFKA_CONSUMER_CONFIG_PREFIX = KAFKA_CONFIG_PREFIX + "consumer.";
+
+    /** Prefix for producer related configuration parameters */
+    String KAFKA_PRODUCER_CONFIG_PREFIX = KAFKA_CONFIG_PREFIX + "producer.";
+
     /**
      * @return Apache Kafka common related configuration (kafka.*)
      */
@@ -36,4 +48,16 @@ public interface KafkaConfig {
      * @return Apache Kafka consumer related configuration (kafka.consumer.*)
      */
     Map<String, String> consumer();
+
+    /**
+     * @return the String representation of the configuration
+     */
+    default String asString() {
+        return "KafkaConfig(" +
+                "common=" + this.common() +
+                ",admin=" + this.admin() +
+                ",producer=" + this.producer() +
+                ",consumer=" + this.consumer() +
+                ")";
+    }
 }

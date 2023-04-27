@@ -6,7 +6,6 @@
 package io.strimzi.kafka.bridge.quarkus;
 
 import io.opentelemetry.instrumentation.kafkaclients.TracingProducerInterceptor;
-import io.strimzi.kafka.bridge.KafkaBridgeConsumer;
 import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
 import io.strimzi.kafka.bridge.quarkus.tracing.TracingUtil;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -27,7 +26,7 @@ import java.util.concurrent.CompletionStage;
  */
 public class KafkaBridgeProducer<K, V> {
 
-    private final Logger log = LoggerFactory.getLogger(KafkaBridgeConsumer.class);
+    private final Logger log = LoggerFactory.getLogger(KafkaBridgeProducer.class);
 
     private final KafkaConfig kafkaConfig;
     private final Serializer<K> keySerializer;

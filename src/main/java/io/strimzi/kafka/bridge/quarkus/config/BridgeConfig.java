@@ -24,4 +24,14 @@ public interface BridgeConfig {
      * @return Tracing system to be used in the bridge
      */
     Optional<String> tracing();
+
+    /**
+     * @return the String representation of the configuration
+     */
+    default String asString() {
+        return "BridgeConfig(" +
+                "id=" + this.id() +
+                ",tracing=" + this.tracing() +
+                ")";
+    }
 }

@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.Startup;
-import io.strimzi.kafka.bridge.Application;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
@@ -112,6 +111,7 @@ public class RestBridge {
         log.infof("HTTP-Kafka Bridge started and listening on port %s", this.httpConfig.port());
         log.infof("HTTP-Kafka Bridge bootstrap servers %s",
                 this.kafkaConfig.common().get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG));
+        log.infof("HTTP-Kafka Bridge configuration %s", this.configurationAsString());
     }
 
     @PreDestroy
@@ -321,7 +321,7 @@ public class RestBridge {
     @Produces(BridgeContentType.JSON)
     public CompletionStage<Response> info() {
         // Only maven built binary has this value set.
-        String version = Application.class.getPackage().getImplementationVersion();
+        String version = RestBridge.class.getPackage().getImplementationVersion();
         ObjectNode versionJson = JsonUtils.createObjectNode();
         versionJson.put("bridge_version", version == null ? "null" : version);
         Response response = RestUtils.buildResponse(HttpResponseStatus.OK.code(),
@@ -615,5 +615,16 @@ public class RestBridge {
         public void execute(JobExecutionContext context) {
             restBridge.deleteInactiveConsumers();
         }
+    }
+
+    /**
+     * @return a String representing the overall bridge configuration
+     */
+    private String configurationAsString() {
+        StringBuilder config = new StringBuilder();
+        config.append(this.bridgeConfig.asString()).append(",");
+        config.append(this.httpConfig.asString()).append(",");
+        config.append(this.kafkaConfig.asString());
+        return config.toString();
     }
 }

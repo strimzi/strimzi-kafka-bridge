@@ -6,10 +6,6 @@
 package io.strimzi.kafka.bridge.quarkus.config;
 
 import io.smallrye.config.FallbackConfigSourceInterceptor;
-import io.strimzi.kafka.bridge.config.KafkaAdminConfig;
-import io.strimzi.kafka.bridge.config.KafkaConfig;
-import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
-import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 
 import java.util.function.Function;
 
@@ -27,16 +23,16 @@ public class BridgeFallbackConfigInterceptor extends FallbackConfigSourceInterce
         super(new Function<String, String>() {
             @Override
             public String apply(final String name) {
-                if (name.startsWith(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX)) {
-                    return removeQuotes(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX, name);
+                if (name.startsWith(KafkaConfig.KAFKA_CONSUMER_CONFIG_PREFIX)) {
+                    return removeQuotes(KafkaConfig.KAFKA_CONSUMER_CONFIG_PREFIX, name);
                 }
-                if (name.startsWith(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX)) {
-                    return removeQuotes(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX, name);
+                if (name.startsWith(KafkaConfig.KAFKA_PRODUCER_CONFIG_PREFIX)) {
+                    return removeQuotes(KafkaConfig.KAFKA_PRODUCER_CONFIG_PREFIX, name);
                 }
-                if (name.startsWith(KafkaAdminConfig.KAFKA_ADMIN_CONFIG_PREFIX)) {
-                    return removeQuotes(KafkaAdminConfig.KAFKA_ADMIN_CONFIG_PREFIX, name);
+                if (name.startsWith(KafkaConfig.KAFKA_ADMIN_CONFIG_PREFIX)) {
+                    return removeQuotes(KafkaConfig.KAFKA_ADMIN_CONFIG_PREFIX, name);
                 }
-                if (name.startsWith(io.strimzi.kafka.bridge.config.KafkaConfig.KAFKA_CONFIG_PREFIX)) {
+                if (name.startsWith(KafkaConfig.KAFKA_CONFIG_PREFIX)) {
                     return removeQuotes(KafkaConfig.KAFKA_CONFIG_PREFIX, name);
                 }
                 return name;

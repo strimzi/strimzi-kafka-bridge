@@ -41,7 +41,7 @@ public class RestBridgeMeterRegistryProducer extends PrometheusMeterRegistry {
      * Came in as part of extending `PrometheusMeterRegistry since
      * it has no default constructors available
      */
-    private RestBridgeMeterRegistryProducer(PrometheusConfig config) {
+    RestBridgeMeterRegistryProducer(PrometheusConfig config) {
         super(config);
     }
 

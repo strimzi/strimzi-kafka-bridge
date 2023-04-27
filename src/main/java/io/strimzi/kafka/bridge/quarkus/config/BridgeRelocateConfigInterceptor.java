@@ -8,10 +8,6 @@ package io.strimzi.kafka.bridge.quarkus.config;
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
-import io.strimzi.kafka.bridge.config.KafkaAdminConfig;
-import io.strimzi.kafka.bridge.config.KafkaConfig;
-import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
-import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 import io.strimzi.kafka.bridge.quarkus.tracing.TracingUtil;
 
 import java.util.function.Function;
@@ -32,14 +28,14 @@ public class BridgeRelocateConfigInterceptor extends RelocateConfigSourceInterce
         super(new Function<String, String>() {
             @Override
             public String apply(final String name) {
-                if (name.startsWith(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX)) {
-                    return withQuotes(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX, name);
+                if (name.startsWith(KafkaConfig.KAFKA_CONSUMER_CONFIG_PREFIX)) {
+                    return withQuotes(KafkaConfig.KAFKA_CONSUMER_CONFIG_PREFIX, name);
                 }
-                if (name.startsWith(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX)) {
-                    return withQuotes(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX, name);
+                if (name.startsWith(KafkaConfig.KAFKA_PRODUCER_CONFIG_PREFIX)) {
+                    return withQuotes(KafkaConfig.KAFKA_PRODUCER_CONFIG_PREFIX, name);
                 }
-                if (name.startsWith(KafkaAdminConfig.KAFKA_ADMIN_CONFIG_PREFIX)) {
-                    return withQuotes(KafkaAdminConfig.KAFKA_ADMIN_CONFIG_PREFIX, name);
+                if (name.startsWith(KafkaConfig.KAFKA_ADMIN_CONFIG_PREFIX)) {
+                    return withQuotes(KafkaConfig.KAFKA_ADMIN_CONFIG_PREFIX, name);
                 }
                 if (name.startsWith(KafkaConfig.KAFKA_CONFIG_PREFIX)) {
                     return withQuotes(KafkaConfig.KAFKA_CONFIG_PREFIX, name);

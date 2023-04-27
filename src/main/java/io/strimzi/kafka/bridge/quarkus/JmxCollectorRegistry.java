@@ -9,7 +9,6 @@ import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
 import io.prometheus.jmx.JmxCollector;
 import io.quarkus.runtime.Startup;
-import io.strimzi.kafka.bridge.Application;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -33,7 +32,7 @@ public class JmxCollectorRegistry {
 
     @PostConstruct
     public void init() throws MalformedObjectNameException, IOException {
-        InputStream is = Application.class.getClassLoader().getResourceAsStream("jmx_metrics_config.yaml");
+        InputStream is = getClass().getClassLoader().getResourceAsStream("jmx_metrics_config.yaml");
         if (is == null) {
             // this should not happen because the JMX metrics configuration is baked into the jar
             throw new RuntimeException("JMX metrics configuration not found");
