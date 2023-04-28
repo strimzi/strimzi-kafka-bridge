@@ -69,7 +69,7 @@ public interface HttpConfig {
          */
         String allowedMethods();
 
-        default String log() {
+        default String asString() {
             return "Cors(" +
                     "enabled=" + this.enabled() +
                     ",allowedOrigins=" + this.allowedOrigins() +
@@ -117,7 +117,7 @@ public interface HttpConfig {
         return "HttpConfig(" +
                 "host=" + this.host() +
                 ",port=" + this.port() +
-                ",cors=" + (this.cors().isPresent() ? this.cors().get().log() : null) +
+                ",cors=" + (this.cors().isPresent() ? this.cors().get().asString() : null) +
                 ",timeoutSeconds=" + this.timeoutSeconds() +
                 ",consumer=" + this.consumer().log() +
                 ",producer=" + this.producer().log() +
