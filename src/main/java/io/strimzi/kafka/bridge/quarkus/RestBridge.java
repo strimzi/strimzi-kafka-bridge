@@ -622,9 +622,9 @@ public class RestBridge {
      */
     private String configurationAsString() {
         StringBuilder config = new StringBuilder();
-        config.append(this.bridgeConfig.asString()).append(",");
-        config.append(this.httpConfig.asString()).append(",");
-        config.append(this.kafkaConfig.asString());
+        config.append(this.bridgeConfig.toString()).append(",");
+        config.append(this.httpConfig.toString()).append(",");
+        config.append(this.kafkaConfig.toString());
         return config.toString();
     }
 }

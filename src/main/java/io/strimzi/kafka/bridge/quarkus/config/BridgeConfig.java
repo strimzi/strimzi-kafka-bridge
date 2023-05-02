@@ -28,10 +28,5 @@ public interface BridgeConfig {
     /**
      * @return the String representation of the configuration
      */
-    default String asString() {
-        return "BridgeConfig(" +
-                "id=" + this.id() +
-                ",tracing=" + this.tracing() +
-                ")";
-    }
+    String toString();
 }

@@ -69,13 +69,10 @@ public interface HttpConfig {
          */
         String allowedMethods();
 
-        default String asString() {
-            return "Cors(" +
-                    "enabled=" + this.enabled() +
-                    ",allowedOrigins=" + this.allowedOrigins() +
-                    ",allowedMethods=" + this.allowedMethods() +
-                    ")";
-        }
+        /**
+         * @return the String representation of the configuration
+         */
+        String toString();
     }
 
     /**
@@ -87,11 +84,10 @@ public interface HttpConfig {
          */
         boolean enabled();
 
-        default String log() {
-            return "Consumer(" +
-                    "enabled=" + this.enabled() +
-                    ")";
-        }
+        /**
+         * @return the String representation of the configuration
+         */
+        String toString();
     }
 
     /**
@@ -103,24 +99,14 @@ public interface HttpConfig {
          */
         boolean enabled();
 
-        default String log() {
-            return "Producer(" +
-                    "enabled=" + this.enabled() +
-                    ")";
-        }
+        /**
+         * @return the String representation of the configuration
+         */
+        String toString();
     }
 
     /**
      * @return the String representation of the configuration
      */
-    default String asString() {
-        return "HttpConfig(" +
-                "host=" + this.host() +
-                ",port=" + this.port() +
-                ",cors=" + (this.cors().isPresent() ? this.cors().get().asString() : null) +
-                ",timeoutSeconds=" + this.timeoutSeconds() +
-                ",consumer=" + this.consumer().log() +
-                ",producer=" + this.producer().log() +
-                ")";
-    }
+    String toString();
 }

@@ -52,12 +52,5 @@ public interface KafkaConfig {
     /**
      * @return the String representation of the configuration
      */
-    default String asString() {
-        return "KafkaConfig(" +
-                "common=" + this.common() +
-                ",admin=" + this.admin() +
-                ",producer=" + this.producer() +
-                ",consumer=" + this.consumer() +
-                ")";
-    }
+    String toString();
 }
