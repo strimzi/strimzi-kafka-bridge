@@ -371,29 +371,41 @@
 						</goals>
 						<configuration>
 							<!-- TODO: to set true again. Switched for having build without complains -->
-							<failOnWarning>false</failOnWarning>
-								<ignoredNonTestScopedDependencies>
-									<!-- OpenTelemetry - The SDK is using this at runtime to load the Vert.x “context storage provider”. To ignore because it is detected as used for test only. -->
-									<ignoredNonTestScopedDependency>io.vertx:vertx-opentelemetry</ignoredNonTestScopedDependency>
-									<!-- Used only for test in the bridge but needed by OAuth. If left "test" scoped, a potential Maven bug remove it from the runtime -->
-									<ignoredNonTestScopedDependencies>com.fasterxml.jackson.core:jackson-databind</ignoredNonTestScopedDependencies>
-								</ignoredNonTestScopedDependencies>
+							<failOnWarning>true</failOnWarning>
+								<ignoredUsedUndeclaredDependencies>
+									<ignoredUsedUndeclaredDependency>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>io.quarkus.arc:arc</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>io.vertx:vertx-core</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>io.vertx:vertx-web</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>io.micrometer:micrometer-registry-prometheus:jar</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>jakarta.enterprise:jakarta.enterprise.cdi-api</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>io.smallrye.config:smallrye-config-core</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>io.micrometer:micrometer-core</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>io.opentelemetry:opentelemetry-api</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>org.jboss.logging:jboss-logging</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>io.opentelemetry:opentelemetry-context</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-semconv</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>org.eclipse.microprofile.config:microprofile-config-api</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>io.quarkus.resteasy.reactive:resteasy-reactive</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>org.slf4j:slf4j-api</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>io.quarkus:quarkus-core</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>jakarta.inject:jakarta.inject-api</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>org.eclipse.microprofile.context-propagation:microprofile-context-propagation-api</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>io.netty:netty-codec-http</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>io.netty:netty-common</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>jakarta.annotation:jakarta.annotation-api</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>org.quartz-scheduler:quartz</ignoredUsedUndeclaredDependency>
+								</ignoredUsedUndeclaredDependencies>
 								<ignoredUnusedDeclaredDependencies>
 									<ignoredUnusedDeclaredDependency>io.strimzi:kafka-env-var-config-provider</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>io.strimzi:kafka-kubernetes-config-provider</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>io.strimzi:kafka-oauth-client</ignoredUnusedDeclaredDependency>
-									<ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-core</ignoredUnusedDeclaredDependency>
-									<ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-slf4j-impl</ignoredUnusedDeclaredDependency>
-									<ignoredUnusedDeclaredDependency>io.jaegertracing:jaeger-client</ignoredUnusedDeclaredDependency>
-									<ignoredUnusedDeclaredDependency>org.yaml:snakeyaml</ignoredUnusedDeclaredDependency> <!-- CVE override -->
-									<ignoredUnusedDeclaredDependency>org.apache.tomcat.embed:tomcat-embed-core</ignoredUnusedDeclaredDependency>  <!-- CVE override -->
-									<!-- OpenTelemetry - used via classpath configuration -->
-									<ignoredUnusedDeclaredDependency>io.opentelemetry:opentelemetry-exporter-otlp</ignoredUnusedDeclaredDependency>
-									<!-- Required to be able to use the Test Container on different platforms such as Arm based Macs -->
-									<!-- Can be removed once the Strimzi Test Container is using new Test Container version (should be in Strimzi Test Container 0.103) -->
-									<ignoredUnusedDeclaredDependency>net.java.dev.jna:jna</ignoredUnusedDeclaredDependency>
-									<!-- OpenTelemetry - Vert.x using old version and OpenTelemetry breaking API compatibility. See dependency declaration for details. -->
-									<ignoredUnusedDeclaredDependency>io.opentelemetry:opentelemetry-sdk-trace</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>io.quarkus:quarkus-resteasy-reactive-jackson</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>io.quarkus:quarkus-quartz</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>io.quarkus:quarkus-micrometer-registry-prometheus</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>jakarta.xml.bind:jakarta.xml.bind-api</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>io.quarkus:quarkus-opentelemetry</ignoredUnusedDeclaredDependency>
 								</ignoredUnusedDeclaredDependencies>
 						</configuration>
 					</execution>
