@@ -149,22 +149,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                         TopicDescription description = topicDescriptions.get(topicName);
                         if (description != null) {
                             description.partitions().forEach(partitionInfo -> {
-                                int leaderId = partitionInfo.leader().id();
-                                ObjectNode partition = JsonUtils.createObjectNode();
-                                partition.put("partition", partitionInfo.partition());
-                                partition.put("leader", leaderId);
-                                ArrayNode replicasArray = JsonUtils.createArrayNode();
-                                Set<Integer> insyncSet = new HashSet<Integer>();
-                                partitionInfo.isr().forEach(node -> insyncSet.add(node.id()));
-                                partitionInfo.replicas().forEach(node -> {
-                                    ObjectNode replica = JsonUtils.createObjectNode();
-                                    replica.put("broker", node.id());
-                                    replica.put("leader", leaderId == node.id());
-                                    replica.put("in_sync", insyncSet.contains(node.id()));
-                                    replicasArray.add(replica);
-                                });
-                                partition.put("replicas", replicasArray);
-                                partitionsArray.add(partition);
+                                partitionsArray.add(createPartitionMetadata(partitionInfo));
                             });
                         }
                         root.put("partitions", partitionsArray);
