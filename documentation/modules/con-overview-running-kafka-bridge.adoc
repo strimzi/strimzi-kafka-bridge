@@ -11,6 +11,11 @@ Install the Strimzi Kafka Bridge to run in the same environment as your Kafka cl
 You can download and add the Kafka Bridge installation artifacts to your host machine.
 To try out the Kafka Bridge in your local environment, see the xref:assembly-kafka-bridge-quickstart-{context}[Kafka Bridge quickstart].
 
+It's important to note that each instance of the Kafka Bridge maintains its own set of in-memory consumers (and subscriptions) that connect to the Kafka Brokers on behalf of the HTTP clients.
+This means that each HTTP client must maintain affinity to the same Kafka Bridge instance in order to access any subscriptions that are created. 
+Additionally, when an instance of the Kafka Bridge restarts, the in-memory consumers and subscriptions are lost.
+**It is the responsibility of the HTTP client to recreate any consumers and subscriptions if the Kafka Bridge restarts.** 
+
 [id="overview-components-running-kafka-bridge-cluster-{context}"]
 == Running the Kafka Bridge on Kubernetes
 
@@ -18,5 +23,8 @@ If you deployed Strimzi on Kubernetes, you can use the Strimzi Cluster Operator 
 Configure and deploy the Kafka Bridge as a `KafkaBridge` resource.
 You'll need a running Kafka cluster that was deployed by the Cluster Operator in a Kubernetes namespace.
 You can configure your deployment to access the Kafka Bridge outside the Kubernetes cluster.
+
+HTTP clients must maintain affinity to the same instance of the Kafka Bridge to access any consumers or subscriptions that they create. Hence, running multiple replicas of the Kafka Bridge per Kubernetes Deployment is not recommended.
+If the Kafka Bridge pod restarts (for instance, due to Kubernetes relocating the workload to another node), the HTTP client must recreate any consumers or subscriptions.
 
 For information on deploying and configuring the Kafka Bridge as a `KafkaBridge` resource, see the {BookURLConfiguring}.
