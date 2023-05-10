@@ -24,8 +24,7 @@ Configure and deploy the Kafka Bridge as a `KafkaBridge` resource.
 You'll need a running Kafka cluster that was deployed by the Cluster Operator in a Kubernetes namespace.
 You can configure your deployment to access the Kafka Bridge outside the Kubernetes cluster.
 
-As mentioned in xref:overview-components-running-kafka-bridge-{context}[Running the Kafka Bridge], HTTP clients need to maintain affinity to the same instance of the Bridge in order to access any consumers/subscriptions that the clients create.
-Therefore, **it is not recommended to run more than 1 replica of the Kafka Bridge per Kubernetes Deployment**.
+HTTP clients must maintain affinity to the same instance of the Kafka Bridge to access any consumers or subscriptions that they create. Hence, running multiple replicas of the Kafka Bridge per Kubernetes Deployment is not recommended.
 In the case that the Bridge pod restarts (for example, if Kubernetes moves the workload to another node), the HTTP client will need to recreate any consumers/subscriptions.
 
 For information on deploying and configuring the Kafka Bridge as a `KafkaBridge` resource, see the {BookURLConfiguring}.
