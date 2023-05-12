@@ -6,6 +6,7 @@
 * Removed accounting HTTP server metrics for requests on the `/metrics` endpoint.
 * Exposed the `/metrics` endpoint through the OpenAPI specification.
 * Fixed OpenAPI 3.0 `OffsetRecordSentList` component schema returning proper record offsets or error.
+* Fixed OpenAPI `ConsumerRecord` component schema returning key and value not only as (JSON) string but even as object.
 
 ## 0.25.0
 
