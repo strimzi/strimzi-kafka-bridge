@@ -1321,7 +1321,10 @@
       },
       "properties": {
         "key": {
-          "type": "string"
+          "type": [
+            "object",
+            "string"
+          ]
         },
         "offset": {
           "format": "int64",
@@ -1335,7 +1338,11 @@
           "type": "string"
         },
         "value": {
-          "type": "string"
+          "type": [
+            "object",
+            "string",
+            "null"
+          ]
         },
         "headers": {
           "$ref": "#/definitions/KafkaHeaderList"
