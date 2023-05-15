@@ -1324,6 +1324,9 @@
                 "responses": {
                     "204": {
                         "description": "The bridge is healthy"
+                    },
+                    "404": {
+                        "description": "The bridge is not healthy"
                     }
                 },
                 "operationId": "healthy",
@@ -1335,6 +1338,9 @@
                 "responses": {
                     "204": {
                         "description": "The bridge is ready"
+                    },
+                    "404": {
+                        "description": "The bridge is not ready"
                     }
                 },
                 "operationId": "ready",
