@@ -912,6 +912,7 @@ Check if the bridge is running. This does not necessarily imply that it is ready
 |===
 |HTTP Code|Description|Schema
 |**200**|The bridge is healthy|No Content
+|**404**|The bridge is not healthy|No Content
 |===
 
 
@@ -970,6 +971,7 @@ Check if the bridge is ready and can accept requests.
 |===
 |HTTP Code|Description|Schema
 |**204**|The bridge is ready|No Content
+|**404**|The bridge is not ready|No Content
 |===
 
 
