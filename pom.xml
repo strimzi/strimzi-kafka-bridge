@@ -182,6 +182,11 @@
 			<version>${jakarta.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>jakarta.ws.rs</groupId>
+			<artifactId>jakarta.ws.rs-api</artifactId>
+			<version>3.1.0</version>
+		</dependency>
+		<dependency>
 			<groupId>io.opentelemetry.instrumentation</groupId>
 			<artifactId>opentelemetry-kafka-clients-2.6</artifactId>
 			<version>${opentelemetry.alpha-version}</version>
@@ -243,6 +248,10 @@
 			<id>jcenter-releases</id>
 			<name>jcenter</name>
 			<url>https://jcenter.bintray.com</url>
+		</pluginRepository>
+		<pluginRepository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
 		</pluginRepository>
 	</pluginRepositories>
 
@@ -478,6 +487,28 @@
 					<!-- Configures the file for excluding warnings -->
 					<excludeFilterFile>${project.basedir}/.spotbugs/spotbugs-exclude.xml</excludeFilterFile>
 				</configuration>
+			</plugin>
+			<!-- TODO: to be replaced with an official release -->
+			<plugin>
+				<groupId>com.github.andreaTP.apicurio-codegen</groupId>
+				<artifactId>apicurio-codegen-maven-plugin</artifactId>
+				<version>0.0.10</version>
+				<executions>
+					<execution>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<projectSettings>
+								<javaPackage>io.strimzi.kafka.bridge.quarkus</javaPackage>
+								<reactive>true</reactive>
+							</projectSettings>
+							<inputSpec>${project.basedir}/src/main/resources/openapi.json</inputSpec>
+							<outputDir>${project.build.directory}/generated-sources/api</outputDir>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

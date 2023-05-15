@@ -5,10 +5,7 @@
 
 package io.strimzi.kafka.bridge.quarkus;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
@@ -25,18 +22,26 @@ import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
-import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.HttpOpenApiOperations;
-import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
-import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.JsonDecodeException;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.strimzi.kafka.bridge.quarkus.beans.AssignedTopicPartitions;
+import io.strimzi.kafka.bridge.quarkus.beans.Consumer;
+import io.strimzi.kafka.bridge.quarkus.beans.ConsumerRecord;
+import io.strimzi.kafka.bridge.quarkus.beans.CreatedConsumer;
+import io.strimzi.kafka.bridge.quarkus.beans.OffsetCommitSeek;
+import io.strimzi.kafka.bridge.quarkus.beans.OffsetCommitSeekList;
+import io.strimzi.kafka.bridge.quarkus.beans.Partitions;
+import io.strimzi.kafka.bridge.quarkus.beans.SubscribedTopicList;
+import io.strimzi.kafka.bridge.quarkus.beans.Topics;
 import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
 import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
+import io.strimzi.kafka.bridge.quarkus.converter.RestBinaryMessageConverter;
+import io.strimzi.kafka.bridge.quarkus.converter.RestJsonMessageConverter;
+import io.strimzi.kafka.bridge.quarkus.converter.RestMessageConverter;
 import io.strimzi.kafka.bridge.quarkus.tracing.TracingManager;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -44,11 +49,11 @@ import org.apache.kafka.common.serialization.Deserializer;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
@@ -59,7 +64,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 /**
  * Represents an HTTP bridge sink endpoint for the Kafka consumer operations
@@ -77,7 +81,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     Pattern forwardedProtoPattern = Pattern.compile("proto=([^;]+)", Pattern.CASE_INSENSITIVE);
     Pattern hostPortPattern = Pattern.compile("^.*:[0-9]+$");
 
-    private MessageConverter<K, V, byte[], byte[]> messageConverter;
+    private RestMessageConverter<K, V> messageConverter;
     private final RestBridgeContext<K, V> httpBridgeContext;
     private final KafkaBridgeConsumer<K, V> kafkaBridgeConsumer;
     private ConsumerInstanceId consumerInstanceId;
@@ -120,15 +124,15 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * @param uriInfo  Contains information regarding the uri
      * @param httpHeaders Contains information regarding the http headers
      * @param groupId consumer group
-     * @param bodyAsJson request body bringing consumer settings
+     * @param consumerData data bringing consumer settings
      * @param handler handler for the request
      * @return a CompletionStage bringing the Response to send back to the client
      */
-    public CompletionStage<Response> createConsumer(UriInfo uriInfo, HttpHeaders httpHeaders, String groupId, JsonNode bodyAsJson, Handler<RestBridgeEndpoint> handler) {
+    public CompletionStage<CreatedConsumer> createConsumer(UriInfo uriInfo, HttpHeaders httpHeaders, String groupId, Consumer consumerData, Handler<RestBridgeEndpoint> handler) {
         // if no name, a random one is assigned
-        this.name = JsonUtils.getString(bodyAsJson, "name", bridgeConfig.id().isEmpty()
-                ? "kafka-bridge-consumer-" + UUID.randomUUID()
-                : bridgeConfig.id().get() + "-" + UUID.randomUUID());
+        this.name = consumerData.getName() != null && !consumerData.getName().isEmpty()
+                ? consumerData.getName()
+                : this.defaultConsumerName(this.bridgeConfig.id());
 
         this.consumerInstanceId = new ConsumerInstanceId(groupId, this.name);
 
@@ -150,18 +154,18 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         // get supported consumer configuration parameters
         Properties config = new Properties();
         addConfigParameter(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
-                JsonUtils.getString(bodyAsJson, ConsumerConfig.AUTO_OFFSET_RESET_CONFIG), config);
+                consumerData.getAutoOffsetReset(), config);
         // OpenAPI validation handles boolean and integer, quoted or not as string, in the same way
         // instead of raising a validation error due to this: https://github.com/vert-x3/vertx-web/issues/1375
         addConfigParameter(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,
-                JsonUtils.getString(bodyAsJson, ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG), config);
+                consumerData.getEnableAutoCommit() != null ? consumerData.getEnableAutoCommit().toString() : null, config);
         addConfigParameter(ConsumerConfig.FETCH_MIN_BYTES_CONFIG,
-                JsonUtils.getString(bodyAsJson, ConsumerConfig.FETCH_MIN_BYTES_CONFIG), config);
+                consumerData.getFetchMinBytes() != null ? consumerData.getFetchMinBytes().toString() : null, config);
         addConfigParameter(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG,
-                JsonUtils.getString(bodyAsJson, "consumer." + ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG), config);
+                consumerData.getConsumerRequestTimeoutMs() != null ? consumerData.getConsumerRequestTimeoutMs().toString() : null, config);
         addConfigParameter(ConsumerConfig.CLIENT_ID_CONFIG, this.name, config);
         addConfigParameter(ConsumerConfig.ISOLATION_LEVEL_CONFIG,
-                JsonUtils.getString(bodyAsJson, ConsumerConfig.ISOLATION_LEVEL_CONFIG), config);
+                consumerData.getIsolationLevel(), config);
 
         // create the consumer
         this.kafkaBridgeConsumer.create(config, groupId);
@@ -172,13 +176,10 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
 
         log.infof("Created consumer %s in group %s", this.name, groupId);
         // send consumer instance id(name) and base URI as response
-        ObjectNode body = JsonUtils.createObjectNode()
-                .put("instance_id", this.name)
-                .put("base_uri", consumerBaseUri);
-
-        Response response = RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(body));
-        return CompletableFuture.completedStage(response);
+        CreatedConsumer createdConsumer = new CreatedConsumer();
+        createdConsumer.setInstanceId(this.name);
+        createdConsumer.setBaseUri(consumerBaseUri);
+        return CompletableFuture.completedStage(createdConsumer);
     }
 
     /**
@@ -188,23 +189,21 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * @param name name of sink instance
      * @return a CompletionStage bringing the Response to send back to the client
      */
-    public CompletionStage<Response> deleteConsumer(String groupId, String name) {
+    public CompletionStage<Void> deleteConsumer(String groupId, String name) {
         this.close();
         log.infof("Deleted consumer %s from group %s", groupId, name);
-        Response response = RestUtils.buildResponse(HttpResponseStatus.NO_CONTENT.code(),
-                null, null);
-        return CompletableFuture.completedStage(response);
+        return CompletableFuture.completedStage(null);
     }
 
     /**
      * Subscribe to topics described as a list or a regex in the provided JSON body
      *
-     * @param bodyAsJson request body bringing the list of topics or the regex
+     * @param topics data bringing the list of topics or the regex
      * @return a CompletionStage bringing the Response to send back to the client
      */
-    public CompletionStage<Response> subscribe(JsonNode bodyAsJson) {
+    public CompletionStage<Void> subscribe(Topics topics) {
         // cannot specify both topics list and topic pattern
-        if ((bodyAsJson.has("topics") && bodyAsJson.has("topic_pattern")) || assigned) {
+        if ((!topics.getTopics().isEmpty() && topics.getTopicPattern() != null && !topics.getTopicPattern().isEmpty()) || assigned) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.CONFLICT.code(),
                     "Subscriptions to topics, partitions, and patterns are mutually exclusive."
@@ -213,7 +212,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         }
 
         // one of topics list or topic pattern has to be specified
-        if (!bodyAsJson.has("topics") && !bodyAsJson.has("topic_pattern")) {
+        if (topics.getTopics().isEmpty() && (topics.getTopicPattern() == null || topics.getTopicPattern().isEmpty())) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     "A list (of Topics type) or a topic_pattern must be specified."
@@ -223,25 +222,22 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
 
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
         return CompletableFuture.runAsync(() -> {
-            if (bodyAsJson.has("topics")) {
-                ArrayNode topicsList = (ArrayNode) bodyAsJson.get("topics");
+            if (!topics.getTopics().isEmpty()) {
                 List<SinkTopicSubscription> topicSubscriptions = new ArrayList<>();
                 topicSubscriptions.addAll(
-                        StreamSupport.stream(topicsList.spliterator(), false)
-                                .map(TextNode.class::cast)
-                                .map(topic -> new SinkTopicSubscription(topic.asText()))
+                        topics.getTopics().stream()
+                                .map(SinkTopicSubscription::new)
                                 .collect(Collectors.toList())
                 );
                 this.kafkaBridgeConsumer.subscribe(topicSubscriptions);
-            } else if (bodyAsJson.has("topic_pattern")) {
-                Pattern pattern = Pattern.compile(JsonUtils.getString(bodyAsJson, "topic_pattern"));
+            } else if (topics.getTopicPattern() != null && !topics.getTopicPattern().isEmpty()) {
+                Pattern pattern = Pattern.compile(topics.getTopicPattern());
                 this.kafkaBridgeConsumer.subscribe(pattern);
             }
-        }).handle((v, ex) -> {
+        }).whenComplete((v, ex) -> {
             log.tracef("Subscribe handler thread %s", Thread.currentThread());
             if (ex == null) {
                 this.subscribed = true;
-                return RestUtils.buildResponse(HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
                 HttpBridgeError error = new HttpBridgeError(
                         HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
@@ -257,15 +253,14 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      *
      * @return a CompletionStage bringing the Response to send back to the client
      */
-    public CompletionStage<Response> unsubscribe() {
+    public CompletionStage<Void> unsubscribe() {
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
         return CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.unsubscribe())
-                .handle((v, ex) -> {
+                .whenComplete((v, ex) -> {
                     log.tracef("Unsubscribe handler thread %s", Thread.currentThread());
                     if (ex == null) {
                         this.subscribed = false;
                         this.assigned = false;
-                        return RestUtils.buildResponse(HttpResponseStatus.NO_CONTENT.code(), null, null);
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
@@ -279,32 +274,29 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     /**
      * Assing topic partitions as described by the provided JSON representation
      *
-     * @param bodyAsJson request body bringing the list of topics partitions to be assigned
+     * @param partitions data bringing the list of topics partitions to be assigned
      * @return a CompletionStage bringing the Response to send back to the client
      */
-    public CompletionStage<Response> assign(JsonNode bodyAsJson) {
+    public CompletionStage<Void> assign(Partitions partitions) {
         if (this.subscribed) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.CONFLICT.code(), "Subscriptions to topics, partitions, and patterns are mutually exclusive."
             );
             throw new RestBridgeException(error);
         }
-        ArrayNode partitionsList = (ArrayNode) bodyAsJson.get("partitions");
         List<SinkTopicSubscription> topicSubscriptions = new ArrayList<>();
         topicSubscriptions.addAll(
-                StreamSupport.stream(partitionsList.spliterator(), false)
-                        .map(JsonNode.class::cast)
-                        .map(json -> new SinkTopicSubscription(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition")))
+                partitions.getPartitions().stream()
+                        .map(partition -> new SinkTopicSubscription(partition.getTopic(), partition.getPartition()))
                         .collect(Collectors.toList())
         );
 
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
         return CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.assign(topicSubscriptions))
-                .handle((v, ex) -> {
+                .whenComplete((v, ex) -> {
                     log.tracef("Assign handler thread %s", Thread.currentThread());
                     if (ex == null) {
                         this.assigned = true;
-                        return RestUtils.buildResponse(HttpResponseStatus.NO_CONTENT.code(), null, null);
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
@@ -323,7 +315,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * @param maxBytes the maximum bytes query parameter for the polling operation
      * @return a CompletionStage bringing the Response to send back to the client
      */
-    public CompletionStage<Response> poll(String accept, Integer timeout, Integer maxBytes) {
+    public CompletionStage<List<ConsumerRecord>> poll(String accept, Integer timeout, Integer maxBytes) {
         if (!this.subscribed && !this.assigned) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
@@ -358,15 +350,16 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         }
     }
 
-    private Response pollHandler(ConsumerRecords<K, V> records, Throwable ex) {
+    private List<ConsumerRecord> pollHandler(ConsumerRecords<K, V> records, Throwable ex) {
         if (ex == null) {
-            for (ConsumerRecord<K, V> record : records) {
+            for (org.apache.kafka.clients.consumer.ConsumerRecord<K, V> record : records) {
                 handleRecordSpan(record);
             }
 
             HttpResponseStatus responseStatus = HttpResponseStatus.INTERNAL_SERVER_ERROR;
             try {
-                byte[] buffer = messageConverter.toMessages(records);
+                List<ConsumerRecord> messages = messageConverter.toMessages(records);
+                byte[] buffer = JsonUtils.objectToBytes(messages);
                 if (buffer.length > this.maxBytes) {
                     responseStatus = HttpResponseStatus.UNPROCESSABLE_ENTITY;
                     HttpBridgeError error = new HttpBridgeError(
@@ -375,10 +368,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                     );
                     throw new RestBridgeException(error);
                 } else {
-                    responseStatus = HttpResponseStatus.OK;
-                    return RestUtils.buildResponse(responseStatus.code(),
-                            this.format == EmbeddedFormat.BINARY ? BridgeContentType.KAFKA_JSON_BINARY : BridgeContentType.KAFKA_JSON_JSON,
-                            buffer);
+                    return messages;
                 }
             } catch (JsonDecodeException e) {
                 log.error("Error decoding records as JSON", e);
@@ -403,20 +393,20 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      *
      * @return a CompletionStage bringing the Response to send back to the client
      */
-    public CompletionStage<Response> listSubscriptions() {
+    public CompletionStage<SubscribedTopicList> listSubscriptions() {
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
         return CompletableFuture.supplyAsync(() -> this.kafkaBridgeConsumer.listSubscriptions())
                 .handle((subscriptions, ex) -> {
                     log.tracef("ListSubscriptions handler thread %s", Thread.currentThread());
                     if (ex == null) {
-                        ObjectNode root = JsonUtils.createObjectNode();
-                        List<String> topics = new ArrayList<>();
-                        ArrayNode partitionsArray = JsonUtils.createArrayNode();
+                        SubscribedTopicList subscribedTopicList = new SubscribedTopicList();
+                        Topics topics = new Topics();
+                        List<AssignedTopicPartitions> assignedTopicPartitions = new ArrayList<>();
 
                         HashMap<String, ArrayNode> partitions = new HashMap<>();
                         for (TopicPartition topicPartition: subscriptions) {
-                            if (!topics.contains(topicPartition.topic())) {
-                                topics.add(topicPartition.topic());
+                            if (!topics.getTopics().contains(topicPartition.topic())) {
+                                topics.getTopics().add(topicPartition.topic());
                             }
                             if (!partitions.containsKey(topicPartition.topic())) {
                                 partitions.put(topicPartition.topic(), JsonUtils.createArrayNode());
@@ -424,15 +414,14 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                             partitions.put(topicPartition.topic(), partitions.get(topicPartition.topic()).add(topicPartition.partition()));
                         }
                         for (Map.Entry<String, ArrayNode> part: partitions.entrySet()) {
-                            ObjectNode topic = JsonUtils.createObjectNode();
-                            topic.put(part.getKey(), part.getValue());
-                            partitionsArray.add(topic);
+                            AssignedTopicPartitions topic = new AssignedTopicPartitions();
+                            topic.setAdditionalProperty(part.getKey(), part.getValue());
+                            assignedTopicPartitions.add(topic);
                         }
-                        ArrayNode topicsArray = JsonUtils.createArrayNode(topics);
-                        root.put("topics", topicsArray);
-                        root.put("partitions", partitionsArray);
+                        subscribedTopicList.setTopics(topics);
+                        subscribedTopicList.setPartitions(assignedTopicPartitions);
 
-                        return RestUtils.buildResponse(HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
+                        return subscribedTopicList;
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
@@ -446,27 +435,30 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     /**
      * Commit offsets on topics partitions provided by the JSON representation or the last polled offsets if no offsets are provided
      *
-     * @param bodyAsJson request body bringing the list of offsets for topics partitions to commit
+     * @param offsetCommitSeekList data bringing the list of offsets for topics partitions to commit
      * @return a CompletionStage bringing the Response to send back to the client
      */
-    public CompletionStage<Response> commit(JsonNode bodyAsJson) {
-        if (!bodyAsJson.isEmpty()) {
-            ArrayNode offsetsList = (ArrayNode) bodyAsJson.get("offsets");
+    public CompletionStage<Void> commit(OffsetCommitSeekList offsetCommitSeekList) {
+        if (offsetCommitSeekList != null && offsetCommitSeekList.getOffsets() != null && !offsetCommitSeekList.getOffsets().isEmpty()) {
             Map<TopicPartition, OffsetAndMetadata> offsetData = new HashMap<>();
 
-            for (int i = 0; i < offsetsList.size(); i++) {
-                JsonNode json = offsetsList.get(i);
-                TopicPartition topicPartition = new TopicPartition(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition"));
-                OffsetAndMetadata offsetAndMetadata = new OffsetAndMetadata(JsonUtils.getLong(json, "offset"), JsonUtils.getString(json, "metadata"));
+            for (int i = 0; i < offsetCommitSeekList.getOffsets().size(); i++) {
+                OffsetCommitSeek offsetCommitSeek = offsetCommitSeekList.getOffsets().get(i);
+                TopicPartition topicPartition = new TopicPartition(
+                        offsetCommitSeek.getTopic() != null && !offsetCommitSeek.getTopic().isEmpty() ? offsetCommitSeek.getTopic() : null,
+                        offsetCommitSeek.getPartition()
+                );
+                OffsetAndMetadata offsetAndMetadata = new OffsetAndMetadata(
+                        offsetCommitSeek.getOffset(),
+                        null
+                );
                 offsetData.put(topicPartition, offsetAndMetadata);
             }
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-            return CompletableFuture.supplyAsync(() -> this.kafkaBridgeConsumer.commit(offsetData))
-                    .handle((data, ex) -> {
+            return CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.commit(offsetData))
+                    .whenComplete((v, ex) -> {
                         log.tracef("Commit handler thread %s", Thread.currentThread());
-                        if (ex == null) {
-                            return RestUtils.buildResponse(HttpResponseStatus.NO_CONTENT.code(), null, null);
-                        } else {
+                        if (ex != null) {
                             HttpBridgeError error = new HttpBridgeError(
                                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                     ex.getMessage()
@@ -477,11 +469,9 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         } else {
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
             return CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.commitLastPolledOffsets())
-                    .handle((v, ex) -> {
+                    .whenComplete((v, ex) -> {
                         log.tracef("Commit handler thread %s", Thread.currentThread());
-                        if (ex == null) {
-                            return RestUtils.buildResponse(HttpResponseStatus.NO_CONTENT.code(), null, null);
-                        } else {
+                        if (ex != null) {
                             HttpBridgeError error = new HttpBridgeError(
                                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                     ex.getMessage()
@@ -495,25 +485,23 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     /**
      * Seek to offsets on topics partitions provided by the JSON representation
      *
-     * @param bodyAsJson request body bringing the list of offsets for topics partitions to seek to
+     * @param offsetCommitSeekList data bringing the list of offsets for topics partitions to seek to
      * @return a CompletionStage bringing the Response to send back to the client
      */
-    public CompletionStage<Response> seek(JsonNode bodyAsJson) {
+    public CompletionStage<Void> seek(OffsetCommitSeekList offsetCommitSeekList) {
         return CompletableFuture.runAsync(() -> {
-            ArrayNode seekOffsetsList = (ArrayNode) bodyAsJson.get("offsets");
-
-            for (int i = 0; i < seekOffsetsList.size(); i++) {
-                JsonNode json = seekOffsetsList.get(i);
-                TopicPartition topicPartition = new TopicPartition(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition"));
-                long offset = JsonUtils.getLong(json, "offset");
-                this.kafkaBridgeConsumer.seek(topicPartition, offset);
+            for (int i = 0; i < offsetCommitSeekList.getOffsets().size(); i++) {
+                OffsetCommitSeek offsetCommitSeek = offsetCommitSeekList.getOffsets().get(i);
+                TopicPartition topicPartition = new TopicPartition(
+                        offsetCommitSeek.getTopic() != null && !offsetCommitSeek.getTopic().isEmpty() ? offsetCommitSeek.getTopic() : null,
+                        offsetCommitSeek.getPartition()
+                );
+                this.kafkaBridgeConsumer.seek(topicPartition, offsetCommitSeek.getOffset());
             }
 
-        }).handle((v, ex) -> {
+        }).whenComplete((v, ex) -> {
             log.tracef("Seek handler thread %s", Thread.currentThread());
-            if (ex == null) {
-                return RestUtils.buildResponse(HttpResponseStatus.NO_CONTENT.code(), null, null);
-            } else {
+            if (ex != null) {
                 HttpBridgeError error = handleError(ex);
                 throw new RestBridgeException(error);
             }
@@ -523,16 +511,16 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     /**
      * Seek to beginning or end on topics partitions provided by the JSON representation
      *
-     * @param bodyAsJson request body bringing the list of offsets for topics partitions to seek to
+     * @param partitions data bringing the list of offsets for topics partitions to seek to
      * @param seekToType define if to seek at the beginning or the end of the provided topics partitions
      * @return a CompletionStage bringing the Response to send back to the client
      */
-    public CompletionStage<Response> seekTo(JsonNode bodyAsJson, HttpOpenApiOperations seekToType) {
-        ArrayNode seekPartitionsList = (ArrayNode) bodyAsJson.get("partitions");
-
-        Set<TopicPartition> set = StreamSupport.stream(seekPartitionsList.spliterator(), false)
-                .map(JsonNode.class::cast)
-                .map(json -> new TopicPartition(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition")))
+    public CompletionStage<Void> seekTo(Partitions partitions, HttpOpenApiOperations seekToType) {
+        Set<TopicPartition> set = partitions.getPartitions().stream()
+                .map(partition -> new TopicPartition(
+                        partition.getTopic() != null && !partition.getTopic().isEmpty() ? partition.getTopic() : null,
+                        partition.getPartition()
+                ))
                 .collect(Collectors.toSet());
 
         return CompletableFuture.runAsync(() -> {
@@ -541,11 +529,9 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
             } else {
                 this.kafkaBridgeConsumer.seekToEnd(set);
             }
-        }).handle((v, ex) -> {
+        }).whenComplete((v, ex) -> {
             log.tracef("SeekTo handler thread %s", Thread.currentThread());
-            if (ex == null) {
-                return RestUtils.buildResponse(HttpResponseStatus.NO_CONTENT.code(), null, null);
-            } else {
+            if (ex != null) {
                 HttpBridgeError error = handleError(ex);
                 throw new RestBridgeException(error);
             }
@@ -565,12 +551,12 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         }
     }
 
-    private MessageConverter<K, V, byte[], byte[]> buildMessageConverter() {
+    private RestMessageConverter<K, V> buildMessageConverter() {
         switch (this.format) {
             case JSON:
-                return (MessageConverter<K, V, byte[], byte[]>) new HttpJsonMessageConverter();
+                return (RestMessageConverter<K, V>) new RestJsonMessageConverter();
             case BINARY:
-                return (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
+                return (RestMessageConverter<K, V>) new RestBinaryMessageConverter();
         }
         return null;
     }
@@ -678,7 +664,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         }
     };
 
-    private <K, V> void handleRecordSpan(ConsumerRecord<K, V> record) {
+    private <K, V> void handleRecordSpan(org.apache.kafka.clients.consumer.ConsumerRecord<K, V> record) {
         if (this.tracer != null) {
             String operationName = record.topic() + " " + MessageOperation.RECEIVE;
             SpanBuilder spanBuilder = this.tracer.spanBuilder(operationName);
@@ -696,5 +682,17 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                     .startSpan()
                     .end();
         }
+    }
+
+    /**
+     * Build a consumer name starting from the bridge id
+     *
+     * @param bridgeId bridge id
+     * @return consumer name built from bridge id + a UUID
+     */
+    private String defaultConsumerName(Optional<String> bridgeId) {
+        return bridgeId.isEmpty()
+                ? "kafka-bridge-consumer-" + UUID.randomUUID()
+                : bridgeId.get() + "-" + UUID.randomUUID();
     }
 }

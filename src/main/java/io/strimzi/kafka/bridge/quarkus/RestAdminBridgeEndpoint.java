@@ -5,13 +5,13 @@
 
 package io.strimzi.kafka.bridge.quarkus;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.strimzi.kafka.bridge.quarkus.beans.Configs;
+import io.strimzi.kafka.bridge.quarkus.beans.OffsetsSummary;
+import io.strimzi.kafka.bridge.quarkus.beans.PartitionMetadata;
+import io.strimzi.kafka.bridge.quarkus.beans.Replica;
+import io.strimzi.kafka.bridge.quarkus.beans.TopicMetadata;
 import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
 import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
 import org.apache.kafka.clients.admin.Config;
@@ -24,7 +24,7 @@ import org.apache.kafka.common.TopicPartitionInfo;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 
-import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -66,15 +66,12 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
     /**
      * @return List all the topics
      */
-    public CompletionStage<Response> listTopics() {
+    public CompletionStage<List<String>> listTopics() {
         return this.kafkaBridgeAdmin.listTopics()
                 .handle((topics, ex) -> {
                     log.tracef("List topics handler thread %s", Thread.currentThread());
                     if (ex == null) {
-                        ArrayNode root = JsonUtils.createArrayNode();
-                        topics.forEach(topic -> root.add(topic));
-                        return RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
+                        return new ArrayList<>(topics);
                     } else {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
@@ -89,9 +86,9 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
      * Get information about the topic in the HTTP request
      *
      * @param topicName the topic for which to retrieve information
-     * @return a CompletionStage bringing the Response to send back to the client
+     * @return a CompletionStage bringing the TopicMetadata to send back to the client
      */
-    public CompletionStage<Response> getTopic(String topicName) {
+    public CompletionStage<TopicMetadata> getTopic(String topicName) {
         CompletionStage<Map<String, TopicDescription>> describeTopicsPromise = this.kafkaBridgeAdmin.describeTopics(List.of(topicName));
         CompletionStage<Map<ConfigResource, Config>> describeConfigsPromise = this.kafkaBridgeAdmin.describeConfigs(List.of(new ConfigResource(ConfigResource.Type.TOPIC, topicName)));
 
@@ -101,39 +98,25 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                     if (ex == null) {
                         Map<String, TopicDescription> topicDescriptions = describeTopicsPromise.toCompletableFuture().getNow(Map.of());
                         Map<ConfigResource, Config> configDescriptions = describeConfigsPromise.toCompletableFuture().getNow(Map.of());
-                        ObjectNode root = JsonUtils.createObjectNode();
-                        ArrayNode partitionsArray = JsonUtils.createArrayNode();
-                        root.put("name", topicName);
+
+                        TopicMetadata topicMetadata = new TopicMetadata();
+                        topicMetadata.setName(topicName);
+                        List<PartitionMetadata> partitions = new ArrayList<>();
                         Collection<ConfigEntry> configEntries = configDescriptions.values().iterator().next().entries();
                         if (configEntries.size() > 0) {
-                            ObjectNode configs = JsonUtils.createObjectNode();
-                            configEntries.forEach(configEntry -> configs.put(configEntry.name(), configEntry.value()));
-                            root.put("configs", configs);
+                            Configs configs = new Configs();
+                            // TODO: the usage of additionalProperties is needed until this is implemented: https://github.com/Apicurio/apicurio-codegen/pull/133
+                            configEntries.forEach(configEntry -> configs.setAdditionalProperty(configEntry.name(), configEntry.value()));
+                            topicMetadata.setConfigs(configs);
                         }
                         TopicDescription description = topicDescriptions.get(topicName);
                         if (description != null) {
                             description.partitions().forEach(partitionInfo -> {
-                                int leaderId = partitionInfo.leader().id();
-                                ObjectNode partition = JsonUtils.createObjectNode();
-                                partition.put("partition", partitionInfo.partition());
-                                partition.put("leader", leaderId);
-                                ArrayNode replicasArray = JsonUtils.createArrayNode();
-                                Set<Integer> insyncSet = new HashSet<Integer>();
-                                partitionInfo.isr().forEach(node -> insyncSet.add(node.id()));
-                                partitionInfo.replicas().forEach(node -> {
-                                    ObjectNode replica = JsonUtils.createObjectNode();
-                                    replica.put("broker", node.id());
-                                    replica.put("leader", leaderId == node.id());
-                                    replica.put("in_sync", insyncSet.contains(node.id()));
-                                    replicasArray.add(replica);
-                                });
-                                partition.put("replicas", replicasArray);
-                                partitionsArray.add(partition);
+                                partitions.add(createPartitionMetadata(partitionInfo));
                             });
                         }
-                        root.put("partitions", partitionsArray);
-                        return RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
+                        topicMetadata.setPartitions(partitions);
+                        return topicMetadata;
                     } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.NOT_FOUND.code(),
@@ -154,20 +137,19 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
      * Get partitions information related to the topic in the HTTP request
      *
      * @param topicName the topic for which to list partitions
-     * @return a CompletionStage bringing the Response to send back to the client
+     * @return a CompletionStage bringing the list of PartitionMetadata to send back to the client
      */
-    public CompletionStage<Response> listPartitions(String topicName) {
+    public CompletionStage<List<PartitionMetadata>> listPartitions(String topicName) {
         return this.kafkaBridgeAdmin.describeTopics(List.of(topicName))
                 .handle((topicDescriptions, ex) -> {
                     log.tracef("List partitions handler thread %s", Thread.currentThread());
                     if (ex == null) {
-                        ArrayNode root = JsonUtils.createArrayNode();
+                        List<PartitionMetadata> partitions = new ArrayList<>();
                         TopicDescription description = topicDescriptions.get(topicName);
                         if (description != null) {
-                            description.partitions().forEach(partitionInfo -> root.add(createPartitionMetadata(partitionInfo)));
+                            description.partitions().forEach(partitionInfo -> partitions.add(createPartitionMetadata(partitionInfo)));
                         }
-                        return RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
+                        return partitions;
                     } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
                         HttpBridgeError error = new HttpBridgeError(
                                 HttpResponseStatus.NOT_FOUND.code(),
@@ -189,9 +171,9 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
      *
      * @param topicName the topic for which to retrieve partition information
      * @param partitionId the partition for which to retrieve information
-     * @return a CompletionStage bringing the Response to send back to the client
+     * @return a CompletionStage bringing the PartitionMetadata to send back to the client
      */
-    public CompletionStage<Response> getPartition(String topicName, String partitionId) throws RestBridgeException {
+    public CompletionStage<PartitionMetadata> getPartition(String topicName, String partitionId) throws RestBridgeException {
         final int partition;
         try {
             partition = Integer.parseInt(partitionId);
@@ -207,9 +189,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                     if (ex == null) {
                         TopicDescription description = topicDescriptions.get(topicName);
                         if (description != null && partition < description.partitions().size()) {
-                            JsonNode root = createPartitionMetadata(description.partitions().get(partition));
-                            return RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
+                            return createPartitionMetadata(description.partitions().get(partition));
                         } else {
                             HttpBridgeError error = new HttpBridgeError(
                                     HttpResponseStatus.NOT_FOUND.code(),
@@ -238,9 +218,9 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
      *
      * @param topicName the topic for which to retrieve offests
      * @param partitionId the partition for which to retrieve offsets
-     * @return a CompletionStage bringing the Response to send back to the client
+     * @return a CompletionStage bringing the OffsetsSummary to send back to the client
      */
-    public CompletionStage<Response> getOffsets(String topicName, String partitionId) throws RestBridgeException {
+    public CompletionStage<OffsetsSummary> getOffsets(String topicName, String partitionId) throws RestBridgeException {
         final int partition;
         try {
             partition = Integer.parseInt(partitionId);
@@ -277,17 +257,16 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                         .handle((v, ex) -> {
                             log.tracef("Get offsets handler thread %s", Thread.currentThread());
                             if (ex == null) {
-                                ObjectNode root = JsonUtils.createObjectNode();
+                                OffsetsSummary offsetsSummary = new OffsetsSummary();
                                 ListOffsetsResult.ListOffsetsResultInfo beginningOffset = getBeginningOffsetsPromise.toCompletableFuture().getNow(Map.of()).get(topicPartition);
                                 if (beginningOffset != null) {
-                                    root.put("beginning_offset", beginningOffset.offset());
+                                    offsetsSummary.setBeginningOffset(beginningOffset.offset());
                                 }
                                 ListOffsetsResult.ListOffsetsResultInfo endOffset = getEndOffsetsPromise.toCompletableFuture().getNow(Map.of()).get(topicPartition);
                                 if (endOffset != null) {
-                                    root.put("end_offset", endOffset.offset());
+                                    offsetsSummary.setEndOffset(endOffset.offset());
                                 }
-                                return RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
+                                return offsetsSummary;
                             } else {
                                 HttpBridgeError error = new HttpBridgeError(
                                         HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
@@ -301,22 +280,21 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
         });
     }
 
-    private static ObjectNode createPartitionMetadata(TopicPartitionInfo partitionInfo) {
-        int leaderId = partitionInfo.leader().id();
-        ObjectNode root = JsonUtils.createObjectNode();
-        root.put("partition", partitionInfo.partition());
-        root.put("leader", leaderId);
-        ArrayNode replicasArray = JsonUtils.createArrayNode();
+    private static PartitionMetadata createPartitionMetadata(TopicPartitionInfo partitionInfo) {
+        PartitionMetadata partitionMetadata = new PartitionMetadata();
+        partitionMetadata.setPartition(partitionInfo.partition());
+        partitionMetadata.setLeader(partitionInfo.leader().id());
+        List<Replica> replicas = new ArrayList<>();
         Set<Integer> insyncSet = new HashSet<>();
         partitionInfo.isr().forEach(node -> insyncSet.add(node.id()));
         partitionInfo.replicas().forEach(node -> {
-            ObjectNode replica = JsonUtils.createObjectNode();
-            replica.put("broker", node.id());
-            replica.put("leader", leaderId == node.id());
-            replica.put("in_sync", insyncSet.contains(node.id()));
-            replicasArray.add(replica);
+            Replica replica = new Replica();
+            replica.setBroker(node.id());
+            replica.setLeader(partitionInfo.leader().id() == node.id());
+            replica.setInSync(insyncSet.contains(node.id()));
+            replicas.add(replica);
         });
-        root.put("replicas", replicasArray);
-        return root;
+        partitionMetadata.setReplicas(replicas);
+        return partitionMetadata;
     }
 }

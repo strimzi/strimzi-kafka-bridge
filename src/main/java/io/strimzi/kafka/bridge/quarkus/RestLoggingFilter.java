@@ -46,8 +46,7 @@ public class RestLoggingFilter {
                 responseContext.getStatusInfo().getReasonPhrase());
         logger.debugf("%s Response: headers = %s", requestLogHeader, responseContext.getHeaders());
         if (responseContext.getEntity() != null) {
-            byte[] body = (byte[]) responseContext.getEntity();
-            logger.debugf("%s Response: body = %s", requestLogHeader, JsonUtils.bytesToJson(body));
+            logger.debugf("%s Response: body = %s", requestLogHeader, JsonUtils.objectToJson(responseContext.getEntity()));
         }
     }
 

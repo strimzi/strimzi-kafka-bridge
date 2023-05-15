@@ -5,25 +5,23 @@
 
 package io.strimzi.kafka.bridge.quarkus;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
-import io.strimzi.kafka.bridge.converter.MessageConverter;
-import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
-import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
-import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
-import io.strimzi.kafka.bridge.http.model.HttpBridgeResult;
+import io.strimzi.kafka.bridge.quarkus.beans.Error;
+import io.strimzi.kafka.bridge.quarkus.beans.OffsetRecordSent;
+import io.strimzi.kafka.bridge.quarkus.beans.OffsetRecordSentList;
+import io.strimzi.kafka.bridge.quarkus.beans.ProducerRecordList;
 import io.strimzi.kafka.bridge.quarkus.config.BridgeConfig;
 import io.strimzi.kafka.bridge.quarkus.config.KafkaConfig;
+import io.strimzi.kafka.bridge.quarkus.converter.RestBinaryMessageConverter;
+import io.strimzi.kafka.bridge.quarkus.converter.RestJsonMessageConverter;
+import io.strimzi.kafka.bridge.quarkus.converter.RestMessageConverter;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.kafka.common.serialization.Serializer;
 
-import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -39,7 +37,7 @@ import java.util.concurrent.ExecutorService;
  */
 public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
 
-    private MessageConverter<K, V, byte[], byte[]> messageConverter;
+    private RestMessageConverter<K, V> messageConverter;
     private boolean closing;
     private final KafkaBridgeProducer<K, V> kafkaBridgeProducer;
 
@@ -75,20 +73,20 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     /**
      * Send records contained in the provided body to the specified topic
      *
-     * @param body body containing the JSON representation of the records to send
+     * @param recordList list with records to send
      * @param topic topic to send the records to
      * @param isAsync defines if it is needed to wait for the callback on the Kafka Producer send
      * @return a CompletionStage bringing the Response to send back to the client
      * @throws RestBridgeException bringing HTTP status error code and message
      */
-    public CompletionStage<Response> send(byte[] body, String topic, boolean isAsync) throws RestBridgeException {
-        return this.send(body, topic, null, isAsync);
+    public CompletionStage<OffsetRecordSentList> send(ProducerRecordList recordList, String topic, boolean isAsync) throws RestBridgeException {
+        return this.send(recordList, topic, null, isAsync);
     }
 
     /**
      * Send records contained in the provided body to the specified topic partition
      *
-     * @param body body containing the JSON representation of the records to send
+     * @param recordList list with records to send
      * @param topic topic to send the records to
      * @param partitionId partition to send the records to
      * @param isAsync defines if it is needed to wait for the callback on the Kafka Producer send
@@ -96,7 +94,7 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * @throws RestBridgeException bringing HTTP status error code and message
      */
     @SuppressWarnings("checkstyle:NPathComplexity")
-    public CompletionStage<Response> send(byte[] body, String topic, String partitionId, boolean isAsync) throws RestBridgeException {
+    public CompletionStage<OffsetRecordSentList> send(ProducerRecordList recordList, String topic, String partitionId, boolean isAsync) throws RestBridgeException {
         List<ProducerRecord<K, V>> records;
 
         Integer partition = null;
@@ -119,14 +117,14 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         }
 
         try {
-            records = messageConverter.toKafkaRecords(topic, partition, body);
+            records = messageConverter.toKafkaRecords(topic, partition, recordList);
         } catch (Exception e) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     e.getMessage());
             throw new RestBridgeException(error);
         }
-        List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
+        List<Object> offsets = new ArrayList<>();
 
         // fulfilling the request of sending (multiple) record(s) sequentially but in a separate thread
         // this will free the Vert.x event loop still in place
@@ -136,10 +134,8 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                 for (ProducerRecord<K, V> record : records) {
                     this.kafkaBridgeProducer.sendIgnoreResult(record);
                 }
-                Response response = RestUtils.buildResponse(HttpResponseStatus.NO_CONTENT.code(),
-                        BridgeContentType.KAFKA_JSON, null);
                 this.maybeClose();
-                return response;
+                return null;
             }
 
             @SuppressWarnings({ "rawtypes" })
@@ -152,12 +148,18 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                             log.tracef("Handle thread %s", Thread.currentThread());
                             if (ex == null) {
                                 log.debugf("Delivered record %s to Kafka on topic %s at partition %s [%s]", record, metadata.topic(), metadata.partition(), metadata.offset());
-                                results.add(new HttpBridgeResult<>(metadata));
+                                OffsetRecordSent offsetRecordSent = new OffsetRecordSent();
+                                offsetRecordSent.setPartition(metadata.partition());
+                                offsetRecordSent.setOffset(metadata.offset());
+                                offsets.add(offsetRecordSent);
                             } else {
                                 String msg = ex.getMessage();
                                 int code = handleError(ex);
                                 log.errorf("Failed to deliver record %s", record, ex);
-                                results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
+                                Error error = new Error();
+                                error.setErrorCode(code);
+                                error.setMessage(msg);
+                                offsets.add(error);
                             }
                             return metadata;
                         });
@@ -168,34 +170,13 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                     // sending HTTP response asynchronously to free the kafka-producer-network-thread
                     .thenApplyAsync(v -> {
                         log.tracef("All sent thread %s", Thread.currentThread());
-                        Response response = RestUtils.buildResponse(HttpResponseStatus.OK.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(buildOffsets(results)));
                         this.maybeClose();
-                        return response;
+                        OffsetRecordSentList offsetRecordSentList = new OffsetRecordSentList();
+                        offsetRecordSentList.setOffsets(offsets);
+                        return offsetRecordSentList;
                     })
                     .join();
         }, this.executorService);
-    }
-
-    private ObjectNode buildOffsets(List<HttpBridgeResult<?>> results) {
-        ObjectNode jsonResponse = JsonUtils.createObjectNode();
-        ArrayNode offsets = JsonUtils.createArrayNode();
-
-        for (HttpBridgeResult<?> result : results) {
-            ObjectNode offset = null;
-            if (result.getResult() instanceof RecordMetadata) {
-                RecordMetadata metadata = (RecordMetadata) result.getResult();
-                offset = JsonUtils.createObjectNode()
-                        .put("partition", metadata.partition())
-                        .put("offset", metadata.offset());
-            } else if (result.getResult() instanceof HttpBridgeError) {
-                HttpBridgeError error = (HttpBridgeError) result.getResult();
-                offset = error.toJson();
-            }
-            offsets.add(offset);
-        }
-        jsonResponse.put("offsets", offsets);
-        return jsonResponse;
     }
 
     private int handleError(Throwable ex) {
@@ -208,12 +189,12 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         }
     }
 
-    private MessageConverter<K, V, byte[], byte[]> buildMessageConverter() {
+    private RestMessageConverter<K, V> buildMessageConverter() {
         switch (this.format) {
             case JSON:
-                return (MessageConverter<K, V, byte[], byte[]>) new HttpJsonMessageConverter();
+                return (RestMessageConverter<K, V>) new RestJsonMessageConverter();
             case BINARY:
-                return (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
+                return (RestMessageConverter<K, V>) new RestBinaryMessageConverter();
         }
         return null;
     }

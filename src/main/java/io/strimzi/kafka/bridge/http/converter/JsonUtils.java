@@ -24,6 +24,48 @@ public class JsonUtils {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**
+     * Get the JSON representation of the provided object
+     *
+     * @param o object to cast to JSON
+     * @return JSON representation of the object
+     */
+    public static JsonNode objectToJson(Object o) {
+        try {
+            return MAPPER.valueToTree(o);
+        } catch (Exception e) {
+            throw new JsonEncodeException("Failed to encode as JSON: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get the JSON bytes array representation of the provided object
+     *
+     * @param o object to cast to JSON
+     * @return bytes array representing the JSON data
+     */
+    public static byte[] objectToBytes(Object o) {
+        try {
+            return MAPPER.writeValueAsBytes(o);
+        } catch (Exception e) {
+            throw new JsonEncodeException("Failed to encode as JSON: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get an object of the provided JSON bytes array representation
+     *
+     * @param bytes array representing the JSON data
+     * @return object representing the provided JSON
+     */
+    public static Object bytesToObject(byte[] bytes) {
+        try {
+            return MAPPER.readValue(bytes, Object.class);
+        } catch (Exception e) {
+            throw new JsonEncodeException("Failed to encode as JSON: " + e.getMessage());
+        }
+    }
+
+    /**
      * Get the JSON representation of the provided bytes array
      *
      * @param bytes bytes array containing JSON data
