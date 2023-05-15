@@ -1201,7 +1201,7 @@
     "/ready": {
       "get": {
         "responses": {
-          "200": {
+          "204": {
             "description": "The bridge is ready"
           }
         },
@@ -1215,7 +1215,7 @@
           "application/json"
         ],
         "responses": {
-          "200": {
+          "204": {
             "description": "OpenAPI v2 specification in JSON format retrieved successfully.",
             "schema": {
               "type": "string"
