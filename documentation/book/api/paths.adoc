@@ -948,7 +948,7 @@ Retrieves the OpenAPI v2 specification in JSON format.
 [options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
-|**200**|OpenAPI v2 specification in JSON format retrieved successfully.|string
+|**204**|OpenAPI v2 specification in JSON format retrieved successfully.|string
 |===
 
 
@@ -969,7 +969,7 @@ Check if the bridge is ready and can accept requests.
 [options="header", cols=".^2a,.^14a,.^4a"]
 |===
 |HTTP Code|Description|Schema
-|**200**|The bridge is ready|No Content
+|**204**|The bridge is ready|No Content
 |===
 
 
