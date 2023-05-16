@@ -58,13 +58,13 @@ public class RestBridgeMeterRegistryProducer extends PrometheusMeterRegistry {
      * @return metrics in Prometheus format as String
      */
     @Override
-    public String scrape() {
+    public String scrape(String contentType) {
         StringBuilder sb = new StringBuilder();
         if (isMetricsEnabled) {
             if (restJmxCollectorRegistry != null) {
                 sb.append(restJmxCollectorRegistry.scrape());
             }
-            sb.append(super.scrape());
+            sb.append(super.scrape(contentType));
         }
         return sb.toString();
     }
