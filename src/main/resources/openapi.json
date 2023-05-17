@@ -1325,7 +1325,7 @@
                     "204": {
                         "description": "The bridge is healthy"
                     },
-                    "404": {
+                    "500": {
                         "description": "The bridge is not healthy"
                     }
                 },
@@ -1339,7 +1339,7 @@
                     "204": {
                         "description": "The bridge is ready"
                     },
-                    "404": {
+                    "500": {
                         "description": "The bridge is not ready"
                     }
                 },
