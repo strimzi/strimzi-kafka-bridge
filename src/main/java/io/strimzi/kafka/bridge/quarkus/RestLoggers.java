@@ -39,6 +39,6 @@ public class RestLoggers {
      * @return logger instance
      */
     public Logger get(String name) {
-        return loggers.get(name);
+        return name != null ? loggers.get(name) : null;
     }
 }

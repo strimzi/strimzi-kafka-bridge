@@ -26,7 +26,7 @@ public class RestLoggingFilter {
 
     @ServerRequestFilter
     public void requestFilter(ContainerRequestContext requestContext, SimpleResourceInfo resourceInfo, HttpServerRequest httpServerRequest) {
-        Logger logger = loggers.get(resourceInfo.getMethodName());
+        Logger logger = loggers.get(this.resourceMethodName(requestContext, resourceInfo));
 
         String requestLogHeader = this.requestLogHeader(requestContext, resourceInfo);
         logger.infof("%s Request: from %s, method = %s, path = %s",
@@ -38,7 +38,7 @@ public class RestLoggingFilter {
 
     @ServerResponseFilter
     public void responseFilter(ContainerRequestContext requestContext, ContainerResponseContext responseContext, SimpleResourceInfo resourceInfo) {
-        Logger logger = loggers.get(resourceInfo.getMethodName());
+        Logger logger = loggers.get(this.resourceMethodName(requestContext, resourceInfo));
 
         String requestLogHeader = this.requestLogHeader(requestContext, resourceInfo);
         logger.infof("%s Response: statusCode = %s, message = %s",
@@ -58,6 +58,20 @@ public class RestLoggingFilter {
             requestId = System.identityHashCode(requestContext.getRequest());
             requestContext.setProperty("request-id", requestId);
         }
-        return String.format("[%s] %s", requestId, resourceInfo.getMethodName());
+        return String.format("[%s] %s", requestId, this.resourceMethodName(requestContext, resourceInfo));
+    }
+
+    // TODO: to be removed when moving to Quarkus 3.x
+    // this is to get and store the "method name" across a request, and it is needed due to this bug in Quarkus 2.x
+    // which was fixed in 3.x https://github.com/quarkusio/quarkus/issues/32862
+    // it happens only when the request throw an exception and the method name is not taken across request/response in the filter
+    private String resourceMethodName(ContainerRequestContext requestContext, SimpleResourceInfo resourceInfo) {
+        String methodName = resourceInfo.getMethodName();
+        if (methodName == null) {
+            methodName = (String) requestContext.getProperty("methodName");
+        } else if (!requestContext.getPropertyNames().contains("methodName")) {
+            requestContext.setProperty("methodName", methodName);
+        }
+        return methodName;
     }
 }
