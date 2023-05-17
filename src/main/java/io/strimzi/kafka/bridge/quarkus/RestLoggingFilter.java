@@ -22,31 +22,42 @@ import javax.ws.rs.container.ContainerResponseContext;
 public class RestLoggingFilter {
 
     @Inject
+    Logger log;
+
+    @Inject
     RestLoggers loggers;
 
     @ServerRequestFilter
     public void requestFilter(ContainerRequestContext requestContext, SimpleResourceInfo resourceInfo, HttpServerRequest httpServerRequest) {
         Logger logger = loggers.get(this.resourceMethodName(requestContext, resourceInfo));
 
-        String requestLogHeader = this.requestLogHeader(requestContext, resourceInfo);
-        logger.infof("%s Request: from %s, method = %s, path = %s",
-                requestLogHeader, httpServerRequest.remoteAddress(), // TODO: do we want HttpServerRequest (from Vert.x) just for this??
-                requestContext.getMethod(),
-                requestContext.getUriInfo().getPath());
-        logger.debugf("%s Request: headers = %s", requestLogHeader, requestContext.getHeaders());
+        if (logger != null) {
+            String requestLogHeader = this.requestLogHeader(requestContext, resourceInfo);
+            logger.infof("%s Request: from %s, method = %s, path = %s",
+                    requestLogHeader, httpServerRequest.remoteAddress(), // TODO: do we want HttpServerRequest (from Vert.x) just for this??
+                    requestContext.getMethod(),
+                    requestContext.getUriInfo().getPath());
+            logger.debugf("%s Request: headers = %s", requestLogHeader, requestContext.getHeaders());
+        } else {
+            log.warnf("No logger for '%s'. Does the endpoint exist?", requestContext.getUriInfo().getPath());
+        }
     }
 
     @ServerResponseFilter
     public void responseFilter(ContainerRequestContext requestContext, ContainerResponseContext responseContext, SimpleResourceInfo resourceInfo) {
         Logger logger = loggers.get(this.resourceMethodName(requestContext, resourceInfo));
 
-        String requestLogHeader = this.requestLogHeader(requestContext, resourceInfo);
-        logger.infof("%s Response: statusCode = %s, message = %s",
-                requestLogHeader, responseContext.getStatusInfo().getStatusCode(),
-                responseContext.getStatusInfo().getReasonPhrase());
-        logger.debugf("%s Response: headers = %s", requestLogHeader, responseContext.getHeaders());
-        if (responseContext.getEntity() != null) {
-            logger.debugf("%s Response: body = %s", requestLogHeader, JsonUtils.objectToJson(responseContext.getEntity()));
+        if (logger != null) {
+            String requestLogHeader = this.requestLogHeader(requestContext, resourceInfo);
+            logger.infof("%s Response: statusCode = %s, message = %s",
+                    requestLogHeader, responseContext.getStatusInfo().getStatusCode(),
+                    responseContext.getStatusInfo().getReasonPhrase());
+            logger.debugf("%s Response: headers = %s", requestLogHeader, responseContext.getHeaders());
+            if (responseContext.getEntity() != null) {
+                logger.debugf("%s Response: body = %s", requestLogHeader, JsonUtils.objectToJson(responseContext.getEntity()));
+            }
+        } else {
+            log.warnf("No logger for '%s'. Does the endpoint exist?", requestContext.getUriInfo().getPath());
         }
     }
 
