@@ -6,7 +6,7 @@
 package io.strimzi.kafka.bridge.quarkus;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.strimzi.kafka.bridge.quarkus.beans.Error;
 
 /**
  * A bridge exception bringing and HTTP bridge error
@@ -16,13 +16,13 @@ public class RestBridgeException extends RuntimeException {
 
     // NOTE: this field is raising SE_BAD_FIELD because it should be serializable, given that RestBridgeException is
     //       serializable because inheriting from RuntimeException
-    private final HttpBridgeError httpBridgeError;
+    private final Error httpBridgeError;
 
-    public RestBridgeException(HttpBridgeError httpBridgeError) {
+    public RestBridgeException(Error httpBridgeError) {
         this.httpBridgeError = httpBridgeError;
     }
 
-    public HttpBridgeError getHttpBridgeError() {
+    public Error getHttpBridgeError() {
         return httpBridgeError;
     }
 }

@@ -14,11 +14,11 @@ import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.IllegalEmbeddedFormatException;
 import io.strimzi.kafka.bridge.http.HttpOpenApiOperations;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
-import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.quarkus.beans.BridgeInfo;
 import io.strimzi.kafka.bridge.quarkus.beans.Consumer;
 import io.strimzi.kafka.bridge.quarkus.beans.ConsumerRecord;
 import io.strimzi.kafka.bridge.quarkus.beans.CreatedConsumer;
+import io.strimzi.kafka.bridge.quarkus.beans.Error;
 import io.strimzi.kafka.bridge.quarkus.beans.OffsetCommitSeekList;
 import io.strimzi.kafka.bridge.quarkus.beans.OffsetRecordSentList;
 import io.strimzi.kafka.bridge.quarkus.beans.OffsetsSummary;
@@ -416,7 +416,7 @@ public class RestBridge {
             this.timestampMap.replace(kafkaConsumerInstanceId, System.currentTimeMillis());
             return sinkEndpoint;
         } else {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.NOT_FOUND.code(),
                     "The specified consumer instance was not found."
             );
@@ -436,7 +436,7 @@ public class RestBridge {
      */
     private RestSourceBridgeEndpoint<byte[], byte[]> getRestSourceBridgeEndpoint(RoutingContext routingContext, String contentType) {
         if (!this.httpConfig.producer().enabled()) {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
                     "Producer is disabled in config. To enable producer update http.producer.enabled to true"
             );
@@ -467,7 +467,7 @@ public class RestBridge {
             if (source != null) {
                 source.close();
             }
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     ex.getMessage()
             );
@@ -485,7 +485,7 @@ public class RestBridge {
         RestAdminBridgeEndpoint adminClientEndpoint = this.httpBridgeContext.getHttpAdminEndpoint();
         // TODO: can this be really true? The admin client endpoint is created in the init() so maybe failures happen there?
         if (adminClientEndpoint == null) {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     "The AdminClient was not found."
             );
@@ -502,7 +502,7 @@ public class RestBridge {
      */
     private RestSinkBridgeEndpoint<byte[], byte[]> doCreateConsumer(Consumer consumerData) {
         if (!this.httpConfig.consumer().enabled()) {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
                     "Consumer is disabled in config. To enable consumer update http.consumer.enabled to true"
             );
@@ -537,7 +537,7 @@ public class RestBridge {
                     HttpResponseStatus.UNPROCESSABLE_ENTITY :
                     HttpResponseStatus.INTERNAL_SERVER_ERROR;
 
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     responseStatus.code(),
                     ex.getMessage()
             );
@@ -563,7 +563,7 @@ public class RestBridge {
             this.timestampMap.remove(kafkaConsumerInstanceId);
             return deleteSinkEndpoint;
         } else {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.NOT_FOUND.code(),
                     "The specified consumer instance was not found."
             );

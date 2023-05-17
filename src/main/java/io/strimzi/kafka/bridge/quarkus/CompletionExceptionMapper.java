@@ -16,7 +16,7 @@ import java.util.concurrent.CompletionException;
  * Exception mapper providing a proper {@link Response} whenever a {@link CompletionException} is raised during
  * the HTTP request handling in any of the {@link java.util.concurrent.CompletionStage}(s).
  * The exception brings a {@link RestBridgeException} instance as cause which contains the corresponding
- * {@link io.strimzi.kafka.bridge.http.model.HttpBridgeError} with the HTTP code and error message to use in the response.
+ * {@link io.strimzi.kafka.bridge.quarkus.beans.Error} with the HTTP code and error message to use in the response.
  */
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
 @Provider

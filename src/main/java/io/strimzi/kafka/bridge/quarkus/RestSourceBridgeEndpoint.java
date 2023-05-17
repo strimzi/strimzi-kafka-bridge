@@ -7,7 +7,6 @@ package io.strimzi.kafka.bridge.quarkus;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
-import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.quarkus.beans.Error;
 import io.strimzi.kafka.bridge.quarkus.beans.OffsetRecordSent;
 import io.strimzi.kafka.bridge.quarkus.beans.OffsetRecordSentList;
@@ -102,7 +101,7 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
             try {
                 partition = Integer.parseInt(partitionId);
             } catch (NumberFormatException ne) {
-                HttpBridgeError error = new HttpBridgeError(
+                Error error = RestUtils.toError(
                         HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                         "Specified partition is not a valid number");
                 throw new RestBridgeException(error);
@@ -110,7 +109,7 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         }
 
         if (messageConverter == null) {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.reasonPhrase());
             throw new RestBridgeException(error);
@@ -119,7 +118,7 @@ public class RestSourceBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         try {
             records = messageConverter.toKafkaRecords(topic, partition, recordList);
         } catch (Exception e) {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     e.getMessage());
             throw new RestBridgeException(error);

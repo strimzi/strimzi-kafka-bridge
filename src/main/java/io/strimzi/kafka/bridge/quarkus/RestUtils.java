@@ -8,7 +8,7 @@ package io.strimzi.kafka.bridge.quarkus;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
-import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.strimzi.kafka.bridge.quarkus.beans.Error;
 
 import javax.ws.rs.core.Response;
 
@@ -41,8 +41,22 @@ public class RestUtils {
      * @param error representation of the bridge error send as HTTP response body
      * @return HTTP response describing the bridge error
      */
-    public static Response buildResponseFromError(HttpBridgeError error) {
-        return RestUtils.buildResponse(error.getCode(),
-                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+    public static Response buildResponseFromError(Error error) {
+        return RestUtils.buildResponse(error.getErrorCode(),
+                BridgeContentType.KAFKA_JSON, JsonUtils.objectToBytes(error));
+    }
+
+    /**
+     * Build an Error instance from code and message
+     *
+     * @param code HTTP error code
+     * @param message HTTP error message
+     * @return an Error instance
+     */
+    public static Error toError(int code, String message) {
+        Error error = new Error();
+        error.setErrorCode(code);
+        error.setMessage(message);
+        return error;
     }
 }

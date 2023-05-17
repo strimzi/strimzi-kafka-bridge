@@ -25,11 +25,11 @@ import io.strimzi.kafka.bridge.SinkTopicSubscription;
 import io.strimzi.kafka.bridge.http.HttpOpenApiOperations;
 import io.strimzi.kafka.bridge.http.converter.JsonDecodeException;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
-import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.quarkus.beans.AssignedTopicPartitions;
 import io.strimzi.kafka.bridge.quarkus.beans.Consumer;
 import io.strimzi.kafka.bridge.quarkus.beans.ConsumerRecord;
 import io.strimzi.kafka.bridge.quarkus.beans.CreatedConsumer;
+import io.strimzi.kafka.bridge.quarkus.beans.Error;
 import io.strimzi.kafka.bridge.quarkus.beans.OffsetCommitSeek;
 import io.strimzi.kafka.bridge.quarkus.beans.OffsetCommitSeekList;
 import io.strimzi.kafka.bridge.quarkus.beans.Partitions;
@@ -137,7 +137,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         this.consumerInstanceId = new ConsumerInstanceId(groupId, this.name);
 
         if (this.httpBridgeContext.getHttpSinkEndpoints().containsKey(this.consumerInstanceId)) {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.CONFLICT.code(),
                     "A consumer instance with the specified name already exists in the Kafka Bridge."
             );
@@ -204,7 +204,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
     public CompletionStage<Void> subscribe(Topics topics) {
         // cannot specify both topics list and topic pattern
         if ((!topics.getTopics().isEmpty() && topics.getTopicPattern() != null && !topics.getTopicPattern().isEmpty()) || assigned) {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.CONFLICT.code(),
                     "Subscriptions to topics, partitions, and patterns are mutually exclusive."
             );
@@ -213,7 +213,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
 
         // one of topics list or topic pattern has to be specified
         if (topics.getTopics().isEmpty() && (topics.getTopicPattern() == null || topics.getTopicPattern().isEmpty())) {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     "A list (of Topics type) or a topic_pattern must be specified."
             );
@@ -244,7 +244,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
             // it's not able to change the ComplationStage flow while we need to complete exceptionally with
             // a new RestBridgeException as cause handled by the corresponding CompletionException mapper
             log.tracef("Subscribe exceptionally handler thread %s", Thread.currentThread());
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     ex.getMessage()
             );
@@ -271,7 +271,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                     // it's not able to change the ComplationStage flow while we need to complete exceptionally with
                     // a new RestBridgeException as cause handled by the corresponding CompletionException mapper
                     log.tracef("Unsubscribe exceptionally handler thread %s", Thread.currentThread());
-                    HttpBridgeError error = new HttpBridgeError(
+                    Error error = RestUtils.toError(
                             HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                             ex.getMessage()
                     );
@@ -287,7 +287,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      */
     public CompletionStage<Void> assign(Partitions partitions) {
         if (this.subscribed) {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.CONFLICT.code(), "Subscriptions to topics, partitions, and patterns are mutually exclusive."
             );
             throw new RestBridgeException(error);
@@ -311,7 +311,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                     // it's not able to change the ComplationStage flow while we need to complete exceptionally with
                     // a new RestBridgeException as cause handled by the corresponding CompletionException mapper
                     log.tracef("Assign exceptionally handler thread %s", Thread.currentThread());
-                    HttpBridgeError error = new HttpBridgeError(
+                    Error error = RestUtils.toError(
                             HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                             ex.getMessage()
                     );
@@ -329,7 +329,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      */
     public CompletionStage<List<ConsumerRecord>> poll(String accept, Integer timeout, Integer maxBytes) {
         if (!this.subscribed && !this.assigned) {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     "Consumer is not subscribed to any topics or assigned any partitions"
             );
@@ -354,7 +354,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                         return this.pollHandler(records, ex);
                     });
         } else {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.NOT_ACCEPTABLE.code(),
                     "Consumer format does not match the embedded format requested by the Accept header."
             );
@@ -374,7 +374,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                 byte[] buffer = JsonUtils.objectToBytes(messages);
                 if (buffer.length > this.maxBytes) {
                     responseStatus = HttpResponseStatus.UNPROCESSABLE_ENTITY;
-                    HttpBridgeError error = new HttpBridgeError(
+                    Error error = RestUtils.toError(
                             responseStatus.code(),
                             "Response exceeds the maximum number of bytes the consumer can receive"
                     );
@@ -385,14 +385,14 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
             } catch (JsonDecodeException e) {
                 log.error("Error decoding records as JSON", e);
                 responseStatus = HttpResponseStatus.NOT_ACCEPTABLE;
-                HttpBridgeError error = new HttpBridgeError(
+                Error error = RestUtils.toError(
                         responseStatus.code(),
                         e.getMessage()
                 );
                 throw new RestBridgeException(error);
             }
         } else {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     ex.getMessage()
             );
@@ -435,7 +435,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
 
                         return subscribedTopicList;
                     } else {
-                        HttpBridgeError error = new HttpBridgeError(
+                        Error error = RestUtils.toError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
@@ -477,7 +477,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                         // it's not able to change the ComplationStage flow while we need to complete exceptionally with
                         // a new RestBridgeException as cause handled by the corresponding CompletionException mapper
                         log.tracef("Commit exceptionally handler thread %s", Thread.currentThread());
-                        HttpBridgeError error = new HttpBridgeError(
+                        Error error = RestUtils.toError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
@@ -494,7 +494,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                         // it's not able to change the ComplationStage flow while we need to complete exceptionally with
                         // a new RestBridgeException as cause handled by the corresponding CompletionException mapper
                         log.tracef("Commit exceptionally handler thread %s", Thread.currentThread());
-                        HttpBridgeError error = new HttpBridgeError(
+                        Error error = RestUtils.toError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
@@ -528,7 +528,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
             // it's not able to change the ComplationStage flow while we need to complete exceptionally with
             // a new RestBridgeException as cause handled by the corresponding CompletionException mapper
             log.tracef("Seek exceptionally handler thread %s", Thread.currentThread());
-            HttpBridgeError error = handleError(ex);
+            Error error = handleError(ex);
             throw new RestBridgeException(error);
         });
     }
@@ -562,7 +562,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
             // it's not able to change the ComplationStage flow while we need to complete exceptionally with
             // a new RestBridgeException as cause handled by the corresponding CompletionException mapper
             log.tracef("SeekTo exceptionally handler thread %s", Thread.currentThread());
-            HttpBridgeError error = handleError(ex);
+            Error error = handleError(ex);
             throw new RestBridgeException(error);
         });
     }
@@ -668,7 +668,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         return false;
     }
 
-    private HttpBridgeError handleError(Throwable ex) {
+    private Error handleError(Throwable ex) {
         if (ex instanceof CompletionException)
             ex = ex.getCause();
         int code = HttpResponseStatus.INTERNAL_SERVER_ERROR.code();
@@ -678,7 +678,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
         } else if (ex instanceof JsonDecodeException) {
             code = HttpResponseStatus.UNPROCESSABLE_ENTITY.code();
         }
-        return new HttpBridgeError(code, ex.getMessage());
+        return RestUtils.toError(code, ex.getMessage());
     }
 
     private static final TextMapGetter<Map<String, String>> TEXT_MAP_GETTER = new TextMapGetter<>() {

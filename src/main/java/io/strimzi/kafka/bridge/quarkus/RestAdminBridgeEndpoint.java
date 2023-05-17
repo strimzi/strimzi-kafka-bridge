@@ -6,8 +6,8 @@
 package io.strimzi.kafka.bridge.quarkus;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.quarkus.beans.Configs;
+import io.strimzi.kafka.bridge.quarkus.beans.Error;
 import io.strimzi.kafka.bridge.quarkus.beans.OffsetsSummary;
 import io.strimzi.kafka.bridge.quarkus.beans.PartitionMetadata;
 import io.strimzi.kafka.bridge.quarkus.beans.Replica;
@@ -73,7 +73,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                     if (ex == null) {
                         return new ArrayList<>(topics);
                     } else {
-                        HttpBridgeError error = new HttpBridgeError(
+                        Error error = RestUtils.toError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
@@ -118,13 +118,13 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                         topicMetadata.setPartitions(partitions);
                         return topicMetadata;
                     } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
-                        HttpBridgeError error = new HttpBridgeError(
+                        Error error = RestUtils.toError(
                                 HttpResponseStatus.NOT_FOUND.code(),
                                 ex.getMessage()
                         );
                         throw new RestBridgeException(error);
                     } else {
-                        HttpBridgeError error = new HttpBridgeError(
+                        Error error = RestUtils.toError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
@@ -151,13 +151,13 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                         }
                         return partitions;
                     } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
-                        HttpBridgeError error = new HttpBridgeError(
+                        Error error = RestUtils.toError(
                                 HttpResponseStatus.NOT_FOUND.code(),
                                 ex.getMessage()
                         );
                         throw new RestBridgeException(error);
                     } else {
-                        HttpBridgeError error = new HttpBridgeError(
+                        Error error = RestUtils.toError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
@@ -178,7 +178,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
         try {
             partition = Integer.parseInt(partitionId);
         } catch (NumberFormatException ne) {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     "Specified partition is not a valid number");
             throw new RestBridgeException(error);
@@ -191,20 +191,20 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                         if (description != null && partition < description.partitions().size()) {
                             return createPartitionMetadata(description.partitions().get(partition));
                         } else {
-                            HttpBridgeError error = new HttpBridgeError(
+                            Error error = RestUtils.toError(
                                     HttpResponseStatus.NOT_FOUND.code(),
                                     "Specified partition does not exist."
                             );
                             throw new RestBridgeException(error);
                         }
                     } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
-                        HttpBridgeError error = new HttpBridgeError(
+                        Error error = RestUtils.toError(
                                 HttpResponseStatus.NOT_FOUND.code(),
                                 ex.getMessage()
                         );
                         throw new RestBridgeException(error);
                     } else {
-                        HttpBridgeError error = new HttpBridgeError(
+                        Error error = RestUtils.toError(
                                 HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                 ex.getMessage()
                         );
@@ -225,7 +225,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
         try {
             partition = Integer.parseInt(partitionId);
         } catch (NumberFormatException ne) {
-            HttpBridgeError error = new HttpBridgeError(
+            Error error = RestUtils.toError(
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     "Specified partition is not a valid number");
             throw new RestBridgeException(error);
@@ -242,7 +242,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                 e = new UnknownTopicOrPartitionException("Topic '" + topicName + "' does not have partition with id " + partition);
             }
             if (e != null) {
-                HttpBridgeError error = new HttpBridgeError(
+                Error error = RestUtils.toError(
                         HttpResponseStatus.NOT_FOUND.code(),
                         e.getMessage()
                 );
@@ -268,7 +268,7 @@ public class RestAdminBridgeEndpoint extends RestBridgeEndpoint {
                                 }
                                 return offsetsSummary;
                             } else {
-                                HttpBridgeError error = new HttpBridgeError(
+                                Error error = RestUtils.toError(
                                         HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                                         ex.getMessage()
                                 );

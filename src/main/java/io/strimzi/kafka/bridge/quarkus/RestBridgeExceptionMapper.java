@@ -11,7 +11,7 @@ import javax.ws.rs.ext.Provider;
 
 /**
  * Exception mapper providing a proper {@link Response} whenever a {@link RestBridgeException} is raised during
- * the HTTP request handling. The exception brings an {@link io.strimzi.kafka.bridge.http.model.HttpBridgeError}
+ * the HTTP request handling. The exception brings an {@link io.strimzi.kafka.bridge.quarkus.beans.Error}
  * containing the HTTP code and error message to use in the response.
  */
 @Provider
