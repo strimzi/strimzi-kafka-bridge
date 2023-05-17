@@ -1322,8 +1322,11 @@
         "/healthy": {
             "get": {
                 "responses": {
-                    "200": {
+                    "204": {
                         "description": "The bridge is healthy"
+                    },
+                    "500": {
+                        "description": "The bridge is not healthy"
                     }
                 },
                 "operationId": "healthy",
@@ -1333,8 +1336,11 @@
         "/ready": {
             "get": {
                 "responses": {
-                    "200": {
+                    "204": {
                         "description": "The bridge is ready"
+                    },
+                    "500": {
+                        "description": "The bridge is not ready"
                     }
                 },
                 "operationId": "ready",

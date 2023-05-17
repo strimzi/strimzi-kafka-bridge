@@ -34,7 +34,7 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                     .send(ar -> {
                         context.verify(() -> {
                             assertThat(ar.succeeded(), is(true));
-                            assertThat(ar.result().statusCode(), is(HttpResponseStatus.OK.code()));
+                            assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                         });
                         if (l == iterations) {
                             context.completeNow();
@@ -56,7 +56,7 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                             LOGGER.info("Verifying that endpoint /healthy is ready " + ar.succeeded() + " for "
                                 + l + " time with status code " + ar.result().statusCode());
                             assertThat(ar.succeeded(), is(true));
-                            assertThat(ar.result().statusCode(), is(HttpResponseStatus.OK.code()));
+                            assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                         });
                         if (l == iterations) {
                             LOGGER.info("Successfully completing the context");

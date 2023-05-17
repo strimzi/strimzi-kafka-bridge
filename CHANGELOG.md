@@ -7,6 +7,9 @@
 * Exposed the `/metrics` endpoint through the OpenAPI specification.
 * Fixed OpenAPI 3.0 `OffsetRecordSentList` component schema returning proper record offsets or error.
 * Fixed OpenAPI `ConsumerRecord` component schema returning key and value not only as (JSON) string but even as object.
+* Fixed OpenAPI HTTP status codes returned by `/ready` and `/healthy`:
+  * from 200 to 204 because no content in the response in case of success.
+  * added 500 in the specification for the failure case, as already returned by the bridge.
 
 ## 0.25.0
 
