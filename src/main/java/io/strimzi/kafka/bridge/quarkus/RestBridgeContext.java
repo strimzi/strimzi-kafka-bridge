@@ -6,7 +6,6 @@
 package io.strimzi.kafka.bridge.quarkus;
 
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
-import io.strimzi.kafka.bridge.http.HttpOpenApiOperations;
 import io.vertx.core.http.HttpConnection;
 
 import java.util.HashMap;
@@ -24,7 +23,7 @@ public class RestBridgeContext<K, V> {
     private Map<ConsumerInstanceId, RestSinkBridgeEndpoint<K, V>> httpSinkEndpoints = new HashMap<>();
     private Map<HttpConnection, RestSourceBridgeEndpoint<K, V>> httpSourceEndpoints = new HashMap<>();
     private RestAdminBridgeEndpoint httpAdminBridgeEndpoint;
-    private HttpOpenApiOperations openApiOperation;
+    private RestOpenApiOperations openApiOperation;
 
     /**
      * @return map of the HTTP sink endpoints
@@ -61,14 +60,14 @@ public class RestBridgeContext<K, V> {
      *
      * @param openApiOperation OpenAPI operation
      */
-    public void setOpenApiOperation(HttpOpenApiOperations openApiOperation) {
+    public void setOpenApiOperation(RestOpenApiOperations openApiOperation) {
         this.openApiOperation = openApiOperation;
     }
 
     /**
      * @return the OpenAPI operation invoked
      */
-    public HttpOpenApiOperations getOpenApiOperation() {
+    public RestOpenApiOperations getOpenApiOperation() {
         return this.openApiOperation;
     }
 

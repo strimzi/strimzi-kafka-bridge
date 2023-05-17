@@ -3,12 +3,12 @@
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
 
-package io.strimzi.kafka.bridge.http;
+package io.strimzi.kafka.bridge.quarkus;
 
 /**
  * OpenAPI operations ids
  */
-public enum HttpOpenApiOperations {
+public enum RestOpenApiOperations {
 
     /** send a message */
     SEND("send"),
@@ -59,7 +59,7 @@ public enum HttpOpenApiOperations {
 
     private final String text;
 
-    HttpOpenApiOperations(final String text) {
+    RestOpenApiOperations(final String text) {
         this.text = text;
     }
 

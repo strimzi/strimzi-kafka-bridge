@@ -5,7 +5,7 @@
 
 package io.strimzi.kafka.bridge.quarkus;
 
-import io.strimzi.kafka.bridge.http.converter.JsonUtils;
+import io.strimzi.kafka.bridge.quarkus.converter.JsonUtils;
 import io.vertx.core.http.HttpServerRequest;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;

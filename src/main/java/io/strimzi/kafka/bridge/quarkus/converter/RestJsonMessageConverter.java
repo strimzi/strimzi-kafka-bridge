@@ -5,7 +5,6 @@
 
 package io.strimzi.kafka.bridge.quarkus.converter;
 
-import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.quarkus.beans.ConsumerRecord;
 import io.strimzi.kafka.bridge.quarkus.beans.KafkaHeader;
 import io.strimzi.kafka.bridge.quarkus.beans.ProducerRecord;

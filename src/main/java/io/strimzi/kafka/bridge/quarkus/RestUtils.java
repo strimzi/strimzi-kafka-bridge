@@ -7,7 +7,7 @@ package io.strimzi.kafka.bridge.quarkus;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.http.converter.JsonUtils;
+import io.strimzi.kafka.bridge.quarkus.converter.JsonUtils;
 import io.strimzi.kafka.bridge.quarkus.beans.Error;
 
 import javax.ws.rs.core.Response;

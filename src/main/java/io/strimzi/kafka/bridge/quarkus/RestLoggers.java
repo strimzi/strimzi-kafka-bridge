@@ -6,7 +6,6 @@
 package io.strimzi.kafka.bridge.quarkus;
 
 import io.quarkus.runtime.Startup;
-import io.strimzi.kafka.bridge.http.HttpOpenApiOperations;
 import org.jboss.logging.Logger;
 
 import javax.annotation.PostConstruct;
@@ -27,7 +26,7 @@ public class RestLoggers {
     @PostConstruct
     public void init() {
         loggers = new ConcurrentHashMap<>();
-        for (HttpOpenApiOperations operation : HttpOpenApiOperations.values()) {
+        for (RestOpenApiOperations operation : RestOpenApiOperations.values()) {
             loggers.put(operation.toString(), Logger.getLogger(LOGGER_NAME_PREFIX + operation));
         }
     }

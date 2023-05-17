@@ -22,9 +22,8 @@ import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
-import io.strimzi.kafka.bridge.http.HttpOpenApiOperations;
-import io.strimzi.kafka.bridge.http.converter.JsonDecodeException;
-import io.strimzi.kafka.bridge.http.converter.JsonUtils;
+import io.strimzi.kafka.bridge.quarkus.converter.JsonDecodeException;
+import io.strimzi.kafka.bridge.quarkus.converter.JsonUtils;
 import io.strimzi.kafka.bridge.quarkus.beans.AssignedTopicPartitions;
 import io.strimzi.kafka.bridge.quarkus.beans.Consumer;
 import io.strimzi.kafka.bridge.quarkus.beans.ConsumerRecord;
@@ -540,7 +539,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
      * @param seekToType define if to seek at the beginning or the end of the provided topics partitions
      * @return a CompletionStage bringing the Response to send back to the client
      */
-    public CompletionStage<Void> seekTo(Partitions partitions, HttpOpenApiOperations seekToType) {
+    public CompletionStage<Void> seekTo(Partitions partitions, RestOpenApiOperations seekToType) {
         Set<TopicPartition> set = partitions.getPartitions().stream()
                 .map(partition -> new TopicPartition(
                         partition.getTopic() != null && !partition.getTopic().isEmpty() ? partition.getTopic() : null,
@@ -549,7 +548,7 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                 .collect(Collectors.toSet());
 
         return CompletableFuture.runAsync(() -> {
-            if (seekToType == HttpOpenApiOperations.SEEK_TO_BEGINNING) {
+            if (seekToType == RestOpenApiOperations.SEEK_TO_BEGINNING) {
                 this.kafkaBridgeConsumer.seekToBeginning(set);
             } else {
                 this.kafkaBridgeConsumer.seekToEnd(set);

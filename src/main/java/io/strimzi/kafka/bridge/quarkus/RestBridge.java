@@ -12,8 +12,7 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.IllegalEmbeddedFormatException;
-import io.strimzi.kafka.bridge.http.HttpOpenApiOperations;
-import io.strimzi.kafka.bridge.http.converter.JsonUtils;
+import io.strimzi.kafka.bridge.quarkus.converter.JsonUtils;
 import io.strimzi.kafka.bridge.quarkus.beans.BridgeInfo;
 import io.strimzi.kafka.bridge.quarkus.beans.Consumer;
 import io.strimzi.kafka.bridge.quarkus.beans.ConsumerRecord;
@@ -83,8 +82,6 @@ import java.util.stream.Collectors;
 @Startup
 @Path("/")
 public class RestBridge {
-
-    private static final ObjectNode EMPTY_JSON = JsonUtils.createObjectNode();
 
     @Inject
     Logger log;
@@ -313,7 +310,7 @@ public class RestBridge {
     public CompletionStage<Void> seekToBeginning(@PathParam("groupid") String groupId, @PathParam("name") String name, Partitions partitions) {
         log.tracef("seekToBeginning thread %s", Thread.currentThread());
         RestSinkBridgeEndpoint<byte[], byte[]> sink = this.getRestSinkBridgeEndpoint(groupId, name);
-        return sink.seekTo(partitions, HttpOpenApiOperations.SEEK_TO_BEGINNING);
+        return sink.seekTo(partitions, RestOpenApiOperations.SEEK_TO_BEGINNING);
     }
 
     @Path("/consumers/{groupid}/instances/{name}/positions/end")
@@ -322,7 +319,7 @@ public class RestBridge {
     public CompletionStage<Void> seekToEnd(@PathParam("groupid") String groupId, @PathParam("name") String name, Partitions partitions) {
         log.tracef("seekToBeginning thread %s", Thread.currentThread());
         RestSinkBridgeEndpoint<byte[], byte[]> sink = this.getRestSinkBridgeEndpoint(groupId, name);
-        return sink.seekTo(partitions, HttpOpenApiOperations.SEEK_TO_END);
+        return sink.seekTo(partitions, RestOpenApiOperations.SEEK_TO_END);
     }
 
     @GET
@@ -509,7 +506,7 @@ public class RestBridge {
             throw new RestBridgeException(error);
         }
 
-        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
+        this.httpBridgeContext.setOpenApiOperation(RestOpenApiOperations.CREATE_CONSUMER);
 
         RestSinkBridgeEndpoint<byte[], byte[]> sink = null;
 
@@ -553,7 +550,7 @@ public class RestBridge {
      * @return the sink endpoint instance
      */
     private RestSinkBridgeEndpoint<byte[], byte[]> doDeleteConsumer(String groupId, String name) {
-        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.DELETE_CONSUMER);
+        this.httpBridgeContext.setOpenApiOperation(RestOpenApiOperations.DELETE_CONSUMER);
         ConsumerInstanceId kafkaConsumerInstanceId = new ConsumerInstanceId(groupId, name);
 
         RestSinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(kafkaConsumerInstanceId);
