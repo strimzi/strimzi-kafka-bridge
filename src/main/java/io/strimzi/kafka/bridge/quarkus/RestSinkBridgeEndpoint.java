@@ -238,13 +238,17 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
             log.tracef("Subscribe handler thread %s", Thread.currentThread());
             if (ex == null) {
                 this.subscribed = true;
-            } else {
-                HttpBridgeError error = new HttpBridgeError(
-                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        ex.getMessage()
-                );
-                throw new RestBridgeException(error);
             }
+        }).exceptionally(ex -> {
+            // raising RestBridgeException from exceptionally because the whenComplete is just a callback
+            // it's not able to change the ComplationStage flow while we need to complete exceptionally with
+            // a new RestBridgeException as cause handled by the corresponding CompletionException mapper
+            log.tracef("Subscribe exceptionally handler thread %s", Thread.currentThread());
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    ex.getMessage()
+            );
+            throw new RestBridgeException(error);
         });
     }
 
@@ -261,13 +265,17 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                     if (ex == null) {
                         this.subscribed = false;
                         this.assigned = false;
-                    } else {
-                        HttpBridgeError error = new HttpBridgeError(
-                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                ex.getMessage()
-                        );
-                        throw new RestBridgeException(error);
                     }
+                }).exceptionally(ex -> {
+                    // raising RestBridgeException from exceptionally because the whenComplete is just a callback
+                    // it's not able to change the ComplationStage flow while we need to complete exceptionally with
+                    // a new RestBridgeException as cause handled by the corresponding CompletionException mapper
+                    log.tracef("Unsubscribe exceptionally handler thread %s", Thread.currentThread());
+                    HttpBridgeError error = new HttpBridgeError(
+                            HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            ex.getMessage()
+                    );
+                    throw new RestBridgeException(error);
                 });
     }
 
@@ -297,13 +305,17 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
                     log.tracef("Assign handler thread %s", Thread.currentThread());
                     if (ex == null) {
                         this.assigned = true;
-                    } else {
-                        HttpBridgeError error = new HttpBridgeError(
-                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                ex.getMessage()
-                        );
-                        throw new RestBridgeException(error);
                     }
+                }).exceptionally(ex -> {
+                    // raising RestBridgeException from exceptionally because the whenComplete is just a callback
+                    // it's not able to change the ComplationStage flow while we need to complete exceptionally with
+                    // a new RestBridgeException as cause handled by the corresponding CompletionException mapper
+                    log.tracef("Assign exceptionally handler thread %s", Thread.currentThread());
+                    HttpBridgeError error = new HttpBridgeError(
+                            HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            ex.getMessage()
+                    );
+                    throw new RestBridgeException(error);
                 });
     }
 
@@ -458,26 +470,35 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
             return CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.commit(offsetData))
                     .whenComplete((v, ex) -> {
                         log.tracef("Commit handler thread %s", Thread.currentThread());
-                        if (ex != null) {
-                            HttpBridgeError error = new HttpBridgeError(
-                                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                    ex.getMessage()
-                            );
-                            throw new RestBridgeException(error);
-                        }
+                        // TODO: do we really needs the whenComplete?
+                    })
+                    .exceptionally(ex -> {
+                        // raising RestBridgeException from exceptionally because the whenComplete is just a callback
+                        // it's not able to change the ComplationStage flow while we need to complete exceptionally with
+                        // a new RestBridgeException as cause handled by the corresponding CompletionException mapper
+                        log.tracef("Commit exceptionally handler thread %s", Thread.currentThread());
+                        HttpBridgeError error = new HttpBridgeError(
+                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                ex.getMessage()
+                        );
+                        throw new RestBridgeException(error);
                     });
         } else {
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
             return CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.commitLastPolledOffsets())
                     .whenComplete((v, ex) -> {
                         log.tracef("Commit handler thread %s", Thread.currentThread());
-                        if (ex != null) {
-                            HttpBridgeError error = new HttpBridgeError(
-                                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                    ex.getMessage()
-                            );
-                            throw new RestBridgeException(error);
-                        }
+                        // TODO: do we really needs the whenComplete?
+                    }).exceptionally(ex -> {
+                        // raising RestBridgeException from exceptionally because the whenComplete is just a callback
+                        // it's not able to change the ComplationStage flow while we need to complete exceptionally with
+                        // a new RestBridgeException as cause handled by the corresponding CompletionException mapper
+                        log.tracef("Commit exceptionally handler thread %s", Thread.currentThread());
+                        HttpBridgeError error = new HttpBridgeError(
+                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                ex.getMessage()
+                        );
+                        throw new RestBridgeException(error);
                     });
         }
     }
@@ -501,10 +522,14 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
 
         }).whenComplete((v, ex) -> {
             log.tracef("Seek handler thread %s", Thread.currentThread());
-            if (ex != null) {
-                HttpBridgeError error = handleError(ex);
-                throw new RestBridgeException(error);
-            }
+            // TODO: do we really needs the whenComplete?
+        }).exceptionally(ex -> {
+            // raising RestBridgeException from exceptionally because the whenComplete is just a callback
+            // it's not able to change the ComplationStage flow while we need to complete exceptionally with
+            // a new RestBridgeException as cause handled by the corresponding CompletionException mapper
+            log.tracef("Seek exceptionally handler thread %s", Thread.currentThread());
+            HttpBridgeError error = handleError(ex);
+            throw new RestBridgeException(error);
         });
     }
 
@@ -531,10 +556,14 @@ public class RestSinkBridgeEndpoint<K, V> extends RestBridgeEndpoint {
             }
         }).whenComplete((v, ex) -> {
             log.tracef("SeekTo handler thread %s", Thread.currentThread());
-            if (ex != null) {
-                HttpBridgeError error = handleError(ex);
-                throw new RestBridgeException(error);
-            }
+            // TODO: do we really needs the whenComplete?
+        }).exceptionally(ex -> {
+            // raising RestBridgeException from exceptionally because the whenComplete is just a callback
+            // it's not able to change the ComplationStage flow while we need to complete exceptionally with
+            // a new RestBridgeException as cause handled by the corresponding CompletionException mapper
+            log.tracef("SeekTo exceptionally handler thread %s", Thread.currentThread());
+            HttpBridgeError error = handleError(ex);
+            throw new RestBridgeException(error);
         });
     }
 
