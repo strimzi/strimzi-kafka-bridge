@@ -35,7 +35,7 @@ public class RestBridgeMeterRegistryProducer extends PrometheusMeterRegistry {
         this.config().meterFilter(
                 MeterFilter.deny(meter -> "/metrics".equals(meter.getTag("uri"))));
         this.config().meterFilter(
-                MeterFilter.denyNameStartsWith("worker_pool"));
+                MeterFilter.denyNameStartsWith("worker.pool"));
         this.config().namingConvention(new RestBridgeMeterRegistryProducer.MetricsNamingConvention());
     }
 
