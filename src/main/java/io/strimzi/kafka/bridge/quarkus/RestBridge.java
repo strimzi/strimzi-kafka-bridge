@@ -64,6 +64,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -100,6 +101,9 @@ public class RestBridge {
 
     @Inject
     ManagedExecutor managedExecutor;
+
+    @Inject
+    MetricsReporter metricsReporter;
 
     private RestBridgeContext<byte[], byte[]> httpBridgeContext;
 
@@ -394,6 +398,17 @@ public class RestBridge {
                 openapi = new String(JsonUtils.jsonToBytes(json), StandardCharsets.UTF_8);
             }
             return openapi;
+        });
+    }
+
+    @Path("/metrics")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public CompletionStage<String> metrics() {
+        log.tracef("metrics thread %s", Thread.currentThread());
+        return CompletableFuture.supplyAsync(() -> {
+            log.tracef("metrics handler thread %s", Thread.currentThread());
+            return this.metricsReporter.scrape();
         });
     }
 
