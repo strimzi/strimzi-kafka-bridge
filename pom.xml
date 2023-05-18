@@ -501,7 +501,7 @@
 						</goals>
 						<configuration>
 							<projectSettings>
-								<javaPackage>io.strimzi.kafka.bridge.quarkus</javaPackage>
+								<javaPackage>io.strimzi.kafka.bridge.http</javaPackage>
 								<reactive>true</reactive>
 							</projectSettings>
 							<inputSpec>${project.basedir}/src/main/resources/openapi.json</inputSpec>

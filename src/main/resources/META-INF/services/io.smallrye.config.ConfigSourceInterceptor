@@ -1,2 +1,2 @@
-io.strimzi.kafka.bridge.quarkus.config.BridgeRelocateConfigInterceptor
-io.strimzi.kafka.bridge.quarkus.config.BridgeFallbackConfigInterceptor
+io.strimzi.kafka.bridge.config.BridgeRelocateConfigInterceptor
+io.strimzi.kafka.bridge.config.BridgeFallbackConfigInterceptor
