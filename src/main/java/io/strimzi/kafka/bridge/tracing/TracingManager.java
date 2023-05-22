@@ -6,19 +6,23 @@
 package io.strimzi.kafka.bridge.tracing;
 
 import io.opentelemetry.api.trace.Tracer;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.runtime.Startup;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
+import jakarta.annotation.PostConstruct;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 @Startup
@@ -37,6 +41,15 @@ public class TracingManager {
     @Inject
     BridgeConfig bridgeConfig;
 
+    @ConfigProperty(name = "quarkus.otel.resource.attributes")
+    Optional<List<String>> otelResourceAttributes;
+
+    @ConfigProperty(name = "quarkus.otel.exporter.otlp.traces.endpoint")
+    Optional<String> otelExporterOtlpEndpoint;
+
+    @ConfigProperty(name = "quarkus.application.name")
+    String applicationName;
+
     private Tracer tracer;
 
     @PostConstruct
@@ -49,16 +62,16 @@ public class TracingManager {
             tracer = this.tracerInstance.isResolvable() && this.bridgeConfig.tracing().get().equals(OPENTELEMETRY) ?
                     this.tracerInstance.get() : null;
             if (tracer != null) {
-                if (System.getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != null) {
-                    log.infof("OpenTelemetry tracing enabled with OTLP exporter endpoint %s", System.getenv("OTEL_EXPORTER_OTLP_ENDPOINT"));
-                } else {
-                    log.errorf("OpenTelemetry tracing enabled but no OTLP exporter endpoint set via OTEL_EXPORTER_OTLP_ENDPOINT env var");
-                }
-                if (System.getenv("OTEL_SERVICE_NAME") != null) {
-                    log.infof("OpenTelemetry service name %s", System.getenv("OTEL_SERVICE_NAME"));
-                } else {
-                    log.warnf("OpenTelemetry service name defaulting to 'strimzi-kafka-bridge-%s' because OTEL_SERVICE_NAME not set", this.bridgeConfig.id().get());
-                }
+                // getting OpenTelemetry service name and endpoint configuration
+                // NOTE: when not set, Quarkus always defaults to specific values
+                String otelServiceName =
+                        this.otelResourceAttributes.orElse(List.of()).stream()
+                                .filter(s -> s.startsWith("service.name"))
+                                .map(s -> s.substring(s.indexOf("=") + 1, s.length()))
+                                .findFirst()
+                                .orElse(this.applicationName);
+                log.infof("OpenTelemetry tracing enabled with OTLP exporter endpoint [%s]", this.otelExporterOtlpEndpoint.orElse(OtlpExporterRuntimeConfig.DEFAULT_GRPC_BASE_URI));
+                log.infof("OpenTelemetry service name [%s]", otelServiceName);
             }
         }
     }

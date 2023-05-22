@@ -71,43 +71,45 @@ public class BridgeRelocateConfigInterceptor extends RelocateConfigSourceInterce
 
     @Override
     public ConfigValue getValue(ConfigSourceInterceptorContext context, String name) {
-        // NOTE: OpenTelemetry cannot be disabled at runtime so the workaround is about turning on and off the sampler
-        //       Traces generation is always enabled but then the traces are sent or not based on the sampler.
-        //       Anyway for backward compatibility we want users still using the bridge.tracing property to enable tracing.
-        //       This implementation allow to relocate the quarkus.opentelemetry.tracer.sampler set to "on" or "off" based
-        //       on the value of the "bridge.tracing"
-        if (name.equals("quarkus.opentelemetry.tracer.sampler")) {
+        if (name.equals("quarkus.otel.sdk.disabled")) {
             ConfigValue bridgeTracing = context.proceed("bridge.tracing");
 
-            String value = bridgeTracing != null && bridgeTracing.getValue().equals(TracingManager.OPENTELEMETRY) ? "on" : "off";
-            ConfigValue sampler;
-            // creating a new ConfigValue respecting the data from the referring one.
-            // Using the bridge.tracing one if enabled otherwise the original quarkus.opentelemetry.tracer.sampler.
-            // No way to easy close, so creating from scratch. Opened issue: https://github.com/smallrye/smallrye-config/issues/902
-            if (value.equals("on")) {
-                sampler = ConfigValue.builder()
-                        .withName("quarkus.opentelemetry.tracer.sampler")
-                        .withValue(value)
-                        .withRawValue(value)
+            boolean value = bridgeTracing != null && bridgeTracing.getValue().equals(TracingManager.OPENTELEMETRY) ? false : true;
+            ConfigValue sdk;
+            if (!value) {
+                sdk = ConfigValue.builder()
+                        .withName("quarkus.otel.sdk.disabled")
+                        .withValue(String.valueOf(value))
+                        .withRawValue(String.valueOf(value))
                         .withConfigSourceName(bridgeTracing.getConfigSourceName())
                         .withConfigSourceOrdinal(bridgeTracing.getConfigSourceOrdinal())
                         .withConfigSourcePosition(bridgeTracing.getConfigSourcePosition())
                         .withProfile(bridgeTracing.getProfile())
                         .build();
             } else {
-                ConfigValue original = context.proceed("quarkus.opentelemetry.tracer.sampler");
-                sampler = ConfigValue.builder()
-                        .withName(original.getName())
-                        .withValue(value)
-                        .withRawValue(value)
-                        .withConfigSourceName(original.getConfigSourceName())
-                        .withConfigSourceOrdinal(original.getConfigSourceOrdinal())
-                        .withConfigSourcePosition(original.getConfigSourcePosition())
-                        .withProfile(original.getProfile())
-                        .withLineNumber(original.getLineNumber())
-                        .build();
+                ConfigValue original = context.proceed("quarkus.otel.sdk.disabled");
+                // this check is needed because of this issue https://github.com/quarkusio/quarkus/issues/33493
+                // TODO: to remove the check and the null branch when issue is fixed
+                if (original != null) {
+                    sdk = ConfigValue.builder()
+                            .withName(original.getName())
+                            .withValue(String.valueOf(value))
+                            .withRawValue(String.valueOf(value))
+                            .withConfigSourceName(original.getConfigSourceName())
+                            .withConfigSourceOrdinal(original.getConfigSourceOrdinal())
+                            .withConfigSourcePosition(original.getConfigSourcePosition())
+                            .withProfile(original.getProfile())
+                            .withLineNumber(original.getLineNumber())
+                            .build();
+                } else {
+                    sdk = ConfigValue.builder()
+                            .withName("quarkus.otel.sdk.disabled")
+                            .withValue(String.valueOf(value))
+                            .withRawValue(String.valueOf(value))
+                            .build();
+                }
             }
-            return sampler;
+            return sdk;
         }
         return super.getValue(context, name);
     }

@@ -8,6 +8,7 @@ package io.strimzi.kafka.bridge.http;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.Startup;
+import io.quarkus.scheduler.Scheduler;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
@@ -33,40 +34,31 @@ import io.strimzi.kafka.bridge.config.HttpConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.ext.web.RoutingContext;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.jboss.logging.Logger;
-import org.quartz.Scheduler;
-import org.quartz.Job;
-import org.quartz.JobBuilder;
-import org.quartz.JobExecutionContext;
-import org.quartz.SchedulerException;
-import org.quartz.Trigger;
-import org.quartz.TriggerBuilder;
-import org.quartz.SimpleScheduleBuilder;
-import org.quartz.JobDetail;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.UriInfo;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.UriInfo;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -89,7 +81,7 @@ public class HttpBridge {
     Logger log;
 
     @Inject
-    Scheduler quartz;
+    Scheduler scheduler;
 
     @Inject
     BridgeConfig bridgeConfig;
@@ -121,11 +113,7 @@ public class HttpBridge {
         adminClientEndpoint.open();
 
         if (this.httpConfig.timeoutSeconds() > -1) {
-            try {
-                scheduleInactiveConsumersDeletionJob(this.httpConfig.timeoutSeconds());
-            } catch (SchedulerException e) {
-                throw new RuntimeException(e);
-            }
+            scheduleInactiveConsumersDeletionJob(this.httpConfig.timeoutSeconds());
         }
         this.isReady = true;
 
@@ -618,18 +606,13 @@ public class HttpBridge {
         return this.isReady;
     }
 
-    private void scheduleInactiveConsumersDeletionJob(long timeout) throws SchedulerException {
-        long timeInMs = timeout * 1000L;
-        JobDetail job = JobBuilder.newJob(InactiveConsumerDeletionJob.class).build();
-        Trigger trigger = TriggerBuilder.newTrigger()
-                .withIdentity("inactiveConsumersDeletion", "inactiveConsumers")
-                .startNow()
-                .withSchedule(
-                        SimpleScheduleBuilder.simpleSchedule()
-                                .withIntervalInMilliseconds(timeInMs / 2)
-                                .repeatForever())
-                .build();
-        quartz.scheduleJob(job, trigger);
+    private void scheduleInactiveConsumersDeletionJob(long timeout) {
+        this.scheduler.newJob("inactiveConsumersDeletion")
+                .setCron(String.format("0/%s * * * * ?", timeout / 2))
+                .setTask(scheduledExecution -> {
+                    this.deleteInactiveConsumers();
+                })
+                .schedule();
     }
 
     /**
@@ -651,20 +634,6 @@ public class HttpBridge {
                     timestampMap.remove(item.getKey());
                 }
             }
-        }
-    }
-
-    /**
-     * Job class which contains the task for deleting the inactive consumers
-     */
-    public static class InactiveConsumerDeletionJob implements Job {
-
-        @Inject
-        HttpBridge httpBridge;
-
-        @Override
-        public void execute(JobExecutionContext context) {
-            httpBridge.deleteInactiveConsumers();
         }
     }
 

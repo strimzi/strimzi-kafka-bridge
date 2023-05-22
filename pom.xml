@@ -121,14 +121,14 @@
 		<opentelemetry.alpha-version>1.19.0-alpha</opentelemetry.alpha-version>
 		<jmx-prometheus-collector.version>0.17.2</jmx-prometheus-collector.version>
 		<prometheus-simpleclient.version>0.16.0</prometheus-simpleclient.version>
-		<jakarta.version>2.3.2</jakarta.version>
+		<jakarta.version>4.0.0</jakarta.version>
 		<!-- property to skip surefire tests during failsafe execution -->
 		<!--suppress UnresolvedMavenProperty -->
 		<skip.surefire.tests>${skipTests}</skip.surefire.tests>
 		<!-- Quarkus -->
 		<quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
 		<quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-		<quarkus.platform.version>2.16.6.Final</quarkus.platform.version>
+		<quarkus.platform.version>3.0.3.Final</quarkus.platform.version>
 	</properties>
 
 	<dependencyManagement>
@@ -150,7 +150,7 @@
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-quartz</artifactId>
+			<artifactId>quarkus-scheduler</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>

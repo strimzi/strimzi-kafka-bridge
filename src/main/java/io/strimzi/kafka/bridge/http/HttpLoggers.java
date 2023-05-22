@@ -6,9 +6,9 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.quarkus.runtime.Startup;
+import jakarta.annotation.PostConstruct;
 import org.jboss.logging.Logger;
 
-import javax.annotation.PostConstruct;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
