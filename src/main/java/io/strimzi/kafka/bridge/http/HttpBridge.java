@@ -106,6 +106,7 @@ public class HttpBridge {
 
     @PostConstruct
     public void init() {
+        log.infof("HTTP-Kafka Bridge configuration %s", this.configurationAsString());
         this.timestampMap = new HashMap<>();
         this.httpBridgeContext = new HttpBridgeContext<>();
         HttpAdminBridgeEndpoint adminClientEndpoint = new HttpAdminBridgeEndpoint(this.bridgeConfig, this.kafkaConfig);
@@ -120,7 +121,6 @@ public class HttpBridge {
         log.infof("HTTP-Kafka Bridge started and listening on port %s", this.httpConfig.port());
         log.infof("HTTP-Kafka Bridge bootstrap servers %s",
                 this.kafkaConfig.common().get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG));
-        log.infof("HTTP-Kafka Bridge configuration %s", this.configurationAsString());
     }
 
     @PreDestroy
@@ -608,7 +608,8 @@ public class HttpBridge {
 
     private void scheduleInactiveConsumersDeletionJob(long timeout) {
         this.scheduler.newJob("inactiveConsumersDeletion")
-                .setCron(String.format("0/%s * * * * ?", timeout / 2))
+                // interval has to be <time>s, i.e. 30s
+                .setInterval(String.format("%ds", timeout / 2))
                 .setTask(scheduledExecution -> {
                     this.deleteInactiveConsumers();
                 })
