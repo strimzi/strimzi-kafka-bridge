@@ -57,16 +57,19 @@ public interface HttpConfig {
         /**
          * @return Enable CORS on HTTP
          */
+        @WithDefault("false")
         boolean enabled();
 
         /**
          * @return Allowed origins with CORS
          */
+        @WithDefault("*")
         String allowedOrigins();
 
         /**
          * @return Allowed methods with CORS
          */
+        @WithDefault("GET,POST,PUT,DELETE,OPTIONS,PATCH")
         String allowedMethods();
 
         /**
@@ -82,6 +85,7 @@ public interface HttpConfig {
         /**
          * @return Enable consumer part of the bridge
          */
+        @WithDefault("true")
         boolean enabled();
 
         /**
@@ -97,6 +101,7 @@ public interface HttpConfig {
         /**
          * @return Enable producer part of the bridge
          */
+        @WithDefault("true")
         boolean enabled();
 
         /**
