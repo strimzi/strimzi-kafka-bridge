@@ -13,4 +13,7 @@
     <!-- Suppressing unnecessary parentheses as in some cases it is better to use them for better code readilibity-->
     <suppress checks="UnnecessaryParentheses"
               files="io[/\\]strimzi[/\\].*"/>
+    <!-- Suppressing checks on the OpenAPI POJOs because they are auto generated-->
+    <suppress checks="[a-zA-Z0-9]*"
+              files="[\\/]generated-sources/api[\\/]"/>
 </suppressions>

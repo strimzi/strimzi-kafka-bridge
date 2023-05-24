@@ -379,7 +379,6 @@
 							<goal>analyze-only</goal>
 						</goals>
 						<configuration>
-							<!-- TODO: to set true again. Switched for having build without complains -->
 							<failOnWarning>true</failOnWarning>
 								<ignoredUsedUndeclaredDependencies>
 									<ignoredUsedUndeclaredDependency>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</ignoredUsedUndeclaredDependency>
@@ -404,14 +403,15 @@
 									<ignoredUsedUndeclaredDependency>io.netty:netty-codec-http</ignoredUsedUndeclaredDependency>
 									<ignoredUsedUndeclaredDependency>io.netty:netty-common</ignoredUsedUndeclaredDependency>
 									<ignoredUsedUndeclaredDependency>jakarta.annotation:jakarta.annotation-api</ignoredUsedUndeclaredDependency>
-									<ignoredUsedUndeclaredDependency>org.quartz-scheduler:quartz</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>io.quarkus:quarkus-scheduler-api</ignoredUsedUndeclaredDependency>
+									<ignoredUsedUndeclaredDependency>com.fasterxml.jackson.core:jackson-annotations</ignoredUsedUndeclaredDependency>
 								</ignoredUsedUndeclaredDependencies>
 								<ignoredUnusedDeclaredDependencies>
 									<ignoredUnusedDeclaredDependency>io.strimzi:kafka-env-var-config-provider</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>io.strimzi:kafka-kubernetes-config-provider</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>io.strimzi:kafka-oauth-client</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>io.quarkus:quarkus-resteasy-reactive-jackson</ignoredUnusedDeclaredDependency>
-									<ignoredUnusedDeclaredDependency>io.quarkus:quarkus-quartz</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>io.quarkus:quarkus-scheduler</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>io.quarkus:quarkus-micrometer-registry-prometheus</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>jakarta.xml.bind:jakarta.xml.bind-api</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>io.quarkus:quarkus-opentelemetry</ignoredUnusedDeclaredDependency>
@@ -444,7 +444,8 @@
 							<goal>jar</goal>
 						</goals>
 						<configuration>
-							<sourcepath>${project.build.sourceDirectory}:${project.build.directory}/generated-sources/annotations</sourcepath>
+							<!-- Excluding the OpenAPI POJOs because they are auto generated -->
+							<excludePackageNames>io.strimzi.kafka.bridge.http;io.strimzi.kafka.bridge.http.beans</excludePackageNames>
 							<show>public</show>
 							<failOnError>true</failOnError>
 							<failOnWarnings>true</failOnWarnings>

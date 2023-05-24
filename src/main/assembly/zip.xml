@@ -21,6 +21,30 @@
             <fileMode>0755</fileMode>
         </fileSet>
         <fileSet>
+            <directory>${project.basedir}/target/quarkus-app/app</directory>
+            <outputDirectory>/app</outputDirectory>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/target/quarkus-app/lib</directory>
+            <outputDirectory>/lib</outputDirectory>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/target/quarkus-app/quarkus</directory>
+            <outputDirectory>/quarkus</outputDirectory>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/target/quarkus-app</directory>
+            <useDefaultExcludes>true</useDefaultExcludes>
+            <outputDirectory>./</outputDirectory>
+            <includes>
+                <include>*.jar</include>
+            </includes>
+            <fileMode>0644</fileMode>
+        </fileSet>
+        <fileSet>
             <directory>${project.basedir}</directory>
             <includes>
                 <include>README*</include>
@@ -30,12 +54,4 @@
             <fileMode>0644</fileMode>
         </fileSet>
     </fileSets>
-    <dependencySets>
-        <dependencySet>
-            <scope>runtime</scope>
-            <outputDirectory>/libs</outputDirectory>
-            <fileMode>0644</fileMode>
-            <outputFileNameMapping>${artifact.groupId}.${artifact.artifactId}-${artifact.version}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-        </dependencySet>
-    </dependencySets>
 </assembly>
