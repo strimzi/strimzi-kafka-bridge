@@ -24,20 +24,6 @@ public class ConsumerInstanceId {
         this.instanceId = instanceId;
     }
 
-    /**
-     * @return the consumer group the Kafka consumer belongs to
-     */
-    public String getGroupId() {
-        return groupId;
-    }
-
-    /**
-     * @return the instance Id of the Kafka consumer
-     */
-    public String getInstanceId() {
-        return instanceId;
-    }
-
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
