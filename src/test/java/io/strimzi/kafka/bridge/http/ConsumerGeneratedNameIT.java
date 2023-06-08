@@ -50,14 +50,23 @@ import static org.hamcrest.Matchers.is;
 @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
 public class ConsumerGeneratedNameIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerGeneratedNameIT.class);
-
+    static String kafkaUri;
     private static Map<String, Object> config = new HashMap<>();
     private static StrimziKafkaContainer kafkaContainer;
     private static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
     private static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
 
     static {
-        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
+            kafkaContainer = new StrimziKafkaContainer();
+            kafkaContainer.start();
+            kafkaUri = kafkaContainer.getBootstrapServers();
+        } else {
+            // else use external kafka
+            kafkaUri = "localhost:9092";
+        }
+
+        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, 5L);
@@ -83,11 +92,6 @@ public class ConsumerGeneratedNameIT {
         vertx = Vertx.vertx();
 
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
-
-        if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
-            kafkaContainer = new StrimziKafkaContainer();
-            kafkaContainer.start();
-        } // else use external kafka
 
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
 
