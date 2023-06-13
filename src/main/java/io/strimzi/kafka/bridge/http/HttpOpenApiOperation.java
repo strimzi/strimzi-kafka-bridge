@@ -41,8 +41,8 @@ public abstract class HttpOpenApiOperation implements Handler<RoutingContext> {
     @Override
     public void handle(RoutingContext routingContext) {
         this.logRequest(routingContext);
+        routingContext.addEndHandler(ignoredResult -> this.logResponse(routingContext));
         this.process(routingContext);
-        this.logResponse(routingContext);
     }
 
     protected void logRequest(RoutingContext routingContext) {
@@ -74,4 +74,3 @@ public abstract class HttpOpenApiOperation implements Handler<RoutingContext> {
         return this.operationId;
     }
 }
- 
