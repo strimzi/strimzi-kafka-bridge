@@ -25,7 +25,7 @@ import java.util.concurrent.CompletionStage;
  */
 public class KafkaBridgeProducer<K, V> {
 
-    private final Logger log = LoggerFactory.getLogger(KafkaBridgeConsumer.class);
+    private final Logger log = LoggerFactory.getLogger(KafkaBridgeProducer.class);
 
     private final KafkaConfig kafkaConfig;
     private final Serializer<K> keySerializer;
