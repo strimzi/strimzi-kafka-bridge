@@ -10,7 +10,7 @@
 * Fixed OpenAPI HTTP status codes returned by `/ready` and `/healthy`:
   * from 200 to 204 because no content in the response in case of success.
   * added 500 in the specification for the failure case, as already returned by the bridge.
-* Dependency updates (Vert.x 4.4.4, Netty 4.1.94.Final to align with Vert.x, Kafka 3.5.0, snakeYAML 2.0, JMX Prometheus Exporter 0.18.0, Jackson 2.14.2)
+* Dependency updates (Vert.x 4.4.4, Netty 4.1.94.Final to align with Vert.x, Kafka 3.5.0, snakeYAML 2.0, JMX Prometheus Exporter 0.18.0, Jackson 2.14.2, OAuth 0.13.0)
 
 ## 0.25.0
 

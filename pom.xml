@@ -125,7 +125,7 @@
 		<jackson-databind.version>2.14.2</jackson-databind.version>
 		<spotbugs.version>4.7.3</spotbugs.version>
 		<maven.spotbugs.version>4.7.3.0</maven.spotbugs.version>
-		<strimzi-oauth.version>0.12.0</strimzi-oauth.version>
+		<strimzi-oauth.version>0.13.0</strimzi-oauth.version>
 		<jaeger.version>1.8.1</jaeger.version>
 		<opentracing.version>0.33.0</opentracing.version>
 		<opentracing-kafka-client.version>0.1.15</opentracing-kafka-client.version>
