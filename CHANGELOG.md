@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.26.1
+
+* Dependency updates (Kafka 3.5.1 [CVE-2023-34455](https://nvd.nist.gov/vuln/detail/CVE-2023-34455))
+
 ## 0.26.0
 
 * Removed "remote" and "local" labels from HTTP server related metrics to avoid a big growth of time series samples.
