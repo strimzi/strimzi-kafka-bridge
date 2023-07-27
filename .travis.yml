@@ -29,8 +29,6 @@ services:
 before_install:
 - curl -s https://rubygems.org/downloads/asciidoctor-2.0.17.gem -o asciidoctor-2.0.17.gem
 - gem install --local asciidoctor
-script:
-- "./.travis/build.sh"
 env:
   global:
   - PULL_REQUEST=${TRAVIS_PULL_REQUEST}
