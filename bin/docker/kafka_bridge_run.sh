@@ -23,7 +23,7 @@ mkdir -p /tmp/strimzi
     "/tmp/strimzi/bridge.keystore.p12" \
     "${STRIMZI_HOME}/bridge-certs"
 
-# Generate and print the consumer config file
+# Generate and print the bridge config file
 echo "Kafka Bridge configuration:"
 "${MYPATH}"/kafka_bridge_config_generator.sh | tee /tmp/kafka-bridge.properties | sed 's/sasl.jaas.config=.*/sasl.jaas.config=[hidden]/g' | sed 's/password=.*/password=[hidden]/g'
 echo ""
