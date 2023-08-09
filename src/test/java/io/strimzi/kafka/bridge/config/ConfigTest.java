@@ -26,7 +26,7 @@ public class ConfigTest {
         Map<String, Object> map = new HashMap<>();
         map.put("bridge.id", "my-bridge");
         map.put("kafka.bootstrap.servers", "localhost:9092");
-        map.put("kafka.producer.acks","1");
+        map.put("kafka.producer.acks", "1");
         map.put("kafka.consumer.auto.offset.reset", "earliest");
         map.put("http.host", "0.0.0.0");
         map.put("http.port", "8080");
@@ -58,7 +58,7 @@ public class ConfigTest {
         map.put("kafka.ssl.truststore.password", storePassword);
         map.put("kafka.ssl.truststore.type", "PKCS12");
         map.put("kafka.ssl.keystore.location", "/tmp/strimzi/bridge.keystore.p12");
-        map.put("kafka.ssl.keystore.password",storePassword);
+        map.put("kafka.ssl.keystore.password", storePassword);
         map.put("kafka.ssl.keystore.type", "PKCS12");
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);

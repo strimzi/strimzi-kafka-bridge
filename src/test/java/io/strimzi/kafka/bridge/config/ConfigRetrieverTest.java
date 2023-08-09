@@ -5,8 +5,6 @@
 
 package io.strimzi.kafka.bridge.config;
 
-import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.strimzi.kafka.bridge.config.ConfigRetriever;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
