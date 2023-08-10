@@ -67,4 +67,18 @@ public class ConfigTest {
         assertThat(bridgeConfig.getKafkaConfig().toString().contains("ssl.truststore.password=" + storePassword), is(false));
         assertThat(bridgeConfig.getKafkaConfig().toString().contains("ssl.truststore.password=[hidden]"), is(true));
     }
+
+    @Test
+    public void testHttpDefaults() {
+        BridgeConfig bridgeConfig = BridgeConfig.fromMap(Map.of());
+
+        assertThat(bridgeConfig.getHttpConfig().getHost(), is("0.0.0.0"));
+        assertThat(bridgeConfig.getHttpConfig().getPort(), is(8080));
+        assertThat(bridgeConfig.getHttpConfig().getConsumerTimeout(), is(-1L));
+        assertThat(bridgeConfig.getHttpConfig().isCorsEnabled(), is(false));
+        assertThat(bridgeConfig.getHttpConfig().getCorsAllowedOrigins(), is("*"));
+        assertThat(bridgeConfig.getHttpConfig().getCorsAllowedMethods(), is("GET,POST,PUT,DELETE,OPTIONS,PATCH"));
+        assertThat(bridgeConfig.getHttpConfig().isConsumerEnabled(), is(true));
+        assertThat(bridgeConfig.getHttpConfig().isProducerEnabled(), is(true));
+    }
 }
