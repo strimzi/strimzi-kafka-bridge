@@ -41,7 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 /**
- * Base for OpenTracing and OpenTelemetry (manual) tests.
+ * Base for OpenTelemetry (manual) tests.
  * <p>
  * Test will only run if the bridge AND tracing server are up-n-running.
  */

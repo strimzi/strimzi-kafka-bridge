@@ -2,6 +2,9 @@
 
 ## 0.27.0
 
+* Removed support for OpenTracing:
+  * The `bridge.tracing=jaeger` configuration is not valid anymore.
+  * The OpenTelemetry based tracing is the only available by using `bridge.tracing=opentelemetry`.
 * Fixed logging Kafka TLS related password for trust/key stores on startup.
 
 ## 0.26.1

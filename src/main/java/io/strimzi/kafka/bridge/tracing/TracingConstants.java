@@ -15,8 +15,6 @@ public final class TracingConstants {
     /** Kafka service name definition */
     public static final String KAFKA_SERVICE = "kafka";
 
-    /** Jaeger/OpenTracing tracing type */
-    public static final String JAEGER = "jaeger";
     /** OpenTelemetry tracing type */
     public static final String OPENTELEMETRY = "opentelemetry";
 
