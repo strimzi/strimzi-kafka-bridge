@@ -12,7 +12,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import java.util.Properties;
 
 /**
- * Simple interface to abstract tracing between legacy OpenTracing and new OpenTelemetry.
+ * Simple interface to abstract tracing
  */
 public interface TracingHandle {
     /**
