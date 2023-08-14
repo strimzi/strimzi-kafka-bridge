@@ -32,8 +32,8 @@ Jaeger implements the required APIs and presents visualizations of the trace dat
 
 To have end-to-end tracing, you must configure tracing in your HTTP clients.
 
-CAUTION: The OpenTracing project is now archived, so Strimzi has no support for OpenTracing.
-Please use the supported OpenTelemetry instead.
+CAUTION: Strimzi no longer supports OpenTracing.
+If you were previously using OpenTracing with the `bridge.tracing=jaeger` option, we encourage you to transition to using OpenTelemetry instead.
 
 .Prerequisites
 
@@ -50,7 +50,7 @@ Use the `bridge.tracing` property to enable the tracing you want to use.
 ----
 bridge.tracing=opentelemetry # <1>
 ----
-<1> The property for enabling OpenTelemetry is uncommented.
+<1> The property for enabling OpenTelemetry is uncommented by removing the `#` at the beginning of the line.
 +
 With tracing enabled, you initialize tracing when you run the Kafka Bridge script.
 
