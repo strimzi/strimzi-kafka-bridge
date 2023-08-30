@@ -107,7 +107,8 @@
 		<kafka.version>3.5.1</kafka.version>
 		<kafka-kubernetes-config-provider.version>1.1.1</kafka-kubernetes-config-provider.version>
 		<kafka-env-var-config-provider.version>1.1.0</kafka-env-var-config-provider.version>
-		<maven.checkstyle.version>3.2.0</maven.checkstyle.version>
+		<maven.checkstyle.version>3.3.0</maven.checkstyle.version>
+		<checkstyle.version>10.12.2</checkstyle.version>
 		<hamcrest.version>2.2</hamcrest.version>
 		<junit.version>5.8.2</junit.version>
 		<maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
@@ -401,7 +402,7 @@
 					<dependency>
 						<groupId>com.puppycrawl.tools</groupId>
 						<artifactId>checkstyle</artifactId>
-						<version>9.0</version>
+						<version>${checkstyle.version}</version>
 					</dependency>
 				</dependencies>
 				<executions>
