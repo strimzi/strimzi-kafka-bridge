@@ -27,5 +27,5 @@ java_clean:
 	mvn clean
 
 .PHONY: spotbugs
-spotbugs: java_compile
+spotbugs:
 	mvn $(MVN_ARGS) spotbugs:check
