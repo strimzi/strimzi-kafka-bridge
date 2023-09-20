@@ -16,6 +16,7 @@ import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
+import io.strimzi.kafka.bridge.http.converter.HttpTextMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeResult;
@@ -114,7 +115,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             }
             records = messageConverter.toKafkaRecords(topic, partition, routingContext.body().buffer().getByteBuf().array());
 
-            for (ProducerRecord<K, V> record :records)   {
+            for (ProducerRecord<K, V> record : records) {
                 span.inject(record);
             }
         } catch (Exception e) {
@@ -216,6 +217,8 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 return (MessageConverter<K, V, byte[], byte[]>) new HttpJsonMessageConverter();
             case BINARY:
                 return (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
+            case TEXT:
+                return (MessageConverter<K, V, byte[], byte[]>) new HttpTextMessageConverter();
         }
         return null;
     }
