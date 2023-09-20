@@ -10,11 +10,20 @@ package io.strimzi.kafka.bridge;
  */
 public enum EmbeddedFormat {
 
-    /** Define "binary" data as embedded format */
+    /**
+     * Define "binary" data as embedded format
+     */
     BINARY,
 
-    /** Define "json" data as embedded format */
-    JSON;
+    /**
+     * Define "json" data as embedded format
+     */
+    JSON,
+
+    /**
+     * Define "text" data as embedded format
+     */
+    TEXT;
 
     /**
      * Convert the String value in the corresponding enum
@@ -28,6 +37,8 @@ public enum EmbeddedFormat {
                 return JSON;
             case "binary":
                 return BINARY;
+            case "text":
+                return TEXT;
         }
         throw new IllegalEmbeddedFormatException("Invalid format type.");
     }
