@@ -75,10 +75,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     /**
      * Constructor
      *
-     * @param bridgeConfig      the bridge configuration
-     * @param context           the HTTP bridge context
-     * @param format            the embedded format for consumed messages
-     * @param keyDeserializer   key deserializer for consumed messages
+     * @param bridgeConfig the bridge configuration
+     * @param context the HTTP bridge context
+     * @param format the embedded format for consumed messages
+     * @param keyDeserializer key deserializer for consumed messages
      * @param valueDeserializer value deserializer for consumed messages
      */
     public HttpSinkBridgeEndpoint(BridgeConfig bridgeConfig, HttpBridgeContext<K, V> context, EmbeddedFormat format,
@@ -112,8 +112,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
      * Create a Kafka consumer
      *
      * @param routingContext the routing context
-     * @param bodyAsJson     HTTP request body bringing consumer settings
-     * @param handler        handler for the request
+     * @param bodyAsJson HTTP request body bringing consumer settings
+     * @param handler handler for the request
      */
     private void doCreateConsumer(RoutingContext routingContext, JsonNode bodyAsJson, Handler<HttpBridgeEndpoint> handler) {
         // get the consumer group-id
@@ -529,7 +529,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     /**
      * Add a configuration parameter with key and value to the provided Properties bag
      *
-     * @param key   key of the configuration parameter
+     * @param key key of the configuration parameter
      * @param value value of the configuration parameter
      * @param props Properties bag where to put the configuration parameter
      */

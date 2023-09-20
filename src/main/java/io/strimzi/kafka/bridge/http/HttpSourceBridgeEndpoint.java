@@ -115,7 +115,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             }
             records = messageConverter.toKafkaRecords(topic, partition, routingContext.body().buffer().getByteBuf().array());
 
-            for (ProducerRecord<K, V> record : records) {
+            for (ProducerRecord<K, V> record :records)   {
                 span.inject(record);
             }
         } catch (Exception e) {
