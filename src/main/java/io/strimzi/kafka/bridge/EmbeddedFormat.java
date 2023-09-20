@@ -10,19 +10,13 @@ package io.strimzi.kafka.bridge;
  */
 public enum EmbeddedFormat {
 
-    /**
-     * Define "binary" data as embedded format
-     */
+    /** Define "binary" data as embedded format */
     BINARY,
 
-    /**
-     * Define "json" data as embedded format
-     */
+    /** Define "json" data as embedded format */
     JSON,
 
-    /**
-     * Define "text" data as embedded format
-     */
+    /** Define "text" data as embedded format */
     TEXT;
 
     /**
