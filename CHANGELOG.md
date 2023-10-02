@@ -6,6 +6,8 @@
   * The `bridge.tracing=jaeger` configuration is not valid anymore.
   * The OpenTelemetry based tracing is the only available by using `bridge.tracing=opentelemetry`.
 * Fixed logging Kafka TLS related password for trust/key stores on startup.
+* Sign containers using cosign
+* Generate and publish Software Bill of Materials (SBOMs) of Strimzi containers
 
 ## 0.26.1
 
