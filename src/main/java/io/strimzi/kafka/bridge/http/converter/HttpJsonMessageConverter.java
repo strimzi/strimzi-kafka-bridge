@@ -91,9 +91,9 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
             ObjectNode jsonObject = JsonUtils.createObjectNode();
 
             jsonObject.put("topic", record.topic());
-            jsonObject.put("key", record.key() != null ?
+            jsonObject.set("key", record.key() != null ?
                     JsonUtils.bytesToJson(record.key()) : null);
-            jsonObject.put("value", record.value() != null ?
+            jsonObject.set("value", record.value() != null ?
                     JsonUtils.bytesToJson(record.value()) : null);
             jsonObject.put("partition", record.partition());
             jsonObject.put("offset", record.offset());
@@ -109,7 +109,7 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
                 headers.add(header);
             }
             if (!headers.isEmpty()) {
-                jsonObject.put("headers", headers);
+                jsonObject.set("headers", headers);
             }
             jsonArray.add(jsonObject);
         }

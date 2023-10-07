@@ -144,7 +144,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                         if (configEntries.size() > 0) {
                             ObjectNode configs = JsonUtils.createObjectNode();
                             configEntries.forEach(configEntry -> configs.put(configEntry.name(), configEntry.value()));
-                            root.put("configs", configs);
+                            root.set("configs", configs);
                         }
                         TopicDescription description = topicDescriptions.get(topicName);
                         if (description != null) {
@@ -152,7 +152,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                                 partitionsArray.add(createPartitionMetadata(partitionInfo));
                             });
                         }
-                        root.put("partitions", partitionsArray);
+                        root.set("partitions", partitionsArray);
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
                     } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
                         HttpBridgeError error = new HttpBridgeError(
@@ -339,7 +339,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
             replica.put("in_sync", insyncSet.contains(node.id()));
             replicasArray.add(replica);
         });
-        root.put("replicas", replicasArray);
+        root.set("replicas", replicasArray);
         return root;
     }
 }

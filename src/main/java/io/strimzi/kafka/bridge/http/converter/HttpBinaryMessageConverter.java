@@ -110,7 +110,7 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
                 headers.add(header);
             }
             if (!headers.isEmpty()) {
-                jsonObject.put("headers", headers);
+                jsonObject.set("headers", headers);
             }
             jsonArray.add(jsonObject);
         }
