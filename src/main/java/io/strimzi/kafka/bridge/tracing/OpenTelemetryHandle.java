@@ -111,7 +111,7 @@ class OpenTelemetryHandle implements TracingHandle {
         return GlobalOpenTelemetry.getPropagators().getTextMapPropagator();
     }
 
-    private static final TextMapGetter<RoutingContext> ROUTING_CONTEXT_GETTER = new TextMapGetter<RoutingContext>() {
+    private static final TextMapGetter<RoutingContext> ROUTING_CONTEXT_GETTER = new TextMapGetter<>() {
         @Override
         public Iterable<String> keys(RoutingContext rc) {
             return rc.request().headers().names();
@@ -126,7 +126,7 @@ class OpenTelemetryHandle implements TracingHandle {
         }
     };
 
-    private static final TextMapGetter<Map<String, String>> MG = new TextMapGetter<Map<String, String>>() {
+    private static final TextMapGetter<Map<String, String>> MG = new TextMapGetter<>() {
         @Override
         public Iterable<String> keys(Map<String, String> map) {
             return map.keySet();

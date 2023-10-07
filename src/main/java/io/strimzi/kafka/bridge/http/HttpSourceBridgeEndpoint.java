@@ -196,7 +196,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             }
             offsets.add(offset);
         }
-        jsonResponse.put("offsets", offsets);
+        jsonResponse.set("offsets", offsets);
         return jsonResponse;
     }
 
