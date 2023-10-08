@@ -24,8 +24,8 @@ public class BridgeConfig extends AbstractConfig {
     /** Tracing system to be used in the bridge */
     public static final String TRACING_TYPE = BRIDGE_CONFIG_PREFIX + "tracing";
 
-    private KafkaConfig kafkaConfig;
-    private HttpConfig httpConfig;
+    private final KafkaConfig kafkaConfig;
+    private final HttpConfig httpConfig;
 
     /**
      * Constructor

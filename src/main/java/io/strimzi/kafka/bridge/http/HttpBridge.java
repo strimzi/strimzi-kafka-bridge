@@ -76,9 +76,9 @@ public class HttpBridge extends AbstractVerticle {
 
     private Router router;
 
-    private Map<ConsumerInstanceId, Long> timestampMap = new HashMap<>();
+    private final Map<ConsumerInstanceId, Long> timestampMap = new HashMap<>();
 
-    private MetricsReporter metricsReporter;
+    private final MetricsReporter metricsReporter;
 
     /**
      * Constructor
@@ -653,7 +653,7 @@ public class HttpBridge extends AbstractVerticle {
         return this.isReady;
     }
 
-    HttpOpenApiOperation SEND = new HttpOpenApiOperation(HttpOpenApiOperations.SEND) {
+    final HttpOpenApiOperation SEND = new HttpOpenApiOperation(HttpOpenApiOperations.SEND) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -661,7 +661,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation SEND_TO_PARTITION = new HttpOpenApiOperation(HttpOpenApiOperations.SEND_TO_PARTITION) {
+    final HttpOpenApiOperation SEND_TO_PARTITION = new HttpOpenApiOperation(HttpOpenApiOperations.SEND_TO_PARTITION) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -669,7 +669,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation CREATE_CONSUMER = new HttpOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER) {
+    final HttpOpenApiOperation CREATE_CONSUMER = new HttpOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -677,7 +677,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation DELETE_CONSUMER = new HttpOpenApiOperation(HttpOpenApiOperations.DELETE_CONSUMER) {
+    final HttpOpenApiOperation DELETE_CONSUMER = new HttpOpenApiOperation(HttpOpenApiOperations.DELETE_CONSUMER) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -685,7 +685,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation SUBSCRIBE = new HttpOpenApiOperation(HttpOpenApiOperations.SUBSCRIBE) {
+    final HttpOpenApiOperation SUBSCRIBE = new HttpOpenApiOperation(HttpOpenApiOperations.SUBSCRIBE) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -693,7 +693,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation UNSUBSCRIBE = new HttpOpenApiOperation(HttpOpenApiOperations.UNSUBSCRIBE) {
+    final HttpOpenApiOperation UNSUBSCRIBE = new HttpOpenApiOperation(HttpOpenApiOperations.UNSUBSCRIBE) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -701,7 +701,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation LIST_SUBSCRIPTIONS = new HttpOpenApiOperation(HttpOpenApiOperations.LIST_SUBSCRIPTIONS) {
+    final HttpOpenApiOperation LIST_SUBSCRIPTIONS = new HttpOpenApiOperation(HttpOpenApiOperations.LIST_SUBSCRIPTIONS) {
 
         @Override
         public void process(RoutingContext routingContext) {
@@ -709,7 +709,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation LIST_TOPICS = new HttpOpenApiOperation(HttpOpenApiOperations.LIST_TOPICS) {
+    final HttpOpenApiOperation LIST_TOPICS = new HttpOpenApiOperation(HttpOpenApiOperations.LIST_TOPICS) {
 
         @Override
         public void process(RoutingContext routingContext) {
@@ -717,7 +717,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation GET_TOPIC = new HttpOpenApiOperation(HttpOpenApiOperations.GET_TOPIC) {
+    final HttpOpenApiOperation GET_TOPIC = new HttpOpenApiOperation(HttpOpenApiOperations.GET_TOPIC) {
 
         @Override
         public void process(RoutingContext routingContext) {
@@ -725,7 +725,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation LIST_PARTITIONS = new HttpOpenApiOperation(HttpOpenApiOperations.LIST_PARTITIONS) {
+    final HttpOpenApiOperation LIST_PARTITIONS = new HttpOpenApiOperation(HttpOpenApiOperations.LIST_PARTITIONS) {
 
         @Override
         public void process(RoutingContext routingContext) {
@@ -733,7 +733,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation GET_PARTITION = new HttpOpenApiOperation(HttpOpenApiOperations.GET_PARTITION) {
+    final HttpOpenApiOperation GET_PARTITION = new HttpOpenApiOperation(HttpOpenApiOperations.GET_PARTITION) {
 
         @Override
         public void process(RoutingContext routingContext) {
@@ -741,7 +741,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation GET_OFFSETS = new HttpOpenApiOperation(HttpOpenApiOperations.GET_OFFSETS) {
+    final HttpOpenApiOperation GET_OFFSETS = new HttpOpenApiOperation(HttpOpenApiOperations.GET_OFFSETS) {
 
         @Override
         public void process(RoutingContext routingContext) {
@@ -749,7 +749,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation ASSIGN = new HttpOpenApiOperation(HttpOpenApiOperations.ASSIGN) {
+    final HttpOpenApiOperation ASSIGN = new HttpOpenApiOperation(HttpOpenApiOperations.ASSIGN) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -757,7 +757,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation POLL = new HttpOpenApiOperation(HttpOpenApiOperations.POLL) {
+    final HttpOpenApiOperation POLL = new HttpOpenApiOperation(HttpOpenApiOperations.POLL) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -765,7 +765,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation COMMIT = new HttpOpenApiOperation(HttpOpenApiOperations.COMMIT) {
+    final HttpOpenApiOperation COMMIT = new HttpOpenApiOperation(HttpOpenApiOperations.COMMIT) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -773,7 +773,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation SEEK = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK) {
+    final HttpOpenApiOperation SEEK = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -781,7 +781,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation SEEK_TO_BEGINNING = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK_TO_BEGINNING) {
+    final HttpOpenApiOperation SEEK_TO_BEGINNING = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK_TO_BEGINNING) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -789,7 +789,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation SEEK_TO_END = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK_TO_END) {
+    final HttpOpenApiOperation SEEK_TO_END = new HttpOpenApiOperation(HttpOpenApiOperations.SEEK_TO_END) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -797,7 +797,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation HEALTHY = new HttpOpenApiOperation(HttpOpenApiOperations.HEALTHY) {
+    final HttpOpenApiOperation HEALTHY = new HttpOpenApiOperation(HttpOpenApiOperations.HEALTHY) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -805,7 +805,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation READY = new HttpOpenApiOperation(HttpOpenApiOperations.READY) {
+    final HttpOpenApiOperation READY = new HttpOpenApiOperation(HttpOpenApiOperations.READY) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -813,7 +813,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation OPENAPI = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPI) {
+    final HttpOpenApiOperation OPENAPI = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPI) {
     
         @Override
         public void process(RoutingContext routingContext) {
@@ -821,7 +821,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation METRICS = new HttpOpenApiOperation(HttpOpenApiOperations.METRICS) {
+    final HttpOpenApiOperation METRICS = new HttpOpenApiOperation(HttpOpenApiOperations.METRICS) {
 
         @Override
         public void process(RoutingContext routingContext) {
@@ -829,7 +829,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    HttpOpenApiOperation INFO = new HttpOpenApiOperation(HttpOpenApiOperations.INFO) {
+    final HttpOpenApiOperation INFO = new HttpOpenApiOperation(HttpOpenApiOperations.INFO) {
 
         @Override
         public void process(RoutingContext routingContext) {

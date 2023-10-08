@@ -20,8 +20,8 @@ public abstract class HttpBridgeEndpoint {
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
     protected String name;
-    protected EmbeddedFormat format;
-    protected BridgeConfig bridgeConfig;
+    protected final EmbeddedFormat format;
+    protected final BridgeConfig bridgeConfig;
     private Handler<HttpBridgeEndpoint> closeHandler;
 
     /**

@@ -12,7 +12,7 @@ import java.util.Map;
  */
 public abstract class AbstractConfig {
 
-    protected Map<String, Object> config;
+    protected final Map<String, Object> config;
 
     /**
      * Constructor
