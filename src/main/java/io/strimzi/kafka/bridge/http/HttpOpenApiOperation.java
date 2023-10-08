@@ -18,7 +18,7 @@ public abstract class HttpOpenApiOperation implements Handler<RoutingContext> {
 
     protected final static String LOGGER_NAME_PREFIX = "http.openapi.operation.";
 
-    protected Logger log;
+    protected final Logger log;
     protected final HttpOpenApiOperations operationId;
 
     /**

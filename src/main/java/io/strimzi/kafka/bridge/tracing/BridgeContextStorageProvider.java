@@ -45,7 +45,7 @@ public class BridgeContextStorageProvider implements ContextStorageProvider {
     enum BridgeContextStorage implements ContextStorage {
         INSTANCE;
 
-        private ConcurrentMap<Object, Object> data = new ConcurrentHashMap();
+        private final ConcurrentMap<Object, Object> data = new ConcurrentHashMap();
 
         @Override
         public Scope attach(Context toAttach) {

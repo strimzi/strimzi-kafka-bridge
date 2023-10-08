@@ -17,9 +17,9 @@ public class KafkaConfig extends AbstractConfig {
     /** Prefix for Kafka related configuration parameters */
     public static final String KAFKA_CONFIG_PREFIX = "kafka.";
 
-    private KafkaProducerConfig producerConfig;
-    private KafkaConsumerConfig consumerConfig;
-    private KafkaAdminConfig adminConfig;
+    private final KafkaProducerConfig producerConfig;
+    private final KafkaConsumerConfig consumerConfig;
+    private final KafkaAdminConfig adminConfig;
 
     /**
      * Constructor

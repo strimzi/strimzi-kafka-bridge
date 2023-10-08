@@ -60,9 +60,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     private long pollTimeOut = 100;
     private long maxBytes = Long.MAX_VALUE;
 
-    Pattern forwardedHostPattern = Pattern.compile("host=([^;]+)", Pattern.CASE_INSENSITIVE);
-    Pattern forwardedProtoPattern = Pattern.compile("proto=([^;]+)", Pattern.CASE_INSENSITIVE);
-    Pattern hostPortPattern = Pattern.compile("^.*:[0-9]+$");
+    final Pattern forwardedHostPattern = Pattern.compile("host=([^;]+)", Pattern.CASE_INSENSITIVE);
+    final Pattern forwardedProtoPattern = Pattern.compile("proto=([^;]+)", Pattern.CASE_INSENSITIVE);
+    final Pattern hostPortPattern = Pattern.compile("^.*:[0-9]+$");
 
     private MessageConverter<K, V, byte[], byte[]> messageConverter;
     private final HttpBridgeContext<K, V> httpBridgeContext;

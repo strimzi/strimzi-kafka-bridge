@@ -20,8 +20,8 @@ import java.util.Map;
  */
 public class HttpBridgeContext<K, V> {
 
-    private Map<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> httpSinkEndpoints = new HashMap<>();
-    private Map<HttpConnection, HttpSourceBridgeEndpoint<K, V>> httpSourceEndpoints = new HashMap<>();
+    private final Map<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> httpSinkEndpoints = new HashMap<>();
+    private final Map<HttpConnection, HttpSourceBridgeEndpoint<K, V>> httpSourceEndpoints = new HashMap<>();
     private HttpAdminBridgeEndpoint httpAdminBridgeEndpoint;
     private HttpOpenApiOperations openApiOperation;
 
