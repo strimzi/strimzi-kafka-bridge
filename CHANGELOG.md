@@ -8,6 +8,7 @@
 * Fixed logging Kafka TLS related password for trust/key stores on startup.
 * Sign containers using cosign
 * Generate and publish Software Bill of Materials (SBOMs) of Strimzi containers
+* Dependency updates (Kafka 3.6.0, OAuth 0.13.0)
 
 ## 0.26.1
 
