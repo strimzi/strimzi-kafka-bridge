@@ -9,6 +9,7 @@
 * Sign containers using cosign
 * Generate and publish Software Bill of Materials (SBOMs) of Strimzi containers
 * Dependency updates (Kafka 3.6.0, OAuth 0.14.0)
+* Dependency updates (Vert.x 4.4.6, Netty 4.1.100.Final [CVE-2023-44487](https://nvd.nist.gov/vuln/detail/CVE-2023-44487))
 
 ## 0.26.1
 
