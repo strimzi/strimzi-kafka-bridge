@@ -95,13 +95,6 @@
                 </repository>
         </distributionManagement>
 
-	<repositories>
-		<repository>
-			<id>staging</id>
-			<url>https://oss.sonatype.org/content/repositories/iostrimzi-1198</url>
-		</repository>
-	</repositories>
-
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>11</maven.compiler.source>
@@ -140,7 +133,7 @@
 		<jmx-prometheus-collector.version>0.18.0</jmx-prometheus-collector.version>
 		<prometheus-simpleclient.version>0.16.0</prometheus-simpleclient.version>
 		<commons-cli.version>1.4</commons-cli.version>
-		<test-container.version>0.105.0-rc1</test-container.version>
+		<test-container.version>0.105.0</test-container.version>
 		<jakarta.version>2.3.2</jakarta.version>
 		<snakeyaml.version>2.0</snakeyaml.version>
 		<!-- property to skip surefire tests during failsafe execution -->
