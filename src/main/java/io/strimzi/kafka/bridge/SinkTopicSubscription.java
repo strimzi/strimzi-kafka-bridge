@@ -11,8 +11,8 @@ package io.strimzi.kafka.bridge;
  */
 public class SinkTopicSubscription {
 
-    private String topic;
-    private Integer partition;
+    private final String topic;
+    private final Integer partition;
 
     /**
      * Constructor
@@ -42,28 +42,10 @@ public class SinkTopicSubscription {
     }
 
     /**
-     * Set the topic to subscribe/assign
-     *
-     * @param topic topic to subscribe/assign
-     */
-    public void setTopic(String topic) {
-        this.topic = topic;
-    }
-
-    /**
      * @return partition requested as assignment (null if no specific assignment)
      */
     public Integer getPartition() {
         return partition;
-    }
-
-    /**
-     * Set the partition requested as assignment (null if no specific assignment)
-     *
-     * @param partition partition requested as assignment (null if no specific assignment)
-     */
-    public void setPartition(Integer partition) {
-        this.partition = partition;
     }
 
     @Override
