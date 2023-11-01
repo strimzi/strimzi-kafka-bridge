@@ -148,9 +148,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                         }
                         TopicDescription description = topicDescriptions.get(topicName);
                         if (description != null) {
-                            description.partitions().forEach(partitionInfo -> {
-                                partitionsArray.add(createPartitionMetadata(partitionInfo));
-                            });
+                            description.partitions().forEach(partitionInfo -> partitionsArray.add(createPartitionMetadata(partitionInfo)));
                         }
                         root.set("partitions", partitionsArray);
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
