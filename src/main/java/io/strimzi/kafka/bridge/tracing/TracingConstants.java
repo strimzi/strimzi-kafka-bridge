@@ -22,8 +22,4 @@ public final class TracingConstants {
     public static final String OPENTELEMETRY_SERVICE_NAME_ENV_KEY = "OTEL_SERVICE_NAME";
     /** OpenTelemetry service name system property */
     public static final String OPENTELEMETRY_SERVICE_NAME_PROPERTY_KEY = "otel.service.name";
-    /** OpenTelemetry traces exporter env var */
-    public static final String OPENTELEMETRY_TRACES_EXPORTER_ENV_KEY = "OTEL_TRACES_EXPORTER";
-    /** OpenTelemetry traces exporter system property */
-    public static final String OPENTELEMETRY_TRACES_EXPORTER_PROPERTY_KEY = "otel.traces.exporter";
 }

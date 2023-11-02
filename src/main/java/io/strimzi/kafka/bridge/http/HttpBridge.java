@@ -230,7 +230,7 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     @Override
-    public void stop(Promise<Void> stopPromise) throws Exception {
+    public void stop(Promise<Void> stopPromise) {
 
         log.info("Stopping HTTP-Kafka bridge verticle ...");
 
@@ -474,9 +474,7 @@ public class HttpBridge extends AbstractVerticle {
                 source = new HttpSourceBridgeEndpoint<>(this.bridgeConfig, contentTypeToFormat(contentType),
                                                         new ByteArraySerializer(), new ByteArraySerializer());
 
-                source.closeHandler(s -> {
-                    this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
-                });
+                source.closeHandler(s -> this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection()));
                 source.open();
                 this.httpBridgeContext.getHttpSourceEndpoints().put(httpServerRequest.connection(), source);
             }
@@ -613,9 +611,7 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void processConnection(HttpConnection httpConnection) {
-        httpConnection.closeHandler(close -> {
-            closeConnectionEndpoint(httpConnection);
-        });
+        httpConnection.closeHandler(close -> closeConnectionEndpoint(httpConnection));
     }
 
     /**
