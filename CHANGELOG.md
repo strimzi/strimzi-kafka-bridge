@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.28.0
+
+* Dependency updates (Kubernetes configuration provider)
+
 ## 0.27.0
 
 * Removed support for OpenTracing:
