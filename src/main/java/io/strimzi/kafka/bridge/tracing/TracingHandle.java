@@ -51,10 +51,9 @@ public interface TracingHandle {
      *
      * @param <K> key type
      * @param <V> value type
-     * @param parentSpanHandle parent span handle
      * @param record Kafka consumer record
      */
-    <K, V>  void handleRecordSpan(SpanHandle<K, V> parentSpanHandle, ConsumerRecord<K, V> record);
+    <K, V>  void handleRecordSpan(ConsumerRecord<K, V> record);
 
     /**
      * Add producer properties, if any.

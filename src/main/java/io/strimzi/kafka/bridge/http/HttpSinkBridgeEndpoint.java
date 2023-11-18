@@ -283,7 +283,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         if (ex == null) {
 
             for (ConsumerRecord<K, V> record : records) {
-                tracing.handleRecordSpan(span, record);
+                tracing.handleRecordSpan(record);
             }
             span.inject(routingContext);
 

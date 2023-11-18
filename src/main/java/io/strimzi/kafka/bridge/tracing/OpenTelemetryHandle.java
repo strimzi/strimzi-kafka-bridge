@@ -89,7 +89,7 @@ class OpenTelemetryHandle implements TracingHandle {
     }
 
     @Override
-    public <K, V> void handleRecordSpan(SpanHandle<K, V> parentSpanHandle, ConsumerRecord<K, V> record) {
+    public <K, V> void handleRecordSpan(ConsumerRecord<K, V> record) {
         String operationName = record.topic() + " " + MessageOperation.RECEIVE;
         SpanBuilder spanBuilder = get().spanBuilder(operationName);
         Context parentContext = propagator().extract(Context.current(), TracingUtil.toHeaders(record), MG);

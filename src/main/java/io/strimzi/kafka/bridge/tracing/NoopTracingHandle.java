@@ -33,7 +33,7 @@ final class NoopTracingHandle implements TracingHandle {
     }
 
     @Override
-    public <K, V> void handleRecordSpan(SpanHandle<K, V> parentSpanHandle, ConsumerRecord<K, V> record) {
+    public <K, V> void handleRecordSpan(ConsumerRecord<K, V> record) {
     }
 
     @Override
