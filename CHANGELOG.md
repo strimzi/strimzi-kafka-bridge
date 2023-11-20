@@ -2,7 +2,7 @@
 
 ## 0.28.0
 
-* Dependency updates (Kubernetes configuration provider)
+* Dependency updates (Kubernetes configuration provider 1.1.2, Vert.x 4.5.0)
 
 ## 0.27.0
 
