@@ -132,7 +132,7 @@ public abstract class HttpBridgeITAbstract {
             vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
         } else {
             context.completeNow();
-            // else we create external bridge from the OS invoked by `.jar`
+            // else we create an external bridge from the OS invoked by `.jar`
         }
 
         client = WebClient.create(vertx, new WebClientOptions()
@@ -146,7 +146,7 @@ public abstract class HttpBridgeITAbstract {
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
             vertx.close(context.succeeding(arg -> context.completeNow()));
         } else {
-            // if we running external bridge
+            // if we are running an external bridge
             context.completeNow();
         }
     }
