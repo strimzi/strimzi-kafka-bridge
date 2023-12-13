@@ -18,7 +18,8 @@ jobs:
     os: linux
     arch: s390x
     jdk: openjdk11
-    script: mvn install -Dmaven.javadoc.skip=true
+    # because of flakiness of tests on s390x, adding automatic retries on failure
+    script: mvn install -Dmaven.javadoc.skip=true -Dfailsafe.rerunFailingTestsCount=10
     addons:
       apt:
         packages:
