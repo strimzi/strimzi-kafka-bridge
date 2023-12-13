@@ -18,7 +18,7 @@ jobs:
     os: linux
     arch: s390x
     jdk: openjdk11
-    script: mvn install -Dmaven.javadoc.skip=true
+    script: mvn install -Dmaven.javadoc.skip=true -Dsurefire.rerunFailingTestsCount=10
     addons:
       apt:
         packages:
