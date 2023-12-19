@@ -92,6 +92,9 @@ class OpenTelemetryHandle implements TracingHandle {
     public <K, V> void handleRecordSpan(ConsumerRecord<K, V> record) {
         String operationName = record.topic() + " " + MessageOperation.RECEIVE;
         SpanBuilder spanBuilder = get().spanBuilder(operationName);
+        spanBuilder.setAttribute(SemanticAttributes.MESSAGING_DESTINATION, record.topic());
+        spanBuilder.setAttribute(SemanticAttributes.MESSAGING_DESTINATION_KIND, SemanticAttributes.MessagingDestinationKindValues.TOPIC);
+        spanBuilder.setAttribute(SemanticAttributes.MESSAGING_SYSTEM, "kafka");
         Context parentContext = propagator().extract(Context.current(), TracingUtil.toHeaders(record), MG);
         if (parentContext != null) {
             Span parentSpan = Span.fromContext(parentContext);
