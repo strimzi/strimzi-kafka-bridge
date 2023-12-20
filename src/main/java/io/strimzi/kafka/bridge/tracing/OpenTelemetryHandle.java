@@ -28,6 +28,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
@@ -90,8 +91,11 @@ class OpenTelemetryHandle implements TracingHandle {
 
     @Override
     public <K, V> void handleRecordSpan(ConsumerRecord<K, V> record) {
-        String operationName = record.topic() + " " + MessageOperation.RECEIVE;
+        String operationName = record.topic() + " " + MessageOperation.RECEIVE.name().toLowerCase(Locale.ROOT);
         SpanBuilder spanBuilder = get().spanBuilder(operationName);
+        spanBuilder.setAttribute(SemanticAttributes.MESSAGING_DESTINATION, record.topic());
+        spanBuilder.setAttribute(SemanticAttributes.MESSAGING_DESTINATION_KIND, SemanticAttributes.MessagingDestinationKindValues.TOPIC);
+        spanBuilder.setAttribute(SemanticAttributes.MESSAGING_SYSTEM, "kafka");
         Context parentContext = propagator().extract(Context.current(), TracingUtil.toHeaders(record), MG);
         if (parentContext != null) {
             Span parentSpan = Span.fromContext(parentContext);
