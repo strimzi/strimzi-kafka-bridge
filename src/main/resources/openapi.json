@@ -652,6 +652,11 @@
                             "schema": {
                                 "$ref": "#/components/schemas/ProducerRecordList"
                             }
+                        },
+                        "application/vnd.kafka.text.v2+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProducerRecordList"
+                            }
                         }
                     },
                     "required": true
@@ -799,6 +804,11 @@
                                     }
                                 }
                             },
+                            "application/vnd.kafka.text.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConsumerRecordList"
+                                }
+                            },
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/ConsumerRecordList"
@@ -815,6 +825,11 @@
                                 }
                             },
                             "application/vnd.kafka.binary.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/vnd.kafka.text.v2+json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Error"
                                 }
@@ -847,6 +862,11 @@
                                     "$ref": "#/components/schemas/Error"
                                 }
                             },
+                            "application/vnd.kafka.text.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Error"
@@ -871,6 +891,11 @@
                                 }
                             },
                             "application/vnd.kafka.binary.v2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/vnd.kafka.text.v2+json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Error"
                                 }
@@ -1038,6 +1063,11 @@
                             }
                         },
                         "application/vnd.kafka.binary.v2+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProducerRecordToPartitionList"
+                            }
+                        },
+                        "application/vnd.kafka.text.v2+json": {
                             "schema": {
                                 "$ref": "#/components/schemas/ProducerRecordToPartitionList"
                             }
