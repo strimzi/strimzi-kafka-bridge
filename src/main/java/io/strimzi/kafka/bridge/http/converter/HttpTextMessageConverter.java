@@ -15,8 +15,6 @@ import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.ArrayList;
@@ -26,11 +24,9 @@ import java.util.List;
  * Implementation of a message converter to deal with the "text" embedded data format
  */
 public class HttpTextMessageConverter implements MessageConverter<byte[], byte[], byte[], byte[]> {
-    private static final Logger log = LoggerFactory.getLogger(HttpTextMessageConverter.class);
-
     @Override
     public ProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, byte[] message) {
-        log.info("HttpTextMessageConverter toKafkaRecord");
+
         Integer partitionFromBody = null;
         byte[] key = null;
         byte[] value = null;
@@ -40,14 +36,14 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
 
         if (!json.isEmpty()) {
             if (json.has("key")) {
-                key = JsonUtils.jsonToBytes(json.get("key"));
+                key = json.get("key").asText().getBytes();
             }
             if (json.has("value")) {
-                value = JsonUtils.jsonToBytes(json.get("value"));
+                value = json.get("value").asText().getBytes();
             }
             if (json.has("headers")) {
                 ArrayNode jsonArray = (ArrayNode) json.get("headers");
-                for (JsonNode jsonObject: jsonArray) {
+                for (JsonNode jsonObject : jsonArray) {
                     headers.add(new RecordHeader(jsonObject.get("key").asText(), DatatypeConverter.parseBase64Binary(jsonObject.get("value").asText())));
                 }
             }
@@ -66,7 +62,7 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
 
     @Override
     public List<ProducerRecord<byte[], byte[]>> toKafkaRecords(String kafkaTopic, Integer partition, byte[] messages) {
-        log.info("HttpTextMessageConverter toKafkaRecords");
+
         List<ProducerRecord<byte[], byte[]>> records = new ArrayList<>();
 
         JsonNode json = JsonUtils.bytesToJson(messages);
@@ -80,35 +76,29 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
 
     @Override
     public byte[] toMessage(String address, ConsumerRecord<byte[], byte[]> record) {
-        log.info("HttpTextMessageConverter toMessage");
         throw new UnsupportedOperationException();
     }
 
     @Override
     public byte[] toMessages(ConsumerRecords<byte[], byte[]> records) {
-        log.info("HttpTextMessageConverter toMessages");
         ArrayNode jsonArray = JsonUtils.createArrayNode();
 
         for (ConsumerRecord<byte[], byte[]> record : records) {
-
             ObjectNode jsonObject = JsonUtils.createObjectNode();
 
             jsonObject.put("topic", record.topic());
-            jsonObject.put("key", record.key() != null ?
-                    JsonUtils.bytesToJson(record.key()) : null);
-            jsonObject.put("value", record.value() != null ?
-                    JsonUtils.bytesToJson(record.value()) : null);
+            jsonObject.put("key", record.key() != null ? new String(record.key()) : null);
+            jsonObject.put("value", record.value() != null ? new String(record.value()) : null);
             jsonObject.put("partition", record.partition());
             jsonObject.put("offset", record.offset());
 
             ArrayNode headers = JsonUtils.createArrayNode();
 
-            for (Header kafkaHeader: record.headers()) {
+            for (Header kafkaHeader : record.headers()) {
                 ObjectNode header = JsonUtils.createObjectNode();
 
                 header.put("key", kafkaHeader.key());
-                header.put("value", DatatypeConverter.printBase64Binary(kafkaHeader.value()));
-
+                header.put("value", new String(kafkaHeader.value()));
                 headers.add(header);
             }
             if (!headers.isEmpty()) {
@@ -116,7 +106,6 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
             }
             jsonArray.add(jsonObject);
         }
-
         return JsonUtils.jsonToBytes(jsonArray);
     }
 }
