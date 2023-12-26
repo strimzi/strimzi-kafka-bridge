@@ -602,7 +602,8 @@
         "operationId": "send",
         "consumes": [
           "application/vnd.kafka.json.v2+json",
-          "application/vnd.kafka.binary.v2+json"
+          "application/vnd.kafka.binary.v2+json",
+          "application/vnd.kafka.text.v2+json"
         ],
         "produces": [
           "application/vnd.kafka.v2+json"
@@ -695,6 +696,7 @@
         "produces": [
           "application/vnd.kafka.json.v2+json",
           "application/vnd.kafka.binary.v2+json",
+          "application/vnd.kafka.text.v2+json",
           "application/vnd.kafka.v2+json"
         ],
         "responses": {
@@ -935,7 +937,8 @@
         "operationId": "sendToPartition",
         "consumes": [
           "application/vnd.kafka.json.v2+json",
-          "application/vnd.kafka.binary.v2+json"
+          "application/vnd.kafka.binary.v2+json",
+          "application/vnd.kafka.text.v2+json"
         ],
         "produces": [
           "application/vnd.kafka.v2+json"

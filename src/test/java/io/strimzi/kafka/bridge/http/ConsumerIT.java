@@ -664,6 +664,68 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
+    @Disabled("Implement in the next PR")
+    @Test
+    void receiveTextMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String topic = "receiveTextMessage";
+        adminClientFacade.createTopic(topic);
+
+        String sentBody = "Simple message as string";
+        basicKafkaClient.sendStringMessagesPlain(topic, sentBody, 0, 1,true);
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("format", "text");
+
+        // create consumer
+        // subscribe to a topic
+        consumerService()
+            .createConsumer(context, groupId, json)
+            .subscribeConsumer(context, groupId, name, topic);
+
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+        // consume records
+        consumerService()
+            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_TEXT)
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonArray> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        JsonObject jsonResponse = response.body().getJsonObject(0);
+
+                        String kafkaTopic = jsonResponse.getString("topic");
+                        int kafkaPartition = jsonResponse.getInteger("partition");
+                        String key = jsonResponse.getString("key");
+                        String value = jsonResponse.getString("value");
+                        long offset = jsonResponse.getLong("offset");
+
+                        assertThat(kafkaTopic, is(topic));
+                        assertThat(value, is(sentBody + "-0"));
+                        assertThat(offset, is(0L));
+                        assertThat(kafkaPartition, notNullValue());
+                        assertThat(key, nullValue());
+                    });
+                    consume.complete(true);
+                });
+
+        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        // consumer deletion
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+
+        // topics deletion
+        adminClientFacade.deleteTopic(topic);
+
+        LOGGER.info("Verifying that all topics are deleted and the size is 0");
+        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
+
+        context.completeNow();
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+
     @Test
     void receiveFromMultipleTopics(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String topic1 = "receiveSimpleMessage-1";
