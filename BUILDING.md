@@ -47,35 +47,6 @@ The `make all` command can be used to trigger all the tasks above - build the Ja
 The `mvn` command can be customized by setting the `MVN_ARGS` environment variable when launching `make all`. 
 For example, `MVN_ARGS=-DskipTests make all` can be used to avoid running the unit tests.
 
-## Release
-
-The `make release` target can be used to create a release. 
-The `RELEASE_VERSION` environment variable (default value `latest`) can be used to define the release version. 
-The `release` target will:
-* Update all the tags of Docker images to `RELEASE_VERSION`
-* Update the documentation version to `RELEASE_VERSION`
-* Set the version of the main Maven project to `RELEASE_VERSION` 
-* Create ZIP and TAR.GZ archives with the Strimzi Kafka Bridge which can be used outside of Kubernetes / OpenShift
- 
-The `release` target will not build the Docker images - they should be built and pushed automatically by Travis CI when the release is tagged in the GitHub repository. 
-It also doesn't deploy the Java artifacts anywhere. 
-
-The release process should normally look like this:
-1. Create a release branch
-2. Export the desired version into the environment variable `RELEASE_VERSION`
-3. Run `make release`
-4. Commit the changes to the existing files (do not add the ZIP and TAR.GZ archives into Git)
-5. Push the changes to the release branch on GitHub
-6. Create the tag and push it to GitHub. 
-The tag name determines the tag of the resulting Docker images. 
-Therefore the git tag name has to be the same as the `RELEASE_VERSION`,
-7. Once the CI build for the tag is finished and the Docker images are pushed to Docker Hub, create a GitHub release based on the tag. 
-Attach the ZIP and TAR.GZ archives to the release.
-8. Build the documentation using `make docu_html` and `make docu_htmlnoheader` and add it to the [Strimzi.io](https://strimzi.io) website.
-8. On the `main` git branch:
-  * Update the versions to the next SNAPSHOT version using the `next_version` `make` target. 
-  For example to update the next version to `0.6.0-SNAPSHOT` run: `make NEXT_VERSION=0.6.0-SNAPSHOT next_version`.
-
 ## Building container images for other platforms with Docker `buildx`
 
 Docker supports building images for different platforms using the `docker buildx` command. If you want to use it to
