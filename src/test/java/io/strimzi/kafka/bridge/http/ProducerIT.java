@@ -245,6 +245,53 @@ public class ProducerIT extends HttpBridgeITAbstract {
     }
 
     @Test
+    void sendTextMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+
+        String value = "message-value";
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        future.get();
+
+        producerService()
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_TEXT)
+                .sendJsonObject(root, verifyOK(context));
+
+        Properties consumerProperties = Consumer.fillDefaultProperties();
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
+
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
+                new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
+        consumer.handler(record -> {
+            context.verify(() -> {
+                assertThat(record.value(), is(value));
+                assertThat(record.topic(), is(topic));
+                assertThat(record.partition(), is(0));
+                assertThat(record.offset(), is(0L));
+                assertThat(record.key(), nullValue());
+            });
+            LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                    record.topic(), record.partition(), record.offset(), record.key(), record.value());
+            consumer.close();
+            context.completeNow();
+        });
+
+        consumer.subscribe(topic, done -> {
+            if (!done.succeeded()) {
+                context.failNow(done.cause());
+            }
+        });
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+
+    @Test
     void sendSimpleMessageWithHeaders(VertxTestContext context) throws ExecutionException, InterruptedException {
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
 
