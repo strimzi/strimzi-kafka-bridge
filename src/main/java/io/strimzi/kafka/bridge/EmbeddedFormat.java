@@ -14,7 +14,10 @@ public enum EmbeddedFormat {
     BINARY,
 
     /** Define "json" data as embedded format */
-    JSON;
+    JSON,
+
+    /** Define "text" data as embedded format */
+    TEXT;
 
     /**
      * Convert the String value in the corresponding enum
@@ -28,6 +31,8 @@ public enum EmbeddedFormat {
                 return JSON;
             case "binary":
                 return BINARY;
+            case "text":
+                return TEXT;
         }
         throw new IllegalEmbeddedFormatException("Invalid format type.");
     }

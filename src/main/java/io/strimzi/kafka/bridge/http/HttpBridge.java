@@ -638,6 +638,8 @@ public class HttpBridge extends AbstractVerticle {
                 return EmbeddedFormat.BINARY;
             case BridgeContentType.KAFKA_JSON_JSON:
                 return EmbeddedFormat.JSON;
+            case BridgeContentType.KAFKA_JSON_TEXT:
+                return EmbeddedFormat.TEXT;
         }
         throw new IllegalArgumentException(contentType);
     }

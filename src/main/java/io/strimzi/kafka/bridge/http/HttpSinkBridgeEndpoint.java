@@ -20,6 +20,7 @@ import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
+import io.strimzi.kafka.bridge.http.converter.HttpTextMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.JsonDecodeException;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
@@ -614,6 +615,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 return (MessageConverter<K, V, byte[], byte[]>) new HttpJsonMessageConverter();
             case BINARY:
                 return (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
+            case TEXT:
+                return (MessageConverter<K, V, byte[], byte[]>) new HttpTextMessageConverter();
         }
         return null;
     }
@@ -624,6 +627,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 return format == EmbeddedFormat.JSON;
             case BridgeContentType.KAFKA_JSON_BINARY:
                 return format == EmbeddedFormat.BINARY;
+            case BridgeContentType.KAFKA_JSON_TEXT:
+                return format == EmbeddedFormat.TEXT;
         }
         return false;
     }
