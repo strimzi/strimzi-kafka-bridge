@@ -616,6 +616,7 @@ __optional__|The maximum amount of time, in milliseconds, that the HTTP Bridge s
 
 * `application/vnd.kafka.json.v2+json`
 * `application/vnd.kafka.binary.v2+json`
+* `application/vnd.kafka.text.v2+json`
 * `application/vnd.kafka.v2+json`
 
 
@@ -1046,6 +1047,7 @@ __required__||<<_producerrecordlist,ProducerRecordList>>
 
 * `application/vnd.kafka.json.v2+json`
 * `application/vnd.kafka.binary.v2+json`
+* `application/vnd.kafka.text.v2+json`
 
 
 ==== Produces
@@ -1312,6 +1314,7 @@ __required__|List of records to send to a given topic partition, including a val
 
 * `application/vnd.kafka.json.v2+json`
 * `application/vnd.kafka.binary.v2+json`
+* `application/vnd.kafka.text.v2+json`
 
 
 ==== Produces
