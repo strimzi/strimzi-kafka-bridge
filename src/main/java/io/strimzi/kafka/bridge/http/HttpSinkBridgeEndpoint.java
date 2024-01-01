@@ -306,9 +306,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                             BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
                 } else {
                     responseStatus = HttpResponseStatus.OK;
-                    HttpUtils.sendResponse(routingContext, responseStatus.code(),
-                            this.format == EmbeddedFormat.BINARY ? BridgeContentType.KAFKA_JSON_BINARY : BridgeContentType.KAFKA_JSON_JSON,
-                            buffer);
+
+                    HttpUtils.sendResponse(routingContext, responseStatus.code(), getContentType(), buffer);
                 }
             } catch (JsonDecodeException e) {
                 LOGGER.error("Error decoding records as JSON", e);
@@ -617,6 +616,18 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 return (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
             case TEXT:
                 return (MessageConverter<K, V, byte[], byte[]>) new HttpTextMessageConverter();
+        }
+        return null;
+    }
+
+    private String getContentType() {
+        switch (this.format) {
+            case JSON:
+                return BridgeContentType.KAFKA_JSON_JSON;
+            case BINARY:
+                return BridgeContentType.KAFKA_JSON_BINARY;
+            case TEXT:
+                return BridgeContentType.KAFKA_JSON_TEXT;
         }
         return null;
     }
