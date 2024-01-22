@@ -2,7 +2,7 @@
 
 ## 0.28.0
 
-* Dependency updates (Kafka 3.6.1, Kubernetes configuration provider 1.1.2, Vert.x 4.5.0)
+* Dependency updates (Kafka 3.6.1, Kubernetes configuration provider 1.1.2, Vert.x 4.5.1, Netty 4.1.103.Final)
 * Fixed missing messaging semantic attributes to the Kafka consumer spans
 
 ## 0.27.0
