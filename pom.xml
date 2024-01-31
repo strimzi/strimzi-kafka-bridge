@@ -129,7 +129,7 @@
 		<strimzi-oauth.version>0.14.0</strimzi-oauth.version>
 		<opentelemetry.alpha-version>1.19.0-alpha</opentelemetry.alpha-version>
 		<opentelemetry.version>1.19.0</opentelemetry.version>
-		<micrometer.version>1.9.5</micrometer.version>
+		<micrometer.version>1.12.2</micrometer.version>
 		<jmx-prometheus-collector.version>0.18.0</jmx-prometheus-collector.version>
 		<prometheus-simpleclient.version>0.16.0</prometheus-simpleclient.version>
 		<commons-cli.version>1.4</commons-cli.version>
