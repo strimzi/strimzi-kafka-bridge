@@ -14,8 +14,8 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Deserializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Duration;
 import java.util.HashSet;
@@ -33,8 +33,7 @@ import java.util.stream.Collectors;
  * @param <V>   type of Kafka message payload
  */
 public class KafkaBridgeConsumer<K, V> {
-
-    private final Logger log = LoggerFactory.getLogger(KafkaBridgeConsumer.class);
+    private static final Logger LOGGER = LogManager.getLogger(KafkaBridgeConsumer.class);
 
     private final KafkaConfig kafkaConfig;
     private final Deserializer<K> keyDeserializer;
@@ -102,9 +101,9 @@ public class KafkaBridgeConsumer<K, V> {
             return;
         }
 
-        log.info("Subscribe to topics {}", topicSubscriptions);
+        LOGGER.info("Subscribe to topics {}", topicSubscriptions);
         Set<String> topics = topicSubscriptions.stream().map(SinkTopicSubscription::getTopic).collect(Collectors.toSet());
-        log.trace("Subscribe thread {}", Thread.currentThread());
+        LOGGER.trace("Subscribe thread {}", Thread.currentThread());
         this.consumer.subscribe(topics, loggingPartitionsRebalance);
     }
 
@@ -112,8 +111,8 @@ public class KafkaBridgeConsumer<K, V> {
      * Unsubscribe all the topics which the consumer currently subscribes
      */
     public void unsubscribe() {
-        log.info("Unsubscribe from topics");
-        log.trace("Unsubscribe thread {}", Thread.currentThread());
+        LOGGER.info("Unsubscribe from topics");
+        LOGGER.trace("Unsubscribe thread {}", Thread.currentThread());
         this.consumer.unsubscribe();
     }
 
@@ -123,8 +122,8 @@ public class KafkaBridgeConsumer<K, V> {
      * @return set of topic partitions to which the consumer is subscribed
      */
     public Set<TopicPartition> listSubscriptions() {
-        log.info("Listing subscribed topics");
-        log.trace("ListSubscriptions thread {}", Thread.currentThread());
+        LOGGER.info("Listing subscribed topics");
+        LOGGER.trace("ListSubscriptions thread {}", Thread.currentThread());
         return this.consumer.assignment();
     }
 
@@ -134,8 +133,8 @@ public class KafkaBridgeConsumer<K, V> {
      * @param pattern Java regex for topics subscription
      */
     public void subscribe(Pattern pattern) {
-        log.info("Subscribe to topics with pattern {}", pattern);
-        log.trace("Subscribe thread {}", Thread.currentThread());
+        LOGGER.info("Subscribe to topics with pattern {}", pattern);
+        LOGGER.trace("Subscribe thread {}", Thread.currentThread());
         this.consumer.subscribe(pattern, loggingPartitionsRebalance);
     }
 
@@ -149,7 +148,7 @@ public class KafkaBridgeConsumer<K, V> {
             throw new IllegalArgumentException("Topic subscriptions cannot be null");
         }
 
-        log.info("Assigning to topics partitions {}", topicSubscriptions);
+        LOGGER.info("Assigning to topics partitions {}", topicSubscriptions);
         // TODO: maybe we don't need the SinkTopicSubscription class anymore? Removing "offset" field, it's now the same as TopicPartition class?
         Set<TopicPartition> topicPartitions = new HashSet<>();
         for (SinkTopicSubscription topicSubscription : topicSubscriptions) {
@@ -161,7 +160,7 @@ public class KafkaBridgeConsumer<K, V> {
             return;
         }
 
-        log.trace("Assign thread {}", Thread.currentThread());
+        LOGGER.trace("Assign thread {}", Thread.currentThread());
         this.consumer.assign(topicPartitions);
     }
 
@@ -172,7 +171,7 @@ public class KafkaBridgeConsumer<K, V> {
      * @return records polled from the Kafka cluster
      */
     public ConsumerRecords<K, V> poll(long timeout) {
-        log.trace("Poll thread {}", Thread.currentThread());
+        LOGGER.trace("Poll thread {}", Thread.currentThread());
         return this.consumer.poll(Duration.ofMillis(timeout));
     }
 
@@ -183,7 +182,7 @@ public class KafkaBridgeConsumer<K, V> {
      * @return map containing topic partitions and corresponding committed offsets
      */
     public Map<TopicPartition, OffsetAndMetadata> commit(Map<TopicPartition, OffsetAndMetadata> offsetsData) {
-        log.trace("Commit thread {}", Thread.currentThread());
+        LOGGER.trace("Commit thread {}", Thread.currentThread());
         // TODO: doesn't it make sense to change using the commitAsync?
         //       does it still make sense to return the offsets we get as parameter?
         this.consumer.commitSync(offsetsData);
@@ -194,7 +193,7 @@ public class KafkaBridgeConsumer<K, V> {
      * Commit offsets returned on the last poll() for all the subscribed list of topics and partitions
      */
     public void commitLastPolledOffsets() {
-        log.trace("Commit thread {}", Thread.currentThread());
+        LOGGER.trace("Commit thread {}", Thread.currentThread());
         // TODO: doesn't it make sense to change using the commitAsync?
         this.consumer.commitSync();
     }
@@ -206,7 +205,7 @@ public class KafkaBridgeConsumer<K, V> {
      * @param offset offset to seek to on the topic partition
      */
     public void seek(TopicPartition topicPartition, long offset) {
-        log.trace("Seek thread {}", Thread.currentThread());
+        LOGGER.trace("Seek thread {}", Thread.currentThread());
         this.consumer.seek(topicPartition, offset);
     }
 
@@ -216,7 +215,7 @@ public class KafkaBridgeConsumer<K, V> {
      * @param topicPartitionSet set of topic partition on which to seek at the beginning
      */
     public void seekToBeginning(Set<TopicPartition> topicPartitionSet) {
-        log.trace("SeekToBeginning thread {}", Thread.currentThread());
+        LOGGER.trace("SeekToBeginning thread {}", Thread.currentThread());
         this.consumer.seekToBeginning(topicPartitionSet);
     }
 
@@ -226,7 +225,7 @@ public class KafkaBridgeConsumer<K, V> {
      * @param topicPartitionSet set of topic partition on which to seek at the end
      */
     public void seekToEnd(Set<TopicPartition> topicPartitionSet) {
-        log.trace("SeekToEnd thread {}", Thread.currentThread());
+        LOGGER.trace("SeekToEnd thread {}", Thread.currentThread());
         this.consumer.seekToEnd(topicPartitionSet);
     }
 }

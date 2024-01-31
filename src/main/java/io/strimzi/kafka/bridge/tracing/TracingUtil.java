@@ -9,8 +9,8 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -24,7 +24,7 @@ import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY;
  */
 @SuppressFBWarnings({"MS_EXPOSE_REP"})
 public class TracingUtil {
-    private static final Logger log = LoggerFactory.getLogger(TracingUtil.class);
+    private static final Logger LOGGER = LogManager.getLogger(TracingUtil.class);
     private static TracingHandle tracing = new NoopTracingHandle();
 
     /**
@@ -47,14 +47,14 @@ public class TracingUtil {
 
                 String serviceName = instance.serviceName(config);
                 if (serviceName != null) {
-                    log.info("Initializing OpenTelemetry tracing config with service name {}", serviceName);
+                    LOGGER.info("Initializing OpenTelemetry tracing config with service name {}", serviceName);
                     instance.initialize();
                     tracing = instance;
                 } else {
-                    log.error("Tracing configuration cannot be initialized because {} environment variable is not defined", instance.envServiceName());
+                    LOGGER.error("Tracing configuration cannot be initialized because {} environment variable is not defined", instance.envServiceName());
                 }
             } else {
-                log.warn("Tracing with {} is not supported/valid", tracingConfig);
+                LOGGER.warn("Tracing with {} is not supported/valid", tracingConfig);
             }
         }
     }

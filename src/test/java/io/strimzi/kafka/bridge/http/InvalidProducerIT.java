@@ -20,10 +20,10 @@ import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.KafkaFuture;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,8 +33,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class InvalidProducerIT extends HttpBridgeITAbstract {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(InvalidProducerIT.class);
+    private static final Logger LOGGER = LogManager.getLogger(InvalidProducerIT.class);
 
     @Test
     void sendSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException {

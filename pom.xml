@@ -100,7 +100,6 @@
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
 		<log4j.version>2.17.2</log4j.version>
-		<slf4j.version>1.7.36</slf4j.version>
 		<vertx.version>4.5.2</vertx.version>
 		<vertx-testing.version>4.5.2</vertx-testing.version>
 		<netty.version>4.1.106.Final</netty.version>
@@ -193,9 +192,9 @@
 			<version>${netty.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>${slf4j.version}</version>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+			<version>${log4j.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>

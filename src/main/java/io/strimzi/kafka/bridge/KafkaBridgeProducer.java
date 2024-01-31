@@ -13,8 +13,8 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.Serializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
@@ -24,8 +24,7 @@ import java.util.concurrent.CompletionStage;
  * Represents a Kafka bridge producer client
  */
 public class KafkaBridgeProducer<K, V> {
-
-    private final Logger log = LoggerFactory.getLogger(KafkaBridgeProducer.class);
+    private static final Logger LOGGER = LogManager.getLogger(KafkaBridgeProducer.class);
 
     private final KafkaConfig kafkaConfig;
     private final Serializer<K> keySerializer;
@@ -56,11 +55,11 @@ public class KafkaBridgeProducer<K, V> {
      */
     public CompletionStage<RecordMetadata> send(ProducerRecord<K, V> record) {
         CompletableFuture<RecordMetadata> promise = new CompletableFuture<>();
-        log.trace("Send thread {}", Thread.currentThread());
-        log.debug("Sending record {}", record);
+        LOGGER.trace("Send thread {}", Thread.currentThread());
+        LOGGER.debug("Sending record {}", record);
         this.producer.send(record, (metadata, exception) -> {
-            log.trace("Kafka client callback thread {}", Thread.currentThread());
-            log.debug("Sent record {} at offset {}", record, metadata.offset());
+            LOGGER.trace("Kafka client callback thread {}", Thread.currentThread());
+            LOGGER.debug("Sent record {} at offset {}", record, metadata.offset());
             if (exception == null) {
                 promise.complete(metadata);
             } else {
@@ -76,8 +75,8 @@ public class KafkaBridgeProducer<K, V> {
      * @param record Kafka record to send
      */
     public void sendIgnoreResult(ProducerRecord<K, V> record) {
-        log.trace("Send ignore result thread {}", Thread.currentThread());
-        log.debug("Sending record {}", record);
+        LOGGER.trace("Send ignore result thread {}", Thread.currentThread());
+        LOGGER.debug("Sending record {}", record);
         this.producer.send(record);
     }
 

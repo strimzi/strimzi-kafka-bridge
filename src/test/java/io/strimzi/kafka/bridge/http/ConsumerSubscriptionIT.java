@@ -15,11 +15,11 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.common.KafkaFuture;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -31,7 +31,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerSubscriptionIT.class);
+    private static final Logger LOGGER = LogManager.getLogger(ConsumerSubscriptionIT.class);
 
     String groupId = "my-group";
 
