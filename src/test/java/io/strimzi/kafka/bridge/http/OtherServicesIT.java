@@ -11,9 +11,9 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -22,7 +22,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class OtherServicesIT extends HttpBridgeITAbstract {
-    private static final Logger LOGGER = LoggerFactory.getLogger(OtherServicesIT.class);
+    private static final Logger LOGGER = LogManager.getLogger(OtherServicesIT.class);
 
     @Test
     void readyTest(VertxTestContext context) throws InterruptedException {

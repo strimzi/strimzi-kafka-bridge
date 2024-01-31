@@ -27,14 +27,14 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -50,8 +50,7 @@ import static org.hamcrest.Matchers.is;
 @ExtendWith(VertxExtension.class)
 @Tag(HTTP_BRIDGE)
 public class DisablingConsumerProducerIT {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DisablingConsumerProducerIT.class);
+    private static final Logger LOGGER = LogManager.getLogger(DisablingConsumerProducerIT.class);
 
     private static Vertx vertx;
     private static WebClient client;

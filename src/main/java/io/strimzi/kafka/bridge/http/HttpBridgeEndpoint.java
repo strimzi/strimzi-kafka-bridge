@@ -9,16 +9,11 @@ import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.ext.web.RoutingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Abstract class for an endpoint bridging traffic between HTTP and Apache Kafka
  */
 public abstract class HttpBridgeEndpoint {
-
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
     protected String name;
     protected final EmbeddedFormat format;
     protected final BridgeConfig bridgeConfig;

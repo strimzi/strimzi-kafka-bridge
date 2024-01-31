@@ -25,11 +25,11 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.ArrayList;
@@ -47,8 +47,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class ProducerIT extends HttpBridgeITAbstract {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProducerIT.class);
+    private static final Logger LOGGER = LogManager.getLogger(ProducerIT.class);
 
     @Test
     void sendSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException {

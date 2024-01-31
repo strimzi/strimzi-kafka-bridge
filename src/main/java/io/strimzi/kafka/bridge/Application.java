@@ -24,8 +24,8 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.management.MalformedObjectNameException;
 import java.io.BufferedReader;
@@ -44,8 +44,7 @@ import java.util.stream.Collectors;
  * Apache Kafka bridge main application class
  */
 public class Application {
-
-    private static final Logger log = LoggerFactory.getLogger(Application.class);
+    private static final Logger LOGGER = LogManager.getLogger(Application.class);
 
     private static final String KAFKA_BRIDGE_METRICS_ENABLED = "KAFKA_BRIDGE_METRICS_ENABLED";
 
@@ -55,12 +54,12 @@ public class Application {
      * @param args command line arguments
      */
     public static void main(String[] args) {
-        log.info("Strimzi Kafka Bridge {} is starting", Application.class.getPackage().getImplementationVersion());
+        LOGGER.info("Strimzi Kafka Bridge {} is starting", Application.class.getPackage().getImplementationVersion());
         try {
             VertxOptions vertxOptions = new VertxOptions();
             JmxCollectorRegistry jmxCollectorRegistry = null;
             if (Boolean.parseBoolean(System.getenv(KAFKA_BRIDGE_METRICS_ENABLED))) {
-                log.info("Metrics enabled and exposed on the /metrics endpoint");
+                LOGGER.info("Metrics enabled and exposed on the /metrics endpoint");
                 // setup Micrometer metrics options
                 vertxOptions.setMetricsOptions(metricsOptions());
                 jmxCollectorRegistry = getJmxCollectorRegistry();
@@ -75,7 +74,7 @@ public class Application {
 
             Map<String, Object> config = ConfigRetriever.getConfig(absoluteFilePath(commandLine.getOptionValue("config-file")));
             BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
-            log.info("Bridge configuration {}", bridgeConfig);
+            LOGGER.info("Bridge configuration {}", bridgeConfig);
 
             deployHttpBridge(vertx, bridgeConfig, metricsReporter).onComplete(done -> {
                 if (done.succeeded()) {
@@ -84,7 +83,7 @@ public class Application {
                 }
             });
         } catch (RuntimeException | MalformedObjectNameException | IOException | ParseException e) {
-            log.error("Error starting the bridge", e);
+            LOGGER.error("Error starting the bridge", e);
             System.exit(1);
         }
     }
@@ -122,10 +121,10 @@ public class Application {
         HttpBridge httpBridge = new HttpBridge(bridgeConfig, metricsReporter);
         vertx.deployVerticle(httpBridge, done -> {
             if (done.succeeded()) {
-                log.info("HTTP verticle instance deployed [{}]", done.result());
+                LOGGER.info("HTTP verticle instance deployed [{}]", done.result());
                 httpPromise.complete(httpBridge);
             } else {
-                log.error("Failed to deploy HTTP verticle instance", done.cause());
+                LOGGER.error("Failed to deploy HTTP verticle instance", done.cause());
                 httpPromise.fail(done.cause());
             }
         });

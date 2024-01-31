@@ -41,8 +41,8 @@ import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.Set;
@@ -62,8 +62,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.ACCESS_CONTROL_ALLOW_M
  */
 @SuppressWarnings({"checkstyle:MemberName"})
 public class HttpBridge extends AbstractVerticle {
-
-    private static final Logger log = LoggerFactory.getLogger(HttpBridge.class);
+    private static final Logger LOGGER = LogManager.getLogger(HttpBridge.class);
 
     private final BridgeConfig bridgeConfig;
 
@@ -99,8 +98,8 @@ public class HttpBridge extends AbstractVerticle {
                 .requestHandler(this.router)
                 .listen(httpServerAsyncResult -> {
                     if (httpServerAsyncResult.succeeded()) {
-                        log.info("HTTP-Kafka Bridge started and listening on port {}", httpServerAsyncResult.result().actualPort());
-                        log.info("HTTP-Kafka Bridge bootstrap servers {}",
+                        LOGGER.info("HTTP-Kafka Bridge started and listening on port {}", httpServerAsyncResult.result().actualPort());
+                        LOGGER.info("HTTP-Kafka Bridge bootstrap servers {}",
                                 this.bridgeConfig.getKafkaConfig().getConfig()
                                         .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
                         );
@@ -112,7 +111,7 @@ public class HttpBridge extends AbstractVerticle {
                         this.isReady = true;
                         startPromise.complete();
                     } else {
-                        log.error("Error starting HTTP-Kafka Bridge", httpServerAsyncResult.cause());
+                        LOGGER.error("Error starting HTTP-Kafka Bridge", httpServerAsyncResult.cause());
                         startPromise.fail(httpServerAsyncResult.cause());
                     }
                 });
@@ -121,7 +120,7 @@ public class HttpBridge extends AbstractVerticle {
     private void startInactiveConsumerDeletionTimer(Long timeout) {
         Long timeoutInMs = timeout * 1000L;
         vertx.setPeriodic(timeoutInMs / 2, ignore -> {
-            log.debug("Looking for stale consumers in {} entries", timestampMap.size());
+            LOGGER.debug("Looking for stale consumers in {} entries", timestampMap.size());
             Iterator<Map.Entry<ConsumerInstanceId, Long>> it = timestampMap.entrySet().iterator();
             while (it.hasNext()) {
                 Map.Entry<ConsumerInstanceId, Long> item = it.next();
@@ -130,7 +129,7 @@ public class HttpBridge extends AbstractVerticle {
                     if (deleteSinkEndpoint != null) {
                         deleteSinkEndpoint.close();
                         this.httpBridgeContext.getHttpSinkEndpoints().remove(item.getKey());
-                        log.warn("Consumer {} deleted after inactivity timeout ({}s).", item.getKey(), timeout);
+                        LOGGER.warn("Consumer {} deleted after inactivity timeout ({}s).", item.getKey(), timeout);
                         timestampMap.remove(item.getKey());
                     }
                 }
@@ -187,14 +186,14 @@ public class HttpBridge extends AbstractVerticle {
                     );
                 }
 
-                log.info("Starting HTTP-Kafka bridge verticle...");
+                LOGGER.info("Starting HTTP-Kafka bridge verticle...");
                 this.httpBridgeContext = new HttpBridgeContext<>();
                 HttpAdminBridgeEndpoint adminClientEndpoint = new HttpAdminBridgeEndpoint(this.bridgeConfig, this.httpBridgeContext);
                 this.httpBridgeContext.setHttpAdminEndpoint(adminClientEndpoint);
                 adminClientEndpoint.open();
                 this.bindHttpServer(startPromise);
             } else {
-                log.error("Failed to create OpenAPI router factory");
+                LOGGER.error("Failed to create OpenAPI router factory");
                 startPromise.fail(ar.cause());
             }
         });
@@ -223,7 +222,7 @@ public class HttpBridge extends AbstractVerticle {
         //set allowed origins from property http.cors.allowedOrigins
         String allowedOrigins = this.bridgeConfig.getHttpConfig().getCorsAllowedOrigins();
 
-        log.info("Allowed origins for Cors: {}", allowedOrigins);
+        LOGGER.info("Allowed origins for Cors: {}", allowedOrigins);
         return CorsHandler.create(allowedOrigins)
                 .allowedHeaders(allowedHeaders)
                 .allowedMethods(allowedMethods);
@@ -232,7 +231,7 @@ public class HttpBridge extends AbstractVerticle {
     @Override
     public void stop(Promise<Void> stopPromise) {
 
-        log.info("Stopping HTTP-Kafka bridge verticle ...");
+        LOGGER.info("Stopping HTTP-Kafka bridge verticle ...");
 
         this.isReady = false;
 
@@ -252,10 +251,10 @@ public class HttpBridge extends AbstractVerticle {
             this.httpServer.close(done -> {
 
                 if (done.succeeded()) {
-                    log.info("HTTP-Kafka bridge has been shut down successfully");
+                    LOGGER.info("HTTP-Kafka bridge has been shut down successfully");
                     stopPromise.complete();
                 } else {
-                    log.info("Error while shutting down HTTP-Kafka bridge", done.cause());
+                    LOGGER.info("Error while shutting down HTTP-Kafka bridge", done.cause());
                     stopPromise.fail(done.cause());
                 }
             });
@@ -538,7 +537,7 @@ public class HttpBridge extends AbstractVerticle {
                     HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, JsonUtils.jsonToBytes(json));
                 }
             } else {
-                log.error("Failed to read OpenAPI JSON file", readFile.cause());
+                LOGGER.error("Failed to read OpenAPI JSON file", readFile.cause());
                 HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     readFile.cause().getMessage());
@@ -566,7 +565,7 @@ public class HttpBridge extends AbstractVerticle {
         int requestId = System.identityHashCode(routingContext.request());
         routingContext.put("request-id", requestId);
         
-        log.error("[{}] Request: from {}, method = {}, path = {}",
+        LOGGER.error("[{}] Request: from {}, method = {}, path = {}",
             requestId,
             routingContext.request().remoteAddress(), 
             routingContext.request().method(),
@@ -604,7 +603,7 @@ public class HttpBridge extends AbstractVerticle {
         HttpUtils.sendResponse(routingContext, routingContext.statusCode(),
                 BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
 
-        log.error("[{}] Response: statusCode = {}, message = {} ", 
+        LOGGER.error("[{}] Response: statusCode = {}, message = {} ",
             requestId,
             routingContext.statusCode(),
             message);

@@ -33,6 +33,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,6 +57,7 @@ import java.util.stream.StreamSupport;
  * @param <V> type of Kafka message payload
  */
 public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
+    private static final Logger LOGGER = LogManager.getLogger(HttpSinkBridgeEndpoint.class);
 
     private static final ObjectNode EMPTY_JSON = JsonUtils.createObjectNode();
     private long pollTimeOut = 100;
@@ -165,7 +168,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             handler.handle(this);
         }
 
-        log.info("Created consumer {} in group {}", this.name, groupId);
+        LOGGER.info("Created consumer {} in group {}", this.name, groupId);
         // send consumer instance id(name) and base URI as response
         ObjectNode body = JsonUtils.createObjectNode()
                 .put("instance_id", this.name)
@@ -186,7 +189,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             }
 
         }).whenComplete((v, ex) -> {
-            log.trace("Seek handler thread {}", Thread.currentThread());
+            LOGGER.trace("Seek handler thread {}", Thread.currentThread());
             if (ex == null) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
@@ -212,7 +215,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 this.kafkaBridgeConsumer.seekToEnd(set);
             }
         }).whenComplete((v, ex) -> {
-            log.trace("SeekTo handler thread {}", Thread.currentThread());
+            LOGGER.trace("SeekTo handler thread {}", Thread.currentThread());
             if (ex == null) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
@@ -238,7 +241,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
             CompletableFuture.supplyAsync(() -> this.kafkaBridgeConsumer.commit(offsetData))
                     .whenComplete((data, ex) -> {
-                        log.trace("Commit handler thread {}", Thread.currentThread());
+                        LOGGER.trace("Commit handler thread {}", Thread.currentThread());
                         if (ex == null) {
                             HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
                         } else {
@@ -254,7 +257,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
             CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.commitLastPolledOffsets())
                     .whenComplete((v, ex) -> {
-                        log.trace("Commit handler thread {}", Thread.currentThread());
+                        LOGGER.trace("Commit handler thread {}", Thread.currentThread());
                         if (ex == null) {
                             HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
                         } else {
@@ -271,7 +274,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
     private void doDeleteConsumer(RoutingContext routingContext) {
         this.close();
-        log.info("Deleted consumer {} from group {}", routingContext.pathParam("name"), routingContext.pathParam("groupid"));
+        LOGGER.info("Deleted consumer {} from group {}", routingContext.pathParam("name"), routingContext.pathParam("groupid"));
         HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
     }
 
@@ -305,7 +308,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                             buffer);
                 }
             } catch (JsonDecodeException e) {
-                log.error("Error decoding records as JSON", e);
+                LOGGER.error("Error decoding records as JSON", e);
                 responseStatus = HttpResponseStatus.NOT_ACCEPTABLE;
                 HttpBridgeError error = new HttpBridgeError(
                         responseStatus.code(),
@@ -355,7 +358,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
             CompletableFuture.supplyAsync(() -> this.kafkaBridgeConsumer.poll(this.pollTimeOut))
                     .whenComplete((records, ex) -> {
-                        log.trace("Poll handler thread {}", Thread.currentThread());
+                        LOGGER.trace("Poll handler thread {}", Thread.currentThread());
                         this.pollHandler(records, ex, routingContext);
                     });
         } else {
@@ -389,7 +392,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
         CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.assign(topicSubscriptions))
                 .whenComplete((v, ex) -> {
-                    log.trace("Assign handler thread {}", Thread.currentThread());
+                    LOGGER.trace("Assign handler thread {}", Thread.currentThread());
                     if (ex == null) {
                         this.assigned = true;
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
@@ -444,7 +447,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 this.kafkaBridgeConsumer.subscribe(pattern);
             }
         }).whenComplete((v, ex) -> {
-            log.trace("Subscribe handler thread {}", Thread.currentThread());
+            LOGGER.trace("Subscribe handler thread {}", Thread.currentThread());
             if (ex == null) {
                 this.subscribed = true;
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
@@ -463,7 +466,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
         CompletableFuture.supplyAsync(() -> this.kafkaBridgeConsumer.listSubscriptions())
                 .whenComplete((subscriptions, ex) -> {
-                    log.trace("ListSubscriptions handler thread {}", Thread.currentThread());
+                    LOGGER.trace("ListSubscriptions handler thread {}", Thread.currentThread());
                     if (ex == null) {
                         ObjectNode root = JsonUtils.createObjectNode();
                         List<String> topics = new ArrayList<>();
@@ -509,7 +512,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
         CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.unsubscribe())
                 .whenComplete((v, ex) -> {
-                    log.trace("Unsubscribe handler thread {}", Thread.currentThread());
+                    LOGGER.trace("Unsubscribe handler thread {}", Thread.currentThread());
                     if (ex == null) {
                         this.subscribed = false;
                         this.assigned = false;
@@ -546,7 +549,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             if (!routingContext.body().isEmpty()) {
                 bodyAsJson = JsonUtils.bytesToJson(routingContext.body().buffer().getByteBuf().array());
             }
-            log.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
+            LOGGER.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
         } catch (JsonDecodeException ex) {
             HttpBridgeError error = handleError(ex);
             HttpUtils.sendResponse(routingContext, error.getCode(),
@@ -554,7 +557,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             return;
         }
 
-        log.trace("HttpSinkBridgeEndpoint handle thread {}", Thread.currentThread());
+        LOGGER.trace("HttpSinkBridgeEndpoint handle thread {}", Thread.currentThread());
         switch (this.httpBridgeContext.getOpenApiOperation()) {
 
             case CREATE_CONSUMER:
@@ -642,25 +645,25 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             Matcher hostMatcher = forwardedHostPattern.matcher(forwarded);
             Matcher protoMatcher = forwardedProtoPattern.matcher(forwarded);
             if (hostMatcher.find() && protoMatcher.find()) {
-                log.debug("Getting base URI from HTTP header: Forwarded '{}'", forwarded);
+                LOGGER.debug("Getting base URI from HTTP header: Forwarded '{}'", forwarded);
                 scheme = protoMatcher.group(1);
                 host = hostMatcher.group(1);
             } else {
-                log.debug("Forwarded HTTP header '{}' lacked 'host' and/or 'proto' pair; ignoring header", forwarded);
+                LOGGER.debug("Forwarded HTTP header '{}' lacked 'host' and/or 'proto' pair; ignoring header", forwarded);
             }
         } else {
             String xForwardedHost = routingContext.request().getHeader("x-forwarded-host");
             String xForwardedProto = routingContext.request().getHeader("x-forwarded-proto");
             if (xForwardedHost != null && !xForwardedHost.isEmpty() &&
                 xForwardedProto != null && !xForwardedProto.isEmpty()) {
-                log.debug("Getting base URI from HTTP headers: X-Forwarded-Host '{}' and X-Forwarded-Proto '{}'",
+                LOGGER.debug("Getting base URI from HTTP headers: X-Forwarded-Host '{}' and X-Forwarded-Proto '{}'",
                         xForwardedHost, xForwardedProto);
                 scheme = xForwardedProto;
                 host = xForwardedHost;
             }
         }
 
-        log.debug("Request URI build upon scheme: {}, host: {}, path: {}", scheme, host, path);
+        LOGGER.debug("Request URI build upon scheme: {}, host: {}, path: {}", scheme, host, path);
         return this.formatRequestUri(scheme, host, path);
     }
 

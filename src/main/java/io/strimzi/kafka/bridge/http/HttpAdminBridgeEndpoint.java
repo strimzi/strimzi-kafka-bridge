@@ -25,6 +25,8 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionInfo;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -38,6 +40,7 @@ import java.util.concurrent.CompletionStage;
  * Represents an HTTP bridge endpoint for the Kafka administration operations
  */
 public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
+    private static final Logger LOGGER = LogManager.getLogger(HttpAdminBridgeEndpoint.class);
 
     private final HttpBridgeContext httpBridgeContext;
     private final KafkaBridgeAdmin kafkaBridgeAdmin;
@@ -68,7 +71,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
 
     @Override
     public void handle(RoutingContext routingContext, Handler<HttpBridgeEndpoint> handler) {
-        log.trace("HttpAdminClientEndpoint handle thread {}", Thread.currentThread());
+        LOGGER.trace("HttpAdminClientEndpoint handle thread {}", Thread.currentThread());
         switch (this.httpBridgeContext.getOpenApiOperation()) {
             case LIST_TOPICS:
                 doListTopics(routingContext);
@@ -104,7 +107,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
     public void doListTopics(RoutingContext routingContext) {
         this.kafkaBridgeAdmin.listTopics()
                 .whenComplete((topics, ex) -> {
-                    log.trace("List topics handler thread {}", Thread.currentThread());
+                    LOGGER.trace("List topics handler thread {}", Thread.currentThread());
                     if (ex == null) {
                         ArrayNode root = JsonUtils.createArrayNode();
                         topics.forEach(topic -> root.add(topic));
@@ -133,7 +136,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
 
         CompletableFuture.allOf(describeTopicsPromise.toCompletableFuture(), describeConfigsPromise.toCompletableFuture())
                 .whenComplete((v, ex) -> {
-                    log.trace("Get topic handler thread {}", Thread.currentThread());
+                    LOGGER.trace("Get topic handler thread {}", Thread.currentThread());
                     if (ex == null) {
                         Map<String, TopicDescription> topicDescriptions = describeTopicsPromise.toCompletableFuture().getNow(Map.of());
                         Map<ConfigResource, Config> configDescriptions = describeConfigsPromise.toCompletableFuture().getNow(Map.of());
@@ -179,7 +182,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
         String topicName = routingContext.pathParam("topicname");
         this.kafkaBridgeAdmin.describeTopics(List.of(topicName))
                 .whenComplete((topicDescriptions, ex) -> {
-                    log.trace("List partitions handler thread {}", Thread.currentThread());
+                    LOGGER.trace("List partitions handler thread {}", Thread.currentThread());
                     if (ex == null) {
                         ArrayNode root = JsonUtils.createArrayNode();
                         TopicDescription description = topicDescriptions.get(topicName);
@@ -225,7 +228,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
         }
         this.kafkaBridgeAdmin.describeTopics(List.of(topicName))
                 .whenComplete((topicDescriptions, ex) -> {
-                    log.trace("Get partition handler thread {}", Thread.currentThread());
+                    LOGGER.trace("Get partition handler thread {}", Thread.currentThread());
                     if (ex == null) {
                         TopicDescription description = topicDescriptions.get(topicName);
                         if (description != null && partitionId < description.partitions().size()) {
@@ -297,7 +300,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
 
                 CompletableFuture.allOf(getBeginningOffsetsPromise.toCompletableFuture(), getEndOffsetsPromise.toCompletableFuture())
                         .whenComplete((v, ex) -> {
-                            log.trace("Get offsets handler thread {}", Thread.currentThread());
+                            LOGGER.trace("Get offsets handler thread {}", Thread.currentThread());
                             if (ex == null) {
                                 ObjectNode root = JsonUtils.createObjectNode();
                                 ListOffsetsResult.ListOffsetsResultInfo beginningOffset = getBeginningOffsetsPromise.toCompletableFuture().getNow(Map.of()).get(topicPartition);

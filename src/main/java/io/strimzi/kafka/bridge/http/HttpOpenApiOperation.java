@@ -5,11 +5,10 @@
 
 package io.strimzi.kafka.bridge.http;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Represents an OpenApi operation with related logging
@@ -28,7 +27,7 @@ public abstract class HttpOpenApiOperation implements Handler<RoutingContext> {
      */
     public HttpOpenApiOperation(HttpOpenApiOperations operationId) {
         this.operationId = operationId;
-        this.log = LoggerFactory.getLogger(LOGGER_NAME_PREFIX + operationId.toString());
+        this.log = LogManager.getLogger(LOGGER_NAME_PREFIX + operationId.toString());
     }
 
     /**

@@ -24,13 +24,13 @@ import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.UUID;
@@ -47,13 +47,13 @@ import static org.hamcrest.Matchers.is;
  */
 @ExtendWith(VertxExtension.class)
 public abstract class TracingTestBase {
-    Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger LOGGER = LogManager.getLogger(TracingTestBase.class);
 
     private void assumeServer(String url) {
         try {
             new URL(url).openConnection().getInputStream();
         } catch (Exception e) {
-            log.info("Cannot connect to server", e);
+            LOGGER.info("Cannot connect to server", e);
             Assumptions.assumeTrue(false, "Server is not running: " + url);
         }
     }

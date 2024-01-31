@@ -31,8 +31,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -48,7 +46,6 @@ import static org.hamcrest.Matchers.hasItem;
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
 public class HttpCorsIT {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpCorsIT.class);
     static Map<String, Object> config = new HashMap<>();
     static long timeout = 5L;
     static String kafkaUri;
