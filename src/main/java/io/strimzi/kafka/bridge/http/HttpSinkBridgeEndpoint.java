@@ -547,7 +547,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         try {
             // check for an empty body
             if (!routingContext.body().isEmpty()) {
-                bodyAsJson = JsonUtils.bytesToJson(routingContext.body().buffer().getByteBuf().array());
+                bodyAsJson = JsonUtils.bytesToJson(routingContext.body().buffer().getBytes());
             }
             LOGGER.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
         } catch (JsonDecodeException ex) {
@@ -605,6 +605,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private MessageConverter<K, V, byte[], byte[]> buildMessageConverter() {
         switch (this.format) {
             case JSON:
@@ -634,7 +635,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     private String buildRequestUri(RoutingContext routingContext) {
         // by default schema/proto and host comes from the base request information (i.e. "Host" header)
         String scheme = routingContext.request().scheme();
-        String host = routingContext.request().host();
+        String host = routingContext.request().authority().toString();
         // eventually get the request path from "X-Forwarded-Path" if set by a gateway/proxy
         String xForwardedPath = routingContext.request().getHeader("x-forwarded-path");
         String path = (xForwardedPath != null && !xForwardedPath.isEmpty()) ? xForwardedPath : routingContext.request().path();

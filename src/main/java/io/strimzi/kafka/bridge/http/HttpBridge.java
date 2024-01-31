@@ -223,7 +223,8 @@ public class HttpBridge extends AbstractVerticle {
         String allowedOrigins = this.bridgeConfig.getHttpConfig().getCorsAllowedOrigins();
 
         LOGGER.info("Allowed origins for Cors: {}", allowedOrigins);
-        return CorsHandler.create(allowedOrigins)
+        return CorsHandler.create()
+                .addRelativeOrigin(allowedOrigins)
                 .allowedHeaders(allowedHeaders)
                 .allowedMethods(allowedMethods);
     }
@@ -292,7 +293,7 @@ public class HttpBridge extends AbstractVerticle {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_CONSUMER);
 
         // check for an empty body
-        JsonNode body = !routingContext.body().isEmpty() ? JsonUtils.bytesToJson(routingContext.body().buffer().getByteBuf().array()) : JsonUtils.createObjectNode();
+        JsonNode body = !routingContext.body().isEmpty() ? JsonUtils.bytesToJson(routingContext.body().buffer().getBytes()) : JsonUtils.createObjectNode();
         HttpSinkBridgeEndpoint<byte[], byte[]> sink = null;
 
         try {
@@ -302,12 +303,14 @@ public class HttpBridge extends AbstractVerticle {
                                                 new ByteArrayDeserializer(), new ByteArrayDeserializer());
 
             sink.closeHandler(endpoint -> {
+                @SuppressWarnings("unchecked")
                 HttpSinkBridgeEndpoint<byte[], byte[]> httpEndpoint = (HttpSinkBridgeEndpoint<byte[], byte[]>) endpoint;
                 httpBridgeContext.getHttpSinkEndpoints().remove(httpEndpoint.consumerInstanceId());
             });        
             sink.open();
 
             sink.handle(routingContext, endpoint -> {
+                @SuppressWarnings("unchecked")
                 HttpSinkBridgeEndpoint<byte[], byte[]> httpEndpoint = (HttpSinkBridgeEndpoint<byte[], byte[]>) endpoint;
                 httpBridgeContext.getHttpSinkEndpoints().put(httpEndpoint.consumerInstanceId(), httpEndpoint);
                 timestampMap.put(httpEndpoint.consumerInstanceId(), System.currentTimeMillis());
@@ -532,7 +535,7 @@ public class HttpBridge extends AbstractVerticle {
                     if (xForwardedPath != null) {
                         path = xForwardedPath;
                     }
-                    ObjectNode json = (ObjectNode) JsonUtils.bytesToJson(readFile.result().getByteBuf().array());
+                    ObjectNode json = (ObjectNode) JsonUtils.bytesToJson(readFile.result().getBytes());
                     json.put("basePath", path);
                     HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, JsonUtils.jsonToBytes(json));
                 }
