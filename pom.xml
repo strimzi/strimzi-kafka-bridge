@@ -127,8 +127,8 @@
 		<spotbugs.version>4.7.3</spotbugs.version>
 		<maven.spotbugs.version>4.7.3.0</maven.spotbugs.version>
 		<strimzi-oauth.version>0.15.0</strimzi-oauth.version>
-		<opentelemetry.alpha-version>1.19.0-alpha</opentelemetry.alpha-version>
-		<opentelemetry.version>1.19.0</opentelemetry.version>
+		<opentelemetry.version>1.34.1</opentelemetry.version>
+		<opentelemetry.instrumentation.version>1.32.0-alpha</opentelemetry.instrumentation.version>
 		<micrometer.version>1.12.3</micrometer.version>
 		<jmx-prometheus-collector.version>0.18.0</jmx-prometheus-collector.version>
 		<prometheus-simpleclient.version>0.16.0</prometheus-simpleclient.version>
@@ -139,7 +139,27 @@
 		<!-- property to skip surefire tests during failsafe execution -->
 		<!--suppress UnresolvedMavenProperty -->
 		<skip.surefire.tests>${skipTests}</skip.surefire.tests>
+		<opentelemetry-semconv.version>1.23.1-alpha</opentelemetry-semconv.version>
 	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>io.opentelemetry</groupId>
+				<artifactId>opentelemetry-bom</artifactId>
+				<version>${opentelemetry.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>io.opentelemetry</groupId>
+				<artifactId>opentelemetry-bom-alpha</artifactId>
+				<version>${opentelemetry.version}-alpha</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<dependencies>
 		<dependency>
@@ -221,37 +241,48 @@
 		<dependency>
 			<groupId>io.opentelemetry</groupId>
 			<artifactId>opentelemetry-sdk-extension-autoconfigure</artifactId>
-			<version>${opentelemetry.alpha-version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.opentelemetry</groupId>
 			<artifactId>opentelemetry-api</artifactId>
-			<version>${opentelemetry.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.opentelemetry</groupId>
 			<artifactId>opentelemetry-context</artifactId>
-			<version>${opentelemetry.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>io.opentelemetry</groupId>
-			<artifactId>opentelemetry-semconv</artifactId>
-			<version>${opentelemetry.alpha-version}</version>
+			<groupId>io.opentelemetry.semconv</groupId>
+			<artifactId>opentelemetry-semconv</artifactId> <!-- semconv -> io.opentelemetry.semconv https://github.com/open-telemetry/opentelemetry-java/pull/5807/files -->
+			<version>${opentelemetry-semconv.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.opentelemetry.instrumentation</groupId>
 			<artifactId>opentelemetry-kafka-clients-2.6</artifactId>
-			<version>${opentelemetry.alpha-version}</version>
+			<version>${opentelemetry.instrumentation.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.opentelemetry.instrumentation</groupId>
 			<artifactId>opentelemetry-instrumentation-api-semconv</artifactId>
-			<version>${opentelemetry.alpha-version}</version>
+			<version>${opentelemetry.instrumentation.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.opentelemetry</groupId>
 			<artifactId>opentelemetry-exporter-otlp</artifactId>
-			<version>${opentelemetry.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>io.opentelemetry</groupId>
+					<artifactId>opentelemetry-exporter-sender-okhttp</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.opentelemetry</groupId>
+					<artifactId>opentelemetry-extension-incubator</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>io.opentelemetry</groupId>
+			<artifactId>opentelemetry-exporter-sender-jdk</artifactId>
+			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.micrometer</groupId>
@@ -534,6 +565,8 @@
 									<ignoredUnusedDeclaredDependency>io.opentelemetry:opentelemetry-exporter-otlp</ignoredUnusedDeclaredDependency>
 									<!-- OpenTelemetry - Vert.x using old version and OpenTelemetry breaking API compatibility. See dependency declaration for details. -->
 									<ignoredUnusedDeclaredDependency>io.opentelemetry:opentelemetry-sdk-trace</ignoredUnusedDeclaredDependency>
+									<!-- OpenTelemetry - used via classpath configuration opentelemetry-exporter-sender-jdk is required at runtime to replace OKHTTP -->
+									<ignoredUnusedDeclaredDependency>io.opentelemetry:opentelemetry-exporter-sender-jdk</ignoredUnusedDeclaredDependency>
 								</ignoredUnusedDeclaredDependencies>
 						</configuration>
 					</execution>
