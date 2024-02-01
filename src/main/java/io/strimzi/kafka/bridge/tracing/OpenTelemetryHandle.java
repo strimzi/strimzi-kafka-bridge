@@ -65,6 +65,7 @@ class OpenTelemetryHandle implements TracingHandle {
     @Override
     public void initialize() {
         System.setProperty("otel.metrics.exporter", "none"); // disable metrics
+        System.setProperty("otel.exporter.otlp.protocol", "http/protobuf"); // force the use of http/protobuf rather than GRPC this will (silently) override the OTEL_EXPORTER_OTLP_PROTOCOL environment variable
         // TODO: to remove when Vert.x won't be used anymore and the ThreadLocalContextStorage could be used again
         System.setProperty("io.opentelemetry.context.contextStorageProvider", "io.strimzi.kafka.bridge.tracing.BridgeContextStorageProvider");
         AutoConfiguredOpenTelemetrySdk.initialize();
