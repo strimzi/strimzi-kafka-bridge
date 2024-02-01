@@ -115,7 +115,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
                 return;
             }
-            records = messageConverter.toKafkaRecords(topic, partition, routingContext.body().buffer().getByteBuf().array());
+            records = messageConverter.toKafkaRecords(topic, partition, routingContext.body().buffer().getBytes());
 
             for (ProducerRecord<K, V> record :records)   {
                 span.inject(record);
@@ -213,6 +213,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private MessageConverter<K, V, byte[], byte[]> buildMessageConverter() {
         switch (this.format) {
             case JSON:
