@@ -7,14 +7,14 @@ package io.strimzi.kafka.bridge.http;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.strimzi.kafka.bridge.facades.AdminClientFacade;
-import io.strimzi.test.container.StrimziKafkaContainer;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.JmxCollectorRegistry;
 import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
+import io.strimzi.kafka.bridge.facades.AdminClientFacade;
 import io.strimzi.kafka.bridge.utils.Urls;
+import io.strimzi.test.container.StrimziKafkaContainer;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpMethod;
@@ -26,10 +26,10 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.KafkaFuture;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
@@ -39,9 +39,9 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.hasItem;
 
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
