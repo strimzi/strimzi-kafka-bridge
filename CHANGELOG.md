@@ -4,6 +4,7 @@
 
 * Dependency updates (Kafka 3.6.1, Kubernetes configuration provider 1.1.2, Vert.x 4.5.2, Netty 4.1.106.Final, Jackson FasterXML 2.16.1, Micrometer 1.12.2)
 * Fixed missing messaging semantic attributes to the Kafka consumer spans
+* Deprecating the use of GRPC in the Open Telemetry integration. Please switch to using `http/protobuf` by specifying `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf` 
 
 ## 0.27.0
 

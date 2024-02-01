@@ -26,6 +26,8 @@ import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
@@ -43,6 +45,7 @@ import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY_SER
  * @see io.opentelemetry.context.LazyStorage looks up all ContextStorageProviders via service-loader pattern,
  */
 class OpenTelemetryHandle implements TracingHandle {
+    private static final Logger LOGGER = LogManager.getLogger(OpenTelemetryHandle.class);
 
     private Tracer tracer;
 
@@ -65,9 +68,24 @@ class OpenTelemetryHandle implements TracingHandle {
     @Override
     public void initialize() {
         System.setProperty("otel.metrics.exporter", "none"); // disable metrics
+        final String configuredOtlpProtocol = resolveConfiguredOtelProtocol();
+        if (configuredOtlpProtocol == null || configuredOtlpProtocol.equalsIgnoreCase("grpc")) {
+            LOGGER.warn("The HTTP-Kafka bridge is deprecating OTLP GRPC support in favour of plain HTTP transports. Please switch to http/protobuf and update collector addresses to match");
+        }
         // TODO: to remove when Vert.x won't be used anymore and the ThreadLocalContextStorage could be used again
         System.setProperty("io.opentelemetry.context.contextStorageProvider", "io.strimzi.kafka.bridge.tracing.BridgeContextStorageProvider");
         AutoConfiguredOpenTelemetrySdk.initialize();
+    }
+
+    private static String resolveConfiguredOtelProtocol() {
+        final Map<String, String> envVars = System.getenv();
+        final String tracesProtocol = System.getProperty("otel.exporter.otlp.traces.protocol", envVars.get("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL"));
+        //The traces protocol is more specific than the general protocol, so it should take prescience
+        if (tracesProtocol != null) {
+            return tracesProtocol;
+        } else {
+            return System.getProperty("otel.exporter.otlp.protocol", envVars.get("OTEL_EXPORTER_OTLP_PROTOCOL"));
+        }
     }
 
     private Tracer get() {
