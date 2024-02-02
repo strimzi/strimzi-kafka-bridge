@@ -5,10 +5,10 @@
 
 package io.strimzi.kafka.bridge.config;
 
+import io.strimzi.kafka.bridge.http.HttpConfig;
+
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import io.strimzi.kafka.bridge.http.HttpConfig;
 
 /**
  * Bridge configuration properties

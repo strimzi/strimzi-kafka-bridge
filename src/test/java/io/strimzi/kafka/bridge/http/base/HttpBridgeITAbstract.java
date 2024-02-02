@@ -5,7 +5,6 @@
 
 package io.strimzi.kafka.bridge.http.base;
 
-import io.strimzi.test.container.StrimziKafkaContainer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.kafka.bridge.JmxCollectorRegistry;
 import io.strimzi.kafka.bridge.MetricsReporter;
@@ -22,6 +21,7 @@ import io.strimzi.kafka.bridge.http.services.ConsumerService;
 import io.strimzi.kafka.bridge.http.services.ProducerService;
 import io.strimzi.kafka.bridge.http.services.SeekService;
 import io.strimzi.kafka.bridge.utils.Urls;
+import io.strimzi.test.container.StrimziKafkaContainer;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
