@@ -46,10 +46,13 @@ class OpenTelemetryHandle implements TracingHandle {
 
     private Tracer tracer;
 
+    @SuppressWarnings("deprecation")
     static void setCommonAttributes(SpanBuilder builder, RoutingContext routingContext) {
         builder.setAttribute(SemanticAttributes.PEER_SERVICE, KAFKA_SERVICE);
-        builder.setAttribute(SemanticAttributes.HTTP_METHOD, routingContext.request().method().name());
-        builder.setAttribute(SemanticAttributes.HTTP_URL, routingContext.request().uri());
+        builder.setAttribute(SemanticAttributes.HTTP_METHOD, routingContext.request().method().name()); // TODO remove in release after 0.28
+        builder.setAttribute(SemanticAttributes.HTTP_REQUEST_METHOD, routingContext.request().method().name());
+        builder.setAttribute(SemanticAttributes.HTTP_URL, routingContext.request().uri()); // TODO remove in release after 0.28
+        builder.setAttribute(SemanticAttributes.URL_FULL, routingContext.request().uri());
     }
 
     @Override
@@ -89,12 +92,14 @@ class OpenTelemetryHandle implements TracingHandle {
         return spanBuilder;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public <K, V> void handleRecordSpan(ConsumerRecord<K, V> record) {
         String operationName = record.topic() + " " + MessageOperation.RECEIVE.name().toLowerCase(Locale.ROOT);
         SpanBuilder spanBuilder = get().spanBuilder(operationName);
         spanBuilder.setAttribute(SemanticAttributes.MESSAGING_DESTINATION, record.topic());
-        spanBuilder.setAttribute(SemanticAttributes.MESSAGING_DESTINATION_KIND, SemanticAttributes.MessagingDestinationKindValues.TOPIC);
+        spanBuilder.setAttribute(SemanticAttributes.MESSAGING_DESTINATION_NAME, record.topic()); // TODO remove in release after 0.28
+        spanBuilder.setAttribute(SemanticAttributes.MESSAGING_DESTINATION_KIND, SemanticAttributes.MessagingDestinationKindValues.TOPIC); // TODO remove in release after 0.28
         spanBuilder.setAttribute(SemanticAttributes.MESSAGING_SYSTEM, "kafka");
         Context parentContext = propagator().extract(Context.current(), TracingUtil.toHeaders(record), MG);
         if (parentContext != null) {
@@ -177,10 +182,12 @@ class OpenTelemetryHandle implements TracingHandle {
             propagator().inject(Context.current(), routingContext, (rc, key, value) -> rc.response().headers().add(key, value));
         }
 
+        @SuppressWarnings("deprecation")
         @Override
         public void finish(int code) {
             try {
-                span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, code);
+                span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, code); // TODO remove in release after 0.28
+                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_STATUS_CODE, code);
                 // OK status is fine for all 2xx HTTP status codes
                 span.setStatus(code >= 200 && code < 300 ? StatusCode.OK : StatusCode.ERROR);
                 scope.close();
@@ -189,10 +196,12 @@ class OpenTelemetryHandle implements TracingHandle {
             }
         }
 
+        @SuppressWarnings("deprecation")
         @Override
         public void finish(int code, Throwable cause) {
             try {
-                span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, code);
+                span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, code); // TODO remove in release after 0.28
+                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_STATUS_CODE, code);
                 span.setStatus(code == HttpResponseStatus.OK.code() ? StatusCode.OK : StatusCode.ERROR);
                 span.recordException(cause);
                 scope.close();
