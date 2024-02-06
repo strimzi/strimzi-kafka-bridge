@@ -141,6 +141,7 @@
 		<!--suppress UnresolvedMavenProperty -->
 		<skip.surefire.tests>${skipTests}</skip.surefire.tests>
 		<opentelemetry-semconv.version>1.21.0-alpha</opentelemetry-semconv.version>
+		<grpc-netty-shaded.version>1.61.0</grpc-netty-shaded.version>
 	</properties>
 
 	<dependencies>
@@ -280,7 +281,7 @@
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-netty-shaded</artifactId>
-			<version>1.61.0</version>
+			<version>${grpc-netty-shaded.version}</version>
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
