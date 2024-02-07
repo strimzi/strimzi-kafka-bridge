@@ -52,7 +52,9 @@ class OpenTelemetryHandle implements TracingHandle {
         builder.setAttribute(SemanticAttributes.HTTP_METHOD, routingContext.request().method().name()); // TODO remove in release after 0.28
         builder.setAttribute(SemanticAttributes.HTTP_REQUEST_METHOD, routingContext.request().method().name());
         builder.setAttribute(SemanticAttributes.HTTP_URL, routingContext.request().uri()); // TODO remove in release after 0.28
-        builder.setAttribute(SemanticAttributes.URL_FULL, routingContext.request().uri());
+        builder.setAttribute(SemanticAttributes.URL_SCHEME, routingContext.request().scheme());
+        builder.setAttribute(SemanticAttributes.URL_PATH, routingContext.request().path());
+        builder.setAttribute(SemanticAttributes.URL_QUERY, routingContext.request().query());
     }
 
     @Override

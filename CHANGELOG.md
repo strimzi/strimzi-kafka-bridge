@@ -9,7 +9,7 @@
 * Dependency update (OpenTelemetry Semconv from 1.19.0-alpha to 1.21.0-alpha)
   * The following span attributes are being replaced replacements:
     1. `http.method` is being replaced with `http.request.method`
-    2. `http.url` is being replaced with `url.full`
+    2. `http.url` is being replaced with `url.scheme`, `url.path` & `url.query`
     3. `messaging.destination` is being replaced with `messaging.destination.name`
     4. `http.status_code` is being replaced with `http.response.status_code`
   * The following span attributes are slated for removal:

@@ -102,7 +102,9 @@ The Kafka Bridge adds the following standard attributes to its spans.
 | Attribute key | Attribute value
 | `peer.service` | Hardcoded to `kafka`
 | `http.request.method` | The http method used to make the request
-| `url.full` | The full url of the request
+| `url.scheme` | The https://www.rfc-editor.org/rfc/rfc3986#section-3.1[URI scheme] component
+| `url.path` | The https://www.rfc-editor.org/rfc/rfc3986#section-3.3[URI path] component
+| `url.query` | The https://www.rfc-editor.org/rfc/rfc3986#section-3.4[URI query] component
 | `messaging.destination.name` | The name of the Kafka topic being produced to or read from
 | `messaging.system` | Hardcoded to `kafka`
 | `http.response.status_code` | `ok` for http responses between 200 and 300. `error` for all other status codes
