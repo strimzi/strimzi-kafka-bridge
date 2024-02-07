@@ -5,6 +5,15 @@
 * Dependency updates (Kafka 3.7.0, Kubernetes configuration provider 1.1.2, Vert.x 4.5.4, Netty 4.1.107.Final, Jackson FasterXML 2.16.1, Micrometer 1.12.3, OAuth 0.15.0)
 * Fixed missing messaging semantic attributes to the Kafka consumer spans
 * Introduced a new text embedded format to send and receive plain strings for record key and value.
+* Removed the dependency on OkHttp and thus Kotlin.
+* Dependency update (OpenTelemetry Semconv from 1.19.0-alpha to 1.21.0-alpha)
+  * The following span attributes are being replaced replacements:
+    1. `http.method` is being replaced with `http.request.method`
+    2. `http.url` is being replaced with `url.full`
+    3. `messaging.destination` is being replaced with `messaging.destination.name`
+    4. `http.status_code` is being replaced with `http.response.status_code`
+  * The following span attributes are slated for removal:
+    1. `messaging.destination.kind` & `messaging.destination.kind=topic`
 
 ## 0.27.0
 
