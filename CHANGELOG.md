@@ -12,8 +12,7 @@
     2. `http.url` is being replaced with `url.scheme`, `url.path` & `url.query`
     3. `messaging.destination` is being replaced with `messaging.destination.name`
     4. `http.status_code` is being replaced with `http.response.status_code`
-  * The following span attributes are slated for removal:
-    1. `messaging.destination.kind` & `messaging.destination.kind=topic`
+  * The span attribute `messaging.destination.kind=topic` is slated for removal.
 
 ## 0.27.0
 

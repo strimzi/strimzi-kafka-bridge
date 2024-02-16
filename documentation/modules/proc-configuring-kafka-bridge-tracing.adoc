@@ -95,8 +95,8 @@ OTEL_EXPORTER_ZIPKIN_ENDPOINT=http://localhost:9411/api/v2/spans <2>
 <1> The name of the tracing system. In this example, Zipkin is specified.
 <2> The endpoint of the specific selected exporter that listens for spans. In this example, a Zipkin endpoint is specified.
 
-== Supported properties
-The Kafka Bridge adds the following standard attributes to its spans.
+== Supported Span attributes
+The Kafka Bridge adds, in addition to the standard Open Telemetry attributes, the following attributes from the https://opentelemetry.io/docs/specs/semconv/http/http-spans/#http-server-semantic-conventions[Open Telemetry standard conventions for HTTP] to its spans.
 [cols="1,1"]
 |===
 | Attribute key | Attribute value
