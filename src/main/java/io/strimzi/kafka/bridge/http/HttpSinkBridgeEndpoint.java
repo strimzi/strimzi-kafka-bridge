@@ -629,7 +629,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             case TEXT:
                 return BridgeContentType.KAFKA_JSON_TEXT;
         }
-        return null;
+        throw new IllegalArgumentException();
     }
 
     private boolean checkAcceptedBody(String accept) {
