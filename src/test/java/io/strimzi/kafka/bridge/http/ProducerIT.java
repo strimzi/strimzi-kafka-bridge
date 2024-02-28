@@ -512,7 +512,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
     void sendTextMessageWithWrongValue(VertxTestContext context) throws InterruptedException, ExecutionException {
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
 
-        JsonObject value = new JsonObject().put("message", "Hi, this is a Kafka Bridge");
+        JsonObject value = new JsonObject().put("message", "Hi, This is kafka bridge");
 
         JsonArray records = new JsonArray();
         JsonObject json = new JsonObject();
@@ -804,19 +804,6 @@ public class ProducerIT extends HttpBridgeITAbstract {
                 assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                 HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                 assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                assertThat(error.getMessage(), is(message));
-                context.completeNow();
-            });
-    }
-
-    Handler<AsyncResult<HttpResponse<JsonObject>>> verifyUnprocessableEntity(VertxTestContext context, String message) {
-        return ar ->
-            context.verify(() -> {
-                assertThat(ar.succeeded(), is(true));
-                HttpResponse<JsonObject> response = ar.result();
-
-                HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                assertThat(error.getCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
                 assertThat(error.getMessage(), is(message));
                 context.completeNow();
             });
