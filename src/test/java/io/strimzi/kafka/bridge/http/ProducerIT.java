@@ -509,6 +509,38 @@ public class ProducerIT extends HttpBridgeITAbstract {
     }
 
     @Test
+    void sendTextMessageWithWrongValue(VertxTestContext context) throws InterruptedException, ExecutionException {
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+
+        JsonObject value = new JsonObject().put("message", "Hi, this is a Kafka Bridge");
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        future.get();
+
+        // produce and check the status code
+        producerService()
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_TEXT)
+                .sendJsonObject(root, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        assertThat(error.getMessage(), is("Because the embedded format is 'text', the value must be a string"));
+                    });
+                    context.completeNow();
+                });
+    }
+
+    @Test
     void sendMessageWithNullValueTest(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendMessageWithNullValueTest";
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
@@ -772,6 +804,19 @@ public class ProducerIT extends HttpBridgeITAbstract {
                 assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                 HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                 assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+                assertThat(error.getMessage(), is(message));
+                context.completeNow();
+            });
+    }
+
+    Handler<AsyncResult<HttpResponse<JsonObject>>> verifyUnprocessableEntity(VertxTestContext context, String message) {
+        return ar ->
+            context.verify(() -> {
+                assertThat(ar.succeeded(), is(true));
+                HttpResponse<JsonObject> response = ar.result();
+
+                HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                assertThat(error.getCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
                 assertThat(error.getMessage(), is(message));
                 context.completeNow();
             });

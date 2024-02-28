@@ -23,6 +23,7 @@ import java.util.List;
 /**
  * Implementation of a message converter to deal with the "text" embedded data format
  */
+@SuppressWarnings("checkstyle:NPathComplexity")
 public class HttpTextMessageConverter implements MessageConverter<byte[], byte[], byte[], byte[]> {
     @Override
     public ProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, byte[] message) {
