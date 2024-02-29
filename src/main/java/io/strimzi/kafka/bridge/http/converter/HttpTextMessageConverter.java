@@ -92,7 +92,7 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
         for (ConsumerRecord<byte[], byte[]> record : records) {
             ObjectNode jsonObject = JsonUtils.createObjectNode();
 
-            jsonObject.put("topic", record.topic());
+            jsonObject.set("topic", new TextNode(record.topic()));
             jsonObject.set("key", record.key() != null ? new TextNode(new String(record.key())) : null);
             jsonObject.set("value", record.value() != null ? new TextNode(new String(record.value())) : null);
             jsonObject.put("partition", record.partition());
@@ -103,12 +103,12 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
             for (Header kafkaHeader : record.headers()) {
                 ObjectNode header = JsonUtils.createObjectNode();
 
-                header.put("key", kafkaHeader.key());
+                header.set("key", new TextNode(kafkaHeader.key()));
                 header.put("value", DatatypeConverter.printBase64Binary(kafkaHeader.value()));
                 headers.add(header);
             }
             if (!headers.isEmpty()) {
-                jsonObject.put("headers", headers);
+                jsonObject.set("headers", headers);
             }
             jsonArray.add(jsonObject);
         }
