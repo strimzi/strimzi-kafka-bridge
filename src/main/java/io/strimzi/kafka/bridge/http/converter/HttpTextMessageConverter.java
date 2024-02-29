@@ -7,6 +7,7 @@ package io.strimzi.kafka.bridge.http.converter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -92,8 +93,8 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
             ObjectNode jsonObject = JsonUtils.createObjectNode();
 
             jsonObject.put("topic", record.topic());
-            jsonObject.put("key", record.key() != null ? new String(record.key()) : null);
-            jsonObject.put("value", record.value() != null ? new String(record.value()) : null);
+            jsonObject.set("key", record.key() != null ? new TextNode(new String(record.key())) : null);
+            jsonObject.set("value", record.value() != null ? new TextNode(new String(record.value())) : null);
             jsonObject.put("partition", record.partition());
             jsonObject.put("offset", record.offset());
 
