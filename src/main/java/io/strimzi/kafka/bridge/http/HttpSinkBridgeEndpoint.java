@@ -70,6 +70,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     private MessageConverter<K, V, byte[], byte[]> messageConverter;
     private final HttpBridgeContext<K, V> httpBridgeContext;
     private final KafkaBridgeConsumer<K, V> kafkaBridgeConsumer;
+    private final EmbeddedFormat format;
     private ConsumerInstanceId consumerInstanceId;
     private boolean subscribed;
     private boolean assigned;
@@ -85,9 +86,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
      */
     public HttpSinkBridgeEndpoint(BridgeConfig bridgeConfig, HttpBridgeContext<K, V> context, EmbeddedFormat format,
                                   Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
-        super(bridgeConfig, format);
+        super(bridgeConfig);
         this.httpBridgeContext = context;
         this.kafkaBridgeConsumer = new KafkaBridgeConsumer<>(bridgeConfig.getKafkaConfig(), keyDeserializer, valueDeserializer);
+        this.format = format;
         this.subscribed = false;
         this.assigned = false;
     }

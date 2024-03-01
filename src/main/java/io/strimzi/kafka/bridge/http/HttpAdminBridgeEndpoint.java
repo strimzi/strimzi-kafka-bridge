@@ -52,7 +52,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
      * @param context the HTTP bridge context
      */
     public HttpAdminBridgeEndpoint(BridgeConfig bridgeConfig, HttpBridgeContext context) {
-        super(bridgeConfig, null);
+        super(bridgeConfig);
         this.name = "kafka-bridge-admin";
         this.httpBridgeContext = context;
         this.kafkaBridgeAdmin = new KafkaBridgeAdmin(bridgeConfig.getKafkaConfig());
