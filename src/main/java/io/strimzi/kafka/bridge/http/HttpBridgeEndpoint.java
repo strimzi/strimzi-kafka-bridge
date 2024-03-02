@@ -5,7 +5,6 @@
 
 package io.strimzi.kafka.bridge.http;
 
-import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.ext.web.RoutingContext;
@@ -15,7 +14,6 @@ import io.vertx.ext.web.RoutingContext;
  */
 public abstract class HttpBridgeEndpoint {
     protected String name;
-    protected final EmbeddedFormat format;
     protected final BridgeConfig bridgeConfig;
     private Handler<HttpBridgeEndpoint> closeHandler;
 
@@ -23,11 +21,9 @@ public abstract class HttpBridgeEndpoint {
      * Constructor
      *
      * @param bridgeConfig the bridge configuration
-     * @param format the embedded format for consumed messages
      */
-    public HttpBridgeEndpoint(BridgeConfig bridgeConfig, EmbeddedFormat format) {
+    public HttpBridgeEndpoint(BridgeConfig bridgeConfig) {
         this.bridgeConfig = bridgeConfig;
-        this.format = format;
     }
 
     /**

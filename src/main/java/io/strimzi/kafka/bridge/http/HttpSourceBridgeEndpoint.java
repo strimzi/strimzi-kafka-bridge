@@ -48,10 +48,11 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     private MessageConverter<K, V, byte[], byte[]> messageConverter;
     private boolean closing;
     private final KafkaBridgeProducer<K, V> kafkaBridgeProducer;
+    private String contentType;
 
     HttpSourceBridgeEndpoint(BridgeConfig bridgeConfig, EmbeddedFormat format,
                              Serializer<K> keySerializer, Serializer<V> valueSerializer) {
-        super(bridgeConfig, format);
+        super(bridgeConfig);
         this.kafkaBridgeProducer = new KafkaBridgeProducer<>(bridgeConfig.getKafkaConfig(), keySerializer, valueSerializer);
     }
 
@@ -59,7 +60,6 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     public void open() {
         this.name = this.bridgeConfig.getBridgeID() == null ? "kafka-bridge-producer-" + UUID.randomUUID() : this.bridgeConfig.getBridgeID() + "-" + UUID.randomUUID();
         this.closing = false;
-        this.messageConverter = this.buildMessageConverter();
         this.kafkaBridgeProducer.create();
     }
 
@@ -106,6 +106,14 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         SpanHandle<K, V> span = tracing.span(routingContext, operationName);
 
         try {
+            String requestContentType = routingContext.request().getHeader("Content-Type") != null ?
+                    routingContext.request().getHeader("Content-Type") : BridgeContentType.KAFKA_JSON_BINARY;
+            // create a new message converter only if it's needed because the Content-Type is different from the previous request
+            if (!requestContentType.equals(contentType)) {
+                contentType = requestContentType;
+                messageConverter = this.buildMessageConverter(contentType);
+            }
+
             if (messageConverter == null) {
                 span.finish(HttpResponseStatus.INTERNAL_SERVER_ERROR.code());
                 HttpBridgeError error = new HttpBridgeError(
@@ -214,11 +222,11 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     }
 
     @SuppressWarnings("unchecked")
-    private MessageConverter<K, V, byte[], byte[]> buildMessageConverter() {
-        switch (this.format) {
-            case JSON:
+    private MessageConverter<K, V, byte[], byte[]> buildMessageConverter(String contentType) {
+        switch (contentType) {
+            case BridgeContentType.KAFKA_JSON_JSON:
                 return (MessageConverter<K, V, byte[], byte[]>) new HttpJsonMessageConverter();
-            case BINARY:
+            case BridgeContentType.KAFKA_JSON_BINARY:
                 return (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
         }
         return null;
