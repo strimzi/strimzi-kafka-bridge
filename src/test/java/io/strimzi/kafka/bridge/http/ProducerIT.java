@@ -268,7 +268,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
-                new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
+                new StringDeserializer(), new StringDeserializer());
         consumer.handler(record -> {
             context.verify(() -> {
                 assertThat(record.value(), is(value));
