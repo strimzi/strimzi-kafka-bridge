@@ -6,7 +6,7 @@
 * Fixed missing messaging semantic attributes to the Kafka consumer spans
 * Introduced a new text embedded format to send and receive plain strings for record key and value.
 * Removed the dependency on OkHttp and thus Kotlin.
-* This release deprecates several attributes (inline with changes from OpenTelemetry Semconv) which it attaches to spans. Both the depricated attribute and its replacement will be added to spans in the current release. The depreciated attributes will be removed in a future version.
+* This release deprecates several attributes (inline with changes from OpenTelemetry Semconv) which it attaches to spans. Both the deprecated attribute and its replacement will be added to spans in the current release. The deprecated attributes will be removed in a future version.
   1. `http.method` is being replaced with `http.request.method`
   2. `http.url` is being replaced with `url.scheme`, `url.path` & `url.query`
   3. `messaging.destination` is being replaced with `messaging.destination.name`
