@@ -238,7 +238,7 @@
 		</dependency>
 		<dependency>
 			<groupId>io.opentelemetry.semconv</groupId>
-			<artifactId>opentelemetry-semconv</artifactId> <!-- semconv -> io.opentelemetry.semconv https://github.com/open-telemetry/opentelemetry-java/pull/5807/files -->
+			<artifactId>opentelemetry-semconv</artifactId> <!-- semconv -> io.opentelemetry.semconv https://github.com/open-telemetry/opentelemetry-java/pull/5807/files  -->
 			<version>${opentelemetry-semconv.version}</version>
 		</dependency>
 		<dependency>
