@@ -20,6 +20,7 @@ import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpJsonMessageConverter;
+import io.strimzi.kafka.bridge.http.converter.HttpTextMessageConverter;
 import io.strimzi.kafka.bridge.http.converter.JsonDecodeException;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
@@ -305,9 +306,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                             BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
                 } else {
                     responseStatus = HttpResponseStatus.OK;
-                    HttpUtils.sendResponse(routingContext, responseStatus.code(),
-                            this.format == EmbeddedFormat.BINARY ? BridgeContentType.KAFKA_JSON_BINARY : BridgeContentType.KAFKA_JSON_JSON,
-                            buffer);
+
+                    HttpUtils.sendResponse(routingContext, responseStatus.code(), getContentType(), buffer);
                 }
             } catch (JsonDecodeException e) {
                 LOGGER.error("Error decoding records as JSON", e);
@@ -614,8 +614,22 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 return (MessageConverter<K, V, byte[], byte[]>) new HttpJsonMessageConverter();
             case BINARY:
                 return (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
+            case TEXT:
+                return (MessageConverter<K, V, byte[], byte[]>) new HttpTextMessageConverter();
         }
         return null;
+    }
+
+    private String getContentType() {
+        switch (this.format) {
+            case JSON:
+                return BridgeContentType.KAFKA_JSON_JSON;
+            case BINARY:
+                return BridgeContentType.KAFKA_JSON_BINARY;
+            case TEXT:
+                return BridgeContentType.KAFKA_JSON_TEXT;
+        }
+        throw new IllegalArgumentException();
     }
 
     private boolean checkAcceptedBody(String accept) {
@@ -624,6 +638,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 return format == EmbeddedFormat.JSON;
             case BridgeContentType.KAFKA_JSON_BINARY:
                 return format == EmbeddedFormat.BINARY;
+            case BridgeContentType.KAFKA_JSON_TEXT:
+                return format == EmbeddedFormat.TEXT;
         }
         return false;
     }

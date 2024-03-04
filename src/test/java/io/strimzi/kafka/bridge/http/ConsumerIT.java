@@ -534,6 +534,60 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     }
 
     @Test
+    void receiveTextMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+
+        future.get();
+        String sentBody = "Simple message";
+        basicKafkaClient.sendStringMessagesPlain(topic, sentBody, 1, 0, true);
+
+        JsonObject json = new JsonObject();
+        json.put("name", name);
+        json.put("format", "text");
+
+        // create consumer
+        // subscribe to a topic
+        consumerService()
+                .createConsumer(context, groupId, json)
+                .subscribeConsumer(context, groupId, name, topic);
+
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+        // consume records
+        consumerService()
+            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_TEXT)
+            .as(BodyCodec.jsonArray())
+            .send(ar -> {
+                context.verify(() -> {
+                    assertThat(ar.succeeded(), is(true));
+                    HttpResponse<JsonArray> response = ar.result();
+                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                    JsonObject jsonResponse = response.body().getJsonObject(0);
+
+                    String kafkaTopic = jsonResponse.getString("topic");
+                    int kafkaPartition = jsonResponse.getInteger("partition");
+                    String key = jsonResponse.getString("key");
+                    String value = jsonResponse.getString("value");
+                    long offset = jsonResponse.getLong("offset");
+
+                    assertThat(kafkaTopic, is(topic));
+                    assertThat(value, is(sentBody));
+                    assertThat(offset, is(0L));
+                    assertThat(kafkaPartition, notNullValue());
+                    assertThat(key, nullValue());
+                });
+                consume.complete(true);
+            });
+
+        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        // consumer deletion
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+        context.completeNow();
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+
+    @Test
     void receiveSimpleMessageWithHeaders(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
 

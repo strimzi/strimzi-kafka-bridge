@@ -16,6 +16,9 @@ public class BridgeContentType {
     /** JSON encoding with BINARY embedded format */
     public static final String KAFKA_JSON_BINARY = "application/vnd.kafka.binary.v2+json";
 
+    /** JSON encoding with TEXT embedded format */
+    public static final String KAFKA_JSON_TEXT = "application/vnd.kafka.text.v2+json";
+
     /** Specific Kafka JSON encoding */
     public static final String KAFKA_JSON = "application/vnd.kafka.v2+json";
 
