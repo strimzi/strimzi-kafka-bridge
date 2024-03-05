@@ -2,7 +2,7 @@
 
 ## 0.28.0
 
-* Dependency updates (Kafka 3.7.0, Kubernetes configuration provider 1.1.2, Vert.x 4.5.4, Netty 4.1.107.Final, Jackson FasterXML 2.16.1, Micrometer 1.12.3)
+* Dependency updates (Kafka 3.7.0, Kubernetes configuration provider 1.1.2, Vert.x 4.5.4, Netty 4.1.107.Final, Jackson FasterXML 2.16.1, Micrometer 1.12.3, OAuth 0.15.0)
 * Fixed missing messaging semantic attributes to the Kafka consumer spans
 * Introduced a new text embedded format to send and receive plain strings for record key and value.
 
