@@ -541,6 +541,39 @@ public class ProducerIT extends HttpBridgeITAbstract {
     }
 
     @Test
+    void sendTextMessageWithWrongKey(VertxTestContext context) throws InterruptedException, ExecutionException {
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+
+        JsonObject key = new JsonObject().put("my-key", "This is a json key");
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("key", key);
+        json.put("value", "Text value");
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        future.get();
+
+        // produce and check the status code
+        producerService()
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_TEXT)
+                .sendJsonObject(root, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        assertThat(error.getMessage(), is("Because the embedded format is 'text', the key must be a string"));
+                    });
+                    context.completeNow();
+                });
+    }
+
+    @Test
     void sendMessageWithNullValueTest(VertxTestContext context) throws InterruptedException, ExecutionException {
         String topic = "sendMessageWithNullValueTest";
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
