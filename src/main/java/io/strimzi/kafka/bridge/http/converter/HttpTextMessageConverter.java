@@ -38,7 +38,11 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
 
         if (!json.isEmpty()) {
             if (json.has("key")) {
-                key = json.get("key").asText().getBytes();
+                JsonNode keyNode = json.get("key");
+                if (!keyNode.isTextual()) {
+                    throw new IllegalStateException("Because the embedded format is 'text', the key must be a string");
+                }
+                key = keyNode.asText().getBytes();
             }
             if (json.has("value")) {
                 JsonNode valueNode = json.get("value");
