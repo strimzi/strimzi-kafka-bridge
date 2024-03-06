@@ -2,9 +2,16 @@
 
 ## 0.28.0
 
-* Dependency updates (Kafka 3.7.0, Kubernetes configuration provider 1.1.2, Vert.x 4.5.4, Netty 4.1.107.Final, Jackson FasterXML 2.16.1, Micrometer 1.12.3, OAuth 0.15.0)
+* Dependency updates (Kafka 3.7.0, Kubernetes configuration provider 1.1.2, Vert.x 4.5.4, Netty 4.1.107.Final, Jackson FasterXML 2.16.1, Micrometer 1.12.3, OAuth 0.15.0, OpenTelemetry 1.34.1, OpenTelemetry Semconv 1.21.0-alpha, OpenTelemetry instrumentation 1.32.0-alpha)
 * Fixed missing messaging semantic attributes to the Kafka consumer spans
 * Introduced a new text embedded format to send and receive plain strings for record key and value.
+* Removed the dependency on OkHttp and thus Kotlin.
+* This release deprecates several attributes (inline with changes from OpenTelemetry Semconv) which it attaches to spans. Both the deprecated attribute and its replacement will be added to spans in the current release. The deprecated attributes will be removed in a future version.
+  1. `http.method` is being replaced with `http.request.method`
+  2. `http.url` is being replaced with `url.scheme`, `url.path` & `url.query`
+  3. `messaging.destination` is being replaced with `messaging.destination.name`
+  4. `http.status_code` is being replaced with `http.response.status_code`
+* The span attribute `messaging.destination.kind=topic` is deprecated, by OpenTelemetry Semconv, without a replacement. It will be removed in a future release of the Strimzi Kafka Bridge.
 
 ## 0.27.0
 

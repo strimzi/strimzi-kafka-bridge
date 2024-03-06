@@ -127,8 +127,11 @@
 		<spotbugs.version>4.7.3</spotbugs.version>
 		<maven.spotbugs.version>4.7.3.0</maven.spotbugs.version>
 		<strimzi-oauth.version>0.15.0</strimzi-oauth.version>
-		<opentelemetry.alpha-version>1.19.0-alpha</opentelemetry.alpha-version>
-		<opentelemetry.version>1.19.0</opentelemetry.version>
+		<opentelemetry.version>1.34.1</opentelemetry.version>
+		<opentelemetry-alpha.version>${opentelemetry.version}-alpha</opentelemetry-alpha.version>
+		<opentelemetry.instrumentation.version>1.32.0-alpha</opentelemetry.instrumentation.version>
+		<opentelemetry-semconv.version>1.21.0-alpha</opentelemetry-semconv.version>
+		<grpc-netty-shaded.version>1.61.0</grpc-netty-shaded.version>
 		<micrometer.version>1.12.3</micrometer.version>
 		<jmx-prometheus-collector.version>0.18.0</jmx-prometheus-collector.version>
 		<prometheus-simpleclient.version>0.16.0</prometheus-simpleclient.version>
@@ -221,7 +224,7 @@
 		<dependency>
 			<groupId>io.opentelemetry</groupId>
 			<artifactId>opentelemetry-sdk-extension-autoconfigure</artifactId>
-			<version>${opentelemetry.alpha-version}</version>
+			<version>${opentelemetry.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.opentelemetry</groupId>
@@ -234,24 +237,48 @@
 			<version>${opentelemetry.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>io.opentelemetry</groupId>
-			<artifactId>opentelemetry-semconv</artifactId>
-			<version>${opentelemetry.alpha-version}</version>
+			<groupId>io.opentelemetry.semconv</groupId>
+			<artifactId>opentelemetry-semconv</artifactId> <!-- semconv -> io.opentelemetry.semconv https://github.com/open-telemetry/opentelemetry-java/pull/5807/files -->
+			<version>${opentelemetry-semconv.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.opentelemetry.instrumentation</groupId>
 			<artifactId>opentelemetry-kafka-clients-2.6</artifactId>
-			<version>${opentelemetry.alpha-version}</version>
+			<version>${opentelemetry.instrumentation.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.opentelemetry.instrumentation</groupId>
 			<artifactId>opentelemetry-instrumentation-api-semconv</artifactId>
-			<version>${opentelemetry.alpha-version}</version>
+			<version>${opentelemetry.instrumentation.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.opentelemetry</groupId>
 			<artifactId>opentelemetry-exporter-otlp</artifactId>
 			<version>${opentelemetry.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>io.opentelemetry</groupId>
+					<artifactId>opentelemetry-exporter-sender-okhttp</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>io.opentelemetry</groupId>
+			<artifactId>opentelemetry-exporter-sender-jdk</artifactId>
+			<version>${opentelemetry-alpha.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.opentelemetry</groupId>
+			<artifactId>opentelemetry-exporter-sender-grpc-managed-channel</artifactId>
+			<version>${opentelemetry.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-netty-shaded</artifactId>
+			<version>${grpc-netty-shaded.version}</version>
+			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.micrometer</groupId>
@@ -534,6 +561,12 @@
 									<ignoredUnusedDeclaredDependency>io.opentelemetry:opentelemetry-exporter-otlp</ignoredUnusedDeclaredDependency>
 									<!-- OpenTelemetry - Vert.x using old version and OpenTelemetry breaking API compatibility. See dependency declaration for details. -->
 									<ignoredUnusedDeclaredDependency>io.opentelemetry:opentelemetry-sdk-trace</ignoredUnusedDeclaredDependency>
+									<!-- OpenTelemetry - used via classpath configuration opentelemetry-exporter-sender-jdk is required at runtime to replace OKHTTP -->
+									<ignoredUnusedDeclaredDependency>io.opentelemetry:opentelemetry-exporter-sender-jdk</ignoredUnusedDeclaredDependency>
+									<!-- OpenTelemetry - used via classpath configuration opentelemetry-exporter-sender-grpc is required at runtime to replace OKHTTP -->
+									<ignoredUnusedDeclaredDependency>io.opentelemetry:opentelemetry-exporter-sender-grpc-managed-channel</ignoredUnusedDeclaredDependency>
+									<!-- OpenTelemetry - used via classpath configuration opentelemetry-exporter-sender-grpc is required at runtime to replace OKHTTP -->
+									<ignoredUnusedDeclaredDependency>io.grpc:grpc-netty-shaded:jar</ignoredUnusedDeclaredDependency>
 								</ignoredUnusedDeclaredDependencies>
 						</configuration>
 					</execution>
