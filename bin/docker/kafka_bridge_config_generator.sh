@@ -150,6 +150,9 @@ http.port=${KAFKA_BRIDGE_HTTP_PORT}
 http.cors.enabled=${KAFKA_BRIDGE_CORS_ENABLED}
 http.cors.allowedOrigins=${KAFKA_BRIDGE_CORS_ALLOWED_ORIGINS}
 http.cors.allowedMethods=${KAFKA_BRIDGE_CORS_ALLOWED_METHODS}
+http.timeoutSeconds=${KAFKA_BRIDGE_HTTP_CONSUMER_TIMEOUT}
+http.consumer.enabled=${KAFKA_BRIDGE_HTTP_CONSUMER_ENABLED}
+http.producer.enabled=${KAFKA_BRIDGE_HTTP_PRODUCER_ENABLED}
 EOF
 )
 
