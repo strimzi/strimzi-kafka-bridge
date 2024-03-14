@@ -14,4 +14,5 @@ Distributed tracing allows you to track the progress of transactions between app
 NOTE: Use the `KafkaBridge` resource to configure properties when you are xref:overview-components-running-kafka-bridge-cluster-{context}[running the Kafka Bridge on Kubernetes].
 
 include::modules/proc-configuring-kafka-bridge.adoc[leveloffset=+1]
+include::modules/proc-configuring-kafka-bridge-metrics.adoc[leveloffset=+1]
 include::modules/proc-configuring-kafka-bridge-tracing.adoc[leveloffset=+1]
