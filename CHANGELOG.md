@@ -2,7 +2,7 @@
 
 ## 0.29.0
 
-* Dependency updates (Vert.x 4.5.5)
+* Dependency updates (Vert.x 4.5.6)
 
 ## 0.28.0
 
