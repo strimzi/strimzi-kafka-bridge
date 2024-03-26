@@ -465,15 +465,11 @@ public class HttpBridge extends AbstractVerticle {
             return;
         }
         HttpServerRequest httpServerRequest = routingContext.request();
-        String contentType = httpServerRequest.getHeader("Content-Type") != null ?
-                httpServerRequest.getHeader("Content-Type") : BridgeContentType.KAFKA_JSON_BINARY;
-
         HttpSourceBridgeEndpoint<byte[], byte[]> source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
 
         try {
             if (source == null) {
-                source = new HttpSourceBridgeEndpoint<>(this.bridgeConfig, contentTypeToFormat(contentType),
-                                                        new ByteArraySerializer(), new ByteArraySerializer());
+                source = new HttpSourceBridgeEndpoint<>(this.bridgeConfig, new ByteArraySerializer(), new ByteArraySerializer());
 
                 source.closeHandler(s -> this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection()));
                 source.open();

@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.KafkaBridgeProducer;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
@@ -51,8 +50,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     private final KafkaBridgeProducer<K, V> kafkaBridgeProducer;
     private String contentType;
 
-    HttpSourceBridgeEndpoint(BridgeConfig bridgeConfig, EmbeddedFormat format,
-                             Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+    HttpSourceBridgeEndpoint(BridgeConfig bridgeConfig, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
         super(bridgeConfig);
         this.kafkaBridgeProducer = new KafkaBridgeProducer<>(bridgeConfig.getKafkaConfig(), keySerializer, valueSerializer);
     }
