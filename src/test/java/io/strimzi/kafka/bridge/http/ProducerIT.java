@@ -13,6 +13,7 @@ import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.KafkaJsonDeserializer;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
@@ -198,7 +199,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
     @Disabled("Will be check in the next PR, this is just external tests for Bridge")
     @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
-    void sendBinaryMessageWithKey(VertxTestContext context) throws InterruptedException, ExecutionException {
+    void sendBinaryMessageWithKey(VertxTestContext context) {
         adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
@@ -1116,5 +1117,78 @@ public class ProducerIT extends HttpBridgeITAbstract {
                 });
 
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+
+    /**
+     * Sends a test message with either JSON or binary content to a Kafka topic and verifies the handling of different content types.
+     * This test prepares two messages with distinct content types and sends them to the Kafka topic, handling their responses accordingly.
+     */
+    @Test
+    void dynamicContentTypeHandling(VertxTestContext context) throws Exception {
+        final KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+
+        final JsonObject messageKafkaJsonContentType = createRecordsToSend("Hello from the other side", "message-key", BridgeContentType.KAFKA_JSON_JSON);
+        final JsonObject messageKafkaJsonBinaryContentType = createRecordsToSend("message-bin-key", "content....----", BridgeContentType.KAFKA_JSON_BINARY);
+
+        future.get();
+
+        producerService()
+            .sendRecordsRequest(topic, messageKafkaJsonContentType, BridgeContentType.KAFKA_JSON_JSON)
+            .sendJsonObject(messageKafkaJsonContentType, response -> handleResponse(context, response, BridgeContentType.KAFKA_JSON_JSON));
+
+        // Second request with binary content, simulating a binary message
+        producerService()
+            .sendRecordsRequest(topic, messageKafkaJsonBinaryContentType, BridgeContentType.KAFKA_JSON_BINARY)
+            .sendBuffer(Buffer.buffer(messageKafkaJsonBinaryContentType.toString()), response -> {
+                handleResponse(context, response, BridgeContentType.KAFKA_JSON_BINARY);
+                context.completeNow();
+            });
+
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+
+    /**
+     * Creates a JSON object representing records to send. Depending on the content type, the method adjusts the key and value
+     * by encoding them in base64 format for binary content.
+     *
+     * @param key           The key of the message
+     * @param value         The value of the message
+     * @param contentType   The content type of the message, determining whether the message is treated as JSON or binary.
+     * @return A JsonObject representing the records to send, formatted according to the specified content type.
+     */
+    private JsonObject createRecordsToSend(String key, String value, final String contentType) {
+        if (BridgeContentType.KAFKA_JSON_BINARY.equals(contentType)) {
+            key = DatatypeConverter.printBase64Binary(key.getBytes());
+            value = DatatypeConverter.printBase64Binary(value.getBytes());
+        }
+
+        JsonObject json = new JsonObject()
+            .put("key", key)
+            .put("value", value);
+
+        JsonArray records = new JsonArray().add(json);
+
+        return new JsonObject().put("records", records);
+    }
+
+    /**
+     * Handles the response from sending a record to Kafka, logging the outcome and verifying the HTTP status code.
+     * This method is used as a callback for the asynchronous HTTP request to send records to Kafka.
+     *
+     * @param context       The VertxTestContext used for assertions and to mark the test as completed.
+     * @param ar            The result of the asynchronous HTTP request, containing either the response or an error.
+     * @param contentType   The content type of the message that was sent, used for logging purposes.
+     */
+    private void handleResponse(final VertxTestContext context, final AsyncResult<HttpResponse<JsonObject>> ar,
+                                final String contentType) {
+        if (ar.succeeded()) {
+            HttpResponse<JsonObject> response = ar.result();
+            context.verify(() -> {
+                assertThat(response.statusCode(), is(200));
+                LOGGER.info("Successfully processed " + contentType + " content");
+            });
+        } else {
+            context.failNow(ar.cause());
+        }
     }
 }
