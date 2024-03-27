@@ -1134,13 +1134,13 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsRequest(topic, messageKafkaJsonContentType, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(messageKafkaJsonContentType, response -> handleResponse(context, response, BridgeContentType.KAFKA_JSON_JSON));
+            .sendJsonObject(messageKafkaJsonContentType, response -> handleResponse(context, response, BridgeContentType.KAFKA_JSON_JSON, HttpResponseStatus.OK));
 
         // Second request with binary content, simulating a binary message
         producerService()
             .sendRecordsRequest(topic, messageKafkaJsonBinaryContentType, BridgeContentType.KAFKA_JSON_BINARY)
             .sendBuffer(Buffer.buffer(messageKafkaJsonBinaryContentType.toString()), response -> {
-                handleResponse(context, response, BridgeContentType.KAFKA_JSON_BINARY);
+                handleResponse(context, response, BridgeContentType.KAFKA_JSON_BINARY, HttpResponseStatus.OK);
                 context.completeNow();
             });
 
@@ -1175,16 +1175,17 @@ public class ProducerIT extends HttpBridgeITAbstract {
      * Handles the response from sending a record to Kafka, logging the outcome and verifying the HTTP status code.
      * This method is used as a callback for the asynchronous HTTP request to send records to Kafka.
      *
-     * @param context       The VertxTestContext used for assertions and to mark the test as completed.
-     * @param ar            The result of the asynchronous HTTP request, containing either the response or an error.
-     * @param contentType   The content type of the message that was sent, used for logging purposes.
+     * @param context               The VertxTestContext used for assertions and to mark the test as completed.
+     * @param ar                    The result of the asynchronous HTTP request, containing either the response or an error.
+     * @param contentType           The content type of the message that was sent, used for logging purposes.
+     * @param httpResponseStatus    The response status code of the asynchronous HTTP request
      */
     private void handleResponse(final VertxTestContext context, final AsyncResult<HttpResponse<JsonObject>> ar,
-                                final String contentType) {
+                                final String contentType, final HttpResponseStatus httpResponseStatus) {
         if (ar.succeeded()) {
             HttpResponse<JsonObject> response = ar.result();
             context.verify(() -> {
-                assertThat(response.statusCode(), is(200));
+                assertThat(response.statusCode(), is(httpResponseStatus.code()));
                 LOGGER.info("Successfully processed " + contentType + " content");
             });
         } else {
