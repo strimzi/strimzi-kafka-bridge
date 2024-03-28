@@ -128,7 +128,7 @@
 		<maven.spotbugs.version>4.7.3.0</maven.spotbugs.version>
 		<strimzi-oauth.version>0.15.0</strimzi-oauth.version>
 		<opentelemetry.version>1.34.1</opentelemetry.version>
-		<opentelemetry-alpha.version>${opentelemetry.version}-alpha</opentelemetry-alpha.version>
+		<opentelemetry-alpha.version>1.34.1-alpha</opentelemetry-alpha.version>
 		<opentelemetry.instrumentation.version>1.32.0-alpha</opentelemetry.instrumentation.version>
 		<opentelemetry-semconv.version>1.21.0-alpha</opentelemetry-semconv.version>
 		<grpc-netty-shaded.version>1.61.0</grpc-netty-shaded.version>
@@ -139,6 +139,7 @@
 		<test-container.version>0.106.0</test-container.version>
 		<jakarta.version>2.3.2</jakarta.version>
 		<snakeyaml.version>2.0</snakeyaml.version>
+		<guava.version>32.1.3-jre</guava.version>
 		<!-- property to skip surefire tests during failsafe execution -->
 		<!--suppress UnresolvedMavenProperty -->
 		<skip.surefire.tests>${skipTests}</skip.surefire.tests>
@@ -206,12 +207,6 @@
 			<version>${log4j.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.github.spotbugs</groupId>
-			<artifactId>spotbugs-annotations</artifactId>
-			<version>${spotbugs.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
 			<groupId>io.strimzi</groupId>
 			<artifactId>kafka-oauth-client</artifactId>
 			<version>${strimzi-oauth.version}</version>
@@ -273,12 +268,26 @@
 			<artifactId>opentelemetry-exporter-sender-grpc-managed-channel</artifactId>
 			<version>${opentelemetry.version}</version>
 			<scope>runtime</scope>
+			<exclusions>
+				<!-- Excluding Guava (which is the android version) because we bring the jre one directly -->
+				<exclusion>
+					<groupId>guava</groupId>
+					<artifactId>com.google.guava</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-netty-shaded</artifactId>
 			<version>${grpc-netty-shaded.version}</version>
 			<scope>runtime</scope>
+			<exclusions>
+				<!-- Excluding Guava (which is the android version) because we bring the jre one directly -->
+				<exclusion>
+					<groupId>guava</groupId>
+					<artifactId>com.google.guava</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>io.micrometer</groupId>
@@ -351,6 +360,21 @@
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
 			<version>${jackson-databind.version}</version>
+		</dependency>
+		<!--
+			Direct dependency to Guava to bring the jre version in and not the android one
+			which is excluded in the grpc-netty-shaded and opentelemetry-exporter-sender-grpc-managed-channel declaration
+		-->
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>${guava.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.spotbugs</groupId>
+			<artifactId>spotbugs-annotations</artifactId>
+			<version>${spotbugs.version}</version>
+			<scope>provided</scope>
 		</dependency>
 		<!-- Testing -->
 		<dependency>
@@ -567,6 +591,7 @@
 									<ignoredUnusedDeclaredDependency>io.opentelemetry:opentelemetry-exporter-sender-grpc-managed-channel</ignoredUnusedDeclaredDependency>
 									<!-- OpenTelemetry - used via classpath configuration opentelemetry-exporter-sender-grpc is required at runtime to replace OKHTTP -->
 									<ignoredUnusedDeclaredDependency>io.grpc:grpc-netty-shaded:jar</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>com.google.guava:guava</ignoredUnusedDeclaredDependency>
 								</ignoredUnusedDeclaredDependencies>
 						</configuration>
 					</execution>
