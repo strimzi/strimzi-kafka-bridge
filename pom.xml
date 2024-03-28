@@ -268,26 +268,12 @@
 			<artifactId>opentelemetry-exporter-sender-grpc-managed-channel</artifactId>
 			<version>${opentelemetry.version}</version>
 			<scope>runtime</scope>
-			<exclusions>
-				<!-- Excluding Guava (which is the android version) because we bring the jre one directly -->
-				<exclusion>
-					<groupId>guava</groupId>
-					<artifactId>com.google.guava</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-netty-shaded</artifactId>
 			<version>${grpc-netty-shaded.version}</version>
 			<scope>runtime</scope>
-			<exclusions>
-				<!-- Excluding Guava (which is the android version) because we bring the jre one directly -->
-				<exclusion>
-					<groupId>guava</groupId>
-					<artifactId>com.google.guava</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>io.micrometer</groupId>
