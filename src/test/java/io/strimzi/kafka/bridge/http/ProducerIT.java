@@ -1130,38 +1130,57 @@ public class ProducerIT extends HttpBridgeITAbstract {
             BridgeContentType.KAFKA_JSON_TEXT,
         };
 
-        return Stream.of(contentTypes).map(Arguments::of);
+        // Create combinations of two different content types
+        return Stream.of(contentTypes)
+            .flatMap(firstContentType ->
+                Stream.of(contentTypes)
+                    .filter(secondContentType -> !firstContentType.equals(secondContentType))
+                    .map(secondContentType -> Arguments.of(firstContentType, secondContentType)));
+
     }
 
-    /**
-     * Sends a test message with either JSON or binary content to a Kafka topic and verifies the handling of different content types.
-     * This test prepares two messages with distinct content types and sends them to the Kafka topic, handling their responses accordingly.
-     */
     @ParameterizedTest
     @MethodSource("contentTypeCombinations")
-    void dynamicContentTypeHandling(String contentType, VertxTestContext context) throws Exception {
+    void dynamicContentTypeHandling(String firstContentType, String secondContentType, VertxTestContext context) throws Exception {
         final String key = "exampleKey";
         final String value = "Hello, world!";
 
-        final JsonObject record = createDynamicRecord(key, value, contentType);
-
-        // Wrap the record in a records array
-        final JsonArray records = new JsonArray().add(record);
-        final JsonObject root = new JsonObject().put("records", records);
+        JsonObject record = createDynamicRecord(key, value, firstContentType);
+        JsonArray records = new JsonArray().add(record);
+        JsonObject root = new JsonObject().put("records", records);
 
         LOGGER.info("Sending:\n{}", root.toString());
 
-        // Send the request
+        // Send the first request
         producerService()
-            .sendRecordsRequest(topic, root, contentType)
+            .sendRecordsRequest(topic, root, firstContentType)
             .sendJsonObject(root, response -> {
                 if (response.succeeded()) {
                     HttpResponse<JsonObject> httpResponse = response.result();
                     context.verify(() -> {
                         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
-                        LOGGER.info("Successfully processed record with key content type: " + contentType + " and value content type: " + contentType);
+                        LOGGER.info("Successfully processed record with content type: {}", secondContentType);
                     });
-                    context.completeNow();
+                } else {
+                    context.failNow(response.cause());
+                }
+            });
+
+        record = createDynamicRecord(key, value, secondContentType);
+        records = new JsonArray().add(record);
+        root = new JsonObject().put("records", records);
+
+        // Send the second request
+        producerService()
+            .sendRecordsRequest(topic, root, secondContentType)
+            .sendJsonObject(root, response -> {
+                if (response.succeeded()) {
+                    HttpResponse<JsonObject> httpResponse = response.result();
+                    context.verify(() -> {
+                        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+                        LOGGER.info("Successfully processed record with content type: {}", secondContentType);
+                        context.completeNow();
+                    });
                 } else {
                     context.failNow(response.cause());
                 }
