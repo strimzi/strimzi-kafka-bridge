@@ -203,7 +203,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
     @Disabled("Will be check in the next PR, this is just external tests for Bridge")
     @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
-    void sendBinaryMessageWithKey(VertxTestContext context) {
+    void sendBinaryMessageWithKey(VertxTestContext context) throws InterruptedException, ExecutionException {
         adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
@@ -1142,8 +1142,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
     @ParameterizedTest
     @MethodSource("contentTypeCombinations")
     void dynamicContentTypeHandling(String firstContentType, String secondContentType, VertxTestContext context) throws Exception {
-        final String key = "exampleKey";
-        final String value = "Hello, world!";
+        final JsonObject key = new JsonObject().put("id", 123);
+        final JsonObject value = new JsonObject().put("id", 10).put("price", 150).put("description", "Hello world");
 
         JsonObject record = createDynamicRecord(key, value, firstContentType);
         JsonArray records = new JsonArray().add(record);
@@ -1189,26 +1189,23 @@ public class ProducerIT extends HttpBridgeITAbstract {
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
-    private JsonObject createDynamicRecord(String key, String value, String contentType) {
+    private JsonObject createDynamicRecord(JsonObject key, JsonObject value, String contentType) {
         JsonObject record = new JsonObject();
 
         switch (contentType) {
             case BridgeContentType.KAFKA_JSON_JSON:
-                // Both key and value are wrapped in a JsonObject
-                record.put("key", new JsonObject().put("actualKey", key));
-                record.put("value", new JsonObject().put("message", value));
-                break;
-            case BridgeContentType.KAFKA_JSON_BINARY:
-                // Both key and value are encoded in Base64
-                String base64Key = Base64.getEncoder().encodeToString(key.getBytes());
-                String base64Value = Base64.getEncoder().encodeToString(value.getBytes());
-                record.put("key", base64Key);
-                record.put("value", base64Value);
-                break;
-            case BridgeContentType.KAFKA_JSON_TEXT:
-                // Both key and value are plain text
+                // Key and value are already JSON objects
                 record.put("key", key);
                 record.put("value", value);
+                break;
+            case BridgeContentType.KAFKA_JSON_BINARY:
+                record.put("key", Base64.getEncoder().encodeToString(key.encode().getBytes()));
+                record.put("value", Base64.getEncoder().encodeToString(value.encode().getBytes()));
+                break;
+            case BridgeContentType.KAFKA_JSON_TEXT:
+                // Convert JSON objects to string representations
+                record.put("key", key.encode());
+                record.put("value", value.encode());
                 break;
             default:
                 throw new RuntimeException("Un-supported content type:" + contentType);
