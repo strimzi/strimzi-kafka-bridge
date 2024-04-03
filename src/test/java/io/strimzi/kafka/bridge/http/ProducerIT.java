@@ -31,14 +31,19 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -1119,77 +1124,78 @@ public class ProducerIT extends HttpBridgeITAbstract {
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
+    private static Stream<Arguments> contentTypeCombinations() {
+        String[] contentTypes = {
+            BridgeContentType.KAFKA_JSON_JSON,
+            BridgeContentType.KAFKA_JSON_BINARY,
+            BridgeContentType.KAFKA_JSON_TEXT,
+        };
+
+        return Stream.of(contentTypes).map(Arguments::of);
+    }
+
     /**
      * Sends a test message with either JSON or binary content to a Kafka topic and verifies the handling of different content types.
      * This test prepares two messages with distinct content types and sends them to the Kafka topic, handling their responses accordingly.
      */
-    @Test
-    void dynamicContentTypeHandling(VertxTestContext context) throws Exception {
-        final KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+    @ParameterizedTest
+    @MethodSource("contentTypeCombinations")
+    void dynamicContentTypeHandling(String contentType, VertxTestContext context) throws Exception {
+        final String key = "exampleKey";
+        final String value = "Hello, world!";
 
-        final JsonObject messageKafkaJsonContentType = createRecordsToSend("Hello from the other side", "message-key", BridgeContentType.KAFKA_JSON_JSON);
-        final JsonObject messageKafkaJsonBinaryContentType = createRecordsToSend("message-bin-key", "content....----", BridgeContentType.KAFKA_JSON_BINARY);
+        final JsonObject record = createDynamicRecord(key, value, contentType);
 
-        future.get();
+        // Wrap the record in a records array
+        final JsonArray records = new JsonArray().add(record);
+        final JsonObject root = new JsonObject().put("records", records);
 
+        LOGGER.info("Sending:\n{}", root.toString());
+
+        // Send the request
         producerService()
-            .sendRecordsRequest(topic, messageKafkaJsonContentType, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(messageKafkaJsonContentType, response -> handleResponse(context, response, BridgeContentType.KAFKA_JSON_JSON, HttpResponseStatus.OK));
-
-        // Second request with binary content, simulating a binary message
-        producerService()
-            .sendRecordsRequest(topic, messageKafkaJsonBinaryContentType, BridgeContentType.KAFKA_JSON_BINARY)
-            .sendBuffer(Buffer.buffer(messageKafkaJsonBinaryContentType.toString()), response -> {
-                handleResponse(context, response, BridgeContentType.KAFKA_JSON_BINARY, HttpResponseStatus.OK);
-                context.completeNow();
+            .sendRecordsRequest(topic, root, contentType)
+            .sendJsonObject(root, response -> {
+                if (response.succeeded()) {
+                    HttpResponse<JsonObject> httpResponse = response.result();
+                    context.verify(() -> {
+                        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+                        LOGGER.info("Successfully processed record with key content type: " + contentType + " and value content type: " + contentType);
+                    });
+                    context.completeNow();
+                } else {
+                    context.failNow(response.cause());
+                }
             });
 
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
-    /**
-     * Creates a JSON object representing records to send. Depending on the content type, the method adjusts the key and value
-     * by encoding them in base64 format for binary content.
-     *
-     * @param key           The key of the message
-     * @param value         The value of the message
-     * @param contentType   The content type of the message, determining whether the message is treated as JSON or binary.
-     * @return A JsonObject representing the records to send, formatted according to the specified content type.
-     */
-    private JsonObject createRecordsToSend(String key, String value, final String contentType) {
-        if (BridgeContentType.KAFKA_JSON_BINARY.equals(contentType)) {
-            key = DatatypeConverter.printBase64Binary(key.getBytes());
-            value = DatatypeConverter.printBase64Binary(value.getBytes());
+    private JsonObject createDynamicRecord(String key, String value, String contentType) {
+        JsonObject record = new JsonObject();
+
+        switch (contentType) {
+            case BridgeContentType.KAFKA_JSON_JSON:
+                // Both key and value are wrapped in a JsonObject
+                record.put("key", new JsonObject().put("actualKey", key));
+                record.put("value", new JsonObject().put("message", value));
+                break;
+            case BridgeContentType.KAFKA_JSON_BINARY:
+                // Both key and value are encoded in Base64
+                String base64Key = Base64.getEncoder().encodeToString(key.getBytes());
+                String base64Value = Base64.getEncoder().encodeToString(value.getBytes());
+                record.put("key", base64Key);
+                record.put("value", base64Value);
+                break;
+            case BridgeContentType.KAFKA_JSON_TEXT:
+                // Both key and value are plain text
+                record.put("key", key);
+                record.put("value", value);
+                break;
+            default:
+                throw new RuntimeException("Un-supported content type:" + contentType);
         }
 
-        JsonObject json = new JsonObject()
-            .put("key", key)
-            .put("value", value);
-
-        JsonArray records = new JsonArray().add(json);
-
-        return new JsonObject().put("records", records);
-    }
-
-    /**
-     * Handles the response from sending a record to Kafka, logging the outcome and verifying the HTTP status code.
-     * This method is used as a callback for the asynchronous HTTP request to send records to Kafka.
-     *
-     * @param context               The VertxTestContext used for assertions and to mark the test as completed.
-     * @param ar                    The result of the asynchronous HTTP request, containing either the response or an error.
-     * @param contentType           The content type of the message that was sent, used for logging purposes.
-     * @param httpResponseStatus    The response status code of the asynchronous HTTP request
-     */
-    private void handleResponse(final VertxTestContext context, final AsyncResult<HttpResponse<JsonObject>> ar,
-                                final String contentType, final HttpResponseStatus httpResponseStatus) {
-        if (ar.succeeded()) {
-            HttpResponse<JsonObject> response = ar.result();
-            context.verify(() -> {
-                assertThat(response.statusCode(), is(httpResponseStatus.code()));
-                LOGGER.info("Successfully processed " + contentType + " content");
-            });
-        } else {
-            context.failNow(ar.cause());
-        }
+        return record;
     }
 }
