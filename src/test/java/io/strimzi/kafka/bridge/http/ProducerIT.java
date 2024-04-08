@@ -1203,9 +1203,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
                 record.put("value", Base64.getEncoder().encodeToString(value.encode().getBytes()));
                 break;
             case BridgeContentType.KAFKA_JSON_TEXT:
-                // Convert JSON objects to string representations
-                record.put("key", key.encode());
-                record.put("value", value.encode());
+                record.put("key", "key"); // Use pure plain text for the key
+                record.put("value", "value"); // Use pure plain text for the value
                 break;
             default:
                 throw new RuntimeException("Un-supported content type:" + contentType);
