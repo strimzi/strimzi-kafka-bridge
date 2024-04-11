@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Properties;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1142,10 +1143,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
     @ParameterizedTest
     @MethodSource("contentTypeCombinations")
     void dynamicContentTypeHandling(String firstContentType, String secondContentType, VertxTestContext context) throws Exception {
-        final JsonObject key = new JsonObject().put("id", 123);
-        final JsonObject value = new JsonObject().put("id", 10).put("price", 150).put("description", "Hello world");
-
-        JsonObject record = createDynamicRecord(key, value, firstContentType);
+        JsonObject record = createDynamicRecord(firstContentType);
         JsonArray records = new JsonArray().add(record);
         JsonObject root = new JsonObject().put("records", records);
 
@@ -1166,7 +1164,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
                 }
             });
 
-        record = createDynamicRecord(key, value, secondContentType);
+        record = createDynamicRecord(secondContentType);
         records = new JsonArray().add(record);
         root = new JsonObject().put("records", records);
 
@@ -1189,22 +1187,49 @@ public class ProducerIT extends HttpBridgeITAbstract {
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
-    private JsonObject createDynamicRecord(JsonObject key, JsonObject value, String contentType) {
+    private JsonObject createJsonRecord(JsonObject key, JsonObject value) {
         JsonObject record = new JsonObject();
+        record.put("key", key);
+        record.put("value", value);
+        return record;
+    }
+
+    private JsonObject createBinaryRecord(byte[] keyBytes, byte[] valueBytes) {
+        JsonObject record = new JsonObject();
+        record.put("key", Base64.getEncoder().encodeToString(keyBytes));
+        record.put("value", Base64.getEncoder().encodeToString(valueBytes));
+        return record;
+    }
+
+    private JsonObject createTextRecord(String keyText, String valueText) {
+        JsonObject record = new JsonObject();
+        record.put("key", keyText);
+        record.put("value", valueText);
+        return record;
+    }
+
+    private byte[] generateRandomBinaryData(int length) {
+        byte[] data = new byte[length];
+        new Random().nextBytes(data);
+        return data;
+    }
+
+    private JsonObject createDynamicRecord(String contentType) {
+        JsonObject record;
 
         switch (contentType) {
             case BridgeContentType.KAFKA_JSON_JSON:
-                // Key and value are already JSON objects
-                record.put("key", key);
-                record.put("value", value);
+                final JsonObject key = new JsonObject().put("id", 123);
+                final JsonObject value = new JsonObject().put("id", 10).put("price", 150).put("description", "Hello world");
+                record = createJsonRecord(key, value);
                 break;
             case BridgeContentType.KAFKA_JSON_BINARY:
-                record.put("key", Base64.getEncoder().encodeToString(key.encode().getBytes()));
-                record.put("value", Base64.getEncoder().encodeToString(value.encode().getBytes()));
+                byte[] keyBytes = generateRandomBinaryData(128);
+                byte[] valueBytes = generateRandomBinaryData(256);
+                record = createBinaryRecord(keyBytes, valueBytes);
                 break;
             case BridgeContentType.KAFKA_JSON_TEXT:
-                record.put("key", "key"); // Use pure plain text for the key
-                record.put("value", "value"); // Use pure plain text for the value
+                record = createTextRecord("key", "value");
                 break;
             default:
                 throw new RuntimeException("Un-supported content type:" + contentType);
