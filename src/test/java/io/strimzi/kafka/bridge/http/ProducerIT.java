@@ -30,14 +30,20 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Properties;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -1116,5 +1122,119 @@ public class ProducerIT extends HttpBridgeITAbstract {
                 });
 
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+
+    private static Stream<Arguments> contentTypeCombinations() {
+        String[] contentTypes = {
+            BridgeContentType.KAFKA_JSON_JSON,
+            BridgeContentType.KAFKA_JSON_BINARY,
+            BridgeContentType.KAFKA_JSON_TEXT,
+        };
+
+        // Create combinations of two different content types
+        return Stream.of(contentTypes)
+            .flatMap(firstContentType ->
+                Stream.of(contentTypes)
+                    .filter(secondContentType -> !firstContentType.equals(secondContentType))
+                    .map(secondContentType -> Arguments.of(firstContentType, secondContentType)));
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("contentTypeCombinations")
+    void dynamicContentTypeHandling(String firstContentType, String secondContentType, VertxTestContext context) throws Exception {
+        JsonObject record = createDynamicRecord(firstContentType);
+        JsonArray records = new JsonArray().add(record);
+        JsonObject root = new JsonObject().put("records", records);
+
+        LOGGER.info("Sending:\n{}", root.toString());
+
+        // Send the first request
+        producerService()
+            .sendRecordsRequest(topic, root, firstContentType)
+            .sendJsonObject(root, response -> {
+                if (response.succeeded()) {
+                    HttpResponse<JsonObject> httpResponse = response.result();
+                    context.verify(() -> {
+                        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+                        LOGGER.info("Successfully processed record with content type: {}", secondContentType);
+                    });
+                } else {
+                    context.failNow(response.cause());
+                }
+            });
+
+        record = createDynamicRecord(secondContentType);
+        records = new JsonArray().add(record);
+        root = new JsonObject().put("records", records);
+
+        // Send the second request
+        producerService()
+            .sendRecordsRequest(topic, root, secondContentType)
+            .sendJsonObject(root, response -> {
+                if (response.succeeded()) {
+                    HttpResponse<JsonObject> httpResponse = response.result();
+                    context.verify(() -> {
+                        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+                        LOGGER.info("Successfully processed record with content type: {}", secondContentType);
+                        context.completeNow();
+                    });
+                } else {
+                    context.failNow(response.cause());
+                }
+            });
+
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+
+    private JsonObject createJsonRecord(JsonObject key, JsonObject value) {
+        JsonObject record = new JsonObject();
+        record.put("key", key);
+        record.put("value", value);
+        return record;
+    }
+
+    private JsonObject createBinaryRecord(byte[] keyBytes, byte[] valueBytes) {
+        JsonObject record = new JsonObject();
+        record.put("key", Base64.getEncoder().encodeToString(keyBytes));
+        record.put("value", Base64.getEncoder().encodeToString(valueBytes));
+        return record;
+    }
+
+    private JsonObject createTextRecord(String keyText, String valueText) {
+        JsonObject record = new JsonObject();
+        record.put("key", keyText);
+        record.put("value", valueText);
+        return record;
+    }
+
+    private byte[] generateRandomBinaryData(int length) {
+        byte[] data = new byte[length];
+        new Random().nextBytes(data);
+        return data;
+    }
+
+    private JsonObject createDynamicRecord(String contentType) {
+        JsonObject record;
+
+        switch (contentType) {
+            case BridgeContentType.KAFKA_JSON_JSON:
+                final JsonObject key = new JsonObject().put("id", 123);
+                final JsonObject value = new JsonObject().put("id", 10).put("price", 150).put("description", "Hello world");
+                record = createJsonRecord(key, value);
+                break;
+            case BridgeContentType.KAFKA_JSON_BINARY:
+                byte[] keyBytes = generateRandomBinaryData(128);
+                byte[] valueBytes = generateRandomBinaryData(256);
+                record = createBinaryRecord(keyBytes, valueBytes);
+                break;
+            case BridgeContentType.KAFKA_JSON_TEXT:
+                record = createTextRecord("key", "value");
+                break;
+            default:
+                throw new RuntimeException("Un-supported content type:" + contentType);
+        }
+
+        return record;
     }
 }
