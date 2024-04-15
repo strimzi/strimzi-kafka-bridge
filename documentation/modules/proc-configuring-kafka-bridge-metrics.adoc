@@ -16,7 +16,7 @@ Enable metrics for the Kafka Bridge by setting the `KAFKA_BRIDGE_METRICS_ENABLED
 
 [source,properties]
 ----
-KAFKA_BRIDGE_METRICS_ENABLE=true
+KAFKA_BRIDGE_METRICS_ENABLED=true
 ----
 
 . Run the Kafka Bridge script to enable metrics.
