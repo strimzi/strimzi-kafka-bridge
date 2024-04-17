@@ -1495,6 +1495,9 @@
                     "key": {
                         "oneOf": [
                             {
+                                "type": "array"
+                            },
+                            {
                                 "type": "object"
                             },
                             {
@@ -1810,6 +1813,9 @@
                     "value": {
                         "oneOf": [
                             {
+                                "type": "array"
+                            },
+                            {
                                 "type": "object",
                                 "nullable": true
                             },
@@ -1821,6 +1827,9 @@
                     },
                     "key": {
                         "oneOf": [
+                            {
+                                "type": "array"
+                            },
                             {
                                 "type": "object"
                             },
@@ -1888,6 +1897,9 @@
                     "value": {
                         "oneOf": [
                             {
+                                "type": "array"
+                            },
+                            {
                                 "type": "object"
                             },
                             {
@@ -1897,6 +1909,9 @@
                     },
                     "key": {
                         "oneOf": [
+                            {
+                                "type": "array"
+                            },
                             {
                                 "type": "object"
                             },
