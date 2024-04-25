@@ -206,13 +206,13 @@ public class ProducerIT extends HttpBridgeITAbstract {
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
-        JsonArray array = new JsonArray();
-        array.add("some-element").add(new JsonObject().put("some-field", "element-2"));
+        JsonArray key = new JsonArray();
+        key.add("some-element").add(new JsonObject().put("some-field", "element-2"));
 
         JsonArray records = new JsonArray();
         JsonObject json = new JsonObject();
         json.put("value", value);
-        json.put("key", array);
+        json.put("key", key);
         records.add(json);
 
         JsonObject root = new JsonObject();
@@ -235,10 +235,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
                 assertThat(record.topic(), is(topic));
                 assertThat(record.partition(), notNullValue());
                 assertThat(record.offset(), is(0L));
-                record.headers().forEach(header -> {
-                    assertThat(header.key(), is("key"));
-                    assertThat(header.value().toString(), is(array.encode()));
-                });
+                assertThat(record.key(), is(key.toBuffer().getBytes()));
             });
             LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                     record.topic(), record.partition(), record.offset(), record.key(), record.value());
@@ -282,10 +279,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
                 new StringDeserializer(), new ByteArrayDeserializer());
         consumer.handler(record -> {
             context.verify(() -> {
-                record.headers().forEach(header -> {
-                    assertThat(header.key(), is("value"));
-                    assertThat(header.value().toString(), is(value.encode()));
-                });
+                assertThat(record.value(), is(value.toBuffer().getBytes()));
                 assertThat(record.topic(), is(topic));
                 assertThat(record.partition(), notNullValue());
                 assertThat(record.offset(), is(0L));

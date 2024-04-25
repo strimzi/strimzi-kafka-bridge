@@ -1331,6 +1331,7 @@
       "properties": {
         "key": {
           "type": [
+            "array",
             "object",
             "string"
           ]
@@ -1348,6 +1349,7 @@
         },
         "value": {
           "type": [
+            "array",
             "object",
             "string",
             "null"
@@ -1626,6 +1628,7 @@
         },
         "value": {
           "type": [
+            "array",
             "object",
             "string",
             "null"
@@ -1633,6 +1636,7 @@
         },
         "key": {
           "type": [
+            "array",
             "object",
             "string"
           ]
@@ -1695,12 +1699,14 @@
       "properties": {
         "value": {
           "type": [
+            "array",
             "object",
             "string"
           ]
         },
         "key": {
           "type": [
+            "array",
             "object",
             "string"
           ]
