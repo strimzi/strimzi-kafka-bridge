@@ -3,7 +3,7 @@
 ## 0.29.0
 
 * Dependency updates (Vert.x 4.5.7, Netty 4.1.108.Final)
-* Fixed No schema matches error when using the `json` embedded format and the record key or value is an array.
+* Added support for records key and value to be JSON array when using the JSON embedded format.
 
 ## 0.28.0
 
