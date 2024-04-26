@@ -201,6 +201,103 @@ public class ProducerIT extends HttpBridgeITAbstract {
         });
     }
 
+    @Test
+    void sendSimpleMessangeWithArrayKey(VertxTestContext context) throws InterruptedException, ExecutionException {
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
+
+        String value = "message-value";
+        JsonArray key = new JsonArray();
+        key.add("some-element").add(new JsonObject().put("some-field", "element-2"));
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        json.put("key", key);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        future.get();
+
+        producerService()
+            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendJsonObject(root, verifyOK(context));
+
+        Properties consumerProperties = Consumer.fillDefaultProperties();
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
+
+        KafkaConsumer<byte[], String> consumer = KafkaConsumer.create(vertx, consumerProperties,
+                new ByteArrayDeserializer(), new KafkaJsonDeserializer<>(String.class));
+        consumer.handler(record -> {
+            context.verify(() -> {
+                assertThat(record.value(), is(value));
+                assertThat(record.topic(), is(topic));
+                assertThat(record.partition(), notNullValue());
+                assertThat(record.offset(), is(0L));
+                assertThat(record.key(), is(key.toBuffer().getBytes()));
+            });
+            LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                    record.topic(), record.partition(), record.offset(), record.key(), record.value());
+            consumer.close();
+            context.completeNow();
+        });
+
+        consumer.subscribe(topic, done -> {
+            if (!done.succeeded()) {
+                context.failNow(done.cause());
+            }
+        });
+    }
+
+
+    @Test
+    void sendSimpleMessageWithArrayValue(VertxTestContext context) throws InterruptedException, ExecutionException {
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
+
+        JsonArray value = new JsonArray();
+        value.add("some-element").add(new JsonObject().put("some-field", "element-2"));
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        future.get();
+
+        producerService()
+            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendJsonObject(root, verifyOK(context));
+
+        Properties consumerProperties = Consumer.fillDefaultProperties();
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
+
+        KafkaConsumer<String, byte[]> consumer = KafkaConsumer.create(vertx, consumerProperties,
+                new StringDeserializer(), new ByteArrayDeserializer());
+        consumer.handler(record -> {
+            context.verify(() -> {
+                assertThat(record.value(), is(value.toBuffer().getBytes()));
+                assertThat(record.topic(), is(topic));
+                assertThat(record.partition(), notNullValue());
+                assertThat(record.offset(), is(0L));
+                assertThat(record.key(), nullValue());
+            });
+            LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
+                    record.topic(), record.partition(), record.offset(), record.key(), record.value());
+            consumer.close();
+            context.completeNow();
+        });
+
+        consumer.subscribe(topic, done -> {
+            if (!done.succeeded()) {
+                context.failNow(done.cause());
+            }
+        });
+    }
+
     @Disabled("Will be check in the next PR, this is just external tests for Bridge")
     @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
