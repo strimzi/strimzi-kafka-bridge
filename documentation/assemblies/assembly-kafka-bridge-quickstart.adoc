@@ -6,7 +6,7 @@
 = Kafka Bridge quickstart
 
 [role="_abstract"]
-Use this quickstart to try out the Strimzi Kafka Bridge in your local development environment.
+Use this quickstart to try out the Kafka Bridge in your local development environment.
 
 You will learn how to do the following:
 

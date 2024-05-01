@@ -32,4 +32,4 @@ Clients can produce and consume messages without the requirement to use the nati
 
 [role="_additional-resources"]
 .Additional resources
-* xref:api_reference-{context}[Strimzi Kafka Bridge API reference]
+* xref:api_reference-{context}[Kafka Bridge API reference]

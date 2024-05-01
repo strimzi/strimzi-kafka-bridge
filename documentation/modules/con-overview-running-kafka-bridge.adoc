@@ -6,7 +6,7 @@
 = Running the Kafka Bridge
 
 [role="_abstract"]
-Install the Strimzi Kafka Bridge to run in the same environment as your Kafka cluster.
+Install the Kafka Bridge to run in the same environment as your Kafka cluster.
 
 You can download and add the Kafka Bridge installation artifacts to your host machine.
 To try out the Kafka Bridge in your local environment, see the xref:assembly-kafka-bridge-quickstart-{context}[Kafka Bridge quickstart].

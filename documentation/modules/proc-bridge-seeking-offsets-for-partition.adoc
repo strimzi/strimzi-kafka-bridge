@@ -61,7 +61,7 @@ NOTE: You can also use the xref:_seektobeginning[positions/beginning] endpoint t
 
 .What to do next
 
-In this quickstart, you have used the Strimzi Kafka Bridge to perform several common operations on a Kafka cluster. You can now xref:proc-bridge-deleting-consumer-{context}[delete the Kafka Bridge consumer] that you created earlier.
+In this quickstart, you have used the Kafka Bridge to perform several common operations on a Kafka cluster. You can now xref:proc-bridge-deleting-consumer-{context}[delete the Kafka Bridge consumer] that you created earlier.
 
 [role="_additional-resources"]
 .Additional resources
