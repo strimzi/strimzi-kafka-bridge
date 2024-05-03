@@ -6,7 +6,7 @@
 = Kafka Bridge overview
 
 [role="_abstract"]
-Use the Strimzi Kafka Bridge to make HTTP requests to a Kafka cluster.
+Use the Kafka Bridge to make HTTP requests to a Kafka cluster.
 
 You can use the Kafka Bridge to integrate HTTP client applications with your Kafka cluster.
 
