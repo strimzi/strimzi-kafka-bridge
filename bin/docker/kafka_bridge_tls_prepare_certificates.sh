@@ -27,43 +27,45 @@ function create_keystore {
    RANDFILE=/tmp/.rnd openssl pkcs12 -export -in $3 -inkey $4 -name $5 -password pass:$2 -out $1 -certpbe aes-128-cbc -keypbe aes-128-cbc -macalg sha256
 }
 
-# $1 = trusted certs, $2 = TLS auth cert, $3 = TLS auth key, $4 = truststore path, $5 = keystore path, $6 = certs and key path
-trusted_certs=$1
-tls_auth_cert=$2
-tls_auth_key=$3
-truststore_path=$4
-keystore_path=$5
-certs_key_path=$6
+# Parameters:
+# $1: Path to the new truststore
+# $2: Truststore password
+# $3: Base path where the certificates are mounted
+# $4: Environment variable defining the certs that should be loaded
+function prepare_truststore {
+    STORE=$1
+    PASSWORD=$2
+    BASEPATH=$3
+    TRUSTED_CERTS=$4
 
-if [ -n "$trusted_certs" ]; then
-    echo "Preparing truststore"
-    rm -f "$truststore_path"
-    IFS=';' read -ra CERTS <<< ${trusted_certs}
+    rm -f "$STORE"
+
+    IFS=';' read -ra CERTS <<< "${TRUSTED_CERTS}"
     for cert in "${CERTS[@]}"
     do
-        create_truststore $truststore_path $CERTS_STORE_PASSWORD $certs_key_path/$cert $cert
+        for file in $BASEPATH/$cert
+        do
+            if [ -f "$file" ]; then
+                echo "Adding $file to truststore $STORE with alias $file"
+                create_truststore "$STORE" "$PASSWORD" "$file" "$file"
+            fi
+        done
     done
-    echo "Preparing truststore is complete"
+}
+
+if [ -n "$KAFKA_BRIDGE_TRUSTED_CERTS" ]; then
+    echo "Preparing Bridge truststore"
+    prepare_truststore "/tmp/strimzi/bridge.truststore.p12" "$CERTS_STORE_PASSWORD" "${STRIMZI_HOME}/bridge-certs" "$KAFKA_BRIDGE_TRUSTED_CERTS"
 fi
 
-if [ -n "$tls_auth_cert" ] && [ -n "$tls_auth_key" ]; then
+if [ -n "$KAFKA_BRIDGE_TLS_AUTH_CERT" ] && [ -n "$KAFKA_BRIDGE_TLS_AUTH_KEY" ]; then
     echo "Preparing keystore"
-    rm -f "$keystore_path"
-    create_keystore $keystore_path $CERTS_STORE_PASSWORD $certs_key_path/$tls_auth_cert $certs_key_path/$tls_auth_key $tls_auth_cert
+    rm -f "/tmp/strimzi/bridge.keystore.p12"
+    create_keystore "/tmp/strimzi/bridge.keystore.p12" "$CERTS_STORE_PASSWORD" "${STRIMZI_HOME}/bridge-certs/$KAFKA_BRIDGE_TLS_AUTH_CERT" "${STRIMZI_HOME}/bridge-certs/$KAFKA_BRIDGE_TLS_AUTH_KEY" "$KAFKA_BRIDGE_TLS_AUTH_CERT"
     echo "Preparing keystore is complete"
 fi
 
-if [ -d /opt/strimzi/oauth-certs ]; then
-  echo "Preparing truststore for OAuth"
-  # Add each certificate to the trust store
-  STORE=/tmp/strimzi/oauth.truststore.p12
-  rm -f "$STORE"
-  declare -i INDEX=0
-  for CRT in /opt/strimzi/oauth-certs/**/*; do
-    ALIAS="oauth-${INDEX}"
-    echo "Adding $CRT to truststore $STORE with alias $ALIAS"
-    create_truststore "$STORE" "$CERTS_STORE_PASSWORD" "$CRT" "$ALIAS"
-    INDEX+=1
-  done
-  echo "Preparing truststore for OAuth is complete"
+if [ -n "$KAFKA_BRIDGE_OAUTH_TRUSTED_CERTS" ]; then
+    echo "Preparing OAuth truststore"
+    prepare_truststore "/tmp/strimzi/oauth.truststore.p12" "$CERTS_STORE_PASSWORD" "/opt/strimzi/oauth-certs" "$KAFKA_BRIDGE_OAUTH_TRUSTED_CERTS"
 fi
