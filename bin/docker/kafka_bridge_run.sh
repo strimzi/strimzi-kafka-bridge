@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 set +x
 
 # Clean-up /tmp directory from files which might have remained from previous container restart
@@ -14,14 +15,7 @@ export CERTS_STORE_PASSWORD=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c32)
 mkdir -p /tmp/strimzi
 
 # Import certificates into keystore and truststore
-# $1 = trusted certs, $2 = TLS auth cert, $3 = TLS auth key, $4 = truststore path, $5 = keystore path, $6 = certs and key path
-"${MYPATH}"/kafka_bridge_tls_prepare_certificates.sh \
-    "$KAFKA_BRIDGE_TRUSTED_CERTS" \
-    "$KAFKA_BRIDGE_TLS_AUTH_CERT" \
-    "$KAFKA_BRIDGE_TLS_AUTH_KEY" \
-    "/tmp/strimzi/bridge.truststore.p12" \
-    "/tmp/strimzi/bridge.keystore.p12" \
-    "${STRIMZI_HOME}/bridge-certs"
+"${MYPATH}"/kafka_bridge_tls_prepare_certificates.sh
 
 # Generate and print the bridge config file
 echo "Kafka Bridge configuration:"
