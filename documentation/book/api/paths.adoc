@@ -959,6 +959,48 @@ Retrieves the OpenAPI v2 specification in JSON format.
 * `application/json`
 
 
+[[_openapiv2]]
+=== GET /openapi/v2
+
+==== Description
+Retrieves the OpenAPI v2 specification in JSON format.
+
+
+==== Responses
+
+[options="header", cols=".^2a,.^14a,.^4a"]
+|===
+|HTTP Code|Description|Schema
+|**204**|OpenAPI v2 specification in JSON format retrieved successfully.|string
+|===
+
+
+==== Produces
+
+* `application/json`
+
+
+[[_openapiv3]]
+=== GET /openapi/v3
+
+==== Description
+Retrieves the OpenAPI v3 specification in JSON format.
+
+
+==== Responses
+
+[options="header", cols=".^2a,.^14a,.^4a"]
+|===
+|HTTP Code|Description|Schema
+|**204**|OpenAPI v3 specification in JSON format retrieved successfully.|string
+|===
+
+
+==== Produces
+
+* `application/json`
+
+
 [[_ready]]
 === GET /ready
 
