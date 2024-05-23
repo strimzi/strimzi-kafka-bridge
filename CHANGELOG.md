@@ -5,6 +5,9 @@
 * Dependency updates (Vert.x 4.5.7, Netty 4.1.108.Final)
 * Added support for records key and value to be JSON array when using the `json` embedded format.
 * Update the base image used by Strimzi containers from UBI8 to UBI9
+* The OpenAPI v2 (Swagger) specification support is now deprecated.
+  * The `/openapi` endpoint still returns the OpenAPI v2 specification. There is an additional `/openapi/v2` endpoint returning the same.
+  * The newly added `/openapi/v3` endpoint returns the OpenAPI v3 specification. Please use this one, because the v2 will be removed in the future.
 
 ## 0.28.0
 

@@ -1395,6 +1395,42 @@
                 "description": "Retrieves the OpenAPI v2 specification in JSON format."
             }
         },
+        "/openapi/v2": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "OpenAPI v2 specification in JSON format retrieved successfully."
+                    }
+                },
+                "operationId": "openapiv2",
+                "description": "Retrieves the OpenAPI v2 specification in JSON format."
+            }
+        },
+        "/openapi/v3": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "OpenAPI v3 specification in JSON format retrieved successfully."
+                    }
+                },
+                "operationId": "openapiv3",
+                "description": "Retrieves the OpenAPI v3 specification in JSON format."
+            }
+        },
         "/metrics": {
             "get": {
                 "responses": {
