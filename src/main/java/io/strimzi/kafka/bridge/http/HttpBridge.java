@@ -163,6 +163,8 @@ public class HttpBridge extends AbstractVerticle {
                 routerBuilder.operation(this.HEALTHY.getOperationId().toString()).handler(this.HEALTHY);
                 routerBuilder.operation(this.READY.getOperationId().toString()).handler(this.READY);
                 routerBuilder.operation(this.OPENAPI.getOperationId().toString()).handler(this.OPENAPI);
+                routerBuilder.operation(this.OPENAPIV2.getOperationId().toString()).handler(this.OPENAPIV2);
+                routerBuilder.operation(this.OPENAPIV3.getOperationId().toString()).handler(this.OPENAPIV3);
                 routerBuilder.operation(this.METRICS.getOperationId().toString()).handler(this.METRICS);
                 routerBuilder.operation(this.INFO.getOperationId().toString()).handler(this.INFO);
                 if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
@@ -516,12 +518,12 @@ public class HttpBridge extends AbstractVerticle {
 
     private void openapi(RoutingContext routingContext) {
         FileSystem fileSystem = vertx.fileSystem();
-        fileSystem.readFile("openapiv2.json", readFile -> {
+        fileSystem.readFile(openapiFileName(routingContext), readFile -> {
             if (readFile.succeeded()) {
                 String xForwardedPath = routingContext.request().getHeader("x-forwarded-path");
                 String xForwardedPrefix = routingContext.request().getHeader("x-forwarded-prefix");
                 if (xForwardedPath == null && xForwardedPrefix == null) {
-                    HttpUtils.sendFile(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, "openapiv2.json");
+                    HttpUtils.sendFile(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, openapiFileName(routingContext));
                 } else {
                     String path = "/";
                     if (xForwardedPrefix != null) {
@@ -543,6 +545,10 @@ public class HttpBridge extends AbstractVerticle {
                         BridgeContentType.JSON, JsonUtils.jsonToBytes(error.toJson()));
             }
         });
+    }
+
+    private String openapiFileName(RoutingContext routingContext) {
+        return "/openapi/v3".equals(routingContext.normalizedPath()) ? "openapi.json" : "openapiv2.json";
     }
 
     private void metrics(RoutingContext routingContext) {
@@ -810,6 +816,22 @@ public class HttpBridge extends AbstractVerticle {
 
     final HttpOpenApiOperation OPENAPI = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPI) {
     
+        @Override
+        public void process(RoutingContext routingContext) {
+            openapi(routingContext);
+        }
+    };
+
+    final HttpOpenApiOperation OPENAPIV2 = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPIV2) {
+
+        @Override
+        public void process(RoutingContext routingContext) {
+            openapi(routingContext);
+        }
+    };
+
+    final HttpOpenApiOperation OPENAPIV3 = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPIV3) {
+
         @Override
         public void process(RoutingContext routingContext) {
             openapi(routingContext);

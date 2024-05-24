@@ -68,6 +68,44 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
     }
 
     @Test
+    void openapiv2Test(VertxTestContext context) {
+        baseService()
+            .getRequest("/openapi/v2")
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        JsonObject bridgeResponse = response.body();
+
+                        String version = bridgeResponse.getString("swagger");
+                        assertThat(version, is("2.0"));
+                    });
+                    context.completeNow();
+                });
+    }
+
+    @Test
+    void openapiv3Test(VertxTestContext context) {
+        baseService()
+                .getRequest("/openapi/v3")
+                .as(BodyCodec.jsonObject())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        JsonObject bridgeResponse = response.body();
+
+                        String version = bridgeResponse.getString("openapi");
+                        assertThat(version, is("3.0.0"));
+                    });
+                    context.completeNow();
+                });
+    }
+
+    @Test
     void openapiTest(VertxTestContext context) {
         baseService()
             .getRequest("/openapi")
