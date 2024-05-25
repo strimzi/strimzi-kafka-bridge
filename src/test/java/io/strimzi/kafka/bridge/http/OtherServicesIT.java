@@ -117,6 +117,9 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                         assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
 
+                        String version = bridgeResponse.getString("swagger");
+                        assertThat(version, is("2.0"));
+
                         Map<String, Object> paths = bridgeResponse.getJsonObject("paths").getMap();
                         // subscribe, list subscriptions and unsubscribe are using the same endpoint but different methods (-2)
                         // getTopic and send are using the same endpoint but different methods (-1)
