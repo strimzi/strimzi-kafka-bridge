@@ -4,9 +4,9 @@ ARG TARGETPLATFORM
 
 USER root
 
-RUN microdnf update \
+RUN microdnf update -y \
     && microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y java-${JAVA_VERSION}-openjdk-headless openssl shadow-utils \
-    && microdnf clean all
+    && microdnf clean all -y
 
 # Set JAVA_HOME env var
 ENV JAVA_HOME /usr/lib/jvm/jre-${JAVA_VERSION}
