@@ -2,9 +2,23 @@ lowercaseOutputName: true
 
 rules:
   # more specific rules to consumer and producer with topic related information
+  - pattern: kafka.producer<type=(.+), client-id=(.+), topic=(.+)><>([a-z-]+)-total
+    name: strimzi_bridge_kafka_producer_$4_total
+    type: COUNTER
+    labels:
+      type: "$1"
+      clientId: "$2"
+      topic: "$3"
   - pattern: kafka.producer<type=(.+), client-id=(.+), topic=(.+)><>([a-z-]+)
     name: strimzi_bridge_kafka_producer_$4
     type: GAUGE
+    labels:
+      type: "$1"
+      clientId: "$2"
+      topic: "$3"
+  - pattern: kafka.consumer<type=(.+), client-id=(.+), topic=(.+)><>([a-z-]+)-total
+    name: strimzi_bridge_kafka_consumer_$4_total
+    type: COUNTER
     labels:
       type: "$1"
       clientId: "$2"
@@ -17,6 +31,18 @@ rules:
       clientId: "$2"
       topic: "$3"
   # more general metrics
+  - pattern: kafka.(\w+)<type=(.+), client-id=(.+)><>([a-z-]+-total-[a-z-]+) # handles the metrics with total in the middle of the metric name
+    name: strimzi_bridge_kafka_$1_$4
+    type: GAUGE
+    labels:
+      type: "$2"
+      clientId: "$3"
+  - pattern: kafka.(\w+)<type=(.+), client-id=(.+)><>([a-z-]+)-total
+    name: strimzi_bridge_kafka_$1_$4_total
+    type: COUNTER
+    labels:
+      type: "$2"
+      clientId: "$3"
   - pattern: kafka.(\w+)<type=(.+), client-id=(.+)><>([a-z-]+)
     name: strimzi_bridge_kafka_$1_$4
     type: GAUGE

@@ -5,22 +5,22 @@
 
 package io.strimzi.kafka.bridge;
 
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.exporter.common.TextFormat;
 import io.prometheus.jmx.JmxCollector;
+import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
 
 import javax.management.MalformedObjectNameException;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Allow to collect JMX metrics exposing them in the Prometheus format
  */
 public class JmxCollectorRegistry {
-
-    private final CollectorRegistry collectorRegistry;
+    private final PrometheusRegistry collectorRegistry;
+    private final PrometheusTextFormatWriter textFormatter = new PrometheusTextFormatWriter(true);
 
     /**
      * Constructor
@@ -30,7 +30,7 @@ public class JmxCollectorRegistry {
      */
     public JmxCollectorRegistry(String yamlConfig) throws MalformedObjectNameException {
         new JmxCollector(yamlConfig).register();
-        collectorRegistry = CollectorRegistry.defaultRegistry;
+        collectorRegistry = PrometheusRegistry.defaultRegistry;
     }
 
     /**
@@ -42,7 +42,7 @@ public class JmxCollectorRegistry {
      */
     public JmxCollectorRegistry(File yamlFileConfig) throws MalformedObjectNameException, IOException {
         new JmxCollector(yamlFileConfig).register();
-        collectorRegistry = CollectorRegistry.defaultRegistry;
+        collectorRegistry = PrometheusRegistry.defaultRegistry;
     }
 
     /**
@@ -50,12 +50,12 @@ public class JmxCollectorRegistry {
      * Prometheus to scrape from.
      */
     public String scrape() {
-        Writer writer = new StringWriter();
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
         try {
-            TextFormat.write004(writer, collectorRegistry.metricFamilySamples());
+            textFormatter.write(stream, collectorRegistry.scrape());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return writer.toString();
+        return stream.toString(StandardCharsets.UTF_8);
     }
 }
