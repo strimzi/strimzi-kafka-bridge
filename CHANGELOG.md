@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.30.0
+
+* Dependency updates (Prometheus JMX Collector 1.0.1, Prometheus Client 1.3.1)
+
 ## 0.29.0
 
 * Dependency updates (Vert.x 4.5.8, Netty 4.1.110.Final)
