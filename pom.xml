@@ -119,7 +119,7 @@
 		<maven.source.version>3.2.1</maven.source.version>
 		<maven.dependency.version>3.3.0</maven.dependency.version>
 		<maven.gpg.version>3.0.1</maven.gpg.version>
-		<sonatype.nexus.staging>1.6.7</sonatype.nexus.staging>
+		<sonatype.nexus.staging>1.7.0</sonatype.nexus.staging>
 		<swagger2markup-plugin.version>1.3.7</swagger2markup-plugin.version>
 		<swagger2markup.version>1.3.4</swagger2markup.version>
 		<jackson-core.version>2.16.1</jackson-core.version>
