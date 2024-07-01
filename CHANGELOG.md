@@ -2,7 +2,7 @@
 
 ## 0.30.0
 
-* Dependency updates (Prometheus JMX Collector 1.0.1, Prometheus Client 1.3.1)
+* Dependency updates (Kafka 3.7.1, Prometheus JMX Collector 1.0.1, Prometheus Client 1.3.1)
 
 ## 0.29.0
 
