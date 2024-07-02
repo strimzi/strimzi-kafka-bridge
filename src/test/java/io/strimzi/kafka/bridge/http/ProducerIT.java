@@ -107,7 +107,6 @@ public class ProducerIT extends HttpBridgeITAbstract {
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
-
         int partition = 1;
 
         JsonArray records = new JsonArray();
@@ -140,6 +139,57 @@ public class ProducerIT extends HttpBridgeITAbstract {
             });
             LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}",
                     record.topic(), record.partition(), record.offset(), record.key(), record.value());
+            consumer.close();
+            context.completeNow();
+        });
+
+        consumer.subscribe(topic, done -> {
+            if (!done.succeeded()) {
+                context.failNow(done.cause());
+            }
+        });
+
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+
+    @Test
+    void sendSimpleMessageWithTimestamp(VertxTestContext context) throws InterruptedException, ExecutionException {
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+
+        String value = "message-value";
+        long timestamp = System.currentTimeMillis();
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        json.put("timestamp", timestamp);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        future.get();
+
+        producerService()
+            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+            .sendJsonObject(root, verifyOK(context));
+
+        Properties consumerProperties = Consumer.fillDefaultProperties();
+        consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
+
+        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, consumerProperties,
+                new StringDeserializer(), new KafkaJsonDeserializer<>(String.class));
+        consumer.handler(record -> {
+            context.verify(() -> {
+                assertThat(record.value(), is(value));
+                assertThat(record.topic(), is(topic));
+                assertThat(record.partition(), is(0));
+                assertThat(record.offset(), is(0L));
+                assertThat(record.key(), nullValue());
+                assertThat(record.timestamp(), is(timestamp));
+            });
+            LOGGER.info("Message consumed topic={} partition={} offset={}, key={}, value={}, timestamp={}",
+                    record.topic(), record.partition(), record.offset(), record.key(), record.value(), record.timestamp());
             consumer.close();
             context.completeNow();
         });
