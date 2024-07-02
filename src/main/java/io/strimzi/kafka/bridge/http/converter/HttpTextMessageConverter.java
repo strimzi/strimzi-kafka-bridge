@@ -30,6 +30,7 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
     public ProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, byte[] message) {
 
         Integer partitionFromBody = null;
+        Long timestamp = null;
         byte[] key = null;
         byte[] value = null;
         Headers headers = new RecordHeaders();
@@ -51,6 +52,9 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
                 }
                 value = valueNode.asText().getBytes();
             }
+            if (json.has("timestamp")) {
+                timestamp = json.get("timestamp").asLong();
+            }
             if (json.has("headers")) {
                 ArrayNode jsonArray = (ArrayNode) json.get("headers");
                 for (JsonNode jsonObject : jsonArray) {
@@ -67,7 +71,7 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
                 partitionFromBody = partition;
             }
         }
-        return new ProducerRecord<>(kafkaTopic, partitionFromBody, key, value, headers);
+        return new ProducerRecord<>(kafkaTopic, partitionFromBody, timestamp, key, value, headers);
     }
 
     @Override
@@ -101,6 +105,7 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
             jsonObject.set("value", record.value() != null ? new TextNode(new String(record.value())) : null);
             jsonObject.put("partition", record.partition());
             jsonObject.put("offset", record.offset());
+            jsonObject.put("timestamp", record.timestamp());
 
             ArrayNode headers = JsonUtils.createArrayNode();
 

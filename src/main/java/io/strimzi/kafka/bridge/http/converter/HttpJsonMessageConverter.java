@@ -30,6 +30,7 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
     public ProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, byte[] message) {
 
         Integer partitionFromBody = null;
+        Long timestamp = null;
         byte[] key = null;
         byte[] value = null;
         Headers headers = new RecordHeaders();
@@ -43,9 +44,12 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
             if (json.has("value")) {
                 value = JsonUtils.jsonToBytes(json.get("value"));
             }
+            if (json.has("timestamp")) {
+                timestamp = json.get("timestamp").asLong();
+            }
             if (json.has("headers")) {
                 ArrayNode jsonArray = (ArrayNode) json.get("headers");
-                for (JsonNode jsonObject: jsonArray) {
+                for (JsonNode jsonObject : jsonArray) {
                     headers.add(new RecordHeader(jsonObject.get("key").asText(), DatatypeConverter.parseBase64Binary(jsonObject.get("value").asText())));
                 }
             }
@@ -59,7 +63,7 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
                 partitionFromBody = partition;
             }
         }
-        return new ProducerRecord<>(kafkaTopic, partitionFromBody, key, value, headers);
+        return new ProducerRecord<>(kafkaTopic, partitionFromBody, timestamp, key, value, headers);
     }
 
     @Override
@@ -97,10 +101,11 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
                     JsonUtils.bytesToJson(record.value()) : null);
             jsonObject.put("partition", record.partition());
             jsonObject.put("offset", record.offset());
+            jsonObject.put("timestamp", record.timestamp());
 
             ArrayNode headers = JsonUtils.createArrayNode();
 
-            for (Header kafkaHeader: record.headers()) {
+            for (Header kafkaHeader : record.headers()) {
                 ObjectNode header = JsonUtils.createObjectNode();
 
                 header.put("key", kafkaHeader.key());
