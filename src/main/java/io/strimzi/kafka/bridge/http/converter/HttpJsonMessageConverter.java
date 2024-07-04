@@ -24,6 +24,7 @@ import java.util.List;
 /**
  * Implementation of a message converter to deal with the "json" embedded data format
  */
+@SuppressWarnings("checkstyle:NPathComplexity")
 public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[], byte[], byte[]> {
 
     @Override
