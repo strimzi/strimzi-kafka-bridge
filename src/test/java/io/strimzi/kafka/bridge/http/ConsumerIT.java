@@ -534,6 +534,49 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     }
 
     @Test
+    void receiveMessageWithTimestamp(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+
+        future.get();
+        String sentBody = "Simple message";
+        long timestamp = System.currentTimeMillis();
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, timestamp);
+
+        // create consumer
+        // subscribe to a topic
+        consumerService()
+                .createConsumer(context, groupId, consumerJson)
+                .subscribeConsumer(context, groupId, name, topic);
+
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+        // consume records
+        consumerService()
+            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+            .as(BodyCodec.jsonArray())
+            .send(ar -> {
+                context.verify(() -> {
+                    assertThat(ar.succeeded(), is(true));
+                    HttpResponse<JsonArray> response = ar.result();
+                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                    JsonObject jsonResponse = response.body().getJsonObject(0);
+
+                    long recordTimestamp = jsonResponse.getLong("timestamp");
+
+                    assertThat(recordTimestamp, is(timestamp));
+                });
+                consume.complete(true);
+            });
+
+        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        // consumer deletion
+        consumerService()
+            .deleteConsumer(context, groupId, name);
+        context.completeNow();
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+
+    }
+    @Test
     void receiveTextMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
 
