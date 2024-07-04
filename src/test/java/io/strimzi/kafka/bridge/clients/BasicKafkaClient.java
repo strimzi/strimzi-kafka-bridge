@@ -46,7 +46,6 @@ public class BasicKafkaClient {
      * @param withNullKeyRecord boolean, which allowing sending messages with NULL key
      * @return sent message count
      */
-    @SuppressWarnings("checkstyle:ParameterNumber")
     public int sendStringMessagesPlain(long timeoutMs, String topicName, int messageCount, List<KafkaHeader> headers,
                                        String message, int partition, Long timestamp, boolean withNullKeyRecord) {
         CompletableFuture<Integer> resultPromise = new CompletableFuture<>();
@@ -119,7 +118,6 @@ public class BasicKafkaClient {
      * @param withNullKeyRecord boolean, which allowing sending messages with NULL key
      * @return sent message count
      */
-    @SuppressWarnings("checkstyle:ParameterNumber")
     public int sendJsonMessagesPlain(long timeoutMs, String topicName, int messageCount, List<KafkaHeader> headers,
                                      String message, int partition, Long timestamp, boolean withNullKeyRecord) {
         CompletableFuture<Integer> resultPromise = new CompletableFuture<>();
@@ -172,7 +170,7 @@ public class BasicKafkaClient {
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message, int partition, boolean withNullKeyRecord) {
         return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
-                message, partition, null,  withNullKeyRecord);
+                message, partition,null,  withNullKeyRecord);
     }
 
     /**
@@ -187,7 +185,7 @@ public class BasicKafkaClient {
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, List<KafkaHeader> headers, String message,
                                      boolean withNullKeyRecord) {
-        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, headers, message, 0, null, withNullKeyRecord);
+        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, headers, message, 0,null, withNullKeyRecord);
     }
 
     /**
@@ -201,7 +199,7 @@ public class BasicKafkaClient {
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message, int partition) {
         return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
-                message, partition, null, false);
+                message, partition,null, false);
     }
 
     /**
@@ -214,7 +212,7 @@ public class BasicKafkaClient {
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message) {
         return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
-                message, 0, null, false);
+                message, 0, null,false);
     }
 
     /**
