@@ -55,6 +55,8 @@ __optional__|<<_kafkaheaderlist,KafkaHeaderList>>
 __optional__|integer (int64)
 |**partition** +
 __optional__|integer (int32)
+|**timestamp** +
+__optional__|integer (int64)
 |**topic** +
 __optional__|string
 |===
@@ -222,6 +224,8 @@ __optional__|< <<_partition,Partition>> > array
 __optional__|<<_kafkaheaderlist,KafkaHeaderList>>
 |**partition** +
 __optional__|integer (int32)
+|**timestamp** +
+__optional__|integer (int64)
 |===
 
 
