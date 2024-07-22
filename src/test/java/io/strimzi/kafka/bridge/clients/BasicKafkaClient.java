@@ -61,10 +61,10 @@ public class BasicKafkaClient {
         properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
 
         try (Producer plainProducer = new Producer.ProducerBuilder(resultPromise, msgCntPredicate, topicName, message, partition, timestamp)
-                .withProperties(properties)
-                .withHeaders(headers)
-                .withNullKeyRecord(withNullKeyRecord)
-                .build()) {
+            .withProperties(properties)
+            .withHeaders(headers)
+            .withNullKeyRecord(withNullKeyRecord)
+            .build()) {
 
             plainProducer.getVertx().deployVerticle(plainProducer);
 
@@ -84,7 +84,7 @@ public class BasicKafkaClient {
      */
     public int sendStringMessagesPlain(String topicName, int messageCount) {
         return sendStringMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount,
-                List.of(), "\"Hello\" : \"World\"", 0, null, false);
+            List.of(), "\"Hello\" : \"World\"", 0, null, false);
     }
 
     /**
@@ -93,7 +93,7 @@ public class BasicKafkaClient {
      * @param topicName    topic name where messages are send
      * @param message      content to be sent
      * @param messageCount message count
-     * @param partition    partition, which will be selected
+     * @param partition partition, which will be selected
      * @return sent message count
      */
     public int sendStringMessagesPlain(String topicName, String message, int messageCount, int partition) {
@@ -133,10 +133,10 @@ public class BasicKafkaClient {
         properties.setProperty(ProducerConfig.CLIENT_ID_CONFIG, "producer-sender-plain-" + new Random().nextInt(Integer.MAX_VALUE));
         properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
         try (Producer plainProducer = new Producer.ProducerBuilder(resultPromise, msgCntPredicate, topicName, message, partition, timestamp)
-                .withProperties(properties)
-                .withHeaders(headers)
-                .withNullKeyRecord(withNullKeyRecord)
-                .build()) {
+            .withProperties(properties)
+            .withHeaders(headers)
+            .withNullKeyRecord(withNullKeyRecord)
+            .build()) {
             plainProducer.getVertx().deployVerticle(plainProducer);
 
             return plainProducer.getResultPromise().get(timeoutMs, TimeUnit.MILLISECONDS);
@@ -172,7 +172,7 @@ public class BasicKafkaClient {
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message, int partition, boolean withNullKeyRecord) {
         return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
-                message, partition, null,  withNullKeyRecord);
+            message, partition, null,  withNullKeyRecord);
     }
 
     /**
@@ -195,13 +195,13 @@ public class BasicKafkaClient {
      *
      * @param topicName    topic name where messages are send
      * @param messageCount message count
-     * @param message      specific message to send
-     * @param partition    partition count, how many shards/partitions will topic have
+     * @param message specific message to send
+     * @param partition partition count, how many shards/partitions will topic have
      * @return sent message count
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message, int partition) {
         return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
-                message, partition, null, false);
+            message, partition, null, false);
     }
 
     /**
@@ -209,12 +209,12 @@ public class BasicKafkaClient {
      *
      * @param topicName    topic name where messages are send
      * @param messageCount message count
-     * @param message      specific message to send
+     * @param message specific message to send
      * @return sent message count
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message) {
         return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
-                message, 0, null, false);
+            message, 0, null, false);
     }
 
     /**
@@ -226,7 +226,7 @@ public class BasicKafkaClient {
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount) {
         return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
-                "{\"Hello\" : \"World\"}", 0, null, false);
+            "{\"Hello\" : \"World\"}", 0, null, false);
     }
 
     /**

@@ -208,6 +208,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
+
         String key = "my-key";
 
         JsonArray records = new JsonArray();
