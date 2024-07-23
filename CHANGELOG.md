@@ -3,9 +3,9 @@
 ## 0.30.0
 
 * Dependency updates (Kafka 3.7.1, Prometheus JMX Collector 1.0.1, Prometheus Client 1.3.1)
-* added support for message timestamp.
-  * Implemented support for interpreting the timestamp parameter in `ProducerRecord` objects sent to Kafka topics via the bridge.
-  * Allow users to read the `ConsumerRecord` timestamp on the request's response.
+* Added support for message timestamp.
+  * Setting the timestamp on a message sent via the `send` API.
+  * Getting the timestamp on receiving a message via the `poll` API.
 
 ## 0.29.0
 
