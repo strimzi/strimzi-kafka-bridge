@@ -35,17 +35,20 @@ public class BasicKafkaClient {
 
     /**
      * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     * @param timeoutMs timeout for the sending messages
-     * @param topicName topic name where messages are send
-     * @param messageCount message count
-     * @param headers kafka headers
-     * @param message specific message to send
-     * @param partition partition count, how many shards/partitions will topic have
+     *
+     * @param timeoutMs         timeout for the sending messages
+     * @param topicName         topic name where messages are send
+     * @param messageCount      message count
+     * @param headers           kafka headers
+     * @param message           specific message to send
+     * @param partition         partition count, how many shards/partitions will topic have
+     * @param timestamp         timestamp of the message
      * @param withNullKeyRecord boolean, which allowing sending messages with NULL key
      * @return sent message count
      */
+    @SuppressWarnings("checkstyle:ParameterNumber")
     public int sendStringMessagesPlain(long timeoutMs, String topicName, int messageCount, List<KafkaHeader> headers,
-                                       String message, int partition, boolean withNullKeyRecord) {
+                                       String message, int partition, Long timestamp, boolean withNullKeyRecord) {
         CompletableFuture<Integer> resultPromise = new CompletableFuture<>();
         IntPredicate msgCntPredicate = x -> x == messageCount;
 
@@ -57,7 +60,7 @@ public class BasicKafkaClient {
         properties.setProperty(ProducerConfig.CLIENT_ID_CONFIG, "producer-sender-plain-");
         properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
 
-        try (Producer plainProducer = new Producer.ProducerBuilder(resultPromise, msgCntPredicate, topicName, message, partition)
+        try (Producer plainProducer = new Producer.ProducerBuilder(resultPromise, msgCntPredicate, topicName, message, partition, timestamp)
             .withProperties(properties)
             .withHeaders(headers)
             .withNullKeyRecord(withNullKeyRecord)
@@ -74,46 +77,51 @@ public class BasicKafkaClient {
 
     /**
      * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     * @param topicName topic name where messages are send
+     *
+     * @param topicName    topic name where messages are send
      * @param messageCount message count
      * @return sent message count
      */
     public int sendStringMessagesPlain(String topicName, int messageCount) {
         return sendStringMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount,
-            List.of(), "\"Hello\" : \"World\"", 0, false);
+            List.of(), "\"Hello\" : \"World\"", 0, null, false);
     }
 
     /**
      * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     * @param topicName topic name where messages are send
-     * @param message content to be sent
+     *
+     * @param topicName    topic name where messages are send
+     * @param message      content to be sent
      * @param messageCount message count
      * @param partition partition, which will be selected
      * @return sent message count
      */
     public int sendStringMessagesPlain(String topicName, String message, int messageCount, int partition) {
         return sendStringMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount,
-                List.of(), message, partition, true);
+                List.of(), message, partition, null, true);
     }
 
     public int sendStringMessagesPlain(String topicName, String message, int messageCount, int partition, boolean withNullKeyRecord) {
         return sendStringMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount,
-                List.of(), message, partition, withNullKeyRecord);
+                List.of(), message, partition, null, withNullKeyRecord);
     }
 
     /**
      * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     * @param timeoutMs timeout for the sending messages
-     * @param topicName topic name where messages are send
-     * @param messageCount message count
-     * @param headers kafka headers
-     * @param message specific message to send
-     * @param partition partition count, how many shards/partitions will topic have
+     *
+     * @param timeoutMs         timeout for the sending messages
+     * @param topicName         topic name where messages are send
+     * @param messageCount      message count
+     * @param headers           kafka headers
+     * @param message           specific message to send
+     * @param partition         partition count, how many shards/partitions will topic have
+     * @param timestamp         timestamp of the message
      * @param withNullKeyRecord boolean, which allowing sending messages with NULL key
      * @return sent message count
      */
+    @SuppressWarnings("checkstyle:ParameterNumber")
     public int sendJsonMessagesPlain(long timeoutMs, String topicName, int messageCount, List<KafkaHeader> headers,
-                                     String message, int partition, boolean withNullKeyRecord) {
+                                     String message, int partition, Long timestamp, boolean withNullKeyRecord) {
         CompletableFuture<Integer> resultPromise = new CompletableFuture<>();
         IntPredicate msgCntPredicate = x -> x == messageCount;
 
@@ -124,7 +132,7 @@ public class BasicKafkaClient {
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrapServer);
         properties.setProperty(ProducerConfig.CLIENT_ID_CONFIG, "producer-sender-plain-" + new Random().nextInt(Integer.MAX_VALUE));
         properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
-        try (Producer plainProducer = new Producer.ProducerBuilder(resultPromise, msgCntPredicate, topicName, message, partition)
+        try (Producer plainProducer = new Producer.ProducerBuilder(resultPromise, msgCntPredicate, topicName, message, partition, timestamp)
             .withProperties(properties)
             .withHeaders(headers)
             .withNullKeyRecord(withNullKeyRecord)
@@ -140,36 +148,52 @@ public class BasicKafkaClient {
 
     /**
      * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     * @param topicName topic name where messages are send
+     *
+     * @param topicName    topic name where messages are send
      * @param messageCount message count
-     * @param message specific message to send
-     * @param partition partition count, how many shards/partitions will topic have
+     * @param message      specific message to send
+     * @param timestamp    timestamp of the message
+     * @return sent message count
+     */
+    public int sendJsonMessagesPlain(String topicName, int messageCount, String message, Long timestamp) {
+        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
+                message, 0, timestamp,  false);
+    }
+
+    /**
+     * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
+     *
+     * @param topicName         topic name where messages are send
+     * @param messageCount      message count
+     * @param message           specific message to send
+     * @param partition         partition count, how many shards/partitions will topic have
      * @param withNullKeyRecord boolean, which allowing sending messages with NULL key
      * @return sent message count
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message, int partition, boolean withNullKeyRecord) {
         return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
-            message, partition, withNullKeyRecord);
+            message, partition, null,  withNullKeyRecord);
     }
 
     /**
      * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     * @param topicName topic name where messages are send
-     * @param messageCount message count
-     * @param headers kafka headers
-     * @param message specific message to send
+     *
+     * @param topicName         topic name where messages are send
+     * @param messageCount      message count
+     * @param headers           kafka headers
+     * @param message           specific message to send
      * @param withNullKeyRecord boolean, which allowing sending messages with NULL key
      * @return sent message count
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, List<KafkaHeader> headers, String message,
                                      boolean withNullKeyRecord) {
-        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, headers, message, 0,
-            withNullKeyRecord);
+        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, headers, message, 0, null, withNullKeyRecord);
     }
 
     /**
      * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     * @param topicName topic name where messages are send
+     *
+     * @param topicName    topic name where messages are send
      * @param messageCount message count
      * @param message specific message to send
      * @param partition partition count, how many shards/partitions will topic have
@@ -177,36 +201,39 @@ public class BasicKafkaClient {
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message, int partition) {
         return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
-            message, partition, false);
+            message, partition, null, false);
     }
 
     /**
      * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     * @param topicName topic name where messages are send
+     *
+     * @param topicName    topic name where messages are send
      * @param messageCount message count
      * @param message specific message to send
      * @return sent message count
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message) {
         return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
-            message, 0, false);
+            message, 0, null, false);
     }
 
     /**
      * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     * @param topicName topic name where messages are send
+     *
+     * @param topicName    topic name where messages are send
      * @param messageCount message count
      * @return sent message count
      */
     public int sendJsonMessagesPlain(String topicName, int messageCount) {
         return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
-            "{\"Hello\" : \"World\"}", 0, false);
+            "{\"Hello\" : \"World\"}", 0, null, false);
     }
 
     /**
      * Receive messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     * @param timeoutMs timeout for the receiving messages
-     * @param topicName topic name from messages are received
+     *
+     * @param timeoutMs    timeout for the receiving messages
+     * @param topicName    topic name from messages are received
      * @param messageCount message count
      * @return received message count
      */
@@ -240,7 +267,8 @@ public class BasicKafkaClient {
 
     /**
      * Receive messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     * @param topicName topic name from messages are received
+     *
+     * @param topicName    topic name from messages are received
      * @param messageCount message count
      * @return received message count
      */

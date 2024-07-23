@@ -778,7 +778,8 @@
                                                     "foo": "bar"
                                                 },
                                                 "partition": 0,
-                                                "offset": 2
+                                                "offset": 2,
+                                                "timestamp": 1591897790000
                                             },
                                             {
                                                 "topic": "topic",
@@ -788,7 +789,8 @@
                                                     "bar2"
                                                 ],
                                                 "partition": 1,
-                                                "offset": 3
+                                                "offset": 3,
+                                                "timestamp": 1591897790002
                                             }
                                         ]
                                     }
@@ -1516,6 +1518,7 @@
                     "partition": 0,
                     "topic": "topic",
                     "value": "value1",
+                    "timestamp": 1591897790000,
                     "headers": [
                         {
                             "key": "key1",
@@ -1566,6 +1569,10 @@
                     },
                     "headers": {
                         "$ref": "#/components/schemas/KafkaHeaderList"
+                    },
+                    "timestamp": {
+                        "format": "int64",
+                        "type": "integer"
                     }
                 },
                 "title": "ConsumerRecord",
@@ -1583,14 +1590,16 @@
                         "key": "key1",
                         "value": "value1",
                         "partition": 0,
-                        "offset": 2
+                        "offset": 2,
+                        "timestamp": 1591897790000
                     },
                     {
                         "topic": "topic",
                         "key": "key2",
                         "value": "value2",
                         "partition": 1,
-                        "offset": 3
+                        "offset": 3,
+                        "timestamp": 1591897790000
                     }
                 ]
             },
@@ -1846,6 +1855,10 @@
                         "format": "int32",
                         "type": "integer"
                     },
+                    "timestamp": {
+                        "format": "int64",
+                        "type": "integer"
+                    },
                     "value": {
                         "oneOf": [
                             {
@@ -1882,6 +1895,7 @@
                 "example": {
                     "key": "key1",
                     "partition": 0,
+                    "timestamp": 1591897790000,
                     "value": "value1",
                     "headers": [
                         {

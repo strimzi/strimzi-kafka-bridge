@@ -32,6 +32,7 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
     private final List<KafkaHeader> headers;
     private final String message;
     private final int partition;
+    private final Long timestamp;
     private final boolean withNullKeyRecord;
 
     public Producer(ProducerBuilder producerBuilder) {
@@ -43,6 +44,7 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
         this.headers = producerBuilder.headers;
         this.message = producerBuilder.message;
         this.partition = producerBuilder.partition;
+        this.timestamp = producerBuilder.timestamp;
         this.withNullKeyRecord = producerBuilder.withNullKeyRecord;
         this.vertx = Vertx.vertx();
     }
@@ -62,9 +64,9 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
                     resultPromise.complete(numSent.get());
                 }
             });
-            vertx.setPeriodic(1000, id -> sendNext(producer, topic, headers, message, partition, withNullKeyRecord));
+            vertx.setPeriodic(1000, id -> sendNext(producer, topic, headers, message, partition, timestamp, withNullKeyRecord));
         } else {
-            sendNext(producer, topic, headers, message, partition, withNullKeyRecord);
+            sendNext(producer, topic, headers, message, partition, timestamp, withNullKeyRecord);
         }
     }
 
@@ -77,15 +79,15 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
     }
 
     private void sendNext(KafkaProducer<String, String> producer, String topic, List<KafkaHeader> headers,
-                          String message, int partition, boolean withNullKeyRecord) {
+                          String message, int partition, Long timestamp, boolean withNullKeyRecord) {
         if (msgCntPredicate.negate().test(numSent.get())) {
 
             KafkaProducerRecord<String, String> record;
 
             if (withNullKeyRecord) {
-                record = KafkaProducerRecord.create(topic, null, message, partition);
+                record = KafkaProducerRecord.create(topic, null, message, timestamp, partition);
             } else {
-                record = KafkaProducerRecord.create(topic, "key-" + numSent.get(), message + "-" + numSent.get(), partition);
+                record = KafkaProducerRecord.create(topic, "key-" + numSent.get(), message + "-" + numSent.get(), timestamp, partition);
             }
 
             record.addHeaders(headers);
@@ -104,12 +106,12 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
                     }
 
                     if (msgCntPredicate.negate().test(-1)) {
-                        sendNext(producer, topic, headers, message, partition, withNullKeyRecord);
+                        sendNext(producer, topic, headers, message, partition, timestamp, withNullKeyRecord);
                     }
 
                 } else {
                     LOGGER.error("Producer cannot connect to topic {}", topic, done.cause());
-                    sendNext(producer, topic, headers, message, partition, withNullKeyRecord);
+                    sendNext(producer, topic, headers, message, partition, timestamp, withNullKeyRecord);
                 }
             });
 
@@ -137,18 +139,19 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
         private final String topic;
         private final String message;
         private final int partition;
-
+        private final Long timestamp;
         private Properties properties;
         private List<KafkaHeader> headers = Collections.emptyList();
         private boolean withNullKeyRecord = false;
 
         public ProducerBuilder(CompletableFuture<Integer> resultPromise, IntPredicate msgCntPredicate, String topic,
-                       String message, int partition) {
+                       String message, int partition, Long timestamp) {
             this.resultPromise = resultPromise;
             this.msgCntPredicate = msgCntPredicate;
             this.topic = topic;
             this.message = message;
             this.partition = partition;
+            this.timestamp = timestamp;
         }
 
         public ProducerBuilder withProperties(Properties properties) {

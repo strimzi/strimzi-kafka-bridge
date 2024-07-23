@@ -24,12 +24,14 @@ import java.util.List;
 /**
  * Implementation of a message converter to deal with the "binary" embedded data format
  */
+@SuppressWarnings("checkstyle:NPathComplexity")
 public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte[], byte[], byte[]> {
 
     @Override
     public ProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, byte[] message) {
 
         Integer partitionFromBody = null;
+        Long timestamp = null;
         byte[] key = null;
         byte[] value = null;
         Headers headers = new RecordHeaders();
@@ -42,6 +44,9 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
             }
             if (json.has("value")) {
                 value = DatatypeConverter.parseBase64Binary(json.get("value").asText());
+            }
+            if (json.has("timestamp")) {
+                timestamp = json.get("timestamp").asLong();
             }
             if (json.has("headers")) {
                 ArrayNode jsonArray = (ArrayNode) json.get("headers");
@@ -59,7 +64,7 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
                 partitionFromBody = partition;
             }
         }
-        return new ProducerRecord<>(kafkaTopic, partitionFromBody, key, value, headers);
+        return new ProducerRecord<>(kafkaTopic, partitionFromBody, timestamp, key, value, headers);
     }
 
     @Override
@@ -98,6 +103,7 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
                     DatatypeConverter.printBase64Binary(record.value()) : null);
             jsonObject.put("partition", record.partition());
             jsonObject.put("offset", record.offset());
+            jsonObject.put("timestamp", record.timestamp());
 
             ArrayNode headers = JsonUtils.createArrayNode();
 
