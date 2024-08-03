@@ -8,7 +8,7 @@ jobs:
     os: linux
     arch: ppc64le
     jdk: openjdk11
-    script: mvn install -Dmaven.javadoc.skip=true
+    script: travis_wait mvn install -Dmaven.javadoc.skip=true
     addons:
       apt:
         packages:
@@ -19,7 +19,7 @@ jobs:
     arch: s390x
     jdk: openjdk11
     # because of flakiness of tests on s390x, adding automatic retries on failure
-    script: mvn install -Dmaven.javadoc.skip=true -Dfailsafe.rerunFailingTestsCount=10
+    script: travis_wait mvn install -Dmaven.javadoc.skip=true -Dfailsafe.rerunFailingTestsCount=10
     addons:
       apt:
         packages:
