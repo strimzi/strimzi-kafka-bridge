@@ -6,6 +6,7 @@
 package io.strimzi.kafka.bridge;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.ConfigRetriever;
 import io.strimzi.kafka.bridge.http.HttpBridge;
@@ -14,6 +15,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.http.impl.Http1xServerRequest;
+import io.vertx.core.http.impl.Http2ServerRequest;
 import io.vertx.micrometer.Label;
 import io.vertx.micrometer.MetricsDomain;
 import io.vertx.micrometer.MicrometerMetricsOptions;
@@ -36,6 +39,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -104,7 +108,18 @@ public class Application {
                 // disable metrics about pool and verticles
                 .setDisabledMetricsCategories(set)
                 .setJvmMetricsEnabled(true)
-                .setEnabled(true);
+                .setEnabled(true)
+                // using a custom tags provider to overwrite the "path" tag because of https://github.com/vert-x3/vertx-micrometer-metrics/issues/225
+                // Vert.x seems to use the URI (including host and query parameters) and not just the HTTP resource path anymore
+                .setServerRequestTagsProvider(req -> {
+                    String path = null;
+                    if (req instanceof Http1xServerRequest) {
+                        path = ((Http1xServerRequest) req).path();
+                    } else if (req instanceof Http2ServerRequest) {
+                        path = ((Http2ServerRequest) req).path();
+                    }
+                    return path != null ? List.of(Tag.of(Label.HTTP_PATH.toString(), path)) : List.of();
+                });
     }
 
     /**
