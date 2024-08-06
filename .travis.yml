@@ -1,25 +1,25 @@
 dist: bionic
-sudo: required
+os: linux
 language: java
 jobs:
   fast_finish: true
   include:
-  - build: ppc64le
+  - name: ppc64le
     os: linux
     arch: ppc64le
     jdk: openjdk11
-    script: travis_wait mvn install -Dmaven.javadoc.skip=true
+    script: mvn install -Dmaven.javadoc.skip=true
     addons:
       apt:
         packages:
         - maven
         - curl
-  - build: s390x
+  - name: s390x
     os: linux
     arch: s390x
     jdk: openjdk11
     # because of flakiness of tests on s390x, adding automatic retries on failure
-    script: travis_wait mvn install -Dmaven.javadoc.skip=true -Dfailsafe.rerunFailingTestsCount=10
+    script: mvn install -Dmaven.javadoc.skip=true -Dfailsafe.rerunFailingTestsCount=10
     addons:
       apt:
         packages:
