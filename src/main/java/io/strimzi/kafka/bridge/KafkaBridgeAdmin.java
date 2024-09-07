@@ -9,6 +9,7 @@ import io.strimzi.kafka.bridge.config.KafkaConfig;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.common.TopicPartition;
@@ -16,6 +17,7 @@ import org.apache.kafka.common.config.ConfigResource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -77,6 +79,29 @@ public class KafkaBridgeAdmin {
                     LOGGER.trace("List topics callback thread {}", Thread.currentThread());
                     if (exception == null) {
                         promise.complete(topics);
+                    } else {
+                        promise.completeExceptionally(exception);
+                    }
+                });
+        return promise;
+    }
+
+    /**
+     * Creates a topic with given name
+     *
+     * @param topicName topic name to create
+     * @return a CompletionStage Void
+     */
+    public CompletionStage<Void> createTopic(String topicName) {
+        log.trace("Create topic thread {}", Thread.currentThread());
+        log.info("Create topic {}", topicName);
+        CompletableFuture<Void> promise = new CompletableFuture<>();
+        this.adminClient.createTopics(Collections.singletonList(new NewTopic(topicName, 2, (short) 1)))
+                .all()
+                .whenComplete((topic, exception) -> {
+                    log.trace("Create topic callback thread {}", Thread.currentThread());
+                    if (exception == null) {
+                        promise.complete(topic);
                     } else {
                         promise.completeExceptionally(exception);
                     }
