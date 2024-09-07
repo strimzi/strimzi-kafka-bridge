@@ -187,7 +187,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
 
         this.kafkaBridgeAdmin.createTopic(topicName)
                 .whenComplete(((topic, exception) -> {
-                    log.trace("Create topic handler thread {}", Thread.currentThread());
+                    LOGGER.trace("Create topic handler thread {}", Thread.currentThread());
                     if (exception == null) {
                         ArrayNode root = JsonUtils.createArrayNode();
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
