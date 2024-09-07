@@ -159,6 +159,7 @@ public class HttpBridge extends AbstractVerticle {
                 routerBuilder.operation(this.SEEK_TO_END.getOperationId().toString()).handler(this.SEEK_TO_END);
                 routerBuilder.operation(this.LIST_TOPICS.getOperationId().toString()).handler(this.LIST_TOPICS);
                 routerBuilder.operation(this.GET_TOPIC.getOperationId().toString()).handler(this.GET_TOPIC);
+                routerBuilder.operation(this.CREATE_TOPIC.getOperationId().toString()).handler(this.CREATE_TOPIC);
                 routerBuilder.operation(this.LIST_PARTITIONS.getOperationId().toString()).handler(this.LIST_PARTITIONS);
                 routerBuilder.operation(this.GET_PARTITION.getOperationId().toString()).handler(this.GET_PARTITION);
                 routerBuilder.operation(this.GET_OFFSETS.getOperationId().toString()).handler(this.GET_OFFSETS);
@@ -375,6 +376,11 @@ public class HttpBridge extends AbstractVerticle {
 
     private void getTopic(RoutingContext routingContext) {
         this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.GET_TOPIC);
+        processAdminClient(routingContext);
+    }
+
+    private void createTopic(RoutingContext routingContext) {
+        this.httpBridgeContext.setOpenApiOperation(HttpOpenApiOperations.CREATE_TOPIC);
         processAdminClient(routingContext);
     }
 
@@ -718,6 +724,14 @@ public class HttpBridge extends AbstractVerticle {
         @Override
         public void process(RoutingContext routingContext) {
             getTopic(routingContext);
+        }
+    };
+
+    final HttpOpenApiOperation CREATE_TOPIC = new HttpOpenApiOperation(HttpOpenApiOperations.CREATE_TOPIC) {
+
+        @Override
+        public void process(RoutingContext routingContext) {
+            createTopic(routingContext);
         }
     };
 
