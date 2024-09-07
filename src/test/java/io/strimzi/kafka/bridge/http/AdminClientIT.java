@@ -215,4 +215,19 @@ public class AdminClientIT extends HttpBridgeITAbstract {
                 });
         producer.get(TEST_TIMEOUT, TimeUnit.SECONDS);
     }
+
+    @Test
+    void createTopicTest(VertxTestContext context) {
+        baseService()
+                .postRequest("/create-topic/" + topic)
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonArray> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                    });
+                    context.completeNow();
+                });
+    }
 }
