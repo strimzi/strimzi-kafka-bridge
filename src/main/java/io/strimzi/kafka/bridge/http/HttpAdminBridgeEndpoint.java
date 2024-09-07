@@ -81,6 +81,10 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                 doGetTopic(routingContext);
                 break;
 
+            case CREATE_TOPIC:
+                doCreateTopic(routingContext);
+                break;
+
             case LIST_PARTITIONS:
                 doListPartitions(routingContext);
                 break;
@@ -171,6 +175,32 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                                 BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
                     }
                 });
+    }
+
+    /**
+     * Create a topic described in the HTTP request
+     *
+     * @param routingContext the routing context
+     */
+    public void doCreateTopic(RoutingContext routingContext) {
+        String topicName = routingContext.pathParam("topicname");
+
+        this.kafkaBridgeAdmin.createTopic(topicName)
+                .whenComplete(((topic, exception) -> {
+                    log.trace("Create topic handler thread {}", Thread.currentThread());
+                    if (exception == null) {
+                        ArrayNode root = JsonUtils.createArrayNode();
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(),
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
+                    } else {
+                        HttpBridgeError error = new HttpBridgeError(
+                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                exception.getMessage()
+                        );
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+                    }
+                }));
     }
 
     /**
