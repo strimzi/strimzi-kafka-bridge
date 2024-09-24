@@ -1747,7 +1747,8 @@
           "type": [
             "array",
             "object",
-            "string"
+            "string",
+            "null"
           ]
         },
         "key": {
