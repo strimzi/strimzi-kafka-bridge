@@ -687,7 +687,7 @@
 										<useMethodAndPath>false</useMethodAndPath>
 										<useTableTitles>true</useTableTitles>
 										<headerAttributes>true</headerAttributes>
-										<snippetDir>${project.basedir}/documentation/book/api/snippet/</snippetDir>
+										<snippetDir>./documentation/book/api/snippet/</snippetDir>
 									</configOptions>
 								</configuration>
 							</execution>

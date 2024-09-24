@@ -4,7 +4,7 @@
 :source-highlighter: highlightjs
 :keywords: openapi, rest, Kafka Bridge API Reference
 :specDir: 
-:snippetDir: /home/ppatiern/github/strimzi-kafka-bridge/documentation/book/api/snippet/
+:snippetDir: ./documentation/book/api/snippet/
 :generator-template: v1 2019-12-20
 :info-url: https://openapi-generator.tech
 :app-name: Kafka Bridge API Reference
