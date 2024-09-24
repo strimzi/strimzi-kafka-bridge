@@ -6,7 +6,7 @@
 = Creating a Kafka Bridge consumer
 
 [role="_abstract"]
-Before you can perform any consumer operations in the Kafka cluster, you must first create a consumer by using the xref:_createconsumer[consumers] endpoint. The consumer is referred to as a __Kafka Bridge consumer__.
+Before you can perform any consumer operations in the Kafka cluster, you must first create a consumer by using the xref:createconsumer[consumers] endpoint. The consumer is referred to as a __Kafka Bridge consumer__.
 
 .Procedure
 
@@ -52,4 +52,4 @@ Now that you have created a Kafka Bridge consumer, you can  xref:proc-bridge-sub
 [role="_additional-resources"]
 .Additional resources
 
-* xref:_createconsumer[POST /consumers/{groupid}]
+* xref:createconsumer[POST /consumers/{groupid}]

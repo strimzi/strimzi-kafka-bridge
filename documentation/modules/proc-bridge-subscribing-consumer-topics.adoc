@@ -6,7 +6,7 @@
 = Subscribing a Kafka Bridge consumer to topics
 
 [role="_abstract"]
-After you have created a Kafka Bridge consumer, subscribe it to one or more topics by using the xref:_subscribe[subscription] endpoint.
+After you have created a Kafka Bridge consumer, subscribe it to one or more topics by using the xref:subscribe[subscription] endpoint.
 When subscribed, the consumer starts receiving all messages that are produced to the topic.
 
 .Procedure
@@ -39,4 +39,4 @@ After subscribing a Kafka Bridge consumer to topics, you can xref:proc-bridge-re
 [role="_additional-resources"]
 .Additional resources
 
-* xref:_subscribe[POST /consumers/{groupid}/instances/{name}/subscription]
+* xref:subscribe[POST /consumers/{groupid}/instances/{name}/subscription]

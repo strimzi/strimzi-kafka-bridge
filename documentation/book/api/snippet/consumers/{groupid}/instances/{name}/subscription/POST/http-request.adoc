@@ -1,0 +1,9 @@
+==== Example HTTP request
+
+===== Request body
+[source,json]
+----
+{
+  "topics" : [ "topic1", "topic2" ]
+}
+----

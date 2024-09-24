@@ -60,7 +60,7 @@ docu_htmlnoheader: docu_htmlnoheaderclean docu_check
 
 .PHONY: docu_api
 docu_api: 
-	mvn $(MVN_ARGS) -P apidoc io.github.swagger2markup:swagger2markup-maven-plugin:convertSwagger2markup@generate-apidoc
+	mvn $(MVN_ARGS) -P apidoc org.openapitools:openapi-generator-maven-plugin:generate@generate-apidoc
 
 .PHONY: docu_check
 docu_check: docu_api

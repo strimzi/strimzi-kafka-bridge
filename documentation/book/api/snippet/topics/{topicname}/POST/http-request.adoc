@@ -1,0 +1,17 @@
+==== Example HTTP request
+
+===== Request body
+[source,json]
+----
+{
+  "records" : [ {
+    "key" : "key1",
+    "value" : "value1"
+  }, {
+    "value" : "value2",
+    "partition" : 1
+  }, {
+    "value" : "value3"
+  } ]
+}
+----

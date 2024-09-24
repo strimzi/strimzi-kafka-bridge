@@ -1,0 +1,20 @@
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "beginning_offset" : 10,
+  "end_offset" : 50
+}
+----
+
+
+===== Response 404
+[source,json]
+----
+{
+  "error_code" : 404,
+  "message" : "The specified topic partition was not found."
+}
+----

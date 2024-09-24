@@ -10,7 +10,7 @@ Delete the Kafka Bridge consumer that you used throughout this quickstart.
 
 .Procedure
 
-* Delete the Kafka Bridge consumer by sending a `DELETE` request to the xref:_deleteconsumer[instances] endpoint.
+* Delete the Kafka Bridge consumer by sending a `DELETE` request to the xref:deleteconsumer[instances] endpoint.
 +
 [source,curl,subs=attributes+]
 ----
@@ -22,4 +22,4 @@ If the request is successful, the Kafka Bridge returns a `204` code.
 [role="_additional-resources"]
 .Additional resources
 
-* xref:_deleteconsumer[DELETE /consumers/{groupid}/instances/{name}]
+* xref:deleteconsumer[DELETE /consumers/{groupid}/instances/{name}]

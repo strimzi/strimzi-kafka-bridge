@@ -1,0 +1,9 @@
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "bridge_version" : "0.16.0"
+}
+----
