@@ -3535,7 +3535,7 @@ Information about Kafka Bridge instance.
 | value
 | X
 | X
-| <<ProducerRecord_value>>    
+| <<ConsumerRecord_value>>    
 | 
 |     
 
@@ -3592,8 +3592,8 @@ Information about Kafka Bridge instance.
 
 | value
 | X
-| 
-| <<ConsumerRecord_key>>    
+| X
+| <<ConsumerRecord_value>>    
 | 
 |     
 
@@ -3632,21 +3632,6 @@ Information about Kafka Bridge instance.
 |   List   of <<ProducerRecordToPartition>>
 | 
 |     
-
-|===
-
-
-
-[#ProducerRecordValue]
-=== _ProducerRecordValue_ 
-
-
-
-
-[.fields-ProducerRecordValue]
-[cols="2,1,1,2,4,1"]
-|===
-| Field Name| Required| Nullable | Type| Description | Format
 
 |===
 

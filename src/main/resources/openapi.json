@@ -1559,6 +1559,10 @@
                     "value": {
                         "oneOf": [
                             {
+                                "type": "array",
+                                "items": {}
+                            },
+                            {
                                 "type": "object",
                                 "nullable": true
                             },
@@ -1954,12 +1958,14 @@
                                 "items": {}
                             },
                             {
-                                "type": "object"
+                                "type": "object",
+                                "nullable": true
                             },
                             {
                                 "type": "string"
                             }
-                        ]
+                        ],
+                        "nullable" : true
                     },
                     "key": {
                         "oneOf": [
