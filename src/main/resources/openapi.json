@@ -1534,7 +1534,8 @@
                     "key": {
                         "oneOf": [
                             {
-                                "type": "array"
+                                "type": "array",
+                                "items": {}
                             },
                             {
                                 "type": "object"
@@ -1862,7 +1863,8 @@
                     "value": {
                         "oneOf": [
                             {
-                                "type": "array"
+                                "type": "array",
+                                "items": {}
                             },
                             {
                                 "type": "object",
@@ -1877,7 +1879,8 @@
                     "key": {
                         "oneOf": [
                             {
-                                "type": "array"
+                                "type": "array",
+                                "items": {}
                             },
                             {
                                 "type": "object"
@@ -1947,7 +1950,8 @@
                     "value": {
                         "oneOf": [
                             {
-                                "type": "array"
+                                "type": "array",
+                                "items": {}
                             },
                             {
                                 "type": "object"
@@ -1960,7 +1964,8 @@
                     "key": {
                         "oneOf": [
                             {
-                                "type": "array"
+                                "type": "array",
+                                "items": {}
                             },
                             {
                                 "type": "object"

@@ -681,7 +681,7 @@
 									<templateDirectory>${project.basedir}/documentation/book/api/template/</templateDirectory>
 									<generatorName>asciidoc</generatorName>
 									<generateAliasAsModel>false</generateAliasAsModel>
-									<skipValidateSpec>true</skipValidateSpec> <!-- need to be set to false after fixing errors on validation -->
+									<skipValidateSpec>false</skipValidateSpec>
 									<configOptions>
 										<useIntroduction>true</useIntroduction>
 										<useMethodAndPath>false</useMethodAndPath>
