@@ -1532,18 +1532,7 @@
                 },
                 "properties": {
                     "key": {
-                        "oneOf": [
-                            {
-                                "type": "array",
-                                "items": {}
-                            },
-                            {
-                                "type": "object"
-                            },
-                            {
-                                "type": "string"
-                            }
-                        ]
+                        "$ref": "#/components/schemas/RecordKey"
                     },
                     "offset": {
                         "format": "int64",
@@ -1557,20 +1546,7 @@
                         "type": "string"
                     },
                     "value": {
-                        "oneOf": [
-                            {
-                                "type": "array",
-                                "items": {}
-                            },
-                            {
-                                "type": "object",
-                                "nullable": true
-                            },
-                            {
-                                "type": "string"
-                            }
-                        ],
-                        "nullable" : true
+                        "$ref": "#/components/schemas/RecordValue"
                     },
                     "headers": {
                         "$ref": "#/components/schemas/KafkaHeaderList"
@@ -1865,34 +1841,10 @@
                         "type": "integer"
                     },
                     "value": {
-                        "oneOf": [
-                            {
-                                "type": "array",
-                                "items": {}
-                            },
-                            {
-                                "type": "object",
-                                "nullable": true
-                            },
-                            {
-                                "type": "string"
-                            }
-                        ],
-                        "nullable" : true
+                        "$ref": "#/components/schemas/RecordValue"
                     },
                     "key": {
-                        "oneOf": [
-                            {
-                                "type": "array",
-                                "items": {}
-                            },
-                            {
-                                "type": "object"
-                            },
-                            {
-                                "type": "string"
-                            }
-                        ]
+                        "$ref": "#/components/schemas/RecordKey"
                     },
                     "headers": {
                         "$ref": "#/components/schemas/KafkaHeaderList"
@@ -1952,34 +1904,10 @@
                 "type": "object",
                 "properties": {
                     "value": {
-                        "oneOf": [
-                            {
-                                "type": "array",
-                                "items": {}
-                            },
-                            {
-                                "type": "object",
-                                "nullable": true
-                            },
-                            {
-                                "type": "string"
-                            }
-                        ],
-                        "nullable" : true
+                        "$ref": "#/components/schemas/RecordValue"
                     },
                     "key": {
-                        "oneOf": [
-                            {
-                                "type": "array",
-                                "items": {}
-                            },
-                            {
-                                "type": "object"
-                            },
-                            {
-                                "type": "string"
-                            }
-                        ]
+                        "$ref": "#/components/schemas/RecordKey"
                     },
                     "headers": {
                         "$ref": "#/components/schemas/KafkaHeaderList"
@@ -2231,6 +2159,40 @@
                 "example": {
                     "bridge_version": "0.16.0"
                 }
+            },
+            "RecordKey": {
+                "title": "RecordKey",
+                "description": "Key representation for a record. It can be an array, a JSON object or a string",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "items": {}
+                    },
+                    {
+                        "type": "object"
+                    },
+                    {
+                        "type": "string"
+                    }
+                ]
+            },
+            "RecordValue": {
+                "title": "RecordValue",
+                "description": "Value representation for a record. It can be an array, a JSON object or a string",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "items": {}
+                    },
+                    {
+                        "type": "object",
+                        "nullable": true
+                    },
+                    {
+                        "type": "string"
+                    }
+                ],
+                "nullable" : true
             }
         }
     },

@@ -3072,7 +3072,7 @@ Information about Kafka Bridge instance.
 | key
 | 
 | 
-| <<ConsumerRecord_key>>    
+| <<RecordKey>>    
 | 
 |     
 
@@ -3100,7 +3100,7 @@ Information about Kafka Bridge instance.
 | value
 | 
 | X
-| <<ConsumerRecord_value>>    
+| <<RecordValue>>    
 | 
 |     
 
@@ -3117,36 +3117,6 @@ Information about Kafka Bridge instance.
 |   Long  
 | 
 | int64    
-
-|===
-
-
-
-[#ConsumerRecordKey]
-=== _ConsumerRecordKey_ 
-
-
-
-
-[.fields-ConsumerRecordKey]
-[cols="2,1,1,2,4,1"]
-|===
-| Field Name| Required| Nullable | Type| Description | Format
-
-|===
-
-
-
-[#ConsumerRecordValue]
-=== _ConsumerRecordValue_ 
-
-
-
-
-[.fields-ConsumerRecordValue]
-[cols="2,1,1,2,4,1"]
-|===
-| Field Name| Required| Nullable | Type| Description | Format
 
 |===
 
@@ -3535,14 +3505,14 @@ Information about Kafka Bridge instance.
 | value
 | X
 | X
-| <<ConsumerRecord_value>>    
+| <<RecordValue>>    
 | 
 |     
 
 | key
 | 
 | 
-| <<ConsumerRecord_key>>    
+| <<RecordKey>>    
 | 
 |     
 
@@ -3593,14 +3563,14 @@ Information about Kafka Bridge instance.
 | value
 | X
 | X
-| <<ConsumerRecord_value>>    
+| <<RecordValue>>    
 | 
 |     
 
 | key
 | 
 | 
-| <<ConsumerRecord_key>>    
+| <<RecordKey>>    
 | 
 |     
 
@@ -3632,6 +3602,36 @@ Information about Kafka Bridge instance.
 |   List   of <<ProducerRecordToPartition>>
 | 
 |     
+
+|===
+
+
+
+[#RecordKey]
+=== _RecordKey_ RecordKey
+
+Key representation for a record. It can be an array, a JSON object or a string
+
+
+[.fields-RecordKey]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+|===
+
+
+
+[#RecordValue]
+=== _RecordValue_ RecordValue
+
+Value representation for a record. It can be an array, a JSON object or a string
+
+
+[.fields-RecordValue]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
 
 |===
 
