@@ -90,6 +90,8 @@ public class KafkaBridgeAdmin {
      * Creates a topic with given name
      *
      * @param topicName topic name to create
+     * @param partitions number of partitions
+     * @param replicationFactor replication factor
      * @return a CompletionStage Void
      */
     public CompletionStage<Void> createTopic(String topicName, int partitions, short replicationFactor) {
