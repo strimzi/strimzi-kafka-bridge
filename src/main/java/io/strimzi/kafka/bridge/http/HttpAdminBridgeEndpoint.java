@@ -184,8 +184,10 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
      */
     public void doCreateTopic(RoutingContext routingContext) {
         String topicName = routingContext.pathParam("topicname");
+        int partitions = Integer.parseInt(routingContext.queryParams().get("partitions"));
+        short replicationFactor = Short.parseShort(routingContext.queryParams().get("replication_factor"));
 
-        this.kafkaBridgeAdmin.createTopic(topicName)
+        this.kafkaBridgeAdmin.createTopic(topicName, partitions, replicationFactor)
                 .whenComplete(((topic, exception) -> {
                     LOGGER.trace("Create topic handler thread {}", Thread.currentThread());
                     if (exception == null) {

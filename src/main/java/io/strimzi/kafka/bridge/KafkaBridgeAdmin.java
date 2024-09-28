@@ -92,11 +92,11 @@ public class KafkaBridgeAdmin {
      * @param topicName topic name to create
      * @return a CompletionStage Void
      */
-    public CompletionStage<Void> createTopic(String topicName) {
+    public CompletionStage<Void> createTopic(String topicName, int partitions, short replicationFactor) {
         LOGGER.trace("Create topic thread {}", Thread.currentThread());
-        LOGGER.info("Create topic {}", topicName);
+        LOGGER.info("Create topic {}, partitions {}, replicationFactor {}", topicName, partitions, replicationFactor);
         CompletableFuture<Void> promise = new CompletableFuture<>();
-        this.adminClient.createTopics(Collections.singletonList(new NewTopic(topicName, 2, (short) 1)))
+        this.adminClient.createTopics(Collections.singletonList(new NewTopic(topicName, partitions, replicationFactor)))
                 .all()
                 .whenComplete((topic, exception) -> {
                     LOGGER.trace("Create topic callback thread {}", Thread.currentThread());
