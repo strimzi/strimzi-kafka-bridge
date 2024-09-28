@@ -1,0 +1,24 @@
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "topics" : [ "my-topic1", "my-topic2" ],
+  "partitions" : [ {
+    "my-topic1" : [ 1, 2, 3 ]
+  }, {
+    "my-topic2" : [ 1 ]
+  } ]
+}
+----
+
+
+===== Response 404
+[source,json]
+----
+{
+  "error_code" : 404,
+  "message" : "The specified consumer instance was not found."
+}
+----

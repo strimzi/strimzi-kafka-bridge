@@ -1,0 +1,17 @@
+==== Example HTTP request
+
+===== Request body
+[source,json]
+----
+{
+  "offsets" : [ {
+    "topic" : "topic",
+    "partition" : 0,
+    "offset" : 15
+  }, {
+    "topic" : "topic",
+    "partition" : 1,
+    "offset" : 42
+  } ]
+}
+----

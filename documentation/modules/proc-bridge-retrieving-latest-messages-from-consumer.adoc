@@ -6,7 +6,7 @@
 = Retrieving the latest messages from a Kafka Bridge consumer
 
 [role="_abstract"]
-Retrieve the latest messages from the Kafka Bridge consumer by requesting data from the xref:_poll[records] endpoint. In production, HTTP clients can call this endpoint repeatedly (in a loop).
+Retrieve the latest messages from the Kafka Bridge consumer by requesting data from the xref:poll[records] endpoint. In production, HTTP clients can call this endpoint repeatedly (in a loop).
 
 .Procedure
 
@@ -58,4 +58,4 @@ After retrieving messages from a Kafka Bridge consumer, try xref:proc-bridge-com
 [role="_additional-resources"]
 .Additional resources
 
-* xref:_poll[GET /consumers/{groupid}/instances/{name}/records]
+* xref:poll[GET /consumers/{groupid}/instances/{name}/records]

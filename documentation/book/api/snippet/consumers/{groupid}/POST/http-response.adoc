@@ -1,0 +1,30 @@
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "instance_id" : "consumer1",
+  "base_uri" : "http://localhost:8080/consumers/my-group/instances/consumer1"
+}
+----
+
+
+===== Response 409
+[source,json]
+----
+{
+  "error_code" : 409,
+  "message" : "A consumer instance with the specified name already exists in the Kafka Bridge."
+}
+----
+
+
+===== Response 422
+[source,json]
+----
+{
+  "error_code" : 422,
+  "message" : "One or more consumer configuration options have invalid values."
+}
+----

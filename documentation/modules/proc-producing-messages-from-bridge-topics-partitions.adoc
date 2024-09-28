@@ -8,9 +8,9 @@
 [role="_abstract"]
 Use the Kafka Bridge to produce messages to a Kafka topic in JSON format by using the topics endpoint.
 
-You can produce messages to topics in JSON format by using the xref:_send[topics] endpoint.
+You can produce messages to topics in JSON format by using the xref:send[topics] endpoint.
 You can specify destination partitions for messages in the request body.
-The xref:_sendtopartition[partitions] endpoint provides an alternative method for specifying a single destination partition for all messages as a path parameter.
+The xref:sendtopartition[partitions] endpoint provides an alternative method for specifying a single destination partition for all messages as a path parameter.
 
 In this procedure, messages are produced to a topic called `bridge-quickstart-topic`.
 
@@ -372,5 +372,5 @@ After producing messages to topics and partitions, xref:proc-creating-kafka-brid
 [role="_additional-resources"]
 .Additional resources
 
-* xref:_send[POST /topics/{topicname}]
-* xref:_sendtopartition[POST /topics/{topicname}/partitions/{partitionid}]
+* xref:send[POST /topics/{topicname}]
+* xref:sendtopartition[POST /topics/{topicname}/partitions/{partitionid}]

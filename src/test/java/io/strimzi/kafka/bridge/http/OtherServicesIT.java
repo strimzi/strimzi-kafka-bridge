@@ -162,7 +162,7 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                         assertThat(paths.containsKey("/"), is(true));
                         assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/").getJsonObject("get").getString("operationId"), is(HttpOpenApiOperations.INFO.toString()));
                         assertThat(paths.containsKey("/karel"), is(false));
-                        assertThat(bridgeResponse.getJsonObject("definitions").getMap().size(), is(25));
+                        assertThat(bridgeResponse.getJsonObject("definitions").getMap().size(), is(27));
                         assertThat(bridgeResponse.getJsonArray("tags").size(), is(4));
                     });
                     context.completeNow();

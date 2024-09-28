@@ -50,17 +50,19 @@ release_package: java_package
 docu_html: docu_htmlclean docu_check
 	mkdir -p documentation/html
 	$(CP) -vrL documentation/book/images documentation/html/images
-	asciidoctor -v --failure-level WARN -t -dbook -a ProductVersion=$(RELEASE_VERSION) documentation/book/bridge.adoc -o documentation/html/bridge.html
+	# override snippetDir for asciidoctor to get right path to the snippets
+	asciidoctor -v --failure-level WARN -t -dbook -a ProductVersion=$(RELEASE_VERSION) -a snippetDir=${PWD}/documentation/book/api/snippet/ documentation/book/bridge.adoc -o documentation/html/bridge.html
 
 .PHONY: docu_htmlnoheader
 docu_htmlnoheader: docu_htmlnoheaderclean docu_check
 	mkdir -p documentation/htmlnoheader
 	$(CP) -vrL documentation/book/images documentation/htmlnoheader/images
-	asciidoctor -v --failure-level WARN -t -dbook -a ProductVersion=$(RELEASE_VERSION) -s documentation/book/bridge.adoc -o documentation/htmlnoheader/bridge.html
+	# override snippetDir for asciidoctor to get right path to the snippets
+	asciidoctor -v --failure-level WARN -t -dbook -a ProductVersion=$(RELEASE_VERSION) -a snippetDir=${PWD}/documentation/book/api/snippet/ -s documentation/book/bridge.adoc -o documentation/htmlnoheader/bridge.html
 
 .PHONY: docu_api
 docu_api: 
-	mvn $(MVN_ARGS) -P apidoc io.github.swagger2markup:swagger2markup-maven-plugin:convertSwagger2markup@generate-apidoc
+	mvn $(MVN_ARGS) -P apidoc org.openapitools:openapi-generator-maven-plugin:generate@generate-apidoc
 
 .PHONY: docu_check
 docu_check: docu_api

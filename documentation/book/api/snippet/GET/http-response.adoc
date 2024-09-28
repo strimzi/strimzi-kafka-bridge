@@ -1,0 +1,10 @@
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+[subs=attributes+]
+----
+{
+  "bridge_version" : {ProductVersion}
+}
+----

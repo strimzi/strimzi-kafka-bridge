@@ -1,0 +1,3768 @@
+:toc: left
+:numbered:
+:toclevels: 4
+:source-highlighter: highlightjs
+:keywords: openapi, rest, Kafka Bridge API Reference
+:specDir: 
+:snippetDir: ./documentation/book/api/snippet/
+:generator-template: v1 2019-12-20
+:info-url: https://openapi-generator.tech
+:app-name: Kafka Bridge API Reference
+
+= Kafka Bridge API Reference
+
+== Introduction
+The Kafka Bridge provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. 
+
+
+// markup not found, no include::{specDir}intro.adoc[opts=optional]
+
+
+
+== Endpoints
+
+
+[.Consumers]
+=== Consumers
+
+
+[.assign]
+==== assign
+
+`POST /consumers/{groupid}/instances/{name}/assignments`
+
+
+
+===== Description
+
+Assigns one or more topic partitions to a consumer.
+
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/assignments/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| groupid
+| ID of the consumer group to which the consumer belongs. 
+| X
+| null
+| 
+
+| name
+| Name of the consumer to assign topic partitions to. 
+| X
+| null
+| 
+
+|===
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| Partitions
+| List of topic partitions to assign to the consumer. <<Partitions>>
+| X
+| 
+| 
+
+|===
+
+
+
+
+
+===== Return Type
+
+
+
+
+-
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 204
+| Partitions assigned successfully.
+|  <<>>
+
+
+| 404
+| The specified consumer instance was not found.
+|  <<Error>>
+
+
+| 409
+| Subscriptions to topics, partitions, and patterns are mutually exclusive.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/assignments/POST/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/assignments/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :consumers/{groupid}/instances/{name}/assignments/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/assignments/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.commit]
+==== commit
+
+`POST /consumers/{groupid}/instances/{name}/offsets`
+
+
+
+===== Description
+
+Commits a list of consumer offsets. To commit offsets for all records fetched by the consumer, leave the request body empty.
+
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/offsets/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| groupid
+| ID of the consumer group to which the consumer belongs. 
+| X
+| null
+| 
+
+| name
+| Name of the consumer. 
+| X
+| null
+| 
+
+|===
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| OffsetCommitSeekList
+| List of consumer offsets to commit to the consumer offsets commit log. You can specify one or more topic partitions to commit offsets for. <<OffsetCommitSeekList>>
+| -
+| 
+| 
+
+|===
+
+
+
+
+
+===== Return Type
+
+
+
+
+-
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 204
+| Commit made successfully.
+|  <<>>
+
+
+| 404
+| The specified consumer instance was not found.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/offsets/POST/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/offsets/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :consumers/{groupid}/instances/{name}/offsets/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/offsets/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.createConsumer]
+==== createConsumer
+
+`POST /consumers/{groupid}`
+
+
+
+===== Description
+
+Creates a consumer instance in the given consumer group. You can optionally specify a consumer name and supported configuration options. It returns a base URI which must be used to construct URLs for subsequent requests against this consumer instance.
+
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| groupid
+| ID of the consumer group in which to create the consumer. 
+| X
+| null
+| 
+
+|===
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| Consumer
+| Name and configuration of the consumer. The name is unique within the scope of the consumer group. If a name is not specified, a randomly generated name is assigned. All parameters are optional. The supported configuration options are shown in the following example. <<Consumer>>
+| -
+| 
+| 
+
+|===
+
+
+
+
+
+===== Return Type
+
+
+<<CreatedConsumer>>
+
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| Consumer created successfully.
+|  <<CreatedConsumer>>
+
+
+| 409
+| A consumer instance with the specified name already exists in the Kafka Bridge.
+|  <<Error>>
+
+
+| 422
+| One or more consumer configuration options have invalid values.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}consumers/\{groupid\}/POST/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}consumers/\{groupid\}/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :consumers/{groupid}/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.deleteConsumer]
+==== deleteConsumer
+
+`DELETE /consumers/{groupid}/instances/{name}`
+
+
+
+===== Description
+
+Deletes a specified consumer instance. The request for this operation MUST use the base URL (including the host and port) returned in the response from the `POST` request to `/consumers/{groupid}` that was used to create this consumer.
+
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/DELETE/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| groupid
+| ID of the consumer group to which the consumer belongs. 
+| X
+| null
+| 
+
+| name
+| Name of the consumer to delete. 
+| X
+| null
+| 
+
+|===
+
+
+
+
+
+
+===== Return Type
+
+
+
+
+-
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 204
+| Consumer removed successfully.
+|  <<>>
+
+
+| 404
+| The specified consumer instance was not found.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/DELETE/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/DELETE/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :consumers/{groupid}/instances/{name}/DELETE/DELETE.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/DELETE/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.listSubscriptions]
+==== listSubscriptions
+
+`GET /consumers/{groupid}/instances/{name}/subscription`
+
+
+
+===== Description
+
+Retrieves a list of the topics to which the consumer is subscribed.
+
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/subscription/GET/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| groupid
+| ID of the consumer group to which the subscribed consumer belongs. 
+| X
+| null
+| 
+
+| name
+| Name of the subscribed consumer. 
+| X
+| null
+| 
+
+|===
+
+
+
+
+
+
+===== Return Type
+
+
+<<SubscribedTopicList>>
+
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| List of subscribed topics and partitions.
+|  <<SubscribedTopicList>>
+
+
+| 404
+| The specified consumer instance was not found.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/subscription/GET/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/subscription/GET/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :consumers/{groupid}/instances/{name}/subscription/GET/GET.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/subscription/GET/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.poll]
+==== poll
+
+`GET /consumers/{groupid}/instances/{name}/records`
+
+
+
+===== Description
+
+Retrieves records for a subscribed consumer, including message values, topics, and partitions. The request for this operation MUST use the base URL (including the host and port) returned in the response from the `POST` request to `/consumers/{groupid}` that was used to create this consumer.
+
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/records/GET/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| groupid
+| ID of the consumer group to which the subscribed consumer belongs. 
+| X
+| null
+| 
+
+| name
+| Name of the subscribed consumer to retrieve records from. 
+| X
+| null
+| 
+
+|===
+
+
+
+
+
+[cols="2,3,1,1,1"]
+.Query Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| timeout
+| The maximum amount of time, in milliseconds, that the HTTP Bridge spends retrieving records before timing out the request. 
+| -
+| null
+| 
+
+| max_bytes
+| The maximum size, in bytes, of unencoded keys and values that can be included in the response. Otherwise, an error response with code 422 is returned. 
+| -
+| null
+| 
+
+|===
+
+
+===== Return Type
+
+
+array[<<ConsumerRecord>>]
+
+
+===== Content Type
+
+* application/vnd.kafka.json.v2+json
+* application/vnd.kafka.binary.v2+json
+* application/vnd.kafka.text.v2+json
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| Poll request executed successfully.
+| List[<<ConsumerRecord>>] 
+
+
+| 404
+| The specified consumer instance was not found.
+|  <<Error>>
+
+
+| 406
+| The &#x60;format&#x60; used in the consumer creation request does not match the embedded format in the Accept header of this request or the bridge got a message from the topic which is not JSON encoded.
+|  <<Error>>
+
+
+| 422
+| Response exceeds the maximum number of bytes the consumer can receive
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/records/GET/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/records/GET/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :consumers/{groupid}/instances/{name}/records/GET/GET.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/records/GET/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.seek]
+==== seek
+
+`POST /consumers/{groupid}/instances/{name}/positions`
+
+
+
+===== Description
+
+Configures a subscribed consumer to fetch offsets from a particular offset the next time it fetches a set of records from a given topic partition. This overrides the default fetch behavior for consumers. You can specify one or more topic partitions.
+
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/positions/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| groupid
+| ID of the consumer group to which the consumer belongs. 
+| X
+| null
+| 
+
+| name
+| Name of the subscribed consumer. 
+| X
+| null
+| 
+
+|===
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| OffsetCommitSeekList
+| List of partition offsets from which the subscribed consumer will next fetch records. <<OffsetCommitSeekList>>
+| X
+| 
+| 
+
+|===
+
+
+
+
+
+===== Return Type
+
+
+
+
+-
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 204
+| Seek performed successfully.
+|  <<>>
+
+
+| 404
+| The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/positions/POST/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/positions/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :consumers/{groupid}/instances/{name}/positions/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/positions/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.seekToBeginning]
+==== seekToBeginning
+
+`POST /consumers/{groupid}/instances/{name}/positions/beginning`
+
+
+
+===== Description
+
+Configures a subscribed consumer to seek (and subsequently read from) the first offset in one or more given topic partitions.
+
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/positions/beginning/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| groupid
+| ID of the consumer group to which the subscribed consumer belongs. 
+| X
+| null
+| 
+
+| name
+| Name of the subscribed consumer. 
+| X
+| null
+| 
+
+|===
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| Partitions
+| List of topic partitions to which the consumer is subscribed. The consumer will seek the first offset in the specified partitions. <<Partitions>>
+| X
+| 
+| 
+
+|===
+
+
+
+
+
+===== Return Type
+
+
+
+
+-
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 204
+| Seek to the beginning performed successfully.
+|  <<>>
+
+
+| 404
+| The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/positions/beginning/POST/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/positions/beginning/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :consumers/{groupid}/instances/{name}/positions/beginning/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/positions/beginning/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.seekToEnd]
+==== seekToEnd
+
+`POST /consumers/{groupid}/instances/{name}/positions/end`
+
+
+
+===== Description
+
+Configures a subscribed consumer to seek (and subsequently read from) the offset at the end of one or more of the given topic partitions.
+
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/positions/end/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| groupid
+| ID of the consumer group to which the subscribed consumer belongs. 
+| X
+| null
+| 
+
+| name
+| Name of the subscribed consumer. 
+| X
+| null
+| 
+
+|===
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| Partitions
+| List of topic partitions to which the consumer is subscribed. The consumer will seek the last offset in the specified partitions. <<Partitions>>
+| X
+| 
+| 
+
+|===
+
+
+
+
+
+===== Return Type
+
+
+
+
+-
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 204
+| Seek to the end performed successfully.
+|  <<>>
+
+
+| 404
+| The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/positions/end/POST/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/positions/end/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :consumers/{groupid}/instances/{name}/positions/end/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/positions/end/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.subscribe]
+==== subscribe
+
+`POST /consumers/{groupid}/instances/{name}/subscription`
+
+
+
+===== Description
+
+Subscribes a consumer to one or more topics. You can describe the topics to which the consumer will subscribe in a list (of `Topics` type) or as a `topic_pattern` field. Each call replaces the subscriptions for the subscriber.
+
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/subscription/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| groupid
+| ID of the consumer group to which the subscribed consumer belongs. 
+| X
+| null
+| 
+
+| name
+| Name of the consumer to subscribe to topics. 
+| X
+| null
+| 
+
+|===
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| Topics
+| List of topics to which the consumer will subscribe. <<Topics>>
+| X
+| 
+| 
+
+|===
+
+
+
+
+
+===== Return Type
+
+
+
+
+-
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 204
+| Consumer subscribed successfully.
+|  <<>>
+
+
+| 404
+| The specified consumer instance was not found.
+|  <<Error>>
+
+
+| 409
+| Subscriptions to topics, partitions, and patterns are mutually exclusive.
+|  <<Error>>
+
+
+| 422
+| A list (of &#x60;Topics&#x60; type) or a &#x60;topic_pattern&#x60; must be specified.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/subscription/POST/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/subscription/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :consumers/{groupid}/instances/{name}/subscription/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/subscription/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.unsubscribe]
+==== unsubscribe
+
+`DELETE /consumers/{groupid}/instances/{name}/subscription`
+
+
+
+===== Description
+
+Unsubscribes a consumer from all topics.
+
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/subscription/DELETE/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| groupid
+| ID of the consumer group to which the subscribed consumer belongs. 
+| X
+| null
+| 
+
+| name
+| Name of the consumer to unsubscribe from topics. 
+| X
+| null
+| 
+
+|===
+
+
+
+
+
+
+===== Return Type
+
+
+
+
+-
+
+===== Content Type
+
+* application/json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 204
+| Consumer unsubscribed successfully.
+|  <<>>
+
+
+| 404
+| The specified consumer instance was not found.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/subscription/DELETE/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/subscription/DELETE/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :consumers/{groupid}/instances/{name}/subscription/DELETE/DELETE.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/subscription/DELETE/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.Default]
+=== Default
+
+
+[.healthy]
+==== healthy
+
+`GET /healthy`
+
+
+
+===== Description
+
+Check if the bridge is running. This does not necessarily imply that it is ready to accept requests.
+
+
+// markup not found, no include::{specDir}healthy/GET/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+
+
+
+
+
+===== Return Type
+
+
+
+
+-
+
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 204
+| The bridge is healthy
+|  <<>>
+
+
+| 500
+| The bridge is not healthy
+|  <<>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}healthy/GET/http-request.adoc[opts=optional]
+
+
+// markup not found, no include::{snippetDir}healthy/GET/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :healthy/GET/GET.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}healthy/GET/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.info]
+==== info
+
+`GET /`
+
+
+
+===== Description
+
+Retrieves information about the Kafka Bridge instance, in JSON format.
+
+
+// markup not found, no include::{specDir}GET/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+
+
+
+
+
+===== Return Type
+
+
+<<BridgeInfo>>
+
+
+===== Content Type
+
+* application/json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| Information about Kafka Bridge instance.
+|  <<BridgeInfo>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}GET/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}GET/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :GET/GET.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}GET/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.metrics]
+==== metrics
+
+`GET /metrics`
+
+
+
+===== Description
+
+Retrieves the bridge metrics in Prometheus format.
+
+
+// markup not found, no include::{specDir}metrics/GET/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+
+
+
+
+
+===== Return Type
+
+
+
+<<String>>
+
+
+===== Content Type
+
+* text/plain
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| Metrics in Prometheus format retrieved successfully.
+|  <<String>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}metrics/GET/http-request.adoc[opts=optional]
+
+
+// markup not found, no include::{snippetDir}metrics/GET/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :metrics/GET/GET.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}metrics/GET/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.openapi]
+==== openapi
+
+`GET /openapi`
+
+
+
+===== Description
+
+Retrieves the OpenAPI v2 specification in JSON format.
+
+
+// markup not found, no include::{specDir}openapi/GET/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+
+
+
+
+
+===== Return Type
+
+
+
+<<String>>
+
+
+===== Content Type
+
+* application/json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| OpenAPI v2 specification in JSON format retrieved successfully.
+|  <<String>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}openapi/GET/http-request.adoc[opts=optional]
+
+
+// markup not found, no include::{snippetDir}openapi/GET/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :openapi/GET/GET.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}openapi/GET/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.openapiv2]
+==== openapiv2
+
+`GET /openapi/v2`
+
+
+
+===== Description
+
+Retrieves the OpenAPI v2 specification in JSON format.
+
+
+// markup not found, no include::{specDir}openapi/v2/GET/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+
+
+
+
+
+===== Return Type
+
+
+
+<<String>>
+
+
+===== Content Type
+
+* application/json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| OpenAPI v2 specification in JSON format retrieved successfully.
+|  <<String>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}openapi/v2/GET/http-request.adoc[opts=optional]
+
+
+// markup not found, no include::{snippetDir}openapi/v2/GET/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :openapi/v2/GET/GET.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}openapi/v2/GET/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.openapiv3]
+==== openapiv3
+
+`GET /openapi/v3`
+
+
+
+===== Description
+
+Retrieves the OpenAPI v3 specification in JSON format.
+
+
+// markup not found, no include::{specDir}openapi/v3/GET/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+
+
+
+
+
+===== Return Type
+
+
+
+<<String>>
+
+
+===== Content Type
+
+* application/json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| OpenAPI v3 specification in JSON format retrieved successfully.
+|  <<String>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}openapi/v3/GET/http-request.adoc[opts=optional]
+
+
+// markup not found, no include::{snippetDir}openapi/v3/GET/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :openapi/v3/GET/GET.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}openapi/v3/GET/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.ready]
+==== ready
+
+`GET /ready`
+
+
+
+===== Description
+
+Check if the bridge is ready and can accept requests.
+
+
+// markup not found, no include::{specDir}ready/GET/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+
+
+
+
+
+===== Return Type
+
+
+
+
+-
+
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 204
+| The bridge is ready
+|  <<>>
+
+
+| 500
+| The bridge is not ready
+|  <<>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}ready/GET/http-request.adoc[opts=optional]
+
+
+// markup not found, no include::{snippetDir}ready/GET/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :ready/GET/GET.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}ready/GET/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.Producer]
+=== Producer
+
+
+[.send]
+==== send
+
+`POST /topics/{topicname}`
+
+
+
+===== Description
+
+Sends one or more records to a given topic, optionally specifying a partition, key, or both.
+
+
+// markup not found, no include::{specDir}topics/\{topicname\}/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| topicname
+| Name of the topic to send records to or retrieve metadata from. 
+| X
+| null
+| 
+
+|===
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| ProducerRecordList
+|  <<ProducerRecordList>>
+| X
+| 
+| 
+
+|===
+
+
+
+
+[cols="2,3,1,1,1"]
+.Query Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| async
+| Ignore metadata as result of the sending operation, not returning them to the client. If not specified it is false, metadata returned. 
+| -
+| null
+| 
+
+|===
+
+
+===== Return Type
+
+
+<<OffsetRecordSentList>>
+
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| Records sent successfully.
+|  <<OffsetRecordSentList>>
+
+
+| 404
+| The specified topic was not found.
+|  <<Error>>
+
+
+| 422
+| The record list is not valid.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}topics/\{topicname\}/POST/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}topics/\{topicname\}/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :topics/{topicname}/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}topics/\{topicname\}/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.sendToPartition]
+==== sendToPartition
+
+`POST /topics/{topicname}/partitions/{partitionid}`
+
+
+
+===== Description
+
+Sends one or more records to a given topic partition, optionally specifying a key.
+
+
+// markup not found, no include::{specDir}topics/\{topicname\}/partitions/\{partitionid\}/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| topicname
+| Name of the topic to send records to or retrieve metadata from. 
+| X
+| null
+| 
+
+| partitionid
+| ID of the partition to send records to or retrieve metadata from. 
+| X
+| null
+| 
+
+|===
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| ProducerRecordToPartitionList
+| List of records to send to a given topic partition, including a value (required) and a key (optional). <<ProducerRecordToPartitionList>>
+| X
+| 
+| 
+
+|===
+
+
+
+
+[cols="2,3,1,1,1"]
+.Query Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| async
+| Whether to return immediately upon sending records, instead of waiting for metadata. No offsets will be returned if specified. Defaults to false. 
+| -
+| null
+| 
+
+|===
+
+
+===== Return Type
+
+
+<<OffsetRecordSentList>>
+
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| Records sent successfully.
+|  <<OffsetRecordSentList>>
+
+
+| 404
+| The specified topic partition was not found.
+|  <<Error>>
+
+
+| 422
+| The record is not valid.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}topics/\{topicname\}/partitions/\{partitionid\}/POST/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}topics/\{topicname\}/partitions/\{partitionid\}/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :topics/{topicname}/partitions/{partitionid}/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}topics/\{topicname\}/partitions/\{partitionid\}/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.Seek]
+=== Seek
+
+
+[.seek]
+==== seek
+
+`POST /consumers/{groupid}/instances/{name}/positions`
+
+
+
+===== Description
+
+Configures a subscribed consumer to fetch offsets from a particular offset the next time it fetches a set of records from a given topic partition. This overrides the default fetch behavior for consumers. You can specify one or more topic partitions.
+
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/positions/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| groupid
+| ID of the consumer group to which the consumer belongs. 
+| X
+| null
+| 
+
+| name
+| Name of the subscribed consumer. 
+| X
+| null
+| 
+
+|===
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| OffsetCommitSeekList
+| List of partition offsets from which the subscribed consumer will next fetch records. <<OffsetCommitSeekList>>
+| X
+| 
+| 
+
+|===
+
+
+
+
+
+===== Return Type
+
+
+
+
+-
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 204
+| Seek performed successfully.
+|  <<>>
+
+
+| 404
+| The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/positions/POST/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/positions/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :consumers/{groupid}/instances/{name}/positions/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/positions/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.seekToBeginning]
+==== seekToBeginning
+
+`POST /consumers/{groupid}/instances/{name}/positions/beginning`
+
+
+
+===== Description
+
+Configures a subscribed consumer to seek (and subsequently read from) the first offset in one or more given topic partitions.
+
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/positions/beginning/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| groupid
+| ID of the consumer group to which the subscribed consumer belongs. 
+| X
+| null
+| 
+
+| name
+| Name of the subscribed consumer. 
+| X
+| null
+| 
+
+|===
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| Partitions
+| List of topic partitions to which the consumer is subscribed. The consumer will seek the first offset in the specified partitions. <<Partitions>>
+| X
+| 
+| 
+
+|===
+
+
+
+
+
+===== Return Type
+
+
+
+
+-
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 204
+| Seek to the beginning performed successfully.
+|  <<>>
+
+
+| 404
+| The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/positions/beginning/POST/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/positions/beginning/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :consumers/{groupid}/instances/{name}/positions/beginning/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/positions/beginning/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.seekToEnd]
+==== seekToEnd
+
+`POST /consumers/{groupid}/instances/{name}/positions/end`
+
+
+
+===== Description
+
+Configures a subscribed consumer to seek (and subsequently read from) the offset at the end of one or more of the given topic partitions.
+
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/positions/end/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| groupid
+| ID of the consumer group to which the subscribed consumer belongs. 
+| X
+| null
+| 
+
+| name
+| Name of the subscribed consumer. 
+| X
+| null
+| 
+
+|===
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| Partitions
+| List of topic partitions to which the consumer is subscribed. The consumer will seek the last offset in the specified partitions. <<Partitions>>
+| X
+| 
+| 
+
+|===
+
+
+
+
+
+===== Return Type
+
+
+
+
+-
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 204
+| Seek to the end performed successfully.
+|  <<>>
+
+
+| 404
+| The specified consumer instance was not found, or the specified consumer instance did not have one of the specified partitions assigned.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/positions/end/POST/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}consumers/\{groupid\}/instances/\{name\}/positions/end/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :consumers/{groupid}/instances/{name}/positions/end/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}consumers/\{groupid\}/instances/\{name\}/positions/end/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.Topics]
+=== Topics
+
+
+[.getOffsets]
+==== getOffsets
+
+`GET /topics/{topicname}/partitions/{partitionid}/offsets`
+
+
+
+===== Description
+
+Retrieves a summary of the offsets for the topic partition.
+
+
+// markup not found, no include::{specDir}topics/\{topicname\}/partitions/\{partitionid\}/offsets/GET/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| topicname
+| Name of the topic containing the partition. 
+| X
+| null
+| 
+
+| partitionid
+| ID of the partition. 
+| X
+| null
+| 
+
+|===
+
+
+
+
+
+
+===== Return Type
+
+
+<<OffsetsSummary>>
+
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| A summary of the offsets of the topic partition.
+|  <<OffsetsSummary>>
+
+
+| 404
+| The specified topic partition was not found.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}topics/\{topicname\}/partitions/\{partitionid\}/offsets/GET/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}topics/\{topicname\}/partitions/\{partitionid\}/offsets/GET/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :topics/{topicname}/partitions/{partitionid}/offsets/GET/GET.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}topics/\{topicname\}/partitions/\{partitionid\}/offsets/GET/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.getPartition]
+==== getPartition
+
+`GET /topics/{topicname}/partitions/{partitionid}`
+
+
+
+===== Description
+
+Retrieves partition metadata for the topic partition.
+
+
+// markup not found, no include::{specDir}topics/\{topicname\}/partitions/\{partitionid\}/GET/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| topicname
+| Name of the topic to send records to or retrieve metadata from. 
+| X
+| null
+| 
+
+| partitionid
+| ID of the partition to send records to or retrieve metadata from. 
+| X
+| null
+| 
+
+|===
+
+
+
+
+
+
+===== Return Type
+
+
+<<PartitionMetadata>>
+
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| Partition metadata
+|  <<PartitionMetadata>>
+
+
+| 404
+| The specified partition was not found.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}topics/\{topicname\}/partitions/\{partitionid\}/GET/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}topics/\{topicname\}/partitions/\{partitionid\}/GET/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :topics/{topicname}/partitions/{partitionid}/GET/GET.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}topics/\{topicname\}/partitions/\{partitionid\}/GET/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.getTopic]
+==== getTopic
+
+`GET /topics/{topicname}`
+
+
+
+===== Description
+
+Retrieves the metadata about a given topic.
+
+
+// markup not found, no include::{specDir}topics/\{topicname\}/GET/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| topicname
+| Name of the topic to send records to or retrieve metadata from. 
+| X
+| null
+| 
+
+|===
+
+
+
+
+
+
+===== Return Type
+
+
+<<TopicMetadata>>
+
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| Topic metadata
+|  <<TopicMetadata>>
+
+
+| 404
+| The specified topic was not found.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}topics/\{topicname\}/GET/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}topics/\{topicname\}/GET/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :topics/{topicname}/GET/GET.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}topics/\{topicname\}/GET/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.listPartitions]
+==== listPartitions
+
+`GET /topics/{topicname}/partitions`
+
+
+
+===== Description
+
+Retrieves a list of partitions for the topic.
+
+
+// markup not found, no include::{specDir}topics/\{topicname\}/partitions/GET/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| topicname
+| Name of the topic to send records to or retrieve metadata from. 
+| X
+| null
+| 
+
+|===
+
+
+
+
+
+
+===== Return Type
+
+
+array[<<PartitionMetadata>>]
+
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| List of partitions.
+| List[<<PartitionMetadata>>] 
+
+
+| 404
+| The specified topic was not found.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}topics/\{topicname\}/partitions/GET/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}topics/\{topicname\}/partitions/GET/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :topics/{topicname}/partitions/GET/GET.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}topics/\{topicname\}/partitions/GET/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.listTopics]
+==== listTopics
+
+`GET /topics`
+
+
+
+===== Description
+
+Retrieves a list of all topics.
+
+
+// markup not found, no include::{specDir}topics/GET/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+
+
+
+
+
+===== Return Type
+
+
+
+<<List>>
+
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| List of topics.
+| List[<<string>>] 
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}topics/GET/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}topics/GET/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :topics/GET/GET.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}topics/GET/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.send]
+==== send
+
+`POST /topics/{topicname}`
+
+
+
+===== Description
+
+Sends one or more records to a given topic, optionally specifying a partition, key, or both.
+
+
+// markup not found, no include::{specDir}topics/\{topicname\}/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| topicname
+| Name of the topic to send records to or retrieve metadata from. 
+| X
+| null
+| 
+
+|===
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| ProducerRecordList
+|  <<ProducerRecordList>>
+| X
+| 
+| 
+
+|===
+
+
+
+
+[cols="2,3,1,1,1"]
+.Query Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| async
+| Ignore metadata as result of the sending operation, not returning them to the client. If not specified it is false, metadata returned. 
+| -
+| null
+| 
+
+|===
+
+
+===== Return Type
+
+
+<<OffsetRecordSentList>>
+
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| Records sent successfully.
+|  <<OffsetRecordSentList>>
+
+
+| 404
+| The specified topic was not found.
+|  <<Error>>
+
+
+| 422
+| The record list is not valid.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}topics/\{topicname\}/POST/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}topics/\{topicname\}/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :topics/{topicname}/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}topics/\{topicname\}/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[.sendToPartition]
+==== sendToPartition
+
+`POST /topics/{topicname}/partitions/{partitionid}`
+
+
+
+===== Description
+
+Sends one or more records to a given topic partition, optionally specifying a key.
+
+
+// markup not found, no include::{specDir}topics/\{topicname\}/partitions/\{partitionid\}/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| topicname
+| Name of the topic to send records to or retrieve metadata from. 
+| X
+| null
+| 
+
+| partitionid
+| ID of the partition to send records to or retrieve metadata from. 
+| X
+| null
+| 
+
+|===
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| ProducerRecordToPartitionList
+| List of records to send to a given topic partition, including a value (required) and a key (optional). <<ProducerRecordToPartitionList>>
+| X
+| 
+| 
+
+|===
+
+
+
+
+[cols="2,3,1,1,1"]
+.Query Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| async
+| Whether to return immediately upon sending records, instead of waiting for metadata. No offsets will be returned if specified. Defaults to false. 
+| -
+| null
+| 
+
+|===
+
+
+===== Return Type
+
+
+<<OffsetRecordSentList>>
+
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| Records sent successfully.
+|  <<OffsetRecordSentList>>
+
+
+| 404
+| The specified topic partition was not found.
+|  <<Error>>
+
+
+| 422
+| The record is not valid.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}topics/\{topicname\}/partitions/\{partitionid\}/POST/http-request.adoc[opts=optional]
+
+
+include::{snippetDir}topics/\{topicname\}/partitions/\{partitionid\}/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :topics/{topicname}/partitions/{partitionid}/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}topics/\{topicname\}/partitions/\{partitionid\}/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
+[#models]
+== Models
+
+
+[#BridgeInfo]
+=== _BridgeInfo_ BridgeInfo
+
+Information about Kafka Bridge instance.
+
+
+[.fields-BridgeInfo]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| bridge_version
+| 
+| 
+|   String  
+| 
+|     
+
+|===
+
+
+
+[#Consumer]
+=== _Consumer_ Consumer
+
+
+
+
+[.fields-Consumer]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| name
+| 
+| 
+|   String  
+| The unique name for the consumer instance. The name is unique within the scope of the consumer group. The name is used in URLs. If a name is not specified, a randomly generated name is assigned.
+|     
+
+| format
+| 
+| 
+|   String  
+| The allowable message format for the consumer, which can be &#x60;binary&#x60; (default) or &#x60;json&#x60;. The messages are converted into a JSON format. 
+|     
+
+| auto.offset.reset
+| 
+| 
+|   String  
+| Resets the offset position for the consumer. If set to &#x60;latest&#x60; (default), messages are read from the latest offset. If set to &#x60;earliest&#x60;, messages are read from the first offset.
+|     
+
+| fetch.min.bytes
+| 
+| 
+|   Integer  
+| Sets the minimum amount of data, in bytes, for the consumer to receive. The broker waits until the data to send exceeds this amount. Default is &#x60;1&#x60; byte.
+|     
+
+| consumer.request.timeout.ms
+| 
+| 
+|   Integer  
+| Sets the maximum amount of time, in milliseconds, for the consumer to wait for messages for a request. If the timeout period is reached without a response, an error is returned. Default is &#x60;30000&#x60; (30 seconds).
+|     
+
+| enable.auto.commit
+| 
+| 
+|   Boolean  
+| If set to &#x60;true&#x60; (default), message offsets are committed automatically for the consumer. If set to &#x60;false&#x60;, message offsets must be committed manually.
+|     
+
+| isolation.level
+| 
+| 
+|   String  
+| If set to &#x60;read_uncommitted&#x60; (default), all transaction records are retrieved, indpendent of any transaction outcome. If set to &#x60;read_committed&#x60;, the records from committed transactions are retrieved.
+|     
+
+|===
+
+
+
+[#ConsumerRecord]
+=== _ConsumerRecord_ ConsumerRecord
+
+
+
+
+[.fields-ConsumerRecord]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| key
+| 
+| 
+| <<RecordKey>>    
+| 
+|     
+
+| offset
+| 
+| 
+|   Long  
+| 
+| int64    
+
+| partition
+| 
+| 
+|   Integer  
+| 
+| int32    
+
+| topic
+| 
+| 
+|   String  
+| 
+|     
+
+| value
+| 
+| X
+| <<RecordValue>>    
+| 
+|     
+
+| headers
+| 
+| 
+|   List   of <<KafkaHeader>>
+| 
+|     
+
+| timestamp
+| 
+| 
+|   Long  
+| 
+| int64    
+
+|===
+
+
+
+[#CreatedConsumer]
+=== _CreatedConsumer_ CreatedConsumer
+
+
+
+
+[.fields-CreatedConsumer]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| instance_id
+| 
+| 
+|   String  
+| Unique ID for the consumer instance in the group.
+|     
+
+| base_uri
+| 
+| 
+|   String  
+| Base URI used to construct URIs for subsequent requests against this consumer instance.
+|     
+
+|===
+
+
+
+[#Error]
+=== _Error_ Error
+
+
+
+
+[.fields-Error]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| error_code
+| 
+| 
+|   Integer  
+| 
+| int32    
+
+| message
+| 
+| 
+|   String  
+| 
+|     
+
+|===
+
+
+
+[#KafkaHeader]
+=== _KafkaHeader_ KafkaHeader
+
+
+
+
+[.fields-KafkaHeader]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| key
+| X
+| 
+|   String  
+| 
+|     
+
+| value
+| X
+| 
+|   byte[]  
+| The header value in binary format, base64-encoded
+| byte    
+
+|===
+
+
+
+[#OffsetCommitSeek]
+=== _OffsetCommitSeek_ OffsetCommitSeek
+
+
+
+
+[.fields-OffsetCommitSeek]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| partition
+| X
+| 
+|   Integer  
+| 
+| int32    
+
+| offset
+| X
+| 
+|   Long  
+| 
+| int64    
+
+| topic
+| X
+| 
+|   String  
+| 
+|     
+
+|===
+
+
+
+[#OffsetCommitSeekList]
+=== _OffsetCommitSeekList_ OffsetCommitSeekList
+
+
+
+
+[.fields-OffsetCommitSeekList]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| offsets
+| 
+| 
+|   List   of <<OffsetCommitSeek>>
+| 
+|     
+
+|===
+
+
+
+[#OffsetRecordSent]
+=== _OffsetRecordSent_ OffsetRecordSent
+
+
+
+
+[.fields-OffsetRecordSent]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| partition
+| 
+| 
+|   Integer  
+| 
+| int32    
+
+| offset
+| 
+| 
+|   Long  
+| 
+| int64    
+
+|===
+
+
+
+[#OffsetRecordSentList]
+=== _OffsetRecordSentList_ OffsetRecordSentList
+
+
+
+
+[.fields-OffsetRecordSentList]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| offsets
+| 
+| 
+|   List   of <<OffsetRecordSentList_offsets_inner>>
+| 
+|     
+
+|===
+
+
+
+[#OffsetRecordSentListOffsetsInner]
+=== _OffsetRecordSentListOffsetsInner_ 
+
+
+
+
+[.fields-OffsetRecordSentListOffsetsInner]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| partition
+| 
+| 
+|   Integer  
+| 
+| int32    
+
+| offset
+| 
+| 
+|   Long  
+| 
+| int64    
+
+| error_code
+| 
+| 
+|   Integer  
+| 
+| int32    
+
+| message
+| 
+| 
+|   String  
+| 
+|     
+
+|===
+
+
+
+[#OffsetsSummary]
+=== _OffsetsSummary_ OffsetsSummary
+
+
+
+
+[.fields-OffsetsSummary]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| beginning_offset
+| 
+| 
+|   Long  
+| 
+| int64    
+
+| end_offset
+| 
+| 
+|   Long  
+| 
+| int64    
+
+|===
+
+
+
+[#Partition]
+=== _Partition_ Partition
+
+
+
+
+[.fields-Partition]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| partition
+| 
+| 
+|   Integer  
+| 
+| int32    
+
+| topic
+| 
+| 
+|   String  
+| 
+|     
+
+|===
+
+
+
+[#PartitionMetadata]
+=== _PartitionMetadata_ PartitionMetadata
+
+
+
+
+[.fields-PartitionMetadata]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| partition
+| 
+| 
+|   Integer  
+| 
+| int32    
+
+| leader
+| 
+| 
+|   Integer  
+| 
+| int32    
+
+| replicas
+| 
+| 
+|   List   of <<Replica>>
+| 
+|     
+
+|===
+
+
+
+[#Partitions]
+=== _Partitions_ Partitions
+
+
+
+
+[.fields-Partitions]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| partitions
+| 
+| 
+|   List   of <<Partition>>
+| 
+|     
+
+|===
+
+
+
+[#ProducerRecord]
+=== _ProducerRecord_ ProducerRecord
+
+
+
+
+[.fields-ProducerRecord]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| partition
+| 
+| 
+|   Integer  
+| 
+| int32    
+
+| timestamp
+| 
+| 
+|   Long  
+| 
+| int64    
+
+| value
+| X
+| X
+| <<RecordValue>>    
+| 
+|     
+
+| key
+| 
+| 
+| <<RecordKey>>    
+| 
+|     
+
+| headers
+| 
+| 
+|   List   of <<KafkaHeader>>
+| 
+|     
+
+|===
+
+
+
+[#ProducerRecordList]
+=== _ProducerRecordList_ ProducerRecordList
+
+
+
+
+[.fields-ProducerRecordList]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| records
+| 
+| 
+|   List   of <<ProducerRecord>>
+| 
+|     
+
+|===
+
+
+
+[#ProducerRecordToPartition]
+=== _ProducerRecordToPartition_ ProducerRecordToPartition
+
+
+
+
+[.fields-ProducerRecordToPartition]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| value
+| X
+| X
+| <<RecordValue>>    
+| 
+|     
+
+| key
+| 
+| 
+| <<RecordKey>>    
+| 
+|     
+
+| headers
+| 
+| 
+|   List   of <<KafkaHeader>>
+| 
+|     
+
+|===
+
+
+
+[#ProducerRecordToPartitionList]
+=== _ProducerRecordToPartitionList_ ProducerRecordToPartitionList
+
+
+
+
+[.fields-ProducerRecordToPartitionList]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| records
+| 
+| 
+|   List   of <<ProducerRecordToPartition>>
+| 
+|     
+
+|===
+
+
+
+[#RecordKey]
+=== _RecordKey_ RecordKey
+
+Key representation for a record. It can be an array, a JSON object or a string
+
+
+[.fields-RecordKey]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+|===
+
+
+
+[#RecordValue]
+=== _RecordValue_ RecordValue
+
+Value representation for a record. It can be an array, a JSON object or a string
+
+
+[.fields-RecordValue]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+|===
+
+
+
+[#Replica]
+=== _Replica_ Replica
+
+
+
+
+[.fields-Replica]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| broker
+| 
+| 
+|   Integer  
+| 
+| int32    
+
+| leader
+| 
+| 
+|   Boolean  
+| 
+|     
+
+| in_sync
+| 
+| 
+|   Boolean  
+| 
+|     
+
+|===
+
+
+
+[#SubscribedTopicList]
+=== _SubscribedTopicList_ SubscribedTopicList
+
+
+
+
+[.fields-SubscribedTopicList]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| topics
+| 
+| 
+| <<Topics>>    
+| 
+|     
+
+| partitions
+| 
+| 
+|   List   of <<map>>
+| 
+| int32    
+
+|===
+
+
+
+[#TopicMetadata]
+=== _TopicMetadata_ TopicMetadata
+
+
+
+
+[.fields-TopicMetadata]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| name
+| 
+| 
+|   String  
+| Name of the topic
+|     
+
+| configs
+| 
+| 
+|   Map   of <<string>>
+| Per-topic configuration overrides
+|     
+
+| partitions
+| 
+| 
+|   List   of <<PartitionMetadata>>
+| 
+|     
+
+|===
+
+
+
+[#Topics]
+=== _Topics_ Topics
+
+
+
+
+[.fields-Topics]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| topics
+| 
+| 
+|   List   of <<string>>
+| 
+|     
+
+| topic_pattern
+| 
+| 
+|   String  
+| A regex topic pattern for matching multiple topics
+|     
+
+|===
+
+
