@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.31.0
+
+* Dependency updates (Vert.x 4.5.10)
+
 ## 0.30.0
 
 * Dependency updates (Kafka 3.8.0, Vert.x 4.5.9, Netty 4.1.111.Final, Prometheus JMX Collector 1.0.1, Prometheus Client 1.3.1)
