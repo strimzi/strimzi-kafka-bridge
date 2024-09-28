@@ -1747,7 +1747,8 @@
           "type": [
             "array",
             "object",
-            "string"
+            "string",
+            "null"
           ]
         },
         "key": {
@@ -2007,6 +2008,25 @@
       "example": {
         "bridge_version": "0.16.0"
       }
+    },
+    "RecordKey": {
+      "title": "RecordKey",
+      "description": "Key representation for a record. It can be an array, a JSON object or a string",
+      "type": [
+        "array",
+        "object",
+        "string"
+      ]
+    },
+    "RecordValue": {
+      "title": "RecordValue",
+      "description": "Value representation for a record. It can be an array, a JSON object or a string",
+      "type": [
+        "array",
+        "object",
+        "string",
+        "null"
+      ]
     }
   },
   "tags": [

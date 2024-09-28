@@ -1,0 +1,38 @@
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "offsets" : [ {
+    "partition" : 2,
+    "offset" : 0
+  }, {
+    "partition" : 1,
+    "offset" : 1
+  }, {
+    "partition" : 2,
+    "offset" : 2
+  } ]
+}
+----
+
+
+===== Response 404
+[source,json]
+----
+{
+  "error_code" : 404,
+  "message" : "The specified topic was not found."
+}
+----
+
+
+===== Response 422
+[source,json]
+----
+{
+  "error_code" : 422,
+  "message" : "The record list contains invalid records."
+}
+----

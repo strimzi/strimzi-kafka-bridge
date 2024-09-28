@@ -1,0 +1,7 @@
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+[ "topic1", "topic2" ]
+----

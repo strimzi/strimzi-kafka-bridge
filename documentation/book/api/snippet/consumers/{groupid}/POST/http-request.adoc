@@ -1,0 +1,15 @@
+==== Example HTTP request
+
+===== Request body
+[source,json]
+----
+{
+  "name" : "consumer1",
+  "format" : "binary",
+  "auto.offset.reset" : "earliest",
+  "enable.auto.commit" : false,
+  "fetch.min.bytes" : 512,
+  "consumer.request.timeout.ms" : 30000,
+  "isolation.level" : "read_committed"
+}
+----

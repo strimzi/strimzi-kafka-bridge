@@ -13,7 +13,7 @@ The Kafka Bridge OpenAPI specification is in JSON format.
 You can find the OpenAPI JSON files in the `src/main/resources/` folder of the Kafka Bridge source download files.
 The download files are available from the {ReleaseDownload}.
 
-You can also use the xref:_openapi[`GET /openapi` method] to retrieve the OpenAPI v2 specification in JSON format.
+You can also use the xref:openapi[`GET /openapi` method] to retrieve the OpenAPI v2 specification in JSON format.
 
 [role="_additional-resources"]
 .Additional resources

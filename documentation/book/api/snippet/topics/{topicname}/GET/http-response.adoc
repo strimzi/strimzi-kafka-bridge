@@ -1,0 +1,38 @@
+==== Example HTTP response
+
+===== Response 200
+[source,json]
+----
+{
+  "name" : "topic",
+  "offset" : 2,
+  "configs" : {
+    "cleanup.policy" : "compact"
+  },
+  "partitions" : [ {
+    "partition" : 1,
+    "leader" : 1,
+    "replicas" : [ {
+      "broker" : 1,
+      "leader" : true,
+      "in_sync" : true
+    }, {
+      "broker" : 2,
+      "leader" : false,
+      "in_sync" : true
+    } ]
+  }, {
+    "partition" : 2,
+    "leader" : 2,
+    "replicas" : [ {
+      "broker" : 1,
+      "leader" : false,
+      "in_sync" : true
+    }, {
+      "broker" : 2,
+      "leader" : true,
+      "in_sync" : true
+    } ]
+  } ]
+}
+----
