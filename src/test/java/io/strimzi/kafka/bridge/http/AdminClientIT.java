@@ -219,7 +219,9 @@ public class AdminClientIT extends HttpBridgeITAbstract {
     @Test
     void createTopicTest(VertxTestContext context) {
         baseService()
-                .postRequest("/create-topic/" + topic)
+                .postRequest("/admin/topics/" + topic)
+                .addQueryParam("partitions", "1")
+                .addQueryParam("replication_factor", "1")
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {

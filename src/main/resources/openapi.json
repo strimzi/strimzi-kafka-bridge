@@ -753,7 +753,7 @@
                 }
             ]
         },
-        "/create-topic/{topicname}": {
+        "/admin/topics/{topicname}": {
             "post": {
                 "tags": [
                     "Topics"
@@ -799,6 +799,24 @@
                     "required": true,
                     "schema": {
                         "type": "string"
+                    }
+                },
+                {
+                    "name": "partitions",
+                    "in": "query",
+                    "description": "Number of partitions for the topic.",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                },
+                {
+                    "name": "replication_factor",
+                    "in": "query",
+                    "description": "Replication factor for the topic.",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
                     }
                 }
             ]
