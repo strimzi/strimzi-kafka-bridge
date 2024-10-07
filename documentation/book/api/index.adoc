@@ -2289,6 +2289,113 @@ endif::internal-generation[]
 === Topics
 
 
+[.createTopic]
+==== createTopic
+
+`POST /admin/topics/{topicname}`
+
+
+
+===== Description
+
+Creates a topic with given topic name.
+
+
+// markup not found, no include::{specDir}admin/topics/\{topicname\}/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+[cols="2,3,1,1,1"]
+.Path Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| topicname
+| Name of the topic to send records to or retrieve metadata from. 
+| X
+| null
+| 
+
+|===
+
+
+
+
+
+[cols="2,3,1,1,1"]
+.Query Parameters
+|===
+|Name| Description| Required| Default| Pattern
+
+| partitions
+| Number of partitions for the topic. 
+| X
+| null
+| 
+
+| replication_factor
+| Replication factor for the topic. 
+| X
+| null
+| 
+
+|===
+
+
+===== Return Type
+
+
+<<TopicMetadata>>
+
+
+===== Content Type
+
+* application/vnd.kafka.v2+json
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 200
+| Topic metadata
+|  <<TopicMetadata>>
+
+
+| 404
+| The specified topic was not found.
+|  <<Error>>
+
+|===
+
+===== Samples
+
+
+// markup not found, no include::{snippetDir}admin/topics/\{topicname\}/POST/http-request.adoc[opts=optional]
+
+
+// markup not found, no include::{snippetDir}admin/topics/\{topicname\}/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :admin/topics/{topicname}/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}admin/topics/\{topicname\}/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
 [.getOffsets]
 ==== getOffsets
 
