@@ -273,6 +273,12 @@
 			<artifactId>grpc-netty-shaded</artifactId>
 			<version>${grpc-netty-shaded.version}</version>
 			<scope>runtime</scope>
+			<exclusions>
+				<exclusion>
+					<artifactId>annotations</artifactId>
+					<groupId>com.google.android</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>io.micrometer</groupId>
