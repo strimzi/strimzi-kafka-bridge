@@ -695,24 +695,8 @@
         "operationId": "createTopic",
         "responses": {
           "200": {
-            "description": "Topic metadata",
-            "schema": {
-              "$ref": "#/definitions/TopicMetadata"
-            }
-          },
-          "404": {
-            "description": "The path was not found.",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            },
-            "examples": {
-              "response": {
-                "value": {
-                  "error_code": 404,
-                  "message": "The path was not found."
-                }
-              }
-            }
+            "description": "No content",
+            "schema": {}
           }
         }
       },
