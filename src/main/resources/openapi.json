@@ -762,31 +762,9 @@
                 "operationId": "createTopic",
                 "responses": {
                     "200": {
-                        "description": "Topic metadata",
+                        "description": "No content",
                         "content": {
-                            "application/vnd.kafka.v2+json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/TopicMetadata"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "The path was not found.",
-                        "content": {
-                            "application/vnd.kafka.v2+json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "error_code": 404,
-                                            "message": "The path was not found."
-                                        }
-                                    }
-                                }
-                            }
+                            "application/vnd.kafka.v2+json": {}
                         }
                     }
                 }
