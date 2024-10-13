@@ -615,7 +615,7 @@
                         }
                     },
                     "404": {
-                        "description": "The path topic was not found.",
+                        "description": "The path was not found.",
                         "content": {
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
