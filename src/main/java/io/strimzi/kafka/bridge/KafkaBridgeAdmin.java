@@ -17,11 +17,7 @@ import org.apache.kafka.common.config.ConfigResource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -94,7 +90,7 @@ public class KafkaBridgeAdmin {
      * @param replicationFactor replication factor
      * @return a CompletionStage Void
      */
-    public CompletionStage<Void> createTopic(String topicName, int partitions, short replicationFactor) {
+    public CompletionStage<Void> createTopic(String topicName, Optional<Integer> partitions, Optional<Short> replicationFactor) {
         LOGGER.trace("Create topic thread {}", Thread.currentThread());
         LOGGER.info("Create topic {}, partitions {}, replicationFactor {}", topicName, partitions, replicationFactor);
         CompletableFuture<Void> promise = new CompletableFuture<>();
