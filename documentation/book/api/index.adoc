@@ -2645,7 +2645,7 @@ Retrieves the metadata about a given topic.
 
 
 | 404
-| The path topic was not found.
+| The path was not found.
 |  <<Error>>
 
 |===
