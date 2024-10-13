@@ -28,11 +28,7 @@ import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -184,8 +180,10 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
      */
     public void doCreateTopic(RoutingContext routingContext) {
         String topicName = routingContext.pathParam("topicname");
-        int partitions = Integer.parseInt(routingContext.queryParams().get("partitions"));
-        short replicationFactor = Short.parseShort(routingContext.queryParams().get("replication_factor"));
+        Optional<Integer> partitions = Optional.ofNullable(routingContext.queryParams().get("partitions"))
+                .map(Integer::valueOf);
+        Optional<Short> replicationFactor = Optional.ofNullable(routingContext.queryParams().get("replication_factor"))
+                .map(Short::valueOf);
 
         this.kafkaBridgeAdmin.createTopic(topicName, partitions, replicationFactor)
                 .whenComplete(((topic, exception) -> {

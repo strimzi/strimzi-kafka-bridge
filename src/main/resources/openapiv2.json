@@ -701,7 +701,7 @@
             }
           },
           "404": {
-            "description": "The specified topic was not found.",
+            "description": "The path was not found.",
             "schema": {
               "$ref": "#/definitions/Error"
             },
@@ -709,7 +709,7 @@
               "response": {
                 "value": {
                   "error_code": 404,
-                  "message": "The specified topic was not found."
+                  "message": "The path was not found."
                 }
               }
             }
@@ -720,7 +720,7 @@
         {
           "name": "topicname",
           "in": "path",
-          "description": "Name of the topic to send records to or retrieve metadata from.",
+          "description": "Name of the topic will be created.",
           "required": true,
           "schema": {
             "type": "string"
@@ -729,8 +729,8 @@
         {
           "name": "partitions",
           "in": "query",
-          "description": "Number of partitions for the topic.",
-          "required": true,
+          "description": "Number of partitions for the topic. (Optional)",
+          "required": false,
           "schema": {
             "type": "integer"
           }
@@ -738,8 +738,8 @@
         {
           "name": "replication_factor",
           "in": "query",
-          "description": "Replication factor for the topic.",
-          "required": true,
+          "description": "Replication factor for the topic. (Optional)",
+          "required": false,
           "schema": {
             "type": "integer"
           }

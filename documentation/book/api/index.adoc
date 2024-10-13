@@ -2314,7 +2314,7 @@ Creates a topic with given topic name.
 |Name| Description| Required| Default| Pattern
 
 | topicname
-| Name of the topic to send records to or retrieve metadata from. 
+| Name of the topic will be created. 
 | X
 | null
 | 
@@ -2331,14 +2331,14 @@ Creates a topic with given topic name.
 |Name| Description| Required| Default| Pattern
 
 | partitions
-| Number of partitions for the topic. 
-| X
+| Number of partitions for the topic. (Optional) 
+| -
 | null
 | 
 
 | replication_factor
-| Replication factor for the topic. 
-| X
+| Replication factor for the topic. (Optional) 
+| -
 | null
 | 
 
@@ -2369,7 +2369,7 @@ Creates a topic with given topic name.
 
 
 | 404
-| The specified topic was not found.
+| The path was not found.
 |  <<Error>>
 
 |===
@@ -2645,7 +2645,7 @@ Retrieves the metadata about a given topic.
 
 
 | 404
-| The specified topic was not found.
+| The path topic was not found.
 |  <<Error>>
 
 |===

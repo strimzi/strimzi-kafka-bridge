@@ -218,10 +218,24 @@ public class AdminClientIT extends HttpBridgeITAbstract {
 
     @Test
     void createTopicTest(VertxTestContext context) {
+        // create topic test with 1 partition and 1 replication factor
         baseService()
                 .postRequest("/admin/topics/" + topic)
                 .addQueryParam("partitions", "1")
                 .addQueryParam("replication_factor", "1")
+                .as(BodyCodec.jsonArray())
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonArray> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                    });
+                    context.completeNow();
+                });
+
+        // create topic test without partitions and replication factor
+        baseService()
+                .postRequest("/admin/topics/" + topic)
                 .as(BodyCodec.jsonArray())
                 .send(ar -> {
                     context.verify(() -> {
