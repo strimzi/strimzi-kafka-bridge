@@ -2348,8 +2348,9 @@ Creates a topic with given topic name.
 ===== Return Type
 
 
-<<TopicMetadata>>
 
+
+-
 
 ===== Content Type
 
@@ -2364,13 +2365,8 @@ Creates a topic with given topic name.
 
 
 | 200
-| Topic metadata
-|  <<TopicMetadata>>
-
-
-| 404
-| The path was not found.
-|  <<Error>>
+| No content
+|  <<>>
 
 |===
 
