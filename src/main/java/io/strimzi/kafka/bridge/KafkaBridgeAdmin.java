@@ -88,7 +88,7 @@ public class KafkaBridgeAdmin {
     }
 
     /**
-     * Creates a topic with given name
+     * Creates a topic with given name and number of partitions (optional) and replication factor (optional).
      *
      * @param topicName topic name to create
      * @param partitions number of partitions
