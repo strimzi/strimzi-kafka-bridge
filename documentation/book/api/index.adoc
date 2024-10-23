@@ -2639,6 +2639,11 @@ Retrieves the metadata about a given topic.
 | Topic metadata
 |  <<TopicMetadata>>
 
+
+| 404
+| The specified topic was not found.
+|  <<Error>>
+
 |===
 
 ===== Samples
