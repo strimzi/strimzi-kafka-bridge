@@ -2292,57 +2292,38 @@ endif::internal-generation[]
 [.createTopic]
 ==== createTopic
 
-`POST /admin/topics/{topicname}`
+`POST /admin/topics`
 
 
 
 ===== Description
 
-Creates a topic with given topic name.
+Creates a topic with given name, partitions count and replication factor.
 
 
-// markup not found, no include::{specDir}admin/topics/\{topicname\}/POST/spec.adoc[opts=optional]
+// markup not found, no include::{specDir}admin/topics/POST/spec.adoc[opts=optional]
 
 
 
 ===== Parameters
 
 
+
 [cols="2,3,1,1,1"]
-.Path Parameters
+.Body Parameter
 |===
 |Name| Description| Required| Default| Pattern
 
-| topicname
-| Name of the topic will be created. 
+| CreateTopic
+| Creates a topic with given name, partitions count and replication factor. <<CreateTopic>>
 | X
-| null
+| 
 | 
 
 |===
 
 
 
-
-
-[cols="2,3,1,1,1"]
-.Query Parameters
-|===
-|Name| Description| Required| Default| Pattern
-
-| partitions
-| Number of partitions for the topic. (Optional) 
-| -
-| null
-| 
-
-| replication_factor
-| Replication factor for the topic. (Optional) 
-| -
-| null
-| 
-
-|===
 
 
 ===== Return Type
@@ -2364,29 +2345,34 @@ Creates a topic with given topic name.
 | Code | Message | Datatype
 
 
-| 200
-| No content
+| 201
+| Created
 |  <<>>
+
+
+| 422
+| Request body is null or it doesn&#39;t contain topic name.
+|  <<Error>>
 
 |===
 
 ===== Samples
 
 
-// markup not found, no include::{snippetDir}admin/topics/\{topicname\}/POST/http-request.adoc[opts=optional]
+// markup not found, no include::{snippetDir}admin/topics/POST/http-request.adoc[opts=optional]
 
 
-// markup not found, no include::{snippetDir}admin/topics/\{topicname\}/POST/http-response.adoc[opts=optional]
+// markup not found, no include::{snippetDir}admin/topics/POST/http-response.adoc[opts=optional]
 
 
 
-// file not found, no * wiremock data link :admin/topics/{topicname}/POST/POST.json[]
+// file not found, no * wiremock data link :admin/topics/POST/POST.json[]
 
 
 ifdef::internal-generation[]
 ===== Implementation
 
-// markup not found, no include::{specDir}admin/topics/\{topicname\}/POST/implementation.adoc[opts=optional]
+// markup not found, no include::{specDir}admin/topics/POST/implementation.adoc[opts=optional]
 
 
 endif::internal-generation[]
@@ -3220,6 +3206,42 @@ Information about Kafka Bridge instance.
 |   Long  
 | 
 | int64    
+
+|===
+
+
+
+[#CreateTopic]
+=== _CreateTopic_ CreateTopic
+
+
+
+
+[.fields-CreateTopic]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| topic_name
+| 
+| 
+|   String  
+| Name of the topic to create.
+|     
+
+| partitions_count
+| 
+| X
+|   Integer  
+| Number of partitions for the topic.
+|     
+
+| replication_factor
+| 
+| X
+|   Integer  
+| Number of replicas for each partition.
+|     
 
 |===
 

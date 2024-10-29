@@ -217,31 +217,58 @@ public class AdminClientIT extends HttpBridgeITAbstract {
     }
 
     @Test
-    void createTopicTest(VertxTestContext context) {
-        // create topic test with 1 partition and 1 replication factor
+    void createTopicBlankBodyTest(VertxTestContext context) {
+        JsonObject jsonObject = new JsonObject();
+
+        // create topic test without name, partitions and replication factor
         baseService()
-                .postRequest("/admin/topics/" + topic)
-                .addQueryParam("partitions", "1")
-                .addQueryParam("replication_factor", "1")
-                .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .postRequest("/admin/topics")
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(jsonObject, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
                     });
                     context.completeNow();
                 });
+    }
+
+    @Test
+    void createTopicTest(VertxTestContext context) {
+        JsonObject jsonObject = new JsonObject();
 
         // create topic test without partitions and replication factor
+        jsonObject.put("topic_name", topic);
         baseService()
-                .postRequest("/admin/topics/" + topic)
-                .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .postRequest("/admin/topics")
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(jsonObject, ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.CREATED.code()));
+                    });
+                    context.completeNow();
+                });
+    }
+
+    @Test
+    void createTopicAllParametersTest(VertxTestContext context) {
+        JsonObject jsonObject = new JsonObject();
+
+        // create topic test with 1 partition and 1 replication factor
+        jsonObject.put("topic_name", topic);
+        jsonObject.put("partitions_count", 1);
+        jsonObject.put("replication_factor", 1);
+        baseService()
+                .postRequest("/admin/topics")
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(jsonObject, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.CREATED.code()));
                     });
                     context.completeNow();
                 });
