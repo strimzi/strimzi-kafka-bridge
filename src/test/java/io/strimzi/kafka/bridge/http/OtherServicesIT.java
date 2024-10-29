@@ -151,8 +151,8 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                         assertThat(paths.containsKey("/topics/{topicname}/partitions/{partitionid}/offsets"), is(true));
                         assertThat(paths.containsKey("/topics/{topicname}/partitions"), is(true));
                         assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/topics/{topicname}/partitions/{partitionid}").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.SEND_TO_PARTITION.toString()));
-                        assertThat(paths.containsKey("/admin/topics/{topicname}"), is(true));
-                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/admin/topics/{topicname}").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.CREATE_TOPIC.toString()));
+                        assertThat(paths.containsKey("/admin/topics"), is(true));
+                        assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/admin/topics").getJsonObject("post").getString("operationId"), is(HttpOpenApiOperations.CREATE_TOPIC.toString()));
                         assertThat(paths.containsKey("/healthy"), is(true));
                         assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/healthy").getJsonObject("get").getString("operationId"), is(HttpOpenApiOperations.HEALTHY.toString()));
                         assertThat(paths.containsKey("/ready"), is(true));
@@ -162,7 +162,7 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                         assertThat(paths.containsKey("/"), is(true));
                         assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/").getJsonObject("get").getString("operationId"), is(HttpOpenApiOperations.INFO.toString()));
                         assertThat(paths.containsKey("/karel"), is(false));
-                        assertThat(bridgeResponse.getJsonObject("definitions").getMap().size(), is(27));
+                        assertThat(bridgeResponse.getJsonObject("definitions").getMap().size(), is(28));
                         assertThat(bridgeResponse.getJsonArray("tags").size(), is(4));
                     });
                     context.completeNow();
