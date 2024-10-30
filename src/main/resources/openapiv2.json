@@ -705,7 +705,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/CreateTopic"
+              "$ref": "#/definitions/NewTopic"
             }
           }
         ],
@@ -714,15 +714,15 @@
             "description": "Created",
             "schema": {}
           },
-          "422": {
+          "400": {
             "description": "Request body is null or it doesn't contain topic name.",
             "schema": {
               "$ref": "#/definitions/Error"
             },
             "examples": {
               "application/vnd.kafka.v2+json": {
-                "error_code": 422,
-                "message": "Request body is null or it doesn't contain topic name."
+                "error_code": 400,
+                "message": "Validation error on:  - provided object should contain property topic_name"
               }
             }
           }
@@ -2071,8 +2071,8 @@
         "null"
       ]
     },
-    "CreateTopic": {
-      "title": "CreateTopic",
+    "NewTopic": {
+      "title": "NewTopic",
       "type": "object",
       "properties": {
         "topic_name": {
@@ -2088,6 +2088,7 @@
           "type": "integer"
         }
       },
+      "required": ["topic_name"],
       "additionalProperties": false,
       "example": {
         "topic_name": "my-topic",

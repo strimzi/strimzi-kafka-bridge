@@ -228,7 +228,7 @@ public class AdminClientIT extends HttpBridgeITAbstract {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                     });
                     context.completeNow();
                 });

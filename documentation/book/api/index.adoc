@@ -2314,8 +2314,8 @@ Creates a topic with given name, partitions count and replication factor.
 |===
 |Name| Description| Required| Default| Pattern
 
-| CreateTopic
-| Creates a topic with given name, partitions count and replication factor. <<CreateTopic>>
+| NewTopic
+| Creates a topic with given name, partitions count and replication factor. <<NewTopic>>
 | X
 | 
 | 
@@ -2350,7 +2350,7 @@ Creates a topic with given name, partitions count and replication factor.
 |  <<>>
 
 
-| 422
+| 400
 | Request body is null or it doesn&#39;t contain topic name.
 |  <<Error>>
 
@@ -3211,42 +3211,6 @@ Information about Kafka Bridge instance.
 
 
 
-[#CreateTopic]
-=== _CreateTopic_ CreateTopic
-
-
-
-
-[.fields-CreateTopic]
-[cols="2,1,1,2,4,1"]
-|===
-| Field Name| Required| Nullable | Type| Description | Format
-
-| topic_name
-| 
-| 
-|   String  
-| Name of the topic to create.
-|     
-
-| partitions_count
-| 
-| X
-|   Integer  
-| Number of partitions for the topic.
-|     
-
-| replication_factor
-| 
-| X
-|   Integer  
-| Number of replicas for each partition.
-|     
-
-|===
-
-
-
 [#CreatedConsumer]
 === _CreatedConsumer_ CreatedConsumer
 
@@ -3329,6 +3293,42 @@ Information about Kafka Bridge instance.
 |   byte[]  
 | The header value in binary format, base64-encoded
 | byte    
+
+|===
+
+
+
+[#NewTopic]
+=== _NewTopic_ NewTopic
+
+
+
+
+[.fields-NewTopic]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| topic_name
+| X
+| 
+|   String  
+| Name of the topic to create.
+|     
+
+| partitions_count
+| 
+| X
+|   Integer  
+| Number of partitions for the topic.
+|     
+
+| replication_factor
+| 
+| X
+|   Integer  
+| Number of replicas for each partition.
+|     
 
 |===
 

@@ -187,10 +187,20 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
     public void doCreateTopic(RoutingContext routingContext) {
         JsonObject jsonBody = routingContext.body().asJsonObject();
 
-        if (jsonBody.isEmpty() || jsonBody.getString("topic_name").isBlank()) {
+        if (jsonBody.isEmpty()) {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     "Request body must be a JSON object"
+            );
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+            return;
+        }
+
+        if (jsonBody.getString("topic_name").isBlank()) {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                    "Topic name must not be empty"
             );
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
                     BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));

@@ -765,7 +765,7 @@
                     "content": {
                         "application/vnd.kafka.json.v2+json": {
                             "schema": {
-                                "$ref": "#/components/schemas/CreateTopic"
+                                "$ref": "#/components/schemas/NewTopic"
                             }
                         }
                     },
@@ -778,7 +778,7 @@
                             "application/vnd.kafka.v2+json": {}
                         }
                     },
-                    "422": {
+                    "400": {
                         "description": "Request body is null or it doesn't contain topic name.",
                         "content": {
                             "application/vnd.kafka.v2+json": {
@@ -788,8 +788,8 @@
                                 "examples": {
                                     "response": {
                                         "value": {
-                                            "error_code": 422,
-                                            "message": "Request body is null or it doesn't contain topic name."
+                                            "error_code": 400,
+                                            "message": "Validation error on:  - provided object should contain property topic_name"
                                         }
                                     }
                                 }
@@ -2240,8 +2240,8 @@
                 ],
                 "nullable" : true
             },
-            "CreateTopic": {
-                "title": "CreateTopic",
+            "NewTopic": {
+                "title": "NewTopic",
                 "type": "object",
                 "properties": {
                     "topic_name": {
@@ -2259,6 +2259,7 @@
                         "nullable": true
                     }
                 },
+                "required": ["topic_name"],
                 "additionalProperties": false,
                 "example": {
                     "topic_name": "my-topic",
