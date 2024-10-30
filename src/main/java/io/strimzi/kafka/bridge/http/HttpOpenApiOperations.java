@@ -28,6 +28,8 @@ public enum HttpOpenApiOperations {
     LIST_TOPICS("listTopics"),
     /** get information for a specific topic */
     GET_TOPIC("getTopic"),
+    /** creates a topic with specified name */
+    CREATE_TOPIC("createTopic"),
     /** list partitions for a specific topic */
     LIST_PARTITIONS("listPartitions"),
     /** get partition information for a specific topic */
