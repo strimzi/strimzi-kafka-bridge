@@ -2,7 +2,7 @@
 
 ## 0.31.0
 
-* Dependency updates (Vert.x 4.5.10)
+* Dependency updates (Kafka 3.8.1, Vert.x 4.5.10)
 
 ## 0.30.0
 
