@@ -2080,7 +2080,7 @@
       "additionalProperties": false,
       "example": {
         "topic_name": "my-topic",
-        "partitions": 3,
+        "partitions_count": 3,
         "replication_factor": 2
       }
     }
