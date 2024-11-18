@@ -197,16 +197,6 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
             return;
         }
 
-        if (jsonBody.getString("topic_name").isBlank()) {
-            HttpBridgeError error = new HttpBridgeError(
-                    HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
-                    "Topic name must not be empty"
-            );
-            HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
-                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
-            return;
-        }
-
         String topicName = jsonBody.getString("topic_name");
         Optional<Integer> partitionsCount = Optional.ofNullable(jsonBody.getInteger("partitions_count"));
         Optional<Short> replicationFactor = Optional.ofNullable(jsonBody.getInteger("replication_factor"))
