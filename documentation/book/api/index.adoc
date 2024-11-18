@@ -2349,17 +2349,12 @@ Creates a topic with given name, partitions count and replication factor.
 | Created
 |  <<>>
 
-
-| 400
-| Request body is null or it doesn&#39;t contain topic name.
-|  <<Error>>
-
 |===
 
 ===== Samples
 
 
-// markup not found, no include::{snippetDir}admin/topics/POST/http-request.adoc[opts=optional]
+include::{snippetDir}admin/topics/POST/http-request.adoc[opts=optional]
 
 
 // markup not found, no include::{snippetDir}admin/topics/POST/http-response.adoc[opts=optional]

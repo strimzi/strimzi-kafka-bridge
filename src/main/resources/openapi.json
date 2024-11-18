@@ -777,24 +777,6 @@
                         "content": {
                             "application/vnd.kafka.v2+json": {}
                         }
-                    },
-                    "400": {
-                        "description": "Request body is null or it doesn't contain topic name.",
-                        "content": {
-                            "application/vnd.kafka.v2+json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "error_code": 400,
-                                            "message": "Validation error on:  - provided object should contain property topic_name"
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }

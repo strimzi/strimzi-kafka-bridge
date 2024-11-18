@@ -1,0 +1,11 @@
+==== Example HTTP request
+
+===== Request body
+[source,json]
+----
+{
+  "topic_name" : "my-topic",
+  "partitions_count" : 1,
+  "replication_factor" : 2,
+}
+----
