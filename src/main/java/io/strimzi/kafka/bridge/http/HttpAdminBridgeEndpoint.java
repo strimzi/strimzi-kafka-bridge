@@ -180,7 +180,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
     }
 
     /**
-     * Create a topic with described name, partitions count and replication factor in the body of the HTTP request
+     * Create a topic with described name, partitions count, and replication factor in the body of the HTTP request
      *
      * @param routingContext the routing context
      */

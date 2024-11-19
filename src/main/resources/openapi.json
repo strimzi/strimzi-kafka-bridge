@@ -758,10 +758,10 @@
                 "tags": [
                     "Topics"
                 ],
-                "description": "Creates a topic with given name, partitions count and replication factor.",
+                "description": "Creates a topic with given name, partitions count, and replication factor.",
                 "operationId": "createTopic",
                 "requestBody": {
-                    "description": "Creates a topic with given name, partitions count and replication factor.",
+                    "description": "Creates a topic with given name, partitions count, and replication factor.",
                     "content": {
                         "application/vnd.kafka.json.v2+json": {
                             "schema": {
@@ -773,10 +773,7 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Created",
-                        "content": {
-                            "application/vnd.kafka.v2+json": {}
-                        }
+                        "description": "Created"
                     }
                 }
             }
