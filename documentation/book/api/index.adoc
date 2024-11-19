@@ -2298,7 +2298,7 @@ endif::internal-generation[]
 
 ===== Description
 
-Creates a topic with given name, partitions count and replication factor.
+Creates a topic with given name, partitions count, and replication factor.
 
 
 // markup not found, no include::{specDir}admin/topics/POST/spec.adoc[opts=optional]
@@ -2315,7 +2315,7 @@ Creates a topic with given name, partitions count and replication factor.
 |Name| Description| Required| Default| Pattern
 
 | NewTopic
-| Creates a topic with given name, partitions count and replication factor. <<NewTopic>>
+| Creates a topic with given name, partitions count, and replication factor. <<NewTopic>>
 | X
 | 
 | 
@@ -2333,9 +2333,6 @@ Creates a topic with given name, partitions count and replication factor.
 
 -
 
-===== Content Type
-
-* application/vnd.kafka.v2+json
 
 ===== Responses
 
