@@ -753,6 +753,31 @@
                 }
             ]
         },
+        "/admin/topics": {
+            "post": {
+                "tags": [
+                    "Topics"
+                ],
+                "description": "Creates a topic with given name, partitions count, and replication factor.",
+                "operationId": "createTopic",
+                "requestBody": {
+                    "description": "Creates a topic with given name, partitions count, and replication factor.",
+                    "content": {
+                        "application/vnd.kafka.json.v2+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/NewTopic"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
         "/consumers/{groupid}/instances/{name}/records": {
             "get": {
                 "tags": [
@@ -2193,6 +2218,33 @@
                     }
                 ],
                 "nullable" : true
+            },
+            "NewTopic": {
+                "title": "NewTopic",
+                "type": "object",
+                "properties": {
+                    "topic_name": {
+                        "description": "Name of the topic to create.",
+                        "type": "string"
+                    },
+                    "partitions_count": {
+                        "description": "Number of partitions for the topic.",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "replication_factor": {
+                        "description": "Number of replicas for each partition.",
+                        "type": "integer",
+                        "nullable": true
+                    }
+                },
+                "required": ["topic_name"],
+                "additionalProperties": false,
+                "example": {
+                    "topic_name": "my-topic",
+                    "partitions_count": 3,
+                    "replication_factor": 2
+                }
             }
         }
     },

@@ -15,6 +15,7 @@ import io.strimzi.kafka.bridge.KafkaBridgeAdmin;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.ConfigEntry;
@@ -32,6 +33,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -79,6 +81,10 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
 
             case GET_TOPIC:
                 doGetTopic(routingContext);
+                break;
+
+            case CREATE_TOPIC:
+                doCreateTopic(routingContext);
                 break;
 
             case LIST_PARTITIONS:
@@ -171,6 +177,47 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                                 BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
                     }
                 });
+    }
+
+    /**
+     * Create a topic with described name, partitions count, and replication factor in the body of the HTTP request
+     *
+     * @param routingContext the routing context
+     */
+    public void doCreateTopic(RoutingContext routingContext) {
+        JsonObject jsonBody = routingContext.body().asJsonObject();
+
+        if (jsonBody.isEmpty()) {
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                    "Request body must be a JSON object"
+            );
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNPROCESSABLE_ENTITY.code(),
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+            return;
+        }
+
+        String topicName = jsonBody.getString("topic_name");
+        Optional<Integer> partitionsCount = Optional.ofNullable(jsonBody.getInteger("partitions_count"));
+        Optional<Short> replicationFactor = Optional.ofNullable(jsonBody.getInteger("replication_factor"))
+                .map(Integer::shortValue);
+
+        this.kafkaBridgeAdmin.createTopic(topicName, partitionsCount, replicationFactor)
+                .whenComplete(((topic, exception) -> {
+                    LOGGER.trace("Create topic handler thread {}", Thread.currentThread());
+                    if (exception == null) {
+                        JsonNode root = JsonUtils.createObjectNode();
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.CREATED.code(),
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
+                    } else {
+                        HttpBridgeError error = new HttpBridgeError(
+                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                exception.getMessage()
+                        );
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+                    }
+                }));
     }
 
     /**

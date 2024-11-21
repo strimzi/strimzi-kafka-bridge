@@ -2289,6 +2289,87 @@ endif::internal-generation[]
 === Topics
 
 
+[.createTopic]
+==== createTopic
+
+`POST /admin/topics`
+
+
+
+===== Description
+
+Creates a topic with given name, partitions count, and replication factor.
+
+
+// markup not found, no include::{specDir}admin/topics/POST/spec.adoc[opts=optional]
+
+
+
+===== Parameters
+
+
+
+[cols="2,3,1,1,1"]
+.Body Parameter
+|===
+|Name| Description| Required| Default| Pattern
+
+| NewTopic
+| Creates a topic with given name, partitions count, and replication factor. <<NewTopic>>
+| X
+| 
+| 
+
+|===
+
+
+
+
+
+===== Return Type
+
+
+
+
+-
+
+
+===== Responses
+
+.HTTP Response Codes
+[cols="2,3,1"]
+|===
+| Code | Message | Datatype
+
+
+| 201
+| Created
+|  <<>>
+
+|===
+
+===== Samples
+
+
+include::{snippetDir}admin/topics/POST/http-request.adoc[opts=optional]
+
+
+// markup not found, no include::{snippetDir}admin/topics/POST/http-response.adoc[opts=optional]
+
+
+
+// file not found, no * wiremock data link :admin/topics/POST/POST.json[]
+
+
+ifdef::internal-generation[]
+===== Implementation
+
+// markup not found, no include::{specDir}admin/topics/POST/implementation.adoc[opts=optional]
+
+
+endif::internal-generation[]
+
+
 [.getOffsets]
 ==== getOffsets
 
@@ -3204,6 +3285,42 @@ Information about Kafka Bridge instance.
 |   byte[]  
 | The header value in binary format, base64-encoded
 | byte    
+
+|===
+
+
+
+[#NewTopic]
+=== _NewTopic_ NewTopic
+
+
+
+
+[.fields-NewTopic]
+[cols="2,1,1,2,4,1"]
+|===
+| Field Name| Required| Nullable | Type| Description | Format
+
+| topic_name
+| X
+| 
+|   String  
+| Name of the topic to create.
+|     
+
+| partitions_count
+| 
+| X
+|   Integer  
+| Number of partitions for the topic.
+|     
+
+| replication_factor
+| 
+| X
+|   Integer  
+| Number of replicas for each partition.
+|     
 
 |===
 

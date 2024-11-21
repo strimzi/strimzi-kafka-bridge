@@ -9,6 +9,7 @@ import io.strimzi.kafka.bridge.config.KafkaConfig;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.common.TopicPartition;
@@ -16,8 +17,10 @@ import org.apache.kafka.common.config.ConfigResource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -77,6 +80,31 @@ public class KafkaBridgeAdmin {
                     LOGGER.trace("List topics callback thread {}", Thread.currentThread());
                     if (exception == null) {
                         promise.complete(topics);
+                    } else {
+                        promise.completeExceptionally(exception);
+                    }
+                });
+        return promise;
+    }
+
+    /**
+     * Creates a topic with given name and number of partitions (optional) and replication factor (optional).
+     *
+     * @param topicName topic name to create
+     * @param partitions number of partitions
+     * @param replicationFactor replication factor
+     * @return a CompletionStage Void
+     */
+    public CompletionStage<Void> createTopic(String topicName, Optional<Integer> partitions, Optional<Short> replicationFactor) {
+        LOGGER.trace("Create topic thread {}", Thread.currentThread());
+        LOGGER.info("Create topic {}, partitions {}, replicationFactor {}", topicName, partitions, replicationFactor);
+        CompletableFuture<Void> promise = new CompletableFuture<>();
+        this.adminClient.createTopics(Collections.singletonList(new NewTopic(topicName, partitions, replicationFactor)))
+                .all()
+                .whenComplete((topic, exception) -> {
+                    LOGGER.trace("Create topic callback thread {}", Thread.currentThread());
+                    if (exception == null) {
+                        promise.complete(topic);
                     } else {
                         promise.completeExceptionally(exception);
                     }

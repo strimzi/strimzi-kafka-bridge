@@ -215,4 +215,62 @@ public class AdminClientIT extends HttpBridgeITAbstract {
                 });
         producer.get(TEST_TIMEOUT, TimeUnit.SECONDS);
     }
+
+    @Test
+    void createTopicBlankBodyTest(VertxTestContext context) {
+        JsonObject jsonObject = new JsonObject();
+
+        // create topic test without name, partitions and replication factor
+        baseService()
+                .postRequest("/admin/topics")
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(jsonObject, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+                    });
+                    context.completeNow();
+                });
+    }
+
+    @Test
+    void createTopicTest(VertxTestContext context) {
+        JsonObject jsonObject = new JsonObject();
+
+        // create topic test without partitions and replication factor
+        jsonObject.put("topic_name", topic);
+        baseService()
+                .postRequest("/admin/topics")
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(jsonObject, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.CREATED.code()));
+                    });
+                    context.completeNow();
+                });
+    }
+
+    @Test
+    void createTopicAllParametersTest(VertxTestContext context) {
+        JsonObject jsonObject = new JsonObject();
+
+        // create topic test with 1 partition and 1 replication factor
+        jsonObject.put("topic_name", topic);
+        jsonObject.put("partitions_count", 1);
+        jsonObject.put("replication_factor", 1);
+        baseService()
+                .postRequest("/admin/topics")
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(jsonObject, ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.CREATED.code()));
+                    });
+                    context.completeNow();
+                });
+    }
 }

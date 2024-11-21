@@ -686,6 +686,36 @@
         }
       ]
     },
+    "/admin/topics": {
+      "post": {
+        "tags": [
+          "Topics"
+        ],
+        "description": "Creates a topic with given name, partitions count, and replication factor.",
+        "operationId": "createTopic",
+        "consumes": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "produces": [
+          "application/vnd.kafka.v2+json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NewTopic"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      }
+    },
     "/consumers/{groupid}/instances/{name}/records": {
       "get": {
         "tags": [
@@ -2027,6 +2057,31 @@
         "string",
         "null"
       ]
+    },
+    "NewTopic": {
+      "title": "NewTopic",
+      "type": "object",
+      "properties": {
+        "topic_name": {
+          "description": "Name of the topic to create.",
+          "type": "string"
+        },
+        "partitions_count": {
+          "description": "Number of partitions for the topic.",
+          "type": "integer"
+        },
+        "replication_factor": {
+          "description": "Number of replicas for each partition.",
+          "type": "integer"
+        }
+      },
+      "required": ["topic_name"],
+      "additionalProperties": false,
+      "example": {
+        "topic_name": "my-topic",
+        "partitions_count": 3,
+        "replication_factor": 2
+      }
     }
   },
   "tags": [
