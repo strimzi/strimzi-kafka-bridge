@@ -72,7 +72,6 @@ public abstract class HttpBridgeITAbstract {
     static {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
             kafkaContainer = new StrimziKafkaContainer()
-                .withKraft()
                 .waitForRunning();
             kafkaContainer.start();
 
