@@ -3,6 +3,7 @@
 ## 0.31.0
 
 * Dependency updates (Kafka 3.9.0, Vert.x 4.5.10)
+* Added support for creating a new topic via endpoint.
 
 ## 0.30.0
 
