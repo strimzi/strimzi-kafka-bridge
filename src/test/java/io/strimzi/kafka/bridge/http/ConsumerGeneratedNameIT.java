@@ -58,7 +58,8 @@ public class ConsumerGeneratedNameIT {
 
     static {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
-            kafkaContainer = new StrimziKafkaContainer();
+            kafkaContainer = new StrimziKafkaContainer()
+                .waitForRunning();
             kafkaContainer.start();
             kafkaUri = kafkaContainer.getBootstrapServers();
         } else {
