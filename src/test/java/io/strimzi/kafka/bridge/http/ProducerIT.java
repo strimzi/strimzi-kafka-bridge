@@ -103,6 +103,59 @@ public class ProducerIT extends HttpBridgeITAbstract {
     }
 
     @Test
+    void sendMessagesToMultiplePartitions(VertxTestContext context) throws InterruptedException, ExecutionException {
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 3, 1);
+
+        String value = "message-value";
+
+        JsonArray records = new JsonArray();
+        records.add(valuePartitionRecord(value, 0));
+
+        records.add(valuePartitionRecord(value, 1));
+
+        records.add(valuePartitionRecord(value, 2));
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+        System.out.println(root);
+
+        future.get();
+
+        producerService()
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root, ar ->
+                        context.verify(() -> {
+                            assertThat(ar.succeeded(), is(true));
+                            HttpResponse<JsonObject> response = ar.result();
+                            assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                            JsonObject bridgeResponse = response.body();
+                            System.out.println(bridgeResponse);
+                            JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                            assertThat(offsets.size(), is(3));
+                            JsonObject metadata = offsets.getJsonObject(0);
+                            assertThat(metadata.getInteger("partition"), is(0));
+                            assertThat(metadata.getLong("offset"), is(0L));
+
+                            JsonObject metadata2 = offsets.getJsonObject(1);
+                            assertThat(metadata2.getInteger("partition"), is(1));
+                            assertThat(metadata2.getLong("offset"), is(0L));
+
+                            JsonObject metadata3 = offsets.getJsonObject(2);
+                            assertThat(metadata3.getInteger("partition"), is(2));
+                            assertThat(metadata3.getLong("offset"), is(0L));
+                            context.completeNow();
+                        }));
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+
+    private static JsonObject valuePartitionRecord(String value, int partition) {
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        json.put("partition", partition);
+        return json;
+    }
+
+    @Test
     void sendSimpleMessageToPartition(VertxTestContext context) throws InterruptedException, ExecutionException {
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
 
@@ -110,9 +163,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
         int partition = 1;
 
         JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("value", value);
-        json.put("partition", partition);
+        JsonObject json = valuePartitionRecord(value, partition);
         records.add(json);
 
         JsonObject root = new JsonObject();
@@ -782,9 +833,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
         int partition = 1000;
 
         JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("value", value);
-        json.put("partition", partition);
+        JsonObject json = valuePartitionRecord(value, partition);
         records.add(json);
 
         JsonObject root = new JsonObject();
@@ -824,9 +873,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
         int partition = 1;
 
         JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("value", value);
-        json.put("partition", partition);
+        JsonObject json = valuePartitionRecord(value, partition);
         records.add(json);
 
         JsonObject root = new JsonObject();
@@ -1020,14 +1067,10 @@ public class ProducerIT extends HttpBridgeITAbstract {
         int partition = 1;
 
         JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("value", value);
-        json.put("partition", partition);
+        JsonObject json = valuePartitionRecord(value, partition);
         records.add(json);
 
-        JsonObject json2 = new JsonObject();
-        json2.put("value", value + "invalid");
-        json2.put("partition", 500);
+        JsonObject json2 = valuePartitionRecord(value + "invalid", 500);
         records.add(json2);
 
         JsonObject root = new JsonObject();
