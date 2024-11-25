@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 /**
  * Represents an HTTP bridge source endpoint for the Kafka producer operations
@@ -137,7 +138,6 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
             return;
         }
-        List<HttpBridgeResult<?>> results = new ArrayList<>(records.size());
 
         // fulfilling the request of sending (multiple) record(s) sequentially but in a separate thread
         // this will free the Vert.x event loop still in place
@@ -154,31 +154,27 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 return;
             }
 
-            @SuppressWarnings({ "rawtypes" })
-            List<CompletableFuture> promises = new ArrayList<>(records.size());
+            List<CompletableFuture<HttpBridgeResult<?>>> promises = new ArrayList<>(records.size());
             for (ProducerRecord<K, V> record : records) {
-                CompletionStage<RecordMetadata> sendHandler =
-                        // inside send method, the callback which completes the promise is executed in the kafka-producer-network-thread
-                        // let's do the result handling in the same thread to keep the messages order delivery execution
-                        this.kafkaBridgeProducer.send(record).handle((metadata, ex) -> {
-                            LOGGER.trace("Handle thread {}", Thread.currentThread());
-                            if (ex == null) {
-                                LOGGER.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", record, metadata.topic(), metadata.partition(), metadata.offset());
-                                results.add(new HttpBridgeResult<>(metadata));
-                            } else {
-                                String msg = ex.getMessage();
-                                int code = handleError(ex);
-                                LOGGER.error("Failed to deliver record {}", record, ex);
-                                results.add(new HttpBridgeResult<>(new HttpBridgeError(code, msg)));
-                            }
-                            return metadata;
-                        });
+                CompletionStage<HttpBridgeResult<?>> sendHandler = this.kafkaBridgeProducer.send(record).handle((metadata, ex) -> {
+                    LOGGER.trace("Handle thread {}", Thread.currentThread());
+                    if (ex == null) {
+                        LOGGER.debug("Delivered record {} to Kafka on topic {} at partition {} [{}]", record, metadata.topic(), metadata.partition(), metadata.offset());
+                        return new HttpBridgeResult<>(metadata);
+                    } else {
+                        String msg = ex.getMessage();
+                        int code = handleError(ex);
+                        LOGGER.error("Failed to deliver record {}", record, ex);
+                        return new HttpBridgeResult<>(new HttpBridgeError(code, msg));
+                    }
+                });
                 promises.add(sendHandler.toCompletableFuture());
             }
 
             CompletableFuture.allOf(promises.toArray(new CompletableFuture[0]))
                     // sending HTTP response asynchronously to free the kafka-producer-network-thread
                     .whenCompleteAsync((v, t) -> {
+                        List<HttpBridgeResult<?>> results = promises.stream().map(CompletableFuture::join).collect(Collectors.toList());
                         LOGGER.trace("All sent thread {}", Thread.currentThread());
                         // always return OK, since failure cause is in the response, per message
                         span.finish(HttpResponseStatus.OK.code());
