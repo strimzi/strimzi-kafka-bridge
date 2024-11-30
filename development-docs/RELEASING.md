@@ -30,6 +30,8 @@ The build pipeline should automatically start for any new commit pushed into the
 Wait until the build pipeline is (successfully) finished for the last commit in the release branch.
 The regular pipeline will build the release ZIP / TAR.GZ files as well as the documentation and store them as artifacts.
 It will also stage the Maven artifacts.
+When it's done, mark the build in the Azure Pipelines UI to be retained forever
+
 Then run the release pipeline manually from the Azure Pipelines UI.
 The release pipeline is named `kafka-bridge-release`.
 When starting the new run, it will ask for several parameters which you need to fill:
@@ -60,6 +62,13 @@ Announce the release on following channels:
 * Mailing lists
 * Slack
 * Twitter (if the release is significant enough)
+
+### Update to next release
+
+The `main` git branch has to be updated with the next SNAPSHOT version.
+Update the version to the next SNAPSHOT version using the `next_version` `make` target. 
+For example to update the next version to 0.32.0-SNAPSHOT run: `make NEXT_VERSION=0.32.0-SNAPSHOT next_version`.
+Add a header for the new release to the CHANGELOG.md file
 
 ### Release candidates
 
