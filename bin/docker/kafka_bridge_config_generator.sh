@@ -47,6 +47,10 @@ if [ -n "$KAFKA_BRIDGE_SASL_MECHANISM" ]; then
         PASSWORD=$(cat /opt/strimzi/bridge-password/$KAFKA_BRIDGE_SASL_PASSWORD_FILE)
         SASL_MECHANISM="PLAIN"
         JAAS_CONFIG="org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_BRIDGE_SASL_USERNAME}\" password=\"${PASSWORD}\";"
+    elif [ "x$KAFKA_BRIDGE_SASL_MECHANISM" = "xscram-sha-256" ]; then
+        PASSWORD=$(cat /opt/strimzi/bridge-password/$KAFKA_BRIDGE_SASL_PASSWORD_FILE)
+        SASL_MECHANISM="SCRAM-SHA-256"
+        JAAS_CONFIG="org.apache.kafka.common.security.scram.ScramLoginModule required username=\"${KAFKA_BRIDGE_SASL_USERNAME}\" password=\"${PASSWORD}\";"
     elif [ "x$KAFKA_BRIDGE_SASL_MECHANISM" = "xscram-sha-512" ]; then
         PASSWORD=$(cat /opt/strimzi/bridge-password/$KAFKA_BRIDGE_SASL_PASSWORD_FILE)
         SASL_MECHANISM="SCRAM-SHA-512"
