@@ -1,11 +1,14 @@
 # CHANGELOG
 
+## 0.31.1
+
+* Fixed missing SCRAM-SHA-256 support.
+
 ## 0.31.0
 
 * Dependency updates (Kafka 3.9.0, Vert.x 4.5.11, Netty 4.1.115.Final)
 * Added support for creating a new topic via endpoint.
 * Fixed metadata order on the HTTP "offsets" response when producing records.
-* Fixed missing SCRAM-SHA-256 support.
 
 ## 0.30.0
 
