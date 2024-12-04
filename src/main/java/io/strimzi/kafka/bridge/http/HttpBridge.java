@@ -558,7 +558,10 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void metrics(RoutingContext routingContext) {
-        routingContext.response().setStatusCode(HttpResponseStatus.OK.code()).end(metricsReporter.scrape());
+        routingContext.response()
+                .putHeader("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+                .setStatusCode(HttpResponseStatus.OK.code())
+                .end(metricsReporter.scrape());
     }
 
     private void information(RoutingContext routingContext) {

@@ -68,6 +68,20 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
     }
 
     @Test
+    void metricsTest(VertxTestContext context) {
+        baseService()
+                .getRequest("/metrics")
+                .send(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.OK.code()));
+                        assertThat(ar.result().getHeader("Content-Type"), is("text/plain; version=0.0.4; charset=utf-8"));
+                        context.completeNow();
+                    });
+                });
+    }
+
+    @Test
     void openapiv2Test(VertxTestContext context) {
         baseService()
             .getRequest("/openapi/v2")
