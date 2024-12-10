@@ -2,6 +2,7 @@
 
 ## 0.32.0
 
+* Dependency updates (JMX exporter 1.1.0)
 
 ## 0.31.1
 
