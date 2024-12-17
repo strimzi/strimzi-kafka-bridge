@@ -7,7 +7,6 @@ package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
@@ -15,6 +14,8 @@ import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.http.services.ConsumerService;
 import io.strimzi.kafka.bridge.http.services.ProducerService;
+import io.strimzi.kafka.bridge.metrics.MetricsReporter;
+import io.strimzi.kafka.bridge.metrics.StrimziCollectorRegistry;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
@@ -166,7 +167,7 @@ public class DisablingConsumerProducerIT {
         CompletableFuture<Boolean> startBridge = new CompletableFuture<>();
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
             BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
-            HttpBridge httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(null, null));
+            HttpBridge httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(new StrimziCollectorRegistry()));
 
             LOGGER.info("Deploying in-memory bridge");
             vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> startBridge.complete(true)));

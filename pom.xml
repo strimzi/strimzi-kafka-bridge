@@ -115,6 +115,7 @@
 		<checkstyle.version>10.12.2</checkstyle.version>
 		<hamcrest.version>2.2</hamcrest.version>
 		<junit.version>5.8.2</junit.version>
+		<mockito.version>4.11.0</mockito.version>
 		<maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
 		<maven-surefire-plugin.version>3.0.0-M7</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.0.0-M7</maven-failsafe-plugin.version>
@@ -131,6 +132,7 @@
 		<spotbugs.version>4.7.3</spotbugs.version>
 		<maven.spotbugs.version>4.7.3.0</maven.spotbugs.version>
 		<strimzi-oauth.version>0.15.0</strimzi-oauth.version>
+		<strimzi-metrics-reporter.version>0.1.0</strimzi-metrics-reporter.version>
 		<opentelemetry.version>1.34.1</opentelemetry.version>
 		<opentelemetry-alpha.version>1.34.1-alpha</opentelemetry-alpha.version>
 		<opentelemetry.instrumentation.version>1.32.0-alpha</opentelemetry.instrumentation.version>
@@ -296,6 +298,11 @@
 			<version>${micrometer.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>io.strimzi</groupId>
+			<artifactId>metrics-reporter</artifactId>
+			<version>${strimzi-metrics-reporter.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>io.prometheus.jmx</groupId>
 			<artifactId>collector</artifactId>
 			<version>${jmx-prometheus-collector.version}</version>
@@ -303,6 +310,16 @@
 		<dependency>
 			<groupId>io.prometheus</groupId>
 			<artifactId>prometheus-metrics-model</artifactId>
+			<version>${prometheus-client.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.prometheus</groupId>
+			<artifactId>prometheus-metrics-instrumentation-jvm</artifactId>
+			<version>${prometheus-client.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.prometheus</groupId>
+			<artifactId>prometheus-metrics-exporter-httpserver</artifactId>
 			<version>${prometheus-client.version}</version>
 		</dependency>
 		<dependency>
@@ -419,6 +436,12 @@
 			<groupId>org.hamcrest</groupId>
 			<artifactId>hamcrest</artifactId>
 			<version>${hamcrest.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<version>${mockito.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -584,6 +607,10 @@
 									<!-- OpenTelemetry - used via classpath configuration opentelemetry-exporter-sender-grpc is required at runtime to replace OKHTTP -->
 									<ignoredUnusedDeclaredDependency>io.grpc:grpc-netty-shaded:jar</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>com.google.guava:guava</ignoredUnusedDeclaredDependency>
+									<!-- Strimzi Metrics Reporter - used via classpath configuration -->
+									<ignoredUnusedDeclaredDependency>io.strimzi:metrics-reporter</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>io.prometheus:prometheus-metrics-instrumentation-jvm</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>io.prometheus:prometheus-metrics-exporter-httpserver</ignoredUnusedDeclaredDependency>
 								</ignoredUnusedDeclaredDependencies>
 						</configuration>
 					</execution>

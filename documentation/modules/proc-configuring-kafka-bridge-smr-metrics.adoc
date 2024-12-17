@@ -1,0 +1,36 @@
+[id='proc-configuring-kafka-bridge-smr-metrics-{context}']
+= Configuring Strimzi Metrics Reporter metrics
+
+[role="_abstract"]
+Enable metrics for the Kafka Bridge by setting the `bridge.metrics` configuration.
+
+.Prerequisites
+
+* xref:proc-downloading-kafka-bridge-{context}[The Kafka Bridge installation archive is downloaded].
+
+.Procedure
+
+. Set the `bridge.metrics` configuration to `strimziMetricsReporter` and related configuration.
++
+.Configuration for enabling metrics
+
+[source,properties]
+----
+bridge.metrics=strimziMetricsReporter
+----
++
+Optionally, you can set a comma-separated list of regexes used to filter exposed metrics using the `kafka.prometheus.metrics.reporter.allowlist` property.
+If not set, all available metrics will be exposed.
++
+You can add any plugin configuration to the Bridge properties file using the `kafka.` prefix.
+See the https://github.com/strimzi/metrics-reporter[Strimzi Metrics Reporter] documentation for more details.
+
+. Run the Kafka Bridge script to enable metrics.
++
+.Running the Kafka Bridge to enable metrics
+[source,shell]
+----
+./bin/kafka_bridge_run.sh --config-file=<path>/application.properties
+----
++
+With metrics enabled, you can use `GET /metrics` with the `/metrics` endpoint to retrieve Kafka Bridge metrics in Prometheus format.

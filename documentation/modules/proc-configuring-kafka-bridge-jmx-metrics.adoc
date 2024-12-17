@@ -1,0 +1,33 @@
+[id='proc-configuring-kafka-bridge-jmx-metrics-{context}']
+= Configuring JMX Exporter metrics
+
+[role="_abstract"]
+Enable metrics for the Kafka Bridge by setting the `bridge.metrics` configuration.
+
+.Prerequisites
+
+* xref:proc-downloading-kafka-bridge-{context}[The Kafka Bridge installation archive is downloaded].
+
+.Procedure
+
+. Set the `bridge.metrics` configuration to `jmxPrometheusExporter`.
++
+.Configuration for enabling metrics
+
+[source,properties]
+----
+bridge.metrics=jmxPrometheusExporter
+----
++
+Optionally, you can set a custom JMX Exporter configuration using the `bridge.metrics.exporter.config.path` property.
+If not set, a default embedded configuration file will be used.
+
+. Run the Kafka Bridge script to enable metrics.
++
+.Running the Kafka Bridge to enable metrics
+[source,shell]
+----
+./bin/kafka_bridge_run.sh --config-file=<path>/application.properties
+----
++
+With metrics enabled, you can use `GET /metrics` with the `/metrics` endpoint to retrieve Kafka Bridge metrics in Prometheus format.

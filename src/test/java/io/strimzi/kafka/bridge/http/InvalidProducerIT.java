@@ -5,12 +5,12 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.clients.BasicKafkaClient;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 import io.strimzi.kafka.bridge.facades.AdminClientFacade;
 import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
+import io.strimzi.kafka.bridge.metrics.MetricsReporter;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
@@ -76,7 +76,7 @@ public class InvalidProducerIT extends HttpBridgeITAbstract {
 
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
             bridgeConfig = BridgeConfig.fromMap(cfg);
-            httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
+            httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry));
 
             LOGGER.info("Deploying in-memory bridge");
             vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> context.completeNow()));
