@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+if [ -n "$STRIMZI_METRICS" ]; then
+    BRIDGE_METRICS="bridge.metrics=${STRIMZI_METRICS}"
+fi
+
 if [ -n "$STRIMZI_TRACING" ]; then
     BRIDGE_TRACING="bridge.tracing=${STRIMZI_TRACING}"
 fi
