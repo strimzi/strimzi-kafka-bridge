@@ -3,6 +3,14 @@
 ## 0.32.0
 
 * Dependency updates (JMX exporter 1.1.0)
+* Added support for the [Strimzi Metrics Reporter](https://github.com/strimzi/metrics-reporter) metrics.
+  This is a Kafka plugin that exports metrics in Prometheus format without passing through JMX, and can be enabled by setting `bridge.metrics=strimziMetricsReporter`.
+  The JMX Exporter metrics can still be enabled by setting `bridge.metrics=jmxPrometheusExporter`.
+
+### Changes, deprecations and removals
+
+* `KAFKA_BRIDGE_METRICS_ENABLED` has been deprecated.
+  The equivalent configuration is `bridge.metrics=jmxPrometheusExporter`. 
 
 ## 0.31.1
 
