@@ -22,6 +22,7 @@ kafka.prometheus.metrics.reporter.listener.enable=false
 kafka.prometheus.metrics.reporter.allowlist=.*
 ----
 +
+You can add any plugin configuration to the Bridge properties file using the `kafka.` prefix.
 See the https://github.com/strimzi/metrics-reporter[Strimzi Metrics Reporter documentation] for more details.
 
 . Run the Kafka Bridge script to enable metrics.
