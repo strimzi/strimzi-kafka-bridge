@@ -103,8 +103,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>11</maven.compiler.source>
-		<maven.compiler.target>11</maven.compiler.target>
+		<maven.compiler.release>17</maven.compiler.release>
 		<log4j.version>2.17.2</log4j.version>
 		<vertx.version>4.5.11</vertx.version>
 		<vertx-testing.version>4.5.11</vertx-testing.version>
