@@ -4,15 +4,14 @@
  */
 package io.strimzi.kafka.bridge.http;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.strimzi.kafka.bridge.JmxCollectorRegistry;
-import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 import io.strimzi.kafka.bridge.http.services.ConsumerService;
+import io.strimzi.kafka.bridge.metrics.JmxCollectorRegistry;
+import io.strimzi.kafka.bridge.metrics.MetricsReporter;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.strimzi.test.container.StrimziKafkaContainer;
 import io.vertx.core.Vertx;
@@ -78,7 +77,6 @@ public class ConsumerGeneratedNameIT {
     private static HttpBridge httpBridge;
     private static WebClient client;
     private static BridgeConfig bridgeConfig;
-    private static MeterRegistry meterRegistry = null;
     private static JmxCollectorRegistry jmxCollectorRegistry = null;
 
     ConsumerService consumerService() {
@@ -97,7 +95,7 @@ public class ConsumerGeneratedNameIT {
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
 
             bridgeConfig = BridgeConfig.fromMap(config);
-            httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
+            httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry));
 
             LOGGER.info("Deploying in-memory bridge");
             vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
