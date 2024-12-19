@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
@@ -135,7 +136,7 @@ public class Application {
             throws MalformedObjectNameException, IOException {
         if (bridgeConfig.getMetrics() != null) {
             if (bridgeConfig.getMetrics().equals(MetricsType.JMX_EXPORTER.toString())) {
-                return new MetricsReporter(getJmxCollectorRegistry());
+                return new MetricsReporter(getJmxCollectorRegistry(bridgeConfig));
             } else if (bridgeConfig.getMetrics().equals(MetricsType.STRIMZI_REPORTER.toString())) {
                 return new MetricsReporter(new StrimziCollectorRegistry());
             }
@@ -144,23 +145,32 @@ public class Application {
     }
 
     /**
-     * Return a JmxCollectorRegistry instance with the YAML configuration filters
+     * Return a JmxCollectorRegistry instance with the YAML configuration filters.
+     * This is loaded from a custom config file if present, or from the default configuration file.
      *
      * @return JmxCollectorRegistry instance
      * @throws MalformedObjectNameException
      * @throws IOException
      */
-    private static JmxCollectorRegistry getJmxCollectorRegistry() throws MalformedObjectNameException, IOException {
-        InputStream is = Application.class.getClassLoader().getResourceAsStream("jmx_metrics_config.yaml");
-        if (is == null) {
-            return null;
-        }
-
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-            String yaml = reader
+    private static JmxCollectorRegistry getJmxCollectorRegistry(BridgeConfig bridgeConfig) throws MalformedObjectNameException, IOException {
+        if (bridgeConfig.getJmxExporterConfigPath() != null && Files.exists(bridgeConfig.getJmxExporterConfigPath())) {
+            // read custom configuration file
+            LOGGER.info("Loading custom JMX Exporter configuration from {}", bridgeConfig.getJmxExporterConfigPath());
+            String yaml = Files.readString(bridgeConfig.getJmxExporterConfigPath(), StandardCharsets.UTF_8);
+            return new JmxCollectorRegistry(yaml);
+        } else {
+            // fallback to default configuration
+            LOGGER.info("Loading default JMX Exporter configuration");
+            InputStream is = Application.class.getClassLoader().getResourceAsStream("jmx_metrics_config.yaml");
+            if (is == null) {
+                return null;
+            }
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                String yaml = reader
                     .lines()
                     .collect(Collectors.joining("\n"));
-            return new JmxCollectorRegistry(yaml);
+                return new JmxCollectorRegistry(yaml);
+            }
         }
     }
 

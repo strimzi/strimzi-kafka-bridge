@@ -10,6 +10,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -86,16 +87,20 @@ public class ConfigTest {
 
     @Test
     public void testJmxExporterMetricsType() {
+        String configFilePah = "/tmp/my-jmx-exporter-config.yaml";
+        
         Map<String, Object> map = Map.of(
             "bridge.id", "my-bridge",
             "kafka.bootstrap.servers", "localhost:9092",
             "bridge.metrics", "jmxPrometheusExporter",
+            "bridge.metrics.jmx.exporter.config.path", configFilePah,
             "http.host", "0.0.0.0",
             "http.port", "8080"
         );
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
         assertThat(bridgeConfig.getMetrics(), is(MetricsType.JMX_EXPORTER.toString()));
+        assertThat(bridgeConfig.getJmxExporterConfigPath(), is(Path.of(configFilePah)));
     }
 
     @Test
