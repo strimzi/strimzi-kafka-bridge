@@ -11,9 +11,26 @@ fi
 BRIDGE_PROPERTIES=$(cat <<-EOF
 #Bridge configuration
 bridge.id=${KAFKA_BRIDGE_ID}
+${BRIDGE_METRICS}
 ${BRIDGE_TRACING}
 EOF
 )
+
+if [ -n "$KAFKA_BRIDGE_METRICS_JMX_CONFIG" ]; then
+    METRICS_JMX_PROPERTIES=$(cat <<EOF
+#JMX Exporter configuration
+bridge.metrics.jmx.exporter.config.path=${KAFKA_BRIDGE_METRICS_JMX_CONFIG}
+EOF
+)
+fi
+
+if [ -n "$KAFKA_BRIDGE_METRICS_SMR_CONFIG" ]; then
+    METRICS_SMR_PROPERTIES=$(cat <<EOF
+#Strimzi Reporter configuration
+${KAFKA_BRIDGE_METRICS_SMR_CONFIG}
+EOF
+)
+fi
 
 SECURITY_PROTOCOL=PLAINTEXT
 
@@ -166,6 +183,9 @@ EOF
 
 PROPERTIES=$(cat <<EOF
 $BRIDGE_PROPERTIES
+
+$METRICS_JMX_PROPERTIES
+$METRICS_SMR_PROPERTIES
 
 $KAFKA_PROPERTIES
 

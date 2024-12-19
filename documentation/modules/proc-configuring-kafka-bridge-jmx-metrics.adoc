@@ -18,6 +18,9 @@ Enable metrics for the Kafka Bridge by setting the `bridge.metrics` configuratio
 ----
 bridge.metrics=jmxPrometheusExporter
 ----
++
+Optionally, you can set a custom JMX Exporter configuration file using the `bridge.metrics.jmx.exporter.config.path` property.
+If this is not set, a default configuration will be applied.
 
 . Run the Kafka Bridge script to enable metrics.
 +

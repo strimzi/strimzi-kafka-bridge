@@ -10,6 +10,7 @@ import io.strimzi.kafka.bridge.metrics.MetricsType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -28,6 +29,9 @@ public class BridgeConfig extends AbstractConfig {
 
     /** Metrics system to be used in the bridge */
     public static final String METRICS_TYPE = BRIDGE_CONFIG_PREFIX + "metrics";
+
+    /** JMX Exporter configuration file path */
+    public static final String JMX_EXPORTER_CONFIG_PATH = METRICS_TYPE + ".jmx.exporter.config.path";
     
     /** Tracing system to be used in the bridge */
     public static final String TRACING_TYPE = BRIDGE_CONFIG_PREFIX + "tracing";
@@ -122,6 +126,17 @@ public class BridgeConfig extends AbstractConfig {
         return (String) Optional.ofNullable(config.get(BridgeConfig.METRICS_TYPE))
             .orElse(Boolean.parseBoolean(envVarValue)
                 ? MetricsType.JMX_EXPORTER.toString() : null);
+    }
+
+    /**
+     * @return the JMX Exporter configuration file path
+     */
+    public Path getJmxExporterConfigPath() {
+        if (config.get(BridgeConfig.JMX_EXPORTER_CONFIG_PATH) == null) {
+            return null;
+        } else {
+            return Path.of((String) config.get(BridgeConfig.JMX_EXPORTER_CONFIG_PATH));
+        }
     }
 
     /**
