@@ -8,11 +8,13 @@
 [role="_abstract"]
 Configure a deployment of the Kafka Bridge using configuration properties.
 Configure Kafka and specify the HTTP connection details needed to be able to interact with Kafka.
+It is possible to enable metrics in Prometheus format with JMX Prometheus Exporter or Strimzi Metrics Reporter.
 You can also use configuration properties to enable and use distributed tracing with the Kafka Bridge.
 Distributed tracing allows you to track the progress of transactions between applications in a distributed system.
 
 NOTE: Use the `KafkaBridge` resource to configure properties when you are xref:overview-components-running-kafka-bridge-cluster-{context}[running the Kafka Bridge on Kubernetes].
 
 include::modules/proc-configuring-kafka-bridge.adoc[leveloffset=+1]
-include::modules/proc-configuring-kafka-bridge-metrics.adoc[leveloffset=+1]
+include::modules/proc-configuring-kafka-bridge-jmx-metrics.adoc[leveloffset=+1]
+include::modules/proc-configuring-kafka-bridge-smr-metrics.adoc[leveloffset=+1]
 include::modules/proc-configuring-kafka-bridge-tracing.adoc[leveloffset=+1]
