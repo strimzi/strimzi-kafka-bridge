@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
-set -e
+#set -e
 
 echo "Build reason: ${BUILD_REASON}"
 echo "Source branch: ${BRANCH}"
+
+echo "JAVA_HOME: " ${JAVA_HOME}
+mvn -version
 
 function cleanup() {
   rm -rf signing.gpg
@@ -19,7 +22,5 @@ echo $GPG_SIGNING_KEY | base64 -d > signing.gpg
 gpg --batch --import signing.gpg
 
 #GPG_EXECUTABLE=gpg mvn $MVN_ARGS -DskipTests -s ./.azure/scripts/settings.xml -P ossrh verify deploy
-echo "JAVA_HOME: " ${JAVA_HOME}
-mvn -version
 
 cleanup
