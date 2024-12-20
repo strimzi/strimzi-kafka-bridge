@@ -9,8 +9,8 @@
 
 ### Changes, deprecations and removals
 
-* `KAFKA_BRIDGE_METRICS_ENABLED` has been deprecated.
-  The equivalent configuration is `bridge.metrics=jmxPrometheusExporter`.
+* `KAFKA_BRIDGE_METRICS_ENABLED` configuration has been deprecated.
+  In order to keep the current behaviour and use JMX Exporter, the `bridge.metrics` property has to be set to `jmxPrometheusExporter`.
 
 ## 0.31.1
 
