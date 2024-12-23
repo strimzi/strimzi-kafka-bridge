@@ -1415,29 +1415,37 @@
                                 }
                             }
                         },
-                        "description": "OpenAPI v2 specification in JSON format retrieved successfully."
+                        "description": "OpenAPI v3 specification in JSON format retrieved successfully."
                     }
                 },
                 "operationId": "openapi",
-                "description": "Retrieves the OpenAPI v2 specification in JSON format."
+                "description": "Retrieves the OpenAPI v3 specification in JSON format."
             }
         },
         "/openapi/v2": {
             "get": {
                 "responses": {
-                    "200": {
+                    "410": {
                         "content": {
-                            "application/json": {
+                            "application/vnd.kafka.v2+json": {
                                 "schema": {
-                                    "type": "string"
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "examples": {
+                                    "response": {
+                                        "value": {
+                                            "error_code": 410,
+                                            "message": "OpenAPI v2 Swagger not supported."
+                                        }
+                                    }
                                 }
                             }
                         },
-                        "description": "OpenAPI v2 specification in JSON format retrieved successfully."
+                        "description": "OpenAPI v2 Swagger not supported."
                     }
                 },
                 "operationId": "openapiv2",
-                "description": "Retrieves the OpenAPI v2 specification in JSON format."
+                "description": "OpenAPI v2 Swagger not supported."
             }
         },
         "/openapi/v3": {

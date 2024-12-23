@@ -524,12 +524,12 @@ public class HttpBridge extends AbstractVerticle {
 
     private void openapi(RoutingContext routingContext) {
         FileSystem fileSystem = vertx.fileSystem();
-        fileSystem.readFile(openapiFileName(routingContext), readFile -> {
+        fileSystem.readFile("openapi.json", readFile -> {
             if (readFile.succeeded()) {
                 String xForwardedPath = routingContext.request().getHeader("x-forwarded-path");
                 String xForwardedPrefix = routingContext.request().getHeader("x-forwarded-prefix");
                 if (xForwardedPath == null && xForwardedPrefix == null) {
-                    HttpUtils.sendFile(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, openapiFileName(routingContext));
+                    HttpUtils.sendFile(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, "openapi.json");
                 } else {
                     String path = "/";
                     if (xForwardedPrefix != null) {
@@ -551,10 +551,6 @@ public class HttpBridge extends AbstractVerticle {
                         BridgeContentType.JSON, JsonUtils.jsonToBytes(error.toJson()));
             }
         });
-    }
-
-    private String openapiFileName(RoutingContext routingContext) {
-        return "/openapi/v3".equals(routingContext.normalizedPath()) ? "openapi.json" : "openapiv2.json";
     }
 
     private void metrics(RoutingContext routingContext) {
@@ -843,7 +839,9 @@ public class HttpBridge extends AbstractVerticle {
 
         @Override
         public void process(RoutingContext routingContext) {
-            openapi(routingContext);
+            HttpBridgeError error = new HttpBridgeError(HttpResponseStatus.GONE.code(), "OpenAPI v2 Swagger not supported");
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.GONE.code(),
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
         }
     };
 

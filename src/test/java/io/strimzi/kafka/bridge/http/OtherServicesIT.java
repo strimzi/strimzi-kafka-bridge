@@ -90,11 +90,10 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-
-                        String version = bridgeResponse.getString("swagger");
-                        assertThat(version, is("2.0"));
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.GONE.code()));
+                        assertThat(error.getCode(), is(HttpResponseStatus.GONE.code()));
+                        assertThat(error.getMessage(), is("OpenAPI v2 Swagger not supported"));
                     });
                     context.completeNow();
                 });
@@ -131,8 +130,8 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                         assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
 
-                        String version = bridgeResponse.getString("swagger");
-                        assertThat(version, is("2.0"));
+                        String version = bridgeResponse.getString("openapi");
+                        assertThat(version, is("3.0.0"));
 
                         Map<String, Object> paths = bridgeResponse.getJsonObject("paths").getMap();
                         // subscribe, list subscriptions and unsubscribe are using the same endpoint but different methods (-2)
@@ -176,7 +175,7 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                         assertThat(paths.containsKey("/"), is(true));
                         assertThat(bridgeResponse.getJsonObject("paths").getJsonObject("/").getJsonObject("get").getString("operationId"), is(HttpOpenApiOperations.INFO.toString()));
                         assertThat(paths.containsKey("/karel"), is(false));
-                        assertThat(bridgeResponse.getJsonObject("definitions").getMap().size(), is(28));
+                        assertThat(bridgeResponse.getJsonObject("components").getJsonObject("schemas").getMap().size(), is(28));
                         assertThat(bridgeResponse.getJsonArray("tags").size(), is(4));
                     });
                     context.completeNow();

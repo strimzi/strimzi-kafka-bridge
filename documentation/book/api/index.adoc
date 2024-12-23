@@ -1432,7 +1432,7 @@ endif::internal-generation[]
 
 ===== Description
 
-Retrieves the OpenAPI v2 specification in JSON format.
+Retrieves the OpenAPI v3 specification in JSON format.
 
 
 // markup not found, no include::{specDir}openapi/GET/spec.adoc[opts=optional]
@@ -1467,7 +1467,7 @@ Retrieves the OpenAPI v2 specification in JSON format.
 
 
 | 200
-| OpenAPI v2 specification in JSON format retrieved successfully.
+| OpenAPI v3 specification in JSON format retrieved successfully.
 |  <<String>>
 
 |===
@@ -1503,7 +1503,7 @@ endif::internal-generation[]
 
 ===== Description
 
-Retrieves the OpenAPI v2 specification in JSON format.
+OpenAPI v2 Swagger not supported.
 
 
 // markup not found, no include::{specDir}openapi/v2/GET/spec.adoc[opts=optional]
@@ -1522,12 +1522,12 @@ Retrieves the OpenAPI v2 specification in JSON format.
 
 
 
-<<String>>
 
+-
 
 ===== Content Type
 
-* application/json
+* application/vnd.kafka.v2+json
 
 ===== Responses
 
@@ -1537,9 +1537,9 @@ Retrieves the OpenAPI v2 specification in JSON format.
 | Code | Message | Datatype
 
 
-| 200
-| OpenAPI v2 specification in JSON format retrieved successfully.
-|  <<String>>
+| 410
+| OpenAPI v2 Swagger not supported.
+|  <<Error>>
 
 |===
 
