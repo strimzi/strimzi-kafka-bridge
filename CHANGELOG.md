@@ -4,6 +4,9 @@
 
 * Dependency updates (JMX exporter 1.1.0)
 * Dropped support for Java 11 and replaced with Java 17.
+* Dropped support for OpenAPI v2 Swagger specification.
+  * The `/openapi/v2` endpoint returns HTTP 410 Gone.
+  * Both the `/openapi` and `/openapi/v3` endpoints return the OpenAPI v3 definition of the bridge REST API.
 
 ## 0.31.1
 
