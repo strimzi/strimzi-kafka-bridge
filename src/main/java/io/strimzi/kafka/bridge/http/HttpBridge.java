@@ -639,18 +639,6 @@ public class HttpBridge extends AbstractVerticle {
         }
     }
 
-    private EmbeddedFormat contentTypeToFormat(String contentType) {
-        switch (contentType) {
-            case BridgeContentType.KAFKA_JSON_BINARY:
-                return EmbeddedFormat.BINARY;
-            case BridgeContentType.KAFKA_JSON_JSON:
-                return EmbeddedFormat.JSON;
-            case BridgeContentType.KAFKA_JSON_TEXT:
-                return EmbeddedFormat.TEXT;
-        }
-        throw new IllegalArgumentException(contentType);
-    }
-
     private boolean isAlive() {
         return this.isReady;
     }

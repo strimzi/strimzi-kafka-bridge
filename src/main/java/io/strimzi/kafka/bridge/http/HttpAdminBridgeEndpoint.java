@@ -150,7 +150,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                         ArrayNode partitionsArray = JsonUtils.createArrayNode();
                         root.put("name", topicName);
                         Collection<ConfigEntry> configEntries = configDescriptions.values().iterator().next().entries();
-                        if (configEntries.size() > 0) {
+                        if (!configEntries.isEmpty()) {
                             ObjectNode configs = JsonUtils.createObjectNode();
                             configEntries.forEach(configEntry -> configs.put(configEntry.name(), configEntry.value()));
                             root.set("configs", configs);
