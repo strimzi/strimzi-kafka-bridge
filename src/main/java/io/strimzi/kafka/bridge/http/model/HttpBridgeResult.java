@@ -9,24 +9,6 @@ package io.strimzi.kafka.bridge.http.model;
  * This class represents a result of an HTTP bridging operation
  *
  * @param <T> the class bringing the actual result as {@link HttpBridgeError} or {@link org.apache.kafka.clients.producer.RecordMetadata}
+ * @param result    actual result
  */
-public class HttpBridgeResult<T> {
-
-    final T result;
-
-    /**
-     * Constructor
-     *
-     * @param result actual result
-     */
-    public HttpBridgeResult(T result) {
-        this.result = result;
-    }
-
-    /**
-     * @return the actual result
-     */
-    public T getResult() {
-        return result;
-    }
-}
+public record HttpBridgeResult<T>(T result) { }

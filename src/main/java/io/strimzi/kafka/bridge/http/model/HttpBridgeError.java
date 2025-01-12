@@ -11,36 +11,11 @@ import io.vertx.core.json.JsonObject;
 
 /**
  * Represents an error related to HTTP bridging
+ *
+ * @param code  code classifying the error itself
+ * @param message   message providing more information about the error
  */
-public class HttpBridgeError {
-
-    private final int code;
-    private final String message;
-
-    /**
-     * Constructor
-     *
-     * @param code code classifying the error itself
-     * @param message message providing more information about the error
-     */
-    public HttpBridgeError(int code, String message) {
-        this.code = code;
-        this.message = message;
-    }
-
-    /**
-     * @return code classifying the error itself
-     */
-    public int getCode() {
-        return code;
-    }
-
-    /**
-     * @return message providing more information about the error
-     */
-    public String getMessage() {
-        return message;
-    }
+public record HttpBridgeError(int code, String message) {
 
     /**
      * @return a JSON representation of the error with code and message
@@ -54,6 +29,7 @@ public class HttpBridgeError {
 
     /**
      * Create an error instance from a JSON representation
+     *
      * @param json JSON representation of the error
      * @return error instance
      */

@@ -58,8 +58,8 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getMessage(), is("The specified consumer instance was not found."));
+                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.message(), is("The specified consumer instance was not found."));
                     });
                     unsubscribe.complete(true);
                 });
@@ -97,8 +97,8 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         assertThat(response.statusCode(), is(HttpResponseStatus.CONFLICT.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(error.getCode(), is(HttpResponseStatus.CONFLICT.code()));
-                        assertThat(error.getMessage(), is("Subscriptions to topics, partitions, and patterns are mutually exclusive."));
+                        assertThat(error.code(), is(HttpResponseStatus.CONFLICT.code()));
+                        assertThat(error.message(), is("Subscriptions to topics, partitions, and patterns are mutually exclusive."));
                     });
 
                     subscribeConflict.complete(true);
@@ -117,8 +117,8 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(error.getCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-                        assertThat(error.getMessage(), is("A list (of Topics type) or a topic_pattern must be specified."));
+                        assertThat(error.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        assertThat(error.message(), is("A list (of Topics type) or a topic_pattern must be specified."));
                     });
 
                     subscribeEmpty.complete(true);
@@ -152,8 +152,8 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getMessage(), is("The specified consumer instance was not found."));
+                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.message(), is("The specified consumer instance was not found."));
                     });
                     subscribe.complete(true);
                 });
@@ -277,8 +277,8 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getMessage(), is("The specified consumer instance was not found."));
+                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.message(), is("The specified consumer instance was not found."));
                     });
                     subscribe.complete(true);
                 });
@@ -377,8 +377,8 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
-                        assertThat(error.getCode(), CoreMatchers.is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
-                        assertThat(error.getMessage(), CoreMatchers.is("Consumer is not subscribed to any topics or assigned any partitions"));
+                        assertThat(error.code(), CoreMatchers.is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
+                        assertThat(error.message(), CoreMatchers.is("Consumer is not subscribed to any topics or assigned any partitions"));
 
                     });
                     consume.complete(true);
@@ -429,8 +429,8 @@ public class ConsumerSubscriptionIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.CONFLICT.code()));
-                        assertThat(error.getCode(), is(HttpResponseStatus.CONFLICT.code()));
-                        assertThat(error.getMessage(), is("Subscriptions to topics, partitions, and patterns are mutually exclusive."));
+                        assertThat(error.code(), is(HttpResponseStatus.CONFLICT.code()));
+                        assertThat(error.message(), is("Subscriptions to topics, partitions, and patterns are mutually exclusive."));
                     });
                     assignCF.complete(true);
                 });

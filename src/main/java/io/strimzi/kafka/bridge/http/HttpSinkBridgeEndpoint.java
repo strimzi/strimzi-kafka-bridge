@@ -197,7 +197,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
                 HttpBridgeError error = handleError(ex);
-                HttpUtils.sendResponse(routingContext, error.getCode(),
+                HttpUtils.sendResponse(routingContext, error.code(),
                         BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
             }
         });
@@ -223,7 +223,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
                 HttpBridgeError error = handleError(ex);
-                HttpUtils.sendResponse(routingContext, error.getCode(),
+                HttpUtils.sendResponse(routingContext, error.code(),
                         BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
             }
         });
@@ -388,7 +388,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             StreamSupport.stream(partitionsList.spliterator(), false)
                     .map(JsonNode.class::cast)
                     .map(json -> new SinkTopicSubscription(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition")))
-                    .collect(Collectors.toList())
+                    .toList()
         );
 
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
@@ -441,7 +441,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                     StreamSupport.stream(topicsList.spliterator(), false)
                             .map(TextNode.class::cast)
                             .map(topic -> new SinkTopicSubscription(topic.asText()))
-                            .collect(Collectors.toList())
+                            .toList()
                 );
                 this.kafkaBridgeConsumer.subscribe(topicSubscriptions);
             } else if (bodyAsJson.has("topic_pattern")) {
@@ -554,7 +554,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             LOGGER.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
         } catch (JsonDecodeException ex) {
             HttpBridgeError error = handleError(ex);
-            HttpUtils.sendResponse(routingContext, error.getCode(),
+            HttpUtils.sendResponse(routingContext, error.code(),
                     BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
             return;
         }
@@ -609,39 +609,30 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
     @SuppressWarnings("unchecked")
     private MessageConverter<K, V, byte[], byte[]> buildMessageConverter() {
-        switch (this.format) {
-            case JSON:
-                return (MessageConverter<K, V, byte[], byte[]>) new HttpJsonMessageConverter();
-            case BINARY:
-                return (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
-            case TEXT:
-                return (MessageConverter<K, V, byte[], byte[]>) new HttpTextMessageConverter();
-        }
-        return null;
+        return switch (this.format) {
+            case JSON -> (MessageConverter<K, V, byte[], byte[]>) new HttpJsonMessageConverter();
+            case BINARY -> (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
+            case TEXT -> (MessageConverter<K, V, byte[], byte[]>) new HttpTextMessageConverter();
+            default -> null;
+        };
     }
 
     private String getContentType() {
-        switch (this.format) {
-            case JSON:
-                return BridgeContentType.KAFKA_JSON_JSON;
-            case BINARY:
-                return BridgeContentType.KAFKA_JSON_BINARY;
-            case TEXT:
-                return BridgeContentType.KAFKA_JSON_TEXT;
-        }
-        throw new IllegalArgumentException();
+        return switch (this.format) {
+            case JSON -> BridgeContentType.KAFKA_JSON_JSON;
+            case BINARY -> BridgeContentType.KAFKA_JSON_BINARY;
+            case TEXT -> BridgeContentType.KAFKA_JSON_TEXT;
+            default -> throw new IllegalArgumentException();
+        };
     }
 
     private boolean checkAcceptedBody(String accept) {
-        switch (accept) {
-            case BridgeContentType.KAFKA_JSON_JSON:
-                return format == EmbeddedFormat.JSON;
-            case BridgeContentType.KAFKA_JSON_BINARY:
-                return format == EmbeddedFormat.BINARY;
-            case BridgeContentType.KAFKA_JSON_TEXT:
-                return format == EmbeddedFormat.TEXT;
-        }
-        return false;
+        return switch (accept) {
+            case BridgeContentType.KAFKA_JSON_JSON -> format == EmbeddedFormat.JSON;
+            case BridgeContentType.KAFKA_JSON_BINARY -> format == EmbeddedFormat.BINARY;
+            case BridgeContentType.KAFKA_JSON_TEXT -> format == EmbeddedFormat.TEXT;
+            default -> false;
+        };
     }
 
     /**

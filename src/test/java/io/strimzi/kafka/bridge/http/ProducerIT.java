@@ -706,7 +706,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
                     HttpResponse<JsonObject> response = ar.result();
                     HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                     assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-                    assertThat(error.getCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                    assertThat(error.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
                 });
                 context.completeNow();
             });
@@ -737,8 +737,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-                        assertThat(error.getCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-                        assertThat(error.getMessage(), is("Because the embedded format is 'text', the value must be a string"));
+                        assertThat(error.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        assertThat(error.message(), is("Because the embedded format is 'text', the value must be a string"));
                     });
                     context.completeNow();
                 });
@@ -770,8 +770,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-                        assertThat(error.getCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-                        assertThat(error.getMessage(), is("Because the embedded format is 'text', the key must be a string"));
+                        assertThat(error.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        assertThat(error.message(), is("Because the embedded format is 'text', the key must be a string"));
                     });
                     context.completeNow();
                 });
@@ -853,10 +853,10 @@ public class ProducerIT extends HttpBridgeITAbstract {
                     assertThat(offsets.size(), is(1));
 
                     HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(0));
-                    assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                    assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
                     // the message got from the Kafka producer (starting from 2.3) is misleading
                     // this JIRA (https://issues.apache.org/jira/browse/KAFKA-8862) raises the issue
-                    assertThat(error.getMessage(), is(
+                    assertThat(error.message(), is(
                             "Topic " + topic + " not present in metadata after " +
                                     config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms."));
                 });
@@ -1036,8 +1036,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
                 HttpResponse<JsonObject> response = ar.result();
                 assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                 HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                assertThat(error.getMessage(), is(message));
+                assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
+                assertThat(error.message(), is(message));
                 context.completeNow();
             });
     }
@@ -1094,8 +1094,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
                         assertThat(metadata.getInteger("partition"), is(partition));
                         assertThat(metadata.getLong("offset"), is(0L));
                         HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(1));
-                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getMessage(), is("Topic " + topic + " not present in metadata after 10000 ms."));
+                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.message(), is("Topic " + topic + " not present in metadata after 10000 ms."));
                     });
                     context.completeNow();
                 });
@@ -1272,8 +1272,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.getMessage(), containsString("Value wrong should be true or false"));
+                        assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
+                        assertThat(error.message(), containsString("Value wrong should be true or false"));
                     });
                     context.completeNow();
                 });
@@ -1305,8 +1305,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.getCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.getMessage(), containsString("Cannot find body processor for content type"));
+                        assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
+                        assertThat(error.message(), containsString("Cannot find body processor for content type"));
                     });
                     context.completeNow();
                 });

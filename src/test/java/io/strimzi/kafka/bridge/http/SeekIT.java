@@ -52,8 +52,8 @@ public class SeekIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getMessage(), is("The specified consumer instance was not found."));
+                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.message(), is("The specified consumer instance was not found."));
                         context.completeNow();
                     });
                 });
@@ -84,8 +84,8 @@ public class SeekIT extends HttpBridgeITAbstract {
                     HttpResponse<JsonObject> response = ar.result();
                     HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                     assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                    assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                    assertThat(error.getMessage(), is("No current assignment for partition " + topic + "-" + notExistingPartition));
+                    assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+                    assertThat(error.message(), is("No current assignment for partition " + topic + "-" + notExistingPartition));
                     context.completeNow();
                 });
             });
@@ -119,8 +119,8 @@ public class SeekIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getMessage(), is("No current assignment for partition " + notExistingTopic + "-" + 0));
+                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.message(), is("No current assignment for partition " + notExistingTopic + "-" + 0));
                         context.completeNow();
                     });
                     consumerInstanceDontHaveTopic.complete(true);
@@ -446,8 +446,8 @@ public class SeekIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getMessage(), is("No current assignment for partition " + notSubscribedTopic + "-0"));
+                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.message(), is("No current assignment for partition " + notSubscribedTopic + "-0"));
                     });
                     seek.complete(true);
                 });
@@ -514,8 +514,8 @@ public class SeekIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.getMessage(), is("No current assignment for partition " + notSubscribedTopic + "-0"));
+                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.message(), is("No current assignment for partition " + notSubscribedTopic + "-0"));
                     });
                     seek.complete(true);
                 });

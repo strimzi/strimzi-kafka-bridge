@@ -191,13 +191,11 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
         for (HttpBridgeResult<?> result : results) {
             ObjectNode offset = null;
-            if (result.getResult() instanceof RecordMetadata) {
-                RecordMetadata metadata = (RecordMetadata) result.getResult();
+            if (result.result() instanceof RecordMetadata metadata) {
                 offset = JsonUtils.createObjectNode()
                         .put("partition", metadata.partition())
                         .put("offset", metadata.offset());
-            } else if (result.getResult() instanceof HttpBridgeError) {
-                HttpBridgeError error = (HttpBridgeError) result.getResult();
+            } else if (result.result() instanceof HttpBridgeError error) {
                 offset = error.toJson();
             }
             offsets.add(offset);
@@ -218,14 +216,14 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
     @SuppressWarnings("unchecked")
     private MessageConverter<K, V, byte[], byte[]> buildMessageConverter(String contentType) {
-        switch (contentType) {
-            case BridgeContentType.KAFKA_JSON_JSON:
-                return (MessageConverter<K, V, byte[], byte[]>) new HttpJsonMessageConverter();
-            case BridgeContentType.KAFKA_JSON_BINARY:
-                return (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
-            case BridgeContentType.KAFKA_JSON_TEXT:
-                return (MessageConverter<K, V, byte[], byte[]>) new HttpTextMessageConverter();
-        }
-        return null;
+        return switch (contentType) {
+            case BridgeContentType.KAFKA_JSON_JSON ->
+                    (MessageConverter<K, V, byte[], byte[]>) new HttpJsonMessageConverter();
+            case BridgeContentType.KAFKA_JSON_BINARY ->
+                    (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
+            case BridgeContentType.KAFKA_JSON_TEXT ->
+                    (MessageConverter<K, V, byte[], byte[]>) new HttpTextMessageConverter();
+            default -> null;
+        };
     }
 }
