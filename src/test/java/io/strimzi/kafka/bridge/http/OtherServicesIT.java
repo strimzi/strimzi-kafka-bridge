@@ -92,8 +92,8 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.GONE.code()));
-                        assertThat(error.getCode(), is(HttpResponseStatus.GONE.code()));
-                        assertThat(error.getMessage(), is("OpenAPI v2 Swagger not supported"));
+                        assertThat(error.code(), is(HttpResponseStatus.GONE.code()));
+                        assertThat(error.message(), is("OpenAPI v2 Swagger not supported"));
                     });
                     context.completeNow();
                 });
@@ -193,7 +193,7 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                     HttpResponse<JsonObject> response = ar.result();
                     HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                     assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                    assertThat(error.getCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                    assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
                 });
                 context.completeNow();
             });

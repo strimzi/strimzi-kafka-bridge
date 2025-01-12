@@ -26,14 +26,11 @@ public enum EmbeddedFormat {
      * @return corresponding enum
      */
     public static EmbeddedFormat from(String value) {
-        switch (value) {
-            case "json":
-                return JSON;
-            case "binary":
-                return BINARY;
-            case "text":
-                return TEXT;
-        }
-        throw new IllegalEmbeddedFormatException("Invalid format type.");
+        return switch (value) {
+            case "json" -> JSON;
+            case "binary" -> BINARY;
+            case "text" -> TEXT;
+            default -> throw new IllegalEmbeddedFormatException("Invalid format type.");
+        };
     }
 }

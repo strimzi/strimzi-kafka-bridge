@@ -329,7 +329,7 @@ public class HttpBridge extends AbstractVerticle {
                 responseStatus.code(),
                 ex.getMessage()
             );
-            HttpUtils.sendResponse(routingContext, error.getCode(),
+            HttpUtils.sendResponse(routingContext, error.code(),
                     BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
         }
     }
@@ -586,20 +586,17 @@ public class HttpBridge extends AbstractVerticle {
             // in case of validation exception, building a meaningful error message
             if (routingContext.failure() != null) {
                 StringBuilder sb = new StringBuilder();
-                if (routingContext.failure().getCause() instanceof ValidationException) {
-                    ValidationException validationException = (ValidationException) routingContext.failure().getCause();
+                if (routingContext.failure().getCause() instanceof ValidationException validationException) {
                     if (validationException.inputScope() != null) {
                         sb.append("Validation error on: ").append(validationException.inputScope()).append(" - ");
                     }
                     sb.append(validationException.getMessage());
-                } else if (routingContext.failure() instanceof ParameterProcessorException) {
-                    ParameterProcessorException parameterException = (ParameterProcessorException) routingContext.failure();
+                } else if (routingContext.failure() instanceof ParameterProcessorException parameterException) {
                     if (parameterException.getParameterName() != null) {
                         sb.append("Parameter error on: ").append(parameterException.getParameterName()).append(" - ");
                     }
                     sb.append(parameterException.getMessage());
-                } else if (routingContext.failure() instanceof BodyProcessorException) {
-                    BodyProcessorException bodyProcessorException = (BodyProcessorException) routingContext.failure();
+                } else if (routingContext.failure() instanceof BodyProcessorException bodyProcessorException) {
                     sb.append(bodyProcessorException.getMessage());
                 }
                 message = sb.toString();

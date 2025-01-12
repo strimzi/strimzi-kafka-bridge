@@ -44,7 +44,7 @@ import java.util.concurrent.CompletionStage;
 public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
     private static final Logger LOGGER = LogManager.getLogger(HttpAdminBridgeEndpoint.class);
 
-    private final HttpBridgeContext httpBridgeContext;
+    private final HttpBridgeContext<?, ?> httpBridgeContext;
     private final KafkaBridgeAdmin kafkaBridgeAdmin;
 
     /**
@@ -53,7 +53,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
      * @param bridgeConfig the bridge configuration
      * @param context the HTTP bridge context
      */
-    public HttpAdminBridgeEndpoint(BridgeConfig bridgeConfig, HttpBridgeContext context) {
+    public HttpAdminBridgeEndpoint(BridgeConfig bridgeConfig, HttpBridgeContext<?, ?> context) {
         super(bridgeConfig);
         this.name = "kafka-bridge-admin";
         this.httpBridgeContext = context;

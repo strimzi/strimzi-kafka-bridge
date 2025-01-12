@@ -111,8 +111,8 @@ public class DisablingConsumerProducerIT {
                     HttpResponse<JsonObject> response = ar.result();
                     assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
                     HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertThat(error.getCode(), CoreMatchers.is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
-                    assertThat(error.getMessage(), CoreMatchers.is("Consumer is disabled in config. To enable consumer update http.consumer.enabled to true"));
+                    assertThat(error.code(), CoreMatchers.is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
+                    assertThat(error.message(), CoreMatchers.is("Consumer is disabled in config. To enable consumer update http.consumer.enabled to true"));
                     tryCreate.complete(true);
                 });
             });
@@ -148,8 +148,8 @@ public class DisablingConsumerProducerIT {
                     HttpResponse<JsonObject> response = ar.result();
                     assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
                     HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertThat(error.getCode(), CoreMatchers.is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
-                    assertThat(error.getMessage(), CoreMatchers.is("Producer is disabled in config. To enable producer update http.producer.enabled to true"));
+                    assertThat(error.code(), CoreMatchers.is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
+                    assertThat(error.message(), CoreMatchers.is("Producer is disabled in config. To enable producer update http.producer.enabled to true"));
                     trySend.complete(true);
                 });
             });
