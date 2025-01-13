@@ -29,6 +29,7 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
@@ -73,6 +74,7 @@ public abstract class HttpBridgeITAbstract {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
             kafkaContainer = new StrimziKafkaContainer()
                 .withKraft()
+                .withKafkaLog(Level.DEBUG)
                 .waitForRunning();
             kafkaContainer.start();
 
