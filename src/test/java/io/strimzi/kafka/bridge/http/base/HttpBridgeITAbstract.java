@@ -72,6 +72,7 @@ public abstract class HttpBridgeITAbstract {
     static {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
             kafkaContainer = new StrimziKafkaContainer()
+                .withKraft()
                 .waitForRunning();
             kafkaContainer.start();
 
@@ -161,7 +162,23 @@ public abstract class HttpBridgeITAbstract {
     void cleanUp() throws InterruptedException, ExecutionException {
         Collection<String> topics = adminClientFacade.listTopic();
         LOGGER.info("Kafka still contains {}", topics);
-        adminClientFacade.deleteTopics(topics);
+
+        if (!topics.isEmpty()) {
+            try {
+                adminClientFacade.deleteTopics(topics);
+            } catch (ExecutionException executionException) {
+                if (executionException.getCause() instanceof org.apache.kafka.common.errors.UnknownTopicOrPartitionException) {
+                    LOGGER.warn("Some topics not found (already deleted). Ignoring ...");
+                } else {
+                    throw executionException;
+                }
+            }
+
+            Collection<String> remainingTopics = adminClientFacade.listTopic();
+            if (!remainingTopics.isEmpty()) {
+                LOGGER.error("Topics still present after cleanup: {}", remainingTopics);
+            }
+        }
     }
 
     protected String generateRandomConsumerGroupName() {

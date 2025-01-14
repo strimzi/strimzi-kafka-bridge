@@ -95,15 +95,20 @@ public class AdminClientFacade {
     }
 
     /**
-     * Method hasKafkaZeroTopics used for the race condition between in-memory kafka cluster and also encapsulate the get
+     * Wait until Kafka actually reports zero topics, or until we time out.
      */
     public boolean hasKafkaZeroTopics() throws InterruptedException, ExecutionException {
-        Set<String> topicSet = adminClient.listTopics().names().get();
-        if (!topicSet.isEmpty()) {
-            LOGGER.error("Kafka should contain 0 topics but contains {}", topicSet.toString());
-            return false;
+        final int maxAttempts = 5;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            Set<String> topicSet = adminClient.listTopics().names().get();
+            if (topicSet.isEmpty()) {
+                return true;
+            }
+            LOGGER.warn("Topics still present on attempt {}: {}", attempt, topicSet);
+            Thread.sleep(1000);
         }
-        return true;
+        LOGGER.error("Kafka did not report zero topics after {} attempts", maxAttempts);
+        return false;
     }
 
     public void close() {
