@@ -30,11 +30,9 @@ public class ConsumerInstanceId {
             return true;
         }
 
-        if (!(obj instanceof ConsumerInstanceId)) {
+        if (!(obj instanceof ConsumerInstanceId other)) {
             return false;
         }
-
-        ConsumerInstanceId other = (ConsumerInstanceId) obj;
 
         if (groupId != null && !groupId.equals(other.groupId)) {
             return false;
