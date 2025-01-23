@@ -19,7 +19,7 @@ mkdir -p /tmp/strimzi
 
 # Generate and print the bridge config file
 echo "Kafka Bridge configuration:"
-"${MYPATH}"/kafka_bridge_config_generator.sh | tee /tmp/kafka-bridge.properties | sed 's/sasl.jaas.config=.*/sasl.jaas.config=[hidden]/g' | sed 's/password=.*/password=[hidden]/g'
+tee /tmp/kafka-bridge.properties < "$STRIMZI_HOME/custom-config/application.properties" | sed -e 's/sasl.jaas.config=.*/sasl.jaas.config=[hidden]/g' -e 's/password=.*/password=[hidden]/g'
 echo ""
 
 # Configure logging for Kubernetes deployments

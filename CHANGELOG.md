@@ -7,6 +7,8 @@
 * Dropped support for OpenAPI v2 Swagger specification.
   * The `/openapi/v2` endpoint returns HTTP 410 Gone.
   * Both the `/openapi` and `/openapi/v3` endpoints return the OpenAPI v3 definition of the bridge REST API.
+* Removed script to build bridge configuration within the container. 
+  It is going to be set up by the Strimzi operator within a ConfigMap and mounted as volume on the bridge pod.
 
 ## 0.31.1
 
