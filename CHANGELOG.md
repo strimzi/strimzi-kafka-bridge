@@ -2,7 +2,7 @@
 
 ## 0.32.0
 
-* Dependency updates (JMX exporter 1.1.0)
+* Dependency updates (Vert.x 4.5.12, Netty 4.1.117.Final, JMX exporter 1.1.0)
 * Dropped support for Java 11 and replaced with Java 17.
 * Dropped support for OpenAPI v2 Swagger specification.
   * The `/openapi/v2` endpoint returns HTTP 410 Gone.
