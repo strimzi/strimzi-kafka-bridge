@@ -25,9 +25,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class JmxCollectorRegistryTest {
+class JmxMetricsCollectorTest {
     @Test
-    void shouldReturnFormattedMetrics() throws IOException {
+    void shouldReturnMetrics() throws IOException {
         JmxCollector mockJmxCollector = mock(JmxCollector.class);
             
         PrometheusRegistry mockPromRegistry = mock(PrometheusRegistry.class);
@@ -41,9 +41,9 @@ class JmxCollectorRegistryTest {
             return null;
         }).when(mockPromFormatter).write(any(), any());
 
-        JmxCollectorRegistry collectorRegistry = new JmxCollectorRegistry(mockJmxCollector, mockPromRegistry, mockPromFormatter);
+        MetricsCollector metricsCollector = new JmxMetricsCollector(mockJmxCollector, mockPromRegistry, mockPromFormatter);
         
-        String result = collectorRegistry.scrape();
+        String result = metricsCollector.scrape();
         assertThat(result, containsString("test_metric"));
         assertThat(result.getBytes(StandardCharsets.UTF_8).length, is(result.length()));
     }
@@ -60,14 +60,14 @@ class JmxCollectorRegistryTest {
         doThrow(new IOException("Test exception"))
             .when(mockPromFormatter).write(any(ByteArrayOutputStream.class), Mockito.eq(mockSnapshots));
 
-        JmxCollectorRegistry collectorRegistry = new JmxCollectorRegistry(mockJmxCollector, mockPromRegistry, mockPromFormatter);
+        MetricsCollector metricsCollector = new JmxMetricsCollector(mockJmxCollector, mockPromRegistry, mockPromFormatter);
         
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> collectorRegistry.scrape());
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> metricsCollector.doScrape());
         assertThat(exception.getMessage(), containsString("Test exception"));
     }
 
     @Test
     void shouldThrowWithInvalidYaml() {
-        assertThrows(ClassCastException.class, () -> new JmxCollectorRegistry("invalid"));
+        assertThrows(ClassCastException.class, () -> new JmxMetricsCollector("invalid"));
     }
 }

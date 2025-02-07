@@ -10,8 +10,6 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.facades.AdminClientFacade;
-import io.strimzi.kafka.bridge.metrics.JmxCollectorRegistry;
-import io.strimzi.kafka.bridge.metrics.MetricsReporter;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.strimzi.test.container.StrimziKafkaContainer;
 import io.vertx.core.Vertx;
@@ -57,7 +55,6 @@ public class HttpCorsIT {
 
     static BridgeConfig bridgeConfig;
     static StrimziKafkaContainer kafkaContainer;
-    static JmxCollectorRegistry jmxCollectorRegistry = null;
     static AdminClientFacade adminClientFacade;
 
     static {
@@ -296,7 +293,7 @@ public class HttpCorsIT {
             config.put(HttpConfig.HTTP_CORS_ALLOWED_METHODS, methodsAllowed != null ? methodsAllowed : "GET,POST,PUT,DELETE,OPTIONS,PATCH");
 
             bridgeConfig = BridgeConfig.fromMap(config);
-            httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry));
+            httpBridge = new HttpBridge(bridgeConfig);
         }
     }
 }

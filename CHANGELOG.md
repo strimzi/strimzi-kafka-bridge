@@ -10,7 +10,7 @@
 * Removed script to build bridge configuration within the container. 
   It is going to be set up by the Strimzi operator within a ConfigMap and mounted as volume on the bridge pod.
 * Added support for [Strimzi Metrics Reporter](https://github.com/strimzi/metrics-reporter).
-  This is a Kafka plugin that directly exposes metrics in Prometheus format without using JMX, and can be enabled by setting `bridge.metrics=strimziMetricsReporter`.
+  Set `bridge.metrics=strimziMetricsReporter` to enable it.
 * Added support for custom Prometheus JMX Exporter configuration.
   Set `bridge.metrics.exporter.config.path=/path/to/my-exporter-config.yml` to use your custom config.
 

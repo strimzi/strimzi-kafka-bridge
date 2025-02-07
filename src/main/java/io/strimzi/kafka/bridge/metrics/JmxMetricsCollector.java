@@ -15,9 +15,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Allow to collect JMX metrics exposing them in the Prometheus format.
+ * Collect and scrape JMX metrics in Prometheus format.
  */
-public class JmxCollectorRegistry {
+public class JmxMetricsCollector extends MetricsCollector {
     private final PrometheusRegistry registry;
     private final PrometheusTextFormatWriter textFormatter;
 
@@ -27,8 +27,8 @@ public class JmxCollectorRegistry {
      * @param yamlConfig YAML configuration string with metrics filtering rules
      * @throws MalformedObjectNameException Throws MalformedObjectNameException
      */
-    public JmxCollectorRegistry(String yamlConfig) throws MalformedObjectNameException {
-        // note that Prometheus default registry is a singleton, so it is shared with JmxCollector
+    public JmxMetricsCollector(String yamlConfig) throws MalformedObjectNameException {
+        // Prometheus default registry is a singleton, so it is shared with JmxCollector
         this(new JmxCollector(yamlConfig), PrometheusRegistry.defaultRegistry, new PrometheusTextFormatWriter(true));
     }
 
@@ -39,19 +39,17 @@ public class JmxCollectorRegistry {
      * @param registry Prometheus collector registry
      * @param textFormatter Prometheus text formatter
      */
-    /* test */ JmxCollectorRegistry(JmxCollector jmxCollector,
-                                    PrometheusRegistry registry,
-                                    PrometheusTextFormatWriter textFormatter) {
+    /* test */ JmxMetricsCollector(JmxCollector jmxCollector,
+                                   PrometheusRegistry registry,
+                                   PrometheusTextFormatWriter textFormatter) {
+        super();
         jmxCollector.register();
         this.registry = registry;
         this.textFormatter = textFormatter;
     }
 
-    /**
-     * @return Content that should be included in the response body for 
-     * an endpoint designated for Prometheus to scrape from.
-     */
-    public String scrape() {
+    @Override
+    public String doScrape() {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         try {
             textFormatter.write(stream, registry.scrape());

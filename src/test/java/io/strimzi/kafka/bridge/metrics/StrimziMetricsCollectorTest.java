@@ -24,9 +24,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class StrimziCollectorRegistryTest {
+class StrimziMetricsCollectorTest {
     @Test
-    void shouldReturnFormattedMetrics() throws IOException {
+    void shouldReturnMetrics() throws IOException {
         PrometheusRegistry mockPromRegistry = mock(PrometheusRegistry.class);
         MetricSnapshots mockSnapshots = mock(MetricSnapshots.class);
         when(mockPromRegistry.scrape()).thenReturn(mockSnapshots);
@@ -38,9 +38,9 @@ class StrimziCollectorRegistryTest {
             return null;
         }).when(mockPromFormatter).write(any(), any());
 
-        StrimziCollectorRegistry collectorRegistry = new StrimziCollectorRegistry(mockPromRegistry, mockPromFormatter);
+        MetricsCollector metricsCollector = new StrimziMetricsCollector(mockPromRegistry, mockPromFormatter);
         
-        String result = collectorRegistry.scrape();
+        String result = metricsCollector.scrape();
         assertThat(result, containsString("test_metric"));
         assertThat(result.getBytes(StandardCharsets.UTF_8).length, is(result.length()));
     }
@@ -55,9 +55,9 @@ class StrimziCollectorRegistryTest {
         doThrow(new IOException("Test exception"))
             .when(mockPromFormatter).write(any(ByteArrayOutputStream.class), Mockito.eq(mockSnapshots));
 
-        StrimziCollectorRegistry collectorRegistry = new StrimziCollectorRegistry(mockPromRegistry, mockPromFormatter);
+        MetricsCollector metricsCollector = new StrimziMetricsCollector(mockPromRegistry, mockPromFormatter);
         
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> collectorRegistry.scrape());
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> metricsCollector.doScrape());
         assertThat(exception.getMessage(), containsString("Test exception"));
     }
 }

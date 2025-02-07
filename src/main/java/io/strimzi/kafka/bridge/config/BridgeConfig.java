@@ -31,10 +31,14 @@ public class BridgeConfig extends AbstractConfig {
     public static final String METRICS_TYPE = BRIDGE_CONFIG_PREFIX + "metrics";
 
     /** JMX Exporter configuration file path */
-    public static final String JMX_EXPORTER_CONFIG_PATH = METRICS_TYPE + ".exporter.config.path";
+    private static final String JMX_EXPORTER_CONFIG_PATH = METRICS_TYPE + ".exporter.config.path";
     
     /** Tracing system to be used in the bridge */
-    public static final String TRACING_TYPE = BRIDGE_CONFIG_PREFIX + "tracing";
+    private static final String TRACING_TYPE = BRIDGE_CONFIG_PREFIX + "tracing";
+    
+    /** Default Strimzi Metrics Reporter allow list. */
+    /* test */ static final String DEFAULT_STRIMZI_METRICS_REPORTER_ALLOW_LIST = "kafka_consumer_consumer_metrics.*, " +
+        "kafka_producer_kafka_metrics_count_count, kafka_producer_producer_metrics.*";
 
     private final KafkaConfig kafkaConfig;
     private final HttpConfig httpConfig;
@@ -84,21 +88,15 @@ public class BridgeConfig extends AbstractConfig {
     }
 
     private static void validateAndApplyDefaults(Map<String, Object> map) {
-        String metricsTypeValue = (String) map.get(METRICS_TYPE);
-        if (metricsTypeValue != null) {
-            // validate metrics type
-            if (!metricsTypeValue.equals(MetricsType.JMX_EXPORTER.toString())
-                    && !metricsTypeValue.equals(MetricsType.STRIMZI_REPORTER.toString())) {
-                throw new IllegalArgumentException(
-                    String.format("Invalid %s configuration, choose one of %s and %s", 
-                        METRICS_TYPE, MetricsType.JMX_EXPORTER, MetricsType.STRIMZI_REPORTER)
-                );
-            }
-            // apply default Strimzi Metrics Reporter configurations if not present
-            if (metricsTypeValue.equals(MetricsType.STRIMZI_REPORTER.toString())) {
+        if (map.get(METRICS_TYPE) != null) {
+            // get and validate metrics type
+            MetricsType metricsType = MetricsType.fromString((String) map.get(METRICS_TYPE));
+            // apply default Strimzi Metrics Reporter configuration if not present
+            if (metricsType == MetricsType.STRIMZI_REPORTER) {
+                LOGGER.info("Using default metrics configuration");
                 map.putIfAbsent("kafka.metric.reporters", "io.strimzi.kafka.metrics.KafkaPrometheusMetricsReporter");
                 map.putIfAbsent("kafka.prometheus.metrics.reporter.listener.enable", "false");
-                map.putIfAbsent("kafka.prometheus.metrics.reporter.allowlist", ".*");
+                map.putIfAbsent("kafka.prometheus.metrics.reporter.allowlist", DEFAULT_STRIMZI_METRICS_REPORTER_ALLOW_LIST);
             }
         }
     }
@@ -124,20 +122,21 @@ public class BridgeConfig extends AbstractConfig {
     }
 
     /**
-     * @return the metric system to be used in the bridge
+     * @return the metric type to be used in the bridge
      */
-    public String getMetrics() {
+    public MetricsType getMetricsType() {
         final String envVarValue = System.getenv("KAFKA_BRIDGE_METRICS_ENABLED");
         if (envVarValue != null) {
             LOGGER.warn("KAFKA_BRIDGE_METRICS_ENABLED is deprecated, use bridge.metrics configuration");
         }
-        return (String) Optional.ofNullable(config.get(BridgeConfig.METRICS_TYPE))
-            .orElse(Boolean.parseBoolean(envVarValue)
-                ? MetricsType.JMX_EXPORTER.toString() : null);
+        
+        return Optional.ofNullable((String) config.get(BridgeConfig.METRICS_TYPE))
+            .map(MetricsType::fromString)
+            .orElseGet(() -> Boolean.parseBoolean(envVarValue) ? MetricsType.JMX_EXPORTER : null);
     }
 
     /**
-     * @return the JMX Exporter configuration file path
+     * @return the Prometheus JMX Exporter configuration file path
      */
     public Path getJmxExporterConfigPath() {
         if (config.get(BridgeConfig.JMX_EXPORTER_CONFIG_PATH) == null) {

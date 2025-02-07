@@ -2,16 +2,11 @@
  * Copyright Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
-
 package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.ConfigRetriever;
 import io.strimzi.kafka.bridge.http.HttpBridge;
-import io.strimzi.kafka.bridge.metrics.JmxCollectorRegistry;
-import io.strimzi.kafka.bridge.metrics.MetricsReporter;
-import io.strimzi.kafka.bridge.metrics.MetricsType;
-import io.strimzi.kafka.bridge.metrics.StrimziCollectorRegistry;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -30,18 +25,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.management.MalformedObjectNameException;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Apache Kafka bridge main application class
@@ -85,28 +73,25 @@ public class Application {
         Promise<HttpBridge> httpPromise = Promise.promise();
 
         Vertx vertx = createVertxInstance(bridgeConfig);
-        MetricsReporter metricsReporter = getMetricsReporter(bridgeConfig);
-        HttpBridge httpBridge = new HttpBridge(bridgeConfig, metricsReporter);
+        HttpBridge httpBridge = new HttpBridge(bridgeConfig);
+
         vertx.deployVerticle(httpBridge)
-            .onComplete(done -> {
-                if (done.succeeded()) {
-                    LOGGER.info("HTTP verticle instance deployed [{}]", done.result());
-                    if (metricsReporter != null) {
-                        LOGGER.info("Metrics of type '{}' enabled and exposed on /metrics endpoint", bridgeConfig.getMetrics());
+                .onComplete(done -> {
+                    if (done.succeeded()) {
+                        LOGGER.info("HTTP verticle instance deployed [{}]", done.result());
+                        httpPromise.complete(httpBridge);
+                    } else {
+                        LOGGER.error("Failed to deploy HTTP verticle instance", done.cause());
+                        httpPromise.fail(done.cause());
                     }
-                    httpPromise.complete(httpBridge);
-                } else {
-                    LOGGER.error("Failed to deploy HTTP verticle instance", done.cause());
-                    httpPromise.fail(done.cause());
-                }
-            });
+                });
 
         return httpPromise.future();
     }
 
     private static Vertx createVertxInstance(BridgeConfig bridgeConfig) {
         VertxOptions vertxOptions = new VertxOptions();
-        if (bridgeConfig.getMetrics() != null) {
+        if (bridgeConfig.getMetricsType() != null) {
             vertxOptions.setMetricsOptions(metricsOptions()); // enable Vertx metrics
         }
         Vertx vertx = Vertx.vertx(vertxOptions);
@@ -119,59 +104,15 @@ public class Application {
      * @return instance of the MicrometerMetricsOptions on Vert.x
      */
     private static MicrometerMetricsOptions metricsOptions() {
-        Set<String> set = new HashSet<>();
-        set.add(MetricsDomain.NAMED_POOLS.name());
-        set.add(MetricsDomain.VERTICLES.name());
         return new MicrometerMetricsOptions()
             .setPrometheusOptions(new VertxPrometheusOptions().setEnabled(true))
             // define the labels on the HTTP server related metrics
             .setLabels(EnumSet.of(Label.HTTP_PATH, Label.HTTP_METHOD, Label.HTTP_CODE))
             // disable metrics about pool and verticles
-            .setDisabledMetricsCategories(set)
-            .setJvmMetricsEnabled(true)
+            .setDisabledMetricsCategories(
+                Set.of(MetricsDomain.NAMED_POOLS.name(), MetricsDomain.VERTICLES.name())
+            ).setJvmMetricsEnabled(true)
             .setEnabled(true);
-    }
-
-    private static MetricsReporter getMetricsReporter(BridgeConfig bridgeConfig) 
-            throws MalformedObjectNameException, IOException {
-        if (bridgeConfig.getMetrics() != null) {
-            if (bridgeConfig.getMetrics().equals(MetricsType.JMX_EXPORTER.toString())) {
-                return new MetricsReporter(getJmxCollectorRegistry(bridgeConfig));
-            } else if (bridgeConfig.getMetrics().equals(MetricsType.STRIMZI_REPORTER.toString())) {
-                return new MetricsReporter(new StrimziCollectorRegistry());
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Return a JmxCollectorRegistry instance with the YAML configuration filters.
-     * This is loaded from a custom config file if present, or from the default configuration file.
-     *
-     * @return JmxCollectorRegistry instance
-     * @throws MalformedObjectNameException
-     * @throws IOException
-     */
-    private static JmxCollectorRegistry getJmxCollectorRegistry(BridgeConfig bridgeConfig) throws MalformedObjectNameException, IOException {
-        if (bridgeConfig.getJmxExporterConfigPath() != null && Files.exists(bridgeConfig.getJmxExporterConfigPath())) {
-            // read custom configuration file
-            LOGGER.info("Loading custom JMX Exporter configuration from {}", bridgeConfig.getJmxExporterConfigPath());
-            String yaml = Files.readString(bridgeConfig.getJmxExporterConfigPath(), StandardCharsets.UTF_8);
-            return new JmxCollectorRegistry(yaml);
-        } else {
-            // fallback to default configuration
-            LOGGER.info("Loading default JMX Exporter configuration");
-            InputStream is = Application.class.getClassLoader().getResourceAsStream("jmx_metrics_config.yaml");
-            if (is == null) {
-                return null;
-            }
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-                String yaml = reader
-                    .lines()
-                    .collect(Collectors.joining("\n"));
-                return new JmxCollectorRegistry(yaml);
-            }
-        }
     }
 
     /**

@@ -1399,6 +1399,11 @@ Retrieves the bridge metrics in Prometheus format.
 | Metrics in Prometheus format retrieved successfully.
 |  <<String>>
 
+
+| 404
+| The metrics endpoint is not enabled.
+|  <<>>
+
 |===
 
 ===== Samples

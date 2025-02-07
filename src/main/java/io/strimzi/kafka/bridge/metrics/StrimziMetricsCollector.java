@@ -13,17 +13,17 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Allow to collect Strimzi Reporter metrics exposing them in the Prometheus format.
+ * Collect and scrape Strimzi Reporter metrics in Prometheus format.
  */
-public class StrimziCollectorRegistry {
+public class StrimziMetricsCollector extends MetricsCollector {
     private final PrometheusRegistry registry;
     private final PrometheusTextFormatWriter textFormatter;
 
     /**
      * Constructor.
      */
-    public StrimziCollectorRegistry() {
-        // note that Prometheus default registry is a singleton, so it is shared with Strimzi Metrics Reporter
+    public StrimziMetricsCollector() {
+        // Prometheus default registry is a singleton, so it is shared with Strimzi Metrics Reporter
         this(PrometheusRegistry.defaultRegistry, new PrometheusTextFormatWriter(true));
     }
 
@@ -33,17 +33,15 @@ public class StrimziCollectorRegistry {
      * @param registry Prometheus collector registry
      * @param textFormatter Prometheus text formatter
      */
-    /* test */ StrimziCollectorRegistry(PrometheusRegistry registry,
-                                        PrometheusTextFormatWriter textFormatter) {
+    /* test */ StrimziMetricsCollector(PrometheusRegistry registry,
+                                       PrometheusTextFormatWriter textFormatter) {
+        super();
         this.registry = registry;
         this.textFormatter = textFormatter;
     }
 
-    /**
-     * @return Content that should be included in the response body for 
-     * an endpoint designated for Prometheus to scrape from.
-     */
-    public String scrape() {
+    @Override
+    public String doScrape() {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         try {
             textFormatter.write(stream, registry.scrape());

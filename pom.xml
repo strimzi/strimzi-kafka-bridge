@@ -312,6 +312,9 @@
 			<artifactId>prometheus-metrics-model</artifactId>
 			<version>${prometheus-client.version}</version>
 		</dependency>
+		<!-- We include explicitly prometheus-metrics-instrumentation-jvm 
+			and prometheus-metrics-exporter-httpserver to force the use of 
+			Bridge version over metrics-reporter version. -->
 		<dependency>
 			<groupId>io.prometheus</groupId>
 			<artifactId>prometheus-metrics-instrumentation-jvm</artifactId>

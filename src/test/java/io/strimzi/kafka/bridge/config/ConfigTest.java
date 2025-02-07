@@ -99,7 +99,7 @@ public class ConfigTest {
         );
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
-        assertThat(bridgeConfig.getMetrics(), is(MetricsType.JMX_EXPORTER.toString()));
+        assertThat(bridgeConfig.getMetricsType(), is(MetricsType.JMX_EXPORTER));
         assertThat(bridgeConfig.getJmxExporterConfigPath(), is(Path.of(configFilePah)));
     }
 
@@ -114,10 +114,10 @@ public class ConfigTest {
         ));
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
-        assertThat(bridgeConfig.getMetrics(), is(MetricsType.STRIMZI_REPORTER.toString()));
+        assertThat(bridgeConfig.getMetricsType(), is(MetricsType.STRIMZI_REPORTER));
         assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("metric.reporters=io.strimzi.kafka.metrics.KafkaPrometheusMetricsReporter"));
         assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("prometheus.metrics.reporter.listener.enable=false"));
-        assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("prometheus.metrics.reporter.allowlist=.*"));
+        assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("prometheus.metrics.reporter.allowlist=" + BridgeConfig.DEFAULT_STRIMZI_METRICS_REPORTER_ALLOW_LIST));
     }
 
     @Test
@@ -133,7 +133,7 @@ public class ConfigTest {
         ));
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
-        assertThat(bridgeConfig.getMetrics(), is(MetricsType.STRIMZI_REPORTER.toString()));
+        assertThat(bridgeConfig.getMetricsType(), is(MetricsType.STRIMZI_REPORTER));
         assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("metric.reporters=my.domain.CustomMetricReporter,io.strimzi.kafka.metrics.KafkaPrometheusMetricsReporter"));
         assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("prometheus.metrics.reporter.listener.enable=false"));
         assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("prometheus.metrics.reporter.allowlist=kafka_log.*,kafka_network.*"));
@@ -150,6 +150,6 @@ public class ConfigTest {
         );
 
         Exception e = assertThrows(IllegalArgumentException.class, () -> BridgeConfig.fromMap(map));
-        assertThat(e.getMessage(), is("Invalid bridge.metrics configuration, choose one of jmxPrometheusExporter and strimziMetricsReporter"));
+        assertThat(e.getMessage(), is("Metrics type not found: invalidReporterType"));
     }
 }

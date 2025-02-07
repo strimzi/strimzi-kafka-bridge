@@ -2,7 +2,7 @@
 = Configuring Strimzi Metrics Reporter metrics
 
 [role="_abstract"]
-Enable metrics for the Kafka Bridge by setting the `bridge.metrics` configuration.
+Enable metrics with Strimzi Metrics Reporter by setting the `bridge.metrics` option to `strimziMetricsReporter`.
 
 .Prerequisites
 
@@ -10,7 +10,7 @@ Enable metrics for the Kafka Bridge by setting the `bridge.metrics` configuratio
 
 .Procedure
 
-. Set the `bridge.metrics` configuration to `strimziMetricsReporter` and related configuration.
+. Set the `bridge.metrics` configuration to `strimziMetricsReporter`.
 +
 .Configuration for enabling metrics
 
@@ -19,18 +19,24 @@ Enable metrics for the Kafka Bridge by setting the `bridge.metrics` configuratio
 bridge.metrics=strimziMetricsReporter
 ----
 +
-Optionally, you can set a comma-separated list of regexes used to filter exposed metrics using the `kafka.prometheus.metrics.reporter.allowlist` property.
-If not set, all available metrics will be exposed.
-+
-You can add any plugin configuration to the Bridge properties file using the `kafka.` prefix.
+Optionally, you can configure a comma-separated list of regexes to filter exposed metrics using the `kafka.prometheus.metrics.reporter.allowlist` property.
+If not configured, a default set of metrics will be exposed.
+
+When needed, it is possible to configure the allowlist per client type.
+For example, set `kafka.admin.prometheus.metrics.reporter.allowlist=` to exclude all admin client metrics.
+
+In case the same property is set with multiple prefixes, the most specific prefix wins.
+For example, `kafka.producer.prometheus.metrics.reporter.allowlist` wins over `kafka.prometheus.metrics.reporter.allowlist`. 
+
+You can add any plugin configuration to the Bridge properties file using `kafka.`, `kafka.admin.`, `kafka.producer.`, and `kafka.consumer.` prefixes.
 See the https://github.com/strimzi/metrics-reporter[Strimzi Metrics Reporter] documentation for more details.
 
-. Run the Kafka Bridge script to enable metrics.
+. Run the Kafka Bridge run script.
 +
-.Running the Kafka Bridge to enable metrics
+.Running the Kafka Bridge
 [source,shell]
 ----
 ./bin/kafka_bridge_run.sh --config-file=<path>/application.properties
 ----
 +
-With metrics enabled, you can use `GET /metrics` with the `/metrics` endpoint to retrieve Kafka Bridge metrics in Prometheus format.
+With metrics enabled, you can scrape metrics in the Prometheus format from the `/metrics` endpoint of the Kafka Bridge.

@@ -8,17 +8,14 @@ package io.strimzi.kafka.bridge.metrics;
  * Metrics type.
  */
 public enum MetricsType {
-    /** JMX Prometheus Exporter.  */
+    /** Prometheus JMX Exporter. */
     JMX_EXPORTER("jmxPrometheusExporter"),
     
     /** Strimzi Metrics Reporter. */
     STRIMZI_REPORTER("strimziMetricsReporter");
 
     private final String text;
-
-    /**
-     * @param text
-     */
+    
     MetricsType(final String text) {
         this.text = text;
     }
@@ -26,5 +23,18 @@ public enum MetricsType {
     @Override
     public String toString() {
         return text;
+    }
+
+    /**
+     * @param text Text.
+     * @return Get type from text.
+     */
+    public static MetricsType fromString(String text) {
+        for (MetricsType t : MetricsType.values()) {
+            if (t.text.equalsIgnoreCase(text)) {
+                return t;
+            }
+        }
+        throw new IllegalArgumentException("Metrics type not found: " + text);
     }
 }
