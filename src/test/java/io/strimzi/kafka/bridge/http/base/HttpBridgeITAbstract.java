@@ -131,7 +131,7 @@ public abstract class HttpBridgeITAbstract {
             httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
 
             LOGGER.info("Deploying in-memory bridge");
-            vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
+            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> context.completeNow()));
         } else {
             context.completeNow();
             // else we create an external bridge from the OS invoked by `.jar`
@@ -146,7 +146,7 @@ public abstract class HttpBridgeITAbstract {
     @AfterAll
     static void afterAll(VertxTestContext context) {
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
-            vertx.close(context.succeeding(arg -> context.completeNow()));
+            vertx.close().onComplete(context.succeeding(arg -> context.completeNow()));
         } else {
             // if we are running an external bridge
             context.completeNow();

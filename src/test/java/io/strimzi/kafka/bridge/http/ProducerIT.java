@@ -73,7 +73,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyOK(context));
+            .sendJsonObject(root).onComplete(verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
@@ -123,7 +123,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root, ar ->
+                .sendJsonObject(root)
+                .onComplete(ar ->
                         context.verify(() -> {
                             assertThat(ar.succeeded(), is(true));
                             HttpResponse<JsonObject> response = ar.result();
@@ -173,7 +174,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyOK(context));
+            .sendJsonObject(root).onComplete(verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
@@ -194,7 +195,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
             context.completeNow();
         });
 
-        consumer.subscribe(topic, done -> {
+        consumer.subscribe(topic).onComplete(done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
             }
@@ -223,7 +224,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyOK(context));
+            .sendJsonObject(root).onComplete(verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
@@ -245,7 +246,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
             context.completeNow();
         });
 
-        consumer.subscribe(topic, done -> {
+        consumer.subscribe(topic).onComplete(done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
             }
@@ -274,7 +275,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyOK(context));
+            .sendJsonObject(root).onComplete(verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
@@ -295,7 +296,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
             context.completeNow();
         });
 
-        consumer.subscribe(topic, done -> {
+        consumer.subscribe(topic).onComplete(done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
             }
@@ -323,7 +324,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyOK(context));
+            .sendJsonObject(root).onComplete(verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
@@ -344,7 +345,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
             context.completeNow();
         });
 
-        consumer.subscribe(topic, done -> {
+        consumer.subscribe(topic).onComplete(done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
             }
@@ -371,7 +372,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyOK(context));
+            .sendJsonObject(root).onComplete(verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
@@ -392,7 +393,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
             context.completeNow();
         });
 
-        consumer.subscribe(topic, done -> {
+        consumer.subscribe(topic).onComplete(done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
             }
@@ -418,8 +419,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
         root.put("records", records);
 
         producerService()
-            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_BINARY)
-                .sendJsonObject(root, verifyOK(context));
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_BINARY)
+                .sendJsonObject(root).onComplete(verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
@@ -441,7 +442,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
             context.completeNow();
         });
 
-        consumer.subscribe(topic, done -> {
+        consumer.subscribe(topic).onComplete(done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
             }
@@ -466,7 +467,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_TEXT)
-                .sendJsonObject(root, verifyOK(context));
+                .sendJsonObject(root).onComplete(verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
@@ -487,7 +488,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
             context.completeNow();
         });
 
-        consumer.subscribe(topic, done -> {
+        consumer.subscribe(topic).onComplete(done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
             }
@@ -524,8 +525,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
         future.get();
 
         producerService()
-            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyOK(context));
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root).onComplete(verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
@@ -552,7 +553,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
             context.completeNow();
         });
 
-        consumer.subscribe(topic, done -> {
+        consumer.subscribe(topic).onComplete(done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
             }
@@ -586,14 +587,14 @@ public class ProducerIT extends HttpBridgeITAbstract {
                 root.put("records", records);
 
                 producerService()
-                    .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                    .sendJsonObject(root, ar -> { });
+                        .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                        .sendJsonObject(root).onComplete(ar -> { });
 
                 this.count++;
             } else {
                 vertx.cancelTimer(timerId);
 
-                consumer.subscribe(topic, done -> {
+                consumer.subscribe(topic).onComplete(done -> {
                     if (!done.succeeded()) {
                         context.failNow(done.cause());
                     }
@@ -640,22 +641,23 @@ public class ProducerIT extends HttpBridgeITAbstract {
         future.get();
 
         producerService()
-            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, ar -> {
-                context.verify(() -> assertThat(ar.succeeded(), is(true)));
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root)
+                .onComplete(ar -> {
+                    context.verify(() -> assertThat(ar.succeeded(), is(true)));
 
-                HttpResponse<JsonObject> response = ar.result();
-                assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                JsonObject bridgeResponse = response.body();
+                    HttpResponse<JsonObject> response = ar.result();
+                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                    JsonObject bridgeResponse = response.body();
 
-                JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                assertThat(offsets.size(), is(numMessages));
-                for (int i = 0; i < numMessages; i++) {
-                    JsonObject metadata = offsets.getJsonObject(i);
-                    assertThat(metadata.getInteger("partition"), is(0));
-                    assertThat(metadata.getLong("offset"), notNullValue());
-                }
-            });
+                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                    assertThat(offsets.size(), is(numMessages));
+                    for (int i = 0; i < numMessages; i++) {
+                        JsonObject metadata = offsets.getJsonObject(i);
+                        assertThat(metadata.getInteger("partition"), is(0));
+                        assertThat(metadata.getLong("offset"), notNullValue());
+                    }
+                });
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
@@ -681,7 +683,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
             }
         });
 
-        consumer.subscribe(topic, done -> {
+        consumer.subscribe(topic).onComplete(done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
             }
@@ -699,17 +701,18 @@ public class ProducerIT extends HttpBridgeITAbstract {
         future.get();
 
         producerService()
-            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonObject> response = ar.result();
-                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-                    assertThat(error.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root)
+                .onComplete(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                        assertThat(error.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+                    });
+                    context.completeNow();
                 });
-                context.completeNow();
-            });
     }
 
     @Test
@@ -731,7 +734,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
         // produce and check the status code
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_TEXT)
-                .sendJsonObject(root, ar -> {
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -764,7 +768,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
         // produce and check the status code
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_TEXT)
-                .sendJsonObject(root, ar -> {
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -797,7 +802,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root, verifyOK(context));
+                .sendJsonObject(root).onComplete(verifyOK(context));
 
         Properties consumerProperties = Consumer.fillDefaultProperties();
         consumerProperties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
@@ -818,7 +823,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
             context.completeNow();
         });
 
-        consumer.subscribe(topic, done -> {
+        consumer.subscribe(topic).onComplete(done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
             }
@@ -842,25 +847,26 @@ public class ProducerIT extends HttpBridgeITAbstract {
         future.get();
 
         producerService()
-            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonObject> response = ar.result();
-                    JsonObject bridgeResponse = response.body();
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root)
+                .onComplete(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        JsonObject bridgeResponse = response.body();
 
-                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                    assertThat(offsets.size(), is(1));
+                        JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                        assertThat(offsets.size(), is(1));
 
-                    HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(0));
-                    assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
-                    // the message got from the Kafka producer (starting from 2.3) is misleading
-                    // this JIRA (https://issues.apache.org/jira/browse/KAFKA-8862) raises the issue
-                    assertThat(error.message(), is(
-                            "Topic " + topic + " not present in metadata after " +
-                                    config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms."));
+                        HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(0));
+                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        // the message got from the Kafka producer (starting from 2.3) is misleading
+                        // this JIRA (https://issues.apache.org/jira/browse/KAFKA-8862) raises the issue
+                        assertThat(error.message(), is(
+                                "Topic " + topic + " not present in metadata after " +
+                                        config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms."));
+                    });
                 });
-            });
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -880,24 +886,25 @@ public class ProducerIT extends HttpBridgeITAbstract {
         root.put("records", records);
 
         producerService()
-            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonObject> response = ar.result();
-                    JsonObject bridgeResponse = response.body();
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root)
+                .onComplete(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        JsonObject bridgeResponse = response.body();
 
-                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                    assertThat(offsets.size(), is(1));
-                    int code = offsets.getJsonObject(0).getInteger("error_code");
-                    String statusMessage = offsets.getJsonObject(0).getString("message");
+                        JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                        assertThat(offsets.size(), is(1));
+                        int code = offsets.getJsonObject(0).getInteger("error_code");
+                        String statusMessage = offsets.getJsonObject(0).getString("message");
 
-                    assertThat(code, is(HttpResponseStatus.NOT_FOUND.code()));
-                    assertThat(statusMessage, is("Topic " + topic + " not present in metadata after " +
-                                config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms."));
+                        assertThat(code, is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(statusMessage, is("Topic " + topic + " not present in metadata after " +
+                                    config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms."));
+                    });
+                    context.completeNow();
                 });
-                context.completeNow();
-            });
     }
 
     @Test
@@ -918,23 +925,24 @@ public class ProducerIT extends HttpBridgeITAbstract {
         future.get();
 
         producerService()
-            .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonObject> response = ar.result();
-                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                    JsonObject bridgeResponse = response.body();
+                .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root)
+                .onComplete(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        JsonObject bridgeResponse = response.body();
 
-                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                    assertThat(offsets.size(), is(1));
-                    JsonObject metadata = offsets.getJsonObject(0);
-                    assertThat(metadata.getInteger("partition"), notNullValue());
-                    assertThat(metadata.getInteger("partition"), is(partition));
-                    assertThat(metadata.getLong("offset"), is(0L));
+                        JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                        assertThat(offsets.size(), is(1));
+                        JsonObject metadata = offsets.getJsonObject(0);
+                        assertThat(metadata.getInteger("partition"), notNullValue());
+                        assertThat(metadata.getInteger("partition"), is(partition));
+                        assertThat(metadata.getLong("offset"), is(0L));
+                    });
+                    context.completeNow();
                 });
-                context.completeNow();
-            });
 
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
@@ -957,8 +965,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
         future.get();
 
         producerService()
-            .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyBadRequest(context, "Parameter error on: partitionid - [Bad Request] Parsing error for parameter partitionid in location PATH: java.lang.NumberFormatException: For input string: \"" + partition + "\""));
+                .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Parameter error on: partitionid - [Bad Request] Parsing error for parameter partitionid in location PATH: java.lang.NumberFormatException: For input string: \"" + partition + "\""));
     }
 
     @Test
@@ -981,8 +989,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
         future.get();
 
         producerService()
-            .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
+                .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
     }
 
     @Test
@@ -1002,8 +1010,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
         future.get();
 
         producerService()
-            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: /records/0 - provided object should contain property value"));
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - provided object should contain property value"));
     }
 
     @Test
@@ -1025,8 +1033,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
         future.get();
 
         producerService()
-            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
     }
 
     Handler<AsyncResult<HttpResponse<JsonObject>>> verifyBadRequest(VertxTestContext context, String message) {
@@ -1080,7 +1088,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root, ar -> {
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1124,8 +1133,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
         future.get();
 
         producerService()
-            .sendRecordsToPartitionRequest(topic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
+                .sendRecordsToPartitionRequest(topic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
 
         records.remove(json);
         records.clear();
@@ -1136,22 +1145,23 @@ public class ProducerIT extends HttpBridgeITAbstract {
         root.put("records", records);
 
         producerService()
-            .sendRecordsToPartitionRequest(topic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonObject> response = ar.result();
-                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                .sendRecordsToPartitionRequest(topic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root)
+                .onComplete(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                    JsonObject bridgeResponse = response.body();
-                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                    assertThat(offsets.size(), is(1));
+                        JsonObject bridgeResponse = response.body();
+                        JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                        assertThat(offsets.size(), is(1));
 
-                    JsonObject metadata = offsets.getJsonObject(0);
-                    assertThat(metadata.getInteger("partition"), is(0));
-                    assertThat(metadata.getInteger("offset"), is(1));
+                        JsonObject metadata = offsets.getJsonObject(0);
+                        assertThat(metadata.getInteger("partition"), is(0));
+                        assertThat(metadata.getInteger("offset"), is(1));
+                    });
                 });
-            });
 
         records.remove(json);
         records.clear();
@@ -1166,22 +1176,23 @@ public class ProducerIT extends HttpBridgeITAbstract {
         root.put("records", records);
 
         producerService()
-            .sendRecordsToPartitionRequest(topic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonObject> response = ar.result();
-                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                .sendRecordsToPartitionRequest(topic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root)
+                .onComplete(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                    JsonObject bridgeResponse = response.body();
-                    JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                    assertThat(offsets.size(), is(1));
+                        JsonObject bridgeResponse = response.body();
+                        JsonArray offsets = bridgeResponse.getJsonArray("offsets");
+                        assertThat(offsets.size(), is(1));
 
-                    JsonObject metadata = offsets.getJsonObject(0);
-                    assertThat(metadata.getInteger("partition"), is(0));
-                    assertThat(metadata.getInteger("offset"), is(2));
+                        JsonObject metadata = offsets.getJsonObject(0);
+                        assertThat(metadata.getInteger("partition"), is(0));
+                        assertThat(metadata.getInteger("offset"), is(2));
+                    });
                 });
-            });
     }
 
     @Test
@@ -1206,7 +1217,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
                 .addQueryParam("async", "true")
-                .sendJsonObject(root, ar -> {
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> assertThat(ar.succeeded(), is(true)));
 
                     HttpResponse<JsonObject> response = ar.result();
@@ -1238,7 +1250,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
             }
         });
 
-        consumer.subscribe(topic, done -> {
+        consumer.subscribe(topic).onComplete(done -> {
             if (!done.succeeded()) {
                 context.failNow(done.cause());
             }
@@ -1266,7 +1278,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
                 .addQueryParam("async", "wrong")
-                .sendJsonObject(root, ar -> {
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1299,7 +1312,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
                 .sendRecordsRequest(topic, root, "bad-content-type")
-                .sendJsonObject(root, ar -> {
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1341,18 +1355,19 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         // Send the first request
         producerService()
-            .sendRecordsRequest(topic, root, firstContentType)
-            .sendJsonObject(root, response -> {
-                if (response.succeeded()) {
-                    HttpResponse<JsonObject> httpResponse = response.result();
-                    context.verify(() -> {
-                        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
-                        LOGGER.info("Successfully processed record with content type: {}", secondContentType);
-                    });
-                } else {
-                    context.failNow(response.cause());
-                }
-            });
+                .sendRecordsRequest(topic, root, firstContentType)
+                .sendJsonObject(root)
+                .onComplete(response -> {
+                    if (response.succeeded()) {
+                        HttpResponse<JsonObject> httpResponse = response.result();
+                        context.verify(() -> {
+                            assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+                            LOGGER.info("Successfully processed record with content type: {}", secondContentType);
+                        });
+                    } else {
+                        context.failNow(response.cause());
+                    }
+                });
 
         record = createDynamicRecord(secondContentType);
         records = new JsonArray().add(record);
@@ -1360,19 +1375,20 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         // Send the second request
         producerService()
-            .sendRecordsRequest(topic, root, secondContentType)
-            .sendJsonObject(root, response -> {
-                if (response.succeeded()) {
-                    HttpResponse<JsonObject> httpResponse = response.result();
-                    context.verify(() -> {
-                        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
-                        LOGGER.info("Successfully processed record with content type: {}", secondContentType);
-                        context.completeNow();
-                    });
-                } else {
-                    context.failNow(response.cause());
-                }
-            });
+                .sendRecordsRequest(topic, root, secondContentType)
+                .sendJsonObject(root)
+                .onComplete(response -> {
+                    if (response.succeeded()) {
+                        HttpResponse<JsonObject> httpResponse = response.result();
+                        context.verify(() -> {
+                            assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+                            LOGGER.info("Successfully processed record with content type: {}", secondContentType);
+                            context.completeNow();
+                        });
+                    } else {
+                        context.failNow(response.cause());
+                    }
+                });
 
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }

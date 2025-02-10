@@ -92,7 +92,7 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
 
             record.addHeaders(headers);
 
-            producer.send(record, done -> {
+            producer.send(record).onComplete(done -> {
                 if (done.succeeded()) {
                     RecordMetadata recordMetadata = done.result();
                     LOGGER.info("Message {} written on topic={}, partition={}, offset={}",

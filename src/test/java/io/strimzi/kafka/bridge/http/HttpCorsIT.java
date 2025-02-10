@@ -90,7 +90,7 @@ public class HttpCorsIT {
 
     @AfterEach
     void cleanup(VertxTestContext context) {
-        vertx.close(context.succeeding(arg -> context.completeNow()));
+        vertx.close().onComplete(context.succeeding(arg -> context.completeNow()));
     }
 
     @AfterAll
@@ -107,15 +107,17 @@ public class HttpCorsIT {
         configureBridge(false, null);
 
         if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
-            vertx.deployVerticle(httpBridge, context.succeeding(id -> client
+            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://evil.io")
                     .putHeader("Access-Control-Request-Method", "POST")
-                    .send(ar -> context.verify(() -> {
+                    .send()
+                    .onComplete(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(HttpResponseStatus.METHOD_NOT_ALLOWED.code()));
                         client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
                                 .putHeader("Origin", "https://evil.io")
-                                .send(ar2 -> context.verify(() -> {
+                                .send()
+                                .onComplete(ar2 -> context.verify(() -> {
                                     assertThat(ar2.result().statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                                     context.completeNow();
                                 }));
@@ -134,16 +136,18 @@ public class HttpCorsIT {
         configureBridge(true, null);
 
         if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
-            vertx.deployVerticle(httpBridge, context.succeeding(id -> client
+            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://evil.io")
                     .putHeader("Access-Control-Request-Method", "POST")
-                    .send(ar -> context.verify(() -> {
+                    .send()
+                    .onComplete(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(HttpResponseStatus.FORBIDDEN.code()));
                         assertThat(ar.result().statusMessage(), is("CORS Rejected - Invalid origin"));
                         client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
                                 .putHeader("Origin", "https://evil.io")
-                                .send(ar2 -> context.verify(() -> {
+                                .send()
+                                .onComplete(ar2 -> context.verify(() -> {
                                     assertThat(ar2.result().statusCode(), is(HttpResponseStatus.FORBIDDEN.code()));
                                     assertThat(ar2.result().statusMessage(), is("CORS Rejected - Invalid origin"));
                                     context.completeNow();
@@ -172,11 +176,12 @@ public class HttpCorsIT {
         final String origin = "https://strimzi.io";
 
         if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
-            vertx.deployVerticle(httpBridge, context.succeeding(id -> client
+            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://strimzi.io")
                     .putHeader("Access-Control-Request-Method", "POST")
-                    .send(ar -> context.verify(() -> {
+                    .send()
+                    .onComplete(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
                         assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,content-length,x-forwarded-proto,x-forwarded-host,origin,x-requested-with,content-type,access-control-allow-methods,accept"));
@@ -185,7 +190,8 @@ public class HttpCorsIT {
                         client.request(HttpMethod.POST, 8080, "localhost", "/consumers/1/instances/1/subscription")
                                 .putHeader("Origin", "https://strimzi.io")
                                 .putHeader("content-type", BridgeContentType.KAFKA_JSON)
-                                .sendJsonObject(topicsRoot, ar2 -> context.verify(() -> {
+                                .sendJsonObject(topicsRoot)
+                                .onComplete(ar2 -> context.verify(() -> {
                                     // we don't have created a consumer, so the address for the subscription doesn't exist
                                     assertThat(ar2.result().statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
                                     context.completeNow();
@@ -221,11 +227,12 @@ public class HttpCorsIT {
         final String origin = "https://strimzi.io";
 
         if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
-            vertx.deployVerticle(httpBridge, context.succeeding(id -> client
+            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/topics/my-topic")
                     .putHeader("Origin", "https://strimzi.io")
                     .putHeader("Access-Control-Request-Method", "POST")
-                    .send(ar -> context.verify(() -> {
+                    .send()
+                    .onComplete(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
                         assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,content-length,x-forwarded-proto,x-forwarded-host,origin,x-requested-with,content-type,access-control-allow-methods,accept"));
@@ -234,7 +241,8 @@ public class HttpCorsIT {
                         client.request(HttpMethod.POST, 8080, "localhost", "/topics/my-topic")
                                 .putHeader("Origin", "https://strimzi.io")
                                 .putHeader("content-type", BridgeContentType.KAFKA_JSON_JSON)
-                                .sendJsonObject(root, ar2 -> context.verify(() -> {
+                                .sendJsonObject(root)
+                                .onComplete(ar2 -> context.verify(() -> {
                                     assertThat(ar2.result().statusCode(), is(HttpResponseStatus.OK.code()));
                                     context.completeNow();
                                 }));
@@ -256,11 +264,12 @@ public class HttpCorsIT {
         final String origin = "https://strimzi.io";
 
         if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
-            vertx.deployVerticle(httpBridge, context.succeeding(id -> client
+            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://strimzi.io")
                     .putHeader("Access-Control-Request-Method", "POST")
-                    .send(ar -> context.verify(() -> {
+                    .send()
+                    .onComplete(ar -> context.verify(() -> {
                         assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
                         assertThat(ar.result().getHeader("access-control-allow-origin"), is(origin));
                         assertThat(ar.result().getHeader("access-control-allow-headers"), is("access-control-allow-origin,content-length,x-forwarded-proto,x-forwarded-host,origin,x-requested-with,content-type,access-control-allow-methods,accept"));

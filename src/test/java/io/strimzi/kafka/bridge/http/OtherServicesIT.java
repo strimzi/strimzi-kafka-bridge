@@ -30,8 +30,9 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
         for (int i = 1; i <= iterations; i++) {
             int l = i;
             baseService()
-                .getRequest("/ready")
-                    .send(ar -> {
+                    .getRequest("/ready")
+                    .send()
+                    .onComplete(ar -> {
                         context.verify(() -> {
                             assertThat(ar.succeeded(), is(true));
                             assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
@@ -50,8 +51,9 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
         for (int i = 1; i <= iterations; i++) {
             int l = i;
             baseService()
-                .getRequest("/healthy")
-                    .send(ar -> {
+                    .getRequest("/healthy")
+                    .send()
+                    .onComplete(ar -> {
                         context.verify(() -> {
                             LOGGER.info("Verifying that endpoint /healthy is ready " + ar.succeeded() + " for "
                                 + l + " time with status code " + ar.result().statusCode());
@@ -71,7 +73,8 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
     void metricsTest(VertxTestContext context) {
         baseService()
                 .getRequest("/metrics")
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         assertThat(ar.result().statusCode(), is(HttpResponseStatus.OK.code()));
@@ -84,9 +87,10 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
     @Test
     void openapiv2Test(VertxTestContext context) {
         baseService()
-            .getRequest("/openapi/v2")
+                .getRequest("/openapi/v2")
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -104,7 +108,8 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
         baseService()
                 .getRequest("/openapi/v3")
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -121,9 +126,10 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
     @Test
     void openapiTest(VertxTestContext context) {
         baseService()
-            .getRequest("/openapi")
+                .getRequest("/openapi")
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -185,18 +191,19 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
     @Test
     void postToNonexistentEndpoint(VertxTestContext context) {
         baseService()
-            .postRequest("/not-existing-endpoint")
-            .as(BodyCodec.jsonObject())
-            .sendJsonObject(null, ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonObject> response = ar.result();
-                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                    assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+                .postRequest("/not-existing-endpoint")
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(null)
+                .onComplete(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+                    });
+                    context.completeNow();
                 });
-                context.completeNow();
-            });
     }
 
     @Test
@@ -204,7 +211,8 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
         baseService()
                 .getRequest("/")
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -221,7 +229,8 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                 .getRequest("/openapi")
                 .putHeader("x-Forwarded-Path", forwardedPath)
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -240,7 +249,8 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                 .getRequest("/openapi")
                 .putHeader("x-Forwarded-Prefix", forwardedPrefix)
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -261,7 +271,8 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                 .putHeader("x-Forwarded-Path", forwardedPath)
                 .putHeader("x-Forwarded-Prefix", forwardedPrefix)
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();

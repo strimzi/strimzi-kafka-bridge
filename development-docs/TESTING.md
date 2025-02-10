@@ -112,7 +112,7 @@ Setup in-memory Strimzi `Kafka` container and in-memory `Kafka Bridge` example:
         httpBridge.setHealthChecker(new HealthChecker());
 
         LOGGER.info("Deploying in-memory bridge");
-        vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow())); <--- deploy in-memory Kafka Bridge
+        vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> context.completeNow())); <--- deploy in-memory Kafka Bridge
     
         client = WebClient.create(vertx, new WebClientOptions() <--- webclient for communication with REST API of Kafka Bridge
             .setDefaultHost(Urls.BRIDGE_HOST)
@@ -142,7 +142,7 @@ Teardown is triggered in `@AfterAll` of `HttpBridgeTestBase`:
     @AfterAll
     static void afterAll(VertxTestContext context) {
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {                              <--- checking if external Kafka Bridge should run
-            vertx.close(context.succeeding(arg -> context.completeNow()));      <--- closing the vertx instance
+            vertx.close().onComplete(context.succeeding(arg -> context.completeNow()));      <--- closing the vertx instance
         } else {
             // if we running external bridge
             context.completeNow();

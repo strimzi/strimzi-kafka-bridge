@@ -119,15 +119,16 @@ public class Application {
         Promise<HttpBridge> httpPromise = Promise.promise();
 
         HttpBridge httpBridge = new HttpBridge(bridgeConfig, metricsReporter);
-        vertx.deployVerticle(httpBridge, done -> {
-            if (done.succeeded()) {
-                LOGGER.info("HTTP verticle instance deployed [{}]", done.result());
-                httpPromise.complete(httpBridge);
-            } else {
-                LOGGER.error("Failed to deploy HTTP verticle instance", done.cause());
-                httpPromise.fail(done.cause());
-            }
-        });
+        vertx.deployVerticle(httpBridge)
+                .onComplete(done -> {
+                    if (done.succeeded()) {
+                        LOGGER.info("HTTP verticle instance deployed [{}]", done.result());
+                        httpPromise.complete(httpBridge);
+                    } else {
+                        LOGGER.error("Failed to deploy HTTP verticle instance", done.cause());
+                        httpPromise.fail(done.cause());
+                    }
+                });
 
         return httpPromise.future();
     }
