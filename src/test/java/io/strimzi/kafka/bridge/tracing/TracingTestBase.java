@@ -100,8 +100,8 @@ public abstract class TracingTestBase {
         String topicName = "mytopic";
 
         ProducerService.getInstance(client)
-            .sendRecordsRequest(topicName, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, verifyOK(context));
+                .sendRecordsRequest(topicName, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root).onComplete(verifyOK(context));
 
         ConsumerService consumerService = ConsumerService.getInstance(client);
 
@@ -116,22 +116,23 @@ public abstract class TracingTestBase {
             .put("format", "json");
 
         consumerService
-            .createConsumer(context, groupId, consumerJson)
-            .subscribeConsumer(context, groupId, consumerName, topicName);
+                .createConsumer(context, groupId, consumerJson)
+                .subscribeConsumer(context, groupId, consumerName, topicName);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
         consumerService
-            .consumeRecordsRequest(groupId, consumerName, BridgeContentType.KAFKA_JSON_JSON)
-            .as(BodyCodec.jsonArray())
-            .send(ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), CoreMatchers.is(true));
-                    HttpResponse<JsonArray> response = ar.result();
-                    assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.OK.code()));
+                .consumeRecordsRequest(groupId, consumerName, BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonArray())
+                .send()
+                .onComplete(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), CoreMatchers.is(true));
+                        HttpResponse<JsonArray> response = ar.result();
+                        assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.OK.code()));
+                    });
+                    consume.complete(true);
                 });
-                consume.complete(true);
-            });
 
         consume.get(60, TimeUnit.SECONDS);
 

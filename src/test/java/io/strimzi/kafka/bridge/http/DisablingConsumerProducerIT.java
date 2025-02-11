@@ -83,7 +83,7 @@ public class DisablingConsumerProducerIT {
     @AfterEach
     void cleanUp(VertxTestContext context) {
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
-            vertx.close(context.succeeding(arg -> context.completeNow()));
+            vertx.close().onComplete(context.succeeding(arg -> context.completeNow()));
         } else {
             // if we running external bridge
             context.completeNow();
@@ -102,20 +102,21 @@ public class DisablingConsumerProducerIT {
         // create consumer
         CompletableFuture<Boolean> tryCreate = new CompletableFuture<>();
         consumerService()
-            .createConsumerRequest("consumer-not-enabled-group", json)
-            .as(BodyCodec.jsonObject())
-            .sendJsonObject(json, ar -> {
-                context.verify(() -> {
-                    LOGGER.info("Verifying that consumer is not created");
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonObject> response = ar.result();
-                    assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
-                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertThat(error.code(), CoreMatchers.is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
-                    assertThat(error.message(), CoreMatchers.is("Consumer is disabled in config. To enable consumer update http.consumer.enabled to true"));
-                    tryCreate.complete(true);
+                .createConsumerRequest("consumer-not-enabled-group", json)
+                .as(BodyCodec.jsonObject())
+                .sendJsonObject(json)
+                .onComplete(ar -> {
+                    context.verify(() -> {
+                        LOGGER.info("Verifying that consumer is not created");
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat(error.code(), CoreMatchers.is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
+                        assertThat(error.message(), CoreMatchers.is("Consumer is disabled in config. To enable consumer update http.consumer.enabled to true"));
+                        tryCreate.complete(true);
+                    });
                 });
-            });
 
         tryCreate.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         context.completeNow();
@@ -140,19 +141,20 @@ public class DisablingConsumerProducerIT {
         // create producer
         CompletableFuture<Boolean> trySend = new CompletableFuture<>();
         producerService()
-            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-            .sendJsonObject(root, ar -> {
-                context.verify(() -> {
-                    LOGGER.info("Verifying that producer is not created");
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonObject> response = ar.result();
-                    assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
-                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertThat(error.code(), CoreMatchers.is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
-                    assertThat(error.message(), CoreMatchers.is("Producer is disabled in config. To enable producer update http.producer.enabled to true"));
-                    trySend.complete(true);
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root)
+                .onComplete(ar -> {
+                    context.verify(() -> {
+                        LOGGER.info("Verifying that producer is not created");
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat(error.code(), CoreMatchers.is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
+                        assertThat(error.message(), CoreMatchers.is("Producer is disabled in config. To enable producer update http.producer.enabled to true"));
+                        trySend.complete(true);
+                    });
                 });
-            });
 
         trySend.get(TEST_TIMEOUT, TimeUnit.SECONDS);
         context.completeNow();
@@ -167,7 +169,7 @@ public class DisablingConsumerProducerIT {
             HttpBridge httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(null, null));
 
             LOGGER.info("Deploying in-memory bridge");
-            vertx.deployVerticle(httpBridge, context.succeeding(id -> startBridge.complete(true)));
+            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> startBridge.complete(true)));
         } else {
             startBridge.complete(true);
             // else we create external bridge from the OS invoked by `.jar`

@@ -101,7 +101,7 @@ public class ConsumerGeneratedNameIT {
             httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
 
             LOGGER.info("Deploying in-memory bridge");
-            vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
+            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> context.completeNow()));
         }
         // else we create external bridge from the OS invoked by `.jar`
 
@@ -115,7 +115,7 @@ public class ConsumerGeneratedNameIT {
     static void afterAll(VertxTestContext context) {
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
             kafkaContainer.stop();
-            vertx.close(context.succeeding(arg -> context.completeNow()));
+            vertx.close().onComplete(context.succeeding(arg -> context.completeNow()));
         }
     }
 
@@ -127,7 +127,8 @@ public class ConsumerGeneratedNameIT {
         consumerService()
             .createConsumerRequest(groupId, json)
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(json, ar -> {
+                .sendJsonObject(json)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         LOGGER.info("Verifying that consumer name is created with 'kafka-bridge-consumer-' plus random hashcode");
                         assertThat(ar.succeeded(), is(true));
@@ -157,7 +158,8 @@ public class ConsumerGeneratedNameIT {
         consumerService()
                 .createConsumerRequest(groupId, json)
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(json, ar -> {
+                .sendJsonObject(json)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();

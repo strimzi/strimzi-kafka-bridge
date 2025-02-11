@@ -92,10 +92,11 @@ public class HttpBridge extends AbstractVerticle {
     private void bindHttpServer(Promise<Void> startPromise) {
         HttpServerOptions httpServerOptions = httpServerOptions();
 
-        this.httpServer = this.vertx.createHttpServer(httpServerOptions)
+        this.vertx.createHttpServer(httpServerOptions)
                 .connectionHandler(this::processConnection)
                 .requestHandler(this.router)
-                .listen(httpServerAsyncResult -> {
+                .listen()
+                .onComplete(httpServerAsyncResult -> {
                     if (httpServerAsyncResult.succeeded()) {
                         LOGGER.info("HTTP-Kafka Bridge started and listening on port {}", httpServerAsyncResult.result().actualPort());
                         LOGGER.info("HTTP-Kafka Bridge bootstrap servers {}",
@@ -108,6 +109,7 @@ public class HttpBridge extends AbstractVerticle {
                         }
 
                         this.isReady = true;
+                        this.httpServer = httpServerAsyncResult.result();
                         startPromise.complete();
                     } else {
                         LOGGER.error("Error starting HTTP-Kafka Bridge", httpServerAsyncResult.cause());
@@ -139,66 +141,67 @@ public class HttpBridge extends AbstractVerticle {
     @Override
     public void start(Promise<Void> startPromise) {
 
-        RouterBuilder.create(vertx, "openapi.json", ar -> {
-            if (ar.succeeded()) {
-                RouterBuilder routerBuilder = ar.result();
-                routerBuilder.operation(this.SEND.getOperationId().toString()).handler(this.SEND);
-                routerBuilder.operation(this.SEND_TO_PARTITION.getOperationId().toString()).handler(this.SEND_TO_PARTITION);
-                routerBuilder.operation(this.CREATE_CONSUMER.getOperationId().toString()).handler(this.CREATE_CONSUMER);
-                routerBuilder.operation(this.DELETE_CONSUMER.getOperationId().toString()).handler(this.DELETE_CONSUMER);
-                routerBuilder.operation(this.SUBSCRIBE.getOperationId().toString()).handler(this.SUBSCRIBE);
-                routerBuilder.operation(this.UNSUBSCRIBE.getOperationId().toString()).handler(this.UNSUBSCRIBE);
-                routerBuilder.operation(this.LIST_SUBSCRIPTIONS.getOperationId().toString()).handler(this.LIST_SUBSCRIPTIONS);
-                routerBuilder.operation(this.ASSIGN.getOperationId().toString()).handler(this.ASSIGN);
-                routerBuilder.operation(this.POLL.getOperationId().toString()).handler(this.POLL);
-                routerBuilder.operation(this.COMMIT.getOperationId().toString()).handler(this.COMMIT);
-                routerBuilder.operation(this.SEEK.getOperationId().toString()).handler(this.SEEK);
-                routerBuilder.operation(this.SEEK_TO_BEGINNING.getOperationId().toString()).handler(this.SEEK_TO_BEGINNING);
-                routerBuilder.operation(this.SEEK_TO_END.getOperationId().toString()).handler(this.SEEK_TO_END);
-                routerBuilder.operation(this.LIST_TOPICS.getOperationId().toString()).handler(this.LIST_TOPICS);
-                routerBuilder.operation(this.GET_TOPIC.getOperationId().toString()).handler(this.GET_TOPIC);
-                routerBuilder.operation(this.CREATE_TOPIC.getOperationId().toString()).handler(this.CREATE_TOPIC);
-                routerBuilder.operation(this.LIST_PARTITIONS.getOperationId().toString()).handler(this.LIST_PARTITIONS);
-                routerBuilder.operation(this.GET_PARTITION.getOperationId().toString()).handler(this.GET_PARTITION);
-                routerBuilder.operation(this.GET_OFFSETS.getOperationId().toString()).handler(this.GET_OFFSETS);
-                routerBuilder.operation(this.HEALTHY.getOperationId().toString()).handler(this.HEALTHY);
-                routerBuilder.operation(this.READY.getOperationId().toString()).handler(this.READY);
-                routerBuilder.operation(this.OPENAPI.getOperationId().toString()).handler(this.OPENAPI);
-                routerBuilder.operation(this.OPENAPIV2.getOperationId().toString()).handler(this.OPENAPIV2);
-                routerBuilder.operation(this.OPENAPIV3.getOperationId().toString()).handler(this.OPENAPIV3);
-                routerBuilder.operation(this.METRICS.getOperationId().toString()).handler(this.METRICS);
-                routerBuilder.operation(this.INFO.getOperationId().toString()).handler(this.INFO);
-                if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
-                    routerBuilder.rootHandler(getCorsHandler());
-                    // body handler is added automatically when the global handlers in the OpenAPI builder is empty
-                    // when adding the CORS handler, we have to add the body handler explicitly instead
-                    routerBuilder.rootHandler(BodyHandler.create());
-                }
+        RouterBuilder.create(vertx, "openapi.json")
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        RouterBuilder routerBuilder = ar.result();
+                        routerBuilder.operation(this.SEND.getOperationId().toString()).handler(this.SEND);
+                        routerBuilder.operation(this.SEND_TO_PARTITION.getOperationId().toString()).handler(this.SEND_TO_PARTITION);
+                        routerBuilder.operation(this.CREATE_CONSUMER.getOperationId().toString()).handler(this.CREATE_CONSUMER);
+                        routerBuilder.operation(this.DELETE_CONSUMER.getOperationId().toString()).handler(this.DELETE_CONSUMER);
+                        routerBuilder.operation(this.SUBSCRIBE.getOperationId().toString()).handler(this.SUBSCRIBE);
+                        routerBuilder.operation(this.UNSUBSCRIBE.getOperationId().toString()).handler(this.UNSUBSCRIBE);
+                        routerBuilder.operation(this.LIST_SUBSCRIPTIONS.getOperationId().toString()).handler(this.LIST_SUBSCRIPTIONS);
+                        routerBuilder.operation(this.ASSIGN.getOperationId().toString()).handler(this.ASSIGN);
+                        routerBuilder.operation(this.POLL.getOperationId().toString()).handler(this.POLL);
+                        routerBuilder.operation(this.COMMIT.getOperationId().toString()).handler(this.COMMIT);
+                        routerBuilder.operation(this.SEEK.getOperationId().toString()).handler(this.SEEK);
+                        routerBuilder.operation(this.SEEK_TO_BEGINNING.getOperationId().toString()).handler(this.SEEK_TO_BEGINNING);
+                        routerBuilder.operation(this.SEEK_TO_END.getOperationId().toString()).handler(this.SEEK_TO_END);
+                        routerBuilder.operation(this.LIST_TOPICS.getOperationId().toString()).handler(this.LIST_TOPICS);
+                        routerBuilder.operation(this.GET_TOPIC.getOperationId().toString()).handler(this.GET_TOPIC);
+                        routerBuilder.operation(this.CREATE_TOPIC.getOperationId().toString()).handler(this.CREATE_TOPIC);
+                        routerBuilder.operation(this.LIST_PARTITIONS.getOperationId().toString()).handler(this.LIST_PARTITIONS);
+                        routerBuilder.operation(this.GET_PARTITION.getOperationId().toString()).handler(this.GET_PARTITION);
+                        routerBuilder.operation(this.GET_OFFSETS.getOperationId().toString()).handler(this.GET_OFFSETS);
+                        routerBuilder.operation(this.HEALTHY.getOperationId().toString()).handler(this.HEALTHY);
+                        routerBuilder.operation(this.READY.getOperationId().toString()).handler(this.READY);
+                        routerBuilder.operation(this.OPENAPI.getOperationId().toString()).handler(this.OPENAPI);
+                        routerBuilder.operation(this.OPENAPIV2.getOperationId().toString()).handler(this.OPENAPIV2);
+                        routerBuilder.operation(this.OPENAPIV3.getOperationId().toString()).handler(this.OPENAPIV3);
+                        routerBuilder.operation(this.METRICS.getOperationId().toString()).handler(this.METRICS);
+                        routerBuilder.operation(this.INFO.getOperationId().toString()).handler(this.INFO);
+                        if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
+                            routerBuilder.rootHandler(getCorsHandler());
+                            // body handler is added automatically when the global handlers in the OpenAPI builder is empty
+                            // when adding the CORS handler, we have to add the body handler explicitly instead
+                            routerBuilder.rootHandler(BodyHandler.create());
+                        }
 
-                this.router = routerBuilder.createRouter();
+                        this.router = routerBuilder.createRouter();
 
-                // handling validation errors and not existing endpoints
-                this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
-                this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
+                        // handling validation errors and not existing endpoints
+                        this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
+                        this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
 
-                if (this.metricsReporter.getMeterRegistry() != null) {
-                    // exclude to report the HTTP server metrics for the /metrics endpoint itself
-                    this.metricsReporter.getMeterRegistry().config().meterFilter(
-                            MeterFilter.deny(meter -> "/metrics".equals(meter.getTag(Label.HTTP_PATH.toString())))
-                    );
-                }
+                        if (this.metricsReporter.getMeterRegistry() != null) {
+                            // exclude to report the HTTP server metrics for the /metrics endpoint itself
+                            this.metricsReporter.getMeterRegistry().config().meterFilter(
+                                    MeterFilter.deny(meter -> "/metrics".equals(meter.getTag(Label.HTTP_PATH.toString())))
+                            );
+                        }
 
-                LOGGER.info("Starting HTTP-Kafka bridge verticle...");
-                this.httpBridgeContext = new HttpBridgeContext<>();
-                HttpAdminBridgeEndpoint adminClientEndpoint = new HttpAdminBridgeEndpoint(this.bridgeConfig, this.httpBridgeContext);
-                this.httpBridgeContext.setHttpAdminEndpoint(adminClientEndpoint);
-                adminClientEndpoint.open();
-                this.bindHttpServer(startPromise);
-            } else {
-                LOGGER.error("Failed to create OpenAPI router factory");
-                startPromise.fail(ar.cause());
-            }
-        });
+                        LOGGER.info("Starting HTTP-Kafka bridge verticle...");
+                        this.httpBridgeContext = new HttpBridgeContext<>();
+                        HttpAdminBridgeEndpoint adminClientEndpoint = new HttpAdminBridgeEndpoint(this.bridgeConfig, this.httpBridgeContext);
+                        this.httpBridgeContext.setHttpAdminEndpoint(adminClientEndpoint);
+                        adminClientEndpoint.open();
+                        this.bindHttpServer(startPromise);
+                    } else {
+                        LOGGER.error("Failed to create OpenAPI router factory");
+                        startPromise.fail(ar.cause());
+                    }
+                });
     }
 
     private CorsHandler getCorsHandler() {
@@ -251,16 +254,16 @@ public class HttpBridge extends AbstractVerticle {
 
         if (this.httpServer != null) {
 
-            this.httpServer.close(done -> {
-
-                if (done.succeeded()) {
-                    LOGGER.info("HTTP-Kafka bridge has been shut down successfully");
-                    stopPromise.complete();
-                } else {
-                    LOGGER.info("Error while shutting down HTTP-Kafka bridge", done.cause());
-                    stopPromise.fail(done.cause());
-                }
-            });
+            this.httpServer.close()
+                    .onComplete(done -> {
+                        if (done.succeeded()) {
+                            LOGGER.info("HTTP-Kafka bridge has been shut down successfully");
+                            stopPromise.complete();
+                        } else {
+                            LOGGER.info("Error while shutting down HTTP-Kafka bridge", done.cause());
+                            stopPromise.fail(done.cause());
+                        }
+                    });
         }
     }
 
@@ -524,33 +527,34 @@ public class HttpBridge extends AbstractVerticle {
 
     private void openapi(RoutingContext routingContext) {
         FileSystem fileSystem = vertx.fileSystem();
-        fileSystem.readFile("openapi.json", readFile -> {
-            if (readFile.succeeded()) {
-                String xForwardedPath = routingContext.request().getHeader("x-forwarded-path");
-                String xForwardedPrefix = routingContext.request().getHeader("x-forwarded-prefix");
-                if (xForwardedPath == null && xForwardedPrefix == null) {
-                    HttpUtils.sendFile(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, "openapi.json");
-                } else {
-                    String path = "/";
-                    if (xForwardedPrefix != null) {
-                        path = xForwardedPrefix;
+        fileSystem.readFile("openapi.json")
+                .onComplete(readFile -> {
+                    if (readFile.succeeded()) {
+                        String xForwardedPath = routingContext.request().getHeader("x-forwarded-path");
+                        String xForwardedPrefix = routingContext.request().getHeader("x-forwarded-prefix");
+                        if (xForwardedPath == null && xForwardedPrefix == null) {
+                            HttpUtils.sendFile(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, "openapi.json");
+                        } else {
+                            String path = "/";
+                            if (xForwardedPrefix != null) {
+                                path = xForwardedPrefix;
+                            }
+                            if (xForwardedPath != null) {
+                                path = xForwardedPath;
+                            }
+                            ObjectNode json = (ObjectNode) JsonUtils.bytesToJson(readFile.result().getBytes());
+                            json.put("basePath", path);
+                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, JsonUtils.jsonToBytes(json));
+                        }
+                    } else {
+                        LOGGER.error("Failed to read OpenAPI JSON file", readFile.cause());
+                        HttpBridgeError error = new HttpBridgeError(
+                            HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            readFile.cause().getMessage());
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                                BridgeContentType.JSON, JsonUtils.jsonToBytes(error.toJson()));
                     }
-                    if (xForwardedPath != null) {
-                        path = xForwardedPath;
-                    }
-                    ObjectNode json = (ObjectNode) JsonUtils.bytesToJson(readFile.result().getBytes());
-                    json.put("basePath", path);
-                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, JsonUtils.jsonToBytes(json));
-                }
-            } else {
-                LOGGER.error("Failed to read OpenAPI JSON file", readFile.cause());
-                HttpBridgeError error = new HttpBridgeError(
-                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                    readFile.cause().getMessage());
-                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                        BridgeContentType.JSON, JsonUtils.jsonToBytes(error.toJson()));
-            }
-        });
+                });
     }
 
     private void metrics(RoutingContext routingContext) {

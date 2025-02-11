@@ -53,7 +53,8 @@ public class InvalidProducerIT extends HttpBridgeITAbstract {
 
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root, ar -> {
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     assertThat(ar.succeeded(), is(true));
                     assertThat(ar.result().statusCode(), is(500));
                     context.completeNow();
@@ -78,7 +79,7 @@ public class InvalidProducerIT extends HttpBridgeITAbstract {
             httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
 
             LOGGER.info("Deploying in-memory bridge");
-            vertx.deployVerticle(httpBridge, context.succeeding(id -> context.completeNow()));
+            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> context.completeNow()));
         } else {
             context.completeNow();
         }

@@ -45,8 +45,9 @@ public class SeekIT extends HttpBridgeITAbstract {
         JsonObject root = new JsonObject();
 
         seekService()
-            .positionsBeginningRequest(groupId, name, root)
-                .sendJsonObject(root, ar -> {
+                .positionsBeginningRequest(groupId, name, root)
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -67,8 +68,8 @@ public class SeekIT extends HttpBridgeITAbstract {
 
         // create consumer
         consumerService()
-            .createConsumer(context, groupId, jsonConsumer)
-            .subscribeTopic(context, groupId, name, new JsonObject().put("topic", topic).put("partition", 0));
+                .createConsumer(context, groupId, jsonConsumer)
+                .subscribeTopic(context, groupId, name, new JsonObject().put("topic", topic).put("partition", 0));
 
         int notExistingPartition = 2;
         JsonArray notExistingPartitionJSON = new JsonArray();
@@ -77,23 +78,25 @@ public class SeekIT extends HttpBridgeITAbstract {
         JsonObject partitionsJSON = new JsonObject();
         partitionsJSON.put("partitions", notExistingPartitionJSON);
 
-        seekService().positionsBeginningRequest(groupId, name, partitionsJSON)
-            .sendJsonObject(partitionsJSON, ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonObject> response = ar.result();
-                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                    assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
-                    assertThat(error.message(), is("No current assignment for partition " + topic + "-" + notExistingPartition));
-                    context.completeNow();
+        seekService()
+                .positionsBeginningRequest(groupId, name, partitionsJSON)
+                .sendJsonObject(partitionsJSON)
+                .onComplete(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonObject> response = ar.result();
+                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
+                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+                        assertThat(error.message(), is("No current assignment for partition " + topic + "-" + notExistingPartition));
+                        context.completeNow();
+                    });
                 });
-            });
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
 
         // consumer deletion
         consumerService()
-            .deleteConsumer(context, groupId, name);
+                .deleteConsumer(context, groupId, name);
     }
 
     @Test
@@ -112,8 +115,10 @@ public class SeekIT extends HttpBridgeITAbstract {
         JsonObject partitionsWithWrongTopic = new JsonObject();
         partitionsWithWrongTopic.put("partitions", notExistingTopicJSON);
 
-        seekService().positionsBeginningRequest(groupId, name, partitionsWithWrongTopic)
-                .sendJsonObject(partitionsWithWrongTopic, ar -> {
+        seekService()
+                .positionsBeginningRequest(groupId, name, partitionsWithWrongTopic)
+                .sendJsonObject(partitionsWithWrongTopic)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -129,7 +134,7 @@ public class SeekIT extends HttpBridgeITAbstract {
 
         // consumer deletion
         consumerService()
-            .deleteConsumer(context, groupId, name);
+                .deleteConsumer(context, groupId, name);
 
         consumerInstanceDontHaveTopic.get(TEST_TIMEOUT, TimeUnit.SECONDS);
     }
@@ -149,15 +154,16 @@ public class SeekIT extends HttpBridgeITAbstract {
         //create consumer
         // subscribe to a topic
         consumerService()
-            .createConsumer(context, groupId, jsonConsumer)
-            .subscribeConsumer(context, groupId, name, topics);
+                .createConsumer(context, groupId, jsonConsumer)
+                .subscribeConsumer(context, groupId, name, topics);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
         consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY)
+                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         JsonArray body = ar.result().body();
@@ -177,8 +183,10 @@ public class SeekIT extends HttpBridgeITAbstract {
 
 
         CompletableFuture<Boolean> seek = new CompletableFuture<>();
-        seekService().positionsBeginningRequest(groupId, name, root)
-                .sendJsonObject(root, ar -> {
+        seekService()
+                .positionsBeginningRequest(groupId, name, root)
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
@@ -191,10 +199,11 @@ public class SeekIT extends HttpBridgeITAbstract {
         CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
         // consume records
         baseService()
-            .getRequest(Urls.consumerInstanceRecords(groupId, name))
+                .getRequest(Urls.consumerInstanceRecords(groupId, name))
                 .putHeader(ACCEPT.toString(), BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         JsonArray body = ar.result().body();
@@ -207,7 +216,7 @@ public class SeekIT extends HttpBridgeITAbstract {
 
         // consumer deletion
         consumerService()
-            .deleteConsumer(context, groupId, name);
+                .deleteConsumer(context, groupId, name);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -228,17 +237,17 @@ public class SeekIT extends HttpBridgeITAbstract {
         // create consumer
         // subscribe to a topic
         consumerService()
-            .createConsumer(context, groupId, jsonConsumer)
-            .subscribeConsumer(context, groupId, name, topic);
+                .createConsumer(context, groupId, jsonConsumer)
+                .subscribeConsumer(context, groupId, name, topic);
 
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
         consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY)
+                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
-                    context.verify(() ->
-                            assertThat(ar.succeeded(), is(true)));
+                .send()
+                .onComplete(ar -> {
+                    context.verify(() -> assertThat(ar.succeeded(), is(true)));
                     dummy.complete(true);
                 });
 
@@ -255,8 +264,9 @@ public class SeekIT extends HttpBridgeITAbstract {
 
         CompletableFuture<Boolean> seek = new CompletableFuture<>();
         seekService()
-            .positionsBeginningEnd(groupId, name, root)
-                .sendJsonObject(root, ar -> {
+                .positionsBeginningEnd(groupId, name, root)
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
@@ -269,12 +279,12 @@ public class SeekIT extends HttpBridgeITAbstract {
         CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
         // consume records
         baseService()
-            .getRequest(Urls.consumerInstanceRecords(groupId, name))
+                .getRequest(Urls.consumerInstanceRecords(groupId, name))
                 .putHeader(ACCEPT.toString(), BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
-                    context.verify(() ->
-                            assertThat(ar.succeeded(), is(true)));
+                .send()
+                .onComplete(ar -> {
+                    context.verify(() -> assertThat(ar.succeeded(), is(true)));
 
                     JsonArray body = ar.result().body();
                     assertThat(body.size(), is(0));
@@ -312,15 +322,16 @@ public class SeekIT extends HttpBridgeITAbstract {
         // create consumer
         // subscribe to a topic
         consumerService()
-            .createConsumer(context, groupId, jsonConsumer)
-            .subscribeConsumer(context, groupId, name, topics);
+                .createConsumer(context, groupId, jsonConsumer)
+                .subscribeConsumer(context, groupId, name, topics);
 
         CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
         consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     assertThat(ar.succeeded(), is(true));
                     dummy.complete(true);
                 });
@@ -336,8 +347,9 @@ public class SeekIT extends HttpBridgeITAbstract {
         root.put("offsets", offsets);
 
         seekService()
-            .positionsRequest(groupId, name, root)
-                .sendJsonObject(root, ar -> {
+                .positionsRequest(groupId, name, root)
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
@@ -349,9 +361,10 @@ public class SeekIT extends HttpBridgeITAbstract {
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
         consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         JsonArray body = ar.result().body();
@@ -388,7 +401,7 @@ public class SeekIT extends HttpBridgeITAbstract {
 
         // consumer deletion
         consumerService()
-            .deleteConsumer(context, groupId, name);
+                .deleteConsumer(context, groupId, name);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -417,16 +430,17 @@ public class SeekIT extends HttpBridgeITAbstract {
         // create consumer
         // subscribe to a topic
         consumerService()
-            .createConsumer(context, groupId, jsonConsumer)
-            .subscribeConsumer(context, groupId, name, topics);
+                .createConsumer(context, groupId, jsonConsumer)
+                .subscribeConsumer(context, groupId, name, topics);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
 
         // poll to subscribe
         consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-            .as(BodyCodec.jsonObject())
-            .send(ar -> consume.complete(true));
+                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonObject())
+                .send()
+                .onComplete(ar -> consume.complete(true));
 
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
@@ -439,8 +453,10 @@ public class SeekIT extends HttpBridgeITAbstract {
         root.put("partitions", partitions);
 
         CompletableFuture<Boolean> seek = new CompletableFuture<>();
-        seekService().positionsBeginningRequest(groupId, name, root)
-                .sendJsonObject(root, ar -> {
+        seekService()
+                .positionsBeginningRequest(groupId, name, root)
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -455,7 +471,7 @@ public class SeekIT extends HttpBridgeITAbstract {
 
         // consumer deletion
         consumerService()
-            .deleteConsumer(context, groupId, name);
+                .deleteConsumer(context, groupId, name);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -484,16 +500,17 @@ public class SeekIT extends HttpBridgeITAbstract {
         // create consumer
         // subscribe to a topic
         consumerService()
-            .createConsumer(context, groupId, jsonConsumer)
-            .subscribeConsumer(context, groupId, name, topics);
+                .createConsumer(context, groupId, jsonConsumer)
+                .subscribeConsumer(context, groupId, name, topics);
 
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
 
         // poll to subscribe
         consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-            .as(BodyCodec.jsonObject())
-            .send(ar -> consume.complete(true));
+                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonObject())
+                .send()
+                .onComplete(ar -> consume.complete(true));
 
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
@@ -507,8 +524,9 @@ public class SeekIT extends HttpBridgeITAbstract {
         root.put("offsets", offsets);
 
         seekService()
-            .positionsRequest(groupId, name, root)
-                .sendJsonObject(root, ar -> {
+                .positionsRequest(groupId, name, root)
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -523,7 +541,7 @@ public class SeekIT extends HttpBridgeITAbstract {
 
         // consumer deletion
         consumerService()
-            .deleteConsumer(context, groupId, name);
+                .deleteConsumer(context, groupId, name);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));

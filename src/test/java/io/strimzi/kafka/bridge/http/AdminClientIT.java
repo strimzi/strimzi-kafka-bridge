@@ -32,7 +32,8 @@ public class AdminClientIT extends HttpBridgeITAbstract {
         baseService()
                 .getRequest("/topics")
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
@@ -52,7 +53,8 @@ public class AdminClientIT extends HttpBridgeITAbstract {
         baseService()
                 .getRequest("/topics/" + topic)
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -85,7 +87,8 @@ public class AdminClientIT extends HttpBridgeITAbstract {
         baseService()
                 .getRequest("/topics/" + topic)
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -102,7 +105,8 @@ public class AdminClientIT extends HttpBridgeITAbstract {
         baseService()
                 .getRequest("/topics/" + topic + "/partitions")
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
@@ -132,7 +136,8 @@ public class AdminClientIT extends HttpBridgeITAbstract {
         baseService()
                 .getRequest("/topics/" + topic + "/partitions/0")
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -157,7 +162,8 @@ public class AdminClientIT extends HttpBridgeITAbstract {
         baseService()
                 .getRequest("/topics/" + topic + "/partitions/0/offsets")
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -175,7 +181,8 @@ public class AdminClientIT extends HttpBridgeITAbstract {
         baseService()
                 .getRequest("/topics/" + topic + "/partitions/0/offsets")
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -207,7 +214,8 @@ public class AdminClientIT extends HttpBridgeITAbstract {
         CompletableFuture<Boolean> producer = new CompletableFuture<>();
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root, ar1 -> {
+                .sendJsonObject(root)
+                .onComplete(ar1 -> {
                     context.verify(() -> {
                         assertThat(ar1.succeeded(), is(true));
                         producer.complete(true);
@@ -224,7 +232,8 @@ public class AdminClientIT extends HttpBridgeITAbstract {
         baseService()
                 .postRequest("/admin/topics")
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(jsonObject, ar -> {
+                .sendJsonObject(jsonObject)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -243,7 +252,8 @@ public class AdminClientIT extends HttpBridgeITAbstract {
         baseService()
                 .postRequest("/admin/topics")
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(jsonObject, ar -> {
+                .sendJsonObject(jsonObject)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -264,7 +274,8 @@ public class AdminClientIT extends HttpBridgeITAbstract {
         baseService()
                 .postRequest("/admin/topics")
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(jsonObject, ar -> {
+                .sendJsonObject(jsonObject)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();

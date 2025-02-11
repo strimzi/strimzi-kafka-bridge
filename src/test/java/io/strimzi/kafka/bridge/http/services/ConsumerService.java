@@ -117,7 +117,8 @@ public class ConsumerService extends BaseService {
         deleteRequest(Urls.consumerInstanceSubscription(groupId, name))
                 .putHeader(CONTENT_LENGTH.toString(), String.valueOf(topicsRoot.toBuffer().length()))
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(topicsRoot, ar -> {
+                .sendJsonObject(topicsRoot)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
@@ -144,7 +145,8 @@ public class ConsumerService extends BaseService {
                 .putHeader(CONTENT_LENGTH.toString(), String.valueOf(partitionsRoot.toBuffer().length()))
                 .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(partitionsRoot, ar -> {
+                .sendJsonObject(partitionsRoot)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
@@ -161,7 +163,8 @@ public class ConsumerService extends BaseService {
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
         createConsumerRequest(groupId, json)
-                .sendJsonObject(json, ar -> {
+                .sendJsonObject(json)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -198,7 +201,8 @@ public class ConsumerService extends BaseService {
                 .putHeader(CONTENT_LENGTH.toString(), String.valueOf(jsonObject.toBuffer().length()))
                 .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(jsonObject, ar -> {
+                .sendJsonObject(jsonObject)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
@@ -216,7 +220,8 @@ public class ConsumerService extends BaseService {
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion
         deleteConsumerRequest(groupId, name)
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();

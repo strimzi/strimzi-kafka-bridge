@@ -85,7 +85,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         // create consumer
         CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerJson)
-                .sendJsonObject(consumerJson, ar -> {
+                .sendJsonObject(consumerJson)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -109,7 +110,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         // create consumer
         CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, null)
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -147,7 +149,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         // create consumer
         CompletableFuture<Boolean> createBooleanAsString = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerJson)
-                .sendJsonObject(consumerJson, ar -> {
+                .sendJsonObject(consumerJson)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -168,7 +171,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         // create consumer
         CompletableFuture<Boolean> createGenericString = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerJson)
-                .sendJsonObject(consumerJson, ar -> {
+                .sendJsonObject(consumerJson)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -212,7 +216,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         // create consumer
         CompletableFuture<Boolean> createIntegerAsString = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerJson)
-                .sendJsonObject(consumerJson, ar -> {
+                .sendJsonObject(consumerJson)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -233,7 +238,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         // create consumer
         CompletableFuture<Boolean> createGenericString = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerJson)
-                .sendJsonObject(consumerJson, ar -> {
+                .sendJsonObject(consumerJson)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -264,7 +270,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(X_FORWARDED_HOST, xForwardedHost)
                 .putHeader(X_FORWARDED_PROTO, xForwardedProto)
-                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -295,7 +302,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(FORWARDED, forwarded)
-                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -331,7 +339,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeaders(headers)
-                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -365,7 +374,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(FORWARDED, forwarded)
                 .putHeader("X-Forwarded-Path", xForwardedPath)
-                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -396,7 +406,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         CompletableFuture<Boolean> create = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(FORWARDED, forwarded)
-                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -424,7 +435,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
 
         consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
                 .putHeader(FORWARDED, forwarded)
-                .sendJsonObject(consumerWithEarliestResetJson, ar -> {
+                .sendJsonObject(consumerWithEarliestResetJson)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -502,7 +514,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
             .as(BodyCodec.jsonArray())
-            .send(ar -> {
+            .send()
+            .onComplete(ar -> {
                 context.verify(() -> {
                     assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonArray> response = ar.result();
@@ -553,7 +566,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
             .as(BodyCodec.jsonArray())
-            .send(ar -> {
+            .send()
+            .onComplete(ar -> {
                 context.verify(() -> {
                     assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonArray> response = ar.result();
@@ -599,7 +613,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_TEXT)
             .as(BodyCodec.jsonArray())
-            .send(ar -> {
+            .send()
+            .onComplete(ar -> {
                 context.verify(() -> {
                     assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonArray> response = ar.result();
@@ -655,7 +670,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
             .as(BodyCodec.jsonArray())
-            .send(ar -> {
+            .send()
+            .onComplete(ar -> {
                 context.verify(() -> {
                     assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonArray> response = ar.result();
@@ -723,7 +739,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
@@ -786,7 +803,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
@@ -857,7 +875,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
@@ -921,7 +940,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
@@ -975,7 +995,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
@@ -1035,7 +1056,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
@@ -1072,7 +1094,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         CompletableFuture<Boolean> commit = new CompletableFuture<>();
         consumerService()
             .offsetsRequest(groupId, name, root)
-                .sendJsonObject(root, ar -> {
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1123,7 +1146,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
@@ -1151,7 +1175,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
 
         consumerService()
             .offsetsRequest(groupId, name)
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1190,7 +1215,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         // create the same consumer again
         consumerService()
             .createConsumerRequest(groupId, json)
-                .sendJsonObject(json, ar -> {
+                .sendJsonObject(json)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1210,7 +1236,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         json.put("name", name + "diff");
         consumerService()
             .createConsumerRequest(groupId, json)
-                .sendJsonObject(json, ar -> {
+                .sendJsonObject(json)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1238,7 +1265,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
             .as(BodyCodec.jsonObject())
-            .send(ar -> {
+            .send()
+            .onComplete(ar -> {
                 context.verify(() -> {
                     assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonObject> response = ar.result();
@@ -1266,7 +1294,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
 
         consumerService()
             .offsetsRequest(groupId, name, root)
-                .sendJsonObject(root, ar -> {
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1303,7 +1332,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, null, 1, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1347,7 +1377,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
@@ -1382,7 +1413,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1423,7 +1455,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY)
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1473,7 +1506,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         CompletableFuture<Boolean> produce = new CompletableFuture<>();
         producerService()
             .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root, ar -> {
+                .sendJsonObject(root)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1506,7 +1540,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonArray> response = ar.result();
@@ -1565,7 +1600,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1596,7 +1632,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .createConsumerRequest(groupId, json)
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(json, ar -> {
+                .sendJsonObject(json)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1624,7 +1661,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
                 .createConsumerRequest(groupId, json)
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(json, ar -> {
+                .sendJsonObject(json)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1649,7 +1687,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .createConsumerRequest(groupId, consumerJson)
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(consumerJson, ar -> {
+                .sendJsonObject(consumerJson)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1665,7 +1704,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                             // consumer deletion
                             consumerService()
                                 .deleteConsumerRequest(groupId, name)
-                                    .send(consumerDeletedResponse -> {
+                                    .send()
+                                    .onComplete(consumerDeletedResponse -> {
                                         context.verify(() -> assertThat(ar.succeeded(), is(true)));
 
                                         HttpResponse<JsonObject> deletionResponse = consumerDeletedResponse.result();
@@ -1688,7 +1728,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
 
         CompletableFuture<Boolean> consumer = new CompletableFuture<>();
         consumerService().createConsumerRequest(groupId, json)
-            .sendJsonObject(json, ar -> {
+            .sendJsonObject(json)
+            .onComplete(ar -> {
                 context.verify(() -> {
                     assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonObject> response = ar.result();
@@ -1716,7 +1757,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
                 .createConsumerRequest(groupId, requestHeader)
                 .as(BodyCodec.jsonObject())
-                .sendJsonObject(requestHeader, ar -> {
+                .sendJsonObject(requestHeader)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1741,7 +1783,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
             .createConsumerRequest(groupId, json)
             .as(BodyCodec.jsonObject())
-            .sendJsonObject(json, ar -> {
+            .sendJsonObject(json)
+            .onComplete(ar -> {
                 context.verify(() -> {
                     assertThat(ar.succeeded(), is(true));
                     HttpResponse<JsonObject> response = ar.result();
@@ -1789,7 +1832,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         CompletableFuture<Boolean> assign = new CompletableFuture<>();
         consumerService()
                 .assignRequest(groupId, name, partitionsRoot)
-                .sendJsonObject(partitionsRoot, ar -> {
+                .sendJsonObject(partitionsRoot)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), Matchers.is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1805,7 +1849,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
                 .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), CoreMatchers.is(true));
                         HttpResponse<JsonArray> response = ar.result();
@@ -1858,7 +1903,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         CompletableFuture<Boolean> assign = new CompletableFuture<>();
         consumerService()
                 .assignRequest(groupId, name, partitionsRoot)
-                .sendJsonObject(partitionsRoot, ar -> {
+                .sendJsonObject(partitionsRoot)
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), Matchers.is(true));
                         HttpResponse<JsonObject> response = ar.result();
@@ -1880,7 +1926,8 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         consumerService()
                 .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonArray())
-                .send(ar -> {
+                .send()
+                .onComplete(ar -> {
                     context.verify(() -> {
                         assertThat(ar.succeeded(), CoreMatchers.is(true));
                         HttpResponse<JsonArray> response = ar.result();
