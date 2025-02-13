@@ -824,15 +824,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    final HttpOpenApiOperation OPENAPIV2 = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPIV2) {
-
-        @Override
-        public void process(RoutingContext routingContext) {
-            HttpBridgeError error = new HttpBridgeError(HttpResponseStatus.GONE.code(), "OpenAPI v2 Swagger not supported");
-            HttpUtils.sendResponse(routingContext, HttpResponseStatus.GONE.code(),
-                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
-        }
-    };
+    final HttpOpenApiOperation OPENAPIV2 = new NotSupportedApi(HttpOpenApiOperations.OPENAPIV2);
 
     final HttpOpenApiOperation OPENAPIV3 = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPIV3) {
 
@@ -857,4 +849,17 @@ public class HttpBridge extends AbstractVerticle {
             information(routingContext);
         }
     };
+
+    static class NotSupportedApi extends HttpOpenApiOperation {
+        public NotSupportedApi(HttpOpenApiOperations operationId) {
+            super(operationId);
+        }
+
+        @Override
+        public void process(RoutingContext routingContext) {
+            HttpBridgeError error = new HttpBridgeError(HttpResponseStatus.GONE.code(), "OpenAPI v2 Swagger not supported");
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.GONE.code(),
+                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+        }
+    }
 }

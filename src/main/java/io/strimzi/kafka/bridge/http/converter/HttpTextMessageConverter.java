@@ -18,6 +18,8 @@ import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 
 import javax.xml.bind.DatatypeConverter;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,7 +30,6 @@ import java.util.List;
 public class HttpTextMessageConverter implements MessageConverter<byte[], byte[], byte[], byte[]> {
     @Override
     public ProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, byte[] message) {
-
         Integer partitionFromBody = null;
         Long timestamp = null;
         byte[] key = null;
@@ -43,14 +44,14 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
                 if (!keyNode.isTextual()) {
                     throw new IllegalStateException("Because the embedded format is 'text', the key must be a string");
                 }
-                key = keyNode.asText().getBytes();
+                key = keyNode.asText().getBytes(Charset.forName("UTF-8"));
             }
             if (json.has("value")) {
                 JsonNode valueNode = json.get("value");
                 if (!valueNode.isTextual()) {
                     throw new IllegalStateException("Because the embedded format is 'text', the value must be a string");
                 }
-                value = valueNode.asText().getBytes();
+                value = valueNode.asText().getBytes(Charset.forName("UTF-8"));
             }
             if (json.has("timestamp")) {
                 timestamp = json.get("timestamp").asLong();
@@ -101,8 +102,8 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
             ObjectNode jsonObject = JsonUtils.createObjectNode();
 
             jsonObject.set("topic", new TextNode(record.topic()));
-            jsonObject.set("key", record.key() != null ? new TextNode(new String(record.key())) : null);
-            jsonObject.set("value", record.value() != null ? new TextNode(new String(record.value())) : null);
+            jsonObject.set("key", record.key() != null ? new TextNode(new String(record.key(), StandardCharsets.UTF_8)) : null);
+            jsonObject.set("value", record.value() != null ? new TextNode(new String(record.value(), StandardCharsets.UTF_8)) : null);
             jsonObject.put("partition", record.partition());
             jsonObject.put("offset", record.offset());
             jsonObject.put("timestamp", record.timestamp());
