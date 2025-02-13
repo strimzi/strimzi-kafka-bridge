@@ -18,7 +18,6 @@ import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 
 import javax.xml.bind.DatatypeConverter;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,14 +43,14 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
                 if (!keyNode.isTextual()) {
                     throw new IllegalStateException("Because the embedded format is 'text', the key must be a string");
                 }
-                key = keyNode.asText().getBytes(Charset.forName("UTF-8"));
+                key = keyNode.asText().getBytes(StandardCharsets.UTF_8);
             }
             if (json.has("value")) {
                 JsonNode valueNode = json.get("value");
                 if (!valueNode.isTextual()) {
                     throw new IllegalStateException("Because the embedded format is 'text', the value must be a string");
                 }
-                value = valueNode.asText().getBytes(Charset.forName("UTF-8"));
+                value = valueNode.asText().getBytes(StandardCharsets.UTF_8);
             }
             if (json.has("timestamp")) {
                 timestamp = json.get("timestamp").asLong();
