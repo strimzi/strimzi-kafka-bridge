@@ -824,7 +824,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    final HttpOpenApiOperation OPENAPIV2 = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPIV2) {
+    final static HttpOpenApiOperation OPENAPIV2 = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPIV2) {
 
         @Override
         public void process(RoutingContext routingContext) {
