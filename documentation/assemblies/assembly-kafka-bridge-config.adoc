@@ -6,9 +6,8 @@
 = Kafka Bridge configuration
 
 [role="_abstract"]
-Configure a deployment of the Kafka Bridge using configuration properties.
-Configure Kafka and specify the HTTP connection details needed to be able to interact with Kafka.
-It is possible to enable metrics in Prometheus format with Prometheus JMX Exporter or Strimzi Metrics Reporter.
+Configure a deployment of the Kafka Bridge with Kafka-related properties and specify the HTTP connection details needed to be able to interact with Kafka.
+Additionally, enable metrics in Prometheus format using either the https://github.com/prometheus/jmx_exporter[Prometheus JMX Exporter] or the https://github.com/strimzi/metrics-reporter[Strimzi Metrics Reporter].
 You can also use configuration properties to enable and use distributed tracing with the Kafka Bridge.
 Distributed tracing allows you to track the progress of transactions between applications in a distributed system.
 

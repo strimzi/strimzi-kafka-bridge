@@ -2,7 +2,7 @@
 = Configuring Strimzi Metrics Reporter metrics
 
 [role="_abstract"]
-Enable metrics with Strimzi Metrics Reporter by setting the `bridge.metrics` option to `strimziMetricsReporter`.
+Enable the Strimzi Metrics Reporter to collect Kafka Bridge metrics by setting the `bridge.metrics` option to `strimziMetricsReporter`.
 
 .Prerequisites
 
@@ -19,17 +19,17 @@ Enable metrics with Strimzi Metrics Reporter by setting the `bridge.metrics` opt
 bridge.metrics=strimziMetricsReporter
 ----
 +
-Optionally, you can configure a comma-separated list of regexes to filter exposed metrics using the `kafka.prometheus.metrics.reporter.allowlist` property.
-If not configured, a default set of metrics will be exposed.
+Optionally, you can configure a comma-separated list of regular expressions to filter exposed metrics using the `kafka.prometheus.metrics.reporter.allowlist` property.
+If not configured, a default set of metrics is exposed.
 
-When needed, it is possible to configure the allowlist per client type.
-For example, set `kafka.admin.prometheus.metrics.reporter.allowlist=` to exclude all admin client metrics.
++
+When needed, it is possible to configure the `allowlist` per client type.
+For example, by using the `kafka.admin` prefix and setting `kafka.admin.prometheus.metrics.reporter.allowlist=`, all admin client metrics are excluded.
 
-In case the same property is set with multiple prefixes, the most specific prefix wins.
-For example, `kafka.producer.prometheus.metrics.reporter.allowlist` wins over `kafka.prometheus.metrics.reporter.allowlist`. 
-
-You can add any plugin configuration to the Bridge properties file using `kafka.`, `kafka.admin.`, `kafka.producer.`, and `kafka.consumer.` prefixes.
-See the https://github.com/strimzi/metrics-reporter[Strimzi Metrics Reporter] documentation for more details.
++
+You can add any plugin configuration to the Kafka Bridge properties file using `kafka.`, `kafka.admin.`, `kafka.producer.`, and `kafka.consumer.` prefixes.
+In the event that the same property is configured with multiple prefixes, the most specific prefix takes precedence.
+For example, `kafka.producer.prometheus.metrics.reporter.allowlist` takes precedence over `kafka.prometheus.metrics.reporter.allowlist`.
 
 . Run the Kafka Bridge run script.
 +
@@ -39,4 +39,4 @@ See the https://github.com/strimzi/metrics-reporter[Strimzi Metrics Reporter] do
 ./bin/kafka_bridge_run.sh --config-file=<path>/application.properties
 ----
 +
-With metrics enabled, you can scrape metrics in the Prometheus format from the `/metrics` endpoint of the Kafka Bridge.
+With metrics enabled, you can scrape metrics in Prometheus format from the `/metrics` endpoint of the Kafka Bridge.
