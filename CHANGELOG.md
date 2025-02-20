@@ -9,6 +9,15 @@
   * Both the `/openapi` and `/openapi/v3` endpoints return the OpenAPI v3 definition of the bridge REST API.
 * Removed script to build bridge configuration within the container. 
   It is going to be set up by the Strimzi operator within a ConfigMap and mounted as volume on the bridge pod.
+* Added support for [Strimzi Metrics Reporter](https://github.com/strimzi/metrics-reporter).
+  Set `bridge.metrics=strimziMetricsReporter` to enable it.
+* Added support for custom Prometheus JMX Exporter configuration.
+  Set `bridge.metrics.exporter.config.path=/path/to/my-exporter-config.yml` to use your custom config.
+
+### Changes, deprecations and removals
+
+* `KAFKA_BRIDGE_METRICS_ENABLED` configuration has been deprecated.
+  Set `bridge.metrics=jmxPrometheusExporter` to keep using Prometheus JMX Exporter.
 
 ## 0.31.1
 

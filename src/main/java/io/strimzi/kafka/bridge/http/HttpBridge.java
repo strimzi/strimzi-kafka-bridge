@@ -2,7 +2,6 @@
  * Copyright Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
-
 package io.strimzi.kafka.bridge.http;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,10 +14,13 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.IllegalEmbeddedFormatException;
-import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.strimzi.kafka.bridge.metrics.JmxMetricsCollector;
+import io.strimzi.kafka.bridge.metrics.MetricsCollector;
+import io.strimzi.kafka.bridge.metrics.MetricsType;
+import io.strimzi.kafka.bridge.metrics.StrimziMetricsCollector;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.file.FileSystem;
@@ -43,11 +45,19 @@ import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.management.MalformedObjectNameException;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
 import static io.netty.handler.codec.http.HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS;
@@ -59,7 +69,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.ORIGIN;
 /**
  * Main bridge class listening for connections and handling HTTP requests.
  */
-@SuppressWarnings({"checkstyle:MemberName"})
+@SuppressWarnings({"checkstyle:MemberName", "checkstyle:ClassDataAbstractionCoupling", "checkstyle:ClassFanOutComplexity"})
 public class HttpBridge extends AbstractVerticle {
     private static final Logger LOGGER = LogManager.getLogger(HttpBridge.class);
 
@@ -76,17 +86,59 @@ public class HttpBridge extends AbstractVerticle {
 
     private final Map<ConsumerInstanceId, Long> timestampMap = new HashMap<>();
 
-    private final MetricsReporter metricsReporter;
+    private MetricsCollector metricsCollector = null;
 
     /**
      * Constructor
      *
      * @param bridgeConfig bridge configuration
-     * @param metricsReporter MetricsReporter instance for scraping metrics from different registries
      */
-    public HttpBridge(BridgeConfig bridgeConfig, MetricsReporter metricsReporter) {
+    public HttpBridge(BridgeConfig bridgeConfig) {
         this.bridgeConfig = bridgeConfig;
-        this.metricsReporter = metricsReporter;
+        if (bridgeConfig.getMetricsType() != null) {
+            if (bridgeConfig.getMetricsType() == MetricsType.JMX_EXPORTER) {
+                this.metricsCollector = createJmxMetricsCollector(bridgeConfig);
+            } else if (bridgeConfig.getMetricsType() == MetricsType.STRIMZI_REPORTER) {
+                this.metricsCollector = new StrimziMetricsCollector();
+            }
+        }
+        if (metricsCollector != null) {
+            LOGGER.info("Metrics of type '{}' enabled and exposed on /metrics endpoint", bridgeConfig.getMetricsType());
+        }
+    }
+
+    /**
+     * Create a JmxMetricsCollector instance with the YAML configuration filters.
+     * This is loaded from a custom config file if present or from the default configuration file.
+     *
+     * @return JmxCollectorRegistry instance
+     */
+    private static JmxMetricsCollector createJmxMetricsCollector(BridgeConfig bridgeConfig) {
+        try {
+            if (bridgeConfig.getJmxExporterConfigPath() == null) {
+                // load default configuration
+                LOGGER.info("Using default JMX metrics configuration");
+                InputStream is = Application.class.getClassLoader().getResourceAsStream("jmx_metrics_config.yaml");
+                if (is == null) {
+                    return null;
+                }
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                    String yaml = reader
+                        .lines()
+                        .collect(Collectors.joining("\n"));
+                    return new JmxMetricsCollector(yaml);
+                }
+            } else if (Files.exists(bridgeConfig.getJmxExporterConfigPath())) {
+                // load custom configuration file
+                LOGGER.info("Loading custom JMX metrics configuration file from {}", bridgeConfig.getJmxExporterConfigPath());
+                String yaml = Files.readString(bridgeConfig.getJmxExporterConfigPath(), StandardCharsets.UTF_8);
+                return new JmxMetricsCollector(yaml);
+            } else {
+                throw new RuntimeException("Custom JMX metrics configuration file not found");
+            }
+        } catch (IOException | MalformedObjectNameException e) {
+            throw new RuntimeException("Failed to initialize JMX metrics collector", e);
+        }
     }
 
     private void bindHttpServer(Promise<Void> startPromise) {
@@ -140,7 +192,6 @@ public class HttpBridge extends AbstractVerticle {
 
     @Override
     public void start(Promise<Void> startPromise) {
-
         RouterBuilder.create(vertx, "openapi.json")
                 .onComplete(ar -> {
                     if (ar.succeeded()) {
@@ -184,9 +235,9 @@ public class HttpBridge extends AbstractVerticle {
                         this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
                         this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
 
-                        if (this.metricsReporter.getMeterRegistry() != null) {
+                        if (this.metricsCollector != null && this.metricsCollector.getVertxRegistry() != null) {
                             // exclude to report the HTTP server metrics for the /metrics endpoint itself
-                            this.metricsReporter.getMeterRegistry().config().meterFilter(
+                            this.metricsCollector.getVertxRegistry().config().meterFilter(
                                     MeterFilter.deny(meter -> "/metrics".equals(meter.getTag(Label.HTTP_PATH.toString())))
                             );
                         }
@@ -236,7 +287,6 @@ public class HttpBridge extends AbstractVerticle {
 
     @Override
     public void stop(Promise<Void> stopPromise) {
-
         LOGGER.info("Stopping HTTP-Kafka bridge verticle ...");
 
         this.isReady = false;
@@ -558,10 +608,14 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void metrics(RoutingContext routingContext) {
-        routingContext.response()
+        if (metricsCollector != null) {
+            routingContext.response()
                 .putHeader("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
                 .setStatusCode(HttpResponseStatus.OK.code())
-                .end(metricsReporter.scrape());
+                .end(metricsCollector.scrape());
+        } else {
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(), null, null);
+        }
     }
 
     private void information(RoutingContext routingContext) {

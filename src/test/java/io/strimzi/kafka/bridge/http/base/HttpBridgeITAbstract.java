@@ -5,9 +5,6 @@
 
 package io.strimzi.kafka.bridge.http.base;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.strimzi.kafka.bridge.JmxCollectorRegistry;
-import io.strimzi.kafka.bridge.MetricsReporter;
 import io.strimzi.kafka.bridge.clients.BasicKafkaClient;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
@@ -20,6 +17,7 @@ import io.strimzi.kafka.bridge.http.services.BaseService;
 import io.strimzi.kafka.bridge.http.services.ConsumerService;
 import io.strimzi.kafka.bridge.http.services.ProducerService;
 import io.strimzi.kafka.bridge.http.services.SeekService;
+import io.strimzi.kafka.bridge.metrics.MetricsType;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.strimzi.test.container.StrimziKafkaContainer;
 import io.vertx.core.Vertx;
@@ -88,6 +86,7 @@ public abstract class HttpBridgeITAbstract {
         config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
         config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
+        config.put(BridgeConfig.METRICS_TYPE, MetricsType.STRIMZI_REPORTER.toString());
         config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
     }
 
@@ -97,9 +96,6 @@ public abstract class HttpBridgeITAbstract {
     protected static AdminClientFacade adminClientFacade;
     protected static HttpBridge httpBridge;
     protected static BridgeConfig bridgeConfig;
-
-    protected static MeterRegistry meterRegistry = null;
-    protected static JmxCollectorRegistry jmxCollectorRegistry = null;
 
     protected BaseService baseService() {
         return BaseService.getInstance(client);
@@ -128,7 +124,8 @@ public abstract class HttpBridgeITAbstract {
 
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
             bridgeConfig = BridgeConfig.fromMap(config);
-            httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry));
+            
+            httpBridge = new HttpBridge(bridgeConfig);
 
             LOGGER.info("Deploying in-memory bridge");
             vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> context.completeNow()));
