@@ -8,7 +8,6 @@ import io.vertx.core.Vertx;
 import io.vertx.kafka.client.producer.KafkaHeader;
 import io.vertx.kafka.client.producer.KafkaProducer;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
-import io.vertx.kafka.client.producer.RecordMetadata;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
@@ -92,29 +91,26 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
 
             record.addHeaders(headers);
 
-            producer.send(record).onComplete(done -> {
-                if (done.succeeded()) {
-                    RecordMetadata recordMetadata = done.result();
-                    LOGGER.info("Message {} written on topic={}, partition={}, offset={}",
-                            record.value(), recordMetadata.getTopic(), recordMetadata.getPartition(), recordMetadata.getOffset());
-                    
-                    numSent.getAndIncrement();
+            producer.send(record)
+                    .onSuccess(recordMetadata -> {
+                        LOGGER.info("Message {} written on topic={}, partition={}, offset={}",
+                                record.value(), recordMetadata.getTopic(), recordMetadata.getPartition(), recordMetadata.getOffset());
 
-                    if (msgCntPredicate.test(numSent.get())) {
-                        LOGGER.info("Producer produced {} messages", numSent.get());
-                        resultPromise.complete(numSent.get());
-                    }
+                        numSent.getAndIncrement();
 
-                    if (msgCntPredicate.negate().test(-1)) {
+                        if (msgCntPredicate.test(numSent.get())) {
+                            LOGGER.info("Producer produced {} messages", numSent.get());
+                            resultPromise.complete(numSent.get());
+                        }
+
+                        if (msgCntPredicate.negate().test(-1)) {
+                            sendNext(producer, topic, headers, message, partition, timestamp, withNullKeyRecord);
+                        }
+                    })
+                    .onFailure(t -> {
+                        LOGGER.error("Producer cannot connect to topic {}", topic, t);
                         sendNext(producer, topic, headers, message, partition, timestamp, withNullKeyRecord);
-                    }
-
-                } else {
-                    LOGGER.error("Producer cannot connect to topic {}", topic, done.cause());
-                    sendNext(producer, topic, headers, message, partition, timestamp, withNullKeyRecord);
-                }
-            });
-
+                    });
         }
     }
 
