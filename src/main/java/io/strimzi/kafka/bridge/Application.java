@@ -50,12 +50,15 @@ public class Application {
             BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
             LOGGER.info("Bridge configuration {}", bridgeConfig);
 
-            deployHttpBridge(bridgeConfig).onComplete(done -> {
-                if (done.succeeded()) {
-                    // register tracing - if set, etc
-                    TracingUtil.initialize(bridgeConfig);
-                }
-            });
+            deployHttpBridge(bridgeConfig)
+                    .onSuccess(httpBridge -> {
+                        // register tracing - if set, etc
+                        TracingUtil.initialize(bridgeConfig);
+                    })
+                    .onFailure(t -> {
+                        LOGGER.error("Error starting the bridge", t);
+                        System.exit(1);
+                    });
         } catch (RuntimeException | MalformedObjectNameException | IOException | ParseException e) {
             LOGGER.error("Error starting the bridge", e);
             System.exit(1);
@@ -76,14 +79,13 @@ public class Application {
         HttpBridge httpBridge = new HttpBridge(bridgeConfig);
 
         vertx.deployVerticle(httpBridge)
-                .onComplete(done -> {
-                    if (done.succeeded()) {
-                        LOGGER.info("HTTP verticle instance deployed [{}]", done.result());
-                        httpPromise.complete(httpBridge);
-                    } else {
-                        LOGGER.error("Failed to deploy HTTP verticle instance", done.cause());
-                        httpPromise.fail(done.cause());
-                    }
+                .onSuccess(deploymentId -> {
+                    LOGGER.info("HTTP verticle instance deployed [{}]", deploymentId);
+                    httpPromise.complete(httpBridge);
+                })
+                .onFailure(t -> {
+                    LOGGER.error("Failed to deploy HTTP verticle instance", t);
+                    httpPromise.fail(t);
                 });
 
         return httpPromise.future();
