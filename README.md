@@ -13,12 +13,12 @@ Thanks to the bridge, all clients which can speak HTTP 1.1 protocol can connect 
 
 ## Architectures support
 
-| Architecture | Status                      |
-|--------------|-----------------------------|
-| **amd64**    | **Supported**               |
-| **arm64**    | **Supported**, _not tested_ |
-| **ppc64le**  | **Supported**, _not tested_ |
-| **s390x**    | **Supported**, _not tested_ |
+| Architecture | Status        | Tested  |
+|--------------|---------------|---------|
+| **amd64**    | **Supported** | **yes** |
+| **arm64**    | **Supported** | _no_    |
+| **ppc64le**  | **Supported** | _no_    |
+| **s390x**    | **Supported** | _no_    |
 
 ## Running the bridge
 
