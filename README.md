@@ -11,6 +11,15 @@ This project provides a software component which acts as a bridge between [HTTP 
 It provides a different way to interact with Apache Kafka because the latter natively supports only a custom (proprietary) protocol.
 Thanks to the bridge, all clients which can speak HTTP 1.1 protocol can connect to Apache Kafka cluster in order to send and receive messages to / from topics.
 
+## Architectures support
+
+| Architecture | Status        | Tested  |
+|--------------|---------------|---------|
+| **amd64**    | **Supported** | **yes** |
+| **arm64**    | **Supported** | _no_    |
+| **ppc64le**  | **Supported** | _no_    |
+| **s390x**    | **Supported** | _no_    |
+
 ## Running the bridge
 
 ### On Kubernetes and OpenShift
