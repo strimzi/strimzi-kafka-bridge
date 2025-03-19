@@ -900,8 +900,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
                         String statusMessage = offsets.getJsonObject(0).getString("message");
 
                         assertThat(code, is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(statusMessage, is("Topic " + topic + " not present in metadata after " +
-                                    config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms."));
+                        assertThat(statusMessage, is("Partition 1 of topic " + topic + " with partition count 1 is not present in metadata after " +
+                                config.get(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG) + " ms."));
                     });
                     context.completeNow();
                 });
@@ -1104,7 +1104,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
                         assertThat(metadata.getLong("offset"), is(0L));
                         HttpBridgeError error = HttpBridgeError.fromJson(offsets.getJsonObject(1));
                         assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.message(), is("Topic " + topic + " not present in metadata after 10000 ms."));
+                        assertThat(error.message(), is("Partition 500 of topic " + topic + " with partition count 3 is not present in metadata after 10000 ms."));
                     });
                     context.completeNow();
                 });
