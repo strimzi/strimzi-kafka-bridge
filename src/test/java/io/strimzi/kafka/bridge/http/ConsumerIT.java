@@ -462,7 +462,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     @Test
     void createConsumerWithWrongAutoOffsetReset(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
         checkCreatingConsumer("auto.offset.reset", "foo", HttpResponseStatus.UNPROCESSABLE_ENTITY,
-                "Invalid value foo for configuration auto.offset.reset: String must be one of: latest, earliest, none", context);
+                "Invalid value foo for configuration auto.offset.reset: Invalid value `foo` for configuration auto.offset.reset. The value must be either 'earliest', 'latest', 'none' or of the format 'by_duration:<PnDTnHnMn.nS.>'.", context);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
