@@ -11,7 +11,7 @@ import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.facades.AdminClientFacade;
 import io.strimzi.kafka.bridge.utils.Urls;
-import io.strimzi.test.container.StrimziKafkaContainer;
+import io.strimzi.test.container.StrimziKafkaCluster;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpMethod;
@@ -54,17 +54,18 @@ public class HttpCorsIT {
     static WebClient client;
 
     static BridgeConfig bridgeConfig;
-    static StrimziKafkaContainer kafkaContainer;
+    static StrimziKafkaCluster kafkaCluster;
     static AdminClientFacade adminClientFacade;
 
     static {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
-            kafkaContainer = new StrimziKafkaContainer()
-                .withKraft()
-                .waitForRunning();
-            kafkaContainer.start();
+            kafkaCluster = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
+                .withNumberOfBrokers(1)
+                .withSharedNetwork()
+                .build();
+            kafkaCluster.start();
 
-            kafkaUri = kafkaContainer.getBootstrapServers();
+            kafkaUri = kafkaCluster.getBootstrapServers();
 
             adminClientFacade = AdminClientFacade.create(kafkaUri);
         } else {
@@ -92,7 +93,7 @@ public class HttpCorsIT {
     static void afterAll() {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
             adminClientFacade.close();
-            kafkaContainer.stop();
+            kafkaCluster.stop();
         }
     }
 

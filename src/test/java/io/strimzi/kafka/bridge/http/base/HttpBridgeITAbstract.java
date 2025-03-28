@@ -19,7 +19,7 @@ import io.strimzi.kafka.bridge.http.services.ProducerService;
 import io.strimzi.kafka.bridge.http.services.SeekService;
 import io.strimzi.kafka.bridge.metrics.MetricsType;
 import io.strimzi.kafka.bridge.utils.Urls;
-import io.strimzi.test.container.StrimziKafkaContainer;
+import io.strimzi.test.container.StrimziKafkaCluster;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
@@ -59,7 +59,7 @@ public abstract class HttpBridgeITAbstract {
     protected int count;
     protected String topic;
 
-    public static StrimziKafkaContainer kafkaContainer = null;
+    public static StrimziKafkaCluster kafkaCluster = null;
     protected static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
     protected static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
 
@@ -69,12 +69,13 @@ public abstract class HttpBridgeITAbstract {
 
     static {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
-            kafkaContainer = new StrimziKafkaContainer()
-                .withKraft()
-                .waitForRunning();
-            kafkaContainer.start();
+            kafkaCluster = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
+                .withNumberOfBrokers(1)
+                .withSharedNetwork()
+                .build();
+            kafkaCluster.start();
 
-            kafkaUri = kafkaContainer.getBootstrapServers();
+            kafkaUri = kafkaCluster.getBootstrapServers();
 
             adminClientFacade = AdminClientFacade.create(kafkaUri);
         } else {
