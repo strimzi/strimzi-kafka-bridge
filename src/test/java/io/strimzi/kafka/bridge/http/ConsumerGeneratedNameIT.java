@@ -11,7 +11,7 @@ import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 import io.strimzi.kafka.bridge.http.services.ConsumerService;
 import io.strimzi.kafka.bridge.utils.Urls;
-import io.strimzi.test.container.StrimziKafkaContainer;
+import io.strimzi.test.container.StrimziKafkaCluster;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
@@ -49,17 +49,18 @@ public class ConsumerGeneratedNameIT {
     private static final Logger LOGGER = LogManager.getLogger(ConsumerGeneratedNameIT.class);
     static String kafkaUri;
     private static Map<String, Object> config = new HashMap<>();
-    private static StrimziKafkaContainer kafkaContainer;
+    private static StrimziKafkaCluster kafkaCluster;
     private static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
     private static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
 
     static {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
-            kafkaContainer = new StrimziKafkaContainer()
-                .withKraft()
-                .waitForRunning();
-            kafkaContainer.start();
-            kafkaUri = kafkaContainer.getBootstrapServers();
+            kafkaCluster = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
+                .withNumberOfBrokers(1)
+                .withSharedNetwork()
+                .build();
+            kafkaCluster.start();
+            kafkaUri = kafkaCluster.getBootstrapServers();
         } else {
             // else use external kafka
             kafkaUri = "localhost:9092";
@@ -109,7 +110,7 @@ public class ConsumerGeneratedNameIT {
     @AfterAll
     static void afterAll(VertxTestContext context) {
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
-            kafkaContainer.stop();
+            kafkaCluster.stop();
             vertx.close().onComplete(context.succeeding(arg -> context.completeNow()));
         }
     }
