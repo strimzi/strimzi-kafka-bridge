@@ -2,7 +2,7 @@
 
 ## 0.32.0
 
-* Dependency updates (Kafka 4.0.0, Vert.x 4.5.13, Netty 4.1.118.Final, JMX exporter 1.2.0)
+* Dependency updates (Kafka 4.0.0, Vert.x 4.5.14, Netty 4.1.118.Final, JMX exporter 1.2.0)
 * Dropped support for Java 11 and replaced with Java 17.
 * Dropped support for OpenAPI v2 Swagger specification.
   * The `/openapi/v2` endpoint returns HTTP 410 Gone.
