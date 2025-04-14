@@ -127,6 +127,7 @@
 		<maven.gpg.version>3.0.1</maven.gpg.version>
 		<sonatype.nexus.staging>1.7.0</sonatype.nexus.staging>
 		<openapi.generator.version>7.8.0</openapi.generator.version>
+		<jackson-core.version>2.18.3</jackson-core.version>
 		<jackson-databind.version>2.18.3</jackson-databind.version>
 		<spotbugs.version>4.7.3</spotbugs.version>
 		<maven.spotbugs.version>4.7.3.0</maven.spotbugs.version>
@@ -370,6 +371,15 @@
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
 			<version>${snakeyaml.version}</version>
+		</dependency>
+		<!--
+			Added direct dependency because of the old version 2.16.x brought by Vert.x 4.5.x which
+			can't work together with the most updated jackson-databind throwing NoSuchMethodException
+		-->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>${jackson-core.version}</version>
 		</dependency>
 		<!-- Used only for test in the bridge, but needs to be here because OAuth brings it but a potential Maven bug remove it as runtime if only for test -->
 		<dependency>
@@ -619,6 +629,8 @@
 									<ignoredUnusedDeclaredDependency>io.prometheus:prometheus-metrics-exporter-httpserver</ignoredUnusedDeclaredDependency>
 									<!-- Transitive override to address CVE-2024-57699. Remove in the future when oauth will bring json-path with fixed json-smart -->
 									<ignoredUnusedDeclaredDependency>net.minidev:json-smart</ignoredUnusedDeclaredDependency>
+									<!-- Added direct dependency because of the old version 2.16.x brought by Vert.x 4.5.x -->
+									<ignoredUnusedDeclaredDependency>com.fasterxml.jackson.core:jackson-core</ignoredUnusedDeclaredDependency>
 								</ignoredUnusedDeclaredDependencies>
 						</configuration>
 					</execution>
