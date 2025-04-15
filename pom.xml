@@ -131,7 +131,7 @@
 		<jackson-databind.version>2.18.3</jackson-databind.version>
 		<spotbugs.version>4.7.3</spotbugs.version>
 		<maven.spotbugs.version>4.7.3.0</maven.spotbugs.version>
-		<strimzi-oauth.version>0.16.1</strimzi-oauth.version>
+		<strimzi-oauth.version>0.16.2</strimzi-oauth.version>
 		<strimzi-metrics-reporter.version>0.2.0</strimzi-metrics-reporter.version>
 		<opentelemetry.version>1.34.1</opentelemetry.version>
 		<opentelemetry-alpha.version>1.34.1-alpha</opentelemetry-alpha.version>
@@ -146,7 +146,6 @@
 		<jakarta.version>2.3.2</jakarta.version>
 		<snakeyaml.version>2.4</snakeyaml.version>
 		<guava.version>32.1.3-jre</guava.version>
-		<json-smart.version>2.5.2</json-smart.version>
 		<!-- property to skip surefire tests during failsafe execution -->
 		<!--suppress UnresolvedMavenProperty -->
 		<skip.surefire.tests>${skipTests}</skip.surefire.tests>
@@ -402,12 +401,6 @@
 			<version>${spotbugs.version}</version>
 			<scope>provided</scope>
 		</dependency>
-		<!-- Transitive override to address CVE-2024-57699. Remove in the future when oauth will bring json-path with fixed json-smart -->
-		<dependency>
-			<groupId>net.minidev</groupId>
-			<artifactId>json-smart</artifactId>
-			<version>${json-smart.version}</version>
-		</dependency>
 		<!-- Testing -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
@@ -627,8 +620,6 @@
 									<ignoredUnusedDeclaredDependency>io.strimzi:metrics-reporter</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>io.prometheus:prometheus-metrics-instrumentation-jvm</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>io.prometheus:prometheus-metrics-exporter-httpserver</ignoredUnusedDeclaredDependency>
-									<!-- Transitive override to address CVE-2024-57699. Remove in the future when oauth will bring json-path with fixed json-smart -->
-									<ignoredUnusedDeclaredDependency>net.minidev:json-smart</ignoredUnusedDeclaredDependency>
 									<!-- Added direct dependency because of the old version 2.16.x brought by Vert.x 4.5.x -->
 									<ignoredUnusedDeclaredDependency>com.fasterxml.jackson.core:jackson-core</ignoredUnusedDeclaredDependency>
 								</ignoredUnusedDeclaredDependencies>
