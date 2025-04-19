@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 0.33.0
+
+
 ## 0.32.0
 
 * Dependency updates (Kafka 4.0.0, Vert.x 4.5.14, Netty 4.1.118.Final, JMX exporter 1.2.0, OAuth 0.16.2)
