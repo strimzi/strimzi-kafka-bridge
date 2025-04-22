@@ -94,11 +94,12 @@ public class ProducerIT extends HttpBridgeITAbstract {
             context.completeNow();
         });
 
-        consumer.subscribe(topic, done -> {
-            if (!done.succeeded()) {
-                context.failNow(done.cause());
-            }
-        });
+        consumer.subscribe(topic)
+                .onComplete(done -> {
+                    if (!done.succeeded()) {
+                        context.failNow(done.cause());
+                    }
+                });
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
