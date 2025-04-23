@@ -60,23 +60,23 @@ public class Consumer extends ClientHandlerBase<Integer> implements AutoCloseabl
             });
         }
 
-        consumer.subscribe(topic, ar -> {
-            if (ar.succeeded()) {
-                consumer.handler(record -> {
-                    LOGGER.debug("Processing key={}, value={}, partition={}, offset={}",
-                                            record.key(), record.value(), record.partition(), record.offset());
-                    numReceived.getAndIncrement();
+        consumer.subscribe(topic)
+                .onSuccess(v -> {
+                    consumer.handler(record -> {
+                        LOGGER.debug("Processing key={}, value={}, partition={}, offset={}",
+                                record.key(), record.value(), record.partition(), record.offset());
+                        numReceived.getAndIncrement();
 
-                    if (msgCntPredicate.test(numReceived.get())) {
-                        LOGGER.info("Consumer consumed " + numReceived.get() + " messages");
-                        resultPromise.complete(numReceived.get());
-                    }
+                        if (msgCntPredicate.test(numReceived.get())) {
+                            LOGGER.info("Consumer consumed " + numReceived.get() + " messages");
+                            resultPromise.complete(numReceived.get());
+                        }
+                    });
+                })
+                .onFailure(t -> {
+                    LOGGER.warn("Consumer could not subscribe {}", t.getMessage());
+                    resultPromise.completeExceptionally(t);
                 });
-            } else {
-                LOGGER.warn("Consumer could not subscribe {}", ar.cause().getMessage());
-                resultPromise.completeExceptionally(ar.cause());
-            }
-        });
     }
 
     @Override
