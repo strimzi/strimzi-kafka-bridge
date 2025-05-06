@@ -967,7 +967,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
                 .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Parameter error on: partitionid - [Bad Request] Parsing error for parameter partitionid in location PATH: java.lang.NumberFormatException: For input string: \"" + partition + "\""));
+                //.sendJsonObject(root).onComplete(verifyBadRequest(context, "Parameter error on: partitionid - [Bad Request] Parsing error for parameter partitionid in location PATH: java.lang.NumberFormatException: For input string: \"" + partition + "\""));
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: The value of path parameter partitionid is invalid. Reason: Instance type string is invalid. Expected integer"));
     }
 
     @Test
@@ -991,7 +992,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
                 .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
+                //.sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: The value of the request body is invalid. Reason: Property \"records\" does not match additional properties schema at #/records"));
     }
 
     @Test
@@ -1012,7 +1014,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - provided object should contain property value"));
+                //.sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - provided object should contain property value"));
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: The value of the request body is invalid. Reason: Property \"records\" does not match additional properties schema at #/records"));
     }
 
     @Test
@@ -1035,7 +1038,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
+                //.sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: The value of the request body is invalid. Reason: Property \"records\" does not match additional properties schema at #/records"));
     }
 
     Handler<AsyncResult<HttpResponse<JsonObject>>> verifyBadRequest(VertxTestContext context, String message) {
@@ -1135,7 +1139,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         producerService()
                 .sendRecordsToPartitionRequest(topic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
+                //.sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: The value of the request body is invalid. Reason: Property \"records\" does not match additional properties schema at #/records"));
 
         records.remove(json);
         records.clear();
@@ -1287,7 +1292,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.message(), containsString("Value wrong should be true or false"));
+                        //assertThat(error.message(), containsString("Value wrong should be true or false"));
+                        assertThat(error.message(), containsString("Validation error on: The value of query parameter async is invalid. Reason: Instance type string is invalid. Expected boolean"));
                     });
                     context.completeNow();
                 });
@@ -1321,7 +1327,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.message(), containsString("Cannot find body processor for content type"));
+                        //assertThat(error.message(), containsString("Cannot find body processor for content type"));
+                        assertThat(error.message(), containsString("Validation error on: The format of the request body is not supported"));
                     });
                     context.completeNow();
                 });

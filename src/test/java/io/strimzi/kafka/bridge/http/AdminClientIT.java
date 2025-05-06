@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
@@ -251,6 +253,8 @@ public class AdminClientIT extends HttpBridgeITAbstract {
         jsonObject.put("topic_name", topic);
         baseService()
                 .postRequest("/admin/topics")
+                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(jsonObject.toBuffer().length()))
+                .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(jsonObject)
                 .onComplete(ar -> {
@@ -273,6 +277,8 @@ public class AdminClientIT extends HttpBridgeITAbstract {
         jsonObject.put("replication_factor", 1);
         baseService()
                 .postRequest("/admin/topics")
+                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(jsonObject.toBuffer().length()))
+                .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON_JSON)
                 .as(BodyCodec.jsonObject())
                 .sendJsonObject(jsonObject)
                 .onComplete(ar -> {

@@ -6,8 +6,8 @@ package io.strimzi.kafka.bridge.metrics;
 
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.micrometer.prometheus.PrometheusNamingConvention;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
+import io.micrometer.prometheusmetrics.PrometheusNamingConvention;
 import io.vertx.micrometer.backends.BackendRegistries;
 
 /**
