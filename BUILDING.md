@@ -9,7 +9,7 @@ To build this project you must first install several command line utilities.
 
 - [`make`](https://www.gnu.org/software/make/) - Make build system
 - [`mvn`](https://maven.apache.org/index.html) - Maven CLI
-- [`docker`](https://www.docker.com/) - Docker
+- [`docker`](https://www.docker.com/) - Docker or [`podman`](https://podman.io/)
 
 In order to use `make` these all need to be available in your `$PATH`.
 
