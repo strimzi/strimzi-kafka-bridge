@@ -551,12 +551,6 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         try {
             ValidatedRequest validatedRequest =
                     routingContext.get(RouterBuilder.KEY_META_DATA_VALIDATED_REQUEST);
-            // check for an empty body
-            /*
-            if (!routingContext.body().isEmpty()) {
-                bodyAsJson = JsonUtils.bytesToJson(routingContext.body().buffer().getBytes());
-            }
-            */
             if (!validatedRequest.getBody().isEmpty()) {
                 bodyAsJson = JsonUtils.bytesToJson(validatedRequest.getBody().getJsonObject().toBuffer().getBytes());
             }

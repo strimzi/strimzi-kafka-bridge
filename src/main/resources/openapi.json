@@ -1719,9 +1719,18 @@
                     },
                     "message": {
                         "type": "string"
+                    },
+                    "validation_errors": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     }
                 },
-                "example": "{\n    \"error_code\": 404,\n    \"message\": \"resource not found\"\n}"
+                "example": {
+                    "error_code": 404,
+                    "message": "resource not found"
+                }
             },
             "Consumer": {
                 "title": "Consumer",

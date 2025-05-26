@@ -11,7 +11,6 @@ import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.MultiMap;
-//import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
@@ -40,6 +39,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -157,8 +157,9 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                         assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        //assertThat(error.message(), is("Validation error on: /enable.auto.commit - input don't match type BOOLEAN"));
-                        assertThat(error.message(), is("Validation error on: The value of the request body is invalid. Reason: Property \"enable.auto.commit\" does not match additional properties schema at #/enable.auto.commit"));
+                        assertThat(error.message(), is("Validation error on: Schema validation error"));
+                        assertThat(error.validationErrors(), hasItem("Property \"enable.auto.commit\" does not match schema"));
+                        assertThat(error.validationErrors(), hasItem("Instance type string is invalid. Expected boolean"));
                     });
                     createBooleanAsString.complete(true);
                 });
@@ -180,8 +181,9 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                         assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        //assertThat(error.message(), is("Validation error on: /enable.auto.commit - input don't match type BOOLEAN"));
-                        assertThat(error.message(), is("Validation error on: The value of the request body is invalid. Reason: Property \"enable.auto.commit\" does not match additional properties schema at #/enable.auto.commit"));
+                        assertThat(error.message(), is("Validation error on: Schema validation error"));
+                        assertThat(error.validationErrors(), hasItem("Property \"enable.auto.commit\" does not match schema"));
+                        assertThat(error.validationErrors(), hasItem("Instance type string is invalid. Expected boolean"));
                     });
                     createGenericString.complete(true);
                 });
@@ -226,8 +228,9 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                         assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        //assertThat(error.message(), is("Validation error on: /" + param + " - input don't match type INTEGER"));
-                        assertThat(error.message(), is("Validation error on: The value of the request body is invalid. Reason: Property \"" + param + "\" does not match additional properties schema at #/" + param));
+                        assertThat(error.message(), is("Validation error on: Schema validation error"));
+                        assertThat(error.validationErrors(), hasItem("Property \"" + param + "\" does not match schema"));
+                        assertThat(error.validationErrors(), hasItem("Instance type string is invalid. Expected integer"));
                     });
                     createIntegerAsString.complete(true);
                 });
@@ -249,8 +252,9 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                         assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        //assertThat(error.message(), is("Validation error on: /" + param + " - input don't match type INTEGER"));
-                        assertThat(error.message(), is("Validation error on: The value of the request body is invalid. Reason: Property \"" + param + "\" does not match additional properties schema at #/" + param));
+                        assertThat(error.message(), is("Validation error on: Schema validation error"));
+                        assertThat(error.validationErrors(), hasItem("Property \"" + param + "\" does not match schema"));
+                        assertThat(error.validationErrors(), hasItem("Instance type string is invalid. Expected integer"));
                     });
                     createGenericString.complete(true);
                 });
@@ -457,8 +461,9 @@ public class ConsumerIT extends HttpBridgeITAbstract {
 
     @Test
     void createConsumerWithWrongIsolationLevel(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        List<String> expectedValidationErrors = List.of();
         checkCreatingConsumer("isolation.level", "foo", HttpResponseStatus.UNPROCESSABLE_ENTITY,
-                "Invalid value foo for configuration isolation.level: String must be one of: read_committed, read_uncommitted", context);
+                "Invalid value foo for configuration isolation.level: String must be one of: read_committed, read_uncommitted", expectedValidationErrors, context);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -466,8 +471,9 @@ public class ConsumerIT extends HttpBridgeITAbstract {
 
     @Test
     void createConsumerWithWrongAutoOffsetReset(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        List<String> expectedValidationErrors = List.of();
         checkCreatingConsumer("auto.offset.reset", "foo", HttpResponseStatus.UNPROCESSABLE_ENTITY,
-                "Invalid value foo for configuration auto.offset.reset: Invalid value `foo` for configuration auto.offset.reset. The value must be either 'earliest', 'latest', 'none' or of the format 'by_duration:<PnDTnHnMn.nS.>'.", context);
+                "Invalid value foo for configuration auto.offset.reset: Invalid value `foo` for configuration auto.offset.reset. The value must be either 'earliest', 'latest', 'none' or of the format 'by_duration:<PnDTnHnMn.nS.>'.", expectedValidationErrors, context);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -475,12 +481,13 @@ public class ConsumerIT extends HttpBridgeITAbstract {
 
     @Test
     void createConsumerWithWrongEnableAutoCommit(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        /*
+        List<String> expectedValidationErrors = List.of(
+                "Property \"enable.auto.commit\" does not match schema",
+                "Instance type string is invalid. Expected boolean",
+                "Property \"enable.auto.commit\" does not match additional properties schema"
+        );
         checkCreatingConsumer("enable.auto.commit", "foo", HttpResponseStatus.BAD_REQUEST,
-                "Validation error on: /enable.auto.commit - input don't match type BOOLEAN", context);
-         */
-        checkCreatingConsumer("enable.auto.commit", "foo", HttpResponseStatus.BAD_REQUEST,
-                "Validation error on: The value of the request body is invalid. Reason: Property \"enable.auto.commit\" does not match additional properties schema at #/enable.auto.commit", context);
+                "Validation error on: Schema validation error", expectedValidationErrors, context);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -488,12 +495,13 @@ public class ConsumerIT extends HttpBridgeITAbstract {
 
     @Test
     void createConsumerWithWrongFetchMinBytes(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        /*
+        List<String> expectedValidationErrors = List.of(
+                "Property \"fetch.min.bytes\" does not match schema",
+                "Instance type string is invalid. Expected integer",
+                "Property \"fetch.min.bytes\" does not match additional properties schema"
+        );
         checkCreatingConsumer("fetch.min.bytes", "foo", HttpResponseStatus.BAD_REQUEST,
-                "Validation error on: /fetch.min.bytes - input don't match type INTEGER", context);
-         */
-        checkCreatingConsumer("fetch.min.bytes", "foo", HttpResponseStatus.BAD_REQUEST,
-                "Validation error on: The value of the request body is invalid. Reason: Property \"fetch.min.bytes\" does not match additional properties schema at #/fetch.min.bytes", context);
+                "Validation error on: Schema validation error", expectedValidationErrors, context);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -501,12 +509,9 @@ public class ConsumerIT extends HttpBridgeITAbstract {
 
     @Test
     void createConsumerWithNotExistingParameter(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        /*
+        List<String> expectedValidationErrors = List.of("Property \"foo\" does not match additional properties schema");
         checkCreatingConsumer("foo", "bar", HttpResponseStatus.BAD_REQUEST,
-                "Validation error on:  - Provided object contains unexpected additional property: foo", context);
-         */
-        checkCreatingConsumer("foo", "bar", HttpResponseStatus.BAD_REQUEST,
-                "Validation error on: The value of the request body is invalid. Reason: Property \"foo\" does not match additional properties schema at #/foo", context);
+                "Validation error on: Schema validation error", expectedValidationErrors, context);
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
@@ -1738,7 +1743,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                 });
     }
 
-    private void checkCreatingConsumer(String key, String value, HttpResponseStatus status, String message, VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    private void checkCreatingConsumer(String key, String value, HttpResponseStatus status, String message, List<String> expectedValidationErrors, VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         JsonObject json = new JsonObject();
         json.put("name", name);
         json.put(key, value);
@@ -1754,6 +1759,9 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                     HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                     assertThat(error.code(), is(status.code()));
                     assertThat(error.message(), is(message));
+                    for (String validationError : error.validationErrors()) {
+                        assertThat(expectedValidationErrors, hasItem(validationError));
+                    }
                 });
                 consumer.complete(true);
             });

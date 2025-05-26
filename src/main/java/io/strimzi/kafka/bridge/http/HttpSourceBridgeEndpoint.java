@@ -127,7 +127,6 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             }
             ValidatedRequest validatedRequest =
                     routingContext.get(RouterBuilder.KEY_META_DATA_VALIDATED_REQUEST);
-            //records = messageConverter.toKafkaRecords(topic, partition, routingContext.body().buffer().getBytes());
             records = messageConverter.toKafkaRecords(topic, partition, validatedRequest.getBody().getJsonObject().toBuffer().getBytes());
 
             for (ProducerRecord<K, V> record :records)   {

@@ -190,7 +190,6 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
         ValidatedRequest validatedRequest =
                 routingContext.get(RouterBuilder.KEY_META_DATA_VALIDATED_REQUEST);
         JsonObject jsonBody = validatedRequest.getBody().getJsonObject();
-        //JsonObject jsonBody = routingContext.body().asJsonObject();
 
         if (jsonBody.isEmpty()) {
             HttpBridgeError error = new HttpBridgeError(

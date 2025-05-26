@@ -31,12 +31,11 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-//import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
-//import io.vertx.ext.web.openapi.router.RequestExtractor;
 import io.vertx.ext.web.openapi.router.RouterBuilder;
 import io.vertx.ext.web.validation.BodyProcessorException;
 import io.vertx.ext.web.validation.ParameterProcessorException;
+import io.vertx.json.schema.OutputUnit;
 import io.vertx.json.schema.ValidationException;
 import io.vertx.micrometer.Label;
 import io.vertx.openapi.contract.OpenAPIContract;
@@ -57,9 +56,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -228,10 +229,6 @@ public class HttpBridge extends AbstractVerticle {
                     routerBuilder.getRoute(this.INFO.getOperationId().toString()).addHandler(this.INFO);
                     if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
                         routerBuilder.rootHandler(getCorsHandler());
-                        // body handler is added automatically when the global handlers in the OpenAPI builder is empty
-                        // when adding the CORS handler, we have to add the body handler explicitly instead
-                        // WARNING: with following code I got 500 internal server error with some HttpCorsIT tests
-                        //routerBuilder.rootHandler(BodyHandler.create());
                     }
 
                     this.router = routerBuilder.createRouter();
@@ -258,68 +255,6 @@ public class HttpBridge extends AbstractVerticle {
                     LOGGER.error("Failed to create OpenAPI router factory");
                     startPromise.fail(t);
                 });
-
-        /*
-        RouterBuilder.create(vertx, "openapi.json")
-                .onSuccess(routerBuilder -> {
-                    routerBuilder.operation(this.SEND.getOperationId().toString()).handler(this.SEND);
-                    routerBuilder.operation(this.SEND_TO_PARTITION.getOperationId().toString()).handler(this.SEND_TO_PARTITION);
-                    routerBuilder.operation(this.CREATE_CONSUMER.getOperationId().toString()).handler(this.CREATE_CONSUMER);
-                    routerBuilder.operation(this.DELETE_CONSUMER.getOperationId().toString()).handler(this.DELETE_CONSUMER);
-                    routerBuilder.operation(this.SUBSCRIBE.getOperationId().toString()).handler(this.SUBSCRIBE);
-                    routerBuilder.operation(this.UNSUBSCRIBE.getOperationId().toString()).handler(this.UNSUBSCRIBE);
-                    routerBuilder.operation(this.LIST_SUBSCRIPTIONS.getOperationId().toString()).handler(this.LIST_SUBSCRIPTIONS);
-                    routerBuilder.operation(this.ASSIGN.getOperationId().toString()).handler(this.ASSIGN);
-                    routerBuilder.operation(this.POLL.getOperationId().toString()).handler(this.POLL);
-                    routerBuilder.operation(this.COMMIT.getOperationId().toString()).handler(this.COMMIT);
-                    routerBuilder.operation(this.SEEK.getOperationId().toString()).handler(this.SEEK);
-                    routerBuilder.operation(this.SEEK_TO_BEGINNING.getOperationId().toString()).handler(this.SEEK_TO_BEGINNING);
-                    routerBuilder.operation(this.SEEK_TO_END.getOperationId().toString()).handler(this.SEEK_TO_END);
-                    routerBuilder.operation(this.LIST_TOPICS.getOperationId().toString()).handler(this.LIST_TOPICS);
-                    routerBuilder.operation(this.GET_TOPIC.getOperationId().toString()).handler(this.GET_TOPIC);
-                    routerBuilder.operation(this.CREATE_TOPIC.getOperationId().toString()).handler(this.CREATE_TOPIC);
-                    routerBuilder.operation(this.LIST_PARTITIONS.getOperationId().toString()).handler(this.LIST_PARTITIONS);
-                    routerBuilder.operation(this.GET_PARTITION.getOperationId().toString()).handler(this.GET_PARTITION);
-                    routerBuilder.operation(this.GET_OFFSETS.getOperationId().toString()).handler(this.GET_OFFSETS);
-                    routerBuilder.operation(this.HEALTHY.getOperationId().toString()).handler(this.HEALTHY);
-                    routerBuilder.operation(this.READY.getOperationId().toString()).handler(this.READY);
-                    routerBuilder.operation(this.OPENAPI.getOperationId().toString()).handler(this.OPENAPI);
-                    routerBuilder.operation(this.OPENAPIV2.getOperationId().toString()).handler(this.OPENAPIV2);
-                    routerBuilder.operation(this.OPENAPIV3.getOperationId().toString()).handler(this.OPENAPIV3);
-                    routerBuilder.operation(this.METRICS.getOperationId().toString()).handler(this.METRICS);
-                    routerBuilder.operation(this.INFO.getOperationId().toString()).handler(this.INFO);
-                    if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
-                        routerBuilder.rootHandler(getCorsHandler());
-                        // body handler is added automatically when the global handlers in the OpenAPI builder is empty
-                        // when adding the CORS handler, we have to add the body handler explicitly instead
-                        routerBuilder.rootHandler(BodyHandler.create());
-                    }
-
-                    this.router = routerBuilder.createRouter();
-
-                    // handling validation errors and not existing endpoints
-                    this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
-                    this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
-
-                    if (this.metricsCollector != null && this.metricsCollector.getVertxRegistry() != null) {
-                        // exclude to report the HTTP server metrics for the /metrics endpoint itself
-                        this.metricsCollector.getVertxRegistry().config().meterFilter(
-                                MeterFilter.deny(meter -> "/metrics".equals(meter.getTag(Label.HTTP_PATH.toString())))
-                        );
-                    }
-
-                    LOGGER.info("Starting HTTP-Kafka bridge verticle...");
-                    this.httpBridgeContext = new HttpBridgeContext<>();
-                    HttpAdminBridgeEndpoint adminClientEndpoint = new HttpAdminBridgeEndpoint(this.bridgeConfig, this.httpBridgeContext);
-                    this.httpBridgeContext.setHttpAdminEndpoint(adminClientEndpoint);
-                    adminClientEndpoint.open();
-                    this.bindHttpServer(startPromise);
-                })
-                .onFailure(t -> {
-                    LOGGER.error("Failed to create OpenAPI router factory");
-                    startPromise.fail(t);
-                });
-         */
     }
 
     private CorsHandler getCorsHandler() {
@@ -415,16 +350,8 @@ public class HttpBridge extends AbstractVerticle {
 
         ValidatedRequest validatedRequest =
                 routingContext.get(RouterBuilder.KEY_META_DATA_VALIDATED_REQUEST);
-        String operation = routingContext.get(RouterBuilder.KEY_META_DATA_OPERATION);
-
-        /*
-        LOGGER.info("operation = {}", operation);
-        LOGGER.info("body = {}", validatedRequest.getBody());
-        LOGGER.info("headers = {}", validatedRequest.getHeaders());
-        */
 
         // check for an empty body
-        //JsonNode body = !routingContext.body().isEmpty() ? JsonUtils.bytesToJson(routingContext.body().buffer().getBytes()) : JsonUtils.createObjectNode();
         JsonNode body = !validatedRequest.getBody().isEmpty() ? JsonUtils.bytesToJson(validatedRequest.getBody().getJsonObject().toBuffer().getBytes()) : JsonUtils.createObjectNode();
         HttpSinkBridgeEndpoint<byte[], byte[]> sink = null;
 
@@ -721,6 +648,7 @@ public class HttpBridge extends AbstractVerticle {
             routingContext.request().path());
 
         String message = null;
+        List<String> validationErrors = null;
         if (routingContext.statusCode() == HttpResponseStatus.BAD_REQUEST.code()) {
             message = HttpResponseStatus.BAD_REQUEST.reasonPhrase();
             // in case of validation exception, building a meaningful error message
@@ -739,7 +667,11 @@ public class HttpBridge extends AbstractVerticle {
                 } else if (routingContext.failure() instanceof BodyProcessorException bodyProcessorException) {
                     sb.append(bodyProcessorException.getMessage());
                 } else if (routingContext.failure().getCause() instanceof SchemaValidationException schemaValidationException) {
-                    sb.append("Validation error on: ").append(schemaValidationException.getMessage());
+                    sb.append("Validation error on: ").append("Schema validation error");
+                    validationErrors = new ArrayList<>(schemaValidationException.getOutputUnit().getErrors().size());
+                    for (OutputUnit outputUnit : schemaValidationException.getOutputUnit().getErrors()) {
+                        validationErrors.add(outputUnit.getError());
+                    }
                 } else if (routingContext.failure().getCause() instanceof ValidatorException validatorException) {
                     sb.append("Validation error on: ").append(validatorException.getMessage());
                 }
@@ -749,7 +681,7 @@ public class HttpBridge extends AbstractVerticle {
             message = HttpResponseStatus.NOT_FOUND.reasonPhrase();
         }
 
-        HttpBridgeError error = new HttpBridgeError(routingContext.statusCode(), message);
+        HttpBridgeError error = new HttpBridgeError(routingContext.statusCode(), message, validationErrors);
         HttpUtils.sendResponse(routingContext, routingContext.statusCode(),
                 BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
 
