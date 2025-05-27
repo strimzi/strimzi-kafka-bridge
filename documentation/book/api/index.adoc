@@ -3262,6 +3262,13 @@ Information about Kafka Bridge instance.
 | 
 |     
 
+| validation_errors
+| 
+| 
+|   List   of <<string>>
+| 
+|     
+
 |===
 
 
@@ -3476,6 +3483,13 @@ Information about Kafka Bridge instance.
 | 
 | 
 |   String  
+| 
+|     
+
+| validation_errors
+| 
+| 
+|   List   of <<string>>
 | 
 |     
 
