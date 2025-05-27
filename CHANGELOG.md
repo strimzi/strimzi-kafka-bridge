@@ -2,6 +2,15 @@
 
 ## 0.33.0
 
+* Dependency updates (Vert.x 5.0.0).
+* Updated OpenAPI specification to 3.1.0.
+* Added `validation_errors` field within the JSON object, as part of the `Error` OpenAPI component, returned by the bridge when there is a schema validation error.
+  Such field is omitted when the error is not schema validation related.
+
+### Changes, deprecations and removals
+
+* The OpenAPI specification was bumped to 3.1.0 in order to deal with the new JSON Schema support for `null` type.
+  It was not possible to deprecate the 3.0.0 first due to the Vert.x OpenAPI component refactoring within Vert.x 5.
 
 ## 0.32.0
 
