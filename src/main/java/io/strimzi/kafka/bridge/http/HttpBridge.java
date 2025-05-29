@@ -199,7 +199,6 @@ public class HttpBridge extends AbstractVerticle {
     public void start(Promise<Void> startPromise) {
         OpenAPIContract.from(vertx, "openapi.json")
                 .onSuccess(contract -> {
-                    //RouterBuilder routerBuilder = RouterBuilder.create(vertx, contract, RequestExtractor.withBodyHandler());
                     RouterBuilder routerBuilder = RouterBuilder.create(vertx, contract);
                     routerBuilder.getRoute(this.SEND.getOperationId().toString()).addHandler(this.SEND);
                     routerBuilder.getRoute(this.SEND_TO_PARTITION.getOperationId().toString()).addHandler(this.SEND_TO_PARTITION);
