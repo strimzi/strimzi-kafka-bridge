@@ -117,7 +117,7 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                         JsonObject bridgeResponse = response.body();
 
                         String version = bridgeResponse.getString("openapi");
-                        assertThat(version, is("3.0.0"));
+                        assertThat(version, is("3.1.0"));
                     });
                     context.completeNow();
                 });
@@ -137,7 +137,7 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                         JsonObject bridgeResponse = response.body();
 
                         String version = bridgeResponse.getString("openapi");
-                        assertThat(version, is("3.0.0"));
+                        assertThat(version, is("3.1.0"));
 
                         Map<String, Object> paths = bridgeResponse.getJsonObject("paths").getMap();
                         // subscribe, list subscriptions and unsubscribe are using the same endpoint but different methods (-2)

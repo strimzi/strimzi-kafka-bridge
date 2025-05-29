@@ -28,6 +28,8 @@ import io.strimzi.kafka.bridge.tracing.SpanHandle;
 import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.openapi.router.RouterBuilder;
+import io.vertx.openapi.validation.ValidatedRequest;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -547,9 +549,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     public void handle(RoutingContext routingContext, Handler<HttpBridgeEndpoint> handler) {
         JsonNode bodyAsJson = EMPTY_JSON;
         try {
-            // check for an empty body
-            if (!routingContext.body().isEmpty()) {
-                bodyAsJson = JsonUtils.bytesToJson(routingContext.body().buffer().getBytes());
+            ValidatedRequest validatedRequest =
+                    routingContext.get(RouterBuilder.KEY_META_DATA_VALIDATED_REQUEST);
+            if (!validatedRequest.getBody().isEmpty()) {
+                bodyAsJson = JsonUtils.bytesToJson(validatedRequest.getBody().getJsonObject().toBuffer().getBytes());
             }
             LOGGER.debug("[{}] Request: body = {}", routingContext.get("request-id"), bodyAsJson);
         } catch (JsonDecodeException ex) {

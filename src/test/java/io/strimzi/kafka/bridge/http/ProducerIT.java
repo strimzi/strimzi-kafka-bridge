@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -965,9 +966,13 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         future.get();
 
+        List<String> expectedValidationErrors = List.of(
+                "Instance type string is invalid. Expected integer"
+        );
         producerService()
                 .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Parameter error on: partitionid - [Bad Request] Parsing error for parameter partitionid in location PATH: java.lang.NumberFormatException: For input string: \"" + partition + "\""));
+                //.sendJsonObject(root).onComplete(verifyBadRequest(context, "Parameter error on: partitionid - [Bad Request] Parsing error for parameter partitionid in location PATH: java.lang.NumberFormatException: For input string: \"" + partition + "\""));
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: Schema validation error", expectedValidationErrors));
     }
 
     @Test
@@ -989,9 +994,16 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         future.get();
 
+        List<String> expectedValidationErrors = List.of(
+                "Property \"records\" does not match schema",
+                "Items did not match schema",
+                "A subschema had errors",
+                "Property \"partition\" does not match additional properties schema",
+                "Property \"records\" does not match additional properties schema"
+        );
         producerService()
                 .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: Schema validation error", expectedValidationErrors));
     }
 
     @Test
@@ -1010,9 +1022,16 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         future.get();
 
+        List<String> expectedValidationErrors = List.of(
+                "Property \"records\" does not match schema",
+                "Items did not match schema",
+                "A subschema had errors",
+                "Instance does not have required property \"value\"",
+                "Property \"records\" does not match additional properties schema"
+        );
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - provided object should contain property value"));
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: Schema validation error", expectedValidationErrors));
     }
 
     @Test
@@ -1033,12 +1052,20 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         future.get();
 
+        List<String> expectedValidationErrors = List.of(
+                "Property \"records\" does not match schema",
+                "Items did not match schema",
+                "A subschema had errors",
+                "Property \"foo\" does not match additional properties schema",
+                "Property \"records\" does not match additional properties schema"
+        );
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
+                //.sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: Schema validation error", expectedValidationErrors));
     }
 
-    Handler<AsyncResult<HttpResponse<JsonObject>>> verifyBadRequest(VertxTestContext context, String message) {
+    Handler<AsyncResult<HttpResponse<JsonObject>>> verifyBadRequest(VertxTestContext context, String message, List<String> expectedValidationErrors) {
         return ar ->
             context.verify(() -> {
                 assertThat(ar.succeeded(), is(true));
@@ -1047,6 +1074,9 @@ public class ProducerIT extends HttpBridgeITAbstract {
                 HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                 assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
                 assertThat(error.message(), is(message));
+                for (String validationError : error.validationErrors()) {
+                    assertThat(expectedValidationErrors, hasItem(validationError));
+                }
                 context.completeNow();
             });
     }
@@ -1133,9 +1163,16 @@ public class ProducerIT extends HttpBridgeITAbstract {
 
         future.get();
 
+        List<String> expectedValidationErrors = List.of(
+                "Property \"records\" does not match schema",
+                "Items did not match schema",
+                "A subschema had errors",
+                "Property \"partition\" does not match additional properties schema",
+                "Property \"records\" does not match additional properties schema"
+        );
         producerService()
                 .sendRecordsToPartitionRequest(topic, 0, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
+                .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: Schema validation error", expectedValidationErrors));
 
         records.remove(json);
         records.clear();
@@ -1287,7 +1324,8 @@ public class ProducerIT extends HttpBridgeITAbstract {
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.message(), containsString("Value wrong should be true or false"));
+                        assertThat(error.message(), containsString("Validation error on: Schema validation error"));
+                        assertThat(error.validationErrors(), hasItem("Instance type string is invalid. Expected boolean"));
                     });
                     context.completeNow();
                 });
@@ -1321,7 +1359,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
                         assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.message(), containsString("Cannot find body processor for content type"));
+                        assertThat(error.message(), containsString("Validation error on: The format of the request body is not supported"));
                     });
                     context.completeNow();
                 });

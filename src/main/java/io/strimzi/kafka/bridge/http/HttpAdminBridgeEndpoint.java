@@ -17,6 +17,8 @@ import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.openapi.router.RouterBuilder;
+import io.vertx.openapi.validation.ValidatedRequest;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.ConfigEntry;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
@@ -185,7 +187,9 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
      * @param routingContext the routing context
      */
     public void doCreateTopic(RoutingContext routingContext) {
-        JsonObject jsonBody = routingContext.body().asJsonObject();
+        ValidatedRequest validatedRequest =
+                routingContext.get(RouterBuilder.KEY_META_DATA_VALIDATED_REQUEST);
+        JsonObject jsonBody = validatedRequest.getBody().getJsonObject();
 
         if (jsonBody.isEmpty()) {
             HttpBridgeError error = new HttpBridgeError(

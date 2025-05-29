@@ -23,6 +23,8 @@ import io.strimzi.kafka.bridge.tracing.SpanHandle;
 import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.openapi.router.RouterBuilder;
+import io.vertx.openapi.validation.ValidatedRequest;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
@@ -123,7 +125,9 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
                 return;
             }
-            records = messageConverter.toKafkaRecords(topic, partition, routingContext.body().buffer().getBytes());
+            ValidatedRequest validatedRequest =
+                    routingContext.get(RouterBuilder.KEY_META_DATA_VALIDATED_REQUEST);
+            records = messageConverter.toKafkaRecords(topic, partition, validatedRequest.getBody().getJsonObject().toBuffer().getBytes());
 
             for (ProducerRecord<K, V> record :records)   {
                 span.inject(record);

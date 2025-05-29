@@ -1,5 +1,5 @@
 {
-    "openapi": "3.0.0",
+    "openapi": "3.1.0",
     "info": {
       "title": "Kafka Bridge API Reference",
       "description": "The Kafka Bridge provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. ",
@@ -1719,9 +1719,18 @@
                     },
                     "message": {
                         "type": "string"
+                    },
+                    "validation_errors": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     }
                 },
-                "example": "{\n    \"error_code\": 404,\n    \"message\": \"resource not found\"\n}"
+                "example": {
+                    "error_code": 404,
+                    "message": "resource not found"
+                }
             },
             "Consumer": {
                 "title": "Consumer",
@@ -2221,14 +2230,15 @@
                         "items": {}
                     },
                     {
-                        "type": "object",
-                        "nullable": true
+                        "type": "object"
                     },
                     {
                         "type": "string"
+                    },
+                    {
+                        "type": "null"
                     }
-                ],
-                "nullable" : true
+                ]
             },
             "NewTopic": {
                 "title": "NewTopic",
@@ -2240,13 +2250,11 @@
                     },
                     "partitions_count": {
                         "description": "Number of partitions for the topic.",
-                        "type": "integer",
-                        "nullable": true
+                        "type": ["integer", "null"]
                     },
                     "replication_factor": {
                         "description": "Number of replicas for each partition.",
-                        "type": "integer",
-                        "nullable": true
+                        "type": ["integer", "null"]
                     }
                 },
                 "required": ["topic_name"],
