@@ -5,23 +5,13 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.clients.BasicKafkaClient;
-import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
-import io.strimzi.kafka.bridge.facades.AdminClientFacade;
 import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
-import io.strimzi.kafka.bridge.utils.Urls;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.junit5.VertxTestContext;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -33,6 +23,13 @@ import static org.hamcrest.Matchers.is;
 
 public class InvalidProducerIT extends HttpBridgeITAbstract {
     private static final Logger LOGGER = LogManager.getLogger(InvalidProducerIT.class);
+
+    @Override
+    protected Map<String, Object> overridableConfig() {
+        Map<String, Object> cfg = new HashMap<>();
+        cfg.put("kafka.producer.acks", "5"); // invalid config
+        return cfg;
+    }
 
     @Test
     void sendSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
@@ -58,34 +55,5 @@ public class InvalidProducerIT extends HttpBridgeITAbstract {
                     assertThat(ar.result().statusCode(), is(500));
                     context.completeNow();
                 });
-    }
-
-    @BeforeAll
-    static void beforeAll(VertxTestContext context) {
-        Map<String, Object> cfg = new HashMap<>();
-        cfg.putAll(config);
-        // value 5 is not valid. Valid values are -1 (all), 0, 1
-        cfg.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.ACKS_CONFIG, "5");
-        vertx = Vertx.vertx();
-        adminClientFacade = AdminClientFacade.create(kafkaUri);
-
-        basicKafkaClient = new BasicKafkaClient(kafkaUri);
-
-        LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
-
-        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
-            bridgeConfig = BridgeConfig.fromMap(cfg);
-            httpBridge = new HttpBridge(bridgeConfig);
-
-            LOGGER.info("Deploying in-memory bridge");
-            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> context.completeNow()));
-        } else {
-            context.completeNow();
-        }
-
-        client = WebClient.create(vertx, new WebClientOptions()
-            .setDefaultHost(Urls.BRIDGE_HOST)
-            .setDefaultPort(Urls.BRIDGE_PORT)
-        );
     }
 }

@@ -34,6 +34,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Collection;
@@ -44,9 +45,35 @@ import java.util.concurrent.ExecutionException;
 
 import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
 
+/**
+ * Abstract base class for Strimzi Kafka Bridge HTTP integration tests.
+ *
+ * <p>This suite provides a reusable setup for integration testing the HTTP Bridge, including:
+ * <ul>
+ *   <li>Lifecycle management of an embedded Kafka cluster (unless EXTERNAL_KAFKA is set).</li>
+ *   <li>Deployment and cleanup of the HTTP Bridge (unless EXTERNAL_BRIDGE is set).</li>
+ *   <li>Vert.x WebClient for HTTP requests against the Bridge REST API.</li>
+ *   <li>Automatic cleanup of Kafka topics between tests.</li>
+ * </ul>
+ *
+ * <p>
+ * The suite is designed for extensibility. Common extension points:
+ * <ul>
+ *   <li>{@link #overridableConfig()} — override to customize bridge or Kafka configuration for your tests.</li>
+ *   <li>{@link #setupKafkaCluster()} — override to customize embedded cluster setup.</li>
+ *   <li>{@link #deployBridge(VertxTestContext)} — override to deploy the Bridge in a custom way (e.g. external or per-test deployment).</li>
+ * </ul>
+ *
+ * <p>
+ * Service accessors such as {@link #baseService()}, {@link #producerService()} provide ready-to-use HTTP clients for Bridge API endpoints.
+ *
+ * <p>
+ * The class is intended to be extended by concrete test classes for actual scenarios.
+ */
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
 @Tag(HTTP_BRIDGE)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class HttpBridgeITAbstract {
     private static final Logger LOGGER = LogManager.getLogger(HttpBridgeITAbstract.class);
     protected static Map<String, Object> config = new HashMap<>();
@@ -67,30 +94,6 @@ public abstract class HttpBridgeITAbstract {
 
     protected static long timeout = 5L;
 
-    static {
-        if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
-            kafkaCluster = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
-                .withNumberOfBrokers(1)
-                .withSharedNetwork()
-                .build();
-            kafkaCluster.start();
-
-            kafkaUri = kafkaCluster.getBootstrapServers();
-
-            adminClientFacade = AdminClientFacade.create(kafkaUri);
-        } else {
-            // else use external kafka
-            kafkaUri = "localhost:9092";
-        }
-
-        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
-        config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
-        config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
-        config.put(BridgeConfig.METRICS_TYPE, MetricsType.STRIMZI_REPORTER.toString());
-        config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
-    }
-
     protected static Vertx vertx;
     protected static WebClient client;
     protected static BasicKafkaClient basicKafkaClient;
@@ -98,47 +101,12 @@ public abstract class HttpBridgeITAbstract {
     protected static HttpBridge httpBridge;
     protected static BridgeConfig bridgeConfig;
 
-    protected BaseService baseService() {
-        return BaseService.getInstance(client);
-    }
-
-    protected ConsumerService consumerService() {
-        return ConsumerService.getInstance(client);
-    }
-
-    protected SeekService seekService() {
-        return SeekService.getInstance(client);
-    }
-
-    protected ProducerService producerService() {
-        return ProducerService.getInstance(client);
-    }
-
     @BeforeAll
-    static void beforeAll(VertxTestContext context) {
-        vertx = Vertx.vertx();
-        adminClientFacade = AdminClientFacade.create(kafkaUri);
-
-        basicKafkaClient = new BasicKafkaClient(kafkaUri);
-
+    void beforeAll(VertxTestContext context) {
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
-
-        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
-            bridgeConfig = BridgeConfig.fromMap(config);
-            
-            httpBridge = new HttpBridge(bridgeConfig);
-
-            LOGGER.info("Deploying in-memory bridge");
-            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> context.completeNow()));
-        } else {
-            context.completeNow();
-            // else we create an external bridge from the OS invoked by `.jar`
-        }
-
-        client = WebClient.create(vertx, new WebClientOptions()
-            .setDefaultHost(Urls.BRIDGE_HOST)
-            .setDefaultPort(Urls.BRIDGE_PORT)
-        );
+        setupKafkaCluster();
+        configureDefaults();
+        deployBridge(context);
     }
 
     @AfterAll
@@ -148,6 +116,14 @@ public abstract class HttpBridgeITAbstract {
         } else {
             // if we are running an external bridge
             context.completeNow();
+        }
+
+        if (adminClientFacade != null) {
+            adminClientFacade.close();
+        }
+
+        if (kafkaCluster != null) {
+            kafkaCluster.stop();
         }
     }
 
@@ -183,4 +159,102 @@ public abstract class HttpBridgeITAbstract {
         int salt = new Random().nextInt(Integer.MAX_VALUE);
         return "my-group-" + salt;
     }
+
+    private void configureDefaults() {
+        kafkaUri = "FALSE".equals(KAFKA_EXTERNAL_ENV)
+            ? kafkaCluster.getBootstrapServers()
+            : "localhost:9092";
+
+        config.clear();
+
+        // Default values
+        Map<String, Object> defaults = Map.of(
+            KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri,
+            KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest",
+            KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000",
+            HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout,
+            BridgeConfig.METRICS_TYPE, MetricsType.STRIMZI_REPORTER.toString(),
+            BridgeConfig.BRIDGE_ID, "my-bridge"
+        );
+
+        config.putAll(defaults);
+
+        // Apply overrides
+        overridableConfig().forEach((key, value) -> {
+            if (value == null) {
+                config.remove(key);
+            } else {
+                config.put(key, value);
+            }
+        });
+
+        LOGGER.info("Bridge config:");
+        config.forEach((key, value) -> LOGGER.info("  {} = {}", key, value));
+
+        vertx = Vertx.vertx();
+        adminClientFacade = AdminClientFacade.create(kafkaUri);
+        basicKafkaClient = new BasicKafkaClient(kafkaUri);
+    }
+
+    // ===== Overridable Hooks =====
+
+    protected void setupKafkaCluster() {
+        if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
+            kafkaCluster = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
+                .withNumberOfBrokers(1)
+                .withSharedNetwork()
+                .build();
+            kafkaCluster.start();
+        }
+    }
+
+    protected void deployBridge(VertxTestContext context) {
+        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+            bridgeConfig = BridgeConfig.fromMap(config);
+            httpBridge = new HttpBridge(bridgeConfig);
+            LOGGER.info("Deploying in-memory bridge");
+
+            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> context.completeNow()));
+        } else {
+            context.completeNow();
+        }
+
+        client = WebClient.create(vertx, new WebClientOptions()
+            .setDefaultHost(Urls.BRIDGE_HOST)
+            .setDefaultPort(Urls.BRIDGE_PORT)
+        );
+    }
+
+    /**
+     * Override or customize Bridge configuration for tests.
+     * <p>
+     * Example:
+     * &#064;Override
+     * protected Map&lt;String, Object&gt; overridableConfig() {
+     *     Map&lt;String, Object&gt; overrides = new HashMap&lt;&gt;();
+     *     overrides.put("bridge.id", "my-custom-bridge");
+     *     return overrides;
+     * }
+     * Return a map with configuration keys to override default values,
+     * or keys mapped to {@code null} to remove them.
+     */
+    protected Map<String, Object> overridableConfig() {
+        return new HashMap<>();
+    }
+
+    // ===== Service Accessors =====
+
+    protected BaseService baseService() {
+        return BaseService.getInstance(client);
+    }
+    protected ConsumerService consumerService() {
+        return ConsumerService.getInstance(client);
+    }
+    protected SeekService seekService() {
+        return SeekService.getInstance(client);
+    }
+    protected ProducerService producerService() {
+        return ProducerService.getInstance(client);
+    }
+
 }
