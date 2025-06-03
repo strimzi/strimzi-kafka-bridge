@@ -9,11 +9,9 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
-import io.strimzi.kafka.bridge.facades.AdminClientFacade;
+import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
 import io.strimzi.kafka.bridge.utils.Urls;
-import io.strimzi.test.container.StrimziKafkaCluster;
 import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -23,16 +21,13 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.KafkaFuture;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,58 +37,26 @@ import static org.hamcrest.Matchers.not;
 
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings({"checkstyle:JavaNCSS"})
-public class HttpCorsIT {
-    static Map<String, Object> config = new HashMap<>();
-    static long timeout = 5L;
-    static String kafkaUri;
+public class HttpCorsIT extends HttpBridgeITAbstract {
 
-    private static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
-
-    static Vertx vertx;
-    static HttpBridge httpBridge;
-    static WebClient client;
-
-    static BridgeConfig bridgeConfig;
-    static StrimziKafkaCluster kafkaCluster;
-    static AdminClientFacade adminClientFacade;
-
-    static {
-        if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
-            kafkaCluster = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
-                .withNumberOfBrokers(1)
-                .withSharedNetwork()
-                .build();
-            kafkaCluster.start();
-
-            kafkaUri = kafkaCluster.getBootstrapServers();
-
-            adminClientFacade = AdminClientFacade.create(kafkaUri);
-        } else {
-            // else use external kafka
-            kafkaUri = "localhost:9092";
-        }
-
-        config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
-        config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
+    @Override
+    protected void deployBridge(VertxTestContext context) {
+        // Intentionally empty; subclasses may deploy and create WebClient per test
+        context.completeNow();
     }
 
     @BeforeEach
-    void prepare() {
-        VertxOptions options = new VertxOptions();
-        options.setMaxEventLoopExecuteTime(Long.MAX_VALUE);
-        vertx = Vertx.vertx(options);
+    void beforeEach() {
+        vertx = Vertx.vertx();
     }
 
     @AfterEach
-    void cleanup(VertxTestContext context) {
-        vertx.close().onComplete(context.succeeding(arg -> context.completeNow()));
-    }
-
-    @AfterAll
-    static void afterAll() {
-        if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
-            adminClientFacade.close();
-            kafkaCluster.stop();
+    void afterEach(VertxTestContext context) {
+        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+            vertx.close().onComplete(context.succeeding(arg -> context.completeNow()));
+        } else {
+            // if we are running an external bridge
+            context.completeNow();
         }
     }
 
@@ -283,7 +246,6 @@ public class HttpCorsIT {
                 .setDefaultHost(Urls.BRIDGE_HOST)
                 .setDefaultPort(Urls.BRIDGE_PORT)
         );
-
     }
 
     private void configureBridge(boolean corsEnabled, String methodsAllowed) {
