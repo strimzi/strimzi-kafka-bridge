@@ -25,7 +25,7 @@ public class InvalidProducerIT extends HttpBridgeITAbstract {
     private static final Logger LOGGER = LogManager.getLogger(InvalidProducerIT.class);
 
     @Override
-    protected Map<String, Object> overridableConfig() {
+    protected Map<String, Object> overrideConfig() {
         Map<String, Object> cfg = new HashMap<>();
         cfg.put("kafka.producer.acks", "5"); // invalid config
         return cfg;

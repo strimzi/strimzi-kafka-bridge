@@ -44,7 +44,7 @@ public class ConsumerGeneratedNameIT extends HttpBridgeITAbstract {
     private String consumerInstanceId = "";
 
     @Override
-    protected Map<String, Object> overridableConfig() {
+    protected Map<String, Object> overrideConfig() {
         Map<String, Object> overrides = new HashMap<>();
         overrides.put(BridgeConfig.BRIDGE_ID, null);
         overrides.put(BridgeConfig.METRICS_TYPE, null);

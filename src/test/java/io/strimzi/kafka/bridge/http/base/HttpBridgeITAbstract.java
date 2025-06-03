@@ -59,7 +59,7 @@ import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
  * <p>
  * The suite is designed for extensibility. Common extension points:
  * <ul>
- *   <li>{@link #overridableConfig()} — override to customize bridge or Kafka configuration for your tests.</li>
+ *   <li>{@link #overrideConfig()} — override to customize bridge or Kafka configuration for your tests.</li>
  *   <li>{@link #setupKafkaCluster()} — override to customize embedded cluster setup.</li>
  *   <li>{@link #deployBridge(VertxTestContext)} — override to deploy the Bridge in a custom way (e.g. external or per-test deployment).</li>
  * </ul>
@@ -180,7 +180,7 @@ public abstract class HttpBridgeITAbstract {
         config.putAll(defaults);
 
         // Apply overrides
-        overridableConfig().forEach((key, value) -> {
+        overrideConfig().forEach((key, value) -> {
             if (value == null) {
                 config.remove(key);
             } else {
@@ -238,7 +238,7 @@ public abstract class HttpBridgeITAbstract {
      * Return a map with configuration keys to override default values,
      * or keys mapped to {@code null} to remove them.
      */
-    protected Map<String, Object> overridableConfig() {
+    protected Map<String, Object> overrideConfig() {
         return new HashMap<>();
     }
 
