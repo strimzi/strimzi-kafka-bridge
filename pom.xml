@@ -5,7 +5,7 @@
 	<artifactId>kafka-bridge</artifactId>
 	<version>0.33.0-SNAPSHOT</version>
 
-	<name>Strimzi Kafka Bridge</name>
+	<name>Strimzi HTTP bridge for Apache Kafka</name>
 	<description>Bridge that allows HTTP clients to interact with Apache Kafka clusters.</description>
 	<url>https://strimzi.io/</url>
 
