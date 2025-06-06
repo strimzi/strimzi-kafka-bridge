@@ -17,6 +17,7 @@ import io.strimzi.kafka.bridge.http.services.BaseService;
 import io.strimzi.kafka.bridge.http.services.ConsumerService;
 import io.strimzi.kafka.bridge.http.services.ProducerService;
 import io.strimzi.kafka.bridge.http.services.SeekService;
+import io.strimzi.kafka.bridge.http.tools.TestSeparator;
 import io.strimzi.kafka.bridge.metrics.MetricsType;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.strimzi.test.container.StrimziKafkaCluster;
@@ -74,7 +75,7 @@ import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
 @SuppressWarnings({"checkstyle:JavaNCSS"})
 @Tag(HTTP_BRIDGE)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public abstract class HttpBridgeITAbstract {
+public abstract class HttpBridgeITAbstract implements TestSeparator {
     private static final Logger LOGGER = LogManager.getLogger(HttpBridgeITAbstract.class);
     protected static Map<String, Object> config = new HashMap<>();
 
