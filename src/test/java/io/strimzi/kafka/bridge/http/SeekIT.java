@@ -408,7 +408,7 @@ public class SeekIT extends HttpBridgeITAbstract {
     }
 
     @Test
-    void seekToBeginningMultipleTopicsWithNotSuscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void seekToBeginningMultipleTopicsWithNotSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
         String subscribedTopic = "seekToBeginningSubscribedTopic";
         String notSubscribedTopic = "seekToBeginningNotSubscribedTopic";
 
@@ -478,8 +478,8 @@ public class SeekIT extends HttpBridgeITAbstract {
     }
 
     @Test
-    void seekToOffsetMultipleTopicsWithNotSuscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String subscribedTopic = "seekToOffseSubscribedTopic";
+    void seekToOffsetMultipleTopicsWithNotSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String subscribedTopic = "seekToOffsetSubscribedTopic";
         String notSubscribedTopic = "seekToOffsetNotSubscribedTopic";
 
         LOGGER.info("Creating topics " + subscribedTopic + "," + notSubscribedTopic);
