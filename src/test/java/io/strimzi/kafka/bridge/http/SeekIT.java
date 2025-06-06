@@ -8,6 +8,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.strimzi.kafka.bridge.http.services.ConsumerService;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -408,7 +409,7 @@ public class SeekIT extends HttpBridgeITAbstract {
     }
 
     @Test
-    void seekToBeginningMultipleTopicsWithNotSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void seekToBeginningMultipleTopicsWithNotSubscribedTopic(VertxTestContext context) throws Exception {
         String subscribedTopic = "seekToBeginningSubscribedTopic";
         String notSubscribedTopic = "seekToBeginningNotSubscribedTopic";
 
@@ -444,6 +445,9 @@ public class SeekIT extends HttpBridgeITAbstract {
 
         consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
+        // Now wait for assignment (can be a no-op if poll is enough)
+        waitUntilPartitionAssigned(consumerService(), groupId, name, 5, 200);
+
         // seek
         JsonArray partitions = new JsonArray();
         partitions.add(new JsonObject().put("topic", subscribedTopic).put("partition", 0));
@@ -475,6 +479,28 @@ public class SeekIT extends HttpBridgeITAbstract {
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+
+    void waitUntilPartitionAssigned(ConsumerService consumerService, String groupId, String name, int maxRetries, int delayMs) throws Exception {
+        int retries = 0;
+        while (retries < maxRetries) {
+            CompletableFuture<Boolean> pollComplete = new CompletableFuture<>();
+            consumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonObject())
+                .send()
+                .onComplete(ar -> {
+                    // if here poll succeeded, then it means assignment is done
+                    pollComplete.complete(true);
+                });
+            boolean result = pollComplete.get(10, TimeUnit.SECONDS);
+            if (result) {
+                return;
+            } else {
+                Thread.sleep(delayMs);
+                retries++;
+            }
+        }
+        throw new TimeoutException("Timed out waiting for partition assignment for consumer " + name);
     }
 
     @Test
