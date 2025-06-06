@@ -461,13 +461,6 @@ public class SeekIT extends HttpBridgeITAbstract {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-
-                        LOGGER.info("Seek response status code: {}", response.statusCode());
-                        LOGGER.info("Seek error code: {}", error.code());
-                        LOGGER.info("Seek error message: '{}'", error.message());
-                        LOGGER.info("Seek response body: {}", response.body());
-
-
                         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
                         assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
                         assertThat(error.message(), is("No current assignment for partition " + notSubscribedTopic + "-0"));
@@ -485,8 +478,8 @@ public class SeekIT extends HttpBridgeITAbstract {
     }
 
     @Test
-    void seekToOffsetMultipleTopicsWithNotSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String subscribedTopic = "seekToOffsetSubscribedTopic";
+    void seekToOffsetMultipleTopicsWithNotSuscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+        String subscribedTopic = "seekToOffseSubscribedTopic";
         String notSubscribedTopic = "seekToOffsetNotSubscribedTopic";
 
         LOGGER.info("Creating topics " + subscribedTopic + "," + notSubscribedTopic);
@@ -538,12 +531,6 @@ public class SeekIT extends HttpBridgeITAbstract {
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-
-                        LOGGER.info("Seek response status code: {}", response.statusCode());
-                        LOGGER.info("Seek error code: {}", error.code());
-                        LOGGER.info("Seek error message: '{}'", error.message());
-                        LOGGER.info("Seek response body: {}", response.body());
-
                         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
                         assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
                         assertThat(error.message(), is("No current assignment for partition " + notSubscribedTopic + "-0"));
