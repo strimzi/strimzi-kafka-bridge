@@ -514,7 +514,7 @@ public class SeekIT extends HttpBridgeITAbstract {
                 retries++;
             }
         }
-        throw new TimeoutException("Timed out waiting for partition assignment for consumer " + name);
+        throw new TimeoutException("Timed out waiting for partition assignment for consumer " + groupId + "/" + name);
     }
 
     @Test
