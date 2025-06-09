@@ -17,6 +17,7 @@ import io.strimzi.kafka.bridge.http.services.BaseService;
 import io.strimzi.kafka.bridge.http.services.ConsumerService;
 import io.strimzi.kafka.bridge.http.services.ProducerService;
 import io.strimzi.kafka.bridge.http.services.SeekService;
+import io.strimzi.kafka.bridge.http.tools.TestSeparator;
 import io.strimzi.kafka.bridge.metrics.MetricsType;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.strimzi.test.container.StrimziKafkaCluster;
@@ -74,7 +75,7 @@ import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
 @SuppressWarnings({"checkstyle:JavaNCSS"})
 @Tag(HTTP_BRIDGE)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public abstract class HttpBridgeITAbstract {
+public abstract class HttpBridgeITAbstract implements TestSeparator {
     private static final Logger LOGGER = LogManager.getLogger(HttpBridgeITAbstract.class);
     protected static Map<String, Object> config = new HashMap<>();
 
@@ -100,6 +101,8 @@ public abstract class HttpBridgeITAbstract {
     protected static AdminClientFacade adminClientFacade;
     protected static HttpBridge httpBridge;
     protected static BridgeConfig bridgeConfig;
+
+    private final static Random RNG = new Random();
 
     @BeforeAll
     void beforeAll(VertxTestContext context) {
@@ -129,7 +132,7 @@ public abstract class HttpBridgeITAbstract {
 
     @BeforeEach
     void setUpEach() {
-        topic = "my-topic-" + new Random().nextInt(Integer.MAX_VALUE);
+        topic = "my-topic-" + RNG.nextInt(Integer.MAX_VALUE);
     }
 
     @AfterEach
@@ -156,7 +159,7 @@ public abstract class HttpBridgeITAbstract {
     }
 
     protected String generateRandomConsumerGroupName() {
-        int salt = new Random().nextInt(Integer.MAX_VALUE);
+        int salt = RNG.nextInt(Integer.MAX_VALUE);
         return "my-group-" + salt;
     }
 
