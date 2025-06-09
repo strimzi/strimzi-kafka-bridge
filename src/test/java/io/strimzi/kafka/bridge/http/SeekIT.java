@@ -434,18 +434,6 @@ public class SeekIT extends HttpBridgeITAbstract {
                 .createConsumer(context, groupId, jsonConsumer)
                 .subscribeConsumer(context, groupId, name, topics);
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
-
-        // poll to subscribe
-        consumerService()
-                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonObject())
-                .send()
-                .onComplete(ar -> consume.complete(true));
-
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        // Now wait for assignment (can be a no-op if poll is enough)
         waitUntilPartitionAssigned(consumerService(), groupId, name, 5, 200);
 
         // seek
@@ -481,7 +469,24 @@ public class SeekIT extends HttpBridgeITAbstract {
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
 
-    void waitUntilPartitionAssigned(ConsumerService consumerService, String groupId, String name, int maxRetries, int delayMs) throws Exception {
+    /**
+     * Waits until the Kafka consumer with the given name in the specified group has received
+     * a partition assignment. This method performs repeated polling using
+     * {@link ConsumerService#consumeRecordsRequest} to ensure that group coordination and
+     * partition assignment have completed before the test proceeds.
+     *
+     * @param consumerService   the {@link ConsumerService} instance used to interact with the consumer
+     * @param groupId           the Kafka consumer group ID
+     * @param name              the name of the consumer (within the group)
+     * @param maxRetries        maximum number of poll attempts before giving up
+     * @param delayMs           delay in milliseconds between retries
+     * @throws Exception        if partition assignment doesn't complete in time
+     */
+    void waitUntilPartitionAssigned(final ConsumerService consumerService,
+                                    final String groupId,
+                                    final String name,
+                                    final int maxRetries,
+                                    final int delayMs) throws Exception {
         int retries = 0;
         while (retries < maxRetries) {
             CompletableFuture<Boolean> pollComplete = new CompletableFuture<>();
