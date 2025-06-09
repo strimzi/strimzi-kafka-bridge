@@ -434,6 +434,15 @@ public class SeekIT extends HttpBridgeITAbstract {
                 .createConsumer(context, groupId, jsonConsumer)
                 .subscribeConsumer(context, groupId, name, topics);
 
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+
+        // poll to subscribe
+        consumerService()
+            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+            .as(BodyCodec.jsonObject())
+            .send()
+            .onComplete(ar -> consume.complete(true));
+
         waitUntilPartitionAssigned(consumerService(), groupId, name, 5, 200);
 
         // seek
