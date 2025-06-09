@@ -102,6 +102,8 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
     protected static HttpBridge httpBridge;
     protected static BridgeConfig bridgeConfig;
 
+    private final static Random RNG = new Random();
+
     @BeforeAll
     void beforeAll(VertxTestContext context) {
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
@@ -130,7 +132,7 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
 
     @BeforeEach
     void setUpEach() {
-        topic = "my-topic-" + new Random().nextInt(Integer.MAX_VALUE);
+        topic = "my-topic-" + RNG.nextInt(Integer.MAX_VALUE);
     }
 
     @AfterEach
@@ -157,7 +159,7 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
     }
 
     protected String generateRandomConsumerGroupName() {
-        int salt = new Random().nextInt(Integer.MAX_VALUE);
+        int salt = RNG.nextInt(Integer.MAX_VALUE);
         return "my-group-" + salt;
     }
 
