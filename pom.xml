@@ -100,10 +100,10 @@
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
 		<log4j.version>2.17.2</log4j.version>
-		<vertx.version>4.5.11</vertx.version>
-		<vertx-testing.version>4.5.11</vertx-testing.version>
-		<netty.version>4.1.115.Final</netty.version>
-		<kafka.version>3.9.0</kafka.version>
+		<vertx.version>4.5.14</vertx.version>
+		<vertx-testing.version>4.5.14</vertx-testing.version>
+		<netty.version>4.1.118.Final</netty.version>
+		<kafka.version>3.9.1</kafka.version>
 		<kafka-kubernetes-config-provider.version>1.2.0</kafka-kubernetes-config-provider.version>
 		<kafka-env-var-config-provider.version>1.1.0</kafka-env-var-config-provider.version>
 		<maven.checkstyle.version>3.3.0</maven.checkstyle.version>
