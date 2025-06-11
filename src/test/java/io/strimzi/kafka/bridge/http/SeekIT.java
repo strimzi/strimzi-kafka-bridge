@@ -8,6 +8,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
+import io.strimzi.kafka.bridge.http.services.ConsumerService;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -395,7 +396,7 @@ public class SeekIT extends HttpBridgeITAbstract {
     }
 
     @Test
-    void seekToBeginningMultipleTopicsWithNotSuscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void seekToBeginningMultipleTopicsWithNotSuscribedTopic(VertxTestContext context) throws Exception {
         String subscribedTopic = "seekToBeginningSubscribedTopic";
         String notSubscribedTopic = "seekToBeginningNotSubscribedTopic";
 
@@ -420,15 +421,7 @@ public class SeekIT extends HttpBridgeITAbstract {
             .createConsumer(context, groupId, jsonConsumer)
             .subscribeConsumer(context, groupId, name, topics);
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
-
-        // poll to subscribe
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-            .as(BodyCodec.jsonObject())
-            .send(ar -> consume.complete(true));
-
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        waitUntilPartitionAssigned(consumerService(), groupId, name, 10, 2000);
 
         // seek
         JsonArray partitions = new JsonArray();
@@ -459,6 +452,45 @@ public class SeekIT extends HttpBridgeITAbstract {
 
         context.completeNow();
         assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+
+    /**
+     * Waits until the Kafka consumer with the given name in the specified group has received
+     * a partition assignment. This method performs repeated polling using
+     * {@link ConsumerService#consumeRecordsRequest} to ensure that group coordination and
+     * partition assignment have completed before the test proceeds.
+     *
+     * @param consumerService   the {@link ConsumerService} instance used to interact with the consumer
+     * @param groupId           the Kafka consumer group ID
+     * @param name              the name of the consumer (within the group)
+     * @param maxRetries        maximum number of poll attempts before giving up
+     * @param delayMs           delay in milliseconds between retries
+     * @throws Exception        if partition assignment doesn't complete in time
+     */
+    void waitUntilPartitionAssigned(final ConsumerService consumerService,
+                                    final String groupId,
+                                    final String name,
+                                    final int maxRetries,
+                                    final int delayMs) throws Exception {
+        int retries = 0;
+        while (retries < maxRetries) {
+            CompletableFuture<Boolean> pollComplete = new CompletableFuture<>();
+            consumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
+                    .as(BodyCodec.jsonObject())
+                    .send()
+                    .onComplete(ar -> {
+                        // if here poll succeeded, then it means assignment is done
+                        pollComplete.complete(true);
+                    });
+            boolean result = pollComplete.get(10, TimeUnit.SECONDS);
+            if (result) {
+                return;
+            } else {
+                Thread.sleep(delayMs);
+                retries++;
+            }
+        }
+        throw new TimeoutException("Timed out waiting for partition assignment for consumer " + groupId + "/" + name);
     }
 
     @Test
