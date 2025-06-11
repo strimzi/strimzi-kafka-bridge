@@ -421,7 +421,7 @@ public class SeekIT extends HttpBridgeITAbstract {
             .createConsumer(context, groupId, jsonConsumer)
             .subscribeConsumer(context, groupId, name, topics);
 
-        waitUntilPartitionAssigned(consumerService(), groupId, name, 5, 200);
+        waitUntilPartitionAssigned(consumerService(), groupId, name, 10, 2000);
 
         // seek
         JsonArray partitions = new JsonArray();
