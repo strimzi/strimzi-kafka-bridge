@@ -2,7 +2,7 @@
 
 ## 0.31.2
 
-* Dependency updates (Kafka 3.9.1 [CVE-2025-27817](https://nvd.nist.gov/vuln/detail/CVE-2025-27817), Vert.x 4.5.14, Netty 4.1.118.Final [CVE-2025-25193](https://nvd.nist.gov/vuln/detail/CVE-2025-25193) [CVE-2025-24970](https://nvd.nist.gov/vuln/detail/CVE-2025-24970)) for fixing CVEs
+* Dependency updates (Kafka 3.9.1 [CVE-2025-27817](https://nvd.nist.gov/vuln/detail/CVE-2025-27817), Vert.x 4.5.14, Netty 4.1.118.Final [CVE-2025-25193](https://nvd.nist.gov/vuln/detail/CVE-2025-25193) [CVE-2025-24970](https://nvd.nist.gov/vuln/detail/CVE-2025-24970), OAuth 0.15.1) for fixing CVEs
 
 ## 0.31.1
 
