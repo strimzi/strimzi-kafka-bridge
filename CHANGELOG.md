@@ -11,6 +11,12 @@
 
 * The OpenAPI specification was bumped to 3.1.0 in order to deal with the new JSON Schema support for `null` type.
   It was not possible to deprecate the 3.0.0 first due to the Vert.x OpenAPI component refactoring within Vert.x 5.
+* Removed the following OpenTelemetry span attributes that were deprecated since [0.28.0](#0280) release.
+  1. `http.method` is being replaced with `http.request.method`
+  2. `http.url` is being replaced with `url.scheme`, `url.path` & `url.query`
+  3. `messaging.destination` is being replaced with `messaging.destination.name`
+  4. `http.status_code` is being replaced with `http.response.status_code`
+  5. `messaging.destination.kind=topic` without any replacement
 
 ## 0.32.0
 
