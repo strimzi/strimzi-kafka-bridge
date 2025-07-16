@@ -41,7 +41,8 @@ When starting the new run, it will ask for several parameters which you need to 
 * Source pipeline ID (Currently, only the build pipeline with ID `34` can be used)
 * Source build ID (the ID of the build from which the artifacts should be used - use the long build ID from the URL and not the shorter build number)
 
-The release pipeline will push the images to the registry. 
+The release pipeline will push the images to the registry.
+Once it completes, mark the build in the Azure Pipelines UI to be retained forever
 
 ### Smoke tests
 
