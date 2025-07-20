@@ -340,7 +340,6 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         String baseUri = "https://my-api-gateway-host:443/consumers/" + groupId + "/instances/" + name;
 
         // we have to use MultiMap because of https://github.com/vert-x3/vertx-web/issues/1383
-        //MultiMap headers = new HeadersMultiMap();
         MultiMap headers = MultiMap.caseInsensitiveMultiMap();
         headers.add(FORWARDED, forwarded);
         headers.add(FORWARDED, forwarded2);
@@ -1037,7 +1036,6 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                             assertThat(kafkaTopic, is("receiveSimpleMessageFromMultiplePartitions"));
                             assertThat(value, is(sentBody));
                             assertThat(offset, is(0L));
-                            //context.assertNotNull(kafkaPartition);
                             assertThat(i, is(kafkaPartition));
                             assertThat(key, nullValue());
                         }
