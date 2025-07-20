@@ -971,7 +971,6 @@ public class ProducerIT extends HttpBridgeITAbstract {
         );
         producerService()
                 .sendRecordsToPartitionRequest(topic, partition, root, BridgeContentType.KAFKA_JSON_JSON)
-                //.sendJsonObject(root).onComplete(verifyBadRequest(context, "Parameter error on: partitionid - [Bad Request] Parsing error for parameter partitionid in location PATH: java.lang.NumberFormatException: For input string: \"" + partition + "\""));
                 .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: Schema validation error", expectedValidationErrors));
     }
 
@@ -1061,7 +1060,6 @@ public class ProducerIT extends HttpBridgeITAbstract {
         );
         producerService()
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                //.sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: /records/0 - Provided object contains unexpected additional property: " + testProp));
                 .sendJsonObject(root).onComplete(verifyBadRequest(context, "Validation error on: Schema validation error", expectedValidationErrors));
     }
 
