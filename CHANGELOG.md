@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.33.0
+## 1.0.0
 
 * Dependency updates (Vert.x 5.0.1, Netty 4.2.2.Final, JMX Prometheus collector 1.3.0).
 * Updated OpenAPI specification to 3.1.0.
