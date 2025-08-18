@@ -85,6 +85,35 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
     }
 
     @Test
+    void metricsContentTest(VertxTestContext context) {
+        baseService()
+                .getRequest("/metrics")
+                .send()
+                .onComplete(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.OK.code()));
+                        assertThat(ar.result().getHeader("Content-Type"), is("text/plain; version=0.0.4; charset=utf-8"));
+
+                        String metricsBody = ar.result().bodyAsString();
+                        assertThat(metricsBody, is(notNullValue()));
+                        assertThat(!metricsBody.isEmpty(), is(true));
+
+                        // verify Prometheus format containing HELP and TYPE comments
+                        assertThat(metricsBody.contains("# HELP"), is(true));
+                        assertThat(metricsBody.contains("# TYPE"), is(true));
+
+                        // verify JVM and Strimzi bridge specific metrics are present
+                        assertThat(metricsBody.contains("strimzi_bridge_"), is(true));
+                        assertThat(metricsBody.contains("jvm_"), is(true));
+
+                        context.completeNow();
+                    });
+                });
+    }
+
+
+    @Test
     void openapiv2Test(VertxTestContext context) {
         baseService()
                 .getRequest("/openapi/v2")
