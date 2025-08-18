@@ -22,10 +22,15 @@ import io.strimzi.kafka.bridge.metrics.MetricsType;
 import io.strimzi.kafka.bridge.utils.Urls;
 import io.strimzi.test.container.StrimziKafkaCluster;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.micrometer.Label;
+import io.vertx.micrometer.MetricsDomain;
+import io.vertx.micrometer.MicrometerMetricsOptions;
+import io.vertx.micrometer.VertxPrometheusOptions;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.logging.log4j.LogManager;
@@ -39,9 +44,11 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
@@ -194,9 +201,26 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
         LOGGER.info("Bridge config:");
         config.forEach((key, value) -> LOGGER.info("  {} = {}", key, value));
 
-        vertx = Vertx.vertx();
+        // create Vert.x instance with metrics options to enable bridge metrics
+        VertxOptions vertxOptions = new VertxOptions();
+        if (config.get(BridgeConfig.METRICS_TYPE) != null) {
+            vertxOptions.setMetricsOptions(metricsOptions());
+        }
+        vertx = Vertx.vertx(vertxOptions);
         adminClientFacade = AdminClientFacade.create(kafkaUri);
         basicKafkaClient = new BasicKafkaClient(kafkaUri);
+    }
+
+    private static MicrometerMetricsOptions metricsOptions() {
+        return new MicrometerMetricsOptions()
+            .setPrometheusOptions(new VertxPrometheusOptions().setEnabled(true))
+            // define the labels on the HTTP server related metrics
+            .setLabels(EnumSet.of(Label.HTTP_PATH, Label.HTTP_METHOD, Label.HTTP_CODE))
+            // disable metrics about pool and verticles
+            .setDisabledMetricsCategories(
+                Set.of(MetricsDomain.NAMED_POOLS.name(), MetricsDomain.VERTICLES.name())
+            ).setJvmMetricsEnabled(true)
+            .setEnabled(true);
     }
 
     // ===== Overridable Hooks =====
