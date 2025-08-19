@@ -10,6 +10,7 @@ import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.common.KafkaFuture;
 import org.hamcrest.CoreMatchers;
@@ -26,8 +27,6 @@ import java.util.regex.Pattern;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-
-import io.vertx.ext.web.codec.BodyCodec;
 
 /**
  * Integration tests for the /metrics endpoint functionality
