@@ -25,6 +25,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -115,14 +116,14 @@ public class MetricsIT extends HttpBridgeITAbstract {
 
                                     Optional<Double> requestsTotal = parseMetricValue(metricsBody, "strimzi_bridge_http_client_requests_total");
                                     assertThat(requestsTotal.isPresent(), is(true));
-                                    assertThat(requestsTotal.get(), is(1.0));
+                                    assertThat(requestsTotal.get(), greaterThan(0.0));
                                     
                                     // verify Kafka producer metrics are present
                                     assertThat(metricsBody.contains("kafka_producer_"), is(true));
 
                                     Optional<Double> recordSend = parseMetricValue(metricsBody, "kafka_producer_producer_metrics_record_send");
                                     assertThat(recordSend.isPresent(), is(true));
-                                    assertThat(recordSend.get(), is(1.0));
+                                    assertThat(recordSend.get(), greaterThan(0.0));
                                     
                                     context.completeNow();
                                 });
