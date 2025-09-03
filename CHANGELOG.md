@@ -2,7 +2,7 @@
 
 ## 1.0.0
 
-* Dependency updates (Vert.x 5.0.3, Netty 4.2.4.Final, JMX Prometheus collector 1.3.0).
+* Dependency updates (Kafka 4.1.0, Vert.x 5.0.3, Netty 4.2.4.Final, JMX Prometheus collector 1.3.0).
 * Updated OpenAPI specification to 3.1.0.
 * Added `validation_errors` field within the JSON object, as part of the `Error` OpenAPI component, returned by the bridge when there is a schema validation error.
   Such field is omitted when the error is not schema validation related.
