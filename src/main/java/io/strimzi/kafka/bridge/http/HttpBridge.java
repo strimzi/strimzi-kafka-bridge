@@ -23,12 +23,14 @@ import io.strimzi.kafka.bridge.metrics.MetricsType;
 import io.strimzi.kafka.bridge.metrics.StrimziMetricsCollector;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.CorsHandler;
@@ -81,7 +83,8 @@ public class HttpBridge extends AbstractVerticle {
 
     private final BridgeConfig bridgeConfig;
 
-    private HttpServer httpServer;
+    private HttpServer apiServer;
+    private HttpServer managementServer;
 
     private HttpBridgeContext<byte[], byte[]> httpBridgeContext;
 
@@ -89,6 +92,8 @@ public class HttpBridge extends AbstractVerticle {
     private boolean isReady = false;
 
     private Router router;
+
+    private Router managementRouter;
 
     private final Map<ConsumerInstanceId, Long> timestampMap = new HashMap<>();
 
@@ -147,16 +152,32 @@ public class HttpBridge extends AbstractVerticle {
         }
     }
 
-    private void bindHttpServer(Promise<Void> startPromise) {
-        HttpServerOptions httpServerOptions = httpServerOptions();
+    private void bindHttpServers(Promise<Void> startPromise) {
+        HttpServerOptions managementServerOptions = new HttpServerOptions();
+        managementServerOptions.setHost(this.bridgeConfig.getHttpConfig().getHost());
+        managementServerOptions.setPort(this.bridgeConfig.getHttpConfig().getManagementPort());
 
+        this.vertx.createHttpServer(managementServerOptions)
+                .connectionHandler(this::processConnection)
+                .requestHandler(this.managementRouter)
+                .listen()
+                .onSuccess(httpServer -> {
+                    LOGGER.info("HTTP Bridge server for management endpoints started and listening on port {}", httpServer.actualPort());
+                    this.managementServer = httpServer;
+                })
+                .onFailure(t -> {
+                    LOGGER.error("Error starting HTTP Bridge management server", t);
+                    startPromise.fail(t);
+                });
+
+        HttpServerOptions httpServerOptions = httpServerOptions();
         this.vertx.createHttpServer(httpServerOptions)
                 .connectionHandler(this::processConnection)
                 .requestHandler(this.router)
                 .listen()
                 .onSuccess(httpServer -> {
-                    LOGGER.info("HTTP-Kafka Bridge started and listening on port {}", httpServer.actualPort());
-                    LOGGER.info("HTTP-Kafka Bridge bootstrap servers {}",
+                    LOGGER.info("HTTP Bridge server started and listening on port {}", httpServer.actualPort());
+                    LOGGER.info("HTTP Bridge bootstrap servers {}",
                             this.bridgeConfig.getKafkaConfig().getConfig()
                                     .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
                     );
@@ -166,11 +187,11 @@ public class HttpBridge extends AbstractVerticle {
                     }
 
                     this.isReady = true;
-                    this.httpServer = httpServer;
+                    this.apiServer = httpServer;
                     startPromise.complete();
                 })
                 .onFailure(t -> {
-                    LOGGER.error("Error starting HTTP-Kafka Bridge", t);
+                    LOGGER.error("Error starting HTTP Bridge server", t);
                     startPromise.fail(t);
                 });
     }
@@ -219,13 +240,11 @@ public class HttpBridge extends AbstractVerticle {
                     routerBuilder.getRoute(this.LIST_PARTITIONS.getOperationId().toString()).addHandler(this.LIST_PARTITIONS);
                     routerBuilder.getRoute(this.GET_PARTITION.getOperationId().toString()).addHandler(this.GET_PARTITION);
                     routerBuilder.getRoute(this.GET_OFFSETS.getOperationId().toString()).addHandler(this.GET_OFFSETS);
-                    routerBuilder.getRoute(this.HEALTHY.getOperationId().toString()).addHandler(this.HEALTHY);
-                    routerBuilder.getRoute(this.READY.getOperationId().toString()).addHandler(this.READY);
                     routerBuilder.getRoute(this.OPENAPI.getOperationId().toString()).addHandler(this.OPENAPI);
                     routerBuilder.getRoute(this.OPENAPI_V2.getOperationId().toString()).addHandler(this.OPENAPI_V2);
                     routerBuilder.getRoute(this.OPENAPI_V3.getOperationId().toString()).addHandler(this.OPENAPI_V3);
-                    routerBuilder.getRoute(this.METRICS.getOperationId().toString()).addHandler(this.METRICS);
                     routerBuilder.getRoute(this.INFO.getOperationId().toString()).addHandler(this.INFO);
+
                     if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
                         routerBuilder.rootHandler(getCorsHandler());
                     }
@@ -236,6 +255,16 @@ public class HttpBridge extends AbstractVerticle {
                     this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
                     this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
 
+                    RouterBuilder managementRouterBuilder = RouterBuilder.create(vertx, contract);
+                    managementRouterBuilder.getRoute(this.HEALTHY.getOperationId().toString()).addHandler(this.HEALTHY);
+                    managementRouterBuilder.getRoute(this.READY.getOperationId().toString()).addHandler(this.READY);
+                    managementRouterBuilder.getRoute(this.METRICS.getOperationId().toString()).addHandler(this.METRICS);
+                    this.managementRouter = managementRouterBuilder.createRouter();
+
+                    // handling validation errors and not existing endpoints
+                    this.managementRouter.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
+                    this.managementRouter.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
+
                     if (this.metricsCollector != null && this.metricsCollector.getVertxRegistry() != null) {
                         // exclude to report the HTTP server metrics for the /metrics endpoint itself
                         this.metricsCollector.getVertxRegistry().config().meterFilter(
@@ -243,12 +272,12 @@ public class HttpBridge extends AbstractVerticle {
                         );
                     }
 
-                    LOGGER.info("Starting HTTP-Kafka bridge verticle...");
+                    LOGGER.info("Starting HTTP bridge verticle...");
                     this.httpBridgeContext = new HttpBridgeContext<>();
                     HttpAdminBridgeEndpoint adminClientEndpoint = new HttpAdminBridgeEndpoint(this.bridgeConfig, this.httpBridgeContext);
                     this.httpBridgeContext.setHttpAdminEndpoint(adminClientEndpoint);
                     adminClientEndpoint.open();
-                    this.bindHttpServer(startPromise);
+                    this.bindHttpServers(startPromise);
                 })
                 .onFailure(t -> {
                     LOGGER.error("Failed to create OpenAPI router factory");
@@ -288,7 +317,7 @@ public class HttpBridge extends AbstractVerticle {
 
     @Override
     public void stop(Promise<Void> stopPromise) {
-        LOGGER.info("Stopping HTTP-Kafka bridge verticle ...");
+        LOGGER.info("Stopping HTTP bridge verticle ...");
 
         this.isReady = false;
 
@@ -303,15 +332,28 @@ public class HttpBridge extends AbstractVerticle {
         // admin client cleanup
         this.httpBridgeContext.closeHttpAdminClientEndpoint();
 
-        if (this.httpServer != null) {
-
-            this.httpServer.shutdown()
+        if (this.apiServer != null) {
+            this.apiServer.shutdown()
                     .onSuccess(v -> {
-                        LOGGER.info("HTTP-Kafka bridge has been shut down successfully");
+                        LOGGER.info("HTTP bridge has been shut down successfully");
+                        if (this.managementServer == null) {
+                            stopPromise.complete();
+                        }
+                    })
+                    .onFailure(t -> {
+                        LOGGER.info("Error while shutting down HTTP bridge", t);
+                        stopPromise.fail(t);
+                    });
+        }
+
+        if (this.managementServer != null) {
+            this.managementServer.shutdown()
+                    .onSuccess(v -> {
+                        LOGGER.info("HTTP bridge management server has been shut down successfully");
                         stopPromise.complete();
                     })
                     .onFailure(t -> {
-                        LOGGER.info("Error while shutting down HTTP-Kafka bridge", t);
+                        LOGGER.info("Error while shutting down HTTP bridge management server", t);
                         stopPromise.fail(t);
                     });
         }
@@ -321,6 +363,32 @@ public class HttpBridge extends AbstractVerticle {
         HttpServerOptions httpServerOptions = new HttpServerOptions();
         httpServerOptions.setHost(this.bridgeConfig.getHttpConfig().getHost());
         httpServerOptions.setPort(this.bridgeConfig.getHttpConfig().getPort());
+
+        if (this.bridgeConfig.getHttpConfig().isSslEnabled()) {
+            httpServerOptions.setSsl(true);
+
+            if (bridgeConfig.getHttpConfig().getHttpServerSslKeystoreLocation() != null & this.bridgeConfig.getHttpConfig().getHttpServerSslKeystoreKeyLocation() != null) {
+                httpServerOptions.setKeyCertOptions(new PemKeyCertOptions()
+                        .setKeyPath(this.bridgeConfig.getHttpConfig().getHttpServerSslKeystoreKeyLocation())
+                        .setCertPath(this.bridgeConfig.getHttpConfig().getHttpServerSslKeystoreLocation()));
+            }
+
+            if (bridgeConfig.getHttpConfig().getHttpServerSslKeystoreCertificateChain() != null & this.bridgeConfig.getHttpConfig().getHttpServerSslKeystoreKey() != null) {
+                httpServerOptions.setKeyCertOptions(new PemKeyCertOptions()
+                        .addKeyValue(Buffer.buffer(this.bridgeConfig.getHttpConfig().getHttpServerSslKeystoreKey()))
+                        .addCertValue(Buffer.buffer(this.bridgeConfig.getHttpConfig().getHttpServerSslKeystoreCertificateChain())));
+            }
+
+            Set<String> sslEnabledProtocols = this.bridgeConfig.getHttpConfig().getHttpServerSslEnabledProtocols();
+            if (sslEnabledProtocols != null) {
+                httpServerOptions.setEnabledSecureTransportProtocols(sslEnabledProtocols);
+            }
+
+            Set<String> sslCipherSuites = this.bridgeConfig.getHttpConfig().getHttpServerSslCipherSuites();
+            if (sslCipherSuites != null) {
+                sslCipherSuites.forEach(httpServerOptions::addEnabledCipherSuite);
+            }
+        }
         return httpServerOptions;
     }
 

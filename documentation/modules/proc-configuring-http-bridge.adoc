@@ -47,14 +47,77 @@ For example:
 ----
 bridge.id=my-bridge
 http.host=0.0.0.0
-http.port=8080 <1>
-http.cors.enabled=true <2>
-http.cors.allowedOrigins=https://strimzi.io <3>
-http.cors.allowedMethods=GET,POST,PUT,DELETE,OPTIONS,PATCH <4>
+http.port=443 <1>
+http.ssl.enable=true <2>
+http.ssl.keystore.certificate.location=/etc/ssl/certs/bridge.crt <3>
+http.ssl.keystore.key.location=/etc/ssl/private/bridge.key <4>
+http.cors.enabled=true <5>
+http.cors.allowedOrigins=https://strimzi.io <6>
+http.cors.allowedMethods=GET,POST,PUT,DELETE,OPTIONS,PATCH <7>
 ----
-<1> The default HTTP configuration for the HTTP Bridge to listen on port 8080.
-<2> Set to `true` to enable CORS.
-<3> Comma-separated list of allowed CORS origins. You can use a URL or a Java regular expression.
-<4> Comma-separated list of allowed HTTP methods for CORS.
+<1> Configure HTTP Bridge to listen on port 443 for TLS encrypted connections.
+<2> Set `true` to enable TLS encryption between HTTP clients and the HTTP Bridge.
+<3> Location of the keystore file in PEM format.
+<4> Location of the private key in PEM format.
+<5> Set to `true` to enable CORS.
+<6> Comma-separated list of allowed CORS origins. You can use a URL or a Java regular expression.
+<7> Comma-separated list of allowed HTTP methods for CORS.
 
-. Save the configuration file.
+.HTTP related configurations
+|====
+|Name |Descriptions
+
+|http.host
+|HTTP Bridge host address. The default is `0.0.0.0`.
+
+|http.port
+|HTTP Bridge port. The default is `8080`. If "http.ssl.enable" is set to `true`, then the default is `443`.
+
+|http.management.port
+|HTTP bridge port for management endpoints such as `/healthy`, `/ready` and `/metrics`. The default is `8081`.
+
+|http.ssl.enable
+|Enable TLS encryption between HTTP clients and HTTP bridge. It is `false` by default.
+If set to `true`, `http.ssl.keystore.location` and `http.ssl.keystore.key.location` configurations or
+ `http.ssl.keystore.certificate.chain` and `http.ssl.keystore.key` configurations are required.
+
+|http.ssl.keystore.location
+|The location of the HTTP Bridge server keystore file in PEM format.
+PEM is the only format supported for keystore.
+
+|http.ssl.keystore.key.location
+|The location of the HTTP Bridge server private key file in PEM format.
+PEM is the only format supported for private key.
+
+|http.ssl.keystore.certificate.chain
+|The HTTP Bridge server keystore certificate in PEM format.
+PEM is the only format supported for keystore.
+
+|http.ssl.keystore.key
+|The HTTP Bridge server private key in PEM format.
+PEM is the only format supported for private key.
+
+|http.ssl.enabled.protocols
+|Comma-separated list of protocols enabled for TLS connections. `TLSv1.2,TLSv1.3` is the default.
+
+|http.ssl.enabled.cipher.suites
+|Comma-separated list of cipher suites. The default of the underlying JVM version is used.
+
+|http.cors.enabled
+|Enable CORS. The default is `false`.
+
+|http.cors.allowedOrigins
+|Comma-separated list of allowed CORS origins. You can use a URL or a Java regular expression.
+
+|http.cors.allowedMethods
+|Comma-separated list of allowed HTTP methods for CORS.
+
+|http.consumer.enabled
+|Enable consumer part of the HTTP Bridge. The default is `true`.
+
+|http.producer.enabled
+|Enable producer part of the HTTP Bridge. The default is `true`.
+
+|http.timeoutSeconds
+|The timeout for closing inactive consumer. By default, inactive consumers will not be closed.
+|====
