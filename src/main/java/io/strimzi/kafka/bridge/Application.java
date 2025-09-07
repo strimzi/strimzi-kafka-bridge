@@ -25,8 +25,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.management.MalformedObjectNameException;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +46,7 @@ public class Application {
         LOGGER.info("Strimzi Kafka Bridge {} is starting", Application.class.getPackage().getImplementationVersion());
         try {
             CommandLine commandLine = new DefaultParser().parse(generateOptions(), args);
-            Map<String, Object> config = ConfigRetriever.getConfig(absoluteFilePath(commandLine.getOptionValue("config-file")));
+            Map<String, Object> config = ConfigRetriever.getConfig(Path.of(commandLine.getOptionValue("config-file")).toAbsolutePath().toString());
             BridgeConfig bridgeConfig = BridgeConfig.fromMap(config);
             LOGGER.info("Bridge configuration {}", bridgeConfig);
 
@@ -96,8 +96,7 @@ public class Application {
         if (bridgeConfig.getMetricsType() != null) {
             vertxOptions.setMetricsOptions(metricsOptions()); // enable Vertx metrics
         }
-        Vertx vertx = Vertx.vertx(vertxOptions);
-        return vertx;
+        return Vertx.vertx(vertxOptions);
     }
 
     /**
@@ -123,20 +122,11 @@ public class Application {
      * @return command line options
      */
     private static Options generateOptions() {
-        Option configFileOption = Option.builder()
+        return new Options().addOption(Option.builder()
                 .required(true)
                 .hasArg(true)
                 .longOpt("config-file")
                 .desc("Configuration file with bridge parameters")
-                .build();
-
-        Options options = new Options();
-        options.addOption(configFileOption);
-        return options;
-    }
-
-    private static String absoluteFilePath(String arg) {
-        // return the file path as absolute (if it's relative)
-        return arg.startsWith(File.separator) ? arg : System.getProperty("user.dir") + File.separator + arg;
+                .build());
     }
 }
