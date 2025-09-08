@@ -80,7 +80,7 @@ public class Application {
 
         vertx.deployVerticle(httpBridge)
                 .onSuccess(deploymentId -> {
-                    LOGGER.info("HTTP verticle instance deployed [{}]", deploymentId);
+                    LOGGER.info("HTTP verticle instance [{}] deployed", deploymentId);
                     httpPromise.complete(httpBridge);
                 })
                 .onFailure(t -> {
