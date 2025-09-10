@@ -1992,4 +1992,50 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         return "my-kafka-consumer-" + salt;
     }
 
+    @Test
+    void concurrentPollAndDeleteConsumer(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+
+        future.get();
+        String sentBody = "Simple message";
+        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
+
+        // create consumer
+        // subscribe to a topic
+        consumerService()
+                .createConsumer(context, groupId, consumerJson)
+                .subscribeConsumer(context, groupId, name, topic);
+
+        // Start a poll operation with a long timeout (10 seconds) to simulate a long-running poll
+        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+        consumerService()
+                .consumeRecordsRequest(groupId, name, 10000, null, BridgeContentType.KAFKA_JSON_JSON)
+                .as(BodyCodec.jsonArray())
+                .send()
+                .onComplete(ar -> {
+                    context.verify(() -> {
+                        assertThat(ar.succeeded(), is(true));
+                        HttpResponse<JsonArray> response = ar.result();
+                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+                        JsonObject jsonResponse = response.body().getJsonObject(0);
+                        String value = jsonResponse.getString("value");
+                        assertThat(value, is(sentBody));
+                    });
+                    consume.complete(true);
+                });
+
+        // Wait a short time to ensure poll request has started
+        Thread.sleep(100);
+
+        // Now try to delete the consumer while the poll is active
+        // This should trigger the ConcurrentModificationException
+        consumerService()
+                .deleteConsumer(context, groupId, name);
+
+        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+
+        context.completeNow();
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+
 }
