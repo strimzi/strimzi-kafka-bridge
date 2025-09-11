@@ -77,6 +77,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     private ConsumerInstanceId consumerInstanceId;
     private boolean subscribed;
     private boolean assigned;
+    
+    // Lock for consumer operations to prevent concurrent access to KafkaConsumer
+    private final Object consumerLock = new Object();
 
     /**
      * Constructor
@@ -111,7 +114,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
     @Override
     public void close() {
-        this.kafkaBridgeConsumer.close();
+        synchronized (consumerLock) {
+            this.kafkaBridgeConsumer.close();
+        }
         super.close();
     }
 
@@ -183,16 +188,18 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     }
 
     private void doSeek(RoutingContext routingContext, JsonNode bodyAsJson) {
+        // fulfilling the request in a separate thread to free the Vert.x event loop still in place
         CompletableFuture.runAsync(() -> {
-            ArrayNode seekOffsetsList = (ArrayNode) bodyAsJson.get("offsets");
+            synchronized (consumerLock) {
+                ArrayNode seekOffsetsList = (ArrayNode) bodyAsJson.get("offsets");
 
-            for (int i = 0; i < seekOffsetsList.size(); i++) {
-                JsonNode json = seekOffsetsList.get(i);
-                TopicPartition topicPartition = new TopicPartition(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition"));
-                long offset = JsonUtils.getLong(json, "offset");
-                this.kafkaBridgeConsumer.seek(topicPartition, offset);
+                for (int i = 0; i < seekOffsetsList.size(); i++) {
+                    JsonNode json = seekOffsetsList.get(i);
+                    TopicPartition topicPartition = new TopicPartition(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition"));
+                    long offset = JsonUtils.getLong(json, "offset");
+                    this.kafkaBridgeConsumer.seek(topicPartition, offset);
+                }
             }
-
         }).whenComplete((v, ex) -> {
             LOGGER.trace("Seek handler thread {}", Thread.currentThread());
             if (ex == null) {
@@ -213,11 +220,14 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 .map(json -> new TopicPartition(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition")))
                 .collect(Collectors.toSet());
 
+        // fulfilling the request in a separate thread to free the Vert.x event loop still in place
         CompletableFuture.runAsync(() -> {
-            if (seekToType == HttpOpenApiOperations.SEEK_TO_BEGINNING) {
-                this.kafkaBridgeConsumer.seekToBeginning(set);
-            } else {
-                this.kafkaBridgeConsumer.seekToEnd(set);
+            synchronized (consumerLock) {
+                if (seekToType == HttpOpenApiOperations.SEEK_TO_BEGINNING) {
+                    this.kafkaBridgeConsumer.seekToBeginning(set);
+                } else {
+                    this.kafkaBridgeConsumer.seekToEnd(set);
+                }
             }
         }).whenComplete((v, ex) -> {
             LOGGER.trace("SeekTo handler thread {}", Thread.currentThread());
@@ -244,36 +254,42 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 offsetData.put(topicPartition, offsetAndMetadata);
             }
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-            CompletableFuture.supplyAsync(() -> this.kafkaBridgeConsumer.commit(offsetData))
-                    .whenComplete((data, ex) -> {
-                        LOGGER.trace("Commit handler thread {}", Thread.currentThread());
-                        if (ex == null) {
-                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
-                        } else {
-                            HttpBridgeError error = new HttpBridgeError(
-                                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                    ex.getMessage()
-                            );
-                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
-                        }
-                    });
+            CompletableFuture.supplyAsync(() -> {
+                synchronized (consumerLock) {
+                    return this.kafkaBridgeConsumer.commit(offsetData);
+                }
+            }).whenComplete((data, ex) -> {
+                LOGGER.trace("Commit handler thread {}", Thread.currentThread());
+                if (ex == null) {
+                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+                } else {
+                    HttpBridgeError error = new HttpBridgeError(
+                            HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            ex.getMessage()
+                    );
+                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+                }
+            });
         } else {
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-            CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.commitLastPolledOffsets())
-                    .whenComplete((v, ex) -> {
-                        LOGGER.trace("Commit handler thread {}", Thread.currentThread());
-                        if (ex == null) {
-                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
-                        } else {
-                            HttpBridgeError error = new HttpBridgeError(
-                                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                    ex.getMessage()
-                            );
-                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
-                        }
-                    });
+            CompletableFuture.runAsync(() -> {
+                synchronized (consumerLock) {
+                    this.kafkaBridgeConsumer.commitLastPolledOffsets();
+                }
+            }).whenComplete((v, ex) -> {
+                LOGGER.trace("Commit handler thread {}", Thread.currentThread());
+                if (ex == null) {
+                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+                } else {
+                    HttpBridgeError error = new HttpBridgeError(
+                            HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            ex.getMessage()
+                    );
+                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+                }
+            });
         }
     }
 
@@ -360,11 +376,14 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             }
 
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-            CompletableFuture.supplyAsync(() -> this.kafkaBridgeConsumer.poll(this.pollTimeOut))
-                    .whenComplete((records, ex) -> {
-                        LOGGER.trace("Poll handler thread {}", Thread.currentThread());
-                        this.pollHandler(records, ex, routingContext);
-                    });
+            CompletableFuture.supplyAsync(() -> {
+                synchronized (consumerLock) {
+                    return this.kafkaBridgeConsumer.poll(this.pollTimeOut);
+                }
+            }).whenComplete((records, ex) -> {
+                LOGGER.trace("Poll handler thread {}", Thread.currentThread());
+                this.pollHandler(records, ex, routingContext);
+            });
         } else {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.NOT_ACCEPTABLE.code(),
@@ -394,21 +413,24 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         );
 
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-        CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.assign(topicSubscriptions))
-                .whenComplete((v, ex) -> {
-                    LOGGER.trace("Assign handler thread {}", Thread.currentThread());
-                    if (ex == null) {
-                        this.assigned = true;
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
-                    } else {
-                        HttpBridgeError error = new HttpBridgeError(
-                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                ex.getMessage()
-                        );
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
-                    }
-                });
+        CompletableFuture.runAsync(() -> {
+            synchronized (consumerLock) {
+                this.kafkaBridgeConsumer.assign(topicSubscriptions);
+            }
+        }).whenComplete((v, ex) -> {
+            LOGGER.trace("Assign handler thread {}", Thread.currentThread());
+            if (ex == null) {
+                this.assigned = true;
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+            } else {
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        ex.getMessage()
+                );
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+            }
+        });
     }
 
     private void doSubscribe(RoutingContext routingContext, JsonNode bodyAsJson) {
@@ -436,19 +458,21 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
         CompletableFuture.runAsync(() -> {
-            if (bodyAsJson.has("topics")) {
-                ArrayNode topicsList = (ArrayNode) bodyAsJson.get("topics");
-                List<SinkTopicSubscription> topicSubscriptions = new ArrayList<>();
-                topicSubscriptions.addAll(
-                    StreamSupport.stream(topicsList.spliterator(), false)
-                            .map(TextNode.class::cast)
-                            .map(topic -> new SinkTopicSubscription(topic.asText()))
-                            .toList()
-                );
-                this.kafkaBridgeConsumer.subscribe(topicSubscriptions);
-            } else if (bodyAsJson.has("topic_pattern")) {
-                Pattern pattern = Pattern.compile(JsonUtils.getString(bodyAsJson, "topic_pattern"));
-                this.kafkaBridgeConsumer.subscribe(pattern);
+            synchronized (consumerLock) {
+                if (bodyAsJson.has("topics")) {
+                    ArrayNode topicsList = (ArrayNode) bodyAsJson.get("topics");
+                    List<SinkTopicSubscription> topicSubscriptions = new ArrayList<>();
+                    topicSubscriptions.addAll(
+                        StreamSupport.stream(topicsList.spliterator(), false)
+                                .map(TextNode.class::cast)
+                                .map(topic -> new SinkTopicSubscription(topic.asText()))
+                                .toList()
+                    );
+                    this.kafkaBridgeConsumer.subscribe(topicSubscriptions);
+                } else if (bodyAsJson.has("topic_pattern")) {
+                    Pattern pattern = Pattern.compile(JsonUtils.getString(bodyAsJson, "topic_pattern"));
+                    this.kafkaBridgeConsumer.subscribe(pattern);
+                }
             }
         }).whenComplete((v, ex) -> {
             LOGGER.trace("Subscribe handler thread {}", Thread.currentThread());
@@ -468,43 +492,46 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
     private void doListSubscriptions(RoutingContext routingContext) {
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-        CompletableFuture.supplyAsync(() -> this.kafkaBridgeConsumer.listSubscriptions())
-                .whenComplete((subscriptions, ex) -> {
-                    LOGGER.trace("ListSubscriptions handler thread {}", Thread.currentThread());
-                    if (ex == null) {
-                        ObjectNode root = JsonUtils.createObjectNode();
-                        List<String> topics = new ArrayList<>();
-                        ArrayNode partitionsArray = JsonUtils.createArrayNode();
+        CompletableFuture.supplyAsync(() -> {
+            synchronized (consumerLock) {
+                return this.kafkaBridgeConsumer.listSubscriptions();
+            }
+        }).whenComplete((subscriptions, ex) -> {
+            LOGGER.trace("ListSubscriptions handler thread {}", Thread.currentThread());
+            if (ex == null) {
+                ObjectNode root = JsonUtils.createObjectNode();
+                List<String> topics = new ArrayList<>();
+                ArrayNode partitionsArray = JsonUtils.createArrayNode();
 
-                        HashMap<String, ArrayNode> partitions = new HashMap<>();
-                        for (TopicPartition topicPartition: subscriptions) {
-                            if (!topics.contains(topicPartition.topic())) {
-                                topics.add(topicPartition.topic());
-                            }
-                            if (!partitions.containsKey(topicPartition.topic())) {
-                                partitions.put(topicPartition.topic(), JsonUtils.createArrayNode());
-                            }
-                            partitions.put(topicPartition.topic(), partitions.get(topicPartition.topic()).add(topicPartition.partition()));
-                        }
-                        for (Map.Entry<String, ArrayNode> part: partitions.entrySet()) {
-                            ObjectNode topic = JsonUtils.createObjectNode();
-                            topic.set(part.getKey(), part.getValue());
-                            partitionsArray.add(topic);
-                        }
-                        ArrayNode topicsArray = JsonUtils.createArrayNode(topics);
-                        root.set("topics", topicsArray);
-                        root.set("partitions", partitionsArray);
-
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
-                    } else {
-                        HttpBridgeError error = new HttpBridgeError(
-                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                ex.getMessage()
-                        );
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+                HashMap<String, ArrayNode> partitions = new HashMap<>();
+                for (TopicPartition topicPartition: subscriptions) {
+                    if (!topics.contains(topicPartition.topic())) {
+                        topics.add(topicPartition.topic());
                     }
-                });
+                    if (!partitions.containsKey(topicPartition.topic())) {
+                        partitions.put(topicPartition.topic(), JsonUtils.createArrayNode());
+                    }
+                    partitions.put(topicPartition.topic(), partitions.get(topicPartition.topic()).add(topicPartition.partition()));
+                }
+                for (Map.Entry<String, ArrayNode> part: partitions.entrySet()) {
+                    ObjectNode topic = JsonUtils.createObjectNode();
+                    topic.set(part.getKey(), part.getValue());
+                    partitionsArray.add(topic);
+                }
+                ArrayNode topicsArray = JsonUtils.createArrayNode(topics);
+                root.set("topics", topicsArray);
+                root.set("partitions", partitionsArray);
+
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
+            } else {
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        ex.getMessage()
+                );
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+            }
+        });
     }
 
     /**
@@ -514,22 +541,25 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
      */
     public void doUnsubscribe(RoutingContext routingContext) {
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
-        CompletableFuture.runAsync(() -> this.kafkaBridgeConsumer.unsubscribe())
-                .whenComplete((v, ex) -> {
-                    LOGGER.trace("Unsubscribe handler thread {}", Thread.currentThread());
-                    if (ex == null) {
-                        this.subscribed = false;
-                        this.assigned = false;
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
-                    } else {
-                        HttpBridgeError error = new HttpBridgeError(
-                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                ex.getMessage()
-                        );
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
-                    }
-                });
+        CompletableFuture.runAsync(() -> {
+            synchronized (consumerLock) {
+                this.kafkaBridgeConsumer.unsubscribe();
+            }
+        }).whenComplete((v, ex) -> {
+            LOGGER.trace("Unsubscribe handler thread {}", Thread.currentThread());
+            if (ex == null) {
+                this.subscribed = false;
+                this.assigned = false;
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+            } else {
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        ex.getMessage()
+                );
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+            }
+        });
     }
 
     /**
