@@ -2006,7 +2006,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                 .createConsumer(context, groupId, consumerJson)
                 .subscribeConsumer(context, groupId, name, topic);
 
-        // Start a poll operation with a long timeout (10 seconds) to simulate a long-running poll
+        // start a poll operation with a long timeout (10 seconds) to simulate a long-running poll
         CompletableFuture<Boolean> consume = new CompletableFuture<>();
         consumerService()
                 .consumeRecordsRequest(groupId, name, 10000, null, BridgeContentType.KAFKA_JSON_JSON)
@@ -2024,11 +2024,12 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                     consume.complete(true);
                 });
 
-        // Wait a short time to ensure poll request has started
+        // wait a short time to ensure poll request has started
         Thread.sleep(100);
 
-        // Now try to delete the consumer while the poll is active
-        // This should trigger the ConcurrentModificationException
+        // try to delete the consumer while the poll is active
+        // this should trigger the ConcurrentModificationException if the synchronization on KafkaConsumer doesn't work
+        // otherwise if deletion is locked while polling is still running, the test will pass
         consumerService()
                 .deleteConsumer(context, groupId, name);
 
