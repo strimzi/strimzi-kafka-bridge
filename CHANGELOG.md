@@ -6,6 +6,7 @@
 * Updated OpenAPI specification to 3.1.0.
 * Added `validation_errors` field within the JSON object, as part of the `Error` OpenAPI component, returned by the bridge when there is a schema validation error.
   Such field is omitted when the error is not schema validation related.
+* Fixed multithreaded access to the KafkaConsumer instance within a sink endpoint.
 
 ### Changes, deprecations and removals
 
