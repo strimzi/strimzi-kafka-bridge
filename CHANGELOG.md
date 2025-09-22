@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.33.1
+
+* Disabled OpenMetrics exemplars within Prometheus to fix [1023](https://github.com/strimzi/strimzi-kafka-bridge/issues/1023)
+
 ## 0.33.0
 
 * Dependency updates (Kafka 4.1.0, Vert.x 5.0.4, Netty 4.2.5.Final, JMX Prometheus collector 1.3.0, OAuth 0.17.0).
