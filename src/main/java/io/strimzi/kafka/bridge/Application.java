@@ -43,6 +43,10 @@ public class Application {
      * @param args command line arguments
      */
     public static void main(String[] args) {
+        // disabling OpenMetrics exemplars added within newer Prometheus client (see https://github.com/strimzi/strimzi-kafka-bridge/issues/1023)
+        // via https://github.com/prometheus/client_java/blob/main/prometheus-metrics-config/src/main/java/io/prometheus/metrics/config/MetricsProperties.java#L14
+        System.setProperty("io.prometheus.metrics.exemplarsEnabled", "false");
+
         LOGGER.info("Strimzi Kafka Bridge {} is starting", Application.class.getPackage().getImplementationVersion());
         try {
             CommandLine commandLine = new DefaultParser().parse(generateOptions(), args);
