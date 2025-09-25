@@ -52,7 +52,7 @@ After the release pipeline is finished, it is always good idea to do some smoke 
 After the release pipeline is finished, the release has to be created:
 
 * Tag the right commit from the release branch with the release name (e.g. `git tag 1.2.0`) and push it to GitHub
-* Go to Maven Central > Publish and publish the release artifacts
+* Go to **Maven Central** > **Publish** to publish the release artifacts
 * Update the documentation on the website using the HTML files from the build pipeline artifacts 
 * On GitHub, create the release and attach the ZIP / TAR.GZ artifacts from the build pipeline artifacts
 
