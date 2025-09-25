@@ -29,7 +29,6 @@ The build pipeline should automatically start for any new commit pushed into the
 
 Wait until the build pipeline is (successfully) finished for the last commit in the release branch.
 The regular pipeline will build the release ZIP / TAR.GZ files as well as the documentation and store them as artifacts.
-It will also stage the Maven artifacts.
 When it's done, mark the build in the Azure Pipelines UI to be retained forever
 
 Then run the release pipeline manually from the Azure Pipelines UI.
@@ -53,9 +52,9 @@ After the release pipeline is finished, it is always good idea to do some smoke 
 After the release pipeline is finished, the release has to be created:
 
 * Tag the right commit from the release branch with the release name (e.g. `git tag 1.2.0`) and push it to GitHub
-* On Sonatype, release the staged maven artifacts
+* Go to **Maven Central** > **Publish** to publish the release artifacts
 * Update the documentation on the website using the HTML files from the build pipeline artifacts 
-* On GitHub, create the release and attach the ZIP / TAR.GZ artifacts either from the staged Maven artifacts of from the build pipeline artifacts
+* On GitHub, create the release and attach the ZIP / TAR.GZ artifacts from the build pipeline artifacts
 
 ### Announcements
 
