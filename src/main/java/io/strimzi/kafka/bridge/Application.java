@@ -30,7 +30,6 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Apache Kafka bridge main application class
@@ -86,20 +85,20 @@ public class Application {
         vertx.deployVerticle(httpBridge)
                 .onSuccess(deploymentId -> {
                     LOGGER.info("HTTP verticle instance [{}] deployed", deploymentId);
-                    httpPromise.complete(httpBridge);
+
+                    // Register shutdown hook for graceful shutdown
                     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-
-                        try {
-                            LOGGER.info("<main> graceful shutdown begins");
-                            vertx.undeploy(deploymentId).await(30, TimeUnit.SECONDS);
-                            // Using System.out to debug because at this point Log4j seems to already be stopped
-                            System.out.println("<main> graceful shutdown ended");
-
-                        } catch (Exception e) {
-                            System.out.println("<main> graceful shutdown error");
-                        }
-
+                        LOGGER.info("Shutdown hook triggered, starting graceful shutdown...");
+                        vertx.close()
+                                .onComplete(ar -> {
+                                    if (ar.succeeded()) {
+                                        LOGGER.info("Vertx instance closed successfully");
+                                    } else {
+                                        LOGGER.error("Error closing Vertx instance", ar.cause());
+                                    }
+                                });
                     }));
+                    httpPromise.complete(httpBridge);
                 })
                 .onFailure(t -> {
                     LOGGER.error("Failed to deploy HTTP verticle instance", t);
