@@ -132,7 +132,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
                             HttpResponse<JsonObject> response = ar.result();
                             assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                             JsonObject bridgeResponse = response.body();
-                            LOGGER.info("Recieved response:\n{}", bridgeResponse);
+                            LOGGER.info("Received response:\n{}", bridgeResponse);
                             JsonArray offsets = bridgeResponse.getJsonArray("offsets");
                             assertThat(offsets.size(), is(3));
                             JsonObject metadata = offsets.getJsonObject(0);
