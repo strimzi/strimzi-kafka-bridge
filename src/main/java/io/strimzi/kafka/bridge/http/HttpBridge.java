@@ -305,7 +305,7 @@ public class HttpBridge extends AbstractVerticle {
 
         if (this.httpServer != null) {
 
-            this.httpServer.close()
+            this.httpServer.shutdown()
                     .onSuccess(v -> {
                         LOGGER.info("HTTP-Kafka bridge has been shut down successfully");
                         stopPromise.complete();
