@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.34.0
+
+* Dependency updates (JMX Prometheus collector 1.5.0).
+
 ## 0.33.1
 
 * Disabled OpenMetrics exemplars within Prometheus to fix [1023](https://github.com/strimzi/strimzi-kafka-bridge/issues/1023)
