@@ -2,7 +2,7 @@
 
 ## 0.34.0
 
-* Dependency updates (JMX Prometheus collector 1.5.0).
+* Dependency updates (Vert.x 5.0.5, Netty 4.2.7.Final, JMX Prometheus collector 1.5.0).
 
 ## 0.33.1
 
