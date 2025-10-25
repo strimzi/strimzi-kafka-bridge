@@ -1,14 +1,14 @@
 // Module included in the following assemblies:
 //
-// assembly-kafka-bridge-quickstart.adoc
+// assembly-http-bridge-quickstart.adoc
 
-[id='proc-downloading-kafka-bridge-{context}']
+[id='proc-downloading-http-bridge-{context}']
 
-= Downloading a Kafka Bridge archive
+= Downloading a HTTP Bridge archive
 
 [role="_abstract"]
-A zipped distribution of the Kafka Bridge is available for download.
+A zipped distribution of the HTTP Bridge is available for download.
 
 .Procedure
 
-- Download the latest version of the Kafka Bridge archive from the {ReleaseDownload}.
+- Download the latest version of the HTTP Bridge archive from the {ReleaseDownload}.

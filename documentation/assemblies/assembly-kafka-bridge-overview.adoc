@@ -2,28 +2,28 @@
 //
 // bridge.adoc
 
-[id='assembly-kafka-bridge-overview-{context}']
-= Kafka Bridge overview
+[id='assembly-http-bridge-overview-{context}']
+= HTTP Bridge overview
 
 [role="_abstract"]
-Use the Kafka Bridge to make HTTP requests to a Kafka cluster.
+Use the HTTP Bridge to make HTTP requests to a Kafka cluster.
 
-You can use the Kafka Bridge to integrate HTTP client applications with your Kafka cluster.
+You can use the HTTP Bridge to integrate HTTP client applications with your Kafka cluster.
 
 .HTTP client integration
 
-image:kafka-bridge.png[Internal and external HTTP producers and consumers exchange data with the Kafka brokers through the Kafka Bridge]
+image:kafka-bridge.png[Internal and external HTTP producers and consumers exchange data with the Kafka brokers through the HTTP Bridge]
 
-include::modules/con-overview-running-kafka-bridge.adoc[leveloffset=+1]
+include::modules/con-overview-running-http-bridge.adoc[leveloffset=+1]
 
-include::modules/con-overview-components-kafka-bridge.adoc[leveloffset=+1]
+include::modules/con-overview-components-http-bridge.adoc[leveloffset=+1]
 
-include::modules/con-overview-open-api-spec-kafka-bridge.adoc[leveloffset=+1]
+include::modules/con-overview-open-api-spec-http-bridge.adoc[leveloffset=+1]
 
-include::modules/con-securing-kafka-bridge.adoc[leveloffset=+1]
+include::modules/con-securing-http-bridge.adoc[leveloffset=+1]
 
 include::modules/con-securing-http-interface.adoc[leveloffset=+1]
 
-include::modules/con-requests-kafka-bridge.adoc[leveloffset=+1]
+include::modules/con-requests-http-bridge.adoc[leveloffset=+1]
 
-include::modules/con-loggers-kafka-bridge.adoc[leveloffset=+1]
+include::modules/con-loggers-http-bridge.adoc[leveloffset=+1]
