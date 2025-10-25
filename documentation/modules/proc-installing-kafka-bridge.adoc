@@ -1,15 +1,15 @@
 // Module included in the following assemblies:
 //
-// assembly-kafka-bridge-quickstart.adoc
+// assembly-http-bridge-quickstart.adoc
 
-[id='proc-installing-kafka-bridge-{context}']
-= Installing the Kafka Bridge
+[id='proc-installing-http-bridge-{context}']
+= Installing the HTTP Bridge
 
 [role="_abstract"]
-Use the script provided with the Kafka Bridge archive to install the Kafka Bridge.
+Use the script provided with the HTTP Bridge archive to install the HTTP Bridge.
 The `application.properties` file provided with the installation archive provides default configuration settings.
 
-The following default property values configure the Kafka Bridge to listen for requests on port 8080.
+The following default property values configure the HTTP Bridge to listen for requests on port 8080.
 
 .Default configuration properties
 [source,shell,subs=attributes+]
@@ -20,13 +20,13 @@ http.port=8080
 
 .Prerequisites
 
-* xref:proc-downloading-kafka-bridge-{context}[The Kafka Bridge installation archive is downloaded]
+* xref:proc-downloading-http-bridge-{context}[The HTTP Bridge installation archive is downloaded]
 
 .Procedure
 
-. If you have not already done so, unzip the Kafka Bridge installation archive to any directory.
+. If you have not already done so, unzip the HTTP Bridge installation archive to any directory.
 
-. Run the Kafka Bridge script using the configuration properties as a parameter:
+. Run the HTTP Bridge script using the configuration properties as a parameter:
 +
 For example:
 +
@@ -39,8 +39,8 @@ For example:
 +
 [source,shell]
 ----
-HTTP-Kafka Bridge started and listening on port 8080
-HTTP-Kafka Bridge bootstrap servers localhost:9092
+HTTP Bridge started and listening on port 8080
+HTTP Bridge bootstrap servers localhost:9092
 ----
 
 .What to do next

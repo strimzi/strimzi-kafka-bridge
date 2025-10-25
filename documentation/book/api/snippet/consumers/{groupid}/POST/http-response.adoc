@@ -15,7 +15,7 @@
 ----
 {
   "error_code" : 409,
-  "message" : "A consumer instance with the specified name already exists in the Kafka Bridge."
+  "message" : "A consumer instance with the specified name already exists in the HTTP Bridge."
 }
 ----
 

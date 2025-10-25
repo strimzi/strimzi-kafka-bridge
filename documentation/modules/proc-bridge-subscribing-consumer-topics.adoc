@@ -1,12 +1,12 @@
 // Module included in the following assemblies:
 //
-// assembly-kafka-bridge-quickstart.adoc
+// assembly-http-bridge-quickstart.adoc
 
 [id='proc-bridge-subscribing-consumer-topics-{context}']
-= Subscribing a Kafka Bridge consumer to topics
+= Subscribing a HTTP Bridge consumer to topics
 
 [role="_abstract"]
-After you have created a Kafka Bridge consumer, subscribe it to one or more topics by using the xref:subscribe[subscription] endpoint.
+After you have created a HTTP Bridge consumer, subscribe it to one or more topics by using the xref:subscribe[subscription] endpoint.
 When subscribed, the consumer starts receiving all messages that are produced to the topic.
 
 .Procedure
@@ -26,7 +26,7 @@ curl -X POST http://localhost:8080/consumers/bridge-quickstart-consumer-group/in
 +
 The `topics` array can contain a single topic (as shown here) or multiple topics. If you want to subscribe the consumer to multiple topics that match a regular expression, you can use the `topic_pattern` string instead of the `topics` array.
 +
-If the request is successful, the Kafka Bridge returns a `204` (No Content) code only.
+If the request is successful, the HTTP Bridge returns a `204` (No Content) code only.
 
 When using an Apache Kafka client, the HTTP subscribe operation adds topics to the local consumer's subscriptions.
 Joining a consumer group and obtaining partition assignments occur after running multiple HTTP poll operations, starting the partition rebalance and join-group process.
@@ -34,7 +34,7 @@ It's important to note that the initial HTTP poll operations may not return any 
 
 .What to do next
 
-After subscribing a Kafka Bridge consumer to topics, you can xref:proc-bridge-retrieving-latest-messages-from-consumer-{context}[retrieve messages from the consumer].
+After subscribing a HTTP Bridge consumer to topics, you can xref:proc-bridge-retrieving-latest-messages-from-consumer-{context}[retrieve messages from the consumer].
 
 [role="_additional-resources"]
 .Additional resources

@@ -1,12 +1,12 @@
 // Module included in the following assemblies:
 //
-// assembly-kafka-bridge-overview.adoc
+// assembly-http-bridge-overview.adoc
 
-[id='con-requests-kafka-bridge-{context}']
-= Requests to the Kafka Bridge
+[id='con-requests-http-bridge-{context}']
+= Requests to the HTTP Bridge
 
 [role="_abstract"]
-Specify data formats and HTTP headers to ensure valid requests are submitted to the Kafka Bridge.
+Specify data formats and HTTP headers to ensure valid requests are submitted to the HTTP Bridge.
 
 == Content Type headers
 
@@ -45,7 +45,7 @@ An empty body can be used to create a consumer with the default values.
 
 == Embedded data format
 
-The embedded data format is the format of the Kafka messages that are transmitted, over HTTP, from a producer to a consumer using the Kafka Bridge. Three embedded data formats are supported: JSON, binary and text.
+The embedded data format is the format of the Kafka messages that are transmitted, over HTTP, from a producer to a consumer using the HTTP Bridge. Three embedded data formats are supported: JSON, binary and text.
 
 When creating a consumer using the `/consumers/_groupid_` endpoint, the `POST` request body must specify an embedded data format of either JSON, binary or text. This is specified in the `format` field, for example:
 
@@ -132,15 +132,15 @@ For example, when retrieving records for a subscribed consumer using an embedded
 Accept: application/vnd.kafka.json.v2+json
 ----
 
-[id='con-requests-kafka-bridge-cors-{context}']
+[id='con-requests-http-bridge-cors-{context}']
 = CORS
 
 In general, it is not possible for an HTTP client to issue requests across different domains.
 
-For example, suppose the Kafka Bridge you deployed alongside a Kafka cluster is accessible using the `\http://my-bridge.io` domain.
-HTTP clients can use the URL to interact with the Kafka Bridge and exchange messages through the Kafka cluster.
+For example, suppose the HTTP Bridge you deployed alongside a Kafka cluster is accessible using the `\http://my-bridge.io` domain.
+HTTP clients can use the URL to interact with the HTTP Bridge and exchange messages through the Kafka cluster.
 However, your client is running as a web application in the `\http://my-web-application.io` domain.
-The client (source) domain is different from the Kafka Bridge (target) domain.
+The client (source) domain is different from the HTTP Bridge (target) domain.
 Because of same-origin policy restrictions, requests from the client fail.  
 You can avoid this situation by using Cross-Origin Resource Sharing (CORS).
 
@@ -155,9 +155,9 @@ and use non-standard headers.
 
 All requests require an _origins_ value in their header, which is the source of the HTTP request.
 
-CORS allows you to specify allowed methods and originating URLs for accessing the Kafka cluster in your Kafka Bridge HTTP configuration.
+CORS allows you to specify allowed methods and originating URLs for accessing the Kafka cluster in your HTTP Bridge HTTP configuration.
 
-.Example CORS configuration for Kafka Bridge
+.Example CORS configuration for HTTP Bridge
 [source,properties,subs="attributes+"]
 ----
 # ...
@@ -184,7 +184,7 @@ curl -v -X GET _HTTP-BRIDGE-ADDRESS_/consumers/my-group/instances/my-consumer/re
 -H 'content-type: application/vnd.kafka.v2+json'
 ----
 
-In the response from the Kafka Bridge, an `Access-Control-Allow-Origin` header is returned.
+In the response from the HTTP Bridge, an `Access-Control-Allow-Origin` header is returned.
 It contains the list of domains from where HTTP requests can be issued to the bridge.
 
 [source,http,subs=+quotes]
@@ -196,8 +196,8 @@ Access-Control-Allow-Origin: * <1>
 
 == Preflighted request
 
-An initial preflight request is sent to Kafka Bridge using an `OPTIONS` method.
-The _HTTP OPTIONS_ request sends header information to check that Kafka Bridge will allow the actual request.
+An initial preflight request is sent to HTTP Bridge using an `OPTIONS` method.
+The _HTTP OPTIONS_ request sends header information to check that HTTP Bridge will allow the actual request.
 
 Here the preflight request checks that a `POST` request is valid from `\http://my-web-application.io`.
 
@@ -208,7 +208,7 @@ Origin: http://my-web-application.io
 Access-Control-Request-Method: POST <1>
 Access-Control-Request-Headers: Content-Type <2>
 ----
-<1> Kafka Bridge is alerted that the actual request is a `POST` request.
+<1> HTTP Bridge is alerted that the actual request is a `POST` request.
 <2> The actual request will be sent with a `Content-Type` header.
 
 `OPTIONS` is added to the header information of the preflight request.
@@ -220,7 +220,7 @@ curl -v -X OPTIONS -H 'Origin: http://my-web-application.io' \
 -H 'content-type: application/vnd.kafka.v2+json'
 ----
 
-Kafka Bridge responds to the initial request to confirm that the request will be accepted.
+HTTP Bridge responds to the initial request to confirm that the request will be accepted.
 The response header returns allowed origins, methods and headers.
 
 [source,http,subs=+quotes]
