@@ -2,17 +2,17 @@
 :numbered:
 :toclevels: 4
 :source-highlighter: highlightjs
-:keywords: openapi, rest, HTTP Bridge API Reference
+:keywords: openapi, rest, Kafka Bridge API Reference
 :specDir: 
 :snippetDir: ./documentation/book/api/snippet/
 :generator-template: v1 2019-12-20
 :info-url: https://openapi-generator.tech
-:app-name: HTTP Bridge API Reference
+:app-name: Kafka Bridge API Reference
 
-= HTTP Bridge API Reference
+= Kafka Bridge API Reference
 
 == Introduction
-The HTTP Bridge provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. 
+The Kafka Bridge provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. 
 
 
 // markup not found, no include::{specDir}intro.adoc[opts=optional]
@@ -321,7 +321,7 @@ Creates a consumer instance in the given consumer group. You can optionally spec
 
 
 | 409
-| A consumer instance with the specified name already exists in the HTTP Bridge.
+| A consumer instance with the specified name already exists in the Kafka Bridge.
 |  <<Error>>
 
 
@@ -1291,7 +1291,7 @@ endif::internal-generation[]
 
 ===== Description
 
-Retrieves information about the HTTP Bridge instance, in JSON format.
+Retrieves information about the Kafka Bridge instance, in JSON format.
 
 
 // markup not found, no include::{specDir}GET/spec.adoc[opts=optional]
@@ -1325,7 +1325,7 @@ Retrieves information about the HTTP Bridge instance, in JSON format.
 
 
 | 200
-| Information about HTTP Bridge instance.
+| Information about Kafka Bridge instance.
 |  <<BridgeInfo>>
 
 |===
@@ -3061,7 +3061,7 @@ endif::internal-generation[]
 [#BridgeInfo]
 === _BridgeInfo_ BridgeInfo
 
-Information about HTTP Bridge instance.
+Information about Kafka Bridge instance.
 
 
 [.fields-BridgeInfo]
