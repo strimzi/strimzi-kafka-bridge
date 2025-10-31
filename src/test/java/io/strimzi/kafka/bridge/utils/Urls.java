@@ -10,6 +10,7 @@ public class Urls {
     private static final String SCHEME = "http://";
     public static final String BRIDGE_HOST = "127.0.0.1";
     public static final int BRIDGE_PORT = 8080;
+    public static final int BRIDGE_SSL_PORT = 443;
     private static final String BRIDGE_ADDRESS = SCHEME + BRIDGE_HOST + ":" + BRIDGE_PORT;
 
     private static final String CONSUMERS_PATH = "/consumers/";
