@@ -1,16 +1,16 @@
 // Module included in the following assemblies:
 //
-// assembly-kafka-bridge-quickstart.adoc
+// assembly-http-bridge-quickstart.adoc
 
-[id='proc-creating-kafka-bridge-consumer-{context}']
-= Creating a Kafka Bridge consumer
+[id='proc-creating-http-bridge-consumer-{context}']
+= Creating a HTTP Bridge consumer
 
 [role="_abstract"]
-Before you can perform any consumer operations in the Kafka cluster, you must first create a consumer by using the xref:createconsumer[consumers] endpoint. The consumer is referred to as a __Kafka Bridge consumer__.
+Before you can perform any consumer operations in the Kafka cluster, you must first create a consumer by using the xref:createconsumer[consumers] endpoint. The consumer is referred to as a __HTTP Bridge consumer__.
 
 .Procedure
 
-. Create a Kafka Bridge consumer in a new consumer group named `bridge-quickstart-consumer-group`:
+. Create a HTTP Bridge consumer in a new consumer group named `bridge-quickstart-consumer-group`:
 +
 [source,curl,subs=attributes+]
 ----
@@ -30,7 +30,7 @@ curl -X POST http://localhost:8080/consumers/bridge-quickstart-consumer-group \
 * Some basic configuration settings are defined.
 * The consumer will not commit offsets to the log automatically because the `enable.auto.commit` setting is `false`. You will commit the offsets manually later in this quickstart.
 +
-If the request is successful, the Kafka Bridge returns the consumer ID (`instance_id`) and base URL (`base_uri`) in the response body, along with a `200` code.
+If the request is successful, the HTTP Bridge returns the consumer ID (`instance_id`) and base URL (`base_uri`) in the response body, along with a `200` code.
 +
 .Example response
 
@@ -47,7 +47,7 @@ If the request is successful, the Kafka Bridge returns the consumer ID (`instanc
 
 .What to do next
 
-Now that you have created a Kafka Bridge consumer, you can  xref:proc-bridge-subscribing-consumer-topics-{context}[subscribe it to topics].
+Now that you have created a HTTP Bridge consumer, you can  xref:proc-bridge-subscribing-consumer-topics-{context}[subscribe it to topics].
 
 [role="_additional-resources"]
 .Additional resources

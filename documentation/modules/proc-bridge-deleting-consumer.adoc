@@ -1,23 +1,23 @@
 // Module included in the following assemblies:
 //
-// assembly-kafka-bridge-quickstart.adoc
+// assembly-http-bridge-quickstart.adoc
 
 [id='proc-bridge-deleting-consumer-{context}']
-= Deleting a Kafka Bridge consumer
+= Deleting a HTTP Bridge consumer
 
 [role="_abstract"]
-Delete the Kafka Bridge consumer that you used throughout this quickstart.
+Delete the HTTP Bridge consumer that you used throughout this quickstart.
 
 .Procedure
 
-* Delete the Kafka Bridge consumer by sending a `DELETE` request to the xref:deleteconsumer[instances] endpoint.
+* Delete the HTTP Bridge consumer by sending a `DELETE` request to the xref:deleteconsumer[instances] endpoint.
 +
 [source,curl,subs=attributes+]
 ----
 curl -X DELETE http://localhost:8080/consumers/bridge-quickstart-consumer-group/instances/bridge-quickstart-consumer
 ----
 +
-If the request is successful, the Kafka Bridge returns a `204` code.
+If the request is successful, the HTTP Bridge returns a `204` code.
 
 [role="_additional-resources"]
 .Additional resources

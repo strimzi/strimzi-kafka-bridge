@@ -1,14 +1,14 @@
 // Module included in the following assemblies:
 //
-// assembly-kafka-bridge-overview.adoc
+// assembly-http-bridge-overview.adoc
 
-[id='con-loggers-kafka-bridge-{context}']
-
-[role="_abstract"]
-= Configuring loggers for the Kafka Bridge
+[id='con-loggers-http-bridge-{context}']
 
 [role="_abstract"]
-You can set a different log level for each operation that is defined by the Kafka Bridge OpenAPI specification.
+= Configuring loggers for the HTTP Bridge
+
+[role="_abstract"]
+You can set a different log level for each operation that is defined by the HTTP Bridge OpenAPI specification.
 
 Each operation has a corresponding API endpoint through which the bridge receives requests from HTTP clients.
 You can change the log level on each endpoint to produce more or less fine-grained logging information about the incoming and outgoing HTTP requests.

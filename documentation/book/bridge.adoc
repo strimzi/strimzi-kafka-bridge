@@ -3,13 +3,13 @@ include::common/attributes.adoc[]
 :context: bridge
 
 [id='using_book-{context}']
-= Using the Strimzi Kafka Bridge
+= Using the Strimzi HTTP Bridge
 
-include::assemblies/assembly-kafka-bridge-overview.adoc[leveloffset=+1]
+include::assemblies/assembly-http-bridge-overview.adoc[leveloffset=+1]
 
-include::assemblies/assembly-kafka-bridge-quickstart.adoc[leveloffset=+1]
+include::assemblies/assembly-http-bridge-quickstart.adoc[leveloffset=+1]
 
-include::assemblies/assembly-kafka-bridge-config.adoc[leveloffset=+1]
+include::assemblies/assembly-http-bridge-config.adoc[leveloffset=+1]
 
 [id='api_reference-{context}']
 include::api/index.adoc[leveloffset=+1]

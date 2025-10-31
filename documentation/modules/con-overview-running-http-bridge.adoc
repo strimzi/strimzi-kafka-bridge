@@ -1,0 +1,30 @@
+// Module included in the following assemblies:
+//
+// assembly-http-bridge-overview.adoc
+
+[id="overview-components-running-http-bridge-{context}"]
+= Running the HTTP Bridge
+
+[role="_abstract"]
+Install the HTTP Bridge to run in the same environment as your Kafka cluster.
+
+You can download and add the HTTP Bridge installation artifacts to your host machine.
+To try out the HTTP Bridge in your local environment, see the xref:assembly-http-bridge-quickstart-{context}[HTTP Bridge quickstart].
+
+It's important to note that each instance of the HTTP Bridge maintains its own set of in-memory consumers (and subscriptions) that connect to the Kafka Brokers on behalf of the HTTP clients.
+This means that each HTTP client must maintain affinity to the same HTTP Bridge instance in order to access any subscriptions that are created. 
+Additionally, when an instance of the HTTP Bridge restarts, the in-memory consumers and subscriptions are lost.
+**It is the responsibility of the HTTP client to recreate any consumers and subscriptions if the HTTP Bridge restarts.** 
+
+[id="overview-components-running-http-bridge-cluster-{context}"]
+== Running the HTTP Bridge on Kubernetes
+
+If you deployed Strimzi on Kubernetes, you can use the Strimzi Cluster Operator to deploy the HTTP Bridge to the Kubernetes cluster.
+Configure and deploy the HTTP Bridge as a `KafkaBridge` resource.
+You'll need a running Kafka cluster that was deployed by the Cluster Operator in a Kubernetes namespace.
+You can configure your deployment to access the HTTP Bridge outside the Kubernetes cluster.
+
+HTTP clients must maintain affinity to the same instance of the HTTP Bridge to access any consumers or subscriptions that they create. Hence, running multiple replicas of the HTTP Bridge per Kubernetes Deployment is not recommended.
+If the HTTP Bridge pod restarts (for instance, due to Kubernetes relocating the workload to another node), the HTTP client must recreate any consumers or subscriptions.
+
+For information on deploying and configuring the HTTP Bridge as a `KafkaBridge` resource, see the {BookURLConfiguring}.
