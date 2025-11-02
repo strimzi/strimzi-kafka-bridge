@@ -222,8 +222,8 @@ public class HttpBridge extends AbstractVerticle {
                     routerBuilder.getRoute(this.HEALTHY.getOperationId().toString()).addHandler(this.HEALTHY);
                     routerBuilder.getRoute(this.READY.getOperationId().toString()).addHandler(this.READY);
                     routerBuilder.getRoute(this.OPENAPI.getOperationId().toString()).addHandler(this.OPENAPI);
-                    routerBuilder.getRoute(this.OPENAPIV2.getOperationId().toString()).addHandler(this.OPENAPIV2);
-                    routerBuilder.getRoute(this.OPENAPIV3.getOperationId().toString()).addHandler(this.OPENAPIV3);
+                    routerBuilder.getRoute(this.OPENAPI_V2.getOperationId().toString()).addHandler(this.OPENAPI_V2);
+                    routerBuilder.getRoute(this.OPENAPI_V3.getOperationId().toString()).addHandler(this.OPENAPI_V3);
                     routerBuilder.getRoute(this.METRICS.getOperationId().toString()).addHandler(this.METRICS);
                     routerBuilder.getRoute(this.INFO.getOperationId().toString()).addHandler(this.INFO);
                     if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
@@ -895,7 +895,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    final HttpOpenApiOperation OPENAPIV2 = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPIV2) {
+    final HttpOpenApiOperation OPENAPI_V2 = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPI_V2) {
 
         @Override
         public void process(RoutingContext routingContext) {
@@ -903,7 +903,7 @@ public class HttpBridge extends AbstractVerticle {
         }
     };
 
-    final HttpOpenApiOperation OPENAPIV3 = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPIV3) {
+    final HttpOpenApiOperation OPENAPI_V3 = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPI_V3) {
 
         @Override
         public void process(RoutingContext routingContext) {

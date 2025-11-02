@@ -55,9 +55,9 @@ public enum HttpOpenApiOperations {
     /** get the OpenAPI v2 specification */
     OPENAPI("openapi"),
     /** get the OpenAPI v2 specification */
-    OPENAPIV2("openapiv2"),
+    OPENAPI_V2("openapiv2"),
     /** get the OpenAPI v3 specification */
-    OPENAPIV3("openapiv3"),
+    OPENAPI_V3("openapiv3"),
     /** get general information (i.e. version) about the bridge */
     INFO("info"),
     /** get metrics (if enabled) in Prometheus format */
