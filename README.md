@@ -18,7 +18,13 @@ Thanks to the bridge, all clients which can speak HTTP 1.1 protocol can connect 
 | **amd64**    | **Supported** | **yes** |
 | **arm64**    | **Supported** | _no_    |
 | **ppc64le**  | **Supported** | _no_    |
-| **s390x**    | **Supported** | _no_    |
+| **s390x**    | **Supported** | **yes** |
+
+## Community Testing for Linux on IBM Z s390x architecture
+
+[![Jenkins](https://ibmz-ci.osuosl.org/buildStatus/icon?job=Strimzi_Kafka_Bridge_IBMZ_CI&subject=s390x%20build)](https://ibmz-ci.osuosl.org/job/Strimzi_Kafka_Bridge_IBMZ_CI/)
+
+_Note: This badge represents a community-led initiative and is not officially endorsed by the Strimzi project maintainers._
 
 ## Running the bridge
 
