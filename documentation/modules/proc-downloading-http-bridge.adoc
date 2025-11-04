@@ -1,0 +1,14 @@
+// Module included in the following assemblies:
+//
+// assembly-http-bridge-quickstart.adoc
+
+[id='proc-downloading-http-bridge-{context}']
+
+= Downloading a HTTP Bridge archive
+
+[role="_abstract"]
+A zipped distribution of the HTTP Bridge is available for download.
+
+.Procedure
+
+- Download the latest version of the HTTP Bridge archive from the {ReleaseDownload}.

@@ -1,12 +1,12 @@
 // Module included in the following assemblies:
 //
-// assembly-kafka-bridge-config.adoc
+// assembly-http-bridge-config.adoc
 
-[id='proc-configuring-kafka-bridge-tracing-{context}']
+[id='proc-configuring-http-bridge-tracing-{context}']
 = Configuring distributed tracing
 
 [role="_abstract"]
-Enable distributed tracing to trace messages consumed and produced by the Kafka Bridge, and HTTP requests from client applications.
+Enable distributed tracing to trace messages consumed and produced by the HTTP Bridge, and HTTP requests from client applications.
 
 Properties to enable tracing are present in the `application.properties` file.
 To enable distributed tracing, do the following:
@@ -23,7 +23,7 @@ OpenTelemetry defines an API specification for collecting tracing data as _spans
 Spans represent a specific operation.
 A trace is a collection of one or more spans.
 
-Traces are generated when the Kafka Bridge does the following:
+Traces are generated when the HTTP Bridge does the following:
 
 * Sends messages from Kafka to consumer HTTP clients 
 * Receives messages from producer HTTP clients to send to Kafka
@@ -37,11 +37,11 @@ If you were previously using OpenTracing with the `bridge.tracing=jaeger` option
 
 .Prerequisites
 
-* xref:proc-downloading-kafka-bridge-{context}[The Kafka Bridge installation archive is downloaded].
+* xref:proc-downloading-http-bridge-{context}[The HTTP Bridge installation archive is downloaded].
 
 .Procedure
 
-. Edit the `application.properties` file provided with the Kafka Bridge installation archive.
+. Edit the `application.properties` file provided with the HTTP Bridge installation archive.
 +
 Use the `bridge.tracing` property to enable the tracing you want to use. 
 +
@@ -52,7 +52,7 @@ bridge.tracing=opentelemetry # <1>
 ----
 <1> The property for enabling OpenTelemetry is uncommented by removing the `#` at the beginning of the line.
 +
-With tracing enabled, you initialize tracing when you run the Kafka Bridge script.
+With tracing enabled, you initialize tracing when you run the HTTP Bridge script.
 
 . Save the configuration file.
 . Set the environment variables for tracing.
@@ -66,15 +66,15 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 # <2>
 <1> The name of the OpenTelemetry tracer service.
 <2> The gRPC-based OTLP endpoint that listens for spans on port 4317.
 
-. Run the Kafka Bridge script with the property enabled for tracing.
+. Run the HTTP Bridge script with the property enabled for tracing.
 +
-.Running the Kafka Bridge with OpenTelemetry enabled
+.Running the HTTP Bridge with OpenTelemetry enabled
 [source,shell,subs="+quotes,attributes"]
 ----
 ./bin/kafka_bridge_run.sh --config-file=_<path>_/application.properties
 ----
 +
-The internal consumers and producers of the Kafka Bridge are now enabled for tracing.
+The internal consumers and producers of the HTTP Bridge are now enabled for tracing.
 
 == Specifying tracing systems with OpenTelemetry
 
@@ -97,7 +97,7 @@ OTEL_EXPORTER_ZIPKIN_ENDPOINT=http://localhost:9411/api/v2/spans <2>
 
 == Supported Span attributes
 
-The Kafka Bridge adds, in addition to the standard OpenTelemetry attributes, the following attributes from the https://opentelemetry.io/docs/specs/semconv/http/http-spans/#http-server-semantic-conventions[OpenTelemetry standard conventions for HTTP] to its spans.
+The HTTP Bridge adds, in addition to the standard OpenTelemetry attributes, the following attributes from the https://opentelemetry.io/docs/specs/semconv/http/http-spans/#http-server-semantic-conventions[OpenTelemetry standard conventions for HTTP] to its spans.
 [cols="1,1"]
 |===
 | Attribute key | Attribute value
