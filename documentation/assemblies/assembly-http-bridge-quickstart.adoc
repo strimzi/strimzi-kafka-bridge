@@ -11,7 +11,7 @@ Use this quickstart to try out the HTTP Bridge in your local development environ
 You will learn how to do the following:
 
 * Produce messages to topics and partitions in your Kafka cluster
-* Create a KafHTTPka Bridge consumer
+* Create a HTTP Bridge consumer
 * Perform basic consumer operations, such as subscribing the consumer to topics and retrieving the messages that you produced
 
 In this quickstart, HTTP requests are formatted as curl commands that you can copy and paste to your terminal.
