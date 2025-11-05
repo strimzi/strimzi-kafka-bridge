@@ -6,27 +6,25 @@
 package io.strimzi.kafka.bridge.http;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
 import io.strimzi.kafka.bridge.utils.Urls;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 @ExtendWith(VertxExtension.class)
-public class HttpSslServerIT extends HttpBridgeITAbstract {
+public class TlsIT extends HttpBridgeITAbstract {
 
     // self-signed cert with 100 years validity
     private static String sslCert = "-----BEGIN CERTIFICATE-----\n" +
@@ -80,102 +78,9 @@ public class HttpSslServerIT extends HttpBridgeITAbstract {
             "+6W/aNisaI3LPr2tXvgPuPQy\n" +
             "-----END PRIVATE KEY-----";
 
-    @Override
-    protected void deployBridge(VertxTestContext context) {
-        // Intentionally empty; subclasses may deploy and create WebClient per test
-        context.completeNow();
-    }
-
-    @BeforeEach
-    void beforeEach() {
-        vertx = Vertx.vertx();
-    }
-
-    @AfterEach
-    void afterEach(VertxTestContext context) {
-        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
-            vertx.close().onComplete(context.succeeding(arg -> context.completeNow()));
-        } else {
-            // if we are running an external bridge
-            context.completeNow();
-        }
-    }
-
     @Test
     public void testSslEnabled(VertxTestContext context) {
-        createSslWebClient();
-        configureBridge();
-
-        if ("FALSE".equalsIgnoreCase(BRIDGE_EXTERNAL_ENV)) {
-            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> client
-                    .request(HttpMethod.GET, 443, "localhost", "/topics/my-topic")
-                    .send()
-                    .onComplete(ar -> context.verify(() -> {
-                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        context.completeNow();
-                    }))));
-        } else {
-            context.completeNow();
-        }
-    }
-
-    @Test
-    public void testUnencryptedConnection(VertxTestContext context) {
-        createWebClient();
-        configureBridge();
-
-        // Once SSL is enabled, HTTP Bridge server should reject unencrypted connections
-        if ("FALSE".equalsIgnoreCase(BRIDGE_EXTERNAL_ENV)) {
-            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> client
-                    .request(HttpMethod.GET, 8080, "localhost", "/topics")
-                    .send()
-                    .onFailure(t -> {
-                        assertThat(t.getCause().getMessage(), is("Connection refused"));
-                        context.completeNow();
-                    })));
-        } else {
-            context.completeNow();
-        }
-    }
-
-    @Test
-    public void testManagementEndpoint(VertxTestContext context) {
-        createWebClient();
-
-        if ("FALSE".equalsIgnoreCase(BRIDGE_EXTERNAL_ENV)) {
-            bridgeConfig = BridgeConfig.fromMap(config);
-            httpBridge = new HttpBridge(bridgeConfig);
-            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> client
-                    .request(HttpMethod.GET, 8081, "localhost", "/ready")
-                    .send()
-                    .onComplete(ar -> context.verify(() -> {
-                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
-                        context.completeNow();
-                    }))));
-        } else {
-            context.completeNow();
-        }
-    }
-
-    @Test
-    public void testManagementEndpointWhenSslEnabled(VertxTestContext context) {
-        createWebClient();
-        configureBridge();
-
-        if ("FALSE".equalsIgnoreCase(BRIDGE_EXTERNAL_ENV)) {
-            vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> client
-                    .request(HttpMethod.GET, 8081, "localhost", "/healthy")
-                    .send()
-                    .onComplete(ar -> context.verify(() -> {
-                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
-                        context.completeNow();
-                    }))));
-        } else {
-            context.completeNow();
-        }
-    }
-
-    private void createSslWebClient() {
+        // we have to recreate the client to enable SSL
         client = WebClient.create(vertx, new WebClientOptions()
                 .setDefaultHost(Urls.BRIDGE_HOST)
                 .setDefaultPort(Urls.BRIDGE_SSL_PORT)
@@ -183,22 +88,53 @@ public class HttpSslServerIT extends HttpBridgeITAbstract {
                 .setTrustOptions(new PemTrustOptions()
                         .addCertValue(Buffer.buffer(sslCert)))
                 .setVerifyHost(false));
+
+        baseService()
+                .getRequest("/topics/my-topic")
+                .send()
+                .onComplete(ar -> context.verify(() -> {
+                    assertThat(ar.result().statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                    context.completeNow();
+                }));
     }
 
-    private void createWebClient() {
+    @Test
+    public void testUnencryptedConnection(VertxTestContext context) {
+        // we have to recreate the client to disable SSL
         client = WebClient.create(vertx, new WebClientOptions()
                 .setDefaultHost(Urls.BRIDGE_HOST)
-                .setDefaultPort(Urls.BRIDGE_PORT));
+                .setDefaultPort(Urls.BRIDGE_PORT)
+        );
+
+        // Once SSL is enabled, HTTP Bridge server should reject unencrypted connections
+        baseService()
+                .getRequest("/topics")
+                .send()
+                .onFailure(t -> {
+                    assertThat(t.getCause().getMessage(), is("Connection refused"));
+                    context.completeNow();
+                });
     }
 
-    private void configureBridge() {
-        if ("FALSE".equalsIgnoreCase(BRIDGE_EXTERNAL_ENV)) {
-            config.put(HttpConfig.HTTP_SERVER_SSL_ENABLE, true);
-            config.put(HttpConfig.HTTP_SERVER_SSL_KEYSTORE_CERTIFICATE_CHAIN, sslCert);
-            config.put(HttpConfig.HTTP_SERVER_SSL_KEYSTORE_KEY, sslKey);
+    @Test
+    public void testManagementEndpointWhenSslEnabled(VertxTestContext context) {
+        internalBaseService()
+                .getRequest("/healthy")
+                .send()
+                .onComplete(ar -> context.verify(() -> {
+                    assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
+                    context.completeNow();
+                }));
+    }
 
-            bridgeConfig = BridgeConfig.fromMap(config);
-            httpBridge = new HttpBridge(bridgeConfig);
-        }
+    @Override
+    protected Map<String, Object> overrideConfig() {
+        Map<String, Object> configs = new HashMap<>();
+        configs.put(HttpConfig.HTTP_SERVER_SSL_ENABLE, true);
+        configs.put(HttpConfig.HTTP_SERVER_SSL_KEYSTORE_CERTIFICATE_CHAIN, sslCert);
+        configs.put(HttpConfig.HTTP_SERVER_SSL_KEYSTORE_KEY, sslKey);
+        // test machines do not allow non-root to bind low port such as 443 which is the default
+        configs.put(HttpConfig.HTTP_PORT, 8443);
+        return configs;
     }
 }

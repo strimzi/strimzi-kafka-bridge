@@ -36,7 +36,7 @@ public class MetricsIT extends HttpBridgeITAbstract {
 
     @Test
     void metricsTest(VertxTestContext context) {
-        baseService()
+        internalBaseService()
                 .getRequest("/metrics")
                 .send()
                 .onComplete(ar -> {
@@ -51,7 +51,7 @@ public class MetricsIT extends HttpBridgeITAbstract {
 
     @Test
     void metricsContentTest(VertxTestContext context) {
-        baseService()
+        internalBaseService()
                 .getRequest("/metrics")
                 .send()
                 .onComplete(ar -> {
@@ -103,7 +103,7 @@ public class MetricsIT extends HttpBridgeITAbstract {
                     });
                     
                     // Check metrics after producer activity
-                    baseService()
+                    internalBaseService()
                             .getRequest("/metrics")
                             .send()
                             .onComplete(metricsResult -> {
@@ -173,14 +173,14 @@ public class MetricsIT extends HttpBridgeITAbstract {
         consume.get(timeout, TimeUnit.SECONDS);
 
         // check metrics after consumer activity
-        baseService()
+        internalBaseService()
                 .getRequest("/metrics")
                 .send()
                 .onComplete(metricsResult -> {
                     context.verify(() -> {
                         assertThat(metricsResult.succeeded(), is(true));
                         String metricsBody = metricsResult.result().bodyAsString();
-                        
+
                         // verify HTTP client request metrics
                         assertThat(metricsBody.contains("strimzi_bridge_http_client_requests_total"), is(true));
 
@@ -190,6 +190,7 @@ public class MetricsIT extends HttpBridgeITAbstract {
                         context.completeNow();
                     });
                 });
+        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
 
         // consumer deletion
         consumerService().deleteConsumer(context, groupId, name);
