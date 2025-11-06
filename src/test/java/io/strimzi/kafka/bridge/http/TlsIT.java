@@ -118,6 +118,7 @@ public class TlsIT extends HttpBridgeITAbstract {
 
     @Test
     public void testManagementEndpointWhenSslEnabled(VertxTestContext context) {
+        // When SSL is enabled, connections to the management endpoints should stay unencrypted
         internalBaseService()
                 .getRequest("/healthy")
                 .send()

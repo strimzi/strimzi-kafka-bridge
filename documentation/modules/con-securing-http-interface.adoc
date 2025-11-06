@@ -10,7 +10,7 @@ By default, requests sent from clients to the HTTP Bridge are sent without encry
 You can configure a TLS-encrypted connection between HTTP clients and the HTTP Bridge through its xref:proc-configuring-kafka-bridge-{context}[properties file].
 If the HTTP Bridge is configured with TLS encryption, requests must use HTTPS.
 
-You can enable TLS encryption for all HTTP Bridge endpoints except management endpoints such as `\ready`, `\healthy` and `\metrics`.
+You can enable TLS encryption for all HTTP Bridge endpoints except management endpoints such as `/ready`, `/healthy` and `/metrics`.
 These endpoints are typically used only by internal clients and requests to them must use HTTP.
 
 Authentication between HTTP clients and the HTTP Bridge is not supported directly by the HTTP Bridge.
