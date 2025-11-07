@@ -153,6 +153,12 @@
 			<version>${log4j.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-layout-template-json</artifactId>
+			<version>${log4j.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
 			<groupId>io.strimzi</groupId>
 			<artifactId>kafka-oauth-client</artifactId>
 			<version>${strimzi-oauth.version}</version>
@@ -546,6 +552,8 @@
 									<ignoredUnusedDeclaredDependency>io.strimzi:kafka-oauth-client</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-core</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-slf4j-impl</ignoredUnusedDeclaredDependency>
+									<!-- Needed for adding new appender JsonTemplateLayout support for logging, it's a runtime dep -->
+									<ignoredUnusedDeclaredDependency>org.apache.logging.log4j:log4j-layout-template-json</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>org.yaml:snakeyaml</ignoredUnusedDeclaredDependency> <!-- CVE override -->
 									<!-- OpenTelemetry - used via classpath configuration -->
 									<ignoredUnusedDeclaredDependency>io.opentelemetry:opentelemetry-exporter-otlp</ignoredUnusedDeclaredDependency>
