@@ -47,21 +47,35 @@ For example:
 ----
 bridge.id=my-bridge
 http.host=0.0.0.0
-http.port=443 <1>
-http.ssl.enable=true <2>
-http.ssl.keystore.certificate.location=/etc/ssl/certs/bridge.crt <3>
-http.ssl.keystore.key.location=/etc/ssl/private/bridge.key <4>
-http.cors.enabled=true <5>
-http.cors.allowedOrigins=https://strimzi.io <6>
-http.cors.allowedMethods=GET,POST,PUT,DELETE,OPTIONS,PATCH <7>
+http.port=8080 <1>
+http.cors.enabled=true <2>
+http.cors.allowedOrigins=https://strimzi.io <3>
+http.cors.allowedMethods=GET,POST,PUT,DELETE,OPTIONS,PATCH <4>
 ----
-<1> Configure HTTP Bridge to listen on port 443 for TLS encrypted connections.
-<2> Set `true` to enable TLS encryption between HTTP clients and the HTTP Bridge.
-<3> Location of the keystore file in PEM format.
-<4> Location of the private key in PEM format.
-<5> Set to `true` to enable CORS.
-<6> Comma-separated list of allowed CORS origins. You can use a URL or a Java regular expression.
-<7> Comma-separated list of allowed HTTP methods for CORS.
+<1> The default HTTP configuration for the HTTP Bridge to listen on port 8080.
+<2> Set to `true` to enable CORS.
+<3> Comma-separated list of allowed CORS origins. You can use a URL or a Java regular expression.
+<4> Comma-separated list of allowed HTTP methods for CORS.
++
+Or configure HTTP-related properties to enable TLS-encryption between clients and HTTP Bridge.
++
+For example:
++
+[source,properties]
+----
+bridge.id=my-bridge
+http.host=0.0.0.0
+http.port=443 <5>
+http.ssl.enable=true <6>
+http.ssl.keystore.certificate.location=/etc/ssl/certs/bridge.crt <7>
+http.ssl.keystore.key.location=/etc/ssl/private/bridge.key <8>
+----
+<5> Configure HTTP Bridge to listen on port 443 for TLS encrypted connections.
+<6> Set `true` to enable TLS encryption between HTTP clients and the HTTP Bridge.
+<7> Location of the keystore file in PEM format.
+<8> Location of the private key in PEM format.
+
+. Save the configuration file.
 
 .HTTP related configurations
 |====

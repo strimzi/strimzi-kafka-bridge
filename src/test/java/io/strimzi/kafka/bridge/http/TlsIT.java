@@ -81,7 +81,7 @@ public class TlsIT extends HttpBridgeITAbstract {
     @Test
     public void testSslEnabled(VertxTestContext context) {
         // we have to recreate the client to enable SSL
-        client = WebClient.create(vertx, new WebClientOptions()
+        WebClient sslClient = WebClient.create(vertx, new WebClientOptions()
                 .setDefaultHost(Urls.BRIDGE_HOST)
                 .setDefaultPort(Urls.BRIDGE_SSL_PORT)
                 .setSsl(true)
@@ -89,8 +89,8 @@ public class TlsIT extends HttpBridgeITAbstract {
                         .addCertValue(Buffer.buffer(sslCert)))
                 .setVerifyHost(false));
 
-        baseService()
-                .getRequest("/topics/my-topic")
+        sslClient
+                .get("/topics/my-topic")
                 .send()
                 .onComplete(ar -> context.verify(() -> {
                     assertThat(ar.result().statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
@@ -100,12 +100,6 @@ public class TlsIT extends HttpBridgeITAbstract {
 
     @Test
     public void testUnencryptedConnection(VertxTestContext context) {
-        // we have to recreate the client to disable SSL
-        client = WebClient.create(vertx, new WebClientOptions()
-                .setDefaultHost(Urls.BRIDGE_HOST)
-                .setDefaultPort(Urls.BRIDGE_PORT)
-        );
-
         // Once SSL is enabled, HTTP Bridge server should reject unencrypted connections
         baseService()
                 .getRequest("/topics")
@@ -134,7 +128,7 @@ public class TlsIT extends HttpBridgeITAbstract {
         configs.put(HttpConfig.HTTP_SERVER_SSL_ENABLE, true);
         configs.put(HttpConfig.HTTP_SERVER_SSL_KEYSTORE_CERTIFICATE_CHAIN, sslCert);
         configs.put(HttpConfig.HTTP_SERVER_SSL_KEYSTORE_KEY, sslKey);
-        // test machines do not allow non-root to bind low port such as 443 which is the default
+        // Azure VMs don’t allow non-root users to bind to low ports, such as 443, which is the default
         configs.put(HttpConfig.HTTP_PORT, 8443);
         return configs;
     }

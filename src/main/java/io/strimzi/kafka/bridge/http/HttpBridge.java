@@ -22,6 +22,7 @@ import io.strimzi.kafka.bridge.metrics.MetricsCollector;
 import io.strimzi.kafka.bridge.metrics.MetricsType;
 import io.strimzi.kafka.bridge.metrics.StrimziMetricsCollector;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystem;
@@ -61,6 +62,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -156,26 +158,13 @@ public class HttpBridge extends AbstractVerticle {
         managementServerOptions.setHost(this.bridgeConfig.getHttpConfig().getHost());
         managementServerOptions.setPort(this.bridgeConfig.getHttpConfig().getManagementPort());
 
-        this.vertx.createHttpServer(managementServerOptions)
-                .connectionHandler(this::processConnection)
-                .requestHandler(this.managementRouter)
-                .listen()
-                .onSuccess(httpServer -> {
-                    LOGGER.info("HTTP Bridge server for management endpoints started and listening on port {}", httpServer.actualPort());
-                    this.managementServer = httpServer;
-                })
-                .onFailure(t -> {
-                    LOGGER.error("Error starting HTTP Bridge management server", t);
-                    startPromise.fail(t);
-                });
-
         HttpServerOptions httpServerOptions = httpServerOptions();
         this.vertx.createHttpServer(httpServerOptions)
                 .connectionHandler(this::processConnection)
                 .requestHandler(this.router)
                 .listen()
-                .onSuccess(httpServer -> {
-                    LOGGER.info("HTTP Bridge server started and listening on port {}", httpServer.actualPort());
+                .compose(apiServer -> {
+                    LOGGER.info("HTTP Bridge server started and listening on port {}", apiServer.actualPort());
                     LOGGER.info("HTTP Bridge bootstrap servers {}",
                             this.bridgeConfig.getKafkaConfig().getConfig()
                                     .get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)
@@ -186,11 +175,18 @@ public class HttpBridge extends AbstractVerticle {
                     }
 
                     this.isReady = true;
-                    this.apiServer = httpServer;
-                    startPromise.complete();
-                })
+                    this.apiServer = apiServer;
+                    return this.vertx.createHttpServer(managementServerOptions)
+                            .connectionHandler(this::processConnection)
+                            .requestHandler(this.managementRouter)
+                            .listen()
+                            .onSuccess(httpServer -> {
+                                LOGGER.info("HTTP Bridge server for management endpoints started and listening on port {}", httpServer.actualPort());
+                                this.managementServer = httpServer;
+                            });
+                }).onSuccess(ok -> startPromise.complete())
                 .onFailure(t -> {
-                    LOGGER.error("Error starting HTTP Bridge server", t);
+                    LOGGER.error("Error starting HTTP Bridge server(s)", t);
                     startPromise.fail(t);
                 });
     }
@@ -199,7 +195,9 @@ public class HttpBridge extends AbstractVerticle {
         Long timeoutInMs = timeout * 1000L;
         vertx.setPeriodic(timeoutInMs / 2, ignore -> {
             LOGGER.debug("Looking for stale consumers in {} entries", timestampMap.size());
-            for (Map.Entry<ConsumerInstanceId, Long> item : timestampMap.entrySet()) {
+            Iterator<Map.Entry<ConsumerInstanceId, Long>> it = timestampMap.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<ConsumerInstanceId, Long> item = it.next();
                 if (item.getValue() + timeoutInMs < System.currentTimeMillis()) {
                     HttpSinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(item.getKey());
                     if (deleteSinkEndpoint != null) {
@@ -328,31 +326,25 @@ public class HttpBridge extends AbstractVerticle {
         // admin client cleanup
         this.httpBridgeContext.closeHttpAdminClientEndpoint();
 
-        if (this.apiServer != null) {
-            this.apiServer.shutdown()
-                    .onSuccess(v -> {
-                        LOGGER.info("HTTP bridge has been shut down successfully");
-                        if (this.managementServer == null) {
-                            stopPromise.complete();
-                        }
-                    })
-                    .onFailure(t -> {
-                        LOGGER.info("Error while shutting down HTTP bridge", t);
-                        stopPromise.fail(t);
-                    });
-        }
+        Future<Void> apiServerShutdown = apiServer != null ?
+                this.apiServer.shutdown()
+                        .onFailure(t -> LOGGER.info("Error while shutting down HTTP bridge server"))
+                : Future.succeededFuture();
 
-        if (this.managementServer != null) {
+        Future<Void> managementServerShutdown = managementServer != null ?
             this.managementServer.shutdown()
-                    .onSuccess(v -> {
-                        LOGGER.info("HTTP bridge management server has been shut down successfully");
-                        stopPromise.complete();
-                    })
-                    .onFailure(t -> {
-                        LOGGER.info("Error while shutting down HTTP bridge management server", t);
-                        stopPromise.fail(t);
-                    });
-        }
+                    .onFailure(t -> LOGGER.info("Error while shutting down HTTP bridge management server"))
+            : Future.succeededFuture();
+
+        Future.all(apiServerShutdown, managementServerShutdown)
+                .onSuccess(v -> {
+                    LOGGER.info("HTTP bridge has been shut down successfully");
+                    stopPromise.complete();
+                })
+                .onFailure(t -> {
+                    LOGGER.info("Error while shutting down HTTP bridge", t);
+                    stopPromise.fail(t);
+                });
     }
 
     private HttpServerOptions httpServerOptions() {
