@@ -1,8 +1,8 @@
 {
     "openapi": "3.1.0",
     "info": {
-      "title": "Kafka Bridge API Reference",
-      "description": "The Kafka Bridge provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. ",
+      "title": "HTTP Bridge API Reference",
+      "description": "The HTTP Bridge provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. ",
         "version": "0.1.0"
     },
     "paths": {
@@ -44,7 +44,7 @@
                         }
                     },
                     "409": {
-                        "description": "A consumer instance with the specified name already exists in the Kafka Bridge.",
+                        "description": "A consumer instance with the specified name already exists in the HTTP Bridge.",
                         "content": {
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
@@ -54,7 +54,7 @@
                                     "response": {
                                         "value": {
                                             "error_code": 409,
-                                            "message": "A consumer instance with the specified name already exists in the Kafka Bridge."
+                                            "message": "A consumer instance with the specified name already exists in the HTTP Bridge."
                                         }
                                     }
                                 }
@@ -1491,7 +1491,7 @@
             "get": {
                 "responses": {
                     "200": {
-                        "description": "Information about Kafka Bridge instance.",
+                        "description": "Information about HTTP Bridge instance.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1502,7 +1502,7 @@
                     }
                 },
                 "operationId": "info",
-                "description": "Retrieves information about the Kafka Bridge instance, in JSON format."
+                "description": "Retrieves information about the HTTP Bridge instance, in JSON format."
             }
         }
     },
@@ -2194,7 +2194,7 @@
             },
             "BridgeInfo": {
                 "title": "BridgeInfo",
-                "description": "Information about Kafka Bridge instance.",
+                "description": "Information about HTTP Bridge instance.",
                 "type": "object",
                 "properties": {
                     "bridge_version": {
