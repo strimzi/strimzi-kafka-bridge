@@ -29,7 +29,7 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
         int iterations = 5;
         for (int i = 1; i <= iterations; i++) {
             int l = i;
-            baseService()
+            internalBaseService()
                     .getRequest("/ready")
                     .send()
                     .onComplete(ar -> {
@@ -50,7 +50,7 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
         int iterations = 5;
         for (int i = 1; i <= iterations; i++) {
             int l = i;
-            baseService()
+            internalBaseService()
                     .getRequest("/healthy")
                     .send()
                     .onComplete(ar -> {
