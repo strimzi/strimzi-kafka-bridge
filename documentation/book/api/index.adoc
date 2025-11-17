@@ -2,7 +2,7 @@
 :numbered:
 :toclevels: 4
 :source-highlighter: highlightjs
-:keywords: openapi, rest, , Kafka, HTTP Bridge API Reference
+:keywords: openapi, rest, HTTP Bridge API Reference
 :specDir: 
 :snippetDir: ./documentation/book/api/snippet/
 :generator-template: v1 2019-12-20
