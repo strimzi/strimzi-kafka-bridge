@@ -1249,6 +1249,11 @@ Check if the bridge is running. This does not necessarily imply that it is ready
 | Code | Message | Datatype
 
 
+| 200
+| The bridge is healthy (only if the environment variable KAFKA_BRIDGE_HEALTH_CHECKS_RESPONSE_STATUS_200 is true)
+|  <<>>
+
+
 | 204
 | The bridge is healthy
 |  <<>>
@@ -1679,6 +1684,11 @@ Check if the bridge is ready and can accept requests.
 [cols="2,3,1"]
 |===
 | Code | Message | Datatype
+
+
+| 200
+| The bridge is ready (only if the environment variable KAFKA_BRIDGE_HEALTH_CHECKS_RESPONSE_STATUS_200 is true)
+|  <<>>
 
 
 | 204

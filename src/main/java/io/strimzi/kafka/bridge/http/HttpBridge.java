@@ -62,6 +62,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -80,6 +81,8 @@ public class HttpBridge extends AbstractVerticle {
     private static final Logger LOGGER = LogManager.getLogger(HttpBridge.class);
 
     private final BridgeConfig bridgeConfig;
+
+    private final HttpResponseStatus healthChecksResponseStatus;
 
     private HttpServer httpServer;
 
@@ -111,6 +114,25 @@ public class HttpBridge extends AbstractVerticle {
         if (metricsCollector != null) {
             LOGGER.info("Metrics of type '{}' enabled and exposed on /metrics endpoint", bridgeConfig.getMetricsType());
         }
+
+        this.healthChecksResponseStatus = getHealthChecksResponseStatus();
+    }
+
+    /**
+     * Return the {@link HttpResponseStatus} used for health checks depending on the value of the environment variable
+     * {@code KAFKA_BRIDGE_HEALTH_CHECKS_RESPONSE_STATUS_200}.
+     *
+     * @return {@link HttpResponseStatus#OK} if {@code KAFKA_BRIDGE_HEALTH_CHECKS_RESPONSE_STATUS_200} is {@code true},
+     * {@link HttpResponseStatus#NO_CONTENT} otherwise.
+     */
+    private static HttpResponseStatus getHealthChecksResponseStatus() {
+        final String envVarValue = System.getenv("KAFKA_BRIDGE_HEALTH_CHECKS_RESPONSE_STATUS_200");
+
+        return Optional.ofNullable(envVarValue)
+                .map(Boolean::parseBoolean)
+                .or(() -> Optional.of(false))
+                .map(b -> b ? HttpResponseStatus.OK : HttpResponseStatus.NO_CONTENT)
+                .orElseThrow();
     }
 
     /**
@@ -569,12 +591,12 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void healthy(RoutingContext routingContext) {
-        HttpResponseStatus httpResponseStatus = this.isAlive() ? HttpResponseStatus.NO_CONTENT : HttpResponseStatus.INTERNAL_SERVER_ERROR;
+        HttpResponseStatus httpResponseStatus = this.isAlive() ? healthChecksResponseStatus : HttpResponseStatus.INTERNAL_SERVER_ERROR;
         HttpUtils.sendResponse(routingContext, httpResponseStatus.code(), null, null);
     }
 
     private void ready(RoutingContext routingContext) {
-        HttpResponseStatus httpResponseStatus = this.isReady() ? HttpResponseStatus.NO_CONTENT : HttpResponseStatus.INTERNAL_SERVER_ERROR;
+        HttpResponseStatus httpResponseStatus = this.isReady() ? healthChecksResponseStatus : HttpResponseStatus.INTERNAL_SERVER_ERROR;
         HttpUtils.sendResponse(routingContext, httpResponseStatus.code(), null, null);
     }
 
