@@ -104,6 +104,7 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
 
     protected static Vertx vertx;
     protected static WebClient client;
+    protected static WebClient internalClient;
     protected static BasicKafkaClient basicKafkaClient;
     protected static AdminClientFacade adminClientFacade;
     protected static HttpBridge httpBridge;
@@ -250,6 +251,11 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
             .setDefaultHost(Urls.BRIDGE_HOST)
             .setDefaultPort(Urls.BRIDGE_PORT)
         );
+
+        internalClient = WebClient.create(vertx, new WebClientOptions()
+                .setDefaultHost(Urls.BRIDGE_HOST)
+                .setDefaultPort(Urls.BRIDGE_MANAGEMENT_PORT)
+        );
     }
 
     /**
@@ -282,6 +288,9 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
     }
     protected ProducerService producerService() {
         return ProducerService.getInstance(client);
+    }
+    protected BaseService internalBaseService() {
+        return BaseService.getInstance(internalClient);
     }
 
 }
