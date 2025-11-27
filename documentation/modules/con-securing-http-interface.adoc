@@ -6,9 +6,8 @@
 = Securing the HTTP Bridge HTTP interface
 
 [role="_abstract"]
-By default, connections between HTTP clients and HTTP Bridge are not encrypted,
-but you can configure a TLS-encrypted connection through its xref:proc-configuring-kafka-bridge-{context}[properties file].
-If the HTTP Bridge is configured with TLS encryption, client requests must use HTTPS instead of HTTP.
+By default, connections between HTTP clients and HTTP Bridge are not encrypted, but you can configure a TLS-encrypted connection through its xref:proc-configuring-kafka-bridge-{context}[properties file].
+If the HTTP Bridge is configured with TLS encryption, client requests should connect to the bridge by using  HTTPS instead of HTTP.
 
 You can enable TLS encryption for all HTTP Bridge endpoints except management endpoints such as `/ready`, `/healthy` and `/metrics`.
 These endpoints are typically used only by internal clients and requests to them must use HTTP.
@@ -19,3 +18,5 @@ You can combine the HTTP Bridge with the following tools to secure it further:
 * Network policies and firewalls that define which pods can access the HTTP Bridge
 * Reverse proxies (for example, OAuth 2.0)
 * API gateways
+
+If any of these tools used, for example, a reverse proxy to add authentication between HTTP clients and the HTTP Bridge, then the proxy should be configured with TLS to encrypt the connections between HTTP clients and the proxy.
