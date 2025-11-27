@@ -180,9 +180,9 @@ public class HttpBridge extends AbstractVerticle {
                             .connectionHandler(this::processConnection)
                             .requestHandler(this.managementRouter)
                             .listen()
-                            .onSuccess(httpServer -> {
-                                LOGGER.info("HTTP Bridge server for management endpoints started and listening on port {}", httpServer.actualPort());
-                                this.managementServer = httpServer;
+                            .onSuccess(managementServer -> {
+                                LOGGER.info("HTTP Bridge server for management endpoints started and listening on port {}", managementServer.actualPort());
+                                this.managementServer = managementServer;
                             });
                 }).onSuccess(ok -> startPromise.complete())
                 .onFailure(t -> {
@@ -326,12 +326,12 @@ public class HttpBridge extends AbstractVerticle {
         // admin client cleanup
         this.httpBridgeContext.closeHttpAdminClientEndpoint();
 
-        Future<Void> apiServerShutdown = apiServer != null ?
+        Future<Void> apiServerShutdown = this.apiServer != null ?
                 this.apiServer.shutdown()
                         .onFailure(t -> LOGGER.info("Error while shutting down HTTP bridge server"))
                 : Future.succeededFuture();
 
-        Future<Void> managementServerShutdown = managementServer != null ?
+        Future<Void> managementServerShutdown = this.managementServer != null ?
             this.managementServer.shutdown()
                     .onFailure(t -> LOGGER.info("Error while shutting down HTTP bridge management server"))
             : Future.succeededFuture();

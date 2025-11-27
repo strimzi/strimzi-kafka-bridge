@@ -90,10 +90,10 @@ public class TlsIT extends HttpBridgeITAbstract {
                 .setVerifyHost(false));
 
         sslClient
-                .get("/topics/my-topic")
+                .get("/")
                 .send()
                 .onComplete(ar -> context.verify(() -> {
-                    assertThat(ar.result().statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+                    assertThat(ar.result().statusCode(), is(HttpResponseStatus.OK.code()));
                     context.completeNow();
                 }));
     }
@@ -102,7 +102,7 @@ public class TlsIT extends HttpBridgeITAbstract {
     public void testUnencryptedConnection(VertxTestContext context) {
         // Once SSL is enabled, HTTP Bridge server should reject unencrypted connections
         baseService()
-                .getRequest("/topics")
+                .getRequest("/")
                 .send()
                 .onFailure(t -> {
                     assertThat(t.getCause().getMessage(), is("Connection refused"));
