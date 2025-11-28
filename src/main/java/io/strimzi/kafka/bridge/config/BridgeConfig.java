@@ -35,7 +35,7 @@ public class BridgeConfig extends AbstractConfig {
     
     /** Tracing system to be used in the bridge */
     private static final String TRACING_TYPE = BRIDGE_CONFIG_PREFIX + "tracing";
-    
+
     /** Default Strimzi Metrics Reporter allow list. */
     /* test */ static final String DEFAULT_STRIMZI_METRICS_REPORTER_ALLOW_LIST = "kafka_consumer_consumer_metrics.*, " +
         "kafka_producer_kafka_metrics_count_count, kafka_producer_producer_metrics.*";
