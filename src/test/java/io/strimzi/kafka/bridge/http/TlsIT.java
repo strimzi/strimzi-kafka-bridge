@@ -128,8 +128,6 @@ public class TlsIT extends HttpBridgeITAbstract {
         configs.put(HttpConfig.HTTP_SERVER_SSL_ENABLE, true);
         configs.put(HttpConfig.HTTP_SERVER_SSL_KEYSTORE_CERTIFICATE_CHAIN, sslCert);
         configs.put(HttpConfig.HTTP_SERVER_SSL_KEYSTORE_KEY, sslKey);
-        // Azure VMs don’t allow non-root users to bind to low ports, such as 443, which is the default
-        configs.put(HttpConfig.HTTP_PORT, 8443);
         return configs;
     }
 }

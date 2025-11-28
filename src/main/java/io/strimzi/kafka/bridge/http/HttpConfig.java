@@ -71,7 +71,7 @@ public class HttpConfig extends AbstractConfig {
     public static final int DEFAULT_PORT = 8080;
 
     /** Default HTTP port if not specified when SSL is enabled */
-    public static final int DEFAULT_HTTPS_PORT = 443;
+    public static final int DEFAULT_HTTPS_PORT = 8443;
 
     /** Default management port */
     public static final int DEFAULT_MANAGEMENT_PORT = 8081;
