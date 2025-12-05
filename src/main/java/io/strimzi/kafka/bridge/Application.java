@@ -21,10 +21,8 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.config.Configurator;
 
 import javax.management.MalformedObjectNameException;
 import java.io.IOException;
@@ -48,9 +46,6 @@ public class Application {
         // disabling OpenMetrics exemplars added within newer Prometheus client (see https://github.com/strimzi/strimzi-kafka-bridge/issues/1023)
         // via https://github.com/prometheus/client_java/blob/main/prometheus-metrics-config/src/main/java/io/prometheus/metrics/config/MetricsProperties.java#L14
         System.setProperty("io.prometheus.metrics.exemplarsEnabled", "false");
-
-        // Reduce verbosity of RouterBuilderImpl warnings for unimplemented OpenAPI endpoints
-        Configurator.setLevel("io.vertx.ext.web.openapi.router.impl.RouterBuilderImpl", Level.ERROR);
 
         LOGGER.info("Strimzi Kafka Bridge {} is starting", Application.class.getPackage().getImplementationVersion());
         try {

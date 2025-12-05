@@ -65,12 +65,12 @@ For example:
 ----
 bridge.id=my-bridge
 http.host=0.0.0.0
-http.port=443 <5>
+http.port=8443 <5>
 http.ssl.enable=true <6>
 http.ssl.keystore.certificate.location=/etc/ssl/certs/bridge.crt <7>
 http.ssl.keystore.key.location=/etc/ssl/private/bridge.key <8>
 ----
-<5> Configure HTTP Bridge to listen on port 443 for TLS encrypted connections.
+<5> Configure HTTP Bridge to listen on port 8443 for TLS encrypted connections.
 <6> Set `true` to enable TLS encryption between HTTP clients and the HTTP Bridge.
 <7> Location of the keystore file in PEM format.
 <8> Location of the private key in PEM format.
@@ -85,7 +85,7 @@ http.ssl.keystore.key.location=/etc/ssl/private/bridge.key <8>
 |HTTP Bridge host address. The default is `0.0.0.0`.
 
 |http.port
-|HTTP Bridge port. The default is `8080`. If "http.ssl.enable" is set to `true`, then the default is `443`.
+|HTTP Bridge port. The default is `8080`. If "http.ssl.enable" is set to `true`, then the default is `8443`.
 
 |http.management.port
 |HTTP bridge port for management endpoints such as `/healthy`, `/ready` and `/metrics`. The default is `8081`.
