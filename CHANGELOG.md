@@ -2,7 +2,7 @@
 
 ## 0.34.0
 
-* Dependency updates (Kafka 4.1.1, Vert.x 5.0.5, Netty 4.2.7.Final, JMX Prometheus collector 1.5.0, OAuth 0.17.1).
+* Dependency updates (Kafka 4.1.1, Vert.x 5.0.6, Netty 4.2.9.Final, JMX Prometheus collector 1.5.0, OAuth 0.17.1).
 * Adding support for [JsonTemplateLayout](https://logging.apache.org/log4j/2.x/manual/json-template-layout.html).
 
 ## 0.33.1
