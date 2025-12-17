@@ -1249,7 +1249,7 @@ Check if the bridge is running. This does not necessarily imply that it is ready
 | Code | Message | Datatype
 
 
-| 204
+| 200
 | The bridge is healthy
 |  <<>>
 
@@ -1681,7 +1681,7 @@ Check if the bridge is ready and can accept requests.
 | Code | Message | Datatype
 
 
-| 204
+| 200
 | The bridge is ready
 |  <<>>
 
