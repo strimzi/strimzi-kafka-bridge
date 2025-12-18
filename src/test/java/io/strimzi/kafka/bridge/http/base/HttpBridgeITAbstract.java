@@ -35,13 +35,16 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.AfterParameterizedClassInvocation;
+import org.junit.jupiter.params.BeforeParameterizedClassInvocation;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Collection;
 import java.util.EnumSet;
@@ -68,7 +71,7 @@ import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
  * The suite is designed for extensibility. Common extension points:
  * <ul>
  *   <li>{@link #overrideConfig()} — override to customize bridge or Kafka configuration for your tests.</li>
- *   <li>{@link #setupKafkaCluster()} — override to customize embedded cluster setup.</li>
+ *   <li>{@link #setupKafkaCluster(String kafkaVersion)} — override to customize embedded cluster setup.</li>
  *   <li>{@link #deployBridge(VertxTestContext)} — override to deploy the Bridge in a custom way (e.g. external or per-test deployment).</li>
  * </ul>
  *
@@ -82,6 +85,9 @@ import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
 @SuppressWarnings({"checkstyle:JavaNCSS"})
 @Tag(HTTP_BRIDGE)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ParameterizedClass
+// These are Kafka versions supported by Strimzi Test Container. Should be updated together with test-container version bump.
+@ValueSource(strings = {"4.0.0", "4.0.1", "4.1.0", "4.1.1"})
 public abstract class HttpBridgeITAbstract implements TestSeparator {
     private static final Logger LOGGER = LogManager.getLogger(HttpBridgeITAbstract.class);
     protected static Map<String, Object> config = new HashMap<>();
@@ -93,6 +99,10 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
     protected static final int TEST_TIMEOUT = 60;
     protected int count;
     protected String topic;
+
+    // Field injection for ParametrizedClass mechanism. Do not remove it!
+    @Parameter
+    protected String kafkaVersion;
 
     public static StrimziKafkaCluster kafkaCluster = null;
     protected static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
@@ -112,16 +122,17 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
 
     private final static Random RNG = new Random();
 
-    @BeforeAll
-    void beforeAll(VertxTestContext context) {
+    @BeforeParameterizedClassInvocation
+    void beforeAll(String kafkaVersion, VertxTestContext context) {
         LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
-        setupKafkaCluster();
+        setupKafkaCluster(kafkaVersion);
         configureDefaults();
         deployBridge(context);
     }
 
-    @AfterAll
-    static void afterAll(VertxTestContext context) {
+    // kafkaVersion is not used, but it is required as AfterParameterizedClassInvocation requires the injected fields
+    @AfterParameterizedClassInvocation
+    static void afterAll(String kafkaVersion, VertxTestContext context) {
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
             vertx.close().onComplete(context.succeeding(arg -> context.completeNow()));
         } else {
@@ -226,12 +237,20 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
 
     // ===== Overridable Hooks =====
 
-    protected void setupKafkaCluster() {
+    protected void setupKafkaCluster(String kafkaVersion) {
         if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
-            kafkaCluster = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
+            StrimziKafkaCluster.StrimziKafkaClusterBuilder builder = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
                 .withNumberOfBrokers(1)
-                .withSharedNetwork()
-                .build();
+                .withSharedNetwork();
+
+            if (kafkaVersion != null && !kafkaVersion.isEmpty()) {
+                LOGGER.info("Using Kafka version: {}", kafkaVersion);
+                builder.withKafkaVersion(kafkaVersion);
+            } else {
+                LOGGER.info("Using default Kafka version from test container");
+            }
+
+            kafkaCluster = builder.build();
             kafkaCluster.start();
         }
     }
