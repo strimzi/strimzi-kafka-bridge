@@ -65,7 +65,7 @@ public class HttpCorsIT extends HttpBridgeITAbstract {
         createWebClient();
         configureBridge(false, null);
 
-        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
+        if ("FALSE".equalsIgnoreCase(BRIDGE_EXTERNAL_ENV)) {
             vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://evil.io")
@@ -94,7 +94,7 @@ public class HttpCorsIT extends HttpBridgeITAbstract {
         createWebClient();
         configureBridge(true, null);
 
-        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
+        if ("FALSE".equalsIgnoreCase(BRIDGE_EXTERNAL_ENV)) {
             vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://evil.io")
@@ -134,7 +134,7 @@ public class HttpCorsIT extends HttpBridgeITAbstract {
 
         final String origin = "https://strimzi.io";
 
-        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
+        if ("FALSE".equalsIgnoreCase(BRIDGE_EXTERNAL_ENV)) {
             vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://strimzi.io")
@@ -185,7 +185,7 @@ public class HttpCorsIT extends HttpBridgeITAbstract {
 
         final String origin = "https://strimzi.io";
 
-        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
+        if ("FALSE".equalsIgnoreCase(BRIDGE_EXTERNAL_ENV)) {
             vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/topics/my-topic")
                     .putHeader("Origin", "https://strimzi.io")
@@ -222,7 +222,7 @@ public class HttpCorsIT extends HttpBridgeITAbstract {
 
         final String origin = "https://strimzi.io";
 
-        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
+        if ("FALSE".equalsIgnoreCase(BRIDGE_EXTERNAL_ENV)) {
             vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> client
                     .request(HttpMethod.OPTIONS, 8080, "localhost", "/consumers/1/instances/1/subscription")
                     .putHeader("Origin", "https://strimzi.io")
@@ -249,7 +249,7 @@ public class HttpCorsIT extends HttpBridgeITAbstract {
     }
 
     private void configureBridge(boolean corsEnabled, String methodsAllowed) {
-        if ("FALSE".equalsIgnoreCase(System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE"))) {
+        if ("FALSE".equalsIgnoreCase(BRIDGE_EXTERNAL_ENV)) {
             config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaUri);
             config.put(HttpConfig.HTTP_CORS_ENABLED, String.valueOf(corsEnabled));
             config.put(HttpConfig.HTTP_CORS_ALLOWED_ORIGINS, "https://strimzi.io");

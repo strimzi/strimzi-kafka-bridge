@@ -13,11 +13,13 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -33,6 +35,7 @@ public class ConfigTest {
         map.put("kafka.consumer.auto.offset.reset", "earliest");
         map.put("http.host", "0.0.0.0");
         map.put("http.port", "8080");
+        map.put("management.port", "8081");
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
         assertThat(bridgeConfig.getBridgeID(), is("my-bridge"));
@@ -51,6 +54,7 @@ public class ConfigTest {
         assertThat(bridgeConfig.getHttpConfig().getConfig().size(), is(2));
         assertThat(bridgeConfig.getHttpConfig().getHost(), is("0.0.0.0"));
         assertThat(bridgeConfig.getHttpConfig().getPort(), is(8080));
+        assertThat(bridgeConfig.getHttpConfig().getManagementPort(), is(8081));
     }
 
     @Test
@@ -83,6 +87,41 @@ public class ConfigTest {
         assertThat(bridgeConfig.getHttpConfig().getCorsAllowedMethods(), is("GET,POST,PUT,DELETE,OPTIONS,PATCH"));
         assertThat(bridgeConfig.getHttpConfig().isConsumerEnabled(), is(true));
         assertThat(bridgeConfig.getHttpConfig().isProducerEnabled(), is(true));
+    }
+
+    @Test
+    public void testHttpSslConfig() {
+        Map<String, Object> map = new HashMap<>(Map.of(
+                "http.ssl.enable", "true",
+                "http.ssl.keystore.key.location", "key.key",
+                "http.ssl.keystore.location", "cert.crt",
+                "http.ssl.enabled.protocols", "TLSv1.3",
+                "http.ssl.enabled.cipher.suites", "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+        ));
+
+        BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
+        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslKeystoreKeyLocation(), is("key.key"));
+        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslKeystoreLocation(), is("cert.crt"));
+        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslEnabledProtocols(), is(Set.of("TLSv1.3")));
+        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslCipherSuites(), is(Set.of("TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384")));
+
+    }
+
+    @Test
+    public void testHttpSslDefaults() {
+        Map<String, Object> map = new HashMap<>(Map.of(
+                "http.ssl.enable", "true",
+                "http.ssl.keystore.key", "key.key",
+                "http.ssl.keystore.certificate.chain", "cert.crt"
+        ));
+
+        BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
+        assertThat(bridgeConfig.getHttpConfig().getPort(), is(8443));
+        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslKeystoreKey(), is("key.key"));
+        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslKeystoreCertificateChain(), is("cert.crt"));
+        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslEnabledProtocols(), is(Set.of("TLSv1.2", "TLSv1.3")));
+        assertNull(bridgeConfig.getHttpConfig().getHttpServerSslCipherSuites());
+
     }
 
     @Test
