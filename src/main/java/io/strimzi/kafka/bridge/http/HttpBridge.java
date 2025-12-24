@@ -626,12 +626,12 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void healthy(RoutingContext routingContext) {
-        HttpResponseStatus httpResponseStatus = this.isAlive() ? HttpResponseStatus.NO_CONTENT : HttpResponseStatus.INTERNAL_SERVER_ERROR;
+        HttpResponseStatus httpResponseStatus = this.isAlive() ? HttpResponseStatus.OK : HttpResponseStatus.INTERNAL_SERVER_ERROR;
         HttpUtils.sendResponse(routingContext, httpResponseStatus.code(), null, null);
     }
 
     private void ready(RoutingContext routingContext) {
-        HttpResponseStatus httpResponseStatus = this.isReady() ? HttpResponseStatus.NO_CONTENT : HttpResponseStatus.INTERNAL_SERVER_ERROR;
+        HttpResponseStatus httpResponseStatus = this.isReady() ? HttpResponseStatus.OK : HttpResponseStatus.INTERNAL_SERVER_ERROR;
         HttpUtils.sendResponse(routingContext, httpResponseStatus.code(), null, null);
     }
 

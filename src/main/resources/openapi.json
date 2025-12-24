@@ -1379,7 +1379,7 @@
         "/healthy": {
             "get": {
                 "responses": {
-                    "204": {
+                    "200": {
                         "description": "The bridge is healthy"
                     },
                     "500": {
@@ -1393,7 +1393,7 @@
         "/ready": {
             "get": {
                 "responses": {
-                    "204": {
+                    "200": {
                         "description": "The bridge is ready"
                     },
                     "500": {
