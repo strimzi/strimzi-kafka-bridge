@@ -7,6 +7,10 @@
 * Add support for TLS/SSL on the HTTP interface
   Set `http.ssl.*` configurations to enable it.
 
+### Changes, deprecations and removals
+
+* The `/healthy` and `/ready` endpoints now return an HTTP response with code `200`, instead of the `204`, with an empty body. 
+
 ## 0.33.1
 
 * Disabled OpenMetrics exemplars within Prometheus to fix [1023](https://github.com/strimzi/strimzi-kafka-bridge/issues/1023)
