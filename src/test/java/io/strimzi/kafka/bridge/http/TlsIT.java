@@ -117,7 +117,7 @@ public class TlsIT extends HttpBridgeITAbstract {
                 .getRequest("/healthy")
                 .send()
                 .onComplete(ar -> context.verify(() -> {
-                    assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
+                    assertThat(ar.result().statusCode(), is(HttpResponseStatus.OK.code()));
                     context.completeNow();
                 }));
     }
