@@ -9,6 +9,9 @@
 
 ### Changes, deprecations and removals
 
+* The `/healthy`, `/ready`, and `/metrics` endpoints are not available on the regular HTTP interface (port 8080 by default) anymore.
+  They are now available on the HTTP management interface (8081 by default).
+  Please update your configurations accordingly. 
 * The `/healthy` and `/ready` endpoints now return an HTTP response with code `200`, instead of the `204`, with an empty body. 
 
 ## 0.33.1
