@@ -40,8 +40,8 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.release>17</maven.compiler.release>
 		<log4j.version>2.25.3</log4j.version>
-		<vertx.version>5.0.6</vertx.version>
-		<vertx-testing.version>5.0.6</vertx-testing.version>
+		<vertx.version>5.0.7</vertx.version>
+		<vertx-testing.version>5.0.7</vertx-testing.version>
 		<netty.version>4.2.9.Final</netty.version>
 		<kafka.version>4.1.1</kafka.version>
 		<kafka-kubernetes-config-provider.version>1.2.0</kafka-kubernetes-config-provider.version>
