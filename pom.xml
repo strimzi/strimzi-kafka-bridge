@@ -44,7 +44,7 @@
 		<vertx-testing.version>5.0.7</vertx-testing.version>
 		<netty.version>4.2.9.Final</netty.version>
 		<kafka.version>4.1.1</kafka.version>
-		<kafka-kubernetes-config-provider.version>1.2.0</kafka-kubernetes-config-provider.version>
+		<kafka-kubernetes-config-provider.version>1.2.1</kafka-kubernetes-config-provider.version>
 		<kafka-env-var-config-provider.version>1.1.0</kafka-env-var-config-provider.version>
 		<maven.checkstyle.version>3.3.0</maven.checkstyle.version>
 		<checkstyle.version>10.12.2</checkstyle.version>
