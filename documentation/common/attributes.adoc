@@ -14,10 +14,7 @@
 :sectlinks:
 
 //links to Strimzi docs
-:BookURLConfiguring: https://strimzi.io/documentation/[Strimzi documentation^]
-
-//API versions
-:KafkaTopicApiVersion: kafka.strimzi.io/v1beta2
+:BookURLConfiguring: https://strimzi.io/documentation/
 
 // Source and download links
 :ReleaseDownload: https://github.com/strimzi/strimzi-kafka-bridge/releases[GitHub release page^]

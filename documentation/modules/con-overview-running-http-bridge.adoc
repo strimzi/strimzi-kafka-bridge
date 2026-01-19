@@ -27,4 +27,4 @@ You can configure your deployment to access the HTTP Bridge outside the Kubernet
 HTTP clients must maintain affinity to the same instance of the HTTP Bridge to access any consumers or subscriptions that they create. Hence, running multiple replicas of the HTTP Bridge per Kubernetes Deployment is not recommended.
 If the HTTP Bridge pod restarts (for instance, due to Kubernetes relocating the workload to another node), the HTTP client must recreate any consumers or subscriptions.
 
-For information on deploying and configuring the HTTP Bridge as a `KafkaBridge` resource, see the {BookURLConfiguring}.
+For information on deploying and configuring the HTTP Bridge as a `KafkaBridge` resource, see the {BookURLConfiguring}[Strimzi Custom Resource API Reference^].
