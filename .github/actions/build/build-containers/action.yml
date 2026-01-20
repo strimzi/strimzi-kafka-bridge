@@ -1,0 +1,68 @@
+name: "Build Kafka-Access-Operator Containers"
+description: "Build and archive kafka-access-operator container images"
+
+inputs:
+  architecture:
+    description: "Architecture to build (amd64, arm64, s390x, ppc64le)"
+    required: false
+    default: "amd64"
+  runnerArch:
+    description: "Architecture of GitHub runner"
+    required: false
+    default: "amd64"
+  buildRunId:
+    description: "Build workflow run ID for artifact download"
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Docker
+      uses: strimzi/strimzi-kafka-operator/.github/actions/dependencies/install-docker@main
+
+    - name: Download binaries from this workflow
+      if: ${{ inputs.buildRunId == '' }}
+      uses: actions/download-artifact@v7
+      with:
+        name: access-operator-binaries.tar
+
+    - name: Download binaries from external build
+      if: ${{ inputs.buildRunId != '' }}
+      uses: actions/download-artifact@v7
+      with:
+        name: access-operator-binaries.tar
+        run-id: ${{ inputs.buildRunId }}
+        github-token: ${{ github.token }}
+
+    - name: Untar binaries
+      shell: bash
+      run: tar -xvf access-operator-binaries.tar
+
+    - name: Build and save containers
+      shell: bash
+      run: make docker_build docker_save
+      env:
+        DOCKER_BUILDKIT: 1
+        BUILD_REASON: "IndividualCI"
+        BRANCH: ${{ github.ref }}
+        DOCKER_REGISTRY: "quay.io"
+        DOCKER_ORG: "strimzi"
+        DOCKER_ARCHITECTURE: ${{ inputs.architecture }}
+
+    - name: Create tarball with container
+      shell: bash
+      run: |
+        tar -cvpf containers-${{ inputs.architecture }}.tar \
+          access-operator-container-${{ inputs.architecture }}.tar.gz
+
+    - name: Upload container artifact
+      uses: actions/upload-artifact@v5
+      with:
+        name: containers-${{ inputs.architecture }}.tar
+        path: containers-${{ inputs.architecture }}.tar
+
+    - name: List built images
+      if: ${{ always() }}
+      shell: bash
+      run: docker images -a

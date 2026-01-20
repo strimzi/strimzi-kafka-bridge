@@ -1,0 +1,114 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - "main"
+      - "release-*"
+  pull_request:
+    branches:
+      - "*"
+
+# Declare default permissions as read only
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-kafka-bridge:
+    name: Build Kafka Bridge
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/build/build-binaries
+        with:
+          runnerArch: "amd64"
+
+  build-docs:
+    name: Build docs
+    needs:
+      - build-kafka-bridge
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/build/build-docs
+        with:
+          artifactName: "documentation.tar"
+          runnerArch: "amd64"
+
+  build-containers:
+    name: Build Containers
+    needs:
+      - build-kafka-bridge
+    strategy:
+      matrix:
+        architecture:
+          - amd64
+          - arm64
+          - s390x
+          - ppc64le
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/build/build-containers
+        with:
+          architecture: ${{ matrix.architecture }}
+          runnerArch: "amd64"
+
+  push-containers:
+    name: Push Containers
+    needs:
+      - build-kafka-bridge
+      - build-containers
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      DOCKER_REGISTRY: "quay.io"
+      DOCKER_ORG: "strimzi"
+      DOCKER_TAG: "latest"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/build/push-containers
+        with:
+          architectures: "amd64,arm64,ppc64le,s390x"
+          runnerArch: "amd64"
+          quayUser: ${{ secrets.QUAY_USER }}
+          quayPass: ${{ secrets.QUAY_PASS }}
+
+  publish-docs:
+    name: Publish Docs
+    needs:
+      - build-kafka-bridge
+      - build-containers
+      - build-docs
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/build/publish-docs
+        with:
+          artifactName: "documentation.tar"
+          websiteDeployKey: ${{ secrets.WEBSITE_DEPLOY_KEY }}
+
+  deploy-java:
+    name: Deploy Java artifacts
+    needs:
+      - build-kafka-bridge
+      - build-containers
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/build/deploy-java
+        with:
+          runnerArch: "amd64"
+          gpgPassphrase: ${{ secrets.GPG_PASSPHRASE }}
+          gpgSigningKey: ${{ secrets.GPG_SIGNING_KEY }}
+          centralUsername: ${{ secrets.CENTRAL_USERNAME }}
+          centralPassword: ${{ secrets.CENTRAL_PASSWORD }}

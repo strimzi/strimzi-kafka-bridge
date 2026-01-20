@@ -1,0 +1,127 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      releaseVersion:
+        description: 'Release Version (e.g., 1.5.0 for GA or 1.5.0-rc1 for RC)'
+        required: true
+        type: string
+      useSuffix:
+        description: 'Build suffixed images (e.g., 1.5.0-0 before final 1.5.0)'
+        required: true
+        type: boolean
+        default: true
+      releaseSuffix:
+        description: 'Release Suffix (e.g., 0 for 1.5.0-0, used only if useSuffix is true)'
+        required: true
+        type: string
+        default: '0'
+      sourceBuildRunId:
+        description: 'GitHub Actions Run ID of the source build (find in Actions tab URL)'
+        required: true
+        type: string
+
+# Declare default permissions as read only
+permissions:
+  contents: read
+
+jobs:
+  prepare-release-artifacts:
+    name: Prepare Release Artifacts
+    if: ${{ startsWith(github.ref, 'refs/heads/release-') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/build/release-artifacts
+        with:
+          releaseVersion: ${{ inputs.releaseVersion }}
+          runnerArch: "amd64"
+          gpgPassphrase: ${{ secrets.GPG_PASSPHRASE }}
+          gpgSigningKey: ${{ secrets.GPG_SIGNING_KEY }}
+          centralUsername: ${{ secrets.CENTRAL_USERNAME }}
+          centralPassword: ${{ secrets.CENTRAL_PASSWORD }}
+
+  # Push Java artifacts to GHCR for long-term storage (for CVE rebuilds)
+  push-java-artifacts-to-ghcr:
+    name: Push Java artifacts to GHCR
+    if: ${{ startsWith(github.ref, 'refs/heads/release-') }}
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup ORAS
+        uses: oras-project/setup-oras@v1
+
+      - name: Download bridge binaries from source build
+        uses: actions/download-artifact@v7
+        with:
+          name: bridge-binaries.tar
+          run-id: ${{ inputs.sourceBuildRunId }}
+          github-token: ${{ github.token }}
+
+      - name: Login to GHCR
+        run: echo "${{ github.token }}" | oras login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push Java artifacts to GHCR
+        run: |
+          oras push ghcr.io/${{ env.REPOSITORY }}/bridge-binaries:${{ env.TAG }} bridge-binaries.tar:application/x-tar
+        env:
+          TAG: ${{ inputs.releaseVersion }}-${{ inputs.sourceBuildRunId }}
+          REPOSITORY: "strimzi"
+
+  push-containers-with-suffix:
+    name: Push Containers with suffix
+    needs:
+      - prepare-release-artifacts
+    if: ${{ startsWith(github.ref, 'refs/heads/release-') && inputs.useSuffix == true }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    env:
+      DOCKER_REGISTRY: "quay.io"
+      DOCKER_ORG: "strimzi"
+      DOCKER_TAG: "${{ inputs.releaseVersion }}-${{ inputs.releaseSuffix }}"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/build/push-containers
+        with:
+          architectures: "amd64,arm64,ppc64le,s390x"
+          runnerArch: "amd64"
+          quayUser: ${{ secrets.QUAY_USER }}
+          quayPass: ${{ secrets.QUAY_PASS }}
+          buildRunId: ${{ inputs.sourceBuildRunId }}
+
+  push-containers:
+    name: Push Containers without suffix (${{ inputs.releaseVersion }})
+    needs:
+      - push-containers-with-suffix
+      - prepare-release-artifacts
+    if: |-
+      ${{ always() && startsWith(github.ref, 'refs/heads/release-') &&
+        needs.prepare-release-artifacts.result == 'success' &&
+        (needs.push-containers-with-suffix.result == 'success' ||
+        needs.push-containers-with-suffix.result == 'skipped')
+      }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    env:
+      DOCKER_REGISTRY: "quay.io"
+      DOCKER_ORG: "strimzi"
+      DOCKER_TAG: "${{ inputs.releaseVersion }}"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/build/push-containers
+        with:
+          architectures: "amd64,arm64,ppc64le,s390x"
+          runnerArch: "amd64"
+          quayUser: ${{ secrets.QUAY_USER }}
+          quayPass: ${{ secrets.QUAY_PASS }}
+          buildRunId: ${{ inputs.sourceBuildRunId }}
