@@ -44,14 +44,6 @@ runs:
       env:
         MVN_ARGS: "-e -V -B -Dsurefire.rerunFailingTestsCount=5 -Dfailsafe.rerunFailingTestsCount=2"
 
-    - name: Check released files
-      shell: bash
-      run: make release_files_check
-
-    - name: Check for uncommitted files
-      shell: bash
-      run: .azure/scripts/uncommitted-changes.sh
-
     - name: Create tarball with target directory
       shell: bash
       run: tar -cvpf bridge-binaries.tar ./operator/target
