@@ -1,0 +1,53 @@
+:_mod-docs-content-type: CONCEPT
+
+// This concept is included in the following assemblies:
+//
+// assembly-http-bridge-overview.adoc
+
+[id='con-http-bridge-ha-{context}']
+= Running the HTTP Bridge with high availability
+
+[role="_abstract"]
+While the HTTP Bridge provides a RESTful interface for Kafka, its handling of consumer operations affects how it can be scaled for high availability (HA). 
+
+== Understanding the limitations
+
+Each HTTP Bridge instance maintains its own in-memory consumers and subscriptions. This state is not shared between instances. 
+
+When an HTTP client creates a consumer, the corresponding Kafka consumer is created on the specific bridge instance that handles the request. All subsequent requests for that consumer must be handled by the same instance. 
+
+Because consumer state is instance-specific, running multiple replicas of the HTTP Bridge does not provide high availability for consumers. 
+
+If a bridge instance restarts, all consumers and subscriptions created on that instance are lost. 
+Client applications must recreate them if the bridge instance becomes unavailable.
+
+== Making producer traffic highly available
+
+Producer requests are stateless. 
+They can be handled by any available HTTP Bridge instance. 
+
+You can deploy multiple bridge instances and use a load balancer or service to distribute producer traffic. 
+This improves availability and throughput for producing records. 
+
+== Constraining consumer traffic to a single instance
+
+Consumer state is local to each HTTP Bridge instance. 
+This affects how consumer traffic can be scaled and routed for high availability.
+
+Consumer operations require client affinity to a specific HTTP Bridge instance.
+An HTTP client must continue sending requests to the same instance where the consumer was created.
+
+Maintaining this affinity is the responsibility of the client application.
+Routing consumer requests to a different instance breaks the consumer session.
+
+== Handling consumer recovery
+
+The HTTP Bridge does not provide automatic consumer failover. 
+
+If a bridge instance becomes unavailable, all consumers running on that instance are terminated. 
+This is equivalent to a Kafka client process stopping.  
+
+In this situation, client applications must do the following: 
+
+* Recreate consumers and subscriptions 
+* Resume consumption from the Kafka cluster 
