@@ -46,7 +46,7 @@ runs:
 
     - name: Create tarball with target directory
       shell: bash
-      run: tar -cvpf bridge-binaries.tar ./operator/target
+      run: tar -cvpf bridge-binaries.tar ./target
 
     - name: Upload binaries artifact
       uses: actions/upload-artifact@v5

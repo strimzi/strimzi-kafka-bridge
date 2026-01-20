@@ -1,5 +1,5 @@
-name: "Build Kafka-Access-Operator Containers"
-description: "Build and archive kafka-access-operator container images"
+name: "Build Kafka-bridge Containers"
+description: "Build and archive kafka-bridge container images"
 
 inputs:
   architecture:
@@ -25,19 +25,19 @@ runs:
       if: ${{ inputs.buildRunId == '' }}
       uses: actions/download-artifact@v7
       with:
-        name: access-operator-binaries.tar
+        name: bridge-binaries.tar
 
     - name: Download binaries from external build
       if: ${{ inputs.buildRunId != '' }}
       uses: actions/download-artifact@v7
       with:
-        name: access-operator-binaries.tar
+        name: bridge-binaries.tar
         run-id: ${{ inputs.buildRunId }}
         github-token: ${{ github.token }}
 
     - name: Untar binaries
       shell: bash
-      run: tar -xvf access-operator-binaries.tar
+      run: tar -xvf bridge-binaries.tar
 
     - name: Build and save containers
       shell: bash
@@ -54,7 +54,7 @@ runs:
       shell: bash
       run: |
         tar -cvpf containers-${{ inputs.architecture }}.tar \
-          access-operator-container-${{ inputs.architecture }}.tar.gz
+          bridge-container-${{ inputs.architecture }}.tar.gz
 
     - name: Upload container artifact
       uses: actions/upload-artifact@v5
