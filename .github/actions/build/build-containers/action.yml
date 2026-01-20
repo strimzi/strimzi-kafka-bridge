@@ -54,7 +54,7 @@ runs:
       shell: bash
       run: |
         tar -cvpf containers-${{ inputs.architecture }}.tar \
-          bridge-container-${{ inputs.architecture }}.tar.gz
+          kafka-bridge-${{ inputs.architecture }}.tar.gz
 
     - name: Upload container artifact
       uses: actions/upload-artifact@v5
