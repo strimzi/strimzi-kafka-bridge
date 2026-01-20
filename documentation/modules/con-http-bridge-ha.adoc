@@ -45,7 +45,7 @@ Routing consumer requests to a different instance breaks the consumer session.
 The HTTP Bridge does not provide automatic consumer failover. 
 
 If a bridge instance becomes unavailable, all consumers running on that instance are terminated. 
-This is equivalent to a Kafka client process stopping.  
+This is equivalent to a Kafka client process stopping. 
 
 In this situation, client applications must do the following: 
 
