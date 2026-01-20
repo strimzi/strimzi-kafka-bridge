@@ -27,6 +27,8 @@ runs:
   steps:
     - name: Setup Java
       uses: strimzi/strimzi-kafka-operator/.github/actions/dependencies/setup-java@main
+      with:
+       javaVersion: "17"
 
     - name: Install Helm
       uses: strimzi/strimzi-kafka-operator/.github/actions/dependencies/install-helm@main
