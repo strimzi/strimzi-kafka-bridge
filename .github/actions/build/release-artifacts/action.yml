@@ -60,13 +60,13 @@ runs:
     #     CENTRAL_USERNAME: ${{ inputs.centralUsername }}
     #     CENTRAL_PASSWORD: ${{ inputs.centralPassword }}
 
+    # TODO - make sure that make release will move the artifacts to the right place (same as in KAO for example)
     - name: Create release archives tarball
       shell: bash
       run: |
         tar -cvpf release.tar \
-          strimzi-bridge-${{ inputs.releaseVersion }}.tar.gz \
-          strimzi-bridge-${{ inputs.releaseVersion }}.zip \
-          strimzi-bridge-helm-3-chart-${{ inputs.releaseVersion }}.tgz
+          target/kafka-bridge-${{ inputs.releaseVersion }}.tar.gz \
+          target/kafka-bridge-${{ inputs.releaseVersion }}.zip
 
     - name: Upload release archives
       uses: actions/upload-artifact@v5
