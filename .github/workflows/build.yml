@@ -3,7 +3,7 @@ name: Build
 on:
   push:
     branches:
-      - "gha-migration"
+      - "main"
       - "release-*"
   pull_request:
     branches:
@@ -63,14 +63,14 @@ jobs:
     needs:
       - build-kafka-bridge
       - build-containers
-    if: ${{ github.ref == 'refs/heads/gha-migration' }}
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     env:
       DOCKER_REGISTRY: "quay.io"
-      DOCKER_ORG: "jstejska"
+      DOCKER_ORG: "strimzi"
       DOCKER_TAG: "latest"
     steps:
       - uses: actions/checkout@v6

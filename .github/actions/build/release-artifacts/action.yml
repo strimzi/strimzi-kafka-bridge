@@ -48,17 +48,16 @@ runs:
         RELEASE_VERSION: ${{ inputs.releaseVersion }}
         MVN_ARGS: "-B"
 
-    # # TODO - shouldn't we call the action instead?
-    # - name: Deploy Java artifacts
-    #   shell: bash
-    #   run: ./.azure/scripts/push-to-central.sh
-    #   env:
-    #     BUILD_REASON: "IndividualCI"
-    #     BRANCH: ${{ github.ref }}
-    #     GPG_PASSPHRASE: ${{ inputs.gpgPassphrase }}
-    #     GPG_SIGNING_KEY: ${{ inputs.gpgSigningKey }}
-    #     CENTRAL_USERNAME: ${{ inputs.centralUsername }}
-    #     CENTRAL_PASSWORD: ${{ inputs.centralPassword }}
+    - name: Deploy Java artifacts
+      shell: bash
+      run: ./.azure/scripts/push-to-central.sh
+      env:
+        BUILD_REASON: "IndividualCI"
+        BRANCH: ${{ github.ref }}
+        GPG_PASSPHRASE: ${{ inputs.gpgPassphrase }}
+        GPG_SIGNING_KEY: ${{ inputs.gpgSigningKey }}
+        CENTRAL_USERNAME: ${{ inputs.centralUsername }}
+        CENTRAL_PASSWORD: ${{ inputs.centralPassword }}
 
     # TODO - make sure that make release will move the artifacts to the right place (same as in KAO for example)
     - name: Create release archives tarball
