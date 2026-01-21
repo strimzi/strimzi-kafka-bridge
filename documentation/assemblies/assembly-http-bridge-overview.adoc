@@ -16,6 +16,8 @@ image:kafka-bridge.png[Internal and external HTTP producers and consumers exchan
 
 include::modules/con-overview-running-http-bridge.adoc[leveloffset=+1]
 
+include::modules/con-http-bridge-ha.adoc[leveloffset=+2]
+
 include::modules/con-overview-components-http-bridge.adoc[leveloffset=+1]
 
 include::modules/con-overview-open-api-spec-http-bridge.adoc[leveloffset=+1]
