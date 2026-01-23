@@ -54,7 +54,7 @@ After the release workflow is finished, the release has to be created:
 * Tag the right commit from the release branch with the release name (e.g. `git tag 1.2.0`) and push it to GitHub
 * The Java artifacts are automatically pushed to Maven Central by the release workflow.
 Once this is done, go to the Sonatype portal and publish the artifacts.
-* The documentation is automatically published to the website by the build workflow
+* Update the documentation on the website using the HTML files from the build pipeline artifacts
 * On GitHub, create the release and attach the ZIP / TAR.GZ artifacts from the build workflow artifacts (download from the Actions run)
 
 ### Announcements
