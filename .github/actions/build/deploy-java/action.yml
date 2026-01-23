@@ -2,6 +2,10 @@ name: "Deploy Java Artifacts"
 description: "Deploys Java artifacts to Maven Central"
 
 inputs:
+  javaVersion:
+    description: "Java version"
+    required: false
+    default: "17"
   runnerArch:
     description: "Runner architecture (amd64, arm64)"
     required: false
@@ -25,7 +29,7 @@ runs:
     - name: Setup Java and Maven
       uses: strimzi/strimzi-kafka-operator/.github/actions/dependencies/setup-java@main
       with:
-        javaVersion: "17"
+        javaVersion: ${{ inputs.javaVersion }}
 
     - name: Restore Maven cache
       uses: actions/cache/restore@v5

@@ -20,11 +20,16 @@ concurrency:
 jobs:
   build-kafka-bridge:
     name: Build Kafka Bridge
+    strategy:
+      matrix:
+        javaVersion:
+          - "17"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/build/build-binaries
         with:
+          javaVersion: ${{ matrix.javaVersion }}
           runnerArch: "amd64"
 
   build-docs:
@@ -107,6 +112,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/build/deploy-java
         with:
+          javaVersion: "17"
           runnerArch: "amd64"
           gpgPassphrase: ${{ secrets.GPG_PASSPHRASE }}
           gpgSigningKey: ${{ secrets.GPG_SIGNING_KEY }}
