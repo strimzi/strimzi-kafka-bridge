@@ -1,5 +1,5 @@
 name: "Build Documentation"
-description: "Builds Strimzi documentation in HTML and PDF formats"
+description: "Builds Strimzi Bridge documentation in HTML and PDF formats"
 
 inputs:
   artifactName:

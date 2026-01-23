@@ -1,5 +1,5 @@
-name: "Push Access-Operator Containers"
-description: "Push access-operator container images with signing and SBOM"
+name: "Push Strimzi Bridge Containers"
+description: "Push Strimzi Bridge container images with signing and SBOM"
 
 inputs:
   architectures:

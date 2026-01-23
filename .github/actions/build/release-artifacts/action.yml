@@ -1,5 +1,5 @@
 name: "Build Release Artifacts"
-description: "Builds release artifacts (tar.gz, zip, Helm chart)"
+description: "Builds release artifacts (tar.gz, zip)"
 
 inputs:
   releaseVersion:
