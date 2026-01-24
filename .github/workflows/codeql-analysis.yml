@@ -20,6 +20,11 @@ on:
   schedule:
     - cron: '23 17 * * 3'
 
+# Declare default permissions
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   analyze:
     name: Analyze

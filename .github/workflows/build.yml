@@ -22,14 +22,18 @@ jobs:
     name: Build Kafka Bridge
     strategy:
       matrix:
-        javaVersion:
-          - "17"
+        # Java 17 is used as default version
+        # In case of adding new version make sure that build-containers and deploy-java has correct static version set
+        java:
+          - version: "17"
+            mainBuild: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/build/build-binaries
         with:
-          javaVersion: ${{ matrix.javaVersion }}
+          javaVersion: ${{ matrix.java.version }}
+          mainBuild: ${{ matrix.java.mainBuild }}
           runnerArch: "amd64"
 
   build-docs:
@@ -112,6 +116,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/build/deploy-java
         with:
+          # Java 17 is used as default version
           javaVersion: "17"
           runnerArch: "amd64"
           gpgPassphrase: ${{ secrets.GPG_PASSPHRASE }}
