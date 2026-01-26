@@ -1,0 +1,96 @@
+name: "Build Kafka-bridge Binaries"
+description: "Build and archive kafka-bridge binaries"
+
+inputs:
+  javaVersion:
+    description: "Java version"
+    required: false
+    default: "17"
+  runnerArch:
+    description: "Architecture of GitHub runner"
+    required: false
+    default: "amd64"
+  mainBuild:
+    description: "Whether this is the main build"
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Java
+      uses: strimzi/strimzi-kafka-operator/.github/actions/dependencies/setup-java@main
+      with:
+        javaVersion: ${{ inputs.javaVersion }}
+
+    - name: Setup Yq
+      uses: strimzi/strimzi-kafka-operator/.github/actions/dependencies/install-yq@main
+
+    - name: Restore Maven cache
+      uses: actions/cache/restore@v5
+      with:
+        path: ~/.m2/repository
+        key: maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          maven-
+
+    - name: Build Java code
+      shell: bash
+      run: make java_install
+      env:
+        MVN_ARGS: "-DskipTests -e -V -B"
+
+    - name: Run Spotbugs
+      shell: bash
+      run: make spotbugs
+      env:
+        MVN_ARGS: "-e -V -B"
+
+    - name: Build & Test Java code
+      shell: bash
+      run: make java_verify
+      env:
+        MVN_ARGS: "-e -V -B -Dsurefire.rerunFailingTestsCount=5 -Dfailsafe.rerunFailingTestsCount=2"
+        TESTCONTAINERS_RYUK_DISABLED: "TRUE"
+        TESTCONTAINERS_CHECKS_DISABLE: "TRUE"
+
+    - name: Create tarball with target directory
+      shell: bash
+      run: tar -cvpf bridge-binaries.tar ./target
+
+    - name: Upload binaries artifact (main build)
+      if: ${{ inputs.mainBuild == 'true' }}
+      uses: actions/upload-artifact@v5
+      with:
+        name: bridge-binaries.tar
+        path: bridge-binaries.tar
+
+    - name: Upload binaries artifact with Java version
+      uses: actions/upload-artifact@v5
+      with:
+        name: bridge-binaries-java-${{ inputs.javaVersion }}.tar
+        path: bridge-binaries.tar
+
+    - name: Clean external SNAPSHOT dependencies from Maven repository
+      if: github.ref == 'refs/heads/main'
+      shell: bash
+      run: |
+        mvn dependency:purge-local-repository \
+        -DsnapshotsOnly=true \
+        -DreResolve=false || true
+
+    - name: Save Maven cache
+      if: github.ref == 'refs/heads/main' && inputs.mainBuild == 'true'
+      uses: actions/cache/save@v5
+      with:
+        path: ~/.m2/repository
+        key: maven-${{ hashFiles('**/pom.xml') }}
+
+    - name: Publish test results
+      uses: dorny/test-reporter@v2
+      if: always()
+      with:
+        name: 'Unit & Integration Tests'
+        path: '**/TEST-*.xml'
+        reporter: java-junit
+        fail-on-error: false

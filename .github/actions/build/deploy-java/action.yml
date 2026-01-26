@@ -1,0 +1,51 @@
+name: "Deploy Java Artifacts"
+description: "Deploys Java artifacts to Maven Central"
+
+inputs:
+  javaVersion:
+    description: "Java version"
+    required: false
+    default: "17"
+  runnerArch:
+    description: "Runner architecture (amd64, arm64)"
+    required: false
+    default: "amd64"
+  gpgPassphrase:
+    description: "GPG passphrase for signing"
+    required: true
+  gpgSigningKey:
+    description: "GPG signing key"
+    required: true
+  centralUsername:
+    description: "Maven Central username"
+    required: true
+  centralPassword:
+    description: "Maven Central password"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Java and Maven
+      uses: strimzi/strimzi-kafka-operator/.github/actions/dependencies/setup-java@main
+      with:
+        javaVersion: ${{ inputs.javaVersion }}
+
+    - name: Restore Maven cache
+      uses: actions/cache/restore@v5
+      with:
+        path: ~/.m2/repository
+        key: maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          maven-
+        
+    - name: Deploy Java artifacts
+      shell: bash
+      run: ./.azure/scripts/push-to-central.sh
+      env:
+        BUILD_REASON: "IndividualCI"
+        BRANCH: ${{ github.ref }}
+        GPG_PASSPHRASE: ${{ inputs.gpgPassphrase }}
+        GPG_SIGNING_KEY: ${{ inputs.gpgSigningKey }}
+        CENTRAL_USERNAME: ${{ inputs.centralUsername }}
+        CENTRAL_PASSWORD: ${{ inputs.centralPassword }}

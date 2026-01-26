@@ -1,0 +1,74 @@
+name: "Build Release Artifacts"
+description: "Builds release artifacts (tar.gz, zip)"
+
+inputs:
+  releaseVersion:
+    description: "Release version (e.g., 1.5.0)"
+    required: true
+  runnerArch:
+    description: "Runner architecture (amd64, arm64)"
+    required: false
+    default: "amd64"
+  gpgPassphrase:
+    description: "GPG passphrase for signing"
+    required: true
+  gpgSigningKey:
+    description: "GPG signing key"
+    required: true
+  centralUsername:
+    description: "Maven Central username"
+    required: true
+  centralPassword:
+    description: "Maven Central password"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Java
+      uses: strimzi/strimzi-kafka-operator/.github/actions/dependencies/setup-java@main
+      with:
+       javaVersion: "17"
+
+    - name: Install Helm
+      uses: strimzi/strimzi-kafka-operator/.github/actions/dependencies/install-helm@main
+
+    - name: Restore Maven cache
+      uses: actions/cache/restore@v5
+      with:
+        path: ~/.m2/repository
+        key: maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          maven-
+
+    - name: Build release artifacts
+      shell: bash
+      run: make release
+      env:
+        RELEASE_VERSION: ${{ inputs.releaseVersion }}
+        MVN_ARGS: "-B"
+
+    - name: Deploy Java artifacts
+      shell: bash
+      run: ./.azure/scripts/push-to-central.sh
+      env:
+        BUILD_REASON: "IndividualCI"
+        BRANCH: ${{ github.ref }}
+        GPG_PASSPHRASE: ${{ inputs.gpgPassphrase }}
+        GPG_SIGNING_KEY: ${{ inputs.gpgSigningKey }}
+        CENTRAL_USERNAME: ${{ inputs.centralUsername }}
+        CENTRAL_PASSWORD: ${{ inputs.centralPassword }}
+
+    # TODO - make sure that make release will move the artifacts to the right place (same as in KAO for example)
+    - name: Create release archives tarball
+      shell: bash
+      run: |
+        tar -cvpf release.tar \
+          target/kafka-bridge-${{ inputs.releaseVersion }}.tar.gz \
+          target/kafka-bridge-${{ inputs.releaseVersion }}.zip
+
+    - name: Upload release archives
+      uses: actions/upload-artifact@v5
+      with:
+        name: release.tar
+        path: release.tar
