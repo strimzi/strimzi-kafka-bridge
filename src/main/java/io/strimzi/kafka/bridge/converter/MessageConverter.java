@@ -13,6 +13,11 @@ import java.util.List;
 
 /**
  * Interface for a message converter between Kafka record and bridge message
+ *
+ * @param <K> the type of the Kafka record key
+ * @param <V> the type of the Kafka record value
+ * @param <M> the type of the bridge message
+ * @param <C> the type of the bridge message collection
  */
 public interface MessageConverter<K, V, M, C> {
 

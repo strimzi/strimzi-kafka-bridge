@@ -27,6 +27,8 @@ public abstract class HttpBridgeEndpoint {
     }
 
     /**
+     * Get the name of the HTTP bridge endpoint.
+     *
      * @return the name of the HTTP bridge endpoint
      */
     public String name() {

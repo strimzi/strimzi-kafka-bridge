@@ -33,6 +33,8 @@ public abstract class MetricsCollector {
     }
 
     /**
+     * Get the registry instance for scraping Vertx metrics.
+     *
      * @return Registry instance for scraping Vertx metrics.
      *         This is null if metrics are not enabled in the VertxOptions instance.
      */
@@ -55,6 +57,8 @@ public abstract class MetricsCollector {
     }
 
     /**
+     * Scrape raw metrics in Prometheus format.
+     *
      * @return Raw metrics in Prometheus format.
      */
     abstract String doScrape();

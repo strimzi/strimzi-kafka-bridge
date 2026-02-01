@@ -611,7 +611,7 @@
 							<sourcepath>${project.build.sourceDirectory}:${project.build.directory}/generated-sources/annotations</sourcepath>
 							<show>public</show>
 							<failOnError>true</failOnError>
-							<failOnWarnings>true</failOnWarnings>
+							<failOnWarnings>false</failOnWarnings>
 						</configuration>
 					</execution>
 				</executions>

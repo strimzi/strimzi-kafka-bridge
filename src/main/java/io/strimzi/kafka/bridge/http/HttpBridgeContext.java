@@ -26,6 +26,8 @@ public class HttpBridgeContext<K, V> {
     private HttpOpenApiOperations openApiOperation;
 
     /**
+     * Get the map of the HTTP sink endpoints.
+     *
      * @return map of the HTTP sink endpoints
      */
     public Map<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> getHttpSinkEndpoints() {
@@ -33,6 +35,8 @@ public class HttpBridgeContext<K, V> {
     }
 
     /**
+     * Get the map of the HTTP source endpoints.
+     *
      * @return map of the HTTP source endpoints
      */
     public Map<HttpConnection, HttpSourceBridgeEndpoint<K, V>> getHttpSourceEndpoints() {
@@ -40,6 +44,8 @@ public class HttpBridgeContext<K, V> {
     }
 
     /**
+     * Get the HTTP admin endpoint.
+     *
      * @return the HTTP admin endpoint
      */
     public HttpAdminBridgeEndpoint getHttpAdminEndpoint() {
@@ -65,6 +71,8 @@ public class HttpBridgeContext<K, V> {
     }
 
     /**
+     * Get the OpenAPI operation invoked.
+     *
      * @return the OpenAPI operation invoked
      */
     public HttpOpenApiOperations getOpenApiOperation() {

@@ -24,6 +24,8 @@ public abstract class AbstractConfig {
     }
 
     /**
+     * Get the configuration parameters map.
+     *
      * @return configuration parameters map
      */
     public Map<String, Object> getConfig() {

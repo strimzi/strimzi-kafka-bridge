@@ -22,6 +22,9 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * Represents a Kafka bridge producer client
+ *
+ * @param <K> the type of the key serialization
+ * @param <V> the type of the value serialization
  */
 public class KafkaBridgeProducer<K, V> {
     private static final Logger LOGGER = LogManager.getLogger(KafkaBridgeProducer.class);

@@ -101,6 +101,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     }
 
     /**
+     * Get the consumer instance id.
+     *
      * @return the consumer instance id
      */
     public ConsumerInstanceId consumerInstanceId() {
