@@ -65,12 +65,6 @@ runs:
         name: bridge-binaries.tar
         path: bridge-binaries.tar
 
-    - name: Upload binaries artifact with Java version
-      uses: actions/upload-artifact@v5
-      with:
-        name: bridge-binaries-java-${{ inputs.javaVersion }}.tar
-        path: bridge-binaries.tar
-
     - name: Clean external SNAPSHOT dependencies from Maven repository
       if: github.ref == 'refs/heads/main'
       shell: bash
