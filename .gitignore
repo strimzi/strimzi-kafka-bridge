@@ -35,3 +35,8 @@ hs_err_pid*
 documentation/html/**
 documentation/htmlnoheader/**
 documentation/book/build/**
+
+# Claude configuration
+.claude/
+CLAUDE.md
+.mcp.json
