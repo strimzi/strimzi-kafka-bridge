@@ -10,6 +10,9 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 
 /**
  * Span handle, an abstraction over actual span implementation.
+ *
+ * @param <K> the type of the Kafka record key
+ * @param <V> the type of the Kafka record value
  */
 public interface SpanHandle<K, V> {
     /**

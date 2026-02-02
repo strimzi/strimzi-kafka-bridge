@@ -32,6 +32,8 @@ public record HttpBridgeError(int code, String message, List<String> validationE
     }
 
     /**
+     * Get a JSON representation of the error with code and message.
+     *
      * @return a JSON representation of the error with code and message
      */
     public ObjectNode toJson() {

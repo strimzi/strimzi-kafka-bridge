@@ -28,6 +28,8 @@ public class TracingUtil {
     private static TracingHandle tracing = new NoopTracingHandle();
 
     /**
+     * Get the current tracing instance.
+     *
      * @return the current tracing instance
      */
     public static TracingHandle getTracing() {

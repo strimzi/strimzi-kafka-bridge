@@ -57,6 +57,8 @@ public class BridgeConfig extends AbstractConfig {
     }
 
     /**
+     * Get the Kafka related configuration.
+     *
      * @return the Kafka related configuration
      */
     public KafkaConfig getKafkaConfig() {
@@ -64,6 +66,8 @@ public class BridgeConfig extends AbstractConfig {
     }
 
     /**
+     * Get the HTTP endpoint related configuration.
+     *
      * @return the HTTP endpoint related configuration
      */
     public HttpConfig getHttpConfig() {
@@ -111,6 +115,8 @@ public class BridgeConfig extends AbstractConfig {
     }
 
     /**
+     * Get the bridge identification number.
+     *
      * @return the bridge identification number
      */
     public String getBridgeID() {
@@ -122,6 +128,8 @@ public class BridgeConfig extends AbstractConfig {
     }
 
     /**
+     * Get the metric type to be used in the bridge.
+     *
      * @return the metric type to be used in the bridge
      */
     public MetricsType getMetricsType() {
@@ -136,6 +144,8 @@ public class BridgeConfig extends AbstractConfig {
     }
 
     /**
+     * Get the Prometheus JMX Exporter configuration file path.
+     *
      * @return the Prometheus JMX Exporter configuration file path
      */
     public Path getJmxExporterConfigPath() {
@@ -147,6 +157,8 @@ public class BridgeConfig extends AbstractConfig {
     }
 
     /**
+     * Get the tracing system to be used in the bridge.
+     *
      * @return the tracing system to be used in the bridge
      */
     public String getTracing() {

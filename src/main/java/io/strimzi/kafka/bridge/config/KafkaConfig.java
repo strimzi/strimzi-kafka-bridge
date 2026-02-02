@@ -37,6 +37,8 @@ public class KafkaConfig extends AbstractConfig {
     }
 
     /**
+     * Get the Kafka producer configuration.
+     *
      * @return the Kafka producer configuration
      */
     public KafkaProducerConfig getProducerConfig() {
@@ -44,6 +46,8 @@ public class KafkaConfig extends AbstractConfig {
     }
 
     /**
+     * Get the Kafka consumer configuration.
+     *
      * @return the Kafka consumer configuration
      */
     public KafkaConsumerConfig getConsumerConfig() {
@@ -51,6 +55,8 @@ public class KafkaConfig extends AbstractConfig {
     }
 
     /**
+     * Get the Kafka admin configuration.
+     *
      * @return the Kafka admin configuration
      */
     public KafkaAdminConfig getAdminConfig() {

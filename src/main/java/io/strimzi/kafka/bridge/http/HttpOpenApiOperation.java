@@ -67,6 +67,8 @@ public abstract class HttpOpenApiOperation implements Handler<RoutingContext> {
     }
 
     /**
+     * Get the OpenAPI operation invoked.
+     *
      * @return the OpenAPI operation invoked
      */
     public HttpOpenApiOperations getOperationId() {

@@ -26,6 +26,8 @@ public enum MetricsType {
     }
 
     /**
+     * Get the metrics type from the given text.
+     *
      * @param text Text.
      * @return Get type from text.
      */

@@ -13,4 +13,7 @@
     <!-- Suppressing unnecessary parentheses as in some cases it is better to use them for better code readilibity-->
     <suppress checks="UnnecessaryParentheses"
               files="io[/\\]strimzi[/\\].*"/>
+
+    <!-- Skip Javadoc checks for tests-->
+    <suppress checks="[JavadocMethod|JavaDocType|JavaDocVariable|MissingJavadocType|MissingJavadocMethod]" files="src[/\\]test[/\\]java[/\\].*"/>
 </suppressions>

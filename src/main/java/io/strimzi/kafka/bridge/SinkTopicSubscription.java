@@ -35,6 +35,8 @@ public class SinkTopicSubscription {
     }
 
     /**
+     * Get the topic to subscribe or assign.
+     *
      * @return topic to subscribe/assign
      */
     public String getTopic() {
@@ -42,6 +44,8 @@ public class SinkTopicSubscription {
     }
 
     /**
+     * Get the partition requested as assignment.
+     *
      * @return partition requested as assignment (null if no specific assignment)
      */
     public Integer getPartition() {

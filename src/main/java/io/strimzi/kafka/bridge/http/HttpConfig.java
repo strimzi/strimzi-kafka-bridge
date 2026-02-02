@@ -91,6 +91,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get the host for HTTP server (to bind).
+     *
      * @return the host for HTTP server (to bind)
      */
     public String getHost() {
@@ -98,6 +100,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get the port for HTTP server (to bind).
+     *
      * @return the port for HTTP server (to bind)
      */
     public int getPort() {
@@ -108,6 +112,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get the port for HTTP management server (to bind).
+     *
      * @return the port for HTTP management server (to bind)
      */
     public int getManagementPort() {
@@ -115,6 +121,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get the timeout for closing inactive consumer.
+     *
      * @return the timeout for closing inactive consumer
      */
     public long getConsumerTimeout() {
@@ -122,6 +130,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get if CORS is enabled.
+     *
      * @return if CORS is enabled
      */
     public boolean isCorsEnabled() {
@@ -129,6 +139,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get the list of CORS Allowed Origins.
+     *
      * @return list of CORS Allowed Origins (default *)
      */
     public String getCorsAllowedOrigins() {
@@ -136,6 +148,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get the list of CORS Allowed Methods.
+     *
      * @return list of CORS Allowed Methods (default GET,POST,PUT,DELETE,OPTIONS,PATCH)
      */
     public String getCorsAllowedMethods() {
@@ -143,6 +157,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get if consumer is enabled.
+     *
      * @return if consumer is enabled
      */
     public boolean isConsumerEnabled() {
@@ -150,6 +166,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get if producer is enabled.
+     *
      * @return if producer is enabled
      */
     public boolean isProducerEnabled() {
@@ -157,6 +175,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get if SSL is enabled.
+     *
      * @return if SSL is enabled
      */
     public Boolean isSslEnabled() {
@@ -164,6 +184,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get the set of SSL enabled protocols.
+     *
      * @return set of SSL enabled protocols
      */
     public Set<String> getHttpServerSslEnabledProtocols() {
@@ -176,6 +198,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get the SSL cipher suites.
+     *
      * @return SSL cipher suites
      */
     public Set<String> getHttpServerSslCipherSuites() {
@@ -188,6 +212,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get the path to the SSL keystore.
+     *
      * @return path to the SSL keystore
      */
     public String getHttpServerSslKeystoreLocation() {
@@ -195,6 +221,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get the path to the SSL keystore key.
+     *
      * @return path to the SSL keystore key
      */
     public String getHttpServerSslKeystoreKeyLocation() {
@@ -202,6 +230,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get the path to the SSL keystore certificate chain.
+     *
      * @return path to the SSL keystore
      */
     public String getHttpServerSslKeystoreCertificateChain() {
@@ -209,6 +239,8 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
+     * Get the path to the SSL keystore key.
+     *
      * @return path to the SSL keystore key
      */
     public String getHttpServerSslKeystoreKey() {

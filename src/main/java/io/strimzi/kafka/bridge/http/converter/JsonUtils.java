@@ -52,6 +52,8 @@ public class JsonUtils {
     }
 
     /**
+     * Create an empty JSON array node to be filled with elements.
+     *
      * @return an empty JSON array node to be filled with elements
      */
     public static ArrayNode createArrayNode() {
@@ -59,6 +61,8 @@ public class JsonUtils {
     }
 
     /**
+     * Create an empty JSON Object node to be filled with data.
+     *
      * @return an empty JSON Object node to be filled with data
      */
     public static ObjectNode createObjectNode() {
