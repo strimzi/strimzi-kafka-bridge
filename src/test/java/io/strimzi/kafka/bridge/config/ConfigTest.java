@@ -154,7 +154,7 @@ public class ConfigTest {
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
         assertThat(bridgeConfig.getMetricsType(), is(MetricsType.STRIMZI_REPORTER));
-        assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("metric.reporters=io.strimzi.kafka.metrics.KafkaPrometheusMetricsReporter"));
+        assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("metric.reporters=io.strimzi.kafka.metrics.prometheus.ClientMetricsReporter"));
         assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("prometheus.metrics.reporter.listener.enable=false"));
         assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("prometheus.metrics.reporter.allowlist=" + BridgeConfig.DEFAULT_STRIMZI_METRICS_REPORTER_ALLOW_LIST));
     }
@@ -165,7 +165,7 @@ public class ConfigTest {
             "bridge.id", "my-bridge",
             "kafka.bootstrap.servers", "localhost:9092",
             "bridge.metrics", "strimziMetricsReporter",
-            "kafka.metric.reporters", "my.domain.CustomMetricReporter,io.strimzi.kafka.metrics.KafkaPrometheusMetricsReporter",
+            "kafka.metric.reporters", "my.domain.CustomMetricReporter,io.strimzi.kafka.metrics.prometheus.ClientMetricsReporter",
             "kafka.prometheus.metrics.reporter.allowlist", "kafka_log.*,kafka_network.*",
             "http.host", "0.0.0.0",
             "http.port", "8080"
@@ -173,7 +173,7 @@ public class ConfigTest {
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
         assertThat(bridgeConfig.getMetricsType(), is(MetricsType.STRIMZI_REPORTER));
-        assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("metric.reporters=my.domain.CustomMetricReporter,io.strimzi.kafka.metrics.KafkaPrometheusMetricsReporter"));
+        assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("metric.reporters=my.domain.CustomMetricReporter,io.strimzi.kafka.metrics.prometheus.ClientMetricsReporter"));
         assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("prometheus.metrics.reporter.listener.enable=false"));
         assertThat(bridgeConfig.getKafkaConfig().toString(), containsString("prometheus.metrics.reporter.allowlist=kafka_log.*,kafka_network.*"));
     }

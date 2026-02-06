@@ -98,7 +98,7 @@ public class BridgeConfig extends AbstractConfig {
             // apply default Strimzi Metrics Reporter configuration if not present
             if (metricsType == MetricsType.STRIMZI_REPORTER) {
                 LOGGER.info("Using default metrics configuration");
-                map.putIfAbsent("kafka.metric.reporters", "io.strimzi.kafka.metrics.KafkaPrometheusMetricsReporter");
+                map.putIfAbsent("kafka.metric.reporters", "io.strimzi.kafka.metrics.prometheus.ClientMetricsReporter");
                 map.putIfAbsent("kafka.prometheus.metrics.reporter.listener.enable", "false");
                 map.putIfAbsent("kafka.prometheus.metrics.reporter.allowlist", DEFAULT_STRIMZI_METRICS_REPORTER_ALLOW_LIST);
             }
