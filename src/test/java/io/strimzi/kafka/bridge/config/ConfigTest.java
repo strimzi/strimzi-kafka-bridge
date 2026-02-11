@@ -93,15 +93,15 @@ public class ConfigTest {
     public void testHttpSslConfig() {
         Map<String, Object> map = new HashMap<>(Map.of(
                 "http.ssl.enable", "true",
-                "http.ssl.keystore.key.location", "key.key",
-                "http.ssl.keystore.location", "cert.crt",
+                "http.ssl.key.path", "key.key",
+                "http.ssl.certificate.path", "cert.crt",
                 "http.ssl.enabled.protocols", "TLSv1.3",
                 "http.ssl.enabled.cipher.suites", "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
         ));
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
-        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslKeystoreKeyLocation(), is("key.key"));
-        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslKeystoreLocation(), is("cert.crt"));
+        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslKeyPath(), is("key.key"));
+        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslCertificatePath(), is("cert.crt"));
         assertThat(bridgeConfig.getHttpConfig().getHttpServerSslEnabledProtocols(), is(Set.of("TLSv1.3")));
         assertThat(bridgeConfig.getHttpConfig().getHttpServerSslCipherSuites(), is(Set.of("TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384")));
 
@@ -111,14 +111,14 @@ public class ConfigTest {
     public void testHttpSslDefaults() {
         Map<String, Object> map = new HashMap<>(Map.of(
                 "http.ssl.enable", "true",
-                "http.ssl.keystore.key", "key.key",
-                "http.ssl.keystore.certificate.chain", "cert.crt"
+                "http.ssl.key", "key.key",
+                "http.ssl.certificate", "cert.crt"
         ));
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
         assertThat(bridgeConfig.getHttpConfig().getPort(), is(8443));
-        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslKeystoreKey(), is("key.key"));
-        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslKeystoreCertificateChain(), is("cert.crt"));
+        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslKey(), is("key.key"));
+        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslCertificate(), is("cert.crt"));
         assertThat(bridgeConfig.getHttpConfig().getHttpServerSslEnabledProtocols(), is(Set.of("TLSv1.2", "TLSv1.3")));
         assertNull(bridgeConfig.getHttpConfig().getHttpServerSslCipherSuites());
 
