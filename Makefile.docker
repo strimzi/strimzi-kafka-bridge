@@ -22,6 +22,8 @@ ifdef DOCKER_ARCHITECTURE
   SBOM_DIR=$(TOPDIR)sbom/$(DOCKER_ARCHITECTURE)
 endif
 
+MANIFEST_ARCHITECTURES ?= $(DOCKER_ARCHITECTURE)
+
 .PHONY: docker_build
 docker_build:
 	# Build Docker image ...
@@ -35,7 +37,7 @@ docker_build:
 .PHONY: docker_save
 docker_save:
 	# Saves the container as TGZ file
-	$(DOCKER_CMD) save strimzi/$(PROJECT_NAME):$(BUILD_TAG)$(DOCKER_PLATFORM_TAG_SUFFIX) | gzip > kafka-bridge$(DOCKER_PLATFORM_TAG_SUFFIX).tar.gz
+	$(DOCKER_CMD) save $(DOCKER_PLATFORM) strimzi/$(PROJECT_NAME):$(BUILD_TAG)$(DOCKER_PLATFORM_TAG_SUFFIX) | gzip > kafka-bridge$(DOCKER_PLATFORM_TAG_SUFFIX).tar.gz
 
 .PHONY: docker_load
 docker_load:
@@ -59,18 +61,12 @@ docker_delete_archive:
 
 .PHONY: docker_amend_manifest
 docker_amend_manifest:
-	# Create / Amend the manifest
-	$(DOCKER_CMD) manifest create $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG) --amend $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG)$(DOCKER_PLATFORM_TAG_SUFFIX)
-
-.PHONY: docker_push_manifest
-docker_push_manifest:
-	# Push the manifest to the registry
-	$(DOCKER_CMD) manifest push $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG)
-
-.PHONY: docker_delete_manifest
-docker_delete_manifest:
-	# Delete the manifest to the registry, ignore the error if manifest doesn't exist
-	$(DOCKER_CMD) manifest rm $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG) || true
+	# Create the multi-platform manifest from architecture-specific images
+	sources="" ; \
+	for arch in $$(echo "$(MANIFEST_ARCHITECTURES)" | tr ',' ' '); do \
+		sources="$$sources $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG)-$$arch" ; \
+	done ; \
+	$(DOCKER_CMD) buildx imagetools create -t $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG) $$sources
 
 .PHONY: docker_sign_manifest
 docker_sign_manifest:
