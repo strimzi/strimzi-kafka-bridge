@@ -126,8 +126,8 @@ public class TlsIT extends HttpBridgeITAbstract {
     protected Map<String, Object> overrideConfig() {
         Map<String, Object> configs = new HashMap<>();
         configs.put(HttpConfig.HTTP_SERVER_SSL_ENABLE, true);
-        configs.put(HttpConfig.HTTP_SERVER_SSL_KEYSTORE_CERTIFICATE_CHAIN, sslCert);
-        configs.put(HttpConfig.HTTP_SERVER_SSL_KEYSTORE_KEY, sslKey);
+        configs.put(HttpConfig.HTTP_SERVER_SSL_CERTIFICATE, sslCert);
+        configs.put(HttpConfig.HTTP_SERVER_SSL_KEY, sslKey);
         return configs;
     }
 }

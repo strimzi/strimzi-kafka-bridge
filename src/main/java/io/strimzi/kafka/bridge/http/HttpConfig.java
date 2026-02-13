@@ -47,15 +47,15 @@ public class HttpConfig extends AbstractConfig {
     /** Comma separated list of cipher suites for HTTP Bridge server  */
     public static final String HTTP_SERVER_SSL_ENABLED_CIPHER_SUITES = HTTP_CONFIG_PREFIX + "ssl.enabled.cipher.suites";
 
-    /** HTTP Server SSL keystore path */
-    public static final String HTTP_SERVER_SSL_KEYSTORE_LOCATION = HTTP_CONFIG_PREFIX + "ssl.keystore.location";
+    /** HTTP Bridge server certificate path */
+    public static final String HTTP_SERVER_SSL_CERTIFICATE_PATH = HTTP_CONFIG_PREFIX + "ssl.certificate.path";
     /** HTTP Bridge server private key path */
-    public static final String HTTP_SERVER_SSL_KEYSTORE_KEY_LOCATION = HTTP_CONFIG_PREFIX + "ssl.keystore.key.location";
+    public static final String HTTP_SERVER_SSL_KEY_PATH = HTTP_CONFIG_PREFIX + "ssl.key.path";
 
-    /** HTTP Bridge server keystore certificate */
-    public static final String HTTP_SERVER_SSL_KEYSTORE_CERTIFICATE_CHAIN = HTTP_CONFIG_PREFIX + "ssl.keystore.certificate.chain";
+    /** HTTP Bridge server certificate */
+    public static final String HTTP_SERVER_SSL_CERTIFICATE = HTTP_CONFIG_PREFIX + "ssl.certificate";
     /** HTTP Bridge server private key */
-    public static final String HTTP_SERVER_SSL_KEYSTORE_KEY = HTTP_CONFIG_PREFIX + "ssl.keystore.key";
+    public static final String HTTP_SERVER_SSL_KEY = HTTP_CONFIG_PREFIX + "ssl.key";
 
     /** HTTP consumer timeouts */
     public static final String HTTP_CONSUMER_TIMEOUT = HTTP_CONFIG_PREFIX + "timeoutSeconds";
@@ -212,39 +212,39 @@ public class HttpConfig extends AbstractConfig {
     }
 
     /**
-     * Get the path to the SSL keystore.
+     * Get the path to the SSL certificate.
      *
-     * @return path to the SSL keystore
+     * @return path to the SSL certificate
      */
-    public String getHttpServerSslKeystoreLocation() {
-        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_KEYSTORE_LOCATION, null);
+    public String getHttpServerSslCertificatePath() {
+        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_CERTIFICATE_PATH, null);
     }
 
     /**
-     * Get the path to the SSL keystore key.
+     * Get the path to the SSL private key.
      *
-     * @return path to the SSL keystore key
+     * @return path to the SSL private key
      */
-    public String getHttpServerSslKeystoreKeyLocation() {
-        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_KEYSTORE_KEY_LOCATION, null);
+    public String getHttpServerSslKeyPath() {
+        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_KEY_PATH, null);
     }
 
     /**
-     * Get the path to the SSL keystore certificate chain.
+     * Get the SSL certificate.
      *
-     * @return path to the SSL keystore
+     * @return SSL certificate
      */
-    public String getHttpServerSslKeystoreCertificateChain() {
-        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_KEYSTORE_CERTIFICATE_CHAIN, null);
+    public String getHttpServerSslCertificate() {
+        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_CERTIFICATE, null);
     }
 
     /**
-     * Get the path to the SSL keystore key.
+     * Get the SSL private key.
      *
-     * @return path to the SSL keystore key
+     * @return SSL private key
      */
-    public String getHttpServerSslKeystoreKey() {
-        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_KEYSTORE_KEY, null);
+    public String getHttpServerSslKey() {
+        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_KEY, null);
     }
 
 
