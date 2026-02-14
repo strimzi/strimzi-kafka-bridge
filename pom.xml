@@ -36,6 +36,17 @@
 		</developer>
 	</developers>
 
+	<repositories>
+		<repository>
+			<!--
+            We use the Kafka staging repository while we use the RC releases of Kafka 4.2.0. This should be removed once
+            we move to the final release of Kafka 4.2.0.
+            -->
+			<id>apache-staging</id>
+			<url>https://repository.apache.org/content/groups/staging/</url>
+		</repository>
+	</repositories>
+
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.release>17</maven.compiler.release>
@@ -43,7 +54,7 @@
 		<vertx.version>5.0.7</vertx.version>
 		<vertx-testing.version>5.0.7</vertx-testing.version>
 		<netty.version>4.2.9.Final</netty.version>
-		<kafka.version>4.1.1</kafka.version>
+		<kafka.version>4.2.0</kafka.version>
 		<kafka-kubernetes-config-provider.version>1.2.2</kafka-kubernetes-config-provider.version>
 		<kafka-env-var-config-provider.version>1.1.0</kafka-env-var-config-provider.version>
 		<maven.checkstyle.version>3.5.0</maven.checkstyle.version>
