@@ -1,4 +1,4 @@
-package io.strimzi.kafka.bridge.refactor.objects;
+package io.strimzi.kafka.bridge.objects;
 
 public record Offsets(
     Integer beginning_offset,

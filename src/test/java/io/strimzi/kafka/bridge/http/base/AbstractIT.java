@@ -2,7 +2,7 @@
  * Copyright Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
-package io.strimzi.kafka.bridge.refactor;
+package io.strimzi.kafka.bridge.http.base;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.strimzi.kafka.bridge.config.BridgeConfig;

@@ -7,9 +7,9 @@ package io.strimzi.kafka.bridge.httpclient;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.strimzi.kafka.bridge.refactor.objects.Offsets;
-import io.strimzi.kafka.bridge.refactor.objects.Partition;
-import io.strimzi.kafka.bridge.refactor.objects.Topic;
+import io.strimzi.kafka.bridge.objects.Offsets;
+import io.strimzi.kafka.bridge.objects.Partition;
+import io.strimzi.kafka.bridge.objects.Topic;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

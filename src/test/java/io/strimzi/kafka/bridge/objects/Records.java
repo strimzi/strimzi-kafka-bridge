@@ -1,4 +1,4 @@
-package io.strimzi.kafka.bridge.refactor.objects;
+package io.strimzi.kafka.bridge.objects;
 
 import java.util.List;
 
