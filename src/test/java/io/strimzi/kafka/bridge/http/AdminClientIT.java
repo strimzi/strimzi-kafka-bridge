@@ -22,6 +22,9 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.AfterParameterizedClassInvocation;
+import org.junit.jupiter.params.BeforeParameterizedClassInvocation;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -32,18 +35,23 @@ import java.util.List;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class AdminClientIT extends AbstractIT {
     private static final Logger LOGGER = LogManager.getLogger(AdminClientIT.class);
+    private AdminClientFacade adminClientFacade;
 
-    @BeforeAll
+    @BeforeParameterizedClassInvocation
     void setup() throws IOException {
         setupBridge();
         bridge.start();
+        adminClientFacade = AdminClientFacade.create(kafkaCluster.getBootstrapServers());
     }
 
-    @AfterAll
+    @AfterParameterizedClassInvocation
     void afterAll() {
         bridge.stop();
+        adminClientFacade.close();
+        adminClientFacade = null;
     }
 
     @Test
@@ -201,7 +209,6 @@ public class AdminClientIT extends AbstractIT {
     }
 
     void createTopic(String topic, int partitions) {
-        AdminClientFacade adminClientFacade = AdminClientFacade.create(kafkaCluster.getBootstrapServers());
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic, partitions, 1);
 
         try {

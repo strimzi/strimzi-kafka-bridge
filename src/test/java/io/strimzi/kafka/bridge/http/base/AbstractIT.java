@@ -10,6 +10,7 @@ import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
 import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
 import io.strimzi.kafka.bridge.http.HttpConfig;
+import io.strimzi.kafka.bridge.http.tools.TestSeparator;
 import io.strimzi.kafka.bridge.httpclient.HttpRequestHandler;
 import io.strimzi.kafka.bridge.metrics.MetricsType;
 import io.strimzi.test.container.StrimziKafkaCluster;
@@ -17,25 +18,36 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.AfterParameterizedClassInvocation;
+import org.junit.jupiter.params.BeforeParameterizedClassInvocation;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class AbstractIT {
+@ParameterizedClass
+@MethodSource("kafkaVersions")
+public class AbstractIT implements TestSeparator {
     private static final Logger LOGGER = LogManager.getLogger(AbstractIT.class);
     private static final String DEFAULT_OPENJDK_IMAGE = "registry.access.redhat.com/ubi9/openjdk-21-runtime:latest";
+    private static final Boolean RUN_WITH_ALL_KAFKA_VERSIONS_ENV = Boolean.valueOf(System.getenv().getOrDefault("RUN_WITH_ALL_KAFKA_VERSIONS", "false"));
 
     public static ObjectMapper objectMapper = new ObjectMapper();
 
@@ -43,15 +55,18 @@ public class AbstractIT {
     public static StrimziKafkaCluster kafkaCluster = null;
     public static GenericContainer<?> bridge = null;
 
-    public static String topicName = null;
+    public static String topicName;
     private final static Random RNG = new Random();
 
-    @BeforeAll
+    @Parameter
+    String kafkaVersion;
+
+    @BeforeParameterizedClassInvocation
     void beforeAll() {
-        setupKafkaCluster(null);
+        setupKafkaCluster(kafkaVersion);
     }
 
-    @AfterAll
+    @AfterParameterizedClassInvocation
     void afterAll() {
         kafkaCluster.stop();
     }
@@ -59,6 +74,18 @@ public class AbstractIT {
     @BeforeEach
     void beforeEach() {
         topicName = "my-topic-" + RNG.nextInt(Integer.MAX_VALUE);
+    }
+
+    List<String> kafkaVersions() {
+        // TODO: replace this with method from strimzi-test-container once we have 0.115.0
+        List<String> listOfVersions = List.of("4.0.0", "4.0.1", "4.1.0", "4.1.1");
+
+        if (RUN_WITH_ALL_KAFKA_VERSIONS_ENV) {
+            return listOfVersions;
+        }
+
+        // run just with `latest` version of Kafka
+        return List.of("latest");
     }
 
     private static String createPropertiesFile(Properties props) throws IOException {
@@ -89,7 +116,7 @@ public class AbstractIT {
             .withNumberOfBrokers(1)
             .withSharedNetwork();
 
-        if (kafkaVersion != null && !kafkaVersion.isEmpty()) {
+        if (kafkaVersion != null && !kafkaVersion.isEmpty() && !kafkaVersion.equals("latest")) {
             LOGGER.info("Using Kafka version: {}", kafkaVersion);
             builder.withKafkaVersion(kafkaVersion);
         } else {
@@ -125,9 +152,12 @@ public class AbstractIT {
             .withFileSystemBind(getBridgeJarPath(), "/app/", BindMode.READ_ONLY)
             .withFileSystemBind(propertiesPath, "/app/application.properties", BindMode.READ_ONLY)
             .withCommand("/app/bin/kafka_bridge_run.sh", "--config-file=/app/application.properties")
-            .withExposedPorts(8080)
+            .withExposedPorts(8080, 8081)
             .withNetwork(Network.SHARED)
-            .waitingFor(Wait.forHttp("/"));
+            .waitingFor(new WaitAllStrategy()
+                .withStrategy(Wait.forHttp("/").forPort(8080))
+                .withStrategy(Wait.forHttp("/healthy").forPort(8081))
+            );
 
         bridge = container;
         bridge.start();
