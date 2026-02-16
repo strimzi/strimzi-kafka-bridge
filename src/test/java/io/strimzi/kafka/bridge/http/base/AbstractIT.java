@@ -30,6 +30,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
+import org.testcontainers.utility.MountableFile;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -78,7 +79,7 @@ public class AbstractIT implements TestSeparator {
 
     List<String> kafkaVersions() {
         // TODO: replace this with method from strimzi-test-container once we have 0.115.0
-        List<String> listOfVersions = List.of("4.0.0", "4.0.1", "4.1.0", "4.1.1");
+        List<String> listOfVersions = List.of("4.0.1", "4.1.1");
 
         if (RUN_WITH_ALL_KAFKA_VERSIONS_ENV) {
             return listOfVersions;
@@ -150,8 +151,11 @@ public class AbstractIT implements TestSeparator {
 
         GenericContainer<?> container = new GenericContainer<>(DEFAULT_OPENJDK_IMAGE)
             .withFileSystemBind(getBridgeJarPath(), "/app/", BindMode.READ_ONLY)
-            .withFileSystemBind(propertiesPath, "/app/application.properties", BindMode.READ_ONLY)
-            .withCommand("/app/bin/kafka_bridge_run.sh", "--config-file=/app/application.properties")
+            .withCopyFileToContainer(
+                MountableFile.forHostPath(propertiesPath, 0644),
+                "/opt/application.properties"
+            )
+            .withCommand("/app/bin/kafka_bridge_run.sh", "--config-file=/opt/application.properties")
             .withExposedPorts(8080, 8081)
             .withNetwork(Network.SHARED)
             .waitingFor(new WaitAllStrategy()
