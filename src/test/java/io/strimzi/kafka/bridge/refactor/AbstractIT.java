@@ -4,6 +4,7 @@
  */
 package io.strimzi.kafka.bridge.refactor;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
@@ -34,6 +35,9 @@ import java.util.Random;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class AbstractIT {
     private static final Logger LOGGER = LogManager.getLogger(AbstractIT.class);
+    private static final String DEFAULT_OPENJDK_IMAGE = "registry.access.redhat.com/ubi9/openjdk-21-runtime:latest";
+
+    public static ObjectMapper objectMapper = new ObjectMapper();
 
     public static HttpRequestHandler httpRequestHandler = null;
     public static StrimziKafkaCluster kafkaCluster = null;
@@ -117,7 +121,7 @@ public class AbstractIT {
     public void setupBridge() throws IOException {
         String propertiesPath = createPropertiesFile(getConfiguration());
 
-        GenericContainer<?> container = new GenericContainer<>("registry.access.redhat.com/ubi9/openjdk-21-runtime:latest")
+        GenericContainer<?> container = new GenericContainer<>(DEFAULT_OPENJDK_IMAGE)
             .withFileSystemBind(getBridgeJarPath(), "/app/", BindMode.READ_ONLY)
             .withFileSystemBind(propertiesPath, "/app/application.properties", BindMode.READ_ONLY)
             .withCommand("/app/bin/kafka_bridge_run.sh", "--config-file=/app/application.properties")

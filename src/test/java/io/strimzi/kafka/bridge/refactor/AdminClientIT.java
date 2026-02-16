@@ -4,10 +4,17 @@
  */
 package io.strimzi.kafka.bridge.refactor;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.facades.AdminClientFacade;
 import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
-import io.strimzi.kafka.bridge.refactor.objects.*;
+import io.strimzi.kafka.bridge.refactor.objects.MessageRecord;
+import io.strimzi.kafka.bridge.refactor.objects.Offsets;
+import io.strimzi.kafka.bridge.refactor.objects.Partition;
+import io.strimzi.kafka.bridge.refactor.objects.Records;
+import io.strimzi.kafka.bridge.refactor.objects.Replica;
+import io.strimzi.kafka.bridge.refactor.objects.Topic;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,7 +56,6 @@ public class AdminClientIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        // Kafka cluster can already have some topics created
         assertThat(topics.contains("my-topic"), is(true));
         assertThat(topics.contains("my-second-topic"), is(true));
     }
@@ -156,16 +162,41 @@ public class AdminClientIT extends AbstractIT {
 
     @Test
     void testGetOffsetSummaryNotFound() {
-        createTopic(topicName, 1);
-
         HttpResponse<String> httpResponse = httpRequestHandler.get(String.format("/topics/%s/partitions/0/offsets", topicName));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
     }
 
     @Test
-    void testCreateEmptyTopic() {
+    void testCreateEmptyTopic() throws JsonProcessingException {
+        ObjectNode jsonNode = objectMapper.createObjectNode();
 
+        HttpResponse<String> httpResponse = httpRequestHandler.post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+        assertThat(httpResponse.body().contains("Instance does not have required property \\\"topic_name\\\""), is(true));
+    }
+
+    @Test
+    void testCreateTopic() throws JsonProcessingException {
+        ObjectNode jsonNode = objectMapper.createObjectNode();
+        jsonNode.put("topic_name", topicName);
+
+        HttpResponse<String> httpResponse = httpRequestHandler.post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.CREATED.code()));
+    }
+
+    @Test
+    void testCreateTopicWithAllParameters() throws JsonProcessingException {
+        ObjectNode jsonNode = objectMapper.createObjectNode();
+        jsonNode.put("topic_name", topicName);
+        jsonNode.put("partitions_count", 1);
+        jsonNode.put("replication_factor", 1);
+
+        HttpResponse<String> httpResponse = httpRequestHandler.post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.CREATED.code()));
     }
 
     void createTopic(String topic, int partitions) {
