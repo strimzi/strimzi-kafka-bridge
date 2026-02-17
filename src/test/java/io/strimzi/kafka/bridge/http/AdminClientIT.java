@@ -5,10 +5,13 @@
 package io.strimzi.kafka.bridge.http;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.facades.AdminClientFacade;
 import io.strimzi.kafka.bridge.http.base.AbstractIT;
+import io.strimzi.kafka.bridge.http.extensions.BridgeTest;
+import io.strimzi.kafka.bridge.http.extensions.TestStorage;
 import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
 import io.strimzi.kafka.bridge.objects.MessageRecord;
 import io.strimzi.kafka.bridge.objects.Offsets;
@@ -19,15 +22,8 @@ import io.strimzi.kafka.bridge.objects.Topic;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.params.AfterParameterizedClassInvocation;
-import org.junit.jupiter.params.BeforeParameterizedClassInvocation;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,31 +31,16 @@ import java.util.List;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class AdminClientIT extends AbstractIT {
     private static final Logger LOGGER = LogManager.getLogger(AdminClientIT.class);
-    private AdminClientFacade adminClientFacade;
-
-    @BeforeParameterizedClassInvocation
-    void setup() throws IOException {
-        setupBridge();
-        bridge.start();
-        adminClientFacade = AdminClientFacade.create(kafkaCluster.getBootstrapServers());
-    }
-
-    @AfterParameterizedClassInvocation
-    void afterAll() {
-        bridge.stop();
-        adminClientFacade.close();
-        adminClientFacade = null;
-    }
+    public static ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void testListKafkaTopics() {
-        createTopic("my-topic", 1);
-        createTopic("my-second-topic", 1);
+    void testListKafkaTopics(TestStorage testStorage) {
+        createTopic("my-topic", testStorage.getAdminClientFacade(), 1);
+        createTopic("my-second-topic", testStorage.getAdminClientFacade(), 1);
 
-        HttpResponse<String> httpResponse = httpRequestHandler.get("/topics");
+        HttpResponse<String> httpResponse = testStorage.getHttpRequestHandler().get("/topics");
 
         List<String> topics = HttpResponseUtils.getListOfStringsFromResponse(httpResponse.body());
 
@@ -70,14 +51,14 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
-    void testGetTopic() {
-        createTopic(topicName, 2);
+    void testGetTopic(TestStorage testStorage) {
+        createTopic(testStorage, 2);
 
-        HttpResponse<String> httpResponse = httpRequestHandler.get("/topics/" + topicName);
+        HttpResponse<String> httpResponse = testStorage.getHttpRequestHandler().get("/topics/" + testStorage.getTopicName());
 
         Topic topic = HttpResponseUtils.getTopicFromResponse(httpResponse.body());
 
-        assertThat(topic.name(), is(topicName));
+        assertThat(topic.name(), is(testStorage.getTopicName()));
         assertThat(topic.configs().get("cleanup.policy"), is("delete"));
         assertThat(topic.listOfPartitions().size(), is(2));
 
@@ -97,17 +78,17 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
-    void testTopicNotFound() {
-        HttpResponse<String> httpResponse = httpRequestHandler.get("/topics/non-existing-topic");
+    void testTopicNotFound(TestStorage testStorage) {
+        HttpResponse<String> httpResponse = testStorage.getHttpRequestHandler().get("/topics/non-existing-topic");
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
     }
 
     @Test
-    void testListingPartitions() {
-        createTopic(topicName, 2);
+    void testListingPartitions(TestStorage testStorage) {
+        createTopic(testStorage, 2);
 
-        HttpResponse<String> httpResponse = httpRequestHandler.get(String.format("/topics/%s/partitions", topicName));
+        HttpResponse<String> httpResponse = testStorage.getHttpRequestHandler().get(String.format("/topics/%s/partitions", testStorage.getTopicName()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
         List<Partition> partitions = HttpResponseUtils.getPartitionsFromResponse(httpResponse.body());
@@ -132,10 +113,10 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
-    void testGetPartition() {
-        createTopic(topicName, 2);
+    void testGetPartition(TestStorage testStorage) {
+        createTopic(testStorage, 2);
 
-        HttpResponse<String> httpResponse = httpRequestHandler.get(String.format("/topics/%s/partitions/0", topicName));
+        HttpResponse<String> httpResponse = testStorage.getHttpRequestHandler().get(String.format("/topics/%s/partitions/0", testStorage.getTopicName()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
@@ -155,11 +136,11 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
-    void testGetOffsetSummary() {
-        createTopic(topicName, 1);
-        sendMessages(topicName, 5);
+    void testGetOffsetSummary(TestStorage testStorage) {
+        createTopic(testStorage, 1);
+        sendMessages(testStorage, 5);
 
-        HttpResponse<String> httpResponse = httpRequestHandler.get(String.format("/topics/%s/partitions/0/offsets", topicName));
+        HttpResponse<String> httpResponse = testStorage.getHttpRequestHandler().get(String.format("/topics/%s/partitions/0/offsets", testStorage.getTopicName()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
@@ -170,56 +151,60 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
-    void testGetOffsetSummaryNotFound() {
-        HttpResponse<String> httpResponse = httpRequestHandler.get(String.format("/topics/%s/partitions/0/offsets", topicName));
+    void testGetOffsetSummaryNotFound(TestStorage testStorage) {
+        HttpResponse<String> httpResponse = testStorage.getHttpRequestHandler().get(String.format("/topics/%s/partitions/0/offsets", testStorage.getTopicName()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
     }
 
     @Test
-    void testCreateEmptyTopic() throws JsonProcessingException {
+    void testCreateEmptyTopic(TestStorage testStorage) throws JsonProcessingException {
         ObjectNode jsonNode = objectMapper.createObjectNode();
 
-        HttpResponse<String> httpResponse = httpRequestHandler.post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
+        HttpResponse<String> httpResponse = testStorage.getHttpRequestHandler().post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
         assertThat(httpResponse.body().contains("Instance does not have required property \\\"topic_name\\\""), is(true));
     }
 
     @Test
-    void testCreateTopic() throws JsonProcessingException {
+    void testCreateTopic(TestStorage testStorage) throws JsonProcessingException {
         ObjectNode jsonNode = objectMapper.createObjectNode();
-        jsonNode.put("topic_name", topicName);
+        jsonNode.put("topic_name", testStorage.getTopicName());
 
-        HttpResponse<String> httpResponse = httpRequestHandler.post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
+        HttpResponse<String> httpResponse = testStorage.getHttpRequestHandler().post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.CREATED.code()));
     }
 
     @Test
-    void testCreateTopicWithAllParameters() throws JsonProcessingException {
+    void testCreateTopicWithAllParameters(TestStorage testStorage) throws JsonProcessingException {
         ObjectNode jsonNode = objectMapper.createObjectNode();
-        jsonNode.put("topic_name", topicName);
+        jsonNode.put("topic_name", testStorage.getTopicName());
         jsonNode.put("partitions_count", 1);
         jsonNode.put("replication_factor", 1);
 
-        HttpResponse<String> httpResponse = httpRequestHandler.post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
+        HttpResponse<String> httpResponse = testStorage.getHttpRequestHandler().post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.CREATED.code()));
     }
 
-    void createTopic(String topic, int partitions) {
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, partitions, 1);
+    void createTopic(TestStorage testStorage, int partitions) {
+        createTopic(testStorage.getTopicName(), testStorage.getAdminClientFacade(), partitions);
+    }
+
+    void createTopic(String topicName, AdminClientFacade adminClientFacade, int partitions) {
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topicName, partitions, 1);
 
         try {
             future.get();
         } catch (Exception e) {
-            LOGGER.error("Failed to create KafkaTopic: {} due to: ", topic, e);
+            LOGGER.error("Failed to create KafkaTopic: {} due to: ", topicName, e);
             throw new RuntimeException(e);
         }
     }
 
-    void sendMessages(String topicName, int messageCount) {
+    void sendMessages(TestStorage testStorage, int messageCount) {
         List<MessageRecord> recordList = new ArrayList<>();
 
         for (int i = 0; i < messageCount; i++) {
@@ -233,7 +218,7 @@ public class AdminClientIT extends AbstractIT {
         try {
             String messages = objectMapper.writeValueAsString(records);
 
-            httpRequestHandler.post("/topics/" + topicName, messages);
+            testStorage.getHttpRequestHandler().post("/topics/" + testStorage.getTopicName(), messages);
         } catch (Exception e) {
             LOGGER.error("Failed to write records as JSON String due to: ", e);
             throw new RuntimeException(e);
