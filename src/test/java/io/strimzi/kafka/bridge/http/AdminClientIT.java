@@ -31,6 +31,7 @@ import java.util.List;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+@BridgeTest
 public class AdminClientIT extends AbstractIT {
     private static final Logger LOGGER = LogManager.getLogger(AdminClientIT.class);
     public static ObjectMapper objectMapper = new ObjectMapper();

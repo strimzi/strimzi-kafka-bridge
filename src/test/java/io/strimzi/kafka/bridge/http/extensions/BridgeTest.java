@@ -1,5 +1,6 @@
 package io.strimzi.kafka.bridge.http.extensions;
 
+import io.strimzi.kafka.bridge.http.extensions.configuration.BridgeConfiguration;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedClass;
@@ -16,5 +17,6 @@ import java.lang.annotation.Target;
 @ExtendWith({KafkaExtension.class, BridgeExtension.class, TestStorageExtension.class})
 @ParameterizedClass
 @MethodSource("io.strimzi.kafka.bridge.http.extensions.KafkaExtension#kafkaVersions")
+@BridgeConfiguration
 public @interface BridgeTest {
 }

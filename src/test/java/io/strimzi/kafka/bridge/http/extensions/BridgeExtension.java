@@ -4,15 +4,10 @@
  */
 package io.strimzi.kafka.bridge.http.extensions;
 
-import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
-import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
-import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
-import io.strimzi.kafka.bridge.http.HttpConfig;
+import io.strimzi.kafka.bridge.http.extensions.configuration.BridgeConfiguration;
 import io.strimzi.kafka.bridge.httpclient.HttpRequestHandler;
-import io.strimzi.kafka.bridge.metrics.MetricsType;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.TestInstance;
@@ -30,10 +25,10 @@ import org.testcontainers.utility.MountableFile;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.Properties;
 
 public class BridgeExtension implements
@@ -85,22 +80,49 @@ public class BridgeExtension implements
         return propsFile.toAbsolutePath().toString();
     }
 
-    private Properties getConfiguration(String bootstrapServers) {
-        Map<String, Object> defaults = Map.of(
-            KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers,
-            KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest",
-            KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000",
-            HttpConfig.HTTP_CONSUMER_TIMEOUT, "5",
-            BridgeConfig.METRICS_TYPE, MetricsType.STRIMZI_REPORTER.toString(),
-            BridgeConfig.BRIDGE_ID, "my-bridge"
-        );
+    private String[] getBridgeConfigurationFromAnnotation(ExtensionContext context) {
+        Class<?> testClass = context.getRequiredTestClass();
+        BridgeConfiguration config;
 
-        Properties properties = new Properties();
-        properties.putAll(defaults);
-        return properties;
+        if (isPerClass(context)) {
+            config = testClass.getAnnotation(BridgeConfiguration.class);
+        } else {
+            Method method = context.getRequiredTestMethod();
+            config = method.getAnnotation(BridgeConfiguration.class);
+        }
+
+        if (config != null) {
+            return config.properties();
+        }
+
+        // Otherwise get it from @BridgeTest meta-annotation
+        BridgeTest bridgeTest = testClass.getAnnotation(BridgeTest.class);
+
+        if (bridgeTest != null) {
+            config = BridgeTest.class.getAnnotation(BridgeConfiguration.class);
+
+            if (config != null) {
+                return config.properties();
+            }
+        }
+
+        return null;
     }
 
+    private Properties getConfiguration(ExtensionContext extensionContext, String bootstrapServers) {
+        String[] propertiesFromAnnotation = getBridgeConfigurationFromAnnotation(extensionContext);
+        Properties properties = new Properties();
 
+        for (String property : propertiesFromAnnotation) {
+            if (property.contains("=")) {
+                String[] keyValue = property.split("=");
+                properties.put(keyValue[0], keyValue[1]);
+            }
+        }
+        properties.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+
+        return properties;
+    }
 
     private static String getBridgeVersion() throws IOException {
         // Read from release.version file
@@ -122,7 +144,7 @@ public class BridgeExtension implements
 
     public void setupBridge(ExtensionContext extensionContext) throws IOException {
         String bootstrapServers = KafkaExtension.getKafkaCluster(extensionContext).getNetworkBootstrapServers();
-        String propertiesPath = createPropertiesFile(getConfiguration(bootstrapServers));
+        String propertiesPath = createPropertiesFile(getConfiguration(extensionContext, bootstrapServers));
 
         GenericContainer<?> bridgeContainer = new GenericContainer<>(DEFAULT_OPENJDK_IMAGE)
             .withFileSystemBind(getBridgeJarPath(), "/app/", BindMode.READ_ONLY)
