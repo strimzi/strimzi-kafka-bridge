@@ -78,7 +78,8 @@
 		<prometheus.version>1.3.6</prometheus.version>
 		<commons-cli.version>1.4</commons-cli.version>
         <!-- Update also list of Kafka version in HttpBridgeITAbstract.java together with test-container version! -->
-		<test-container.version>0.114.0</test-container.version>
+		<strimzi-test-container.version>0.114.0</strimzi-test-container.version>
+		<test-container.version>2.0.2</test-container.version>
 		<jakarta.version>2.3.2</jakarta.version>
 		<snakeyaml.version>2.5</snakeyaml.version>
 		<guava.version>32.1.3-jre</guava.version>
@@ -412,9 +413,16 @@
 		<dependency>
 			<groupId>io.strimzi</groupId>
 			<artifactId>strimzi-test-container</artifactId>
+			<version>${strimzi-test-container.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers</artifactId>
 			<version>${test-container.version}</version>
 			<scope>test</scope>
 		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -552,6 +560,7 @@
 									<ignoredNonTestScopedDependency>io.vertx:vertx-opentelemetry</ignoredNonTestScopedDependency>
 									<!-- Used only for test in the bridge but needed by OAuth. If left "test" scoped, a potential Maven bug remove it from the runtime -->
 									<ignoredNonTestScopedDependencies>com.fasterxml.jackson.core:jackson-databind</ignoredNonTestScopedDependencies>
+									<ignoredUnusedDeclaredDependency>com.fasterxml.jackson.core:jackson-core</ignoredUnusedDeclaredDependency>
 								</ignoredNonTestScopedDependencies>
 								<ignoredUnusedDeclaredDependencies>
 									<ignoredUnusedDeclaredDependency>io.strimzi:kafka-env-var-config-provider</ignoredUnusedDeclaredDependency>
