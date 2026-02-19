@@ -78,7 +78,7 @@
 		<prometheus.version>1.3.6</prometheus.version>
 		<commons-cli.version>1.4</commons-cli.version>
         <!-- Update also list of Kafka version in HttpBridgeITAbstract.java together with test-container version! -->
-		<test-container.version>0.114.0</test-container.version>
+		<test-container.version>0.115.0-rc1</test-container.version>
 		<jakarta.version>2.3.2</jakarta.version>
 		<snakeyaml.version>2.5</snakeyaml.version>
 		<guava.version>32.1.3-jre</guava.version>
