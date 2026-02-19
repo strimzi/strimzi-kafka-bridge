@@ -17,7 +17,8 @@ public class Utils {
      *
      * @param releaseFile The name of the file that contains the release version
      * @return The version of the Kafka Bridge
-     * @throws Exception
+     *
+     * @throws Exception exception if file is not found, unable to open, or get version from the file
      */
 
     public static String getKafkaBridgeVersionFromFile(String releaseFile) throws Exception {
