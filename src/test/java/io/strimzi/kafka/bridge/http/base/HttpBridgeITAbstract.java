@@ -44,6 +44,7 @@ import org.junit.jupiter.params.AfterParameterizedClassInvocation;
 import org.junit.jupiter.params.BeforeParameterizedClassInvocation;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Collection;
@@ -86,8 +87,7 @@ import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
 @Tag(HTTP_BRIDGE)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ParameterizedClass
-// These are Kafka versions supported by Strimzi Test Container. Should be updated together with test-container version bump.
-@ValueSource(strings = {"4.0.0", "4.0.1", "4.1.0", "4.1.1"})
+@MethodSource("io.strimzi.test.container.StrimziKafkaCluster#getSupportedKafkaVersions")
 public abstract class HttpBridgeITAbstract implements TestSeparator {
     private static final Logger LOGGER = LogManager.getLogger(HttpBridgeITAbstract.class);
     protected static Map<String, Object> config = new HashMap<>();
