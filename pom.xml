@@ -88,8 +88,7 @@
 		<hamcrest.version>2.2</hamcrest.version>
 		<junit.version>6.0.0</junit.version>
 		<mockito.version>5.21.0</mockito.version>
-		<!-- Update also list of Kafka version in HttpBridgeITAbstract.java together with test-container version! -->
-		<test-container.version>0.114.0</test-container.version>
+		<test-container.version>0.115.0-rc1</test-container.version>
 		<!-- property to skip surefire tests during failsafe execution -->
 		<!--suppress UnresolvedMavenProperty -->
 		<skip.surefire.tests>${skipTests}</skip.surefire.tests>
