@@ -355,16 +355,16 @@ public class HttpBridge extends AbstractVerticle {
         if (this.bridgeConfig.getHttpConfig().isSslEnabled()) {
             httpServerOptions.setSsl(true);
 
-            if (bridgeConfig.getHttpConfig().getHttpServerSslCertificatePath() != null && this.bridgeConfig.getHttpConfig().getHttpServerSslKeyPath() != null) {
+            if (bridgeConfig.getHttpConfig().getHttpServerSslCertificateLocation() != null && this.bridgeConfig.getHttpConfig().getHttpServerSslKeyLocation() != null) {
                 httpServerOptions.setKeyCertOptions(new PemKeyCertOptions()
-                        .setKeyPath(this.bridgeConfig.getHttpConfig().getHttpServerSslKeyPath())
-                        .setCertPath(this.bridgeConfig.getHttpConfig().getHttpServerSslCertificatePath()));
+                        .setKeyPath(this.bridgeConfig.getHttpConfig().getHttpServerSslKeyLocation())
+                        .setCertPath(this.bridgeConfig.getHttpConfig().getHttpServerSslCertificateLocation()));
             } else if (bridgeConfig.getHttpConfig().getHttpServerSslCertificate() != null && this.bridgeConfig.getHttpConfig().getHttpServerSslKey() != null) {
                 httpServerOptions.setKeyCertOptions(new PemKeyCertOptions()
                         .addKeyValue(Buffer.buffer(this.bridgeConfig.getHttpConfig().getHttpServerSslKey()))
                         .addCertValue(Buffer.buffer(this.bridgeConfig.getHttpConfig().getHttpServerSslCertificate())));
             } else {
-                LOGGER.error("Required SSL configurations are missing! Either both of http.ssl.certificate.path and http.ssl.key.path " +
+                LOGGER.error("Required SSL configurations are missing! Either both of http.ssl.certificate.location and http.ssl.key.location " +
                         "or both of http.ssl.certificate and http.ssl.key should be configured");
             }
 

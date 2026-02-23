@@ -67,13 +67,13 @@ bridge.id=my-bridge
 http.host=0.0.0.0
 http.port=8443 <5>
 http.ssl.enable=true <6>
-http.ssl.certificate.path=/etc/ssl/certs/bridge.crt <7>
-http.ssl.key.path=/etc/ssl/private/bridge.key <8>
+http.ssl.certificate.location=/etc/ssl/certs/bridge.crt <7>
+http.ssl.key.location=/etc/ssl/private/bridge.key <8>
 ----
 <5> Configure HTTP Bridge to listen on port 8443 for TLS encrypted connections.
 <6> Set `true` to enable TLS encryption between HTTP clients and the HTTP Bridge.
-<7> Path to the certificate file in PEM format.
-<8> Path to the private key file in PEM format.
+<7> Location of the certificate file in PEM format.
+<8> Location of the private key file in PEM format.
 
 . Save the configuration file.
 
@@ -92,15 +92,15 @@ http.ssl.key.path=/etc/ssl/private/bridge.key <8>
 
 |http.ssl.enable
 |Enable TLS encryption between HTTP clients and HTTP bridge. It is `false` by default.
-If set to `true`, `http.ssl.certificate.path` and `http.ssl.key.path` configurations or
+If set to `true`, `http.ssl.certificate.location` and `http.ssl.key.location` configurations or
  `http.ssl.certificate` and `http.ssl.key` configurations are required.
 
-|http.ssl.certificate.path
-|The path to the HTTP Bridge server certificate file in PEM format.
+|http.ssl.certificate.location
+|The location of the HTTP Bridge server certificate file in PEM format.
 PEM is the only format supported for certificate.
 
-|http.ssl.key.path
-|The path to the HTTP Bridge server private key file in PEM format.
+|http.ssl.key.location
+|The location of the HTTP Bridge server private key file in PEM format.
 PEM is the only format supported for private key.
 
 |http.ssl.certificate

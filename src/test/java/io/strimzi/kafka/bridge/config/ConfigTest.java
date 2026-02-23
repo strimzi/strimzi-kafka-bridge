@@ -93,15 +93,15 @@ public class ConfigTest {
     public void testHttpSslConfig() {
         Map<String, Object> map = new HashMap<>(Map.of(
                 "http.ssl.enable", "true",
-                "http.ssl.key.path", "key.key",
-                "http.ssl.certificate.path", "cert.crt",
+                "http.ssl.key.location", "key.key",
+                "http.ssl.certificate.location", "cert.crt",
                 "http.ssl.enabled.protocols", "TLSv1.3",
                 "http.ssl.enabled.cipher.suites", "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
         ));
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
-        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslKeyPath(), is("key.key"));
-        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslCertificatePath(), is("cert.crt"));
+        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslKeyLocation(), is("key.key"));
+        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslCertificateLocation(), is("cert.crt"));
         assertThat(bridgeConfig.getHttpConfig().getHttpServerSslEnabledProtocols(), is(Set.of("TLSv1.3")));
         assertThat(bridgeConfig.getHttpConfig().getHttpServerSslCipherSuites(), is(Set.of("TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384")));
 

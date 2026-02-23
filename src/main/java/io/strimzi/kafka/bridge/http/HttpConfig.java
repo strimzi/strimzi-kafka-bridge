@@ -47,10 +47,10 @@ public class HttpConfig extends AbstractConfig {
     /** Comma separated list of cipher suites for HTTP Bridge server  */
     public static final String HTTP_SERVER_SSL_ENABLED_CIPHER_SUITES = HTTP_CONFIG_PREFIX + "ssl.enabled.cipher.suites";
 
-    /** HTTP Bridge server certificate path */
-    public static final String HTTP_SERVER_SSL_CERTIFICATE_PATH = HTTP_CONFIG_PREFIX + "ssl.certificate.path";
-    /** HTTP Bridge server private key path */
-    public static final String HTTP_SERVER_SSL_KEY_PATH = HTTP_CONFIG_PREFIX + "ssl.key.path";
+    /** HTTP Bridge server certificate file location */
+    public static final String HTTP_SERVER_SSL_CERTIFICATE_LOCATION = HTTP_CONFIG_PREFIX + "ssl.certificate.location";
+    /** HTTP Bridge server private key file location */
+    public static final String HTTP_SERVER_SSL_KEY_LOCATION = HTTP_CONFIG_PREFIX + "ssl.key.location";
 
     /** HTTP Bridge server certificate */
     public static final String HTTP_SERVER_SSL_CERTIFICATE = HTTP_CONFIG_PREFIX + "ssl.certificate";
@@ -216,8 +216,8 @@ public class HttpConfig extends AbstractConfig {
      *
      * @return path to the SSL certificate
      */
-    public String getHttpServerSslCertificatePath() {
-        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_CERTIFICATE_PATH, null);
+    public String getHttpServerSslCertificateLocation() {
+        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_CERTIFICATE_LOCATION, null);
     }
 
     /**
@@ -225,8 +225,8 @@ public class HttpConfig extends AbstractConfig {
      *
      * @return path to the SSL private key
      */
-    public String getHttpServerSslKeyPath() {
-        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_KEY_PATH, null);
+    public String getHttpServerSslKeyLocation() {
+        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_KEY_LOCATION, null);
     }
 
     /**
