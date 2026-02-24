@@ -88,7 +88,7 @@
 		<hamcrest.version>2.2</hamcrest.version>
 		<junit.version>6.0.0</junit.version>
 		<mockito.version>5.21.0</mockito.version>
-        <strimzi-test-container.version>0.114.0</strimzi-test-container.version>
+        <strimzi-test-container.version>0.115.0</strimzi-test-container.version>
         <test-container.version>2.0.2</test-container.version>
 		<!-- property to skip surefire tests during failsafe execution -->
 		<!--suppress UnresolvedMavenProperty -->

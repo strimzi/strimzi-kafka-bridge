@@ -12,7 +12,10 @@ import org.junit.jupiter.api.extension.BeforeClassTemplateInvocationCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterInfo;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Extension (or fixture) for managing Kafka cluster in tests.
@@ -35,15 +38,50 @@ public class KafkaExtension implements
      * @return  list of Kafka versions for which we will run the tests.
      */
     static List<String> kafkaVersions() {
-        // TODO: replace this with method from strimzi-test-container once we have 0.115.0
-        List<String> listOfVersions = List.of("4.0.1", "4.1.1");
-
         if (RUN_WITH_ALL_KAFKA_VERSIONS_ENV) {
-            return listOfVersions;
+            return getFilteredListOfKafkaVersions();
         }
 
         // run just with `latest` version of Kafka
         return List.of("latest");
+    }
+
+    /**
+     * Method for filtering the Kafka versions from {@link StrimziKafkaCluster#getSupportedKafkaVersions()}
+     * as we want to run tests only against the latest patch release for every minor release.
+     * That means if we have - 4.1.0, 4.1.1, 4.1.2 - the 4.1.2 release will be picked.
+     *
+     * @return  list of filtered Kafka versions
+     */
+    private static List<String> getFilteredListOfKafkaVersions() {
+        List<String> supportedKafkaVersions = StrimziKafkaCluster.getSupportedKafkaVersions();
+        Map<String, String> latestByMinor = new HashMap<>();
+
+        for (String kafkaVersion : supportedKafkaVersions) {
+            String[] majorMinorPatch = kafkaVersion.split("\\.");
+            String majorMinor = majorMinorPatch[0] + "." + majorMinorPatch[1];
+
+            if (!latestByMinor.containsKey(majorMinor) || isNewerVersion(kafkaVersion, latestByMinor.get(majorMinor))) {
+                latestByMinor.put(majorMinor, kafkaVersion);
+            }
+        }
+
+        return new ArrayList<>(latestByMinor.values());
+    }
+
+    /**
+     * Method for comparing patch release versions between two Kafka versions.
+     *
+     * @param version1  first Kafka version.
+     * @param version2  second Kafka version.
+     *
+     * @return  boolean value determining if the {@param version1} is bigger than {@param version2}
+     */
+    private static boolean isNewerVersion(String version1, String version2) {
+        int patchReleaseVersion1 = Integer.parseInt(version1.split("\\.")[2]);
+        int patchReleaseVersion2 = Integer.parseInt(version2.split("\\.")[2]);
+
+        return patchReleaseVersion1 > patchReleaseVersion2;
     }
 
     /**

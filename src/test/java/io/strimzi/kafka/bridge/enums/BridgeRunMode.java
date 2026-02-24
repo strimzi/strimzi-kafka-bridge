@@ -18,8 +18,8 @@ public enum BridgeRunMode {
             return CONTAINER;
         } else if (IN_MEMORY.name().toLowerCase(Locale.ROOT).equals(lowerCase)) {
             return IN_MEMORY;
+        } else {
+            throw new IllegalArgumentException("No such option: " + value);
         }
-
-        return NONE;
     }
 }

@@ -7,11 +7,7 @@ package io.strimzi.kafka.bridge.objects;
 import java.util.List;
 import java.util.Map;
 
-public record Topic(
-    String name,
-    Map<String, Object> configs,
-    Partition[] partitions
-) {
+public record Topic(String name, Map<String, Object> configs, Partition[] partitions) {
     public List<Partition> listOfPartitions() {
         return List.of(partitions);
     }

@@ -6,11 +6,7 @@ package io.strimzi.kafka.bridge.objects;
 
 import java.util.List;
 
-public record Partition(
-    Integer partition,
-    Integer leader,
-    Replica[] replicas
-) {
+public record Partition(Integer partition, Integer leader, Replica[] replicas) {
     public List<Replica> listOfReplicas() {
         return List.of(replicas);
     }
