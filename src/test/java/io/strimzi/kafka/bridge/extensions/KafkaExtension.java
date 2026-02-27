@@ -27,7 +27,7 @@ public class KafkaExtension implements
     BeforeClassTemplateInvocationCallback,
     AfterClassTemplateInvocationCallback {
     private static final Logger LOGGER = LogManager.getLogger(KafkaExtension.class);
-    private static final Boolean RUN_WITH_ALL_KAFKA_VERSIONS_ENV = Boolean.valueOf(System.getenv().getOrDefault("RUN_WITH_ALL_KAFKA_VERSIONS", "false"));
+    private static final Boolean RUN_WITH_ALL_KAFKA_VERSIONS_ENV = Boolean.valueOf(System.getenv().getOrDefault("RUN_WITH_ALL_KAFKA_VERSIONS", "true"));
 
     private static final String KAFKA_CLUSTER_KEY = "kafkaCluster";
 
