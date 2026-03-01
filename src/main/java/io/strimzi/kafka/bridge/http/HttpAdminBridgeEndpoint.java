@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.KafkaBridgeAdmin;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
@@ -39,6 +38,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 
 /**
  * Represents an HTTP bridge endpoint for the Kafka administration operations
@@ -74,7 +74,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
     }
 
     @Override
-    public void handle(RoutingContext routingContext, Handler<HttpBridgeEndpoint> handler) {
+    public void handle(RoutingContext routingContext, Consumer<HttpBridgeEndpoint> handler) {
         LOGGER.trace("HttpAdminClientEndpoint handle thread {}", Thread.currentThread());
         switch (this.httpBridgeContext.getOpenApiOperation()) {
             case LIST_TOPICS:

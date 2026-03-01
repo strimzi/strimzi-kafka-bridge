@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.KafkaBridgeProducer;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
@@ -37,6 +36,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -82,7 +82,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
     @Override
     @SuppressWarnings("checkstyle:NPathComplexity")
-    public void handle(RoutingContext routingContext, Handler<HttpBridgeEndpoint> handler) {
+    public void handle(RoutingContext routingContext, Consumer<HttpBridgeEndpoint> handler) {
         String topic = routingContext.pathParam("topicname");
 
         List<ProducerRecord<K, V>> records;
