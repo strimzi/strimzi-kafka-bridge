@@ -13,7 +13,6 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
-import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.KafkaBridgeConsumer;
 import io.strimzi.kafka.bridge.SinkTopicSubscription;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
@@ -48,6 +47,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -129,7 +129,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
      * @param bodyAsJson HTTP request body bringing consumer settings
      * @param handler handler for the request
      */
-    private void doCreateConsumer(RoutingContext routingContext, JsonNode bodyAsJson, Handler<HttpBridgeEndpoint> handler) {
+    private void doCreateConsumer(RoutingContext routingContext, JsonNode bodyAsJson, Consumer<HttpBridgeEndpoint> handler) {
         // get the consumer group-id
         String groupId = routingContext.pathParam("groupid");
 
@@ -177,7 +177,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         this.kafkaBridgeConsumer.create(config, groupId);
 
         if (handler != null) {
-            handler.handle(this);
+            handler.accept(this);
         }
 
         LOGGER.info("Created consumer {} in group {}", this.name, groupId);
@@ -578,7 +578,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     }
 
     @Override
-    public void handle(RoutingContext routingContext, Handler<HttpBridgeEndpoint> handler) {
+    public void handle(RoutingContext routingContext, Consumer<HttpBridgeEndpoint> handler) {
         JsonNode bodyAsJson = EMPTY_JSON;
         try {
             ValidatedRequest validatedRequest =

@@ -5,9 +5,10 @@
 
 package io.strimzi.kafka.bridge.http;
 
-import io.strimzi.kafka.bridge.Handler;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.ext.web.RoutingContext;
+
+import java.util.function.Consumer;
 
 /**
  * Abstract class for an endpoint bridging traffic between HTTP and Apache Kafka
@@ -15,7 +16,7 @@ import io.vertx.ext.web.RoutingContext;
 public abstract class HttpBridgeEndpoint {
     protected String name;
     protected final BridgeConfig bridgeConfig;
-    private Handler<HttpBridgeEndpoint> closeHandler;
+    private Consumer<HttpBridgeEndpoint> closeHandler;
 
     /**
      * Constructor
@@ -62,7 +63,7 @@ public abstract class HttpBridgeEndpoint {
      * @param routingContext HTTP routing context to handle
      * @param handler handler for the corresponding bridge endpoint
      */
-    public abstract void handle(RoutingContext routingContext, Handler<HttpBridgeEndpoint> handler);
+    public abstract void handle(RoutingContext routingContext, Consumer<HttpBridgeEndpoint> handler);
 
     /**
      * Sets a handler called when an HTTP bridge endpoint is closed due to internal processing
@@ -70,7 +71,7 @@ public abstract class HttpBridgeEndpoint {
      * @param endpointCloseHandler The handler
      * @return The HTTP bridge endpoint itself
      */
-    public HttpBridgeEndpoint closeHandler(Handler<HttpBridgeEndpoint> endpointCloseHandler) {
+    public HttpBridgeEndpoint closeHandler(Consumer<HttpBridgeEndpoint> endpointCloseHandler) {
         this.closeHandler = endpointCloseHandler;
         return this;
     }
@@ -80,7 +81,7 @@ public abstract class HttpBridgeEndpoint {
      */
     protected void handleClose() {
         if (this.closeHandler != null) {
-            this.closeHandler.handle(this);
+            this.closeHandler.accept(this);
         }
     }
 }
