@@ -43,37 +43,41 @@ For more information on configuration of Kafka properties, see the http://kafka.
 +
 For example:
 +
+--
 [source,properties]
 ----
 bridge.id=my-bridge
 http.host=0.0.0.0
-http.port=8080 <1>
-http.cors.enabled=true <2>
-http.cors.allowedOrigins=https://strimzi.io <3>
-http.cors.allowedMethods=GET,POST,PUT,DELETE,OPTIONS,PATCH <4>
+http.port=8080
+http.cors.enabled=true
+http.cors.allowedOrigins=https://strimzi.io
+http.cors.allowedMethods=GET,POST,PUT,DELETE,OPTIONS,PATCH
 ----
-<1> The default HTTP configuration for the HTTP Bridge to listen on port 8080.
-<2> Set to `true` to enable CORS.
-<3> Comma-separated list of allowed CORS origins. You can use a URL or a Java regular expression.
-<4> Comma-separated list of allowed HTTP methods for CORS.
+* `http.port` defines the port on which the HTTP Bridge listens. The default port is `8080`.
+* `http.cors.enabled` enables Cross-Origin Resource Sharing (CORS) when set to `true`.
+* `http.cors.allowedOrigins` defines a comma-separated list of allowed CORS origins. Specify a URL or a Java regular expression.
+* `http.cors.allowedMethods` defines a comma-separated list of allowed HTTP methods for CORS.
+--
 +
-Or configure HTTP-related properties to enable TLS-encryption between clients and HTTP Bridge.
+Alternatively, configure HTTP-related properties to enable TLS encryption between clients and the HTTP Bridge.
 +
 For example:
 +
+--
 [source,properties]
 ----
 bridge.id=my-bridge
 http.host=0.0.0.0
-http.port=8443 <5>
-http.ssl.enable=true <6>
-http.ssl.certificate.location=/etc/ssl/certs/bridge.crt <7>
-http.ssl.key.location=/etc/ssl/private/bridge.key <8>
+http.port=8443
+http.ssl.enable=true
+http.ssl.certificate.location=/etc/ssl/certs/bridge.crt
+http.ssl.key.location=/etc/ssl/private/bridge.key
 ----
-<5> Configure HTTP Bridge to listen on port 8443 for TLS encrypted connections.
-<6> Set `true` to enable TLS encryption between HTTP clients and the HTTP Bridge.
-<7> Location of the certificate file in PEM format.
-<8> Location of the private key file in PEM format.
+* `http.port` defines the port on which the HTTP Bridge listens for TLS-encrypted connections. For example, `8443`.
+* `http.ssl.enable` enables TLS encryption between HTTP clients and the HTTP Bridge when set to `true`.
+* `http.ssl.certificate.location` defines the location of the certificate file in PEM format.
+* `http.ssl.key.location` defines the location of the private key file in PEM format.
+--
 
 . Save the configuration file.
 
