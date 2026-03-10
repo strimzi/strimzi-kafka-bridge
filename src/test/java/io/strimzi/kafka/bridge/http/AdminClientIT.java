@@ -12,12 +12,12 @@ import io.strimzi.kafka.bridge.extensions.BridgeSuite;
 import io.strimzi.kafka.bridge.facades.AdminClientFacade;
 import io.strimzi.kafka.bridge.http.base.AbstractIT;
 import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
+import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import io.strimzi.kafka.bridge.objects.MessageRecord;
 import io.strimzi.kafka.bridge.objects.Offsets;
 import io.strimzi.kafka.bridge.objects.Partition;
 import io.strimzi.kafka.bridge.objects.Records;
 import io.strimzi.kafka.bridge.objects.Replica;
-import io.strimzi.kafka.bridge.objects.TestStorage;
 import io.strimzi.kafka.bridge.objects.Topic;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.logging.log4j.LogManager;
@@ -37,11 +37,11 @@ public class AdminClientIT extends AbstractIT {
     public static ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void testListKafkaTopics(TestStorage testStorage) {
-        createTopic("my-topic", testStorage.getAdminClientFacade(), 1);
-        createTopic("my-second-topic", testStorage.getAdminClientFacade(), 1);
+    void testListKafkaTopics(BridgeTestContext bridgeTestContext) {
+        createTopic("my-topic", bridgeTestContext.getAdminClientFacade(), 1);
+        createTopic("my-second-topic", bridgeTestContext.getAdminClientFacade(), 1);
 
-        HttpResponse<String> httpResponse = testStorage.getHttpService().get("/topics");
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get("/topics");
 
         List<String> topics = HttpResponseUtils.getListOfStringsFromResponse(httpResponse.body());
 
@@ -52,14 +52,14 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
-    void testGetTopic(TestStorage testStorage) {
-        createTopic(testStorage, 2);
+    void testGetTopic(BridgeTestContext bridgeTestContext) {
+        createTopic(bridgeTestContext, 2);
 
-        HttpResponse<String> httpResponse = testStorage.getHttpService().get("/topics/" + testStorage.getTopicName());
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get("/topics/" + bridgeTestContext.getTopicName());
 
         Topic topic = HttpResponseUtils.getTopicFromResponse(httpResponse.body());
 
-        assertThat(topic.name(), is(testStorage.getTopicName()));
+        assertThat(topic.name(), is(bridgeTestContext.getTopicName()));
         assertThat(topic.configs().get("cleanup.policy"), is("delete"));
         assertThat(topic.listOfPartitions().size(), is(2));
 
@@ -79,17 +79,17 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
-    void testTopicNotFound(TestStorage testStorage) {
-        HttpResponse<String> httpResponse = testStorage.getHttpService().get("/topics/non-existing-topic");
+    void testTopicNotFound(BridgeTestContext bridgeTestContext) {
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get("/topics/non-existing-topic");
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
     }
 
     @Test
-    void testListingPartitions(TestStorage testStorage) {
-        createTopic(testStorage, 2);
+    void testListingPartitions(BridgeTestContext bridgeTestContext) {
+        createTopic(bridgeTestContext, 2);
 
-        HttpResponse<String> httpResponse = testStorage.getHttpService().get(String.format("/topics/%s/partitions", testStorage.getTopicName()));
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions", bridgeTestContext.getTopicName()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
         List<Partition> partitions = HttpResponseUtils.getPartitionsFromResponse(httpResponse.body());
@@ -114,10 +114,10 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
-    void testGetPartition(TestStorage testStorage) {
-        createTopic(testStorage, 2);
+    void testGetPartition(BridgeTestContext bridgeTestContext) {
+        createTopic(bridgeTestContext, 2);
 
-        HttpResponse<String> httpResponse = testStorage.getHttpService().get(String.format("/topics/%s/partitions/0", testStorage.getTopicName()));
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions/0", bridgeTestContext.getTopicName()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
@@ -137,11 +137,11 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
-    void testGetOffsetSummary(TestStorage testStorage) {
-        createTopic(testStorage, 1);
-        sendMessages(testStorage, 5);
+    void testGetOffsetSummary(BridgeTestContext bridgeTestContext) {
+        createTopic(bridgeTestContext, 1);
+        sendMessages(bridgeTestContext, 5);
 
-        HttpResponse<String> httpResponse = testStorage.getHttpService().get(String.format("/topics/%s/partitions/0/offsets", testStorage.getTopicName()));
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions/0/offsets", bridgeTestContext.getTopicName()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
@@ -152,46 +152,46 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
-    void testGetOffsetSummaryNotFound(TestStorage testStorage) {
-        HttpResponse<String> httpResponse = testStorage.getHttpService().get(String.format("/topics/%s/partitions/0/offsets", testStorage.getTopicName()));
+    void testGetOffsetSummaryNotFound(BridgeTestContext bridgeTestContext) {
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions/0/offsets", bridgeTestContext.getTopicName()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
     }
 
     @Test
-    void testCreateEmptyTopic(TestStorage testStorage) throws JsonProcessingException {
+    void testCreateEmptyTopic(BridgeTestContext bridgeTestContext) throws JsonProcessingException {
         ObjectNode jsonNode = objectMapper.createObjectNode();
 
-        HttpResponse<String> httpResponse = testStorage.getHttpService().post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
         assertThat(httpResponse.body().contains("Instance does not have required property \\\"topic_name\\\""), is(true));
     }
 
     @Test
-    void testCreateTopic(TestStorage testStorage) throws JsonProcessingException {
+    void testCreateTopic(BridgeTestContext bridgeTestContext) throws JsonProcessingException {
         ObjectNode jsonNode = objectMapper.createObjectNode();
-        jsonNode.put("topic_name", testStorage.getTopicName());
+        jsonNode.put("topic_name", bridgeTestContext.getTopicName());
 
-        HttpResponse<String> httpResponse = testStorage.getHttpService().post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.CREATED.code()));
     }
 
     @Test
-    void testCreateTopicWithAllParameters(TestStorage testStorage) throws JsonProcessingException {
+    void testCreateTopicWithAllParameters(BridgeTestContext bridgeTestContext) throws JsonProcessingException {
         ObjectNode jsonNode = objectMapper.createObjectNode();
-        jsonNode.put("topic_name", testStorage.getTopicName());
+        jsonNode.put("topic_name", bridgeTestContext.getTopicName());
         jsonNode.put("partitions_count", 1);
         jsonNode.put("replication_factor", 1);
 
-        HttpResponse<String> httpResponse = testStorage.getHttpService().post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.CREATED.code()));
     }
 
-    void createTopic(TestStorage testStorage, int partitions) {
-        createTopic(testStorage.getTopicName(), testStorage.getAdminClientFacade(), partitions);
+    void createTopic(BridgeTestContext bridgeTestContext, int partitions) {
+        createTopic(bridgeTestContext.getTopicName(), bridgeTestContext.getAdminClientFacade(), partitions);
     }
 
     void createTopic(String topicName, AdminClientFacade adminClientFacade, int partitions) {
@@ -205,7 +205,7 @@ public class AdminClientIT extends AbstractIT {
         }
     }
 
-    void sendMessages(TestStorage testStorage, int messageCount) {
+    void sendMessages(BridgeTestContext bridgeTestContext, int messageCount) {
         List<MessageRecord> recordList = new ArrayList<>();
 
         for (int i = 0; i < messageCount; i++) {
@@ -219,7 +219,7 @@ public class AdminClientIT extends AbstractIT {
         try {
             String messages = objectMapper.writeValueAsString(records);
 
-            testStorage.getHttpService().post("/topics/" + testStorage.getTopicName(), messages);
+            bridgeTestContext.getHttpService().post("/topics/" + bridgeTestContext.getTopicName(), messages);
         } catch (Exception e) {
             LOGGER.error("Failed to write records as JSON String due to: ", e);
             throw new RuntimeException(e);

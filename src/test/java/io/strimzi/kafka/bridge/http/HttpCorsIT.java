@@ -11,11 +11,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.configuration.BridgeConfiguration;
+import io.strimzi.kafka.bridge.configuration.ConfigEntry;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
 import io.strimzi.kafka.bridge.http.base.AbstractIT;
+import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import io.strimzi.kafka.bridge.objects.MessageRecord;
 import io.strimzi.kafka.bridge.objects.Records;
-import io.strimzi.kafka.bridge.objects.TestStorage;
 import io.vertx.core.http.HttpMethod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,14 +41,14 @@ public class HttpCorsIT extends AbstractIT {
 
     @BridgeConfiguration(
         properties = {
-            HttpConfig.HTTP_CORS_ENABLED + "=false",
-            HttpConfig.HTTP_CORS_ALLOWED_ORIGINS + "=https://strimzi.io",
-            HttpConfig.HTTP_CORS_ALLOWED_METHODS + "=GET,POST,PUT,DELETE,OPTIONS,PATCH"
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ENABLED, value = "false"),
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ALLOWED_ORIGINS, value = "https://strimzi.io"),
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ALLOWED_METHODS, value = "GET,POST,PUT,DELETE,OPTIONS,PATCH")
         }
     )
     @Test
-    public void testCorsNotEnabled(TestStorage testStorage) throws IOException, InterruptedException {
-        String uri = testStorage.getHttpService().getUri("/consumers/1/instances/1/subscription");
+    public void testCorsNotEnabled(BridgeTestContext bridgeTestContext) throws IOException, InterruptedException {
+        String uri = bridgeTestContext.getHttpService().getUri("/consumers/1/instances/1/subscription");
 
         HttpRequest httpRequest = HttpRequest.newBuilder()
             .uri(URI.create(uri))
@@ -57,7 +58,7 @@ public class HttpCorsIT extends AbstractIT {
             .header("Access-Control-Request-Method", "POST")
             .build();
 
-        HttpResponse<String> httpResponse = testStorage.getHttpService().getClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().getClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.METHOD_NOT_ALLOWED.code()));
 
@@ -68,7 +69,7 @@ public class HttpCorsIT extends AbstractIT {
             .header("Origin", "https://evil.io")
             .build();
 
-        httpResponse = testStorage.getHttpService().getClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        httpResponse = bridgeTestContext.getHttpService().getClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
     }
@@ -78,14 +79,14 @@ public class HttpCorsIT extends AbstractIT {
      */
     @BridgeConfiguration(
         properties = {
-            HttpConfig.HTTP_CORS_ENABLED + "=true",
-            HttpConfig.HTTP_CORS_ALLOWED_ORIGINS + "=https://strimzi.io",
-            HttpConfig.HTTP_CORS_ALLOWED_METHODS + "=GET,POST,PUT,DELETE,OPTIONS,PATCH"
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ENABLED, value = "true"),
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ALLOWED_ORIGINS, value = "https://strimzi.io"),
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ALLOWED_METHODS, value = "GET,POST,PUT,DELETE,OPTIONS,PATCH")
         }
     )
     @Test
-    public void testCorsForbidden(TestStorage testStorage) throws IOException, InterruptedException {
-        String uri = testStorage.getHttpService().getUri("/consumers/1/instances/1/subscription");
+    public void testCorsForbidden(BridgeTestContext bridgeTestContext) throws IOException, InterruptedException {
+        String uri = bridgeTestContext.getHttpService().getUri("/consumers/1/instances/1/subscription");
 
         HttpRequest httpRequest = HttpRequest.newBuilder()
             .uri(URI.create(uri))
@@ -95,7 +96,7 @@ public class HttpCorsIT extends AbstractIT {
             .header("Access-Control-Request-Method", "POST")
             .build();
 
-        HttpResponse<String> httpResponse = testStorage.getHttpService().getClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().getClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.FORBIDDEN.code()));
         assertThat(httpResponse.body(), is("CORS Rejected - Invalid origin"));
@@ -107,7 +108,7 @@ public class HttpCorsIT extends AbstractIT {
             .header("Origin", "https://evil.io")
             .build();
 
-        httpResponse = testStorage.getHttpService().getClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        httpResponse = bridgeTestContext.getHttpService().getClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.FORBIDDEN.code()));
         assertThat(httpResponse.body(), is("CORS Rejected - Invalid origin"));
@@ -118,14 +119,14 @@ public class HttpCorsIT extends AbstractIT {
      */
     @BridgeConfiguration(
         properties = {
-            HttpConfig.HTTP_CORS_ENABLED + "=true",
-            HttpConfig.HTTP_CORS_ALLOWED_ORIGINS + "=https://strimzi.io",
-            HttpConfig.HTTP_CORS_ALLOWED_METHODS + "=GET,POST,PUT,DELETE,OPTIONS,PATCH"
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ENABLED, value = "true"),
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ALLOWED_ORIGINS, value = "https://strimzi.io"),
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ALLOWED_METHODS, value = "GET,POST,PUT,DELETE,OPTIONS,PATCH")
         }
     )
     @Test
-    public void testCorsOriginAllowed(TestStorage testStorage) throws IOException, InterruptedException {
-        String uri = testStorage.getHttpService().getUri("/consumers/1/instances/1/subscription");
+    public void testCorsOriginAllowed(BridgeTestContext bridgeTestContext) throws IOException, InterruptedException {
+        String uri = bridgeTestContext.getHttpService().getUri("/consumers/1/instances/1/subscription");
         final String origin = "https://strimzi.io";
 
         ArrayNode topics = objectMapper.createArrayNode();
@@ -142,7 +143,7 @@ public class HttpCorsIT extends AbstractIT {
             .header("content-type", BridgeContentType.KAFKA_JSON)
             .build();
 
-        HttpResponse<String> httpResponse = testStorage.getHttpService().getClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().getClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
     }
 
@@ -151,14 +152,14 @@ public class HttpCorsIT extends AbstractIT {
      */
     @BridgeConfiguration(
         properties = {
-            HttpConfig.HTTP_CORS_ENABLED + "=true",
-            HttpConfig.HTTP_CORS_ALLOWED_ORIGINS + "=https://strimzi.io",
-            HttpConfig.HTTP_CORS_ALLOWED_METHODS + "=GET,POST,PUT,DELETE,OPTIONS,PATCH"
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ENABLED, value = "true"),
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ALLOWED_ORIGINS, value = "https://strimzi.io"),
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ALLOWED_METHODS, value = "GET,POST,PUT,DELETE,OPTIONS,PATCH")
         }
     )
     @Test
-    public void testCorsOriginAllowedProducer(TestStorage testStorage) {
-        testStorage.getAdminClientFacade().createTopic(testStorage.getTopicName());
+    public void testCorsOriginAllowedProducer(BridgeTestContext bridgeTestContext) {
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName());
 
         final String origin = "https://strimzi.io";
 
@@ -175,7 +176,7 @@ public class HttpCorsIT extends AbstractIT {
             throw new RuntimeException(e);
         }
 
-        HttpResponse<String> httpResponse = testStorage.getHttpService().post("/topics/" + testStorage.getTopicName(), messages, List.of("Origin", origin));
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().post("/topics/" + bridgeTestContext.getTopicName(), messages, List.of("Origin", origin));
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
     }
 
@@ -185,14 +186,14 @@ public class HttpCorsIT extends AbstractIT {
      */
     @BridgeConfiguration(
         properties = {
-            HttpConfig.HTTP_CORS_ENABLED + "=true",
-            HttpConfig.HTTP_CORS_ALLOWED_ORIGINS + "=https://strimzi.io",
-            HttpConfig.HTTP_CORS_ALLOWED_METHODS + "=GET,DELETE,PUT,OPTIONS,PATCH"
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ENABLED, value = "true"),
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ALLOWED_ORIGINS, value = "https://strimzi.io"),
+            @ConfigEntry(key = HttpConfig.HTTP_CORS_ALLOWED_METHODS, value = "GET,DELETE,PUT,OPTIONS,PATCH")
         }
     )
     @Test
-    public void testCorsMethodNotAllowed(TestStorage testStorage) throws IOException, InterruptedException {
-        String uri = testStorage.getHttpService().getUri("/topics/" + testStorage.getTopicName());
+    public void testCorsMethodNotAllowed(BridgeTestContext bridgeTestContext) throws IOException, InterruptedException {
+        String uri = bridgeTestContext.getHttpService().getUri("/topics/" + bridgeTestContext.getTopicName());
         final String origin = "https://strimzi.io";
 
         HttpRequest httpRequest = HttpRequest.newBuilder()
@@ -203,7 +204,7 @@ public class HttpCorsIT extends AbstractIT {
             .header("Access-Control-Request-Method", "POST")
             .build();
 
-        HttpResponse<String> httpResponse = testStorage.getHttpService().getClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().getClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
         assertThat(httpResponse.headers().map().get("access-control-allow-origin").get(0), is(origin));
         assertThat(httpResponse.headers().map().get("access-control-allow-headers").get(0), is("access-control-allow-origin,content-length,x-forwarded-proto,x-forwarded-host,origin,x-requested-with,content-type,access-control-allow-methods,accept"));

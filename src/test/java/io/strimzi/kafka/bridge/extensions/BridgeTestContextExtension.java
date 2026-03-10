@@ -4,7 +4,7 @@
  */
 package io.strimzi.kafka.bridge.extensions;
 
-import io.strimzi.kafka.bridge.objects.TestStorage;
+import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -12,21 +12,21 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 /**
- * Extension handling preparation, clean-up and injection of {@link TestStorage} into the tests.
+ * Extension handling preparation, clean-up and injection of {@link BridgeTestContext} into the tests.
  */
-public class TestStorageExtension implements BeforeEachCallback, AfterEachCallback, ParameterResolver {
+public class BridgeTestContextExtension implements BeforeEachCallback, AfterEachCallback, ParameterResolver {
 
-    private static final String TEST_STORAGE_KEY = "testStorage";
+    private static final String BRIDGE_TEST_CONTEXT_KEY = "bridgeTestContext";
 
     /**
-     * Method creating {@link TestStorage} for the particular test and {@link ExtensionContext}.
+     * Method creating {@link BridgeTestContext} for the particular test and {@link ExtensionContext}.
      *
      * @param extensionContext  context of the test.
      */
     @Override
     public void beforeEach(ExtensionContext extensionContext) {
-        TestStorage testStorage = new TestStorage(extensionContext);
-        getStore(extensionContext).put(TEST_STORAGE_KEY, testStorage);
+        BridgeTestContext bridgeTestContext = new BridgeTestContext(extensionContext);
+        getStore(extensionContext).put(BRIDGE_TEST_CONTEXT_KEY, bridgeTestContext);
     }
 
     /**
@@ -36,9 +36,9 @@ public class TestStorageExtension implements BeforeEachCallback, AfterEachCallba
      */
     @Override
     public void afterEach(ExtensionContext extensionContext) {
-        TestStorage testStorage = getStore(extensionContext).get(TEST_STORAGE_KEY, TestStorage.class);
-        if (testStorage != null && testStorage.getAdminClientFacade() != null) {
-            testStorage.getAdminClientFacade().close();
+        BridgeTestContext bridgeTestContext = getStore(extensionContext).get(BRIDGE_TEST_CONTEXT_KEY, BridgeTestContext.class);
+        if (bridgeTestContext != null && bridgeTestContext.getAdminClientFacade() != null) {
+            bridgeTestContext.getAdminClientFacade().close();
         }
     }
 
@@ -54,7 +54,7 @@ public class TestStorageExtension implements BeforeEachCallback, AfterEachCallba
     public boolean supportsParameter(ParameterContext parameterContext,
                                      ExtensionContext extensionContext) {
         Class<?> type = parameterContext.getParameter().getType();
-        return type.equals(TestStorage.class);
+        return type.equals(BridgeTestContext.class);
     }
 
     /**
@@ -68,7 +68,7 @@ public class TestStorageExtension implements BeforeEachCallback, AfterEachCallba
     @Override
     public Object resolveParameter(ParameterContext parameterContext,
                                    ExtensionContext extensionContext) {
-        return getStore(extensionContext).get(TEST_STORAGE_KEY, TestStorage.class);
+        return getStore(extensionContext).get(BRIDGE_TEST_CONTEXT_KEY, BridgeTestContext.class);
     }
 
     /**

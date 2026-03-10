@@ -7,6 +7,7 @@ package io.strimzi.kafka.bridge.extensions;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.configuration.BridgeConfiguration;
+import io.strimzi.kafka.bridge.configuration.ConfigEntry;
 import io.strimzi.kafka.bridge.enums.BridgeRunMode;
 import io.strimzi.kafka.bridge.http.HttpBridge;
 import io.strimzi.kafka.bridge.httpclient.HttpService;
@@ -143,6 +144,24 @@ public class BridgeExtension implements
     }
 
     /**
+     * Return properties in the Map from the {@link BridgeConfiguration} annotation.
+     *
+     * @param bridgeConfiguration   annotation containing the array of {@link ConfigEntry} used for configuring the Bridge cluster.
+     *
+     * @return  properties in the Map from the {@link BridgeConfiguration} annotation.
+     */
+    private Map<String, Object> returnPropertiesFromConfigEntries(BridgeConfiguration bridgeConfiguration) {
+        ConfigEntry[] configEntries = bridgeConfiguration.properties();
+        Map<String, Object> properties = new HashMap<>();
+
+        for (ConfigEntry configEntry : configEntries) {
+            properties.put(configEntry.key(), configEntry.value());
+        }
+
+        return properties;
+    }
+
+    /**
      * Method for obtaining the {@link BridgeConfiguration} annotation, together with it's configured properties.
      * Depending on the {@link org.junit.jupiter.api.TestInstance.Lifecycle}, the annotation is taken from method or class.
      * In case that method doesn't contain this annotation, we are taking the default class one (which is by default configured in
@@ -150,9 +169,9 @@ public class BridgeExtension implements
      *
      * @param context   context of the test.
      *
-     * @return  array of properties from the {@link BridgeConfiguration}.
+     * @return  properties from the {@link BridgeConfiguration}.
      */
-    private String[] getBridgeConfigurationFromAnnotation(ExtensionContext context) {
+    private Map<String, Object> getBridgeConfigurationFromAnnotation(ExtensionContext context) {
         Class<?> testClass = context.getRequiredTestClass();
         BridgeConfiguration config;
 
@@ -164,7 +183,7 @@ public class BridgeExtension implements
         }
 
         if (config != null) {
-            return config.properties();
+            return returnPropertiesFromConfigEntries(config);
         }
 
         // Otherwise get it from @BridgeTest meta-annotation
@@ -174,7 +193,7 @@ public class BridgeExtension implements
             config = BridgeSuite.class.getAnnotation(BridgeConfiguration.class);
 
             if (config != null) {
-                return config.properties();
+                return returnPropertiesFromConfigEntries(config);
             }
         }
 
@@ -182,8 +201,7 @@ public class BridgeExtension implements
     }
 
     /**
-     * Method for obtaining the Bridge configuration from {@link BridgeConfiguration} annotation and then parsing
-     * the key-value pairs into the {@link Map}, which is then returned.
+     * Method for obtaining the Bridge configuration from {@link BridgeConfiguration} annotation and returning it in Map.
      * There is also {@param bootstrapServers} of the Kafka cluster (created in {@link KafkaExtension} added into the configuration.
      *
      * @param extensionContext  context of the test.
@@ -192,18 +210,10 @@ public class BridgeExtension implements
      * @return  {@link Map} containing configuration of the Bridge cluster.
      */
     private Map<String, Object> getConfiguration(ExtensionContext extensionContext, String bootstrapServers) {
-        String[] propertiesFromAnnotation = getBridgeConfigurationFromAnnotation(extensionContext);
-        Map<String, Object> configuration = new HashMap<>();
+        Map<String, Object> propertiesFromAnnotation = getBridgeConfigurationFromAnnotation(extensionContext);
+        propertiesFromAnnotation.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
 
-        for (String property : propertiesFromAnnotation) {
-            if (property.contains("=")) {
-                String[] keyValue = property.split("=");
-                configuration.put(keyValue[0], keyValue[1]);
-            }
-        }
-        configuration.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-
-        return configuration;
+        return propertiesFromAnnotation;
     }
 
     /**
@@ -230,7 +240,7 @@ public class BridgeExtension implements
      * @param extensionContext  context of the test.
      * @param configuration     configuration of the Bridge.
      */
-    private void deployBridgeInMemory(ExtensionContext extensionContext, Map<String, Object> configuration) throws InterruptedException {
+    private void deployBridgeInMemory(ExtensionContext extensionContext, Map<String, Object> configuration) {
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(configuration);
         HttpBridge httpBridge = new HttpBridge(bridgeConfig);
         LOGGER.info("Deploying in-memory Bridge");
@@ -297,7 +307,7 @@ public class BridgeExtension implements
      *
      * @throws IOException  exception during creating properties file.
      */
-    public void setupBridge(ExtensionContext extensionContext) throws IOException, InterruptedException {
+    public void setupBridge(ExtensionContext extensionContext) throws IOException {
         String bootstrapServers = BRIDGE_RUN_MODE_ENV.equals(BridgeRunMode.IN_MEMORY) ?
             KafkaExtension.getKafkaCluster(extensionContext).getBootstrapServers() : KafkaExtension.getKafkaCluster(extensionContext).getNetworkBootstrapServers();
         Map<String, Object> bridgeConfiguration = getConfiguration(extensionContext, bootstrapServers);

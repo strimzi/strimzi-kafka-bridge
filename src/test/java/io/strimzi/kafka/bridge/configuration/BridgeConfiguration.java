@@ -28,22 +28,20 @@ public @interface BridgeConfiguration {
      * <pre>
      * &#64;BridgeConfiguration(
      *     properties = {
-     *         HttpConfig.HTTP_CORS_ENABLED + "=false",
-     *         HttpConfig.HTTP_CORS_ALLOWED_ORIGINS + "=https://strimzi.io",
-     *         HttpConfig.HTTP_CORS_ALLOWED_METHODS + "=GET,POST,PUT,DELETE,OPTIONS,PATCH"
+     *         &#64@ConfigEntry(key = HttpConfig.HTTP_CORS_ENABLED, value = "false"),
+     *         &#64@ConfigEntry(key = HttpConfig.HTTP_CORS_ALLOWED_ORIGINS, value = "https://strimzi.io"),
+     *         &#64@ConfigEntry(key = HttpConfig.HTTP_CORS_ALLOWED_METHODS, value = "GET,POST,PUT,DELETE,OPTIONS,PATCH")
      *     }
      * )
      * </pre>
      *
-     * Note: it's a String array where each element is one key-value pair separated by `=`.
-     *
-     * @return  array of Strings containing configuration of Bridge
+     * @return  array of {@link ConfigEntry} containing configuration in key-value pairs
      */
-    String[] properties() default {
-        KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG + "=earliest",
-        KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG + "=10000",
-        HttpConfig.HTTP_CONSUMER_TIMEOUT + "=5",
-        BridgeConfig.METRICS_TYPE + "=strimziMetricsReporter",
-        BridgeConfig.BRIDGE_ID + "=my-bridge"
+    ConfigEntry[] properties() default {
+        @ConfigEntry(key = KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, value = "earliest"),
+        @ConfigEntry(key = KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, value = "10000"),
+        @ConfigEntry(key = HttpConfig.HTTP_CONSUMER_TIMEOUT, value = "5"),
+        @ConfigEntry(key = BridgeConfig.METRICS_TYPE, value = "strimziMetricsReporter"),
+        @ConfigEntry(key = BridgeConfig.BRIDGE_ID, value = "my-bridge"),
     };
 }

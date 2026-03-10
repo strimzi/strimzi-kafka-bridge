@@ -15,7 +15,7 @@ import java.util.Random;
 /**
  * Class used for storing variables, services, and all information used in tests.
  */
-public class TestStorage {
+public class BridgeTestContext {
     private final static Random RNG = new Random();
 
     private String topicName;
@@ -27,7 +27,7 @@ public class TestStorage {
      *
      * @param extensionContext  context of the test.
      */
-    public TestStorage(ExtensionContext extensionContext) {
+    public BridgeTestContext(ExtensionContext extensionContext) {
         topicName = "my-topic-" + RNG.nextInt(Integer.MAX_VALUE);
         httpService = BridgeExtension.getHttpService(extensionContext);
         adminClientFacade = AdminClientFacade.create(KafkaExtension.getKafkaCluster(extensionContext).getBootstrapServers());
