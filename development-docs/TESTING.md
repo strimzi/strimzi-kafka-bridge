@@ -6,7 +6,7 @@ This document gives a detailed breakdown of the testing processes and testing op
 
 - [Pre-requisites](#pre-requisites)
 - [Package Structure](#package-structure)
-- [Approaches](#approaches)
+- [Kafka and Bridge installation methods](#kafka-and-bridge-installation-methods)
 - [Test Phases](#test-phases)
 - [Available Test Groups](#available-test-groups)
 - [Environment Variables](#environment-variables)
@@ -30,45 +30,31 @@ when `test-containers` tries to start, you can set `TESTCONTAINERS_RYUK_CONTAINE
 
 You can find tests inside `src.test.java` package. Moreover we have the auxiliary classes and the most notable one are:
  
-- `Utils` static methods
-- `Clients` clients for testing overall communication of the `Kafka Bridge`
-- `Facades` encapsulation of the standalone `Kafka` and `AdminClient` instance
+- `utils` - static methods
+- `clients` - clients for testing overall communication of the `Kafka Bridge`
+- `facades` - encapsulation of the standalone `Kafka` and `AdminClient` instance
+- `configuration` - annotations used in the tests for configuring Bridge cluster
+- `enums` - enums used in tests
+- `extensions` - test extensions for deploying Kafka, Bridge and for creating object storing all test related variables
+- `httpclient` - HTTP service with utils methods for communicating with Bridge via HTTP requests
+- `objects` - objects used in tests - mainly for creating objects for easier manipulation in tests from JSON objects (using Jackson)
 
-The test suite has provides a `Http` package, where you can find all test cases related to the `Http Kafka Bridge`.
+All test cases related to the `Http Kafka Bridge` are then stored inside `http` package.
 
-## Approaches
+## Kafka and Bridge installation methods
 
-There are four approaches how you can verify that `Kafka Bridge` is without any bug. Before I list all approaches 
-the following  terminology is needed.
+The Kafka cluster is always deployed using [strimzi-test-containers](https://github.com/strimzi/test-container).
+Based on the `RUN_WITH_ALL_KAFKA_VERSIONS` environment variable, the Bridge tests can be executed against:
+- latest Kafka version when set to `false`.
+- to list of Kafka versions when set to `true` (default). For the list of Kafka versions we are taking the supported versions by the `strimzi-test-container` and we filter them to use just latest versions for the particular minor version
+  (that means if the supported versions are `4.1.0`, `4.1.1`, `4.2.0`, `4.2.1`, `4.2.2` then we take `4.1.1` and `4.2.2`).
 
-#### In-memory 
-`Kafka` = 
-- for `Http Kafka Bridge` we use [Strimzi Kafka container]([here](https://github.com/strimzi/strimzi-kafka-operator/tree/main/test-container).)
+In case of Bridge cluster, there are two modes that can be configured using `BRIDGE_RUN_MODE`:
+- `IN_MEMORY` - default mode, Bridge is started using VertX verticle. This mode is useful in case of local debugging, you are able to stop at particular place in the code.
+- `CONTAINER` - Bridge is started using [test-containers](https://github.com/testcontainers). This mode is useful for testing the image we are producing (the image can be configured using `BRIDGE_IMAGE` env variable).
 
-`Kafka Bridge` =
- - for deployment of the `Http Kafka Bridge` we are using [Vert.x](https://vertx.io/) 
-
-#### Standalone 
-`Kafka` 
- - we use latest version of the `Kafka` and you can start the `Kafka` instance by the `zookeeper-server-start.sh` and
-`kafka-server-start.sh`, which can be for instance downloaded from [this](https://kafka.apache.org/downloads) site
-
-`Kafka Bridge` 
- - start `Kafka Bridge` instance using bash script located `target/kafka-bridge-{version}/kafka-bridge-{version}/bin/kafka_bridge_run.sh` 
-with following command `kafka_bridge_run.sh --config-file ../config/application.properties`
- 
-----  
-The approaches are as follows:
-
-|  Approach	| Supported |
-|---	|---	| 
-|   1. Using in-memory `Kafka` and in-memory `Kafka Bridge` | Yes
-|   2. Using standalone `Kafka` and standalone `Kafka Bridge` | Yes
-|   3. Using in-memory `Kafka` and standalone `Kafka Bridge` | No
-|   4. Using standalone `Kafka` and in-memory `Kafka Bridge` | No
-
-In our CI we are currently testing the first approach which is the most important. Also, in the future we are planning 
-to add the second option. Rest of these approaches are not so essential. 
+Currently in the CI we are testing against list of Kafka versions with in-memory Bridge. 
+But in the future we should definitely add step for running the very same tests also against container Bridge (and test the image we are producing).
 
 ## Test Phases
 
@@ -79,50 +65,21 @@ In general, we use classic test phases: `setup`, `exercise`, `verify` and `teard
 
 In this phase we perform:
 
-* Deploy the in-memory Strimzi `Kafka` container or standalone `Kafka`
-* Deploy the AdminClient
-* Deploy the in-memory `Kafka Bridge` or standalone `Kafka-Bridge`
-* Deploy the WebClient
+* Deploy the Strimzi `Kafka` container
+* Deploy the in-memory or container of `Kafka Bridge`
+* Create Admin client and HTTP Service
 
-Everything is setup in the `HttpBridgeTestAbstract` class. In the static block we instantiate the Strimzi `Kafka` container,
-AdminClient to be shared across all test suites. In `@Before` we create our `Kafka` client, `Kafka Bridge` instance and lastly
-Webclient, which is used for communication with `Kafka Bridge` REST API.
+Everything is set up in the `BridgeSuite`. 
+This annotation contains all extensions needed for deploying everything needed for the tests.
+Based on the `TestInstance.Lifecycle` - if `PER_CLASS` or `PER_METHOD` is specified - the Bridge cluster is deployed.
+In case that `PER_CLASS` is used (default in the `BridgeSuite` annotation), Bridge is deployed _before all_ tests.
+Otherwise, in case that `PER_METHOD` is used (you can overwrite it on class-level), Bridge is deployed _before each_ test. 
+Based on the `TestInstance.Lifecycle` you can also configure the Bridge using the `BridgeConfiguration` annotation - there is default used in the `BridgeSuite`, however you can configure the Bridge any way you want and need.
+The `BridgeConfiguration` should be added to the particular method in case of `TestInstance.Lifecycle.PER_METHOD`, otherwise it should be added for the whole class.
 
-Setup in-memory Strimzi `Kafka` container and in-memory `Kafka Bridge` example:
-```
-    ...
-    ...
-    static {
-        kafkaContainer = new StrimziKafkaContainer();        
-        kafkaContainer.start();                                 <--- deploy in-memory Strimzi Kafka container
-
-        kafkaUri = kafkaContainer.getBootstrapServers();        <--- get Kafka bootstrap address
-
-        adminClientFacade = AdminClientFacade.create(kafkaUri); <--- deploy in-memory AdminClient
-    }
-    ...
-    ...
-    @BeforeAll
-    void setup() {
-    
-        basicKafkaClient = new BasicKafkaClient(kafkaUri);  <--- setup Kafka client
-        bridgeConfig = BridgeConfig.fromMap(config);        <--- setup bridge config
-        
-        httpBridge = new HttpBridge(bridgeConfig, new MetricsReporter(jmxCollectorRegistry, meterRegistry)); <--- new instance of Kafka Bridge
-        httpBridge.setHealthChecker(new HealthChecker());
-
-        LOGGER.info("Deploying in-memory bridge");
-        vertx.deployVerticle(httpBridge).onComplete(context.succeeding(id -> context.completeNow())); <--- deploy in-memory Kafka Bridge
-    
-        client = WebClient.create(vertx, new WebClientOptions() <--- webclient for communication with REST API of Kafka Bridge
-            .setDefaultHost(Urls.BRIDGE_HOST)
-            .setDefaultPort(Urls.BRIDGE_PORT));
-}
-```
-
-In case testing standalone Strimzi `Kafka` container it is excepted that you have already spin-up your Kafka cluster locally. 
-Same is applied on standalone `Kafka Bridge` instance. Note that you have to have set the environment variables `BRIDGE_EXTERNAL_ENV` and
-`KAFKA_EXTERNAL_ENV`. Semantics of these variables is described in section Environment variables.
+Setup of the Kafka and Bridge is written as extension and you will not need to bother with writing the _before all/each_ methods in every test class.
+However, your test class have to extend the `AbstractIT` class in order to use the `BridgeSuite` with its extensions, but also to provide parameter for the Kafka version, as we are running in the `ParameterizedClass` and
+the parameter for Kafka has to be specified.
 
 ### Exercise
 
@@ -134,21 +91,8 @@ When your environment is in place from the previous phase, you can add code for 
 
 ### Teardown
 
-In teardown phase we perform deletion of the `Kafka Bridge` instance. What is worth mentioning is that Strimzi `Kafka` container is
-implicitly stopped because of static block.
-
-Teardown is triggered in `@AfterAll` of `HttpBridgeTestBase`:
-```
-    @AfterAll
-    static void afterAll(VertxTestContext context) {
-        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {                              <--- checking if external Kafka Bridge should run
-            vertx.close().onComplete(context.succeeding(arg -> context.completeNow()));      <--- closing the vertx instance
-        } else {
-            // if we running external bridge
-            context.completeNow();
-        }
-    }
-```
+In teardown phase, we are stopping the in-memory or container Bridge based on the `TestInstance.Lifecycle` - so either after each test when `TestInstance.Lifecycle.PER_METHOD` is used, or after all tests when `TestInstance.Lifecycle.PER_CLASS` is used.
+The Kafka cluster is stopped after everything.
 
 ## Available Test groups
 
@@ -173,10 +117,12 @@ All available test groups are listed in [Constants](https://github.com/strimzi/s
 
 System tests can be configured by several environment variables, which are loaded before test execution.
 
-| Name                                   | Description                                                                              | Default                                         |
-| :------------------------------------: | :--------------------------------------------------------------------------------------: | :----------------------------------------------:|
-| KAFKA_EXTERNAL_ENV                     |  Specify if tests should run against in-memory or external Kafka cluster                 | false                                           |
-| BRIDGE_EXTERNAL_ENV                    | Specify if tests should run against in-memory or external Kafka Bridge                   | false                                           |
+|            Name             |                                                                                  Description                                                                                  |               Default               |
+|:---------------------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-----------------------------------:|
+| RUN_WITH_ALL_KAFKA_VERSIONS |     Environment variable configuring if the Bridge tests should run against all Kafka versions (latest patch version of each minor Kafka version) or just against latest.     |                true                 |
+|       BRIDGE_RUN_MODE       | Configures mode in which we are going to start the Bridge cluster for the tests - IN_MEMORY, CONTAINER. In case of CONTAINER, we are going to test the official Bridge image. |              IN_MEMORY              |
+|        BRIDGE_IMAGE         |                             If tests are executed with Bridge running in test-container, this environment is used for configuring the used image                              | quay.io/strimzi/kafka-bridge:latest |
+
 
 ## Running single test class
 
