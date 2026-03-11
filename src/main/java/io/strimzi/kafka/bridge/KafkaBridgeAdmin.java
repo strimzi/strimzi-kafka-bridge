@@ -6,7 +6,7 @@
 package io.strimzi.kafka.bridge;
 
 import io.strimzi.kafka.bridge.config.KafkaConfig;
-import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -33,7 +33,7 @@ public class KafkaBridgeAdmin {
     private static final Logger LOGGER = LogManager.getLogger(KafkaBridgeAdmin.class);
 
     private final KafkaConfig kafkaConfig;
-    private AdminClient adminClient;
+    private Admin adminClient;
 
     /**
      * Constructor
@@ -53,7 +53,7 @@ public class KafkaBridgeAdmin {
         props.putAll(this.kafkaConfig.getConfig());
         props.putAll(this.kafkaConfig.getAdminConfig().getConfig());
 
-        this.adminClient = AdminClient.create(props);
+        this.adminClient = Admin.create(props);
     }
 
     /**
