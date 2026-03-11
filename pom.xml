@@ -88,7 +88,8 @@
 		<hamcrest.version>2.2</hamcrest.version>
 		<junit.version>6.0.0</junit.version>
 		<mockito.version>5.21.0</mockito.version>
-		<test-container.version>0.115.0</test-container.version>
+        <strimzi-test-container.version>0.115.0</strimzi-test-container.version>
+        <test-container.version>2.0.2</test-container.version>
 		<!-- property to skip surefire tests during failsafe execution -->
 		<!--suppress UnresolvedMavenProperty -->
 		<skip.surefire.tests>${skipTests}</skip.surefire.tests>
@@ -419,6 +420,12 @@
 		<dependency>
 			<groupId>io.strimzi</groupId>
 			<artifactId>strimzi-test-container</artifactId>
+			<version>${strimzi-test-container.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers</artifactId>
 			<version>${test-container.version}</version>
 			<scope>test</scope>
 		</dependency>
@@ -559,6 +566,7 @@
 									<ignoredNonTestScopedDependency>io.vertx:vertx-opentelemetry</ignoredNonTestScopedDependency>
 									<!-- Used only for test in the bridge but needed by OAuth. If left "test" scoped, a potential Maven bug remove it from the runtime -->
 									<ignoredNonTestScopedDependencies>com.fasterxml.jackson.core:jackson-databind</ignoredNonTestScopedDependencies>
+									<ignoredUnusedDeclaredDependency>com.fasterxml.jackson.core:jackson-core</ignoredUnusedDeclaredDependency>
 								</ignoredNonTestScopedDependencies>
 								<ignoredUnusedDeclaredDependencies>
 									<ignoredUnusedDeclaredDependency>io.strimzi:kafka-env-var-config-provider</ignoredUnusedDeclaredDependency>
