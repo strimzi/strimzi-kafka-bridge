@@ -62,7 +62,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -195,9 +194,7 @@ public class HttpBridge extends AbstractVerticle {
         Long timeoutInMs = timeout * 1000L;
         vertx.setPeriodic(timeoutInMs / 2, ignore -> {
             LOGGER.debug("Looking for stale consumers in {} entries", timestampMap.size());
-            Iterator<Map.Entry<ConsumerInstanceId, Long>> it = timestampMap.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry<ConsumerInstanceId, Long> item = it.next();
+            for (Map.Entry<ConsumerInstanceId, Long> item : timestampMap.entrySet()) {
                 if (item.getValue() + timeoutInMs < System.currentTimeMillis()) {
                     HttpSinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(item.getKey());
                     if (deleteSinkEndpoint != null) {

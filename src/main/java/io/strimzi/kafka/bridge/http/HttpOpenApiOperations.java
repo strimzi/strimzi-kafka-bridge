@@ -34,7 +34,7 @@ public enum HttpOpenApiOperations {
     LIST_PARTITIONS("listPartitions"),
     /** get partition information for a specific topic */
     GET_PARTITION("getPartition"),
-    /** get offesets information for a specific topic partition */
+    /** get offsets information for a specific topic partition */
     GET_OFFSETS("getOffsets"),
     /** assign a consumer to topic partition(s) */
     ASSIGN("assign"),

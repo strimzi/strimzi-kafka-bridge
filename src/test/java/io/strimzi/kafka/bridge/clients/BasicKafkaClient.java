@@ -9,7 +9,6 @@ import io.strimzi.kafka.bridge.utils.KafkaJsonSerializer;
 import io.vertx.kafka.client.producer.KafkaHeader;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -85,20 +84,6 @@ public class BasicKafkaClient {
     public int sendStringMessagesPlain(String topicName, int messageCount) {
         return sendStringMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount,
             List.of(), "\"Hello\" : \"World\"", 0, null, false);
-    }
-
-    /**
-     * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     *
-     * @param topicName    topic name where messages are send
-     * @param message      content to be sent
-     * @param messageCount message count
-     * @param partition partition, which will be selected
-     * @return sent message count
-     */
-    public int sendStringMessagesPlain(String topicName, String message, int messageCount, int partition) {
-        return sendStringMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount,
-                List.of(), message, partition, null, true);
     }
 
     public int sendStringMessagesPlain(String topicName, String message, int messageCount, int partition, boolean withNullKeyRecord) {
@@ -205,31 +190,6 @@ public class BasicKafkaClient {
     }
 
     /**
-     * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     *
-     * @param topicName    topic name where messages are send
-     * @param messageCount message count
-     * @param message specific message to send
-     * @return sent message count
-     */
-    public int sendJsonMessagesPlain(String topicName, int messageCount, String message) {
-        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
-            message, 0, null, false);
-    }
-
-    /**
-     * Send messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     *
-     * @param topicName    topic name where messages are send
-     * @param messageCount message count
-     * @return sent message count
-     */
-    public int sendJsonMessagesPlain(String topicName, int messageCount) {
-        return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
-            "{\"Hello\" : \"World\"}", 0, null, false);
-    }
-
-    /**
      * Receive messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
      *
      * @param timeoutMs    timeout for the receiving messages
@@ -251,7 +211,7 @@ public class BasicKafkaClient {
         properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrapServer);
         properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-sender-plain-");
         properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
-        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, OffsetResetStrategy.EARLIEST.name().toLowerCase());
+        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "consumer-group" + new Random().nextInt(Integer.MAX_VALUE));
 
         try (Consumer plainConsumer = new Consumer(properties, resultPromise, msgCntPredicate, topicName)) {
@@ -263,16 +223,5 @@ public class BasicKafkaClient {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Receive messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     *
-     * @param topicName    topic name from messages are received
-     * @param messageCount message count
-     * @return received message count
-     */
-    public int receiveStringMessagesPlain(String topicName, int messageCount) {
-        return receiveStringMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount);
     }
 }

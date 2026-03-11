@@ -122,7 +122,7 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
 
     @BeforeParameterizedClassInvocation
     void beforeAll(String kafkaVersion, VertxTestContext context) {
-        LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
+        LOGGER.info("Environment variable EXTERNAL_BRIDGE: {}", BRIDGE_EXTERNAL_ENV);
         setupKafkaCluster(kafkaVersion);
         configureDefaults();
         deployBridge(context);
@@ -279,12 +279,14 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
      * Override or customize Bridge configuration for tests.
      * <p>
      * Example:
+     * <pre>
      * &#064;Override
      * protected Map&lt;String, Object&gt; overridableConfig() {
      *     Map&lt;String, Object&gt; overrides = new HashMap&lt;&gt;();
      *     overrides.put("bridge.id", "my-custom-bridge");
      *     return overrides;
      * }
+     * </pre>
      * Return a map with configuration keys to override default values,
      * or keys mapped to {@code null} to remove them.
      */

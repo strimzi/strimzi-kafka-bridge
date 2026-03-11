@@ -54,11 +54,9 @@ public class BridgeContextStorageProvider implements ContextStorageProvider {
                 return Scope.noop();
             } else {
                 data.put(ACTIVE_CONTEXT, toAttach);
-                return current == null ? () -> {
-                    data.remove(ACTIVE_CONTEXT);
-                } : () -> {
-                    data.put(ACTIVE_CONTEXT, current);
-                };
+                return current == null
+                        ? () -> data.remove(ACTIVE_CONTEXT)
+                        : () -> data.put(ACTIVE_CONTEXT, current);
             }
         }
 

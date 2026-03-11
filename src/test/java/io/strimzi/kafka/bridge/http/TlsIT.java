@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.is;
 public class TlsIT extends HttpBridgeITAbstract {
 
     // self-signed cert with 100 years validity
-    private static String sslCert = "-----BEGIN CERTIFICATE-----\n" +
+    private static final String SSL_CERT = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDczCCAlugAwIBAgIUHt1AoJ7RM/GO5SrrmDXkdO5TJQowDQYJKoZIhvcNAQEL\n" +
             "BQAwSDELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxEDAOBgNVBAoM\n" +
             "B1N0cmltemkxEjAQBgNVBAMMCWxvY2FsaG9zdDAgFw0yNTEwMDYxMTA1NDdaGA8y\n" +
@@ -49,7 +49,7 @@ public class TlsIT extends HttpBridgeITAbstract {
             "ouquxThA4toTNTI++ISUAh2/8X4IsU8=\n" +
             "-----END CERTIFICATE-----";
 
-    private static String sslKey = "-----BEGIN PRIVATE KEY-----\n" +
+    private static final String SSL_KEY = "-----BEGIN PRIVATE KEY-----\n" +
             "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDfwlE6P4tTSyE7\n" +
             "RWMdHZpF1fs84KiKQjFIQGa8u+d8Ttm7NWmRy5KLK7aHHcJzy0YRyTIwt8X2ctT9\n" +
             "KXMpHYUJ3xv3eX5WerbxfEyDlHfjf+GpUAviae2Aq8u36Ta00Ti9HtVWp8rDhFJ0\n" +
@@ -86,7 +86,7 @@ public class TlsIT extends HttpBridgeITAbstract {
                 .setDefaultPort(Urls.BRIDGE_SSL_PORT)
                 .setSsl(true)
                 .setTrustOptions(new PemTrustOptions()
-                        .addCertValue(Buffer.buffer(sslCert)))
+                        .addCertValue(Buffer.buffer(SSL_CERT)))
                 .setVerifyHost(false));
 
         sslClient
@@ -126,8 +126,8 @@ public class TlsIT extends HttpBridgeITAbstract {
     protected Map<String, Object> overrideConfig() {
         Map<String, Object> configs = new HashMap<>();
         configs.put(HttpConfig.HTTP_SERVER_SSL_ENABLE, true);
-        configs.put(HttpConfig.HTTP_SERVER_SSL_CERTIFICATE, sslCert);
-        configs.put(HttpConfig.HTTP_SERVER_SSL_KEY, sslKey);
+        configs.put(HttpConfig.HTTP_SERVER_SSL_CERTIFICATE, SSL_CERT);
+        configs.put(HttpConfig.HTTP_SERVER_SSL_KEY, SSL_KEY);
         return configs;
     }
 }

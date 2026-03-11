@@ -159,7 +159,7 @@ public class ConsumerService extends BaseService {
 
     public ConsumerService createConsumer(VertxTestContext context, String groupId, JsonObject json) throws InterruptedException, ExecutionException, TimeoutException {
 
-        LOGGER.info("Creating consumer with name " + json.getString("name"));
+        LOGGER.info("Creating consumer with name {}", json.getString("name"));
 
         CompletableFuture<Boolean> create = new CompletableFuture<>();
         createConsumerRequest(groupId, json)
@@ -215,7 +215,7 @@ public class ConsumerService extends BaseService {
 
     public ConsumerService deleteConsumer(VertxTestContext context, String groupId, String name) throws InterruptedException, ExecutionException, TimeoutException {
 
-        LOGGER.info("Deleting consumer with name " + name);
+        LOGGER.info("Deleting consumer with name {}", name);
 
         CompletableFuture<Boolean> delete = new CompletableFuture<>();
         // consumer deletion

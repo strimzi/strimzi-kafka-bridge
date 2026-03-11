@@ -98,9 +98,7 @@ public class MetricsIT extends HttpBridgeITAbstract {
                 .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
                 .sendJsonObject(root)
                 .onComplete(sendResult -> {
-                    context.verify(() -> {
-                        assertThat(sendResult.succeeded(), is(true));
-                    });
+                    context.verify(() -> assertThat(sendResult.succeeded(), is(true)));
                     
                     // Check metrics after producer activity
                     internalBaseService()

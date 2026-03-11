@@ -62,7 +62,7 @@ class JmxMetricsCollectorTest {
 
         MetricsCollector metricsCollector = new JmxMetricsCollector(mockJmxCollector, mockPromRegistry, mockPromFormatter);
         
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> metricsCollector.doScrape());
+        RuntimeException exception = assertThrows(RuntimeException.class, metricsCollector::doScrape);
         assertThat(exception.getMessage(), containsString("Test exception"));
     }
 

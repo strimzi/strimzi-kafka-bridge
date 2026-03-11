@@ -11,12 +11,6 @@ package io.strimzi.kafka.bridge.http.converter;
 public class JsonEncodeException extends RuntimeException {
 
     /**
-     * Default constrctor
-     */
-    public JsonEncodeException() {
-    }
-
-    /**
      * Constructor
      *
      * @param message Exception message
@@ -25,13 +19,4 @@ public class JsonEncodeException extends RuntimeException {
         super(message);
     }
 
-    /**
-     * Constructor
-     *
-     * @param message Exception message
-     * @param cause Inner cause of the exception
-     */
-    public JsonEncodeException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }

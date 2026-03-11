@@ -54,7 +54,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     private String name = "my-kafka-consumer";
     private String groupId = "my-group";
 
-    private JsonObject consumerWithEarliestResetJson = new JsonObject()
+    private final JsonObject consumerWithEarliestResetJson = new JsonObject()
         .put("name", name)
         .put("auto.offset.reset", "earliest")
         .put("enable.auto.commit", true)
@@ -437,7 +437,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
     }
 
     @Test
-    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException {
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=mqtt";
 
@@ -1133,7 +1133,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
             .deleteConsumer(context, groupId, name);
 
         // topics deletion
-        LOGGER.info("Deleting async topics " + topic + " via Admin client");
+        LOGGER.info("Deleting async topics {} via Admin client", topic);
         adminClientFacade.deleteTopic(topic);
 
         LOGGER.info("Verifying that all topics are deleted and the size is 0");
@@ -1719,7 +1719,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                         assertThat(consumerInstanceId, is(name));
                         assertThat(consumerBaseUri, is(Urls.consumerInstance(groupId, name)));
 
-                        vertx.setTimer(timeout * 2 * 1000L, timeouted -> {
+                        vertx.setTimer(timeout * 2 * 1000L, timedouted -> {
                             CompletableFuture<Boolean> delete = new CompletableFuture<>();
                             // consumer deletion
                             consumerService()
@@ -1788,7 +1788,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                         assertThat("Response status code is not '422'", response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
                         HttpBridgeError error = HttpBridgeError.fromJson(response.body());
                         assertThat("Response status code is not '422'", HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), is(error.code()));
-                        LOGGER.info("This is message -> " + error.message());
+                        LOGGER.info("This is message -> {}", error.message());
                         assertThat("Body message doesn't contain 'Invalid format type.'", error.message(), equalTo("Invalid format type."));
                     });
                     create.complete(true);

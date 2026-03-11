@@ -55,8 +55,8 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
                     .send()
                     .onComplete(ar -> {
                         context.verify(() -> {
-                            LOGGER.info("Verifying that endpoint /healthy is ready " + ar.succeeded() + " for "
-                                + l + " time with status code " + ar.result().statusCode());
+                            LOGGER.info("Verifying that endpoint /healthy is ready {} for  {} time with status code {}",
+                                    ar.succeeded(), l, ar.result().statusCode());
                             assertThat(ar.succeeded(), is(true));
                             assertThat(ar.result().statusCode(), is(HttpResponseStatus.OK.code()));
                         });

@@ -40,7 +40,7 @@ public interface TracingHandle {
      *
      * @param <K> key type
      * @param <V> value type
-     * @param routingContext Vert.x rounting context
+     * @param routingContext Vert.x routing context
      * @param operationName current operation name
      * @return span handle
      */
