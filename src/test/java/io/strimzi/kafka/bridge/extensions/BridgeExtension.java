@@ -257,6 +257,7 @@ public class BridgeExtension implements
                     LOGGER.info("Bridge deployed: " + ar.result());
                 } else {
                     LOGGER.error("Failed to deploy Bridge", ar.cause());
+                    throw new RuntimeException("Failed to deploy Bridge: " + ar.cause());
                 }
             }).await();
 
@@ -278,6 +279,8 @@ public class BridgeExtension implements
         Properties properties = new Properties();
         properties.putAll(configuration);
         String propertiesPath = createPropertiesFile(properties);
+
+        LOGGER.info("Deploying Bridge in container");
 
         GenericContainer<?> bridgeContainer = new GenericContainer<>(BRIDGE_IMAGE_ENV)
             .withCopyFileToContainer(
