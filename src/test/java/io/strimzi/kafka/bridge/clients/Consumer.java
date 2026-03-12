@@ -4,7 +4,6 @@
  */
 package io.strimzi.kafka.bridge.clients;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -78,13 +77,11 @@ public class Consumer extends ClientHandlerBase<Integer> implements AutoCloseabl
         }
     }
 
-    @SuppressWarnings("Regexp") // for the `.toLowerCase()` because kafka needs this property as lower-case
-    @SuppressFBWarnings("DM_CONVERT_CASE")
     public static Properties fillDefaultProperties() {
         Properties properties = new Properties();
 
-        properties.setProperty("key.deserializer", StringDeserializer.class.getName());
-        properties.setProperty("value.deserializer", StringDeserializer.class.getName());
+        properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-sender-plain-" + new Random().nextInt(Integer.MAX_VALUE));
         properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");

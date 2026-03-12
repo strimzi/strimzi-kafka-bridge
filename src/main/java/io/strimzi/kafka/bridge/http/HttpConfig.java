@@ -179,7 +179,7 @@ public class HttpConfig extends AbstractConfig {
      *
      * @return if SSL is enabled
      */
-    public Boolean isSslEnabled() {
+    public boolean isSslEnabled() {
         return Boolean.parseBoolean(this.config.getOrDefault(HTTP_SERVER_SSL_ENABLE, "false").toString());
     }
 

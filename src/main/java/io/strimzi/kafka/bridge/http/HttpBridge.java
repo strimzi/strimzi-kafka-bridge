@@ -191,8 +191,8 @@ public class HttpBridge extends AbstractVerticle {
                 });
     }
 
-    private void startInactiveConsumerDeletionTimer(Long timeout) {
-        Long timeoutInMs = timeout * 1000L;
+    private void startInactiveConsumerDeletionTimer(long timeout) {
+        long timeoutInMs = timeout * 1000L;
         vertx.setPeriodic(timeoutInMs / 2, ignore -> {
             LOGGER.debug("Looking for stale consumers in {} entries", timestampMap.size());
             Iterator<Map.Entry<ConsumerInstanceId, Long>> it = timestampMap.entrySet().iterator();
