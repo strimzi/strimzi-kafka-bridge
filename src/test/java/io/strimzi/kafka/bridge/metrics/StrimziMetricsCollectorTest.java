@@ -57,7 +57,7 @@ class StrimziMetricsCollectorTest {
 
         MetricsCollector metricsCollector = new StrimziMetricsCollector(mockPromRegistry, mockPromFormatter);
         
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> metricsCollector.doScrape());
+        RuntimeException exception = assertThrows(RuntimeException.class, metricsCollector::doScrape);
         assertThat(exception.getMessage(), containsString("Test exception"));
     }
 }

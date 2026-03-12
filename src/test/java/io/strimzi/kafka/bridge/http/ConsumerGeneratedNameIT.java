@@ -66,11 +66,11 @@ public class ConsumerGeneratedNameIT extends HttpBridgeITAbstract {
                         LOGGER.info("Verifying that consumer name is created with 'kafka-bridge-consumer-' plus random hashcode");
                         assertThat(ar.succeeded(), is(true));
                         HttpResponse<JsonObject> response = ar.result();
-                        LOGGER.info("Response code from the Bridge is " + response.statusCode());
+                        LOGGER.info("Response code from the Bridge is {}", response.statusCode());
                         assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
                         JsonObject bridgeResponse = response.body();
                         consumerInstanceId = bridgeResponse.getString("instance_id");
-                        LOGGER.info("Consumer instance of the consumer is " + consumerInstanceId);
+                        LOGGER.info("Consumer instance of the consumer is {}", consumerInstanceId);
                         assertThat(consumerInstanceId.startsWith("kafka-bridge-consumer-"), is(true));
                         create.complete(true);
                     });

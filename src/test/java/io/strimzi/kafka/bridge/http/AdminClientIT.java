@@ -179,7 +179,7 @@ public class AdminClientIT extends HttpBridgeITAbstract {
     }
 
     @Test
-    void getOffsetsSummaryNotFoundTest(VertxTestContext context) throws Exception {
+    void getOffsetsSummaryNotFoundTest(VertxTestContext context) {
         baseService()
                 .getRequest("/topics/" + topic + "/partitions/0/offsets")
                 .as(BodyCodec.jsonObject())

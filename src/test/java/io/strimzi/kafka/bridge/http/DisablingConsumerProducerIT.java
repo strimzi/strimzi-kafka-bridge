@@ -54,7 +54,7 @@ public class DisablingConsumerProducerIT {
     private static Vertx vertx;
     private static WebClient client;
 
-    private static Map<String, Object> config = new HashMap<>();
+    private static final Map<String, Object> CONFIG = new HashMap<>();
     private static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
     private static final int TEST_TIMEOUT = 60;
 
@@ -62,11 +62,11 @@ public class DisablingConsumerProducerIT {
         // NOTE: despite other tests, these not need the Kafka container because the requests should not need it to be successful
 
         long timeout = 5L;
-        config.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        config.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        config.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
-        config.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
-        config.put(BridgeConfig.BRIDGE_ID, "my-bridge");
+        CONFIG.put(KafkaConfig.KAFKA_CONFIG_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        CONFIG.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        CONFIG.put(KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + ProducerConfig.MAX_BLOCK_MS_CONFIG, "10000");
+        CONFIG.put(HttpConfig.HTTP_CONSUMER_TIMEOUT, timeout);
+        CONFIG.put(BridgeConfig.BRIDGE_ID, "my-bridge");
     }
 
     @BeforeEach
@@ -84,15 +84,15 @@ public class DisablingConsumerProducerIT {
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
             vertx.close().onComplete(context.succeeding(arg -> context.completeNow()));
         } else {
-            // if we running external bridge
+            // if we are running external bridge
             context.completeNow();
         }
     }
 
     @Test
     void consumerDisabledTest(VertxTestContext context) throws ExecutionException, InterruptedException, TimeoutException {
-        config.put(HttpConfig.HTTP_CONSUMER_ENABLED, "false");
-        this.startBridge(context, config);
+        CONFIG.put(HttpConfig.HTTP_CONSUMER_ENABLED, "false");
+        this.startBridge(context, CONFIG);
 
         JsonObject json = new JsonObject()
                 .put("name", "consumer-not-enabled")
@@ -123,8 +123,8 @@ public class DisablingConsumerProducerIT {
 
     @Test
     void producerDisabledTest(VertxTestContext context) throws ExecutionException, InterruptedException, TimeoutException {
-        config.put(HttpConfig.HTTP_PRODUCER_ENABLED, "false");
-        this.startBridge(context, config);
+        CONFIG.put(HttpConfig.HTTP_PRODUCER_ENABLED, "false");
+        this.startBridge(context, CONFIG);
 
         String topic = "topic";
         String value = "message-value";
@@ -160,7 +160,7 @@ public class DisablingConsumerProducerIT {
     }
 
     private void startBridge(VertxTestContext context, Map<String, Object> config) throws ExecutionException, InterruptedException, TimeoutException {
-        LOGGER.info("Environment variable EXTERNAL_BRIDGE:" + BRIDGE_EXTERNAL_ENV);
+        LOGGER.info("Environment variable EXTERNAL_BRIDGE: {}", BRIDGE_EXTERNAL_ENV);
 
         CompletableFuture<Boolean> startBridge = new CompletableFuture<>();
         if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {

@@ -52,8 +52,7 @@ public class ConfigRetrieverTest {
     @Test
     public void testEnvVarOverride() throws IOException {
         // "simulating" an addition to the current environment variables
-        Map<String, String> env = new HashMap<>();
-        env.putAll(System.getenv());
+        Map<String, String> env = new HashMap<>(System.getenv());
         env.put(BRIDGE_ID, "different-bridge-id");
 
         String path = getClass().getClassLoader().getResource("application.properties").getPath();
@@ -64,7 +63,7 @@ public class ConfigRetrieverTest {
     }
 
     @Test
-    public void testNoApplicationPropertiesFile() throws IOException {
+    public void testNoApplicationPropertiesFile() {
         assertThrows(FileNotFoundException.class, () -> ConfigRetriever.getConfig("no-existing.properties"));
     }
 

@@ -8,10 +8,6 @@ import io.vertx.core.Vertx;
 import io.vertx.kafka.client.producer.KafkaHeader;
 import io.vertx.kafka.client.producer.KafkaProducer;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
-import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,7 +20,7 @@ import java.util.function.IntPredicate;
 
 public class Producer extends ClientHandlerBase<Integer> implements AutoCloseable {
     private static final Logger LOGGER = LogManager.getLogger(Producer.class);
-    private Properties properties;
+    private final Properties properties;
     private final AtomicInteger numSent = new AtomicInteger(0);
     private final String topic;
     private final String clientName;
@@ -112,21 +108,6 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
                         sendNext(producer, topic, headers, message, partition, timestamp, withNullKeyRecord);
                     });
         }
-    }
-
-    private Properties fillDefaultProperties() {
-        Properties properties = new Properties();
-
-        properties.setProperty("key.serializer", StringSerializer.class.getName());
-        properties.setProperty("value.serializer", StringSerializer.class.getName());
-        properties.setProperty(ProducerConfig.CLIENT_ID_CONFIG, this.clientName);
-        properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
-
-        return properties;
-    }
-
-    public Properties getProperties() {
-        return properties;
     }
 
     public static class ProducerBuilder {

@@ -10,8 +10,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxTestContext;
 import org.apache.kafka.common.KafkaFuture;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -22,7 +20,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class InvalidProducerIT extends HttpBridgeITAbstract {
-    private static final Logger LOGGER = LogManager.getLogger(InvalidProducerIT.class);
 
     @Override
     protected Map<String, Object> overrideConfig() {

@@ -9,7 +9,6 @@ import io.vertx.core.Vertx;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.logging.log4j.LogManager;
@@ -37,14 +36,6 @@ public class Consumer extends ClientHandlerBase<Integer> implements AutoCloseabl
         this.vertx = Vertx.vertx();
     }
 
-    public Consumer(CompletableFuture<Integer> resultPromise, IntPredicate msgCntPredicate, String topic) {
-        super(resultPromise, msgCntPredicate);
-        this.topic = topic;
-        this.clientName = "consumer-sender-plain-";
-        this.properties = fillDefaultProperties();
-        this.vertx = Vertx.vertx();
-    }
-
     @Override
     protected void handleClient() {
         LOGGER.info("Consumer is starting with following properties: {}", properties.toString());
@@ -68,7 +59,7 @@ public class Consumer extends ClientHandlerBase<Integer> implements AutoCloseabl
                         numReceived.getAndIncrement();
 
                         if (msgCntPredicate.test(numReceived.get())) {
-                            LOGGER.info("Consumer consumed " + numReceived.get() + " messages");
+                            LOGGER.info("Consumer consumed {} messages", numReceived.get());
                             resultPromise.complete(numReceived.get());
                         }
                     });
@@ -96,32 +87,10 @@ public class Consumer extends ClientHandlerBase<Integer> implements AutoCloseabl
         properties.setProperty("value.deserializer", StringDeserializer.class.getName());
         properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-sender-plain-" + new Random().nextInt(Integer.MAX_VALUE));
         properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
-        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, OffsetResetStrategy.EARLIEST.name().toLowerCase());
+        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "consumer-group-" + new Random().nextInt(Integer.MAX_VALUE));
 
         return properties;
-    }
-
-    @SuppressWarnings("Regexp") // for the `.toLowerCase()` because kafka needs this property as lower-case
-    @SuppressFBWarnings("DM_CONVERT_CASE")
-    public static Properties fillProperties(String brokerList, String groupId, String clientId, OffsetResetStrategy autoOffsetReset) {
-        if (groupId == null) {
-            throw new IllegalArgumentException("The groupId is required");
-        } else {
-            Properties props = new Properties();
-            props.setProperty("bootstrap.servers", brokerList);
-            props.setProperty("group.id", groupId);
-            props.setProperty("enable.auto.commit", Boolean.FALSE.toString());
-            if (autoOffsetReset != null) {
-                props.setProperty("auto.offset.reset", autoOffsetReset.toString().toLowerCase());
-            }
-
-            if (clientId != null) {
-                props.setProperty("client.id", clientId);
-            }
-
-            return props;
-        }
     }
 
 }

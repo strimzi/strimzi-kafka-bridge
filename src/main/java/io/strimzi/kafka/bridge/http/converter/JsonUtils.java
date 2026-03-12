@@ -47,7 +47,7 @@ public class JsonUtils {
         try {
             return MAPPER.writeValueAsBytes(json);
         } catch (Exception e) {
-            throw new JsonEncodeException("Failed to encode as JSON: " + e.getMessage());
+            throw new JsonEncodeException("Failed to encode as JSON: " + e.getMessage(), e);
         }
     }
 

@@ -306,7 +306,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
     }
 
     @Test
-    void sendSimpleMessangeWithArrayKey(VertxTestContext context) throws InterruptedException, ExecutionException {
+    void sendSimpleMessageWithArrayKey(VertxTestContext context) throws InterruptedException, ExecutionException {
         KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";
@@ -405,7 +405,7 @@ public class ProducerIT extends HttpBridgeITAbstract {
     @Disabled("Will be check in the next PR, this is just external tests for Bridge")
     @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
     @Test
-    void sendBinaryMessageWithKey(VertxTestContext context) throws InterruptedException, ExecutionException {
+    void sendBinaryMessageWithKey(VertxTestContext context) {
         adminClientFacade.createTopic(topic, 2, 1);
 
         String value = "message-value";

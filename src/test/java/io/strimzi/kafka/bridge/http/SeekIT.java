@@ -35,9 +35,9 @@ import static org.hamcrest.Matchers.is;
 public class SeekIT extends HttpBridgeITAbstract {
     private static final Logger LOGGER = LogManager.getLogger(SeekIT.class);
 
-    private String name = "my-kafka-consumer";
-    private String groupId = "my-group";
-    private JsonObject jsonConsumer = new JsonObject()
+    private final String name = "my-kafka-consumer";
+    private final String groupId = "my-group";
+    private final JsonObject jsonConsumer = new JsonObject()
         .put("name", name)
         .put("format", "json");
 
@@ -386,7 +386,7 @@ public class SeekIT extends HttpBridgeITAbstract {
                         metadata = body.stream()
                                 .map(JsonObject.class::cast)
                                 .filter(jo -> jo.getInteger("partition") == 1)
-                                .collect(Collectors.toList());
+                                .toList();
                         assertThat(metadata.isEmpty(), is(false));
                         assertThat(metadata.size(), is(5));
 
@@ -413,7 +413,7 @@ public class SeekIT extends HttpBridgeITAbstract {
         String subscribedTopic = "seekToBeginningSubscribedTopic";
         String notSubscribedTopic = "seekToBeginningNotSubscribedTopic";
 
-        LOGGER.info("Creating topics " + subscribedTopic + "," + notSubscribedTopic);
+        LOGGER.info("Creating topics {}, {}", subscribedTopic, notSubscribedTopic);
 
         KafkaFuture<Void> future1 = adminClientFacade.createTopic(subscribedTopic);
         KafkaFuture<Void> future2 = adminClientFacade.createTopic(notSubscribedTopic);
@@ -513,7 +513,7 @@ public class SeekIT extends HttpBridgeITAbstract {
         String subscribedTopic = "seekToOffsetSubscribedTopic";
         String notSubscribedTopic = "seekToOffsetNotSubscribedTopic";
 
-        LOGGER.info("Creating topics " + subscribedTopic + "," + notSubscribedTopic);
+        LOGGER.info("Creating topics {}, {}", subscribedTopic, notSubscribedTopic);
 
         KafkaFuture<Void> future1 = adminClientFacade.createTopic(subscribedTopic);
         KafkaFuture<Void> future2 = adminClientFacade.createTopic(notSubscribedTopic);

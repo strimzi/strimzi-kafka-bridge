@@ -11,21 +11,6 @@ package io.strimzi.kafka.bridge.http.converter;
 public class JsonDecodeException extends RuntimeException {
 
     /**
-     * Default constrctor
-     */
-    public JsonDecodeException() {
-    }
-
-    /**
-     * Constructor
-     *
-     * @param message Exception message
-     */
-    public JsonDecodeException(String message) {
-        super(message);
-    }
-
-    /**
      * Constructor
      *
      * @param message Exception message

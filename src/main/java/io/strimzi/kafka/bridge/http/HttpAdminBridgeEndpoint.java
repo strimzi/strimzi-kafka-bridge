@@ -118,7 +118,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                     LOGGER.trace("List topics handler thread {}", Thread.currentThread());
                     if (ex == null) {
                         ArrayNode root = JsonUtils.createArrayNode();
-                        topics.forEach(topic -> root.add(topic));
+                        topics.forEach(root::add);
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
                     } else {
                         HttpBridgeError error = new HttpBridgeError(

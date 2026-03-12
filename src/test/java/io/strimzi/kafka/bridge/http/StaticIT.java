@@ -18,11 +18,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 public class StaticIT {
 
-    @Test
     /**
      * Start the kafka bridge using ProcessBuilder to run the kafka_bridge_run.sh script, then check
      * if the bridge version is displayed in messages.
      */
+    @Test
     void bridgeVersionDisplayedInStartupTest() throws Exception {
 
         String kBVersion = Utils.getKafkaBridgeVersionFromFile("release.version");

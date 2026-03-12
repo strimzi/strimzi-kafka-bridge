@@ -218,7 +218,6 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         ArrayNode seekPartitionsList = (ArrayNode) bodyAsJson.get("partitions");
 
         Set<TopicPartition> set = StreamSupport.stream(seekPartitionsList.spliterator(), false)
-                .map(JsonNode.class::cast)
                 .map(json -> new TopicPartition(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition")))
                 .collect(Collectors.toSet());
 
@@ -420,13 +419,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             return;
         }
         ArrayNode partitionsList = (ArrayNode) bodyAsJson.get("partitions");
-        List<SinkTopicSubscription> topicSubscriptions = new ArrayList<>();
-        topicSubscriptions.addAll(
-            StreamSupport.stream(partitionsList.spliterator(), false)
-                    .map(JsonNode.class::cast)
-                    .map(json -> new SinkTopicSubscription(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition")))
-                    .toList()
-        );
+        List<SinkTopicSubscription> topicSubscriptions = new ArrayList<>(StreamSupport.stream(partitionsList.spliterator(), false)
+                .map(json -> new SinkTopicSubscription(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition")))
+                .toList());
 
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
         CompletableFuture.runAsync(() -> {
@@ -477,13 +472,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             synchronized (consumerLock) {
                 if (bodyAsJson.has("topics")) {
                     ArrayNode topicsList = (ArrayNode) bodyAsJson.get("topics");
-                    List<SinkTopicSubscription> topicSubscriptions = new ArrayList<>();
-                    topicSubscriptions.addAll(
-                        StreamSupport.stream(topicsList.spliterator(), false)
-                                .map(TextNode.class::cast)
-                                .map(topic -> new SinkTopicSubscription(topic.asText()))
-                                .toList()
-                    );
+                    List<SinkTopicSubscription> topicSubscriptions = new ArrayList<>(StreamSupport.stream(topicsList.spliterator(), false)
+                            .map(TextNode.class::cast)
+                            .map(topic -> new SinkTopicSubscription(topic.asText()))
+                            .toList());
                     this.kafkaBridgeConsumer.subscribe(topicSubscriptions);
                 } else if (bodyAsJson.has("topic_pattern")) {
                     Pattern pattern = Pattern.compile(JsonUtils.getString(bodyAsJson, "topic_pattern"));
@@ -662,7 +654,6 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             case JSON -> (MessageConverter<K, V, byte[], byte[]>) new HttpJsonMessageConverter();
             case BINARY -> (MessageConverter<K, V, byte[], byte[]>) new HttpBinaryMessageConverter();
             case TEXT -> (MessageConverter<K, V, byte[], byte[]>) new HttpTextMessageConverter();
-            default -> null;
         };
     }
 
@@ -671,7 +662,6 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             case JSON -> BridgeContentType.KAFKA_JSON_JSON;
             case BINARY -> BridgeContentType.KAFKA_JSON_BINARY;
             case TEXT -> BridgeContentType.KAFKA_JSON_TEXT;
-            default -> throw new IllegalArgumentException();
         };
     }
 
