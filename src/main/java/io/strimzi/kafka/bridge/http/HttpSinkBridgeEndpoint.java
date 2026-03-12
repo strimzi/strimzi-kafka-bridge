@@ -296,9 +296,23 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     }
 
     private void doDeleteConsumer(RoutingContext routingContext) {
-        this.close();
-        LOGGER.info("Deleted consumer {} from group {}", routingContext.pathParam("name"), routingContext.pathParam("groupid"));
-        HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+        // fulfilling the request in a separate thread to free the Vert.x event loop still in place
+        CompletableFuture.runAsync(() -> {
+            this.close();
+        }).whenComplete((v, ex) -> {
+            LOGGER.trace("DeleteConsumer handler thread {}", Thread.currentThread());
+            if (ex == null) {
+                LOGGER.info("Deleted consumer {} from group {}", routingContext.pathParam("name"), routingContext.pathParam("groupid"));
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
+            } else {
+                HttpBridgeError error = new HttpBridgeError(
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        ex.getMessage()
+                );
+                HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                        BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+            }
+        });
     }
 
     private void pollHandler(ConsumerRecords<K, V> records, Throwable ex, RoutingContext routingContext) {
