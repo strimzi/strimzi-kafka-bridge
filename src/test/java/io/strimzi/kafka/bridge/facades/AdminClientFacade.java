@@ -4,7 +4,7 @@
  */
 package io.strimzi.kafka.bridge.facades;
 
-import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DeleteTopicsResult;
@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class AdminClientFacade {
     private static final Logger LOGGER = LogManager.getLogger(AdminClientFacade.class);
-    private static AdminClient adminClient;
+    private static Admin adminClient;
     private static AdminClientFacade adminClientFacade;
 
     private AdminClientFacade() {}
@@ -35,7 +35,7 @@ public class AdminClientFacade {
 
             Properties properties = new Properties();
             properties.setProperty(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
-            adminClient = AdminClient.create(properties);
+            adminClient = Admin.create(properties);
             adminClientFacade = new AdminClientFacade();
         }
         return adminClientFacade;
