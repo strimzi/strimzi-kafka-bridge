@@ -1719,7 +1719,7 @@ public class ConsumerIT extends HttpBridgeITAbstract {
                         assertThat(consumerInstanceId, is(name));
                         assertThat(consumerBaseUri, is(Urls.consumerInstance(groupId, name)));
 
-                        vertx.setTimer(timeout * 2 * 1000L, timedouted -> {
+                        vertx.setTimer(timeout * 2 * 1000L, ignore -> {
                             CompletableFuture<Boolean> delete = new CompletableFuture<>();
                             // consumer deletion
                             consumerService()

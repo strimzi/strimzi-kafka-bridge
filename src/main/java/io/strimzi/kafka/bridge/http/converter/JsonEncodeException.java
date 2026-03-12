@@ -14,9 +14,10 @@ public class JsonEncodeException extends RuntimeException {
      * Constructor
      *
      * @param message Exception message
+     * @param cause Inner cause of the exception
      */
-    public JsonEncodeException(String message) {
-        super(message);
+    public JsonEncodeException(String message, Throwable cause) {
+        super(message, cause);
     }
 
 }
