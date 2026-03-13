@@ -32,11 +32,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/build/build-binaries
+
+      - name: Setup Java and Maven
+        uses: strimzi/github-actions/.github/actions/dependencies/setup-java@v1
         with:
           javaVersion: ${{ matrix.java.version }}
-          mainBuild: ${{ matrix.java.mainBuild }}
-          runnerArch: "amd64"
+
+      - name: Build binaries using build-binaries action
+        uses: strimzi/github-actions/.github/actions/build/build-binaries@v1
+        with:
+          mainJavaBuild: ${{ matrix.java.mainBuild }}
+          artifactSuffix: "kafka-bridge"
+          clusterOperatorBuild: "false"
 
   build-docs:
     name: Build docs
@@ -64,10 +71,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/build/build-containers
+
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@v1
+
+      - uses: strimzi/github-actions/.github/actions/build/build-containers@v1
         with:
           architecture: ${{ matrix.architecture }}
-          runnerArch: "amd64"
+          artifactSuffix: "kafka-bridge"
+          containerRegistry: "quay.io"
+          containerOrg: "strimzi"
+          containerTag: "latest"
+          imagesDir: "kafka-bridge-amd64.tar.gz"
 
   push-containers:
     name: Push Containers
@@ -79,18 +93,22 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    env:
-      DOCKER_REGISTRY: "quay.io"
-      DOCKER_ORG: "strimzi"
-      DOCKER_TAG: "latest"
     steps:
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/build/push-containers
+
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@v1
+
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-syft@v1
+
+      - uses: strimzi/github-actions/.github/actions/build/push-containers@v1
         with:
           architectures: "amd64,arm64,ppc64le,s390x"
-          runnerArch: "amd64"
-          quayUser: ${{ secrets.QUAY_USER }}
-          quayPass: ${{ secrets.QUAY_PASS }}
+          containerRegistry: "quay.io"
+          containerOrg: "strimzi"
+          containerTag: "latest"
+          registryUser: ${{ secrets.QUAY_USER }}
+          registryPassword: ${{ secrets.QUAY_PASS }}
+          artifactSuffix: "kafka-bridge"
 
   publish-docs:
     name: Publish Docs
@@ -116,12 +134,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/build/deploy-java
+
+      - uses: strimzi/github-actions/.github/actions/dependencies/setup-java@v1
         with:
-          # Java 17 is used as default version
           javaVersion: "17"
-          runnerArch: "amd64"
+
+      - uses: strimzi/github-actions/.github/actions/build/deploy-java@v1
+        with:
           gpgPassphrase: ${{ secrets.GPG_PASSPHRASE }}
           gpgSigningKey: ${{ secrets.GPG_SIGNING_KEY }}
           centralUsername: ${{ secrets.CENTRAL_USERNAME }}
           centralPassword: ${{ secrets.CENTRAL_PASSWORD }}
+          artifactSuffix: "kafka-bridge"
+          modules: "./"
