@@ -30,7 +30,7 @@ jobs:
       ref: ${{ github.sha }}
       architecture: "amd64"
       artifactSuffix: "kafka-bridge"
-      buildContainers: false
+      buildContainers: true
       modules: "./"
       nexusCheck: "kafka-bridge"
       javaVersion: "17"

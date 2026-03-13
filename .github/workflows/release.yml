@@ -49,7 +49,6 @@ jobs:
           gpgSigningKey: ${{ secrets.GPG_SIGNING_KEY }}
           centralUsername: ${{ secrets.CENTRAL_USERNAME }}
           centralPassword: ${{ secrets.CENTRAL_PASSWORD }}
-          artifactSuffix: "kafka-bridge"
           modules: "./"
 
   # Push Java artifacts to GHCR for long-term storage (for CVE rebuilds)
