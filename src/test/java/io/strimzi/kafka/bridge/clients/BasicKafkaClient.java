@@ -4,14 +4,11 @@
  */
 package io.strimzi.kafka.bridge.clients;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.strimzi.kafka.bridge.utils.KafkaJsonSerializer;
 import io.vertx.kafka.client.producer.KafkaHeader;
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
-import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.time.Duration;
@@ -52,9 +49,8 @@ public class BasicKafkaClient {
         IntPredicate msgCntPredicate = x -> x == messageCount;
 
         Properties properties = new Properties();
-
-        properties.setProperty("key.serializer", StringSerializer.class.getName());
-        properties.setProperty("value.serializer", StringSerializer.class.getName());
+        properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrapServer);
         properties.setProperty(ProducerConfig.CLIENT_ID_CONFIG, "producer-sender-plain-");
         properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
@@ -112,8 +108,8 @@ public class BasicKafkaClient {
 
         Properties properties = new Properties();
 
-        properties.setProperty("key.serializer", KafkaJsonSerializer.class.getName());
-        properties.setProperty("value.serializer", KafkaJsonSerializer.class.getName());
+        properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, KafkaJsonSerializer.class.getName());
+        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaJsonSerializer.class.getName());
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrapServer);
         properties.setProperty(ProducerConfig.CLIENT_ID_CONFIG, "producer-sender-plain-" + new Random().nextInt(Integer.MAX_VALUE));
         properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
@@ -187,41 +183,5 @@ public class BasicKafkaClient {
     public int sendJsonMessagesPlain(String topicName, int messageCount, String message, int partition) {
         return sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
             message, partition, null, false);
-    }
-
-    /**
-     * Receive messages to entry-point of the kafka cluster with PLAINTEXT security protocol setting
-     *
-     * @param timeoutMs    timeout for the receiving messages
-     * @param topicName    topic name from messages are received
-     * @param messageCount message count
-     * @return received message count
-     */
-    @SuppressWarnings("Regexp") // for the `.toLowerCase()` because kafka needs this property as lower-case
-    @SuppressFBWarnings("DM_CONVERT_CASE")
-    public int receiveStringMessagesPlain(long timeoutMs, String topicName, int messageCount) {
-
-        CompletableFuture<Integer> resultPromise = new CompletableFuture<>();
-        IntPredicate msgCntPredicate = x -> x == messageCount;
-
-        Properties properties = new Properties();
-
-        properties.setProperty("key.serializer", StringDeserializer.class.getName());
-        properties.setProperty("value.serializer", StringDeserializer.class.getName());
-        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrapServer);
-        properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-sender-plain-");
-        properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
-        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "consumer-group" + new Random().nextInt(Integer.MAX_VALUE));
-
-        try (Consumer plainConsumer = new Consumer(properties, resultPromise, msgCntPredicate, topicName)) {
-
-            plainConsumer.getVertx().deployVerticle(plainConsumer);
-
-            return plainConsumer.getResultPromise().get(timeoutMs, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
     }
 }

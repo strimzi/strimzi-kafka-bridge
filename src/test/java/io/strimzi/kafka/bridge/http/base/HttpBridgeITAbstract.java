@@ -103,8 +103,8 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
     protected String kafkaVersion;
 
     public static StrimziKafkaCluster kafkaCluster = null;
-    protected static final String BRIDGE_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_BRIDGE", "FALSE");
-    protected static final String KAFKA_EXTERNAL_ENV = System.getenv().getOrDefault("EXTERNAL_KAFKA", "FALSE");
+    protected static final boolean BRIDGE_EXTERNAL_ENV = Boolean.parseBoolean(System.getenv().get("EXTERNAL_BRIDGE"));
+    protected static final boolean KAFKA_EXTERNAL_ENV = Boolean.parseBoolean(System.getenv().get("EXTERNAL_KAFKA"));
 
     protected static String kafkaUri;
 
@@ -131,7 +131,7 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
     // kafkaVersion is not used, but it is required as AfterParameterizedClassInvocation requires the injected fields
     @AfterParameterizedClassInvocation
     static void afterAll(String kafkaVersion, VertxTestContext context) {
-        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+        if (!BRIDGE_EXTERNAL_ENV) {
             vertx.close().onComplete(context.succeeding(arg -> context.completeNow()));
         } else {
             // if we are running an external bridge
@@ -181,7 +181,7 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
     }
 
     private void configureDefaults() {
-        kafkaUri = "FALSE".equals(KAFKA_EXTERNAL_ENV)
+        kafkaUri = !KAFKA_EXTERNAL_ENV
             ? kafkaCluster.getBootstrapServers()
             : "localhost:9092";
 
@@ -236,7 +236,7 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
     // ===== Overridable Hooks =====
 
     protected void setupKafkaCluster(String kafkaVersion) {
-        if ("FALSE".equals(KAFKA_EXTERNAL_ENV)) {
+        if (!KAFKA_EXTERNAL_ENV) {
             StrimziKafkaCluster.StrimziKafkaClusterBuilder builder = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
                 .withNumberOfBrokers(1)
                 .withSharedNetwork();
@@ -254,7 +254,7 @@ public abstract class HttpBridgeITAbstract implements TestSeparator {
     }
 
     protected void deployBridge(VertxTestContext context) {
-        if ("FALSE".equals(BRIDGE_EXTERNAL_ENV)) {
+        if (!BRIDGE_EXTERNAL_ENV) {
             bridgeConfig = BridgeConfig.fromMap(config);
             httpBridge = new HttpBridge(bridgeConfig);
             LOGGER.info("Deploying in-memory bridge");
