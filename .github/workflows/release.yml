@@ -33,14 +33,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/build/release-artifacts
+
+      - uses: strimzi/github-actions/.github/actions/dependencies/setup-java@v1
+        with:
+          javaVersion: "17"
+
+      - uses: strimzi/github-actions/.github/actions/build/release-artifacts@v1
         with:
           releaseVersion: ${{ inputs.releaseVersion }}
-          runnerArch: "amd64"
+          artifactSuffix: "kafka-bridge"
+
+      - uses: strimzi/github-actions/.github/actions/build/deploy-java@v1
+        with:
           gpgPassphrase: ${{ secrets.GPG_PASSPHRASE }}
           gpgSigningKey: ${{ secrets.GPG_SIGNING_KEY }}
           centralUsername: ${{ secrets.CENTRAL_USERNAME }}
           centralPassword: ${{ secrets.CENTRAL_PASSWORD }}
+          modules: "./"
 
   # Push Java artifacts to GHCR for long-term storage (for CVE rebuilds)
   push-java-artifacts-to-ghcr:
@@ -82,18 +91,22 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    env:
-      DOCKER_REGISTRY: "quay.io"
-      DOCKER_ORG: "strimzi"
-      DOCKER_TAG: "${{ inputs.releaseVersion }}-${{ inputs.releaseSuffix }}"
     steps:
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/build/push-containers
+
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@v1
+
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-syft@v1
+
+      - uses: strimzi/github-actions/.github/actions/build/push-containers@v1
         with:
           architectures: "amd64,arm64,ppc64le,s390x"
-          runnerArch: "amd64"
-          quayUser: ${{ secrets.QUAY_USER }}
-          quayPass: ${{ secrets.QUAY_PASS }}
+          containerRegistry: "quay.io"
+          containerOrg: "strimzi"
+          containerTag: "${{ inputs.releaseVersion }}-${{ inputs.releaseSuffix }}"
+          registryUser: ${{ secrets.QUAY_USER }}
+          registryPassword: ${{ secrets.QUAY_PASS }}
+          artifactSuffix: "kafka-bridge"
           buildRunId: ${{ inputs.sourceBuildRunId }}
 
   push-containers:
@@ -112,16 +125,20 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    env:
-      DOCKER_REGISTRY: "quay.io"
-      DOCKER_ORG: "strimzi"
-      DOCKER_TAG: "${{ inputs.releaseVersion }}"
     steps:
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/build/push-containers
+
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@v1
+
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-syft@v1
+
+      - uses: strimzi/github-actions/.github/actions/build/push-containers@v1
         with:
           architectures: "amd64,arm64,ppc64le,s390x"
-          runnerArch: "amd64"
-          quayUser: ${{ secrets.QUAY_USER }}
-          quayPass: ${{ secrets.QUAY_PASS }}
+          containerRegistry: "quay.io"
+          containerOrg: "strimzi"
+          containerTag: ${{ inputs.releaseVersion }}
+          registryUser: ${{ secrets.QUAY_USER }}
+          registryPassword: ${{ secrets.QUAY_PASS }}
+          artifactSuffix: "kafka-bridge"
           buildRunId: ${{ inputs.sourceBuildRunId }}
