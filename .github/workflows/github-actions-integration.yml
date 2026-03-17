@@ -37,6 +37,5 @@ jobs:
       helmChartName: "none"
       releaseVersion: "6.6.6"
       imagesDir: "kafka-bridge-amd64.tar.gz"
-      clusterOperatorBuild: false
       githubActionsRef: "v1"
     secrets: inherit

@@ -43,7 +43,6 @@ jobs:
         with:
           mainJavaBuild: ${{ matrix.java.mainBuild }}
           artifactSuffix: "kafka-bridge"
-          clusterOperatorBuild: "false"
 
   build-docs:
     name: Build docs
