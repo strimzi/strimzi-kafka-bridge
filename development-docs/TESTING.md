@@ -11,6 +11,7 @@ This document gives a detailed breakdown of the testing processes and testing op
 - [Available Test Groups](#available-test-groups)
 - [Environment Variables](#environment-variables)
 - [Running single test class](#running-single-test-class)
+- [Accessing GitHub Actions logs](#accessing-github-actions-logs)
 
 <!-- /TOC -->
 
@@ -183,3 +184,11 @@ System tests can be configured by several environment variables, which are loade
 Use the `test` build goal and provide `-Dtest=TestClassName[#testMethodName]` system property.
 
     mvn test -Dtest=SeekTest#seekToNotExistingTopic
+
+## Accessing GitHub Actions logs
+
+When a GitHub Actions (GHA) job fails, you can examine the logs to debug the issue:
+
+1. Click **View details** next to the failed check on the pull request. This redirects you to the workflow run page (e.g., `https://github.com/strimzi/strimzi-kafka-bridge/actions/runs/<run-id>/`).
+2. Scroll down to the **Artifacts** section at the bottom of the page, labeled _Produced during runtime_. Each artifact has a direct download link on the right side.
+3. Download the relevant artifact and extract it to examine the logs for that specific run.
