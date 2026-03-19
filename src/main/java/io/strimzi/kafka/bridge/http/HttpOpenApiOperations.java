@@ -52,10 +52,8 @@ public enum HttpOpenApiOperations {
     HEALTHY("healthy"),
     /** check the readiness of the bridge */
     READY("ready"),
-    /** get the OpenAPI v2 specification */
+    /** get the OpenAPI v3 specification */
     OPENAPI("openapi"),
-    /** get the OpenAPI v2 specification */
-    OPENAPI_V2("openapiv2"),
     /** get the OpenAPI v3 specification */
     OPENAPI_V3("openapiv3"),
     /** get general information (i.e. version) about the bridge */

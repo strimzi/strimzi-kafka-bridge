@@ -70,25 +70,6 @@ public class OtherServicesIT extends HttpBridgeITAbstract {
     }
 
     @Test
-    void openapiv2Test(VertxTestContext context) {
-        baseService()
-                .getRequest("/openapi/v2")
-                .as(BodyCodec.jsonObject())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(response.statusCode(), is(HttpResponseStatus.GONE.code()));
-                        assertThat(error.code(), is(HttpResponseStatus.GONE.code()));
-                        assertThat(error.message(), is("OpenAPI v2 Swagger not supported"));
-                    });
-                    context.completeNow();
-                });
-    }
-
-    @Test
     void openapiv3Test(VertxTestContext context) {
         baseService()
                 .getRequest("/openapi/v3")

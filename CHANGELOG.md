@@ -15,6 +15,7 @@
   They are now available on the HTTP management interface (8081 by default).
   Please update your configurations accordingly. 
 * The `/healthy` and `/ready` endpoints now return an HTTP response with code `200`, instead of the `204`, with an empty body. 
+* Removed `/openapi/v2` endpoint because already deprecated since long time by returning HTTP 410 Gone.
 
 ## 0.33.1
 

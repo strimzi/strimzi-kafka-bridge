@@ -236,7 +236,6 @@ public class HttpBridge extends AbstractVerticle {
                     routerBuilder.getRoute(this.GET_PARTITION.getOperationId().toString()).addHandler(this.GET_PARTITION);
                     routerBuilder.getRoute(this.GET_OFFSETS.getOperationId().toString()).addHandler(this.GET_OFFSETS);
                     routerBuilder.getRoute(this.OPENAPI.getOperationId().toString()).addHandler(this.OPENAPI);
-                    routerBuilder.getRoute(this.OPENAPI_V2.getOperationId().toString()).addHandler(this.OPENAPI_V2);
                     routerBuilder.getRoute(this.OPENAPI_V3.getOperationId().toString()).addHandler(this.OPENAPI_V3);
                     routerBuilder.getRoute(this.INFO.getOperationId().toString()).addHandler(this.INFO);
                     if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
@@ -636,40 +635,34 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void openapi(RoutingContext routingContext) {
-        if (routingContext.request().path().contains("/openapi/v2")) {
-            HttpBridgeError error = new HttpBridgeError(HttpResponseStatus.GONE.code(), "OpenAPI v2 Swagger not supported");
-            HttpUtils.sendResponse(routingContext, HttpResponseStatus.GONE.code(),
-                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
-        } else {
-            FileSystem fileSystem = vertx.fileSystem();
-            fileSystem.readFile("openapi.json")
-                    .onSuccess(buffer -> {
-                        String xForwardedPath = routingContext.request().getHeader("x-forwarded-path");
-                        String xForwardedPrefix = routingContext.request().getHeader("x-forwarded-prefix");
-                        if (xForwardedPath == null && xForwardedPrefix == null) {
-                            HttpUtils.sendFile(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, "openapi.json");
-                        } else {
-                            String path = "/";
-                            if (xForwardedPrefix != null) {
-                                path = xForwardedPrefix;
-                            }
-                            if (xForwardedPath != null) {
-                                path = xForwardedPath;
-                            }
-                            ObjectNode json = (ObjectNode) JsonUtils.bytesToJson(buffer.getBytes());
-                            json.put("basePath", path);
-                            HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, JsonUtils.jsonToBytes(json));
+        FileSystem fileSystem = vertx.fileSystem();
+        fileSystem.readFile("openapi.json")
+                .onSuccess(buffer -> {
+                    String xForwardedPath = routingContext.request().getHeader("x-forwarded-path");
+                    String xForwardedPrefix = routingContext.request().getHeader("x-forwarded-prefix");
+                    if (xForwardedPath == null && xForwardedPrefix == null) {
+                        HttpUtils.sendFile(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, "openapi.json");
+                    } else {
+                        String path = "/";
+                        if (xForwardedPrefix != null) {
+                            path = xForwardedPrefix;
                         }
-                    })
-                    .onFailure(t -> {
-                        LOGGER.error("Failed to read OpenAPI JSON file", t);
-                        HttpBridgeError error = new HttpBridgeError(
-                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                t.getMessage());
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                BridgeContentType.JSON, JsonUtils.jsonToBytes(error.toJson()));
-                    });
-        }
+                        if (xForwardedPath != null) {
+                            path = xForwardedPath;
+                        }
+                        ObjectNode json = (ObjectNode) JsonUtils.bytesToJson(buffer.getBytes());
+                        json.put("basePath", path);
+                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.JSON, JsonUtils.jsonToBytes(json));
+                    }
+                })
+                .onFailure(t -> {
+                    LOGGER.error("Failed to read OpenAPI JSON file", t);
+                    HttpBridgeError error = new HttpBridgeError(
+                            HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            t.getMessage());
+                    HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                            BridgeContentType.JSON, JsonUtils.jsonToBytes(error.toJson()));
+                });
     }
 
     private void metrics(RoutingContext routingContext) {
@@ -946,14 +939,6 @@ public class HttpBridge extends AbstractVerticle {
 
     final HttpOpenApiOperation OPENAPI = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPI) {
     
-        @Override
-        public void process(RoutingContext routingContext) {
-            openapi(routingContext);
-        }
-    };
-
-    final HttpOpenApiOperation OPENAPI_V2 = new HttpOpenApiOperation(HttpOpenApiOperations.OPENAPI_V2) {
-
         @Override
         public void process(RoutingContext routingContext) {
             openapi(routingContext);

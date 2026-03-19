@@ -1422,32 +1422,6 @@
                 "description": "Retrieves the OpenAPI v3 specification in JSON format."
             }
         },
-        "/openapi/v2": {
-            "get": {
-                "responses": {
-                    "410": {
-                        "content": {
-                            "application/vnd.kafka.v2+json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "error_code": 410,
-                                            "message": "OpenAPI v2 Swagger not supported."
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "description": "OpenAPI v2 Swagger not supported."
-                    }
-                },
-                "operationId": "openapiv2",
-                "description": "OpenAPI v2 Swagger not supported."
-            }
-        },
         "/openapi/v3": {
             "get": {
                 "responses": {
