@@ -133,14 +133,9 @@ public class BridgeConfig extends AbstractConfig {
      * @return the metric type to be used in the bridge
      */
     public MetricsType getMetricsType() {
-        final String envVarValue = System.getenv("KAFKA_BRIDGE_METRICS_ENABLED");
-        if (envVarValue != null) {
-            LOGGER.warn("KAFKA_BRIDGE_METRICS_ENABLED is deprecated, use bridge.metrics configuration");
-        }
-        
         return Optional.ofNullable((String) config.get(BridgeConfig.METRICS_TYPE))
             .map(MetricsType::fromString)
-            .orElseGet(() -> Boolean.parseBoolean(envVarValue) ? MetricsType.JMX_EXPORTER : null);
+            .orElse(null);
     }
 
     /**
