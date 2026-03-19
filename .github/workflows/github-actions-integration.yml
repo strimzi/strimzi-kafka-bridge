@@ -33,7 +33,7 @@ jobs:
       buildContainers: true
       modules: "./"
       nexusCheck: "kafka-bridge"
-      javaVersion: "17"
+      javaVersion: "21"
       helmChartName: "none"
       releaseVersion: "6.6.6"
       imagesDir: "kafka-bridge-amd64.tar.gz"

@@ -7,6 +7,7 @@
 * Adding support for [JsonTemplateLayout](https://logging.apache.org/log4j/2.x/manual/json-template-layout.html).
 * Add support for TLS/SSL on the HTTP interface
   Set `http.ssl.*` configurations to enable it.
+* Moved to Java 21 at language level and dropped support for Java 17.
 
 ### Changes, deprecations and removals
 
