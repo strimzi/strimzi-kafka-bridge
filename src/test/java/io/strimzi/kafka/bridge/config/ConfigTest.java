@@ -28,14 +28,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class ConfigTest {
     @Test
     public void testConfig() {
-        Map<String, Object> map = new HashMap<>();
-        map.put("bridge.id", "my-bridge");
-        map.put("kafka.bootstrap.servers", "localhost:9092");
-        map.put("kafka.producer.acks", "1");
-        map.put("kafka.consumer.auto.offset.reset", "earliest");
-        map.put("http.host", "0.0.0.0");
-        map.put("http.port", "8080");
-        map.put("management.port", "8081");
+        Map<String, Object> map = Map.of(
+                "bridge.id", "my-bridge",
+                "kafka.bootstrap.servers", "localhost:9092",
+                "kafka.producer.acks", "1",
+                "kafka.consumer.auto.offset.reset", "earliest",
+                "http.host", "0.0.0.0",
+                "http.port", "8080",
+                "management.port", "8081"
+        );
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
         assertThat(bridgeConfig.getBridgeID(), is("my-bridge"));
@@ -60,13 +61,14 @@ public class ConfigTest {
     @Test
     public void testHidingPassword() {
         String storePassword = "logged-config-should-not-contain-this-password";
-        Map<String, Object> map = new HashMap<>();
-        map.put("kafka.ssl.truststore.location", "/tmp/strimzi/bridge.truststore.p12");
-        map.put("kafka.ssl.truststore.password", storePassword);
-        map.put("kafka.ssl.truststore.type", "PKCS12");
-        map.put("kafka.ssl.keystore.location", "/tmp/strimzi/bridge.keystore.p12");
-        map.put("kafka.ssl.keystore.password", storePassword);
-        map.put("kafka.ssl.keystore.type", "PKCS12");
+        Map<String, Object> map = Map.of(
+                "kafka.ssl.truststore.location", "/tmp/strimzi/bridge.truststore.p12",
+                "kafka.ssl.truststore.password", storePassword,
+                "kafka.ssl.truststore.type", "PKCS12",
+                "kafka.ssl.keystore.location", "/tmp/strimzi/bridge.keystore.p12",
+                "kafka.ssl.keystore.password", storePassword,
+                "kafka.ssl.keystore.type", "PKCS12"
+        );
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
         assertThat(bridgeConfig.getKafkaConfig().getConfig().size(), is(6));
@@ -91,13 +93,13 @@ public class ConfigTest {
 
     @Test
     public void testHttpSslConfig() {
-        Map<String, Object> map = new HashMap<>(Map.of(
+        Map<String, Object> map = Map.of(
                 "http.ssl.enable", "true",
                 "http.ssl.key.location", "key.key",
                 "http.ssl.certificate.location", "cert.crt",
                 "http.ssl.enabled.protocols", "TLSv1.3",
                 "http.ssl.enabled.cipher.suites", "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
-        ));
+        );
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
         assertThat(bridgeConfig.getHttpConfig().getHttpServerSslKeyLocation(), is("key.key"));
@@ -109,11 +111,11 @@ public class ConfigTest {
 
     @Test
     public void testHttpSslDefaults() {
-        Map<String, Object> map = new HashMap<>(Map.of(
+        Map<String, Object> map = Map.of(
                 "http.ssl.enable", "true",
                 "http.ssl.key", "key.key",
                 "http.ssl.certificate", "cert.crt"
-        ));
+        );
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
         assertThat(bridgeConfig.getHttpConfig().getPort(), is(8443));
@@ -144,12 +146,14 @@ public class ConfigTest {
 
     @Test
     public void testStrimziReporterMetricsType() {
+        // using HashMap because with metrics configuration additional properties will be added on load
+        // NOTE: Map.of() is immutable so can't be used directly in this case
         Map<String, Object> map = new HashMap<>(Map.of(
-            "bridge.id", "my-bridge",
-            "kafka.bootstrap.servers", "localhost:9092",
-            "bridge.metrics", "strimziMetricsReporter",
-            "http.host", "0.0.0.0",
-            "http.port", "8080"
+                "bridge.id", "my-bridge",
+                "kafka.bootstrap.servers", "localhost:9092",
+                "bridge.metrics", "strimziMetricsReporter",
+                "http.host", "0.0.0.0",
+                "http.port", "8080"
         ));
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
@@ -161,14 +165,16 @@ public class ConfigTest {
 
     @Test
     public void testStrimziReporterWithCustomConfig() {
+        // using HashMap because with metrics configuration additional properties will be added on load
+        // NOTE: Map.of() is immutable so can't be used directly in this case
         Map<String, Object> map = new HashMap<>(Map.of(
-            "bridge.id", "my-bridge",
-            "kafka.bootstrap.servers", "localhost:9092",
-            "bridge.metrics", "strimziMetricsReporter",
-            "kafka.metric.reporters", "my.domain.CustomMetricReporter,io.strimzi.kafka.metrics.prometheus.ClientMetricsReporter",
-            "kafka.prometheus.metrics.reporter.allowlist", "kafka_log.*,kafka_network.*",
-            "http.host", "0.0.0.0",
-            "http.port", "8080"
+                "bridge.id", "my-bridge",
+                "kafka.bootstrap.servers", "localhost:9092",
+                "bridge.metrics", "strimziMetricsReporter",
+                "kafka.metric.reporters", "my.domain.CustomMetricReporter,io.strimzi.kafka.metrics.prometheus.ClientMetricsReporter",
+                "kafka.prometheus.metrics.reporter.allowlist", "kafka_log.*,kafka_network.*",
+                "http.host", "0.0.0.0",
+                "http.port", "8080"
         ));
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
