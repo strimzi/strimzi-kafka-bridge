@@ -8,6 +8,8 @@
 * Add support for TLS/SSL on the HTTP interface
   Set `http.ssl.*` configurations to enable it.
 * Moved to Java 21 at language level and dropped support for Java 17.
+* Added dedicated internal executor service for running Kafka-related asynchronous operations.
+  Use `bridge.executor.pool.size` and `bridge.executor.queue.size` to configure it.
 
 ### Changes, deprecations and removals
 

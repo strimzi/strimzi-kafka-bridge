@@ -81,6 +81,35 @@ http.ssl.key.location=/etc/ssl/private/bridge.key
 
 . Save the configuration file.
 
+.Tuning the executor service pool
+
+The HTTP Bridge uses a dedicated thread pool with a bounded task queue for all Kafka-related asynchronous operations.
+Their size is configurable through `bridge.executor.pool.size` and `bridge.executor.queue.size` properties.
+When both the pool and queue are full, new requests are rejected with HTTP 503 to prevent resource exhaustion.
+
+Tune these settings based on your workload:
+
+* High throughput with many concurrent requests: Increase `bridge.executor.pool.size` to handle more simultaneous operations.
+* Bursty traffic: Increase `bridge.executor.queue.size` to buffer temporary load spikes.
+* Resource-constrained environments: Reduce `bridge.executor.pool.size` to limit thread count, but ensure it's high enough to avoid frequent HTTP 503 errors.
+* CPU-limited deployments (less than 2 cores): The default pool size adapts automatically, but you may need to increase the queue size to handle bursts.
+
+Monitor the `executor_*` metrics exposed on the `/metrics` endpoint to observe pool utilization, queue depth, and rejected tasks.
+
+.Bridge configuration
+|====
+|Name |Descriptions
+
+|bridge.id
+|Bridge identifier. This is used as the Kafka client ID for the internal Kafka clients (producer and admin client).
+
+|bridge.executor.pool.size
+|The number of threads in the dedicated executor service pool for all Kafka-related asynchronous operations. The default is `max(4, <available CPUs> * 2)`.
+
+|bridge.executor.queue.size
+|The maximum number of tasks that can be queued when all executor threads are busy. The default is `1000`. When both the pool and queue are full, new requests are rejected with HTTP 503.
+|====
+
 .HTTP related configurations
 |====
 |Name |Descriptions
