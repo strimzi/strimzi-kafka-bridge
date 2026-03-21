@@ -166,6 +166,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
                 List<CompletableFuture<HttpBridgeResult<?>>> promises = new ArrayList<>(records.size());
                 for (ProducerRecord<K, V> record : records) {
+                    LOGGER.trace("Sending record thread {}", Thread.currentThread());
                     CompletionStage<HttpBridgeResult<?>> sendHandler = this.kafkaBridgeProducer.send(record).handle((metadata, ex) -> {
                         LOGGER.trace("Handle thread {}", Thread.currentThread());
                         if (ex == null) {
@@ -194,6 +195,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                         }, asyncExecutor);
             }, asyncExecutor);
         } catch (RejectedExecutionException e) {
+            LOGGER.error("Executor service rejected task, bridge is overloaded");
             span.finish(HttpResponseStatus.SERVICE_UNAVAILABLE.code());
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.SERVICE_UNAVAILABLE.code(),

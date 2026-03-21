@@ -656,6 +656,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                     throw new IllegalArgumentException("Unknown Operation: " + this.httpBridgeContext.getOpenApiOperation());
             }
         } catch (RejectedExecutionException e) {
+            LOGGER.error("Executor service rejected task, bridge is overloaded");
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
                     "Bridge is overloaded, please retry later"
