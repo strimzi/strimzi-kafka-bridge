@@ -4,6 +4,7 @@
  */
 package io.strimzi.kafka.bridge.http;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import io.vertx.micrometer.backends.BackendRegistries;
@@ -22,6 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class HttpBridgeExecutor {
     private static final Logger LOGGER = LogManager.getLogger(HttpBridgeExecutor.class);
+
+    private static Counter rejectedTasksCounter;
 
     /**
      * Custom ThreadFactory for Kafka-related asynchronous operations.
@@ -85,12 +88,27 @@ public class HttpBridgeExecutor {
                     executor,
                     "kafka-bridge"  // executor name (appears as 'name' tag in metrics)
                 );
+
+                // Custom counter for rejected tasks
+                rejectedTasksCounter = Counter.builder("executor.rejected.tasks")
+                    .description("Total number of tasks rejected by the executor due to capacity limits")
+                    .register(registry);
+
                 LOGGER.info("Bridge executor metrics registered with Micrometer");
             } else {
                 LOGGER.debug("MeterRegistry not available, bridge executor metrics will not be exposed");
             }
         } catch (Exception e) {
             LOGGER.warn("Failed to register executor metrics", e);
+        }
+    }
+
+    /**
+     * Increment the rejected tasks counter when a task is rejected.
+     */
+    public static void incrementRejectedTasks() {
+        if (rejectedTasksCounter != null) {
+            rejectedTasksCounter.increment();
         }
     }
 

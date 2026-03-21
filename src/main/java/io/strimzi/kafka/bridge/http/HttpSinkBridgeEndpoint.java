@@ -657,6 +657,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             }
         } catch (RejectedExecutionException e) {
             LOGGER.error("Executor service rejected task, bridge is overloaded");
+            HttpBridgeExecutor.incrementRejectedTasks();
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
                     "Bridge is overloaded, please retry later"

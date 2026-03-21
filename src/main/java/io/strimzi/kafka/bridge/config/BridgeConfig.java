@@ -47,8 +47,7 @@ public class BridgeConfig extends AbstractConfig {
         "kafka_producer_kafka_metrics_count_count, kafka_producer_producer_metrics.*";
 
     /** Default executor pool size: max(4, availableProcessors * 2) */
-    private static final int DEFAULT_EXECUTOR_POOL_SIZE =
-        Math.max(4, Runtime.getRuntime().availableProcessors() * 2);
+    private static final int DEFAULT_EXECUTOR_POOL_SIZE = Math.max(4, Runtime.getRuntime().availableProcessors() * 2);
 
     /** Default executor queue size */
     private static final int DEFAULT_EXECUTOR_QUEUE_SIZE = 1000;

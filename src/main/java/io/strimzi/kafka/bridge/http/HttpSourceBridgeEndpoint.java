@@ -196,6 +196,7 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             }, asyncExecutor);
         } catch (RejectedExecutionException e) {
             LOGGER.error("Executor service rejected task, bridge is overloaded");
+            HttpBridgeExecutor.incrementRejectedTasks();
             span.finish(HttpResponseStatus.SERVICE_UNAVAILABLE.code());
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
