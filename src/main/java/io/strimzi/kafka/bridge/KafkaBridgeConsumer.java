@@ -24,8 +24,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 /**
  * Represents a Kafka bridge consumer client
  *
@@ -91,7 +89,7 @@ public class KafkaBridgeConsumer<K, V> {
      *
      * @param topicSubscriptions topics to subscribe to
      */
-    public void subscribe(List<SinkTopicSubscription> topicSubscriptions) {
+    public void subscribe(List<String> topicSubscriptions) {
         if (topicSubscriptions == null) {
             throw new IllegalArgumentException("Topic subscriptions cannot be null");
         }
@@ -102,7 +100,7 @@ public class KafkaBridgeConsumer<K, V> {
         }
 
         LOGGER.info("Subscribe to topics {}", topicSubscriptions);
-        Set<String> topics = topicSubscriptions.stream().map(SinkTopicSubscription::getTopic).collect(Collectors.toSet());
+        Set<String> topics = new HashSet<>(topicSubscriptions);
         LOGGER.trace("Subscribe thread {}", Thread.currentThread());
         this.consumer.subscribe(topics, loggingPartitionsRebalance);
     }
@@ -141,19 +139,14 @@ public class KafkaBridgeConsumer<K, V> {
     /**
      * Request for assignment of topics partitions specified in the related topicSubscriptions list
      *
-     * @param topicSubscriptions topics to be assigned
+     * @param topicPartitions topics to be assigned
      */
-    public void assign(List<SinkTopicSubscription> topicSubscriptions) {
-        if (topicSubscriptions == null) {
-            throw new IllegalArgumentException("Topic subscriptions cannot be null");
+    public void assign(Set<TopicPartition> topicPartitions) {
+        if (topicPartitions == null) {
+            throw new IllegalArgumentException("Topic partitions cannot be null");
         }
 
-        LOGGER.info("Assigning to topics partitions {}", topicSubscriptions);
-        // TODO: maybe we don't need the SinkTopicSubscription class anymore? Removing "offset" field, it's now the same as TopicPartition class?
-        Set<TopicPartition> topicPartitions = new HashSet<>();
-        for (SinkTopicSubscription topicSubscription : topicSubscriptions) {
-            topicPartitions.add(new TopicPartition(topicSubscription.getTopic(), topicSubscription.getPartition()));
-        }
+        LOGGER.info("Assigning to topics partitions {}", topicPartitions);
 
         if (topicPartitions.isEmpty()) {
             this.unsubscribe();
