@@ -73,7 +73,7 @@ public class HttpBridgeExecutorTest {
 
         // verify all threads have the expected name pattern
         for (String name : threadNames) {
-            assertThat(name, startsWith("kafka-bridge-async-"));
+            assertThat(name, startsWith("kafka-bridge-executor-"));
         }
     }
 
