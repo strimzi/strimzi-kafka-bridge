@@ -471,10 +471,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             synchronized (consumerLock) {
                 if (bodyAsJson.has("topics")) {
                     ArrayNode topicsList = (ArrayNode) bodyAsJson.get("topics");
-                    List<String> topicSubscriptions = new ArrayList<>(StreamSupport.stream(topicsList.spliterator(), false)
+                    List<String> topicSubscriptions = StreamSupport.stream(topicsList.spliterator(), false)
                             .map(TextNode.class::cast)
                             .map(TextNode::asText)
-                            .toList());
+                            .toList();
                     this.kafkaBridgeConsumer.subscribe(topicSubscriptions);
                 } else if (bodyAsJson.has("topic_pattern")) {
                     Pattern pattern = Pattern.compile(JsonUtils.getString(bodyAsJson, "topic_pattern"));

@@ -100,9 +100,8 @@ public class KafkaBridgeConsumer<K, V> {
         }
 
         LOGGER.info("Subscribe to topics {}", topicSubscriptions);
-        Set<String> topics = new HashSet<>(topicSubscriptions);
         LOGGER.trace("Subscribe thread {}", Thread.currentThread());
-        this.consumer.subscribe(topics, loggingPartitionsRebalance);
+        this.consumer.subscribe(topicSubscriptions, loggingPartitionsRebalance);
     }
 
     /**
