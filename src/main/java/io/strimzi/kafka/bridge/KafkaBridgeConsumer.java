@@ -82,25 +82,25 @@ public class KafkaBridgeConsumer<K, V> {
     }
 
     /**
-     * Subscribe to the topics specified in the related topicSubscriptions list
+     * Subscribe to the topics specified in the related topics list
      * It should be the next call after the {@link #create(Properties config, String groupId)} after getting
      * the topics information in order to subscribe to them.
      *
-     * @param topicSubscriptions topics to subscribe to
+     * @param topics topics to subscribe to
      */
-    public void subscribe(List<String> topicSubscriptions) {
-        if (topicSubscriptions == null) {
-            throw new IllegalArgumentException("Topic subscriptions cannot be null");
+    public void subscribe(List<String> topics) {
+        if (topics == null) {
+            throw new IllegalArgumentException("Topics cannot be null");
         }
 
-        if (topicSubscriptions.isEmpty()) {
+        if (topics.isEmpty()) {
             this.unsubscribe();
             return;
         }
 
-        LOGGER.info("Subscribe to topics {}", topicSubscriptions);
+        LOGGER.info("Subscribe to topics {}", topics);
         LOGGER.trace("Subscribe thread {}", Thread.currentThread());
-        this.consumer.subscribe(topicSubscriptions, loggingPartitionsRebalance);
+        this.consumer.subscribe(topics, loggingPartitionsRebalance);
     }
 
     /**
