@@ -14,7 +14,6 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.KafkaBridgeConsumer;
-import io.strimzi.kafka.bridge.SinkTopicSubscription;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
@@ -419,14 +418,14 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             return;
         }
         ArrayNode partitionsList = (ArrayNode) bodyAsJson.get("partitions");
-        List<SinkTopicSubscription> topicSubscriptions = new ArrayList<>(StreamSupport.stream(partitionsList.spliterator(), false)
-                .map(json -> new SinkTopicSubscription(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition")))
-                .toList());
+        Set<TopicPartition> topicPartitions = StreamSupport.stream(partitionsList.spliterator(), false)
+                .map(json -> new TopicPartition(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition")))
+                .collect(Collectors.toSet());
 
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
         CompletableFuture.runAsync(() -> {
             synchronized (consumerLock) {
-                this.kafkaBridgeConsumer.assign(topicSubscriptions);
+                this.kafkaBridgeConsumer.assign(topicPartitions);
             }
         }).whenComplete((v, ex) -> {
             LOGGER.trace("Assign handler thread {}", Thread.currentThread());
@@ -472,10 +471,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             synchronized (consumerLock) {
                 if (bodyAsJson.has("topics")) {
                     ArrayNode topicsList = (ArrayNode) bodyAsJson.get("topics");
-                    List<SinkTopicSubscription> topicSubscriptions = new ArrayList<>(StreamSupport.stream(topicsList.spliterator(), false)
+                    List<String> topicSubscriptions = StreamSupport.stream(topicsList.spliterator(), false)
                             .map(TextNode.class::cast)
-                            .map(topic -> new SinkTopicSubscription(topic.asText()))
-                            .toList());
+                            .map(TextNode::asText)
+                            .toList();
                     this.kafkaBridgeConsumer.subscribe(topicSubscriptions);
                 } else if (bodyAsJson.has("topic_pattern")) {
                     Pattern pattern = Pattern.compile(JsonUtils.getString(bodyAsJson, "topic_pattern"));
