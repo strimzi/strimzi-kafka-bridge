@@ -233,7 +233,7 @@ public class MetricsIT extends HttpBridgeITAbstract {
                                     assertThat(metricsBody.contains("executor_completed_tasks_total"), is(true));
 
                                     // verify executor metrics have the expected tags
-                                    assertThat(metricsBody.contains("name=\"strimzi-bridge\""), is(true));
+                                    assertThat(metricsBody.contains("name=\"kafka-bridge\""), is(true));
 
                                     // verify executor completed tasks counter is > 0 (at least one task completed)
                                     Optional<Double> completedTotal = parseMetricValue(metricsBody, "executor_completed_tasks_total");
