@@ -101,13 +101,13 @@ Monitor the `executor_*` metrics exposed on the `/metrics` endpoint to observe p
 |Name |Descriptions
 
 |bridge.id
-|Bridge identifier. This is used as the Kafka client ID for the internal Kafka clients (producer and admin client).
+|Bridge identifier. Used as the Kafka client ID for the internal Kafka clients (producer and admin client).
 
 |bridge.executor.pool.size
 |The number of threads in the dedicated executor service pool for all Kafka-related asynchronous operations. The default is `max(4, <available CPUs> * 2)`.
 
 |bridge.executor.queue.size
-|The maximum number of tasks that can be queued when all executor threads are busy. The default is `1000`. When both the pool and queue are full, new requests are rejected with HTTP 503.
+|The maximum number of tasks that can be queued when all executor threads are busy. The default is `1000`. When both the pool and queue are full, new requests are rejected with HTTP 503. The clients should retry.
 |====
 
 .HTTP related configurations
