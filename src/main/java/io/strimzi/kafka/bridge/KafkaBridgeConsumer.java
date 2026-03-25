@@ -136,13 +136,12 @@ public class KafkaBridgeConsumer<K, V> {
      * @param topicPartitions topics to be assigned
      */
     public void assign(Set<TopicPartition> topicPartitions) {
-        LOGGER.info("Assigning to topics partitions {}", topicPartitions);
-
         if (topicPartitions.isEmpty()) {
             this.unsubscribe();
             return;
         }
 
+        LOGGER.info("Assigning to topics partitions {}", topicPartitions);
         LOGGER.trace("Assign thread {}", Thread.currentThread());
         this.consumer.assign(topicPartitions);
     }
