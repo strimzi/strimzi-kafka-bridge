@@ -592,6 +592,8 @@
 									<ignoredUnusedDeclaredDependency>com.fasterxml.jackson.core:jackson-core</ignoredUnusedDeclaredDependency>
                                     <!-- Needed by junit 6 -->
                                     <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter-engine</ignoredUnusedDeclaredDependency>
+                                    <!-- Used in tests, brought transitively by testcontainers but explicitly declared to control version -->
+                                    <ignoredUnusedDeclaredDependency>org.hamcrest:hamcrest-core</ignoredUnusedDeclaredDependency>
 								</ignoredUnusedDeclaredDependencies>
 						</configuration>
 					</execution>
