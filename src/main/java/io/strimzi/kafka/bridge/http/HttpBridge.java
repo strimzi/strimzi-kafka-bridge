@@ -66,6 +66,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
@@ -99,6 +100,8 @@ public class HttpBridge extends AbstractVerticle {
     private final Map<ConsumerInstanceId, Long> timestampMap = new HashMap<>();
 
     private MetricsCollector metricsCollector = null;
+
+    private ExecutorService asyncExecutor;
 
     /**
      * Constructor
@@ -266,6 +269,10 @@ public class HttpBridge extends AbstractVerticle {
                     }
 
                     LOGGER.info("Starting HTTP bridge verticle...");
+
+                    // create dedicated executor for the Kafka-related asynchronous operations
+                    this.asyncExecutor = HttpBridgeExecutor.create(bridgeConfig.getExecutorPoolSize(), bridgeConfig.getExecutorQueueSize());
+
                     this.httpBridgeContext = new HttpBridgeContext<>();
                     HttpAdminBridgeEndpoint adminClientEndpoint = new HttpAdminBridgeEndpoint(this.bridgeConfig, this.httpBridgeContext);
                     this.httpBridgeContext.setHttpAdminEndpoint(adminClientEndpoint);
@@ -324,6 +331,9 @@ public class HttpBridge extends AbstractVerticle {
 
         // admin client cleanup
         this.httpBridgeContext.closeHttpAdminClientEndpoint();
+
+        // shutdown the async executor
+        HttpBridgeExecutor.shutdown(this.asyncExecutor);
 
         Future<Void> apiServerShutdown = this.apiServer != null ?
                 this.apiServer.shutdown()
@@ -414,7 +424,8 @@ public class HttpBridge extends AbstractVerticle {
             EmbeddedFormat format = EmbeddedFormat.from(JsonUtils.getString(body, "format", "binary"));
 
             sink = new HttpSinkBridgeEndpoint<>(this.bridgeConfig, this.httpBridgeContext, format,
-                                                new ByteArrayDeserializer(), new ByteArrayDeserializer());
+                                                new ByteArrayDeserializer(), new ByteArrayDeserializer(),
+                                                this.asyncExecutor);
 
             sink.closeHandler(endpoint -> {
                 @SuppressWarnings("unchecked")
@@ -589,7 +600,8 @@ public class HttpBridge extends AbstractVerticle {
 
         try {
             if (source == null) {
-                source = new HttpSourceBridgeEndpoint<>(this.bridgeConfig, new ByteArraySerializer(), new ByteArraySerializer());
+                source = new HttpSourceBridgeEndpoint<>(this.bridgeConfig, new ByteArraySerializer(), new ByteArraySerializer(),
+                                                        this.asyncExecutor);
 
                 source.closeHandler(s -> this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection()));
                 source.open();

@@ -46,6 +46,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -80,6 +82,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     // Lock for consumer operations to prevent concurrent access to KafkaConsumer
     private final Object consumerLock = new Object();
 
+    private final ExecutorService asyncExecutor;
+
     /**
      * Constructor
      *
@@ -88,13 +92,16 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
      * @param format the embedded format for consumed messages
      * @param keyDeserializer key deserializer for consumed messages
      * @param valueDeserializer value deserializer for consumed messages
+     * @param asyncExecutor executor service for Kafka-related asynchronous operations
      */
     public HttpSinkBridgeEndpoint(BridgeConfig bridgeConfig, HttpBridgeContext<K, V> context, EmbeddedFormat format,
-                                  Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
+                                  Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer,
+                                  ExecutorService asyncExecutor) {
         super(bridgeConfig);
         this.httpBridgeContext = context;
         this.kafkaBridgeConsumer = new KafkaBridgeConsumer<>(bridgeConfig.getKafkaConfig(), keyDeserializer, valueDeserializer);
         this.format = format;
+        this.asyncExecutor = asyncExecutor;
         this.subscribed = false;
         this.assigned = false;
     }
@@ -201,7 +208,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                     this.kafkaBridgeConsumer.seek(topicPartition, offset);
                 }
             }
-        }).whenComplete((v, ex) -> {
+        }, asyncExecutor).whenComplete((v, ex) -> {
             LOGGER.trace("Seek handler thread {}", Thread.currentThread());
             if (ex == null) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
@@ -229,7 +236,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                     this.kafkaBridgeConsumer.seekToEnd(set);
                 }
             }
-        }).whenComplete((v, ex) -> {
+        }, asyncExecutor).whenComplete((v, ex) -> {
             LOGGER.trace("SeekTo handler thread {}", Thread.currentThread());
             if (ex == null) {
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
@@ -258,7 +265,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 synchronized (consumerLock) {
                     return this.kafkaBridgeConsumer.commit(offsetData);
                 }
-            }).whenComplete((data, ex) -> {
+            }, asyncExecutor).whenComplete((data, ex) -> {
                 LOGGER.trace("Commit handler thread {}", Thread.currentThread());
                 if (ex == null) {
                     HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
@@ -277,7 +284,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 synchronized (consumerLock) {
                     this.kafkaBridgeConsumer.commitLastPolledOffsets();
                 }
-            }).whenComplete((v, ex) -> {
+            }, asyncExecutor).whenComplete((v, ex) -> {
                 LOGGER.trace("Commit handler thread {}", Thread.currentThread());
                 if (ex == null) {
                     HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
@@ -297,7 +304,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         // fulfilling the request in a separate thread to free the Vert.x event loop still in place
         CompletableFuture.runAsync(() -> {
             this.close();
-        }).whenComplete((v, ex) -> {
+        }, asyncExecutor).whenComplete((v, ex) -> {
             LOGGER.trace("DeleteConsumer handler thread {}", Thread.currentThread());
             if (ex == null) {
                 LOGGER.info("Deleted consumer {} from group {}", routingContext.pathParam("name"), routingContext.pathParam("groupid"));
@@ -394,7 +401,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 synchronized (consumerLock) {
                     return this.kafkaBridgeConsumer.poll(this.pollTimeOut);
                 }
-            }).whenComplete((records, ex) -> {
+            }, asyncExecutor).whenComplete((records, ex) -> {
                 LOGGER.trace("Poll handler thread {}", Thread.currentThread());
                 this.pollHandler(records, ex, routingContext);
             });
@@ -427,7 +434,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             synchronized (consumerLock) {
                 this.kafkaBridgeConsumer.assign(topicPartitions);
             }
-        }).whenComplete((v, ex) -> {
+        }, asyncExecutor).whenComplete((v, ex) -> {
             LOGGER.trace("Assign handler thread {}", Thread.currentThread());
             if (ex == null) {
                 this.assigned = true;
@@ -481,7 +488,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                     this.kafkaBridgeConsumer.subscribe(pattern);
                 }
             }
-        }).whenComplete((v, ex) -> {
+        }, asyncExecutor).whenComplete((v, ex) -> {
             LOGGER.trace("Subscribe handler thread {}", Thread.currentThread());
             if (ex == null) {
                 this.subscribed = true;
@@ -503,7 +510,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             synchronized (consumerLock) {
                 return this.kafkaBridgeConsumer.listSubscriptions();
             }
-        }).whenComplete((subscriptions, ex) -> {
+        }, asyncExecutor).whenComplete((subscriptions, ex) -> {
             LOGGER.trace("ListSubscriptions handler thread {}", Thread.currentThread());
             if (ex == null) {
                 ObjectNode root = JsonUtils.createObjectNode();
@@ -552,7 +559,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             synchronized (consumerLock) {
                 this.kafkaBridgeConsumer.unsubscribe();
             }
-        }).whenComplete((v, ex) -> {
+        }, asyncExecutor).whenComplete((v, ex) -> {
             LOGGER.trace("Unsubscribe handler thread {}", Thread.currentThread());
             if (ex == null) {
                 this.subscribed = false;
@@ -583,6 +590,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     }
 
     @Override
+    @SuppressWarnings("checkstyle:CyclomaticComplexity")
     public void handle(RoutingContext routingContext, Consumer<HttpBridgeEndpoint> handler) {
         JsonNode bodyAsJson = EMPTY_JSON;
         try {
@@ -600,50 +608,61 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         }
 
         LOGGER.trace("HttpSinkBridgeEndpoint handle thread {}", Thread.currentThread());
-        switch (this.httpBridgeContext.getOpenApiOperation()) {
+        try {
+            switch (this.httpBridgeContext.getOpenApiOperation()) {
 
-            case CREATE_CONSUMER:
-                doCreateConsumer(routingContext, bodyAsJson, handler);
-                break;
+                case CREATE_CONSUMER:
+                    doCreateConsumer(routingContext, bodyAsJson, handler);
+                    break;
 
-            case SUBSCRIBE:
-                doSubscribe(routingContext, bodyAsJson);
-                break;
+                case SUBSCRIBE:
+                    doSubscribe(routingContext, bodyAsJson);
+                    break;
 
-            case ASSIGN:
-                doAssign(routingContext, bodyAsJson);
-                break;
+                case ASSIGN:
+                    doAssign(routingContext, bodyAsJson);
+                    break;
 
-            case POLL:
-                doPoll(routingContext);
-                break;
+                case POLL:
+                    doPoll(routingContext);
+                    break;
 
-            case DELETE_CONSUMER:
-                doDeleteConsumer(routingContext);
-                break;
+                case DELETE_CONSUMER:
+                    doDeleteConsumer(routingContext);
+                    break;
 
-            case COMMIT:
-                doCommit(routingContext, bodyAsJson);
-                break;
+                case COMMIT:
+                    doCommit(routingContext, bodyAsJson);
+                    break;
 
-            case SEEK:
-                doSeek(routingContext, bodyAsJson);
-                break;
+                case SEEK:
+                    doSeek(routingContext, bodyAsJson);
+                    break;
 
-            case SEEK_TO_BEGINNING:
-            case SEEK_TO_END:
-                doSeekTo(routingContext, bodyAsJson, this.httpBridgeContext.getOpenApiOperation());
-                break;
+                case SEEK_TO_BEGINNING:
+                case SEEK_TO_END:
+                    doSeekTo(routingContext, bodyAsJson, this.httpBridgeContext.getOpenApiOperation());
+                    break;
 
-            case UNSUBSCRIBE:
-                doUnsubscribe(routingContext);
-                break;
-            case LIST_SUBSCRIPTIONS:
-                doListSubscriptions(routingContext);
-                break;
+                case UNSUBSCRIBE:
+                    doUnsubscribe(routingContext);
+                    break;
+                case LIST_SUBSCRIPTIONS:
+                    doListSubscriptions(routingContext);
+                    break;
 
-            default:
-                throw new IllegalArgumentException("Unknown Operation: " + this.httpBridgeContext.getOpenApiOperation());
+                default:
+                    throw new IllegalArgumentException("Unknown Operation: " + this.httpBridgeContext.getOpenApiOperation());
+            }
+        } catch (RejectedExecutionException e) {
+            LOGGER.error("Executor service rejected task, bridge is overloaded");
+            HttpBridgeExecutor.incrementRejectedTasks();
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
+                    "Bridge is overloaded, please retry later"
+            );
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
         }
     }
 

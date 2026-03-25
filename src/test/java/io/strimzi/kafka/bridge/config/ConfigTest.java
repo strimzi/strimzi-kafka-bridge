@@ -197,4 +197,37 @@ public class ConfigTest {
         Exception e = assertThrows(IllegalArgumentException.class, () -> BridgeConfig.fromMap(map));
         assertThat(e.getMessage(), is("Metrics type not found: invalidReporterType"));
     }
+
+    @Test
+    public void testExecutorServiceDefaults() {
+        BridgeConfig bridgeConfig = BridgeConfig.fromMap(Map.of());
+
+        // default pool size should be max(4, availableProcessors * 2)
+        int expectedDefaultPoolSize = Math.max(4, Runtime.getRuntime().availableProcessors() * 2);
+        assertThat(bridgeConfig.getExecutorPoolSize(), is(expectedDefaultPoolSize));
+
+        // default queue size should be 1000
+        assertThat(bridgeConfig.getExecutorQueueSize(), is(1000));
+    }
+
+    @Test
+    public void testExecutorServiceExplicitConfig() {
+        Map<String, Object> map = Map.of(
+                "bridge.executor.pool.size", "20",
+                "bridge.executor.queue.size", "500"
+        );
+
+        BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
+        assertThat(bridgeConfig.getExecutorPoolSize(), is(20));
+        assertThat(bridgeConfig.getExecutorQueueSize(), is(500));
+    }
+
+    @Test
+    public void testExecutorServicePoolSizeFloor() {
+        BridgeConfig bridgeConfig = BridgeConfig.fromMap(Map.of());
+
+        // the default should never be less than 4, even on single-core systems
+        assertThat(bridgeConfig.getExecutorPoolSize(), is(not(0)));
+        assertThat(bridgeConfig.getExecutorPoolSize() >= 4, is(true));
+    }
 }

@@ -194,6 +194,63 @@ public class MetricsIT extends HttpBridgeITAbstract {
         consumerService().deleteConsumer(context, groupId, name);
     }
 
+    @Test
+    void metricsExecutorTest(VertxTestContext context) throws InterruptedException, ExecutionException {
+        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+
+        String value = "test-message-for-executor-metrics";
+
+        JsonArray records = new JsonArray();
+        JsonObject json = new JsonObject();
+        json.put("value", value);
+        records.add(json);
+
+        JsonObject root = new JsonObject();
+        root.put("records", records);
+
+        future.get();
+
+        producerService()
+                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
+                .sendJsonObject(root)
+                .onComplete(sendResult -> {
+                    context.verify(() -> assertThat(sendResult.succeeded(), is(true)));
+
+                    // check metrics after producer activity to verify executor metrics
+                    internalBaseService()
+                            .getRequest("/metrics")
+                            .send()
+                            .onComplete(metricsResult -> {
+                                context.verify(() -> {
+                                    assertThat(metricsResult.succeeded(), is(true));
+                                    String metricsBody = metricsResult.result().bodyAsString();
+
+                                    // verify executor metrics are present with correct tags
+                                    assertThat(metricsBody.contains("executor_active_threads"), is(true));
+                                    assertThat(metricsBody.contains("executor_queued_tasks"), is(true));
+                                    assertThat(metricsBody.contains("executor_queue_remaining_tasks"), is(true));
+                                    assertThat(metricsBody.contains("executor_pool_size_threads"), is(true));
+                                    assertThat(metricsBody.contains("executor_completed_tasks_total"), is(true));
+
+                                    // verify executor metrics have the expected tags
+                                    assertThat(metricsBody.contains("name=\"kafka-bridge\""), is(true));
+
+                                    // verify executor completed tasks counter is > 0 (at least one task completed)
+                                    Optional<Double> completedTotal = parseMetricValue(metricsBody, "executor_completed_tasks_total");
+                                    assertThat(completedTotal.isPresent(), is(true));
+                                    assertThat(completedTotal.get(), greaterThan(0.0));
+
+                                    // verify pool size gauge has a reasonable value
+                                    Optional<Double> poolSize = parseMetricValue(metricsBody, "executor_pool_size_threads");
+                                    assertThat(poolSize.isPresent(), is(true));
+                                    assertThat(poolSize.get(), greaterThan(0.0));
+
+                                    context.completeNow();
+                                });
+                            });
+                });
+    }
+
     private Optional<Double> parseMetricValue(String metricsBody, String metricName) {
         // Look for the metric line that starts with the metric name, optionally has tags in {}, and contains a numeric value
         Pattern pattern = Pattern.compile("^" + Pattern.quote(metricName) + "(?:\\{[^}]*})?\\s+(\\d+(?:\\.\\d+)?)\\s*$", Pattern.MULTILINE);

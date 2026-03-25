@@ -32,6 +32,12 @@ public class BridgeConfig extends AbstractConfig {
 
     /** JMX Exporter configuration file path */
     private static final String JMX_EXPORTER_CONFIG_PATH = METRICS_TYPE + ".exporter.config.path";
+
+    /** Bridge executor pool size */
+    public static final String BRIDGE_EXECUTOR_POOL_SIZE = BRIDGE_CONFIG_PREFIX + "executor.pool.size";
+
+    /** Bridge executor queue size */
+    public static final String BRIDGE_EXECUTOR_QUEUE_SIZE = BRIDGE_CONFIG_PREFIX + "executor.queue.size";
     
     /** Tracing system to be used in the bridge */
     private static final String TRACING_TYPE = BRIDGE_CONFIG_PREFIX + "tracing";
@@ -39,6 +45,12 @@ public class BridgeConfig extends AbstractConfig {
     /** Default Strimzi Metrics Reporter allow list. */
     /* test */ static final String DEFAULT_STRIMZI_METRICS_REPORTER_ALLOW_LIST = "kafka_consumer_consumer_metrics.*, " +
         "kafka_producer_kafka_metrics_count_count, kafka_producer_producer_metrics.*";
+
+    /** Default executor pool size: max(4, availableProcessors * 2) */
+    private static final int DEFAULT_EXECUTOR_POOL_SIZE = Math.max(4, Runtime.getRuntime().availableProcessors() * 2);
+
+    /** Default executor queue size */
+    private static final int DEFAULT_EXECUTOR_QUEUE_SIZE = 1000;
 
     private final KafkaConfig kafkaConfig;
     private final HttpConfig httpConfig;
@@ -162,5 +174,27 @@ public class BridgeConfig extends AbstractConfig {
         } else {
             return config.get(BridgeConfig.TRACING_TYPE).toString();
         }
+    }
+
+    /**
+     * Get the executor pool size for the Kafka-related asynchronous operations.
+     *
+     * @return the executor pool size
+     */
+    public int getExecutorPoolSize() {
+        return Optional.ofNullable(config.get(BRIDGE_EXECUTOR_POOL_SIZE))
+            .map(v -> Integer.parseInt(v.toString()))
+            .orElse(DEFAULT_EXECUTOR_POOL_SIZE);
+    }
+
+    /**
+     * Get the executor queue size for Kafka-related asynchronous operations.
+     *
+     * @return the executor queue size
+     */
+    public int getExecutorQueueSize() {
+        return Optional.ofNullable(config.get(BRIDGE_EXECUTOR_QUEUE_SIZE))
+            .map(v -> Integer.parseInt(v.toString()))
+            .orElse(DEFAULT_EXECUTOR_QUEUE_SIZE);
     }
 }
