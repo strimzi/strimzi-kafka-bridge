@@ -89,10 +89,6 @@ public class KafkaBridgeConsumer<K, V> {
      * @param topics topics to subscribe to
      */
     public void subscribe(List<String> topics) {
-        if (topics == null) {
-            throw new IllegalArgumentException("Topics cannot be null");
-        }
-
         if (topics.isEmpty()) {
             this.unsubscribe();
             return;
@@ -140,17 +136,12 @@ public class KafkaBridgeConsumer<K, V> {
      * @param topicPartitions topics to be assigned
      */
     public void assign(Set<TopicPartition> topicPartitions) {
-        if (topicPartitions == null) {
-            throw new IllegalArgumentException("Topic partitions cannot be null");
-        }
-
-        LOGGER.info("Assigning to topics partitions {}", topicPartitions);
-
         if (topicPartitions.isEmpty()) {
             this.unsubscribe();
             return;
         }
 
+        LOGGER.info("Assigning to topics partitions {}", topicPartitions);
         LOGGER.trace("Assign thread {}", Thread.currentThread());
         this.consumer.assign(topicPartitions);
     }
