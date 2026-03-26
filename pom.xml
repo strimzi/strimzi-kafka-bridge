@@ -61,8 +61,8 @@
 
 		<!-- Runtime dependencies -->
 		<log4j.version>2.25.3</log4j.version>
-		<vertx.version>5.0.8</vertx.version>
-		<netty.version>4.2.10.Final</netty.version>
+		<vertx.version>5.0.9</vertx.version>
+		<netty.version>4.2.11.Final</netty.version>
 		<kafka.version>4.2.0</kafka.version>
 		<kafka-kubernetes-config-provider.version>1.2.2</kafka-kubernetes-config-provider.version>
 		<kafka-env-var-config-provider.version>1.1.0</kafka-env-var-config-provider.version>
@@ -84,7 +84,7 @@
 		<guava.version>32.1.3-jre</guava.version>
 
 		<!-- Test only dependencies -->
-		<vertx-testing.version>5.0.8</vertx-testing.version>
+		<vertx-testing.version>5.0.9</vertx-testing.version>
 		<hamcrest.version>2.2</hamcrest.version>
 		<junit.version>6.0.0</junit.version>
 		<mockito.version>5.21.0</mockito.version>
@@ -379,6 +379,15 @@
 			<artifactId>vertx-kafka-client</artifactId>
 			<version>${vertx-testing.version}</version>
 			<scope>test</scope>
+			<!-- Exclude testcontainers to avoid transitive dependency on junit:4.13.2 and hamcrest-core:1.3
+			     which causes Maven dependency analyzer issues. See https://github.com/strimzi/strimzi-kafka-bridge/issues/1102
+			     This exclusion can be removed when upgrading to Vert.x 5.0.10+ which will have testcontainers scoped as test-only -->
+			<exclusions>
+				<exclusion>
+					<groupId>org.testcontainers</groupId>
+					<artifactId>testcontainers</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>io.vertx</groupId>
