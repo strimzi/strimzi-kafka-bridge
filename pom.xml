@@ -379,6 +379,9 @@
 			<artifactId>vertx-kafka-client</artifactId>
 			<version>${vertx-testing.version}</version>
 			<scope>test</scope>
+			<!-- Exclude testcontainers to avoid transitive dependency on junit:4.13.2 and hamcrest-core:1.3
+			     which causes Maven dependency analyzer issues. See https://github.com/strimzi/strimzi-kafka-bridge/issues/1102
+			     This exclusion can be removed when upgrading to Vert.x 5.0.10+ which will have testcontainers scoped as test-only -->
 			<exclusions>
 				<exclusion>
 					<groupId>org.testcontainers</groupId>
