@@ -379,6 +379,12 @@
 			<artifactId>vertx-kafka-client</artifactId>
 			<version>${vertx-testing.version}</version>
 			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.testcontainers</groupId>
+					<artifactId>testcontainers</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>io.vertx</groupId>
@@ -407,12 +413,6 @@
 		<dependency>
 			<groupId>org.hamcrest</groupId>
 			<artifactId>hamcrest</artifactId>
-			<version>${hamcrest.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.hamcrest</groupId>
-			<artifactId>hamcrest-core</artifactId>
 			<version>${hamcrest.version}</version>
 			<scope>test</scope>
 		</dependency>
@@ -592,8 +592,6 @@
 									<ignoredUnusedDeclaredDependency>com.fasterxml.jackson.core:jackson-core</ignoredUnusedDeclaredDependency>
                                     <!-- Needed by junit 6 -->
                                     <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter-engine</ignoredUnusedDeclaredDependency>
-                                    <!-- Used in tests, brought transitively by testcontainers but explicitly declared to control version -->
-                                    <ignoredUnusedDeclaredDependency>org.hamcrest:hamcrest-core</ignoredUnusedDeclaredDependency>
 								</ignoredUnusedDeclaredDependencies>
 						</configuration>
 					</execution>
