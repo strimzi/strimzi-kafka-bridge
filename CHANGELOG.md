@@ -3,7 +3,7 @@
 ## 1.0.0
 
 * Use Java 21 as the runtime in the Bridge container (Java 17 continues to be supported)
-* Dependency updates (Kafka 4.2.0, Vert.x 5.0.9, Netty 4.2.11.Final, JMX Prometheus collector 1.5.0, OAuth 0.17.1, Kubernetes Configuration Provider 1.2.2, Metrics Reporter 0.3.0).
+* Dependency updates (Kafka 4.2.0, Vert.x 5.0.10, Netty 4.2.12.Final, JMX Prometheus collector 1.5.0, OAuth 0.17.1, Kubernetes Configuration Provider 1.2.2, Metrics Reporter 0.3.0).
 * Adding support for [JsonTemplateLayout](https://logging.apache.org/log4j/2.x/manual/json-template-layout.html).
 * Add support for TLS/SSL on the HTTP interface
   Set `http.ssl.*` configurations to enable it.
