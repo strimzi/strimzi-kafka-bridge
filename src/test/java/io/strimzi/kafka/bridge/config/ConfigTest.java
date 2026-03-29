@@ -35,7 +35,7 @@ public class ConfigTest {
                 "kafka.consumer.auto.offset.reset", "earliest",
                 "http.host", "0.0.0.0",
                 "http.port", "8080",
-                "management.port", "8081"
+                "http.management.port", "8081"
         );
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
@@ -52,7 +52,7 @@ public class ConfigTest {
         assertThat(bridgeConfig.getKafkaConfig().getConsumerConfig().getConfig().size(), is(1));
         assertThat(bridgeConfig.getKafkaConfig().getConsumerConfig().getConfig().get(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG), is("earliest"));
 
-        assertThat(bridgeConfig.getHttpConfig().getConfig().size(), is(2));
+        assertThat(bridgeConfig.getHttpConfig().getConfig().size(), is(3));
         assertThat(bridgeConfig.getHttpConfig().getHost(), is("0.0.0.0"));
         assertThat(bridgeConfig.getHttpConfig().getPort(), is(8080));
         assertThat(bridgeConfig.getHttpConfig().getManagementPort(), is(8081));
@@ -229,5 +229,31 @@ public class ConfigTest {
         // the default should never be less than 4, even on single-core systems
         assertThat(bridgeConfig.getExecutorPoolSize(), is(not(0)));
         assertThat(bridgeConfig.getExecutorPoolSize() >= 4, is(true));
+    }
+
+    @Test
+    public void testUnknownPropertiesAreIgnored() {
+        Map<String, Object> map = Map.of(
+                "bridge.id", "my-bridge",
+                "kafka.bootstrap.servers", "localhost:9092",
+                "http.host", "0.0.0.0",
+                "http.port", "8080",
+                "unknown.property", "value"
+        );
+
+        BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
+
+        // valid properties should be processed
+        assertThat(bridgeConfig.getBridgeID(), is("my-bridge"));
+        assertThat(bridgeConfig.getKafkaConfig().getConfig().size(), is(1));
+        assertThat(bridgeConfig.getKafkaConfig().getConfig().get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG), is("localhost:9092"));
+        assertThat(bridgeConfig.getHttpConfig().getConfig().size(), is(2));
+        assertThat(bridgeConfig.getHttpConfig().getHost(), is("0.0.0.0"));
+        assertThat(bridgeConfig.getHttpConfig().getPort(), is(8080));
+
+        // unknown properties should not appear in any config
+        assertThat(bridgeConfig.getConfig().containsKey("unknown.property"), is(false));
+        assertThat(bridgeConfig.getKafkaConfig().getConfig().containsKey("unknown.property"), is(false));
+        assertThat(bridgeConfig.getHttpConfig().getConfig().containsKey("unknown.property"), is(false));
     }
 }

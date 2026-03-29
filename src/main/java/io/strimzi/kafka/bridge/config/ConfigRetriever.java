@@ -5,6 +5,10 @@
 
 package io.strimzi.kafka.bridge.config;
 
+import io.strimzi.kafka.bridge.http.HttpConfig;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,6 +21,7 @@ import java.util.stream.Collectors;
  * Retrieve the bridge configuration from properties file and environment variables
  */
 public class ConfigRetriever {
+    private static final Logger LOGGER = LogManager.getLogger(ConfigRetriever.class);
 
     /**
      * Retrieve the bridge configuration from the properties file provided as parameter
@@ -53,8 +58,23 @@ public class ConfigRetriever {
                                     e -> String.valueOf(e.getValue()),
                                     (prev, next) -> next, HashMap::new
                             ));
+            // warn about unknown properties from the file
+            warnUnknownProperties(configuration);
         }
         configuration.putAll(additionalConfig);
         return configuration;
+    }
+
+    /**
+     * Warns about unknown configuration properties that don't match any expected prefix.
+     *
+     * @param properties properties to check (from properties file only)
+     */
+    private static void warnUnknownProperties(Map<String, Object> properties) {
+        properties.keySet().stream()
+                .filter(key -> !key.startsWith(BridgeConfig.BRIDGE_CONFIG_PREFIX) &&
+                        !key.startsWith(KafkaConfig.KAFKA_CONFIG_PREFIX) &&
+                        !key.startsWith(HttpConfig.HTTP_CONFIG_PREFIX))
+                .forEach(key -> LOGGER.warn("Ignoring unknown configuration property: {}", key));
     }
 }
