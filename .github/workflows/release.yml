@@ -67,7 +67,7 @@ jobs:
       - name: Download bridge binaries from source build
         uses: actions/download-artifact@v7
         with:
-          name: bridge-binaries.tar
+          name: binaries-kafka-bridge.tar
           run-id: ${{ inputs.sourceBuildRunId }}
           github-token: ${{ github.token }}
 
@@ -76,7 +76,7 @@ jobs:
 
       - name: Push Java artifacts to GHCR
         run: |
-          oras push ghcr.io/${{ env.REPOSITORY }}/bridge-binaries:${{ env.TAG }} bridge-binaries.tar:application/x-tar
+          oras push ghcr.io/${{ env.REPOSITORY }}/binaries-kafka-bridge:${{ env.TAG }} binaries-kafka-bridge.tar:application/x-tar
         env:
           TAG: ${{ inputs.releaseVersion }}-${{ inputs.sourceBuildRunId }}
           REPOSITORY: "strimzi"
