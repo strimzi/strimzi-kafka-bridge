@@ -60,7 +60,7 @@
 		<spotbugs.version>4.7.3</spotbugs.version>
 
 		<!-- Runtime dependencies -->
-		<log4j.version>2.25.3</log4j.version>
+		<log4j.version>2.25.4</log4j.version>
 		<vertx.version>5.0.10</vertx.version>
 		<netty.version>4.2.12.Final</netty.version>
 		<kafka.version>4.2.0</kafka.version>
