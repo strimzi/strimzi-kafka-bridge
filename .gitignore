@@ -38,5 +38,4 @@ documentation/book/build/**
 
 # Claude configuration
 .claude/
-CLAUDE.md
 .mcp.json
