@@ -2,6 +2,8 @@
 
 ## 1.1.0
 
+* Dependency updates (Vert.x 5.0.11)
+
 ## 1.0.0
 
 * Use Java 21 as the runtime in the Bridge container (Java 17 continues to be supported)
