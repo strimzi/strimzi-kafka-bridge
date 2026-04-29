@@ -85,49 +85,11 @@ public class ConsumerService extends BaseService {
                 .putHeader(ACCEPT.toString(), BridgeContentType.KAFKA_JSON);
     }
 
-    public HttpRequest<JsonObject> offsetsRequest(String groupId, String name, JsonObject json) {
-        return postRequest(Urls.consumerInstanceOffsets(groupId, name))
-                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(json.toBuffer().length()))
-                .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON)
-                .as(BodyCodec.jsonObject());
-    }
-
     public HttpRequest<JsonObject> assignRequest(String groupId, String name, JsonObject json) {
         return postRequest(Urls.consumerInstanceAssignments(groupId, name))
                 .putHeader(CONTENT_LENGTH.toString(), String.valueOf(json.toBuffer().length()))
                 .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON)
                 .as(BodyCodec.jsonObject());
-    }
-
-    public HttpRequest<JsonObject> offsetsRequest(String groupId, String name) {
-        return postRequest(Urls.consumerInstanceOffsets(groupId, name));
-    }
-
-    // Consumer actions
-    public ConsumerService unsubscribeConsumer(VertxTestContext context, String groupId, String name, String... topicNames) throws InterruptedException, ExecutionException, TimeoutException {
-        JsonArray topics = new JsonArray();
-        for (String topicName : topicNames) {
-            topics.add(topicName);
-        }
-
-        JsonObject topicsRoot = new JsonObject();
-        topicsRoot.put("topics", topics);
-
-        CompletableFuture<Boolean> unsubscribe = new CompletableFuture<>();
-        deleteRequest(Urls.consumerInstanceSubscription(groupId, name))
-                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(topicsRoot.toBuffer().length()))
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(topicsRoot)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
-                    });
-                    unsubscribe.complete(true);
-                });
-
-        unsubscribe.get(HTTP_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-        return this;
     }
 
     public ConsumerService subscribeTopic(VertxTestContext context, String groupId, String name, JsonObject... partition) throws InterruptedException, ExecutionException, TimeoutException {

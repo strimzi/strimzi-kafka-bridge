@@ -152,10 +152,23 @@ public class BridgeExtension implements
      */
     private Map<String, Object> returnPropertiesFromConfigEntries(BridgeConfiguration bridgeConfiguration) {
         ConfigEntry[] configEntries = bridgeConfiguration.properties();
+        ConfigEntry[] additionalEntries = bridgeConfiguration.additionalProperties();
+
         Map<String, Object> properties = new HashMap<>();
 
+        // These are the "defaults"
         for (ConfigEntry configEntry : configEntries) {
             properties.put(configEntry.key(), configEntry.value());
+        }
+
+        // These are additional properties - to either add to existing defaults without need to configure everything
+        // or to override some of the properties (and again without need configuring everything)
+        for (ConfigEntry additionalConfig : additionalEntries) {
+            if (ConfigEntry.REMOVE.equals(additionalConfig.value())) {
+                properties.remove(additionalConfig.key());
+            } else {
+                properties.put(additionalConfig.key(), additionalConfig.value());
+            }
         }
 
         return properties;

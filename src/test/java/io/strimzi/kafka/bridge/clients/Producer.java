@@ -4,131 +4,98 @@
  */
 package io.strimzi.kafka.bridge.clients;
 
-import io.vertx.core.Vertx;
-import io.vertx.kafka.client.producer.KafkaHeader;
-import io.vertx.kafka.client.producer.KafkaProducer;
-import io.vertx.kafka.client.producer.KafkaProducerRecord;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.header.Header;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntPredicate;
 
-public class Producer extends ClientHandlerBase<Integer> implements AutoCloseable {
+public class Producer {
     private static final Logger LOGGER = LogManager.getLogger(Producer.class);
-    private final Properties properties;
+    private Properties properties;
     private final AtomicInteger numSent = new AtomicInteger(0);
     private final String topic;
-    private final String clientName;
-    private final List<KafkaHeader> headers;
+    private final List<Header> headers;
     private final String message;
     private final int partition;
     private final Long timestamp;
     private final boolean withNullKeyRecord;
+    private final int messageCount;
 
     public Producer(ProducerBuilder producerBuilder) {
-        super(producerBuilder.resultPromise, producerBuilder.msgCntPredicate);
-
         this.properties = producerBuilder.properties;
         this.topic = producerBuilder.topic;
-        this.clientName = "producer-sender-plain-";
         this.headers = producerBuilder.headers;
         this.message = producerBuilder.message;
         this.partition = producerBuilder.partition;
         this.timestamp = producerBuilder.timestamp;
         this.withNullKeyRecord = producerBuilder.withNullKeyRecord;
-        this.vertx = Vertx.vertx();
+        this.messageCount = producerBuilder.messageCount;
     }
 
-    @Override
-    protected void handleClient() {
-        LOGGER.info("Creating instance of Vert.x for the client {}", this.getClass().getName());
+    public void sendMessages() {
+        LOGGER.info("Creating {} messages", messageCount);
+        List<ProducerRecord<String, String>> messages = createMessages();
 
         LOGGER.info("Producer is starting with following properties: {}", properties.toString());
+        KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
 
-        KafkaProducer<String, String> producer = KafkaProducer.create(vertx, properties);
-
-        if (msgCntPredicate.test(-1)) {
-            vertx.eventBus().consumer(clientName, msg -> {
-                if (msg.body().equals("stop")) {
-                    LOGGER.info("Received stop command! Produced messages: {}", numSent.get());
-                    resultPromise.complete(numSent.get());
-                }
-            });
-            vertx.setPeriodic(1000, id -> sendNext(producer, topic, headers, message, partition, timestamp, withNullKeyRecord));
-        } else {
-            sendNext(producer, topic, headers, message, partition, timestamp, withNullKeyRecord);
-        }
+        LOGGER.info("Sending messages");
+        messages.forEach(producerRecord -> sendMessage(producer, producerRecord));
     }
 
-    @Override
-    public void close() {
-        LOGGER.info("Closing Vert.x instance for the client {}", this.getClass().getName());
-        if (vertx != null) {
-            vertx.close();
-        }
-    }
+    private List<ProducerRecord<String, String>> createMessages() {
+        List<ProducerRecord<String, String>> producerRecords = new ArrayList<>();
 
-    private void sendNext(KafkaProducer<String, String> producer, String topic, List<KafkaHeader> headers,
-                          String message, int partition, Long timestamp, boolean withNullKeyRecord) {
-        if (msgCntPredicate.negate().test(numSent.get())) {
-
-            KafkaProducerRecord<String, String> record;
-
+        for (int i = 0; i < messageCount; i++) {
             if (withNullKeyRecord) {
-                record = KafkaProducerRecord.create(topic, null, message, timestamp, partition);
+                producerRecords.add(new ProducerRecord<>(topic, partition, timestamp, null, message, headers));
             } else {
-                record = KafkaProducerRecord.create(topic, "key-" + numSent.get(), message + "-" + numSent.get(), timestamp, partition);
+                producerRecords.add(new ProducerRecord<>(topic, partition, timestamp, "key-" + i, message + "-" + i, headers));
             }
-
-            record.addHeaders(headers);
-
-            producer.send(record)
-                    .onSuccess(recordMetadata -> {
-                        LOGGER.info("Message {} written on topic={}, partition={}, offset={}",
-                                record.value(), recordMetadata.getTopic(), recordMetadata.getPartition(), recordMetadata.getOffset());
-
-                        numSent.getAndIncrement();
-
-                        if (msgCntPredicate.test(numSent.get())) {
-                            LOGGER.info("Producer produced {} messages", numSent.get());
-                            resultPromise.complete(numSent.get());
-                        }
-
-                        if (msgCntPredicate.negate().test(-1)) {
-                            sendNext(producer, topic, headers, message, partition, timestamp, withNullKeyRecord);
-                        }
-                    })
-                    .onFailure(t -> {
-                        LOGGER.error("Producer cannot connect to topic {}", topic, t);
-                        sendNext(producer, topic, headers, message, partition, timestamp, withNullKeyRecord);
-                    });
         }
+
+        return producerRecords;
+    }
+
+    private void sendMessage(KafkaProducer<String, String> producer, ProducerRecord<String, String> message) {
+        try {
+            RecordMetadata recordMetadata = producer.send(message).get();
+
+            LOGGER.info("Message {} written on topic={}, partition={}, offset={}",
+                message.value(), recordMetadata.topic(), recordMetadata.partition(), recordMetadata.offset());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send messages due to: " + e.getMessage());
+        }
+    }
+
+    public Properties getProperties() {
+        return properties;
     }
 
     public static class ProducerBuilder {
-        private final CompletableFuture<Integer> resultPromise;
-        private final IntPredicate msgCntPredicate;
         private final String topic;
         private final String message;
         private final int partition;
         private final Long timestamp;
         private Properties properties;
-        private List<KafkaHeader> headers = Collections.emptyList();
+        private List<Header> headers = Collections.emptyList();
         private boolean withNullKeyRecord = false;
+        private final int messageCount;
 
-        public ProducerBuilder(CompletableFuture<Integer> resultPromise, IntPredicate msgCntPredicate, String topic,
-                       String message, int partition, Long timestamp) {
-            this.resultPromise = resultPromise;
-            this.msgCntPredicate = msgCntPredicate;
+        public ProducerBuilder(String topic, String message, int partition, Long timestamp, int messageCount) {
             this.topic = topic;
             this.message = message;
             this.partition = partition;
             this.timestamp = timestamp;
+            this.messageCount = messageCount;
         }
 
         public ProducerBuilder withProperties(Properties properties) {
@@ -136,7 +103,7 @@ public class Producer extends ClientHandlerBase<Integer> implements AutoCloseabl
             return this;
         }
 
-        public ProducerBuilder withHeaders(List<KafkaHeader> headers) {
+        public ProducerBuilder withHeaders(List<Header> headers) {
             this.headers = headers;
             return this;
         }
