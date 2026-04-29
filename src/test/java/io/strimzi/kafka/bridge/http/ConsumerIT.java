@@ -18,8 +18,6 @@ import io.strimzi.kafka.bridge.objects.ReceivedMessage;
 import io.strimzi.kafka.bridge.utils.Endpoints;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -47,7 +45,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 @BridgeSuite
 public class ConsumerIT extends AbstractIT {
-    private static final Logger LOGGER = LogManager.getLogger(ConsumerIT.class);
     private static final String FORWARDED = "Forwarded";
     private static final String X_FORWARDED_HOST = "X-Forwarded-Host";
     private static final String X_FORWARDED_PROTO = "X-Forwarded-Proto";
