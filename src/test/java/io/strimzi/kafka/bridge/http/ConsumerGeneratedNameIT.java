@@ -7,105 +7,73 @@ package io.strimzi.kafka.bridge.http;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
-import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.HttpResponse;
-import io.vertx.ext.web.codec.BodyCodec;
-import io.vertx.junit5.VertxExtension;
-import io.vertx.junit5.VertxTestContext;
+import io.strimzi.kafka.bridge.configuration.BridgeConfiguration;
+import io.strimzi.kafka.bridge.configuration.ConfigEntry;
+import io.strimzi.kafka.bridge.extensions.BridgeSuite;
+import io.strimzi.kafka.bridge.http.base.AbstractIT;
+import io.strimzi.kafka.bridge.httpclient.HttpConsumerService;
+import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
+import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
-import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.HashMap;
+import java.net.http.HttpResponse;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@ExtendWith(VertxExtension.class)
+@BridgeSuite
+@BridgeConfiguration(
+    additionalProperties = {
+        @ConfigEntry(key = BridgeConfig.BRIDGE_ID, value = ConfigEntry.REMOVE),
+        @ConfigEntry(key = BridgeConfig.METRICS_TYPE, value = ConfigEntry.REMOVE),
+        @ConfigEntry(key = KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, value = "latest"),
+    }
+)
 @Tag(HTTP_BRIDGE)
-@DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
-public class ConsumerGeneratedNameIT extends HttpBridgeITAbstract {
+public class ConsumerGeneratedNameIT extends AbstractIT {
     private static final Logger LOGGER = LogManager.getLogger(ConsumerGeneratedNameIT.class);
-    private static final int TEST_TIMEOUT = 60;
 
     private final String groupId = "my-group";
 
-    private String consumerInstanceId = "";
+    @Test
+    void createConsumerNameIsNotSetAndBridgeIdNotSet(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+        HttpResponse<String> response = httpConsumerService.createConsumerRequest(groupId, Map.of());
 
-    @Override
-    protected Map<String, Object> overrideConfig() {
-        Map<String, Object> overrides = new HashMap<>();
-        overrides.put(BridgeConfig.BRIDGE_ID, null);
-        overrides.put(BridgeConfig.METRICS_TYPE, null);
-        overrides.put(KafkaConsumerConfig.KAFKA_CONSUMER_CONFIG_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
-        return overrides;
+        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(response.body());
+
+        LOGGER.info("Verifying that consumer name is created with 'kafka-bridge-consumer-' plus random hashcode");
+        String consumerInstanceId = responseBody.get("instance_id").toString();
+        assertThat(consumerInstanceId.contains("kafka-bridge-consumer-"), is(true));
+
+        httpConsumerService.deleteConsumer(groupId, consumerInstanceId);
     }
 
     @Test
-    void createConsumerNameIsNotSetAndBridgeIdNotSet(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        JsonObject json = new JsonObject();
+    void createConsumerNameIsSetAndBridgeIdIsNotSet(BridgeTestContext bridgeTestContext) {
+        String consumerName = "consumer-1";
+        Map<String, Object> consumerConfig = Map.of(
+            "name", consumerName,
+            "format", "json"
+        );
 
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService()
-            .createConsumerRequest(groupId, json)
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(json)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        LOGGER.info("Verifying that consumer name is created with 'kafka-bridge-consumer-' plus random hashcode");
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        LOGGER.info("Response code from the Bridge is {}", response.statusCode());
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        consumerInstanceId = bridgeResponse.getString("instance_id");
-                        LOGGER.info("Consumer instance of the consumer is {}", consumerInstanceId);
-                        assertThat(consumerInstanceId.startsWith("kafka-bridge-consumer-"), is(true));
-                        create.complete(true);
-                    });
-                });
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService()
-            .deleteConsumer(context, groupId, consumerInstanceId);
-        context.completeNow();
-    }
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+        HttpResponse<String> response = httpConsumerService.createConsumerRequest(groupId, consumerConfig);
 
-    @Test
-    void createConsumerNameIsSetAndBridgeIdIsNotSet(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        JsonObject json = new JsonObject()
-                .put("name", "consumer-1")
-                .put("format", "json");
+        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(response.body());
+        String consumerInstanceId = responseBody.get("instance_id").toString();
 
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService()
-                .createConsumerRequest(groupId, json)
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(json)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        assertThat(consumerInstanceId, is("consumer-1"));
-                        create.complete(true);
-                    });
-                });
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService()
-            .deleteConsumer(context, groupId, "consumer-1");
-        context.completeNow();
+        LOGGER.info("Checking if the instance ID is really: {}", consumerName);
+        assertThat(consumerInstanceId, is(consumerName));
+
+        httpConsumerService.deleteConsumer(groupId, consumerInstanceId);
     }
 }

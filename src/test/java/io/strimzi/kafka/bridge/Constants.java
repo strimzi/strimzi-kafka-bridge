@@ -10,4 +10,9 @@ public interface Constants {
      * Tag for http bridge tests, which are triggered for each push/pr/merge on travis-ci
      */
     String HTTP_BRIDGE = "httpbridge";
+
+    String DEFAULT_BRIDGE_ID = "my-bridge";
+
+    long DEFAULT_CONSUMER_TIMEOUT = 5;
+    String DEFAULT_CONSUMER_TIMEOUT_STRING = "5";
 }
