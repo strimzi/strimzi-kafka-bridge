@@ -58,7 +58,7 @@ public class Producer {
             if (withNullKeyRecord) {
                 producerRecords.add(new ProducerRecord<>(topic, partition, timestamp, null, message, headers));
             } else {
-                producerRecords.add(new ProducerRecord<>(topic, partition, timestamp, "key-" + numSent.get(), message + "-" + numSent.get(), headers));
+                producerRecords.add(new ProducerRecord<>(topic, partition, timestamp, "key-" + i, message + "-" + i, headers));
             }
         }
 
@@ -71,8 +71,6 @@ public class Producer {
 
             LOGGER.info("Message {} written on topic={}, partition={}, offset={}",
                 message.value(), recordMetadata.topic(), recordMetadata.partition(), recordMetadata.offset());
-
-            numSent.getAndIncrement();
         } catch (Exception e) {
             throw new RuntimeException("Failed to send messages due to: " + e.getMessage());
         }
