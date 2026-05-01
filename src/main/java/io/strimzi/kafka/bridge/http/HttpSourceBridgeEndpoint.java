@@ -212,14 +212,13 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         ArrayNode offsets = JsonUtils.createArrayNode();
 
         for (HttpBridgeResult<?> result : results) {
-            ObjectNode offset = null;
-            if (result.result() instanceof RecordMetadata metadata) {
-                offset = JsonUtils.createObjectNode()
+            ObjectNode offset = switch (result.result()) {
+                case RecordMetadata metadata -> JsonUtils.createObjectNode()
                         .put("partition", metadata.partition())
                         .put("offset", metadata.offset());
-            } else if (result.result() instanceof HttpBridgeError error) {
-                offset = error.toJson();
-            }
+                case HttpBridgeError error -> error.toJson();
+                default -> null;
+            };
             offsets.add(offset);
         }
         jsonResponse.set("offsets", offsets);
