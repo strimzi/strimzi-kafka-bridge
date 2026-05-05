@@ -2,7 +2,7 @@
 
 ## 1.1.0
 
-* Dependency updates (Vert.x 5.0.11)
+* Dependency updates (Vert.x 5.0.12, Netty 4.2.13.Final)
 
 ## 1.0.0
 
