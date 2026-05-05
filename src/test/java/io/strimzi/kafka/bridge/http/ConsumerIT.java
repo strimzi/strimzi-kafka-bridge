@@ -9,8 +9,8 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.Constants;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
 import io.strimzi.kafka.bridge.http.base.AbstractIT;
+import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.httpclient.HttpConsumerService;
-import io.strimzi.kafka.bridge.httpclient.HttpError;
 import io.strimzi.kafka.bridge.httpclient.HttpProducerService;
 import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
 import io.strimzi.kafka.bridge.objects.BridgeTestContext;
@@ -92,10 +92,10 @@ public class ConsumerIT extends AbstractIT {
         HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerWithWrongFormat);
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-        HttpError httpError = HttpError.fromResponse(httpResponse.body());
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
 
-        assertThat(httpError.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-        assertThat(httpError.message(), is("Invalid format type."));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+        assertThat(httpBridgeError.message(), is("Invalid format type."));
     }
 
     @Test
@@ -141,21 +141,21 @@ public class ConsumerIT extends AbstractIT {
         httpResponse = httpConsumerService.createConsumerRequest(groupId, incorrectConsumer);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
 
-        HttpError httpError = HttpError.fromResponse(httpResponse.body());
-        assertThat(httpError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-        assertThat(httpError.message(), is("Validation error on: Schema validation error"));
-        assertThat(httpError.validationErrors(), hasItem("Property \"enable.auto.commit\" does not match schema"));
-        assertThat(httpError.validationErrors(), hasItem("Instance type string is invalid. Expected boolean"));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
+        assertThat(httpBridgeError.message(), is("Validation error on: Schema validation error"));
+        assertThat(httpBridgeError.validationErrors(), hasItem("Property \"enable.auto.commit\" does not match schema"));
+        assertThat(httpBridgeError.validationErrors(), hasItem("Instance type string is invalid. Expected boolean"));
 
         // create incorrect consumer - with enable.auto.commit containing completely random String
         httpResponse = httpConsumerService.createConsumerRequest(groupId, incorrectConsumerWithInvalidValue);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
 
-        httpError = HttpError.fromResponse(httpResponse.body());
-        assertThat(httpError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-        assertThat(httpError.message(), is("Validation error on: Schema validation error"));
-        assertThat(httpError.validationErrors(), hasItem("Property \"enable.auto.commit\" does not match schema"));
-        assertThat(httpError.validationErrors(), hasItem("Instance type string is invalid. Expected boolean"));
+        httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
+        assertThat(httpBridgeError.message(), is("Validation error on: Schema validation error"));
+        assertThat(httpBridgeError.validationErrors(), hasItem("Property \"enable.auto.commit\" does not match schema"));
+        assertThat(httpBridgeError.validationErrors(), hasItem("Instance type string is invalid. Expected boolean"));
 
         httpConsumerService.deleteConsumer(groupId, name);
     }
@@ -195,21 +195,21 @@ public class ConsumerIT extends AbstractIT {
         httpResponse = httpConsumerService.createConsumerRequest(groupId, incorrectConsumer);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
 
-        HttpError httpError = HttpError.fromResponse(httpResponse.body());
-        assertThat(httpError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-        assertThat(httpError.message(), is("Validation error on: Schema validation error"));
-        assertThat(httpError.validationErrors(), hasItem(String.format("Property \"%s\" does not match schema", param)));
-        assertThat(httpError.validationErrors(), hasItem("Instance type string is invalid. Expected integer"));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
+        assertThat(httpBridgeError.message(), is("Validation error on: Schema validation error"));
+        assertThat(httpBridgeError.validationErrors(), hasItem(String.format("Property \"%s\" does not match schema", param)));
+        assertThat(httpBridgeError.validationErrors(), hasItem("Instance type string is invalid. Expected integer"));
 
         // create incorrect consumer - with param containing completely random String
         httpResponse = httpConsumerService.createConsumerRequest(groupId, incorrectConsumerWithInvalidValue);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
 
-        httpError = HttpError.fromResponse(httpResponse.body());
-        assertThat(httpError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-        assertThat(httpError.message(), is("Validation error on: Schema validation error"));
-        assertThat(httpError.validationErrors(), hasItem(String.format("Property \"%s\" does not match schema", param)));
-        assertThat(httpError.validationErrors(), hasItem("Instance type string is invalid. Expected integer"));
+        httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
+        assertThat(httpBridgeError.message(), is("Validation error on: Schema validation error"));
+        assertThat(httpBridgeError.validationErrors(), hasItem(String.format("Property \"%s\" does not match schema", param)));
+        assertThat(httpBridgeError.validationErrors(), hasItem("Instance type string is invalid. Expected integer"));
 
         httpConsumerService.deleteConsumer(groupId, name);
     }
@@ -347,9 +347,9 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
 
-        HttpError httpError = HttpError.fromResponse(httpResponse.body());
-        assertThat(httpError.code(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
-        assertThat(httpError.message(), is("mqtt is not a valid schema/proto."));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
+        assertThat(httpBridgeError.message(), is("mqtt is not a valid schema/proto."));
     }
 
     @Test
@@ -406,10 +406,10 @@ public class ConsumerIT extends AbstractIT {
         HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerJson);
         assertThat(httpResponse.statusCode(), is(status.code()));
 
-        HttpError httpError = HttpError.fromResponse(httpResponse.body());
-        assertThat(httpError.code(), is(status.code()));
-        assertThat(httpError.message(), is(message));
-        httpError.validationErrors().forEach(validationError -> assertThat(expectedValidationErrors, hasItem(validationError)));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(status.code()));
+        assertThat(httpBridgeError.message(), is(message));
+        httpBridgeError.validationErrors().forEach(validationError -> assertThat(expectedValidationErrors, hasItem(validationError)));
     }
 
     @Test
@@ -871,9 +871,9 @@ public class ConsumerIT extends AbstractIT {
         HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumer);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.CONFLICT.code()));
 
-        HttpError httpError = HttpError.fromResponse(httpResponse.body());
-        assertThat(httpError.code(), is(HttpResponseStatus.CONFLICT.code()));
-        assertThat(httpError.message(), is("A consumer instance with the specified name already exists in the Kafka Bridge."));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.CONFLICT.code()));
+        assertThat(httpBridgeError.message(), is("A consumer instance with the specified name already exists in the Kafka Bridge."));
 
         // create consumer with suffix
         httpResponse = httpConsumerService.createConsumerRequest(groupId, Map.of("name", consumerNameWithSuffix));
@@ -895,9 +895,9 @@ public class ConsumerIT extends AbstractIT {
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        HttpError httpError = HttpError.fromResponse(httpResponse.body());
-        assertThat(httpError.code(), is(HttpResponseStatus.NOT_FOUND.code()));
-        assertThat(httpError.message(), is("The specified consumer instance was not found."));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+        assertThat(httpBridgeError.message(), is("The specified consumer instance was not found."));
     }
 
     @Test
@@ -912,11 +912,11 @@ public class ConsumerIT extends AbstractIT {
         );
 
         HttpResponse<String> httpResponse = httpConsumerService.commitOffsetsRequest(groupId, name, List.of(offsets));
-        HttpError httpError = HttpError.fromResponse(httpResponse.body());
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-        assertThat(httpError.code(), is(HttpResponseStatus.NOT_FOUND.code()));
-        assertThat(httpError.message(), is("The specified consumer instance was not found."));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+        assertThat(httpBridgeError.message(), is("The specified consumer instance was not found."));
     }
 
     @Test
@@ -934,11 +934,11 @@ public class ConsumerIT extends AbstractIT {
 
         // consume records
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name, 1);
-        HttpError httpError = HttpError.fromResponse(httpResponse.body());
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-        assertThat(httpError.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-        assertThat(httpError.message(), is("Response exceeds the maximum number of bytes the consumer can receive"));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+        assertThat(httpBridgeError.message(), is("Response exceeds the maximum number of bytes the consumer can receive"));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -979,11 +979,11 @@ public class ConsumerIT extends AbstractIT {
 
         // Try to consume after unsubscription
         httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
-        HttpError httpError = HttpError.fromResponse(httpResponse.body());
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
-        assertThat(httpError.code(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
-        assertThat(httpError.message(), is("Consumer is not subscribed to any topics or assigned any partitions"));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
+        assertThat(httpBridgeError.message(), is("Consumer is not subscribed to any topics or assigned any partitions"));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -1005,11 +1005,11 @@ public class ConsumerIT extends AbstractIT {
 
         // consume records
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY);
-        HttpError httpError = HttpError.fromResponse(httpResponse.body());
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
-        assertThat(httpError.code(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
-        assertThat(httpError.message(), is("Consumer format does not match the embedded format requested by the Accept header."));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
+        assertThat(httpBridgeError.message(), is("Consumer format does not match the embedded format requested by the Accept header."));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -1111,11 +1111,11 @@ public class ConsumerIT extends AbstractIT {
 
         // consume records
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON);
-        HttpError httpError = HttpError.fromResponse(httpResponse.body());
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
-        assertThat(httpError.code(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
-        assertThat(httpError.message(), startsWith("Failed to decode"));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
+        assertThat(httpBridgeError.message(), startsWith("Failed to decode"));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -1138,9 +1138,9 @@ public class ConsumerIT extends AbstractIT {
         httpResponse = httpConsumerService.deleteConsumer(groupId, name);
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-        HttpError httpError = HttpError.fromResponse(httpResponse.body());
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
 
-        assertThat(httpError.message(), is("The specified consumer instance was not found."));
+        assertThat(httpBridgeError.message(), is("The specified consumer instance was not found."));
     }
 
     @Test

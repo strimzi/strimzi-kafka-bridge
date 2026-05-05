@@ -6,6 +6,7 @@ package io.strimzi.kafka.bridge.httpclient;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
+import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Endpoints;
 
 import java.net.http.HttpResponse;
@@ -24,8 +25,8 @@ public class HttpConsumerService extends HttpClientBaseService {
         HttpResponse<String> httpResponse = createConsumerRequest(groupId, requestBody);
 
         if (httpResponse.statusCode() != HttpResponseStatus.OK.code()) {
-            HttpError httpError = HttpError.fromResponse(httpResponse.body());
-            throw new RuntimeException("Failed to create consumer due to: " + httpError.message());
+            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+            throw new RuntimeException("Failed to create consumer due to: " + httpBridgeError.message());
         }
     }
 
@@ -45,8 +46,8 @@ public class HttpConsumerService extends HttpClientBaseService {
         HttpResponse<String> httpResponse = subscribeConsumerRequest(groupId, consumerName, topics);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
-            HttpError httpError = HttpError.fromResponse(httpResponse.body());
-            throw new RuntimeException("Failed to subscribe consumer due to: " + httpError.message());
+            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+            throw new RuntimeException("Failed to subscribe consumer due to: " + httpBridgeError.message());
         }
     }
 
@@ -84,8 +85,8 @@ public class HttpConsumerService extends HttpClientBaseService {
         HttpResponse<String> httpResponse = assignmentRequest(groupId, consumerName, partitions);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
-            HttpError httpError = HttpError.fromResponse(httpResponse.body());
-            throw new RuntimeException("Failed to assign partitions to consumer due to: " + httpError.message());
+            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+            throw new RuntimeException("Failed to assign partitions to consumer due to: " + httpBridgeError.message());
         }
     }
 
@@ -98,8 +99,8 @@ public class HttpConsumerService extends HttpClientBaseService {
         HttpResponse<String> httpResponse = commitOffsetsRequest(groupId, consumerName, partitionOffsets);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
-            HttpError httpError = HttpError.fromResponse(httpResponse.body());
-            throw new RuntimeException("Failed to commit offsets due to: " + httpError.message());
+            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+            throw new RuntimeException("Failed to commit offsets due to: " + httpBridgeError.message());
         }
     }
 
@@ -114,8 +115,8 @@ public class HttpConsumerService extends HttpClientBaseService {
         HttpResponse<String> httpResponse = unsubscribeConsumerRequest(groupId, consumerName, topics);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
-            HttpError httpError = HttpError.fromResponse(httpResponse.body());
-            throw new RuntimeException("Failed to unsubscribe consumer due to: " + httpError.message());
+            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+            throw new RuntimeException("Failed to unsubscribe consumer due to: " + httpBridgeError.message());
         }
     }
 

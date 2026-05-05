@@ -13,6 +13,6 @@ public interface Constants {
 
     String DEFAULT_BRIDGE_ID = "my-bridge";
 
-    long DEFAULT_CONSUMER_TIMEOUT = 5;
     String DEFAULT_CONSUMER_TIMEOUT_STRING = "5";
+    Long DEFAULT_CONSUMER_TIMEOUT = Long.valueOf(DEFAULT_CONSUMER_TIMEOUT_STRING);
 }
