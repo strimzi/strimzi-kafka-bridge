@@ -90,10 +90,9 @@ public class ConsumerIT extends AbstractIT {
 
         // create consumer
         HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerWithWrongFormat);
-
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
 
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
         assertThat(httpBridgeError.message(), is("Invalid format type."));
     }
@@ -344,7 +343,6 @@ public class ConsumerIT extends AbstractIT {
         List<String> headers = List.of(FORWARDED, forwarded);
 
         HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerWithEarliestOffsetReset, headers);
-
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
 
         HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
@@ -912,9 +910,9 @@ public class ConsumerIT extends AbstractIT {
         );
 
         HttpResponse<String> httpResponse = httpConsumerService.commitOffsetsRequest(groupId, name, List.of(offsets));
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
-
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_FOUND.code()));
         assertThat(httpBridgeError.message(), is("The specified consumer instance was not found."));
     }
@@ -934,9 +932,9 @@ public class ConsumerIT extends AbstractIT {
 
         // consume records
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name, 1);
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
-
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
         assertThat(httpBridgeError.message(), is("Response exceeds the maximum number of bytes the consumer can receive"));
 
@@ -979,9 +977,9 @@ public class ConsumerIT extends AbstractIT {
 
         // Try to consume after unsubscription
         httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
-
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
+
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
         assertThat(httpBridgeError.message(), is("Consumer is not subscribed to any topics or assigned any partitions"));
 
@@ -1005,9 +1003,9 @@ public class ConsumerIT extends AbstractIT {
 
         // consume records
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY);
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
-
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
+
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
         assertThat(httpBridgeError.message(), is("Consumer format does not match the embedded format requested by the Accept header."));
 
@@ -1111,9 +1109,9 @@ public class ConsumerIT extends AbstractIT {
 
         // consume records
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON);
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
-
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
+
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
         assertThat(httpBridgeError.message(), startsWith("Failed to decode"));
 
@@ -1129,17 +1127,15 @@ public class ConsumerIT extends AbstractIT {
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
         Map<String, Object> responseMap = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-
         assertThat(responseMap.get("instance_id"), is(name));
         assertThat(responseMap.get("base_uri"), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, name))));
 
         Thread.sleep(Constants.DEFAULT_CONSUMER_TIMEOUT * 2 * 1000);
 
         httpResponse = httpConsumerService.deleteConsumer(groupId, name);
-
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
 
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
         assertThat(httpBridgeError.message(), is("The specified consumer instance was not found."));
     }
 
