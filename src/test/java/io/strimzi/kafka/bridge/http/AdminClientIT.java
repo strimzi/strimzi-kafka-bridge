@@ -9,23 +9,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
-import io.strimzi.kafka.bridge.facades.AdminClientFacade;
 import io.strimzi.kafka.bridge.http.base.AbstractIT;
 import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
 import io.strimzi.kafka.bridge.objects.BridgeTestContext;
-import io.strimzi.kafka.bridge.objects.MessageRecord;
 import io.strimzi.kafka.bridge.objects.Offsets;
 import io.strimzi.kafka.bridge.objects.Partition;
-import io.strimzi.kafka.bridge.objects.Records;
 import io.strimzi.kafka.bridge.objects.Replica;
 import io.strimzi.kafka.bridge.objects.Topic;
-import org.apache.kafka.common.KafkaFuture;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,7 +26,6 @@ import static org.hamcrest.Matchers.is;
 
 @BridgeSuite
 public class AdminClientIT extends AbstractIT {
-    private static final Logger LOGGER = LogManager.getLogger(AdminClientIT.class);
     public static ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
@@ -188,41 +180,5 @@ public class AdminClientIT extends AbstractIT {
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.CREATED.code()));
-    }
-
-    void createTopic(BridgeTestContext bridgeTestContext, int partitions) {
-        createTopic(bridgeTestContext.getTopicName(), bridgeTestContext.getAdminClientFacade(), partitions);
-    }
-
-    void createTopic(String topicName, AdminClientFacade adminClientFacade, int partitions) {
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topicName, partitions, 1);
-
-        try {
-            future.get();
-        } catch (Exception e) {
-            LOGGER.error("Failed to create KafkaTopic: {} due to: ", topicName, e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    void sendMessages(BridgeTestContext bridgeTestContext, int messageCount) {
-        List<MessageRecord> recordList = new ArrayList<>();
-
-        for (int i = 0; i < messageCount; i++) {
-            recordList.add(new MessageRecord("key-" + i, "hello-world-" + i));
-        }
-
-        Records records = new Records(recordList);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        try {
-            String messages = objectMapper.writeValueAsString(records);
-
-            bridgeTestContext.getHttpService().post("/topics/" + bridgeTestContext.getTopicName(), messages);
-        } catch (Exception e) {
-            LOGGER.error("Failed to write records as JSON String due to: ", e);
-            throw new RuntimeException(e);
-        }
     }
 }

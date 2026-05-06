@@ -4,6 +4,7 @@
  */
 package io.strimzi.kafka.bridge.objects;
 
+import io.strimzi.kafka.bridge.clients.BasicKafkaClient;
 import io.strimzi.kafka.bridge.extensions.BridgeExtension;
 import io.strimzi.kafka.bridge.extensions.KafkaExtension;
 import io.strimzi.kafka.bridge.facades.AdminClientFacade;
@@ -21,6 +22,7 @@ public class BridgeTestContext {
     private String topicName;
     private HttpService httpService;
     private AdminClientFacade adminClientFacade;
+    private BasicKafkaClient basicKafkaClient;
 
     /**
      * Constructor for creating variables and services for particular {@param extensionContext}.
@@ -31,6 +33,7 @@ public class BridgeTestContext {
         topicName = "my-topic-" + RNG.nextInt(Integer.MAX_VALUE);
         httpService = BridgeExtension.getHttpService(extensionContext);
         adminClientFacade = AdminClientFacade.create(KafkaExtension.getKafkaCluster(extensionContext).getBootstrapServers());
+        basicKafkaClient = new BasicKafkaClient(KafkaExtension.getKafkaCluster(extensionContext).getBootstrapServers());
     }
 
     /**
@@ -55,5 +58,9 @@ public class BridgeTestContext {
      */
     public AdminClientFacade getAdminClientFacade() {
         return adminClientFacade;
+    }
+
+    public BasicKafkaClient getBasicKafkaClient() {
+        return basicKafkaClient;
     }
 }

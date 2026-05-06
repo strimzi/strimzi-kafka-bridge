@@ -4,6 +4,9 @@
  */
 package io.strimzi.kafka.bridge.httpclient;
 
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpMethod;
+import io.strimzi.kafka.bridge.BridgeContentType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,6 +16,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public class HttpService {
     private static final Logger LOGGER = LogManager.getLogger(HttpService.class);
@@ -33,10 +37,14 @@ public class HttpService {
     }
 
     public HttpResponse<String> post(String endpoint, String request, List<String> headers) {
+        return post(endpoint, request, headers, BridgeContentType.KAFKA_JSON_JSON);
+    }
+
+    public HttpResponse<String> post(String endpoint, String request, List<String> headers, String contentType) {
         String uri = getUri(endpoint);
 
         try {
-            List<String> headersToUse = new ArrayList<>(List.of("content-type", "application/vnd.kafka.json.v2+json"));
+            List<String> headersToUse = new ArrayList<>(List.of(HttpHeaderNames.CONTENT_TYPE.toString(), contentType));
 
             if (headers != null && !headers.isEmpty()) {
                 headersToUse.addAll(headers);
@@ -57,12 +65,16 @@ public class HttpService {
     }
 
     public HttpResponse<String> get(String endpoint) {
+        return get(endpoint, BridgeContentType.KAFKA_JSON_JSON);
+    }
+
+    public HttpResponse<String> get(String endpoint, String acceptType) {
         String uri = getUri(endpoint);
 
         try {
             HttpRequest httpRequest = HttpRequest.newBuilder()
                 .uri(new URI(uri))
-                .setHeader("accept", "application/vnd.kafka.json.v2+json")
+                .setHeader(HttpHeaderNames.ACCEPT.toString(), acceptType)
                 .version(HttpClient.Version.HTTP_1_1)
                 .GET()
                 .build();
@@ -70,6 +82,58 @@ public class HttpService {
             return client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
             LOGGER.error("Unable to fulfill the GET request to: {} due to: ", uri, e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public CompletableFuture<HttpResponse<String>> getAsync(String endpoint, String acceptType) {
+        String uri = getUri(endpoint);
+
+        try {
+            HttpRequest httpRequest = HttpRequest.newBuilder()
+                .uri(new URI(uri))
+                .setHeader(HttpHeaderNames.ACCEPT.toString(), acceptType)
+                .version(HttpClient.Version.HTTP_1_1)
+                .GET()
+                .build();
+
+            return client.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            LOGGER.error("Unable to create URI: {}, due to: ", uri, e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public HttpResponse<String> delete(String endpoint) {
+        String uri = getUri(endpoint);
+
+        try {
+            HttpRequest httpRequest = HttpRequest.newBuilder()
+                .uri(new URI(uri))
+                .version(HttpClient.Version.HTTP_1_1)
+                .DELETE()
+                .build();
+
+            return client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            LOGGER.error("Unable to fulfill the DELETE request to: {} due to: ", uri, e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public HttpResponse<String> delete(String endpoint, String request) {
+        String uri = getUri(endpoint);
+
+        try {
+            HttpRequest httpRequest = HttpRequest.newBuilder()
+                .uri(new URI(uri))
+                .version(HttpClient.Version.HTTP_1_1)
+                .method(HttpMethod.DELETE.toString(), HttpRequest.BodyPublishers.ofString(request))
+                .build();
+
+            return client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            LOGGER.error("Unable to fulfill the DELETE request to: {} due to: ", uri, e);
             throw new RuntimeException(e);
         }
     }
