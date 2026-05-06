@@ -23,7 +23,6 @@ public class Urls {
     private static final String TOPICS_PATH = "/topics/";
     private static final String PARTITIONS_PATH = "/partitions/";
     private static final String ASSIGNMENTS_PATH = "/assignments";
-    private static final String OFFSETS_PATH = "/offsets";
     private static final String RECORDS_PATH = "/records";
 
     public static String consumer(String groupId) {
@@ -52,10 +51,6 @@ public class Urls {
 
     public static String consumerInstanceAssignments(String groupId, String name) {
         return consumerInstance(groupId, name) + ASSIGNMENTS_PATH;
-    }
-
-    public static String consumerInstanceOffsets(String groupId, String name) {
-        return consumerInstance(groupId, name) + OFFSETS_PATH;
     }
 
     public static String consumerInstanceRecords(String groupId, String name, Integer timeout, Integer maxBytes) {

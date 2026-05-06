@@ -11,6 +11,7 @@ import io.vertx.core.json.JsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Represents an error related to HTTP bridging
@@ -60,5 +61,22 @@ public record HttpBridgeError(int code, String message, List<String> validationE
         } else {
             return new HttpBridgeError(json.getInteger("error_code"), json.getString("message"));
         }
+    }
+
+    /**
+     * Create an error instance from a JSON representation in Map.
+     *
+     * @param jsonMap   JSON in Map representation of error.
+     *
+     * @return  error instance
+     */
+    public static HttpBridgeError fromJson(Map<String, Object> jsonMap) {
+        List<String> validationErrors = new ArrayList<>();
+
+        if (jsonMap.containsKey("validation_errors")) {
+            List.of(((Object[]) jsonMap.get("validation_errors"))).forEach(error -> validationErrors.add((String) error));
+        }
+
+        return new HttpBridgeError(Integer.parseInt(jsonMap.get("error_code").toString()), (String) jsonMap.get("message"), validationErrors);
     }
 }

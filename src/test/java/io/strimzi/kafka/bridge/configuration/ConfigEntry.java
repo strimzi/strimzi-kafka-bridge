@@ -9,5 +9,11 @@ package io.strimzi.kafka.bridge.configuration;
  */
 public @interface ConfigEntry {
     String key() default "";
+    /**
+     * Value for this config entry.
+     * Use {@code "__REMOVE__"} to remove a default property.
+     */
     String value() default "";
+
+    String REMOVE = "__REMOVE__";
 }
