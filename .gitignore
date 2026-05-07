@@ -36,6 +36,7 @@ documentation/html/**
 documentation/htmlnoheader/**
 documentation/book/build/**
 
-# Claude configuration
+# AI assistants configuration
 .claude/
 .mcp.json
+.bob/
