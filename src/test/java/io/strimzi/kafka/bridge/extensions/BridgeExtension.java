@@ -10,7 +10,9 @@ import io.strimzi.kafka.bridge.configuration.BridgeConfiguration;
 import io.strimzi.kafka.bridge.configuration.ConfigEntry;
 import io.strimzi.kafka.bridge.enums.BridgeRunMode;
 import io.strimzi.kafka.bridge.http.HttpBridge;
+import io.strimzi.kafka.bridge.http.HttpConfig;
 import io.strimzi.kafka.bridge.httpclient.HttpService;
+import io.strimzi.kafka.bridge.utils.Urls;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.micrometer.Label;
@@ -61,6 +63,9 @@ public class BridgeExtension implements
     private static final String BRIDGE_CONTAINER_KEY = "bridgeContainer";
     private static final String BRIDGE_BINARY_KEY = "bridgeBinary";
     private static final String HTTP_SERVICE_KEY = "httpService";
+    private static final String BRIDGE_HOST_KEY = "bridgeHost";
+    private static final String BRIDGE_PORT_KEY = "bridgePort";
+    private static final String BRIDGE_MANAGEMENT_PORT_KEY = "bridgeManagementPort";
 
     private static final BridgeRunMode BRIDGE_RUN_MODE_ENV = BridgeRunMode.fromString(System.getenv().getOrDefault("BRIDGE_RUN_MODE", BridgeRunMode.IN_MEMORY.name()));
     private static final String DEFAULT_BRIDGE_IMAGE = "quay.io/strimzi/kafka-bridge:latest";
@@ -274,10 +279,16 @@ public class BridgeExtension implements
                 }
             }).await();
 
-        HttpService httpService = new HttpService("127.0.0.1", 8080);
+        boolean sslEnabled = "true".equals(String.valueOf(configuration.get(HttpConfig.HTTP_SERVER_SSL_ENABLE)));
+        int bridgePort = sslEnabled ? Urls.BRIDGE_SSL_PORT : Urls.BRIDGE_PORT;
+
+        HttpService httpService = sslEnabled ? null : new HttpService(Urls.BRIDGE_HOST, bridgePort);
 
         getStore(extensionContext).put(BRIDGE_BINARY_KEY, vertx);
         getStore(extensionContext).put(HTTP_SERVICE_KEY, httpService);
+        getStore(extensionContext).put(BRIDGE_HOST_KEY, Urls.BRIDGE_HOST);
+        getStore(extensionContext).put(BRIDGE_PORT_KEY, bridgePort);
+        getStore(extensionContext).put(BRIDGE_MANAGEMENT_PORT_KEY, Urls.BRIDGE_MANAGEMENT_PORT);
     }
 
     /**
@@ -293,6 +304,9 @@ public class BridgeExtension implements
         properties.putAll(configuration);
         String propertiesPath = createPropertiesFile(properties);
 
+        boolean sslEnabled = "true".equals(String.valueOf(configuration.get(HttpConfig.HTTP_SERVER_SSL_ENABLE)));
+        int httpPort = sslEnabled ? Urls.BRIDGE_SSL_PORT : Urls.BRIDGE_PORT;
+
         LOGGER.info("Deploying Bridge in container");
 
         GenericContainer<?> bridgeContainer = new GenericContainer<>(BRIDGE_IMAGE_ENV)
@@ -301,19 +315,24 @@ public class BridgeExtension implements
                 "/opt/strimzi/application.properties"
             )
             .withCommand("/opt/strimzi/bin/kafka_bridge_run.sh", "--config-file=/opt/strimzi/application.properties")
-            .withExposedPorts(8080, 8081)
+            .withExposedPorts(httpPort, Urls.BRIDGE_MANAGEMENT_PORT)
             .withNetwork(Network.SHARED)
-            .waitingFor(new WaitAllStrategy()
-                .withStrategy(Wait.forHttp("/").forPort(8080))
-                .withStrategy(Wait.forHttp("/healthy").forPort(8081))
+            .waitingFor(sslEnabled ?
+                Wait.forHttp("/healthy").forPort(Urls.BRIDGE_MANAGEMENT_PORT) :
+                new WaitAllStrategy()
+                    .withStrategy(Wait.forHttp("/").forPort(httpPort))
+                    .withStrategy(Wait.forHttp("/healthy").forPort(Urls.BRIDGE_MANAGEMENT_PORT))
             );
 
         bridgeContainer.start();
 
-        HttpService httpService = new HttpService(bridgeContainer.getHost(), bridgeContainer.getMappedPort(8080));
+        HttpService httpService = sslEnabled ? null : new HttpService(bridgeContainer.getHost(), bridgeContainer.getMappedPort(httpPort));
 
         getStore(extensionContext).put(BRIDGE_CONTAINER_KEY, bridgeContainer);
         getStore(extensionContext).put(HTTP_SERVICE_KEY, httpService);
+        getStore(extensionContext).put(BRIDGE_HOST_KEY, bridgeContainer.getHost());
+        getStore(extensionContext).put(BRIDGE_PORT_KEY, bridgeContainer.getMappedPort(httpPort));
+        getStore(extensionContext).put(BRIDGE_MANAGEMENT_PORT_KEY, bridgeContainer.getMappedPort(Urls.BRIDGE_MANAGEMENT_PORT));
     }
 
     /**
@@ -381,6 +400,39 @@ public class BridgeExtension implements
      */
     public static HttpService getHttpService(ExtensionContext extensionContext) {
         return extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).get(HTTP_SERVICE_KEY, HttpService.class);
+    }
+
+    /**
+     * Returns the bridge host from the extension context's store.
+     *
+     * @param extensionContext  context of the test.
+     *
+     * @return  the bridge host.
+     */
+    public static String getBridgeHost(ExtensionContext extensionContext) {
+        return extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).get(BRIDGE_HOST_KEY, String.class);
+    }
+
+    /**
+     * Returns the bridge main port (HTTP or HTTPS) from the extension context's store.
+     *
+     * @param extensionContext  context of the test.
+     *
+     * @return  the bridge main port.
+     */
+    public static int getBridgePort(ExtensionContext extensionContext) {
+        return extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).get(BRIDGE_PORT_KEY, Integer.class);
+    }
+
+    /**
+     * Returns the bridge management port from the extension context's store.
+     *
+     * @param extensionContext  context of the test.
+     *
+     * @return  the bridge management port.
+     */
+    public static int getBridgeManagementPort(ExtensionContext extensionContext) {
+        return extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).get(BRIDGE_MANAGEMENT_PORT_KEY, Integer.class);
     }
 
     /**

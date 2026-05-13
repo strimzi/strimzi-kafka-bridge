@@ -23,6 +23,9 @@ public class BridgeTestContext {
     private HttpService httpService;
     private AdminClientFacade adminClientFacade;
     private BasicKafkaClient basicKafkaClient;
+    private String bridgeHost;
+    private int bridgePort;
+    private int bridgeManagementPort;
 
     /**
      * Constructor for creating variables and services for particular {@param extensionContext}.
@@ -34,6 +37,9 @@ public class BridgeTestContext {
         httpService = BridgeExtension.getHttpService(extensionContext);
         adminClientFacade = AdminClientFacade.create(KafkaExtension.getKafkaCluster(extensionContext).getBootstrapServers());
         basicKafkaClient = new BasicKafkaClient(KafkaExtension.getKafkaCluster(extensionContext).getBootstrapServers());
+        bridgeHost = BridgeExtension.getBridgeHost(extensionContext);
+        bridgePort = BridgeExtension.getBridgePort(extensionContext);
+        bridgeManagementPort = BridgeExtension.getBridgeManagementPort(extensionContext);
     }
 
     /**
@@ -62,5 +68,29 @@ public class BridgeTestContext {
 
     public BasicKafkaClient getBasicKafkaClient() {
         return basicKafkaClient;
+    }
+
+    /**
+     * Returns the bridge host.
+     * @return the bridge host.
+     */
+    public String getBridgeHost() {
+        return bridgeHost;
+    }
+
+    /**
+     * Returns the bridge main port (HTTP or HTTPS depending on SSL configuration).
+     * @return the bridge main port.
+     */
+    public int getBridgePort() {
+        return bridgePort;
+    }
+
+    /**
+     * Returns the bridge management port.
+     * @return the bridge management port.
+     */
+    public int getBridgeManagementPort() {
+        return bridgeManagementPort;
     }
 }
