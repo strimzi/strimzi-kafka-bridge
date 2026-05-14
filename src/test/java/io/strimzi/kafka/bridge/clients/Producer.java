@@ -45,10 +45,10 @@ public class Producer {
         List<ProducerRecord<String, String>> messages = createMessages();
 
         LOGGER.info("Producer is starting with following properties: {}", properties.toString());
-        KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
-
-        LOGGER.info("Sending messages");
-        messages.forEach(producerRecord -> sendMessage(producer, producerRecord));
+        try (KafkaProducer<String, String> producer = new KafkaProducer<>(properties)) {
+            LOGGER.info("Sending messages");
+            messages.forEach(producerRecord -> sendMessage(producer, producerRecord));
+        }
     }
 
     private List<ProducerRecord<String, String>> createMessages() {

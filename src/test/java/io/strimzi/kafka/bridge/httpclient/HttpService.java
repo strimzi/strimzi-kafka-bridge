@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class HttpService {
+public class HttpService implements AutoCloseable {
     private static final Logger LOGGER = LogManager.getLogger(HttpService.class);
 
     private HttpClient client;
@@ -144,5 +144,12 @@ public class HttpService {
 
     public String getUri(String endpoint) {
         return baseUri + endpoint;
+    }
+
+    @Override
+    public void close() {
+        if (client != null) {
+            client.close();
+        }
     }
 }

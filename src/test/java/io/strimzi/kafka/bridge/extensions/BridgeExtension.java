@@ -259,15 +259,16 @@ public class BridgeExtension implements
      * @param configuration     configuration of the Bridge.
      */
     private void deployBridgeInMemory(ExtensionContext extensionContext, Map<String, Object> configuration) {
-        BridgeConfig bridgeConfig = BridgeConfig.fromMap(configuration);
-        HttpBridge httpBridge = new HttpBridge(bridgeConfig);
         LOGGER.info("Deploying in-memory Bridge");
 
         VertxOptions vertxOptions = new VertxOptions();
         if (configuration.get(BridgeConfig.METRICS_TYPE) != null) {
             vertxOptions.setMetricsOptions(metricsOptions());
         }
-        Vertx vertx =  Vertx.vertx(vertxOptions);
+        Vertx vertx = Vertx.vertx(vertxOptions);
+
+        BridgeConfig bridgeConfig = BridgeConfig.fromMap(configuration);
+        HttpBridge httpBridge = new HttpBridge(bridgeConfig);
 
         vertx.deployVerticle(httpBridge)
             .onComplete(ar -> {
@@ -362,20 +363,40 @@ public class BridgeExtension implements
      * @param extensionContext  context of the test.
      */
     private void stopBridge(ExtensionContext extensionContext) {
+        closeHttpServices(extensionContext);
+
         if (BRIDGE_RUN_MODE_ENV.equals(BridgeRunMode.IN_MEMORY)) {
+            LOGGER.info("Stopping in-memory Bridge");
             Vertx bridge = getStore(extensionContext)
                 .get(BRIDGE_BINARY_KEY, Vertx.class);
 
             if (bridge != null) {
-                bridge.close();
+                bridge.close().await();
             }
         } else {
+            LOGGER.info("Stopping container Bridge");
             GenericContainer<?> bridge = getStore(extensionContext)
                 .get(BRIDGE_CONTAINER_KEY, GenericContainer.class);
 
             if (bridge != null) {
                 bridge.stop();
             }
+        }
+    }
+
+    /**
+     * Closes the HTTP client services to release connections before stopping the bridge.
+     *
+     * @param extensionContext  context of the test.
+     */
+    private void closeHttpServices(ExtensionContext extensionContext) {
+        HttpService httpService = getStore(extensionContext).get(HTTP_SERVICE_KEY, HttpService.class);
+        if (httpService != null) {
+            httpService.close();
+        }
+        HttpService managementHttpService = getStore(extensionContext).get(MANAGEMENT_HTTP_SERVICE_KEY, HttpService.class);
+        if (managementHttpService != null) {
+            managementHttpService.close();
         }
     }
 
