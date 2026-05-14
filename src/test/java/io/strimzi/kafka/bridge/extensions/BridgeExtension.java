@@ -279,7 +279,7 @@ public class BridgeExtension implements
                 }
             }).await();
 
-        boolean sslEnabled = "true".equals(String.valueOf(configuration.get(HttpConfig.HTTP_SERVER_SSL_ENABLE)));
+        boolean sslEnabled = Boolean.parseBoolean(String.valueOf(configuration.get(HttpConfig.HTTP_SERVER_SSL_ENABLE)));
         int bridgePort = sslEnabled ? Urls.BRIDGE_SSL_PORT : Urls.BRIDGE_PORT;
 
         HttpService httpService = sslEnabled ? null : new HttpService(Urls.BRIDGE_HOST, bridgePort);
@@ -304,7 +304,7 @@ public class BridgeExtension implements
         properties.putAll(configuration);
         String propertiesPath = createPropertiesFile(properties);
 
-        boolean sslEnabled = "true".equals(String.valueOf(configuration.get(HttpConfig.HTTP_SERVER_SSL_ENABLE)));
+        boolean sslEnabled = Boolean.parseBoolean(String.valueOf(configuration.get(HttpConfig.HTTP_SERVER_SSL_ENABLE)));
         int httpPort = sslEnabled ? Urls.BRIDGE_SSL_PORT : Urls.BRIDGE_PORT;
 
         LOGGER.info("Deploying Bridge in container");
