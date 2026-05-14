@@ -4,6 +4,7 @@
  */
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
 import io.strimzi.kafka.bridge.http.base.AbstractIT;
@@ -107,9 +108,8 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         HttpResponse<String> httpResponse = httpConsumerService.listSubscriptionsRequest(groupId, name);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        Object[] topics = (Object[]) responseBody.get("topics");
-        assertThat(topics.length, is(1));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("topics").size(), is(1));
 
         // subscribe with empty topics list
         Map<String, Object> emptyTopicsSubscription = Map.of("topics", List.of());
@@ -121,9 +121,8 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         httpResponse = httpConsumerService.listSubscriptionsRequest(groupId, name);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        topics = (Object[]) responseBody.get("topics");
-        assertThat(topics.length, is(0));
+        responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("topics").size(), is(0));
 
         httpConsumerService.deleteConsumer(groupId, name);
     }
@@ -168,27 +167,27 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         HttpResponse<String> httpResponse = httpConsumerService.listSubscriptionsRequest(groupId, name);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        Object[] topics = (Object[]) responseBody.get("topics");
-        assertThat(topics.length, is(2));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        JsonNode topicsNode = responseBody.get("topics");
+        assertThat(topicsNode.size(), is(2));
 
-        List<String> topicsList = List.of((String) topics[0], (String) topics[1]);
+        List<String> topicsList = List.of(topicsNode.get(0).asText(), topicsNode.get(1).asText());
         assertThat(topicsList.contains(topic), is(true));
         assertThat(topicsList.contains(topic2), is(true));
 
-        Object[] partitions = (Object[]) responseBody.get("partitions");
-        assertThat(partitions.length, is(2));
+        JsonNode partitions = responseBody.get("partitions");
+        assertThat(partitions.size(), is(2));
 
         // partitions contain objects like {topicName: [0, 1, 2, 3]}
-        Map<String, Object> part0 = (Map<String, Object>) partitions[0];
-        Map<String, Object> part1 = (Map<String, Object>) partitions[1];
+        JsonNode part0 = partitions.get(0);
+        JsonNode part1 = partitions.get(1);
 
-        if (part0.containsKey(topic2)) {
-            assertThat(((Object[]) part0.get(topic2)).length, is(4));
-            assertThat(((Object[]) part1.get(topic)).length, is(1));
+        if (part0.has(topic2)) {
+            assertThat(part0.get(topic2).size(), is(4));
+            assertThat(part1.get(topic).size(), is(1));
         } else {
-            assertThat(((Object[]) part0.get(topic)).length, is(1));
-            assertThat(((Object[]) part1.get(topic2)).length, is(4));
+            assertThat(part0.get(topic).size(), is(1));
+            assertThat(part1.get(topic2).size(), is(4));
         }
 
         httpConsumerService.deleteConsumer(groupId, name);
@@ -256,9 +255,8 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         httpResponse = httpConsumerService.listSubscriptionsRequest(groupId, name);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        Object[] topics = (Object[]) responseBody.get("topics");
-        assertThat(topics.length, is(1));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("topics").size(), is(1));
 
         // assign empty partitions
         httpResponse = httpConsumerService.assignmentRequest(groupId, name, List.of());
@@ -268,9 +266,8 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         httpResponse = httpConsumerService.listSubscriptionsRequest(groupId, name);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        topics = (Object[]) responseBody.get("topics");
-        assertThat(topics.length, is(0));
+        responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("topics").size(), is(0));
 
         httpConsumerService.deleteConsumer(groupId, name);
     }
