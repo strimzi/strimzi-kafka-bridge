@@ -65,7 +65,7 @@ public class BridgeExtension implements
     private static final String HTTP_SERVICE_KEY = "httpService";
     private static final String BRIDGE_HOST_KEY = "bridgeHost";
     private static final String BRIDGE_PORT_KEY = "bridgePort";
-    private static final String BRIDGE_MANAGEMENT_PORT_KEY = "bridgeManagementPort";
+    private static final String MANAGEMENT_HTTP_SERVICE_KEY = "managementHttpService";
 
     private static final BridgeRunMode BRIDGE_RUN_MODE_ENV = BridgeRunMode.fromString(System.getenv().getOrDefault("BRIDGE_RUN_MODE", BridgeRunMode.IN_MEMORY.name()));
     private static final String DEFAULT_BRIDGE_IMAGE = "quay.io/strimzi/kafka-bridge:latest";
@@ -283,12 +283,13 @@ public class BridgeExtension implements
         int bridgePort = sslEnabled ? Urls.BRIDGE_SSL_PORT : Urls.BRIDGE_PORT;
 
         HttpService httpService = sslEnabled ? null : new HttpService(Urls.BRIDGE_HOST, bridgePort);
+        HttpService managementHttpService = new HttpService(Urls.BRIDGE_HOST, Urls.BRIDGE_MANAGEMENT_PORT);
 
         getStore(extensionContext).put(BRIDGE_BINARY_KEY, vertx);
         getStore(extensionContext).put(HTTP_SERVICE_KEY, httpService);
         getStore(extensionContext).put(BRIDGE_HOST_KEY, Urls.BRIDGE_HOST);
         getStore(extensionContext).put(BRIDGE_PORT_KEY, bridgePort);
-        getStore(extensionContext).put(BRIDGE_MANAGEMENT_PORT_KEY, Urls.BRIDGE_MANAGEMENT_PORT);
+        getStore(extensionContext).put(MANAGEMENT_HTTP_SERVICE_KEY, managementHttpService);
     }
 
     /**
@@ -327,12 +328,13 @@ public class BridgeExtension implements
         bridgeContainer.start();
 
         HttpService httpService = sslEnabled ? null : new HttpService(bridgeContainer.getHost(), bridgeContainer.getMappedPort(httpPort));
+        HttpService managementHttpService = new HttpService(bridgeContainer.getHost(), bridgeContainer.getMappedPort(Urls.BRIDGE_MANAGEMENT_PORT));
 
         getStore(extensionContext).put(BRIDGE_CONTAINER_KEY, bridgeContainer);
         getStore(extensionContext).put(HTTP_SERVICE_KEY, httpService);
         getStore(extensionContext).put(BRIDGE_HOST_KEY, bridgeContainer.getHost());
         getStore(extensionContext).put(BRIDGE_PORT_KEY, bridgeContainer.getMappedPort(httpPort));
-        getStore(extensionContext).put(BRIDGE_MANAGEMENT_PORT_KEY, bridgeContainer.getMappedPort(Urls.BRIDGE_MANAGEMENT_PORT));
+        getStore(extensionContext).put(MANAGEMENT_HTTP_SERVICE_KEY, managementHttpService);
     }
 
     /**
@@ -425,14 +427,14 @@ public class BridgeExtension implements
     }
 
     /**
-     * Returns the bridge management port from the extension context's store.
+     * Method for getting the management {@link HttpService} from the extension context's store.
      *
      * @param extensionContext  context of the test.
      *
-     * @return  the bridge management port.
+     * @return  management {@link HttpService} from the extension context's store.
      */
-    public static int getBridgeManagementPort(ExtensionContext extensionContext) {
-        return extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).get(BRIDGE_MANAGEMENT_PORT_KEY, Integer.class);
+    public static HttpService getManagementHttpService(ExtensionContext extensionContext) {
+        return extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).get(MANAGEMENT_HTTP_SERVICE_KEY, HttpService.class);
     }
 
     /**

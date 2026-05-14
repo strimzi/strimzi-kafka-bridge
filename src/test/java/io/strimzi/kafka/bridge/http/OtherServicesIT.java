@@ -9,7 +9,6 @@ import io.strimzi.kafka.bridge.extensions.BridgeSuite;
 import io.strimzi.kafka.bridge.http.base.AbstractIT;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
-import io.strimzi.kafka.bridge.httpclient.HttpService;
 import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import org.junit.jupiter.api.Test;
 
@@ -28,11 +27,9 @@ public class OtherServicesIT extends AbstractIT {
 
     @Test
     void readyTest(BridgeTestContext bridgeTestContext) throws InterruptedException {
-        HttpService managementService = new HttpService(bridgeTestContext.getBridgeHost(), bridgeTestContext.getBridgeManagementPort());
-
         int iterations = 5;
         for (int i = 0; i < iterations; i++) {
-            HttpResponse<String> httpResponse = managementService.get("/ready");
+            HttpResponse<String> httpResponse = bridgeTestContext.getManagementHttpService().get("/ready");
             assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
             Thread.sleep(1000);
         }
@@ -40,11 +37,9 @@ public class OtherServicesIT extends AbstractIT {
 
     @Test
     void healthyTest(BridgeTestContext bridgeTestContext) throws InterruptedException {
-        HttpService managementService = new HttpService(bridgeTestContext.getBridgeHost(), bridgeTestContext.getBridgeManagementPort());
-
         int iterations = 5;
         for (int i = 0; i < iterations; i++) {
-            HttpResponse<String> httpResponse = managementService.get("/healthy");
+            HttpResponse<String> httpResponse = bridgeTestContext.getManagementHttpService().get("/healthy");
             assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
             Thread.sleep(1000);
         }
