@@ -6,6 +6,7 @@ package io.strimzi.kafka.bridge.httpclient;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.strimzi.kafka.bridge.objects.Offsets;
 import io.strimzi.kafka.bridge.objects.Partition;
@@ -23,6 +24,15 @@ public class HttpResponseUtils {
 
     static {
         OBJECT_MAPPER.configure(DeserializationFeature.USE_JAVA_ARRAY_FOR_JSON_ARRAY, true);
+    }
+
+    public static JsonNode getResponseAsJsonNode(String response) {
+        try {
+            return OBJECT_MAPPER.readTree(response);
+        } catch (Exception e) {
+            LOGGER.error("Unable to parse the response {} as JsonNode due to: ", response, e);
+            throw new RuntimeException(e);
+        }
     }
 
     public static Map<String, Object> getResponseAsMap(String response) {

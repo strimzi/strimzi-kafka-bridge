@@ -113,7 +113,7 @@ public class HttpConsumerService extends HttpClientBaseService {
      */
     public HttpResponse<String> subscribeConsumerRequest(String groupId, String consumerName, List<String> topics) {
         Map<String, Object> topicMap = Map.of("topics", topics);
-        return subscribeConsumerRequest(groupId, consumerName, parseJsonFromMap(topicMap));
+        return subscribeConsumerRequest(groupId, consumerName, topicMap);
     }
 
     /**
@@ -126,12 +126,26 @@ public class HttpConsumerService extends HttpClientBaseService {
     public void subscribeConsumerRequestWithTopicPattern(String groupId, String consumerName, String topicsPattern) {
         Map<String, Object> topicMap = Map.of("topic_pattern", topicsPattern);
 
-        HttpResponse<String> httpResponse = subscribeConsumerRequest(groupId, consumerName, parseJsonFromMap(topicMap));
+        HttpResponse<String> httpResponse = subscribeConsumerRequest(groupId, consumerName, topicMap);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
             HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
             throw new RuntimeException("Failed to subscribe consumer due to: " + httpBridgeError.message());
         }
+    }
+
+    /**
+     * Method that subscribes the consumer using subscription config in Map.
+     * It then returns result of the request in {@link HttpResponse}.
+     *
+     * @param groupId               group ID to which consumer belongs to.
+     * @param consumerName          name of the consumer.
+     * @param subscriptionConfig    subscription configuration as a Map (e.g., containing "topics", "topic_pattern", or both).
+     *
+     * @return  result of the request in {@link HttpResponse}.
+     */
+    public HttpResponse<String> subscribeConsumerRequest(String groupId, String consumerName, Map<String, Object> subscriptionConfig) {
+        return subscribeConsumerRequest(groupId, consumerName, parseJsonFromMap(subscriptionConfig));
     }
 
     /**
@@ -267,6 +281,19 @@ public class HttpConsumerService extends HttpClientBaseService {
             "offsets", partitionOffsets
         );
         return httpService.post(Endpoints.consumerOffsets(groupId, consumerName), parseJsonFromMap(offsets), null, BridgeContentType.KAFKA_JSON);
+    }
+
+    /**
+     * Method that lists the subscriptions of the consumer.
+     * It then returns the result of the request in {@link HttpResponse}.
+     *
+     * @param groupId       group ID to which consumer belongs to.
+     * @param consumerName  name of the consumer.
+     *
+     * @return  the response in {@link HttpResponse}.
+     */
+    public HttpResponse<String> listSubscriptionsRequest(String groupId, String consumerName) {
+        return httpService.get(Endpoints.consumerSubscribe(groupId, consumerName));
     }
 
     /**
