@@ -6,9 +6,11 @@ package io.strimzi.kafka.bridge.clients;
 
 import io.strimzi.kafka.bridge.utils.KafkaJsonSerializer;
 import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.time.Duration;
@@ -168,5 +170,25 @@ public class BasicKafkaClient {
     public void sendJsonMessagesPlain(String topicName, int messageCount, String message, int partition) {
         sendJsonMessagesPlain(Duration.ofMinutes(2).toMillis(), topicName, messageCount, List.of(),
             message, partition, null, false);
+    }
+
+    /**
+     * Receive messages from kafka cluster with PLAINTEXT security protocol setting and custom deserializers.
+     *
+     * @param topicName         topic name where messages are consumed from
+     * @param messageCount      number of messages to consume
+     * @param keyDeserializer   deserializer for the message key
+     * @param valueDeserializer deserializer for the message value
+     * @param <K>               type of the message key
+     * @param <V>               type of the message value
+     *
+     * @return list of consumed records
+     */
+    public <K, V> List<ConsumerRecord<K, V>> receiveMessagesPlain(String topicName, int messageCount,
+                                                                  Deserializer<K> keyDeserializer,
+                                                                  Deserializer<V> valueDeserializer) {
+        Properties properties = Consumer.createDefaultProperties(bootstrapServer);
+        Consumer<K, V> consumer = new Consumer<>(properties, topicName, messageCount, keyDeserializer, valueDeserializer);
+        return consumer.receiveMessages();
     }
 }
