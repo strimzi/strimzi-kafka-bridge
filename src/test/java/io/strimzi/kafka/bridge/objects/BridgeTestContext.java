@@ -21,11 +21,11 @@ public class BridgeTestContext {
 
     private String topicName;
     private HttpService httpService;
+    private HttpService managementHttpService;
     private AdminClientFacade adminClientFacade;
     private BasicKafkaClient basicKafkaClient;
     private String bridgeHost;
     private int bridgePort;
-    private int bridgeManagementPort;
 
     /**
      * Constructor for creating variables and services for particular {@param extensionContext}.
@@ -35,11 +35,11 @@ public class BridgeTestContext {
     public BridgeTestContext(ExtensionContext extensionContext) {
         topicName = "my-topic-" + RNG.nextInt(Integer.MAX_VALUE);
         httpService = BridgeExtension.getHttpService(extensionContext);
+        managementHttpService = BridgeExtension.getManagementHttpService(extensionContext);
         adminClientFacade = AdminClientFacade.create(KafkaExtension.getKafkaCluster(extensionContext).getBootstrapServers());
         basicKafkaClient = new BasicKafkaClient(KafkaExtension.getKafkaCluster(extensionContext).getBootstrapServers());
         bridgeHost = BridgeExtension.getBridgeHost(extensionContext);
         bridgePort = BridgeExtension.getBridgePort(extensionContext);
-        bridgeManagementPort = BridgeExtension.getBridgeManagementPort(extensionContext);
     }
 
     /**
@@ -56,6 +56,14 @@ public class BridgeTestContext {
      */
     public HttpService getHttpService() {
         return httpService;
+    }
+
+    /**
+     * Returns management {@link HttpService}.
+     * @return management {@link HttpService}.
+     */
+    public HttpService getManagementHttpService() {
+        return managementHttpService;
     }
 
     /**
@@ -86,11 +94,4 @@ public class BridgeTestContext {
         return bridgePort;
     }
 
-    /**
-     * Returns the bridge management port.
-     * @return the bridge management port.
-     */
-    public int getBridgeManagementPort() {
-        return bridgeManagementPort;
-    }
 }

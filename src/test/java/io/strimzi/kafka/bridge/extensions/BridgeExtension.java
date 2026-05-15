@@ -65,7 +65,7 @@ public class BridgeExtension implements
     private static final String HTTP_SERVICE_KEY = "httpService";
     private static final String BRIDGE_HOST_KEY = "bridgeHost";
     private static final String BRIDGE_PORT_KEY = "bridgePort";
-    private static final String BRIDGE_MANAGEMENT_PORT_KEY = "bridgeManagementPort";
+    private static final String MANAGEMENT_HTTP_SERVICE_KEY = "managementHttpService";
 
     private static final BridgeRunMode BRIDGE_RUN_MODE_ENV = BridgeRunMode.fromString(System.getenv().getOrDefault("BRIDGE_RUN_MODE", BridgeRunMode.IN_MEMORY.name()));
     private static final String DEFAULT_BRIDGE_IMAGE = "quay.io/strimzi/kafka-bridge:latest";
@@ -259,15 +259,16 @@ public class BridgeExtension implements
      * @param configuration     configuration of the Bridge.
      */
     private void deployBridgeInMemory(ExtensionContext extensionContext, Map<String, Object> configuration) {
-        BridgeConfig bridgeConfig = BridgeConfig.fromMap(configuration);
-        HttpBridge httpBridge = new HttpBridge(bridgeConfig);
         LOGGER.info("Deploying in-memory Bridge");
 
         VertxOptions vertxOptions = new VertxOptions();
         if (configuration.get(BridgeConfig.METRICS_TYPE) != null) {
             vertxOptions.setMetricsOptions(metricsOptions());
         }
-        Vertx vertx =  Vertx.vertx(vertxOptions);
+        Vertx vertx = Vertx.vertx(vertxOptions);
+
+        BridgeConfig bridgeConfig = BridgeConfig.fromMap(configuration);
+        HttpBridge httpBridge = new HttpBridge(bridgeConfig);
 
         vertx.deployVerticle(httpBridge)
             .onComplete(ar -> {
@@ -283,12 +284,13 @@ public class BridgeExtension implements
         int bridgePort = sslEnabled ? Urls.BRIDGE_SSL_PORT : Urls.BRIDGE_PORT;
 
         HttpService httpService = sslEnabled ? null : new HttpService(Urls.BRIDGE_HOST, bridgePort);
+        HttpService managementHttpService = new HttpService(Urls.BRIDGE_HOST, Urls.BRIDGE_MANAGEMENT_PORT);
 
         getStore(extensionContext).put(BRIDGE_BINARY_KEY, vertx);
         getStore(extensionContext).put(HTTP_SERVICE_KEY, httpService);
         getStore(extensionContext).put(BRIDGE_HOST_KEY, Urls.BRIDGE_HOST);
         getStore(extensionContext).put(BRIDGE_PORT_KEY, bridgePort);
-        getStore(extensionContext).put(BRIDGE_MANAGEMENT_PORT_KEY, Urls.BRIDGE_MANAGEMENT_PORT);
+        getStore(extensionContext).put(MANAGEMENT_HTTP_SERVICE_KEY, managementHttpService);
     }
 
     /**
@@ -327,12 +329,13 @@ public class BridgeExtension implements
         bridgeContainer.start();
 
         HttpService httpService = sslEnabled ? null : new HttpService(bridgeContainer.getHost(), bridgeContainer.getMappedPort(httpPort));
+        HttpService managementHttpService = new HttpService(bridgeContainer.getHost(), bridgeContainer.getMappedPort(Urls.BRIDGE_MANAGEMENT_PORT));
 
         getStore(extensionContext).put(BRIDGE_CONTAINER_KEY, bridgeContainer);
         getStore(extensionContext).put(HTTP_SERVICE_KEY, httpService);
         getStore(extensionContext).put(BRIDGE_HOST_KEY, bridgeContainer.getHost());
         getStore(extensionContext).put(BRIDGE_PORT_KEY, bridgeContainer.getMappedPort(httpPort));
-        getStore(extensionContext).put(BRIDGE_MANAGEMENT_PORT_KEY, bridgeContainer.getMappedPort(Urls.BRIDGE_MANAGEMENT_PORT));
+        getStore(extensionContext).put(MANAGEMENT_HTTP_SERVICE_KEY, managementHttpService);
     }
 
     /**
@@ -360,20 +363,40 @@ public class BridgeExtension implements
      * @param extensionContext  context of the test.
      */
     private void stopBridge(ExtensionContext extensionContext) {
+        closeHttpServices(extensionContext);
+
         if (BRIDGE_RUN_MODE_ENV.equals(BridgeRunMode.IN_MEMORY)) {
+            LOGGER.info("Stopping in-memory Bridge");
             Vertx bridge = getStore(extensionContext)
                 .get(BRIDGE_BINARY_KEY, Vertx.class);
 
             if (bridge != null) {
-                bridge.close();
+                bridge.close().await();
             }
         } else {
+            LOGGER.info("Stopping container Bridge");
             GenericContainer<?> bridge = getStore(extensionContext)
                 .get(BRIDGE_CONTAINER_KEY, GenericContainer.class);
 
             if (bridge != null) {
                 bridge.stop();
             }
+        }
+    }
+
+    /**
+     * Closes the HTTP client services to release connections before stopping the bridge.
+     *
+     * @param extensionContext  context of the test.
+     */
+    private void closeHttpServices(ExtensionContext extensionContext) {
+        HttpService httpService = getStore(extensionContext).get(HTTP_SERVICE_KEY, HttpService.class);
+        if (httpService != null) {
+            httpService.close();
+        }
+        HttpService managementHttpService = getStore(extensionContext).get(MANAGEMENT_HTTP_SERVICE_KEY, HttpService.class);
+        if (managementHttpService != null) {
+            managementHttpService.close();
         }
     }
 
@@ -425,14 +448,14 @@ public class BridgeExtension implements
     }
 
     /**
-     * Returns the bridge management port from the extension context's store.
+     * Method for getting the management {@link HttpService} from the extension context's store.
      *
      * @param extensionContext  context of the test.
      *
-     * @return  the bridge management port.
+     * @return  management {@link HttpService} from the extension context's store.
      */
-    public static int getBridgeManagementPort(ExtensionContext extensionContext) {
-        return extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).get(BRIDGE_MANAGEMENT_PORT_KEY, Integer.class);
+    public static HttpService getManagementHttpService(ExtensionContext extensionContext) {
+        return extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).get(MANAGEMENT_HTTP_SERVICE_KEY, HttpService.class);
     }
 
     /**

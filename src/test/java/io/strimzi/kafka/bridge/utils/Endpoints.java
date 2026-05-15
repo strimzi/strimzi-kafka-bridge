@@ -13,6 +13,9 @@ public class Endpoints {
     private static final String RECORDS_ENDPOINT = "/records";
     private static final String ASSIGNMENTS_ENDPOINT = "/assignments";
     private static final String OFFSETS_ENDPOINT = "/offsets";
+    private static final String POSITIONS_ENDPOINT = "/positions";
+    private static final String POSITIONS_BEGINNING_ENDPOINT = "/positions/beginning";
+    private static final String POSITIONS_END_ENDPOINT = "/positions/end";
 
     public static String consumerInstance(String groupId, String consumerName) {
         return CONSUMERS_ENDPOINT + groupId + INSTANCES_ENDPOINT + consumerName;
@@ -44,6 +47,18 @@ public class Endpoints {
 
     public static String consumerOffsets(String groupId, String consumerName) {
         return consumerInstance(groupId, consumerName) + OFFSETS_ENDPOINT;
+    }
+
+    public static String consumerPositions(String groupId, String consumerName) {
+        return consumerInstance(groupId, consumerName) + POSITIONS_ENDPOINT;
+    }
+
+    public static String consumerPositionsBeginning(String groupId, String consumerName) {
+        return consumerInstance(groupId, consumerName) + POSITIONS_BEGINNING_ENDPOINT;
+    }
+
+    public static String consumerPositionsEnd(String groupId, String consumerName) {
+        return consumerInstance(groupId, consumerName) + POSITIONS_END_ENDPOINT;
     }
 
     public static String topic(String topicName) {

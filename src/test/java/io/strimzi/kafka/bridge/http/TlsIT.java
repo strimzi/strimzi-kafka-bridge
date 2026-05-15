@@ -119,9 +119,7 @@ public class TlsIT extends AbstractIT {
 
     @Test
     void testManagementEndpointWhenSslEnabled(BridgeTestContext bridgeTestContext) {
-        HttpService managementService = new HttpService(bridgeTestContext.getBridgeHost(), bridgeTestContext.getBridgeManagementPort());
-
-        HttpResponse<String> httpResponse = managementService.get("/healthy");
+        HttpResponse<String> httpResponse = bridgeTestContext.getManagementHttpService().get("/healthy");
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
     }
 
