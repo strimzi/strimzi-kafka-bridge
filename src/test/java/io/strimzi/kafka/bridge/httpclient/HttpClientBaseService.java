@@ -4,7 +4,8 @@
  */
 package io.strimzi.kafka.bridge.httpclient;
 
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 
@@ -41,5 +42,20 @@ public class HttpClientBaseService {
         }
 
         return jsonBody;
+    }
+
+    /**
+     * Serializes a {@link JsonNode} to a JSON string for use in HTTP request bodies.
+     *
+     * @param jsonNode   JsonNode to serialize.
+     *
+     * @return  JSON string representation.
+     */
+    protected String toJsonString(JsonNode jsonNode) {
+        try {
+            return objectMapper.writeValueAsString(jsonNode);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize JsonNode to JSON string");
+        }
     }
 }
