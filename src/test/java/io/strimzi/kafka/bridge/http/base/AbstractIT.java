@@ -21,6 +21,7 @@ import java.util.Random;
 public abstract class AbstractIT {
     private static final Logger LOGGER = LogManager.getLogger(AbstractIT.class);
     protected static final int TEST_TIMEOUT = 60;
+    protected static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**
      * The {@link Parameter} kafkaVersion here is needed because of the

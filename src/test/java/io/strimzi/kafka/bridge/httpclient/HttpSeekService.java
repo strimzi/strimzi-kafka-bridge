@@ -4,13 +4,13 @@
  */
 package io.strimzi.kafka.bridge.httpclient;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Endpoints;
 
 import java.net.http.HttpResponse;
-import java.util.Map;
 
 /**
  * Class containing methods for HTTP seek operations - for seeking consumer positions via the HTTP Bridge.
@@ -33,7 +33,7 @@ public class HttpSeekService extends HttpClientBaseService {
      * @param consumerName  name of the consumer.
      * @param body          request body containing offsets.
      */
-    public void seekToPositions(String groupId, String consumerName, Map<String, Object> body) {
+    public void seekToPositions(String groupId, String consumerName, JsonNode body) {
         HttpResponse<String> httpResponse = seekToPositionsRequest(groupId, consumerName, body);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
@@ -51,8 +51,8 @@ public class HttpSeekService extends HttpClientBaseService {
      *
      * @return  the response in {@link HttpResponse}.
      */
-    public HttpResponse<String> seekToPositionsRequest(String groupId, String consumerName, Map<String, Object> body) {
-        return httpService.post(Endpoints.consumerPositions(groupId, consumerName), parseJsonFromMap(body), null, BridgeContentType.KAFKA_JSON);
+    public HttpResponse<String> seekToPositionsRequest(String groupId, String consumerName, JsonNode body) {
+        return httpService.post(Endpoints.consumerPositions(groupId, consumerName), toJsonString(body), null, BridgeContentType.KAFKA_JSON);
     }
 
     /**
@@ -63,7 +63,7 @@ public class HttpSeekService extends HttpClientBaseService {
      * @param consumerName  name of the consumer.
      * @param body          request body containing partitions.
      */
-    public void seekToBeginning(String groupId, String consumerName, Map<String, Object> body) {
+    public void seekToBeginning(String groupId, String consumerName, JsonNode body) {
         HttpResponse<String> httpResponse = seekToBeginningRequest(groupId, consumerName, body);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
@@ -81,8 +81,8 @@ public class HttpSeekService extends HttpClientBaseService {
      *
      * @return  the response in {@link HttpResponse}.
      */
-    public HttpResponse<String> seekToBeginningRequest(String groupId, String consumerName, Map<String, Object> body) {
-        return httpService.post(Endpoints.consumerPositionsBeginning(groupId, consumerName), parseJsonFromMap(body), null, BridgeContentType.KAFKA_JSON);
+    public HttpResponse<String> seekToBeginningRequest(String groupId, String consumerName, JsonNode body) {
+        return httpService.post(Endpoints.consumerPositionsBeginning(groupId, consumerName), toJsonString(body), null, BridgeContentType.KAFKA_JSON);
     }
 
     /**
@@ -93,7 +93,7 @@ public class HttpSeekService extends HttpClientBaseService {
      * @param consumerName  name of the consumer.
      * @param body          request body containing partitions.
      */
-    public void seekToEnd(String groupId, String consumerName, Map<String, Object> body) {
+    public void seekToEnd(String groupId, String consumerName, JsonNode body) {
         HttpResponse<String> httpResponse = seekToEndRequest(groupId, consumerName, body);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
@@ -111,7 +111,7 @@ public class HttpSeekService extends HttpClientBaseService {
      *
      * @return  the response in {@link HttpResponse}.
      */
-    public HttpResponse<String> seekToEndRequest(String groupId, String consumerName, Map<String, Object> body) {
-        return httpService.post(Endpoints.consumerPositionsEnd(groupId, consumerName), parseJsonFromMap(body), null, BridgeContentType.KAFKA_JSON);
+    public HttpResponse<String> seekToEndRequest(String groupId, String consumerName, JsonNode body) {
+        return httpService.post(Endpoints.consumerPositionsEnd(groupId, consumerName), toJsonString(body), null, BridgeContentType.KAFKA_JSON);
     }
 }

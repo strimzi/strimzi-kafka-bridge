@@ -4,6 +4,9 @@
  */
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
@@ -45,7 +48,7 @@ public class SeekIT extends AbstractIT {
     void seekToNotExistingConsumer(BridgeTestContext bridgeTestContext) {
         HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
 
-        Map<String, Object> emptyBody = Map.of();
+        JsonNode emptyBody = MAPPER.createObjectNode();
 
         HttpResponse<String> response = httpSeekService.seekToBeginningRequest(groupId, name, emptyBody);
         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
@@ -67,11 +70,9 @@ public class SeekIT extends AbstractIT {
 
         String notExistingTopic = "notExistingTopic";
 
-        Map<String, Object> partitionsBody = Map.of(
-            "partitions", List.of(
-                Map.of("topic", notExistingTopic, "partition", 0)
-            )
-        );
+        ObjectNode partitionsBody = MAPPER.createObjectNode();
+        partitionsBody.putArray("partitions")
+            .add(MAPPER.createObjectNode().put("topic", notExistingTopic).put("partition", 0));
 
         HttpResponse<String> response = httpSeekService.seekToBeginningRequest(groupId, name, partitionsBody);
         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
@@ -106,11 +107,9 @@ public class SeekIT extends AbstractIT {
         assertThat(messages.length, is(10));
 
         // seek to beginning
-        Map<String, Object> partitionsBody = Map.of(
-            "partitions", List.of(
-                Map.of("topic", topic, "partition", 0)
-            )
-        );
+        ObjectNode partitionsBody = MAPPER.createObjectNode();
+        partitionsBody.putArray("partitions")
+            .add(MAPPER.createObjectNode().put("topic", topic).put("partition", 0));
 
         httpSeekService.seekToBeginning(groupId, name, partitionsBody);
 
@@ -143,11 +142,9 @@ public class SeekIT extends AbstractIT {
         bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(topic, 10);
 
         // seek to end
-        Map<String, Object> partitionsBody = Map.of(
-            "partitions", List.of(
-                Map.of("topic", topic, "partition", 0)
-            )
-        );
+        ObjectNode partitionsBody = MAPPER.createObjectNode();
+        partitionsBody.putArray("partitions")
+            .add(MAPPER.createObjectNode().put("topic", topic).put("partition", 0));
 
         httpSeekService.seekToEnd(groupId, name, partitionsBody);
 
@@ -182,12 +179,10 @@ public class SeekIT extends AbstractIT {
         httpConsumerService.consumeRecordsRequest(groupId, name);
 
         // seek to specific offsets
-        Map<String, Object> offsetsBody = Map.of(
-            "offsets", List.of(
-                Map.of("topic", topic, "partition", 0, "offset", 9),
-                Map.of("topic", topic, "partition", 1, "offset", 5)
-            )
-        );
+        ObjectNode offsetsBody = MAPPER.createObjectNode();
+        ArrayNode offsets = offsetsBody.putArray("offsets");
+        offsets.add(MAPPER.createObjectNode().put("topic", topic).put("partition", 0).put("offset", 9));
+        offsets.add(MAPPER.createObjectNode().put("topic", topic).put("partition", 1).put("offset", 5));
 
         httpSeekService.seekToPositions(groupId, name, offsetsBody);
 
@@ -245,12 +240,10 @@ public class SeekIT extends AbstractIT {
         waitUntilPartitionAssigned(httpConsumerService, groupId, name, 10, 2000);
 
         // seek with subscribed and not-subscribed topic
-        Map<String, Object> partitionsBody = Map.of(
-            "partitions", List.of(
-                Map.of("topic", subscribedTopic, "partition", 0),
-                Map.of("topic", notSubscribedTopic, "partition", 0)
-            )
-        );
+        ObjectNode partitionsBody = MAPPER.createObjectNode();
+        ArrayNode partitions = partitionsBody.putArray("partitions");
+        partitions.add(MAPPER.createObjectNode().put("topic", subscribedTopic).put("partition", 0));
+        partitions.add(MAPPER.createObjectNode().put("topic", notSubscribedTopic).put("partition", 0));
 
         HttpResponse<String> response = httpSeekService.seekToBeginningRequest(groupId, name, partitionsBody);
         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
@@ -312,12 +305,10 @@ public class SeekIT extends AbstractIT {
         httpConsumerService.consumeRecordsRequest(groupId, name);
 
         // seek with subscribed and not-subscribed topic
-        Map<String, Object> offsetsBody = Map.of(
-            "offsets", List.of(
-                Map.of("topic", subscribedTopic, "partition", 0, "offset", 0),
-                Map.of("topic", notSubscribedTopic, "partition", 0, "offset", 0)
-            )
-        );
+        ObjectNode offsetsBody = MAPPER.createObjectNode();
+        ArrayNode offsets = offsetsBody.putArray("offsets");
+        offsets.add(MAPPER.createObjectNode().put("topic", subscribedTopic).put("partition", 0).put("offset", 0));
+        offsets.add(MAPPER.createObjectNode().put("topic", notSubscribedTopic).put("partition", 0).put("offset", 0));
 
         HttpResponse<String> response = httpSeekService.seekToPositionsRequest(groupId, name, offsetsBody);
         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
