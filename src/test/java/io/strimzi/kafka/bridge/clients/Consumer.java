@@ -4,80 +4,83 @@
  */
 package io.strimzi.kafka.bridge.clients;
 
-import io.vertx.core.Vertx;
-import io.vertx.kafka.client.consumer.KafkaConsumer;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntPredicate;
 
-public class Consumer extends ClientHandlerBase<Integer> implements AutoCloseable {
+public class Consumer<K, V> {
     private static final Logger LOGGER = LogManager.getLogger(Consumer.class);
+    private static final long DEFAULT_TIMEOUT_MS = 60_000;
 
     private final Properties properties;
-    private final AtomicInteger numReceived = new AtomicInteger(0);
     private final String topic;
-    private final String clientName;
+    private final int messageCount;
+    private final Deserializer<K> keyDeserializer;
+    private final Deserializer<V> valueDeserializer;
 
-    public Consumer(Properties properties, CompletableFuture<Integer> resultPromise, IntPredicate msgCntPredicate, String topic) {
-        super(resultPromise, msgCntPredicate);
+    public Consumer(Properties properties, String topic, int messageCount,
+                    Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
         this.topic = topic;
-        this.clientName = "consumer-sender-plain-";
         this.properties = properties;
-        this.vertx = Vertx.vertx();
+        this.messageCount = messageCount;
+        this.keyDeserializer = keyDeserializer;
+        this.valueDeserializer = valueDeserializer;
     }
 
-    @Override
-    protected void handleClient() {
+    public Consumer(String bootstrapServer, String topic, int messageCount) {
+        this(createDefaultProperties(bootstrapServer), topic, messageCount, null, null);
+    }
+
+    public List<ConsumerRecord<K, V>> receiveMessages() {
         LOGGER.info("Consumer is starting with following properties: {}", properties.toString());
 
-        KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, properties);
+        KafkaConsumer<K, V> consumer;
 
-        if (msgCntPredicate.test(-1)) {
-            vertx.eventBus().consumer(clientName, msg -> {
-                if (msg.body().equals("stop")) {
-                    LOGGER.debug("Received stop command! Consumed messages: {}", numReceived.get());
-                    resultPromise.complete(numReceived.get());
+        if (keyDeserializer != null && valueDeserializer != null) {
+            consumer = new KafkaConsumer<>(properties, keyDeserializer, valueDeserializer);
+        } else {
+            consumer = new KafkaConsumer<>(properties);
+        }
+
+        try (consumer) {
+            LOGGER.info("Subscribing to topic: {}", topic);
+            consumer.subscribe(List.of(topic));
+
+            List<ConsumerRecord<K, V>> received = new ArrayList<>();
+            long deadline = System.currentTimeMillis() + DEFAULT_TIMEOUT_MS;
+
+            while (received.size() < messageCount && System.currentTimeMillis() < deadline) {
+                ConsumerRecords<K, V> records = consumer.poll(Duration.ofSeconds(1));
+                for (ConsumerRecord<K, V> record : records) {
+                    LOGGER.debug("Processing key={}, value={}, partition={}, offset={}",
+                        record.key(), record.value(), record.partition(), record.offset());
+                    received.add(record);
+
+                    if (received.size() == messageCount) {
+                        LOGGER.info("Received all {} messages", messageCount);
+                        break;
+                    }
                 }
-            });
-        }
+            }
 
-        consumer.subscribe(topic)
-                .onSuccess(v -> {
-                    consumer.handler(record -> {
-                        LOGGER.debug("Processing key={}, value={}, partition={}, offset={}",
-                                record.key(), record.value(), record.partition(), record.offset());
-                        numReceived.getAndIncrement();
-
-                        if (msgCntPredicate.test(numReceived.get())) {
-                            LOGGER.info("Consumer consumed {} messages", numReceived.get());
-                            resultPromise.complete(numReceived.get());
-                        }
-                    });
-                })
-                .onFailure(t -> {
-                    LOGGER.warn("Consumer could not subscribe {}", t.getMessage());
-                    resultPromise.completeExceptionally(t);
-                });
-    }
-
-    @Override
-    public void close() {
-        LOGGER.info("Closing Vert.x instance for the client {}", this.getClass().getName());
-        if (vertx != null) {
-            vertx.close();
+            return received;
         }
     }
 
-    public static Properties fillDefaultProperties() {
+    public static Properties createDefaultProperties(String bootstrapServer) {
         Properties properties = new Properties();
 
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
@@ -86,8 +89,8 @@ public class Consumer extends ClientHandlerBase<Integer> implements AutoCloseabl
         properties.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "consumer-group-" + new Random().nextInt(Integer.MAX_VALUE));
+        properties.setProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
 
         return properties;
     }
-
 }

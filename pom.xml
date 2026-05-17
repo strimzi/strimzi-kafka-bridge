@@ -376,36 +376,6 @@
             <scope>test</scope>
         </dependency>
 		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-kafka-client</artifactId>
-			<version>${vertx-testing.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-web-client</artifactId>
-			<version>${vertx-testing.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-junit5</artifactId>
-			<version>${vertx-testing.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-opentelemetry</artifactId>
-			<version>${vertx-testing.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-web-common</artifactId>
-			<version>${vertx-testing.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
 			<groupId>org.hamcrest</groupId>
 			<artifactId>hamcrest</artifactId>
 			<version>${hamcrest.version}</version>
