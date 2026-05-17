@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
       "title": "HTTP Bridge API Reference",
-      "description": "The HTTP Bridge provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. ",
+      "description": "The HTTP Bridge provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol.",
         "version": "0.1.0"
     },
     "paths": {
@@ -605,7 +605,7 @@
                 "operationId": "getTopic",
                 "responses": {
                     "200": {
-                        "description": "Topic metadata",
+                        "description": "Topic metadata.",
                         "content": {
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
@@ -773,7 +773,7 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Created"
+                        "description": "Created."
                     }
                 }
             }
@@ -910,7 +910,7 @@
                         }
                     },
                     "422": {
-                        "description": "Response exceeds the maximum number of bytes the consumer can receive",
+                        "description": "Response exceeds the maximum number of bytes the consumer can receive.",
                         "content": {
                             "application/vnd.kafka.json.v2+json": {
                                 "schema": {
@@ -1045,7 +1045,7 @@
                 "operationId": "getPartition",
                 "responses": {
                     "200": {
-                        "description": "Partition metadata",
+                        "description": "Partition metadata.",
                         "content": {
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
@@ -1380,10 +1380,10 @@
             "get": {
                 "responses": {
                     "200": {
-                        "description": "The bridge is healthy"
+                        "description": "The bridge is healthy."
                     },
                     "500": {
-                        "description": "The bridge is not healthy"
+                        "description": "The bridge is not healthy."
                     }
                 },
                 "operationId": "healthy",
@@ -1394,10 +1394,10 @@
             "get": {
                 "responses": {
                     "200": {
-                        "description": "The bridge is ready"
+                        "description": "The bridge is ready."
                     },
                     "500": {
-                        "description": "The bridge is not ready"
+                        "description": "The bridge is not ready."
                     }
                 },
                 "operationId": "ready",
@@ -1483,29 +1483,32 @@
     "components": {
         "schemas": {
             "KafkaHeader": {
+                "title": "KafkaHeader",
+                "description": "A Kafka record header containing a key-value pair.",
+                "type": "object",
+                "required": [
+                    "key",
+                    "value"
+                ],
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "Header key name."
+                    },
+                    "value": {
+                        "type": "string",
+                        "format": "byte",
+                        "description": "The header value in binary format, base64-encoded."
+                    }
+                },
                 "example": {
                     "key": "key1",
                     "value": "dmFsdWUx"
-                },
-                "properties": {
-                    "key": {
-                        "type": "string"
-                    },
-                    "value": {
-                        "format": "byte",
-                        "type": "string",
-                        "description": "The header value in binary format, base64-encoded"
-                    }
-                },
-                "title": "KafkaHeader",
-                "required": [
-                    "value",
-                    "key"
-                ],
-                "type": "object"
+                }
             },
             "KafkaHeaderList": {
                 "title": "KafkaHeaderList",
+                "description": "List of Kafka record headers.",
                 "type": "array",
                 "items": {
                     "$ref": "#/components/schemas/KafkaHeader"
@@ -1522,6 +1525,39 @@
                 ]
             },
             "ConsumerRecord": {
+                "title": "ConsumerRecord",
+                "description": "A record consumed from a Kafka topic.",
+                "type": "object",
+                "properties": {
+                    "topic": {
+                        "type": "string",
+                        "description": "Topic name from which the record was consumed."
+                    },
+                    "key": {
+                        "$ref": "#/components/schemas/RecordKey"
+                    },
+                    "value": {
+                        "$ref": "#/components/schemas/RecordValue"
+                    },
+                    "partition": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Partition number from which the record was consumed."
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "Offset of the record in the partition."
+                    },
+                    "timestamp": {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "Timestamp of the record in milliseconds since epoch."
+                    },
+                    "headers": {
+                        "$ref": "#/components/schemas/KafkaHeaderList"
+                    }
+                },
                 "example": {
                     "key": "key1",
                     "offset": 2,
@@ -1539,38 +1575,11 @@
                             "value": "dmFsdWUy"
                         }
                     ]
-                },
-                "properties": {
-                    "key": {
-                        "$ref": "#/components/schemas/RecordKey"
-                    },
-                    "offset": {
-                        "format": "int64",
-                        "type": "integer"
-                    },
-                    "partition": {
-                        "format": "int32",
-                        "type": "integer"
-                    },
-                    "topic": {
-                        "type": "string"
-                    },
-                    "value": {
-                        "$ref": "#/components/schemas/RecordValue"
-                    },
-                    "headers": {
-                        "$ref": "#/components/schemas/KafkaHeaderList"
-                    },
-                    "timestamp": {
-                        "format": "int64",
-                        "type": "integer"
-                    }
-                },
-                "title": "ConsumerRecord",
-                "type": "object"
+                }
             },
             "ConsumerRecordList": {
                 "title": "ConsumerRecordList",
+                "description": "List of records consumed from Kafka topics.",
                 "type": "array",
                 "items": {
                     "$ref": "#/components/schemas/ConsumerRecord"
@@ -1596,15 +1605,16 @@
             },
             "CreatedConsumer": {
                 "title": "CreatedConsumer",
+                "description": "Response containing details of a newly created consumer instance.",
                 "type": "object",
                 "properties": {
                     "instance_id": {
-                        "description": "Unique ID for the consumer instance in the group.",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Unique ID for the consumer instance in the group."
                     },
                     "base_uri": {
-                        "description": "Base URI used to construct URIs for subsequent requests against this consumer instance.",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Base URI used to construct URIs for subsequent requests against this consumer instance."
                     }
                 },
                 "example": {
@@ -1614,15 +1624,18 @@
             },
             "OffsetRecordSent": {
                 "title": "OffsetRecordSent",
+                "description": "Offset information for a successfully sent record.",
                 "type": "object",
                 "properties": {
                     "partition": {
+                        "type": "integer",
                         "format": "int32",
-                        "type": "integer"
+                        "description": "Partition to which the record was sent."
                     },
                     "offset": {
+                        "type": "integer",
                         "format": "int64",
-                        "type": "integer"
+                        "description": "Offset of the record in the partition."
                     }
                 },
                 "example": {
@@ -1632,10 +1645,12 @@
             },
             "OffsetRecordSentList": {
                 "title": "OffsetRecordSentList",
+                "description": "List of offset information for sent records, which may include errors for individual records.",
                 "type": "object",
                 "properties": {
                     "offsets": {
                         "type": "array",
+                        "description": "Array of offset information or errors for each record sent.",
                         "items": {
                             "oneOf": [
                                 {
@@ -1667,15 +1682,18 @@
             },
             "OffsetsSummary": {
                 "title": "OffsetsSummary",
+                "description": "Summary of offset positions for a topic partition.",
                 "type": "object",
                 "properties": {
                     "beginning_offset": {
+                        "type": "integer",
                         "format": "int64",
-                        "type": "integer"
+                        "description": "Earliest available offset in the partition."
                     },
                     "end_offset": {
+                        "type": "integer",
                         "format": "int64",
-                        "type": "integer"
+                        "description": "Latest offset in the partition (offset of the next message to be appended)."
                     }
                 },
                 "example": {
@@ -1685,17 +1703,21 @@
             },
             "Error": {
                 "title": "Error",
+                "description": "Error response returned by the HTTP Bridge.",
                 "type": "object",
                 "properties": {
                     "error_code": {
+                        "type": "integer",
                         "format": "int32",
-                        "type": "integer"
+                        "description": "HTTP status code or Kafka error code."
                     },
                     "message": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Detailed error message."
                     },
                     "validation_errors": {
                         "type": "array",
+                        "description": "List of validation errors (if applicable).",
                         "items": {
                             "type": "string"
                         }
@@ -1715,7 +1737,7 @@
                         "type": "string"
                     },
                     "format": {
-                        "description": "The allowable message format for the consumer, which can be `binary` (default) or `json`. The messages are converted into a JSON format. ",
+                        "description": "The allowable message format for the consumer, which can be `binary` (default) or `json`. The messages are converted into a JSON format.",
                         "type": "string"
                     },
                     "auto.offset.reset": {
@@ -1752,38 +1774,44 @@
             },
             "OffsetCommitSeek": {
                 "title": "OffsetCommitSeek",
-                "required": [
-                    "partition",
-                    "offset",
-                    "topic"
-                ],
+                "description": "Offset position for committing or seeking to a specific offset in a topic partition.",
                 "type": "object",
+                "required": [
+                    "topic",
+                    "partition",
+                    "offset"
+                ],
                 "properties": {
+                    "topic": {
+                        "type": "string",
+                        "description": "Topic name."
+                    },
                     "partition": {
+                        "type": "integer",
                         "format": "int32",
-                        "type": "integer"
+                        "description": "Partition number."
                     },
                     "offset": {
+                        "type": "integer",
                         "format": "int64",
-                        "type": "integer"
-                    },
-                    "topic": {
-                        "type": "string"
+                        "description": "Offset position in the partition."
                     }
                 },
                 "additionalProperties": false,
                 "example": {
+                    "topic": "topic",
                     "partition": 43,
-                    "offset": 92,
-                    "topic": "topic"
+                    "offset": 92
                 }
             },
             "OffsetCommitSeekList": {
                 "title": "OffsetCommitSeekList",
+                "description": "List of offset positions for committing or seeking across multiple topic partitions.",
                 "type": "object",
                 "properties": {
                     "offsets": {
                         "type": "array",
+                        "description": "Array of offset positions for topic partitions.",
                         "items": {
                             "$ref": "#/components/schemas/OffsetCommitSeek"
                         }
@@ -1807,24 +1835,29 @@
             },
             "Partition": {
                 "title": "Partition",
+                "description": "A topic partition identifier.",
                 "type": "object",
                 "properties": {
-                    "partition": {
-                        "format": "int32",
-                        "type": "integer"
-                    },
                     "topic": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Topic name"
+                    },
+                    "partition": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Partition number"
                     }
                 },
                 "additionalProperties": false
             },
             "Partitions": {
                 "title": "Partitions",
+                "description": "List of topic partitions for assignment to a consumer.",
                 "type": "object",
                 "properties": {
                     "partitions": {
                         "type": "array",
+                        "description": "Array of topic partition identifiers.",
                         "items": {
                             "$ref": "#/components/schemas/Partition"
                         }
@@ -1846,24 +1879,27 @@
             },
             "ProducerRecord": {
                 "title": "ProducerRecord",
+                "description": "A record to be sent to a Kafka topic.",
+                "type": "object",
                 "required": [
                     "value"
                 ],
-                "type": "object",
                 "properties": {
-                    "partition": {
-                        "format": "int32",
-                        "type": "integer"
-                    },
-                    "timestamp": {
-                        "format": "int64",
-                        "type": "integer"
-                    },
                     "value": {
                         "$ref": "#/components/schemas/RecordValue"
                     },
                     "key": {
                         "$ref": "#/components/schemas/RecordKey"
+                    },
+                    "partition": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Target partition for the record (optional, will be determined by partitioner if not specified)."
+                    },
+                    "timestamp": {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "Timestamp for the record in milliseconds since epoch (optional, will use current time if not specified)."
                     },
                     "headers": {
                         "$ref": "#/components/schemas/KafkaHeaderList"
@@ -1889,10 +1925,12 @@
             },
             "ProducerRecordList": {
                 "title": "ProducerRecordList",
+                "description": "List of records to be sent to a Kafka topic.",
                 "type": "object",
                 "properties": {
                     "records": {
                         "type": "array",
+                        "description": "Array of records to send.",
                         "items": {
                             "$ref": "#/components/schemas/ProducerRecord"
                         }
@@ -1917,10 +1955,11 @@
             },
             "ProducerRecordToPartition": {
                 "title": "ProducerRecordToPartition",
+                "description": "A record to be sent to a specific Kafka topic partition.",
+                "type": "object",
                 "required": [
                     "value"
                 ],
-                "type": "object",
                 "properties": {
                     "value": {
                         "$ref": "#/components/schemas/RecordValue"
@@ -1944,10 +1983,12 @@
             },
             "ProducerRecordToPartitionList": {
                 "title": "ProducerRecordToPartitionList",
+                "description": "List of records to be sent to a specific Kafka topic partition.",
                 "type": "object",
                 "properties": {
                     "records": {
                         "type": "array",
+                        "description": "Array of records to send to the partition.",
                         "items": {
                             "$ref": "#/components/schemas/ProducerRecordToPartition"
                         }
@@ -1968,17 +2009,19 @@
             },
             "Topics": {
                 "title": "Topics",
+                "description": "Topic subscription specification using either a list of topic names or a regex pattern.",
                 "type": "object",
                 "properties": {
                     "topics": {
                         "type": "array",
+                        "description": "List of topic names to subscribe to.",
                         "items": {
                             "type": "string"
                         }
                     },
                     "topic_pattern": {
-                        "description": "A regex topic pattern for matching multiple topics",
-                        "type": "string"
+                        "type": "string",
+                        "description": "A regex topic pattern for matching multiple topics."
                     }
                 },
                 "additionalProperties": false,
@@ -1991,12 +2034,14 @@
             },
             "AssignedTopicPartitions": {
                 "title": "AssignedTopicPartitions",
+                "description": "Map of topic names to their assigned partition numbers.",
                 "type": "object",
                 "additionalProperties": {
                     "type": "array",
+                    "description": "Array of partition numbers for the topic.",
                     "items": {
-                        "format": "int32",
-                        "type": "integer"
+                        "type": "integer",
+                        "format": "int32"
                     }
                 },
                 "example": {
@@ -2009,6 +2054,7 @@
             },
             "SubscribedTopicList": {
                 "title": "SubscribedTopicList",
+                "description": "List of topics and partitions to which a consumer is subscribed or assigned.",
                 "type": "object",
                 "properties": {
                     "topics": {
@@ -2016,6 +2062,7 @@
                     },
                     "partitions": {
                         "type": "array",
+                        "description": "List of assigned topic partitions.",
                         "items": {
                             "$ref": "#/components/schemas/AssignedTopicPartitions"
                         }
@@ -2044,21 +2091,23 @@
             },
             "TopicMetadata": {
                 "title": "TopicMetadata",
+                "description": "Metadata information about a Kafka topic.",
                 "type": "object",
                 "properties": {
                     "name": {
-                        "description": "Name of the topic",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the topic."
                     },
                     "configs": {
-                        "description": "Per-topic configuration overrides",
                         "type": "object",
+                        "description": "Per-topic configuration overrides.",
                         "additionalProperties": {
                             "type": "string"
                         }
                     },
                     "partitions": {
                         "type": "array",
+                        "description": "List of partition metadata for the topic.",
                         "items": {
                             "$ref": "#/components/schemas/PartitionMetadata"
                         }
@@ -2109,18 +2158,22 @@
             },
             "PartitionMetadata": {
                 "title": "PartitionMetadata",
+                "description": "Metadata information about a topic partition.",
                 "type": "object",
                 "properties": {
                     "partition": {
+                        "type": "integer",
                         "format": "int32",
-                        "type": "integer"
+                        "description": "Partition number"
                     },
                     "leader": {
+                        "type": "integer",
                         "format": "int32",
-                        "type": "integer"
+                        "description": "Broker ID of the partition leader."
                     },
                     "replicas": {
                         "type": "array",
+                        "description": "List of replica information for the partition.",
                         "items": {
                             "$ref": "#/components/schemas/Replica"
                         }
@@ -2146,17 +2199,21 @@
             },
             "Replica": {
                 "title": "Replica",
+                "description": "Information about a partition replica.",
                 "type": "object",
                 "properties": {
                     "broker": {
+                        "type": "integer",
                         "format": "int32",
-                        "type": "integer"
+                        "description": "Broker ID hosting this replica."
                     },
                     "leader": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "description": "Whether this replica is the partition leader."
                     },
                     "in_sync": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "description": "Whether this replica is in-sync with the leader."
                     }
                 },
                 "additionalProperties": false,
@@ -2172,7 +2229,8 @@
                 "type": "object",
                 "properties": {
                     "bridge_version": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Version of the Strimzi Kafka Bridge."
                     }
                 },
                 "example": {
@@ -2181,57 +2239,65 @@
             },
             "RecordKey": {
                 "title": "RecordKey",
-                "description": "Key representation for a record. It can be an array, a JSON object or a string",
+                "description": "Key representation for a record. It can be an array, a JSON object, or a string depending on the content type.",
                 "oneOf": [
                     {
                         "type": "array",
-                        "items": {}
+                        "items": {},
+                        "description": "Array representation of the key."
                     },
                     {
-                        "type": "object"
+                        "type": "object",
+                        "description": "JSON object representation of the key."
                     },
                     {
-                        "type": "string"
+                        "type": "string",
+                        "description": "String representation of the key (text or base64-encoded binary)."
                     }
                 ]
             },
             "RecordValue": {
                 "title": "RecordValue",
-                "description": "Value representation for a record. It can be an array, a JSON object or a string",
+                "description": "Value representation for a record. It can be an array, a JSON object, a string, or null depending on the content type.",
                 "oneOf": [
                     {
                         "type": "array",
-                        "items": {}
+                        "items": {},
+                        "description": "Array representation of the value."
                     },
                     {
-                        "type": "object"
+                        "type": "object",
+                        "description": "JSON object representation of the value."
                     },
                     {
-                        "type": "string"
+                        "type": "string",
+                        "description": "String representation of the value (text or base64-encoded binary)."
                     },
                     {
-                        "type": "null"
+                        "type": "null",
+                        "description": "Null value (tombstone record)."
                     }
                 ]
             },
             "NewTopic": {
                 "title": "NewTopic",
+                "description": "Specification for creating a new Kafka topic.",
                 "type": "object",
+                "required": ["topic_name"],
                 "properties": {
                     "topic_name": {
-                        "description": "Name of the topic to create.",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the topic to create."
                     },
                     "partitions_count": {
-                        "description": "Number of partitions for the topic.",
-                        "type": ["integer", "null"]
+                        "type": ["integer", "null"],
+                        "description": "Number of partitions for the topic (optional, uses broker default if not specified)."
                     },
                     "replication_factor": {
-                        "description": "Number of replicas for each partition.",
-                        "type": ["integer", "null"]
+                        "type": ["integer", "null"],
+                        "description": "Number of replicas for each partition (optional, uses broker default if not specified)."
                     }
                 },
-                "required": ["topic_name"],
                 "additionalProperties": false,
                 "example": {
                     "topic_name": "my-topic",
