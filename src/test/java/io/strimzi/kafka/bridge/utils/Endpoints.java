@@ -64,4 +64,12 @@ public class Endpoints {
     public static String topic(String topicName) {
         return TOPICS_ENDPOINT + topicName;
     }
+
+    public static String topicPartition(String topicName, int partition) {
+        return TOPICS_ENDPOINT + topicName + "/partitions/" + partition;
+    }
+
+    public static String topicPartition(String topicName, String partition) {
+        return TOPICS_ENDPOINT + topicName + "/partitions/" + partition;
+    }
 }

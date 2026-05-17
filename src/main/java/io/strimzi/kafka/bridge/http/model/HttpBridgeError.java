@@ -5,9 +5,9 @@
 
 package io.strimzi.kafka.bridge.http.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
-import io.vertx.core.json.JsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,13 +53,13 @@ public record HttpBridgeError(int code, String message, List<String> validationE
      * @param json JSON representation of the error
      * @return error instance
      */
-    public static HttpBridgeError fromJson(JsonObject json) {
-        if (json.containsKey("validation_errors")) {
+    public static HttpBridgeError fromJson(JsonNode json) {
+        if (json.has("validation_errors")) {
             List<String> validationErrors = new ArrayList<>();
-            json.getJsonArray("validation_errors").forEach(error -> validationErrors.add(error.toString()));
-            return new HttpBridgeError(json.getInteger("error_code"), json.getString("message"), validationErrors);
+            json.get("validation_errors").forEach(error -> validationErrors.add(error.asText()));
+            return new HttpBridgeError(json.get("error_code").asInt(), json.get("message").asText(), validationErrors);
         } else {
-            return new HttpBridgeError(json.getInteger("error_code"), json.getString("message"));
+            return new HttpBridgeError(json.get("error_code").asInt(), json.get("message").asText());
         }
     }
 
