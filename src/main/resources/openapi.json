@@ -1498,7 +1498,7 @@
                     "value": {
                         "type": "string",
                         "format": "byte",
-                        "description": "The header value in binary format, base64-encoded."
+                        "description": "The header value in binary format, encoded as Base64."
                     }
                 },
                 "example": {
@@ -1552,7 +1552,7 @@
                     "timestamp": {
                         "type": "integer",
                         "format": "int64",
-                        "description": "Timestamp of the record in milliseconds since epoch."
+                        "description": "The record timestamp, in milliseconds since the Unix epoch."
                     },
                     "headers": {
                         "$ref": "#/components/schemas/KafkaHeaderList"
@@ -1645,7 +1645,7 @@
             },
             "OffsetRecordSentList": {
                 "title": "OffsetRecordSentList",
-                "description": "List of offset information for sent records, which may include errors for individual records.",
+                "description": "List of offset information for sent records, which might include errors for individual records.",
                 "type": "object",
                 "properties": {
                     "offsets": {
@@ -1894,12 +1894,12 @@
                     "partition": {
                         "type": "integer",
                         "format": "int32",
-                        "description": "Target partition for the record (optional, will be determined by partitioner if not specified)."
+                        "description": "The target partition for the record. If not specified, the partitioner determines the partition."
                     },
                     "timestamp": {
                         "type": "integer",
                         "format": "int64",
-                        "description": "Timestamp for the record in milliseconds since epoch (optional, will use current time if not specified)."
+                        "description": "The record timestamp, in milliseconds since the Unix epoch. If not specified, the current time is used."
                     },
                     "headers": {
                         "$ref": "#/components/schemas/KafkaHeaderList"
@@ -2209,11 +2209,11 @@
                     },
                     "leader": {
                         "type": "boolean",
-                        "description": "Whether this replica is the partition leader."
+                        "description": "Indicates whether the replica is the partition leader."
                     },
                     "in_sync": {
                         "type": "boolean",
-                        "description": "Whether this replica is in-sync with the leader."
+                        "description": "Indicates whether the replica is in-sync with the leader."
                     }
                 },
                 "additionalProperties": false,
@@ -2291,11 +2291,11 @@
                     },
                     "partitions_count": {
                         "type": ["integer", "null"],
-                        "description": "Number of partitions for the topic (optional, uses broker default if not specified)."
+                        "description": "The number of partitions for the topic. If not specified, the broker default is used."
                     },
                     "replication_factor": {
                         "type": ["integer", "null"],
-                        "description": "Number of replicas for each partition (optional, uses broker default if not specified)."
+                        "description": "The number of replicas for each partition. If not specified, the broker default is used."
                     }
                 },
                 "additionalProperties": false,

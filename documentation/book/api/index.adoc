@@ -3123,7 +3123,7 @@ A record consumed from a Kafka topic.
 | 
 | 
 |   Long  
-| Timestamp of the record in milliseconds since epoch.
+| The record timestamp, in milliseconds since the Unix epoch.
 | int64    
 
 | headers
@@ -3224,7 +3224,7 @@ A Kafka record header containing a key-value pair.
 | X
 | 
 |   byte[]  
-| The header value in binary format, base64-encoded.
+| The header value in binary format, encoded as Base64.
 | byte    
 
 |===
@@ -3253,14 +3253,14 @@ Specification for creating a new Kafka topic.
 | 
 | X
 |   Integer  
-| Number of partitions for the topic (optional, uses broker default if not specified).
+| The number of partitions for the topic. If not specified, the broker default is used.
 |     
 
 | replication_factor
 | 
 | X
 |   Integer  
-| Number of replicas for each partition (optional, uses broker default if not specified).
+| The number of replicas for each partition. If not specified, the broker default is used.
 |     
 
 |===
@@ -3357,7 +3357,7 @@ Offset information for a successfully sent record.
 [#OffsetRecordSentList]
 === _OffsetRecordSentList_ OffsetRecordSentList
 
-List of offset information for sent records, which may include errors for individual records.
+List of offset information for sent records, which might include errors for individual records.
 
 
 [.fields-OffsetRecordSentList]
@@ -3571,14 +3571,14 @@ A record to be sent to a Kafka topic.
 | 
 | 
 |   Integer  
-| Target partition for the record (optional, will be determined by partitioner if not specified).
+| The target partition for the record. If not specified, the partitioner determines the partition.
 | int32    
 
 | timestamp
 | 
 | 
 |   Long  
-| Timestamp for the record in milliseconds since epoch (optional, will use current time if not specified).
+| The record timestamp, in milliseconds since the Unix epoch. If not specified, the current time is used.
 | int64    
 
 | headers
@@ -3724,14 +3724,14 @@ Information about a partition replica.
 | 
 | 
 |   Boolean  
-| Whether this replica is the partition leader.
+| Indicates whether the replica is the partition leader.
 |     
 
 | in_sync
 | 
 | 
 |   Boolean  
-| Whether this replica is in-sync with the leader.
+| Indicates whether the replica is in-sync with the leader.
 |     
 
 |===
