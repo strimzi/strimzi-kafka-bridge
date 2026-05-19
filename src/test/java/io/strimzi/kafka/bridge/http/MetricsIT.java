@@ -4,6 +4,8 @@
  */
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
@@ -12,12 +14,9 @@ import io.strimzi.kafka.bridge.httpclient.HttpConsumerService;
 import io.strimzi.kafka.bridge.httpclient.HttpProducerService;
 import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
 import io.strimzi.kafka.bridge.objects.BridgeTestContext;
-import io.strimzi.kafka.bridge.objects.ReceivedMessage;
 import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpResponse;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -68,14 +67,11 @@ public class MetricsIT extends AbstractIT {
 
         String value = "test-message-for-metrics";
 
-        Map<String, Object> records = Map.of(
-            "records", List.of(
-                Map.of("value", value)
-            )
-        );
+        ObjectNode records = MAPPER.createObjectNode();
+        records.putArray("records").add(MAPPER.createObjectNode().put("value", value));
 
         HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
-        httpProducerService.sendJsonRecordsRequest(bridgeTestContext.getTopicName(), records, BridgeContentType.KAFKA_JSON_JSON);
+        httpProducerService.sendJsonNodeRecordsRequest(bridgeTestContext.getTopicName(), records, BridgeContentType.KAFKA_JSON_JSON);
 
         // Check metrics after producer activity
         HttpResponse<String> metricsResponse = bridgeTestContext.getManagementHttpService().get("/metrics");
@@ -106,10 +102,9 @@ public class MetricsIT extends AbstractIT {
 
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        Map<String, Object> consumerConfig = Map.of(
-            "name", name,
-            "format", "json"
-        );
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json");
 
         // consumer creation + subscription
         httpConsumerService.createConsumer(groupId, consumerConfig);
@@ -119,9 +114,9 @@ public class MetricsIT extends AbstractIT {
         HttpResponse<String> consumeResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
         assertThat(consumeResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage[] receivedMessages = HttpResponseUtils.getReceivedMessagesFromResponse(consumeResponse.body());
-        assertThat(receivedMessages.length, greaterThan(0));
-        assertThat(receivedMessages[0].value(), is(sentBody));
+        JsonNode receivedMessages = HttpResponseUtils.getResponseAsJsonNode(consumeResponse.body());
+        assertThat(receivedMessages.size(), greaterThan(0));
+        assertThat(receivedMessages.get(0).get("value").asText(), is(sentBody));
 
         // check metrics after consumer activity
         HttpResponse<String> metricsResponse = bridgeTestContext.getManagementHttpService().get("/metrics");
@@ -145,14 +140,11 @@ public class MetricsIT extends AbstractIT {
 
         String value = "test-message-for-executor-metrics";
 
-        Map<String, Object> records = Map.of(
-            "records", List.of(
-                Map.of("value", value)
-            )
-        );
+        ObjectNode records = MAPPER.createObjectNode();
+        records.putArray("records").add(MAPPER.createObjectNode().put("value", value));
 
         HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
-        httpProducerService.sendJsonRecordsRequest(bridgeTestContext.getTopicName(), records, BridgeContentType.KAFKA_JSON_JSON);
+        httpProducerService.sendJsonNodeRecordsRequest(bridgeTestContext.getTopicName(), records, BridgeContentType.KAFKA_JSON_JSON);
 
         // check metrics after producer activity to verify executor metrics
         HttpResponse<String> metricsResponse = bridgeTestContext.getManagementHttpService().get("/metrics");

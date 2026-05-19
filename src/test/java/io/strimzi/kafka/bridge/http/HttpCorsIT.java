@@ -15,8 +15,6 @@ import io.strimzi.kafka.bridge.configuration.ConfigEntry;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
 import io.strimzi.kafka.bridge.http.base.AbstractIT;
 import io.strimzi.kafka.bridge.objects.BridgeTestContext;
-import io.strimzi.kafka.bridge.objects.MessageRecord;
-import io.strimzi.kafka.bridge.objects.Records;
 import io.vertx.core.http.HttpMethod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -163,18 +161,10 @@ public class HttpCorsIT extends AbstractIT {
 
         final String origin = "https://strimzi.io";
 
-        Records records = new Records(List.of(new MessageRecord("my-key", "my-value")));
+        ObjectNode root = objectMapper.createObjectNode();
+        root.putArray("records").add(objectMapper.createObjectNode().put("key", "my-key").put("value", "my-value"));
 
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        String messages;
-
-        try {
-            messages = objectMapper.writeValueAsString(records);
-        } catch (Exception e) {
-            LOGGER.error("Failed to write records as JSON String due to: ", e);
-            throw new RuntimeException(e);
-        }
+        String messages = root.toString();
 
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().post("/topics/" + bridgeTestContext.getTopicName(), messages, List.of("Origin", origin));
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));

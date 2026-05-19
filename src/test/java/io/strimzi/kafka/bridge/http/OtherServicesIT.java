@@ -4,6 +4,7 @@
  */
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
 import io.strimzi.kafka.bridge.http.base.AbstractIT;
@@ -16,7 +17,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -50,8 +50,8 @@ public class OtherServicesIT extends AbstractIT {
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get("/openapi/v3");
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        assertThat(responseBody.get("openapi"), is("3.1.0"));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("openapi").asText(), is("3.1.0"));
     }
 
     @Test
@@ -59,75 +59,74 @@ public class OtherServicesIT extends AbstractIT {
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get("/openapi");
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
-        assertThat(responseBody.get("openapi"), is("3.1.0"));
+        assertThat(responseBody.get("openapi").asText(), is("3.1.0"));
 
-        Map<String, Object> paths = (Map<String, Object>) responseBody.get("paths");
+        JsonNode paths = responseBody.get("paths");
         // subscribe, list subscriptions and unsubscribe are using the same endpoint but different methods (-2)
         // getTopic and send are using the same endpoint but different methods (-1)
         // getPartition and sendToPartition are using the same endpoint but different methods (-1)
         int pathsSize = HttpOpenApiOperations.values().length - 4;
         assertThat(paths.size(), is(pathsSize));
 
-        assertThat(paths.containsKey("/consumers/{groupid}"), is(true));
+        assertThat(paths.has("/consumers/{groupid}"), is(true));
         assertThat(getOperationId(paths, "/consumers/{groupid}", "post"), is(HttpOpenApiOperations.CREATE_CONSUMER.toString()));
 
-        assertThat(paths.containsKey("/consumers/{groupid}/instances/{name}/positions"), is(true));
+        assertThat(paths.has("/consumers/{groupid}/instances/{name}/positions"), is(true));
         assertThat(getOperationId(paths, "/consumers/{groupid}/instances/{name}/positions", "post"), is(HttpOpenApiOperations.SEEK.toString()));
 
-        assertThat(paths.containsKey("/consumers/{groupid}/instances/{name}/positions/beginning"), is(true));
+        assertThat(paths.has("/consumers/{groupid}/instances/{name}/positions/beginning"), is(true));
         assertThat(getOperationId(paths, "/consumers/{groupid}/instances/{name}/positions/beginning", "post"), is(HttpOpenApiOperations.SEEK_TO_BEGINNING.toString()));
 
-        assertThat(paths.containsKey("/consumers/{groupid}/instances/{name}/positions/end"), is(true));
+        assertThat(paths.has("/consumers/{groupid}/instances/{name}/positions/end"), is(true));
         assertThat(getOperationId(paths, "/consumers/{groupid}/instances/{name}/positions/end", "post"), is(HttpOpenApiOperations.SEEK_TO_END.toString()));
 
-        assertThat(paths.containsKey("/consumers/{groupid}/instances/{name}/subscription"), is(true));
+        assertThat(paths.has("/consumers/{groupid}/instances/{name}/subscription"), is(true));
         assertThat(getOperationId(paths, "/consumers/{groupid}/instances/{name}/subscription", "post"), is(HttpOpenApiOperations.SUBSCRIBE.toString()));
         assertThat(getOperationId(paths, "/consumers/{groupid}/instances/{name}/subscription", "delete"), is(HttpOpenApiOperations.UNSUBSCRIBE.toString()));
         assertThat(getOperationId(paths, "/consumers/{groupid}/instances/{name}/subscription", "get"), is(HttpOpenApiOperations.LIST_SUBSCRIPTIONS.toString()));
 
-        assertThat(paths.containsKey("/consumers/{groupid}/instances/{name}/assignments"), is(true));
+        assertThat(paths.has("/consumers/{groupid}/instances/{name}/assignments"), is(true));
         assertThat(getOperationId(paths, "/consumers/{groupid}/instances/{name}/assignments", "post"), is(HttpOpenApiOperations.ASSIGN.toString()));
 
-        assertThat(paths.containsKey("/consumers/{groupid}/instances/{name}/records"), is(true));
+        assertThat(paths.has("/consumers/{groupid}/instances/{name}/records"), is(true));
         assertThat(getOperationId(paths, "/consumers/{groupid}/instances/{name}/records", "get"), is(HttpOpenApiOperations.POLL.toString()));
 
-        assertThat(paths.containsKey("/consumers/{groupid}/instances/{name}/offsets"), is(true));
+        assertThat(paths.has("/consumers/{groupid}/instances/{name}/offsets"), is(true));
         assertThat(getOperationId(paths, "/consumers/{groupid}/instances/{name}/offsets", "post"), is(HttpOpenApiOperations.COMMIT.toString()));
 
-        assertThat(paths.containsKey("/topics"), is(true));
-        assertThat(paths.containsKey("/topics/{topicname}"), is(true));
+        assertThat(paths.has("/topics"), is(true));
+        assertThat(paths.has("/topics/{topicname}"), is(true));
         assertThat(getOperationId(paths, "/topics/{topicname}", "post"), is(HttpOpenApiOperations.SEND.toString()));
 
-        assertThat(paths.containsKey("/topics/{topicname}/partitions/{partitionid}"), is(true));
-        assertThat(paths.containsKey("/topics/{topicname}/partitions/{partitionid}/offsets"), is(true));
-        assertThat(paths.containsKey("/topics/{topicname}/partitions"), is(true));
+        assertThat(paths.has("/topics/{topicname}/partitions/{partitionid}"), is(true));
+        assertThat(paths.has("/topics/{topicname}/partitions/{partitionid}/offsets"), is(true));
+        assertThat(paths.has("/topics/{topicname}/partitions"), is(true));
         assertThat(getOperationId(paths, "/topics/{topicname}/partitions/{partitionid}", "post"), is(HttpOpenApiOperations.SEND_TO_PARTITION.toString()));
 
-        assertThat(paths.containsKey("/admin/topics"), is(true));
+        assertThat(paths.has("/admin/topics"), is(true));
         assertThat(getOperationId(paths, "/admin/topics", "post"), is(HttpOpenApiOperations.CREATE_TOPIC.toString()));
 
-        assertThat(paths.containsKey("/healthy"), is(true));
+        assertThat(paths.has("/healthy"), is(true));
         assertThat(getOperationId(paths, "/healthy", "get"), is(HttpOpenApiOperations.HEALTHY.toString()));
 
-        assertThat(paths.containsKey("/ready"), is(true));
+        assertThat(paths.has("/ready"), is(true));
         assertThat(getOperationId(paths, "/ready", "get"), is(HttpOpenApiOperations.READY.toString()));
 
-        assertThat(paths.containsKey("/openapi"), is(true));
+        assertThat(paths.has("/openapi"), is(true));
         assertThat(getOperationId(paths, "/openapi", "get"), is(HttpOpenApiOperations.OPENAPI.toString()));
 
-        assertThat(paths.containsKey("/"), is(true));
+        assertThat(paths.has("/"), is(true));
         assertThat(getOperationId(paths, "/", "get"), is(HttpOpenApiOperations.INFO.toString()));
 
-        assertThat(paths.containsKey("/karel"), is(false));
+        assertThat(paths.has("/karel"), is(false));
 
-        Map<String, Object> components = (Map<String, Object>) responseBody.get("components");
-        Map<String, Object> schemas = (Map<String, Object>) components.get("schemas");
+        JsonNode schemas = responseBody.get("components").get("schemas");
         assertThat(schemas.size(), is(28));
 
-        Object[] tags = (Object[]) responseBody.get("tags");
-        assertThat(tags.length, is(4));
+        JsonNode tags = responseBody.get("tags");
+        assertThat(tags.size(), is(4));
     }
 
     @Test
@@ -135,7 +134,7 @@ public class OtherServicesIT extends AbstractIT {
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().post("/not-existing-endpoint", "");
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
     }
 
@@ -144,7 +143,7 @@ public class OtherServicesIT extends AbstractIT {
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get("/");
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
         assertThat(responseBody.get("bridge_version"), is(notNullValue()));
     }
 
@@ -164,8 +163,8 @@ public class OtherServicesIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        assertThat(responseBody.get("basePath"), is(forwardedPath));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("basePath").asText(), is(forwardedPath));
     }
 
     @Test
@@ -184,8 +183,8 @@ public class OtherServicesIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        assertThat(responseBody.get("basePath"), is(forwardedPrefix));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("basePath").asText(), is(forwardedPrefix));
     }
 
     @Test
@@ -206,13 +205,11 @@ public class OtherServicesIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        assertThat(responseBody.get("basePath"), is(forwardedPath));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("basePath").asText(), is(forwardedPath));
     }
 
-    private String getOperationId(Map<String, Object> paths, String path, String method) {
-        Map<String, Object> pathObj = (Map<String, Object>) paths.get(path);
-        Map<String, Object> methodObj = (Map<String, Object>) pathObj.get(method);
-        return (String) methodObj.get("operationId");
+    private String getOperationId(JsonNode paths, String path, String method) {
+        return paths.get(path).get(method).get("operationId").asText();
     }
 }

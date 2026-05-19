@@ -40,10 +40,6 @@ public class Consumer<K, V> {
         this.valueDeserializer = valueDeserializer;
     }
 
-    public Consumer(String bootstrapServer, String topic, int messageCount) {
-        this(createDefaultProperties(bootstrapServer), topic, messageCount, null, null);
-    }
-
     public List<ConsumerRecord<K, V>> receiveMessages() {
         LOGGER.info("Consumer is starting with following properties: {}", properties.toString());
 

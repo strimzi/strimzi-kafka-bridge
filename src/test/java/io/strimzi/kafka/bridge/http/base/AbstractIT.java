@@ -7,15 +7,11 @@ package io.strimzi.kafka.bridge.http.base;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.strimzi.kafka.bridge.facades.AdminClientFacade;
 import io.strimzi.kafka.bridge.objects.BridgeTestContext;
-import io.strimzi.kafka.bridge.objects.MessageRecord;
-import io.strimzi.kafka.bridge.objects.Records;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.params.Parameter;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 public abstract class AbstractIT {
@@ -52,27 +48,6 @@ public abstract class AbstractIT {
             future.get();
         } catch (Exception e) {
             LOGGER.error("Failed to create KafkaTopic: {} due to: ", topicName, e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void sendMessages(BridgeTestContext bridgeTestContext, int messageCount) {
-        List<MessageRecord> recordList = new ArrayList<>();
-
-        for (int i = 0; i < messageCount; i++) {
-            recordList.add(new MessageRecord("key-" + i, "hello-world-" + i));
-        }
-
-        Records records = new Records(recordList);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        try {
-            String messages = objectMapper.writeValueAsString(records);
-
-            bridgeTestContext.getHttpService().post("/topics/" + bridgeTestContext.getTopicName(), messages);
-        } catch (Exception e) {
-            LOGGER.error("Failed to write records as JSON String due to: ", e);
             throw new RuntimeException(e);
         }
     }
