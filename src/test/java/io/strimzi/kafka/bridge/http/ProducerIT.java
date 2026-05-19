@@ -53,7 +53,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendSimpleMessage(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String value = "message-value";
 
@@ -79,7 +79,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendMessagesToMultiplePartitions(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 3);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 3);
 
         String value = "message-value";
 
@@ -120,7 +120,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendSimpleMessageToPartition(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 2);
 
         String value = "message-value";
         int partition = 1;
@@ -147,7 +147,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendSimpleMessageWithTimestamp(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String value = "message-value";
         long timestamp = System.currentTimeMillis();
@@ -175,7 +175,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendSimpleMessageWithKey(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 2);
 
         String value = "message-value";
         String key = "my-key";
@@ -202,7 +202,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendSimpleMessageWithArrayKey(BridgeTestContext bridgeTestContext) throws Exception {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 2);
 
         String value = "message-value";
         ArrayNode key = MAPPER.createArrayNode();
@@ -231,7 +231,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendSimpleMessageWithArrayValue(BridgeTestContext bridgeTestContext) throws Exception {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 2);
 
         ArrayNode value = MAPPER.createArrayNode();
         value.add("some-element").add(MAPPER.createObjectNode().put("some-field", "element-2"));
@@ -260,7 +260,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendBinaryMessageWithKey(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 2);
 
         String value = "message-value";
         String key = "my-key-bin";
@@ -289,7 +289,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendTextMessage(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String value = "message-value";
 
@@ -316,7 +316,7 @@ public class ProducerIT extends AbstractIT {
     @SuppressWarnings("checkstyle:MethodLength")
     void sendSimpleMessageWithHeaders(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 2);
 
         String value = "message-value";
 
@@ -363,7 +363,7 @@ public class ProducerIT extends AbstractIT {
     @SuppressWarnings("checkstyle:MethodLength")
     void sendPeriodicMessage(BridgeTestContext bridgeTestContext) throws InterruptedException {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
 
@@ -396,7 +396,7 @@ public class ProducerIT extends AbstractIT {
     @SuppressWarnings("checkstyle:MethodLength")
     void sendMultipleMessages(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String value = "message-value";
         int numMessages = MULTIPLE_MAX_MESSAGE;
@@ -438,7 +438,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void emptyRecordTest(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         ObjectNode root = MAPPER.createObjectNode();
 
@@ -453,7 +453,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendTextMessageWithWrongValue(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         ObjectNode valueObj = MAPPER.createObjectNode().put("message", "Hi, This is kafka bridge");
 
@@ -473,7 +473,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendTextMessageWithWrongKey(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         ObjectNode keyObj = MAPPER.createObjectNode().put("my-key", "This is a json key");
 
@@ -496,7 +496,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendMessageWithNullValueTest(BridgeTestContext bridgeTestContext) {
         String topic = "sendMessageWithNullValueTest";
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 1);
 
         String key = "my-key";
 
@@ -526,7 +526,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendToNonExistingPartitionsTest(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 3);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 3);
 
         String value = "Hi, This is kafka bridge";
         int partition = 1000;
@@ -571,7 +571,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendToOnePartitionTest(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 3);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 3);
 
         String value = "Hi, This is kafka bridge";
         int partition = 1;
@@ -596,7 +596,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendToOneStringPartitionTest(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 3);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 3);
 
         String value = "Hi, This is kafka bridge";
         String partition = "karel";
@@ -616,7 +616,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendToBothPartitionTest(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 3);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 3);
 
         String value = "Hi, This is kafka bridge";
         int partition = 1;
@@ -640,7 +640,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendMessageLackingRequiredProperty(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String key = "my-key";
 
@@ -663,7 +663,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendMessageWithUnknownProperty(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String value = "message-value";
 
@@ -708,7 +708,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendMultipleRecordsWithOneInvalidPartitionTest(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 3);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 3);
 
         String value = "Hi, This is kafka bridge";
         int partition = 1;
@@ -740,7 +740,7 @@ public class ProducerIT extends AbstractIT {
     @SuppressWarnings("checkstyle:MethodLength")
     void jsonPayloadTest(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 3);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 3);
 
         String value = "Hello from the other side";
         String key = "message-key";
@@ -798,7 +798,7 @@ public class ProducerIT extends AbstractIT {
     @SuppressWarnings("checkstyle:MethodLength")
     void sendAsyncMessages(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String value = "message-value";
         int numMessages = MULTIPLE_MAX_MESSAGE;
@@ -830,7 +830,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendWithWrongAsync(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String value = "message-value";
 
@@ -850,7 +850,7 @@ public class ProducerIT extends AbstractIT {
     @Test
     void sendSimpleMessageWithWrongContentType(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String value = "message-value";
 

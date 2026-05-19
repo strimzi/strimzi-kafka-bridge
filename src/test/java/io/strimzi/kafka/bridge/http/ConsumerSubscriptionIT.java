@@ -36,7 +36,7 @@ public class ConsumerSubscriptionIT extends AbstractIT {
     void unsubscribeConsumerNotFound(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         HttpResponse<String> httpResponse = httpConsumerService.unsubscribeConsumerRequest(groupId, name, List.of(bridgeTestContext.getTopicName()));
 
@@ -80,7 +80,7 @@ public class ConsumerSubscriptionIT extends AbstractIT {
     void subscriptionConsumerDoesNotExistBecauseNotCreated(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         HttpResponse<String> httpResponse = httpConsumerService.subscribeConsumerRequest(groupId, name, List.of(bridgeTestContext.getTopicName()));
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
@@ -94,7 +94,7 @@ public class ConsumerSubscriptionIT extends AbstractIT {
     void subscriptionConsumerEmptyTopics(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         httpConsumerService.createConsumer(groupId, consumer);
         httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
@@ -131,7 +131,7 @@ public class ConsumerSubscriptionIT extends AbstractIT {
     void subscriptionConsumerDoesNotExistBecauseAnotherGroup(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         httpConsumerService.createConsumer(groupId, consumer);
 
@@ -155,8 +155,8 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         String topic = bridgeTestContext.getTopicName() + "-0";
         String topic2 = bridgeTestContext.getTopicName() + "-1";
 
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 1);
-        createTopic(topic2, bridgeTestContext.getAdminClientFacade(), 4);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic2, 4);
 
         httpConsumerService.createConsumer(groupId, consumer);
         httpConsumerService.subscribeConsumer(groupId, name, List.of(topic, topic2));
@@ -214,7 +214,7 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 4);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 4);
 
         httpConsumerService.createConsumer(groupId, consumer);
         httpConsumerService.subscribeConsumer(groupId, name, topic);
@@ -239,7 +239,7 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 4);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 4);
 
         httpConsumerService.createConsumer(groupId, consumer);
 

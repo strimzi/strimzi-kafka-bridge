@@ -394,7 +394,7 @@ public class ConsumerIT extends AbstractIT {
     void receiveSimpleMessage(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
         String sentBody = "Simple message";
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
 
@@ -424,7 +424,7 @@ public class ConsumerIT extends AbstractIT {
     void receiveMessageWithTimestamp(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
         long timestamp = System.currentTimeMillis();
@@ -452,7 +452,7 @@ public class ConsumerIT extends AbstractIT {
     void receiveTextMessage(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
         bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(bridgeTestContext.getTopicName(), sentBody, 1, 0, true);
@@ -487,7 +487,7 @@ public class ConsumerIT extends AbstractIT {
     void receiveSimpleMessageWithHeaders(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
         List<Header> headers = new ArrayList<>();
@@ -537,7 +537,7 @@ public class ConsumerIT extends AbstractIT {
     void receiveBinaryMessage(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
         // TODO: make client to producer binary data..
@@ -578,8 +578,8 @@ public class ConsumerIT extends AbstractIT {
 
         String message = "Simple message";
 
-        createTopic(topic1, bridgeTestContext.getAdminClientFacade(), 1);
-        createTopic(topic2, bridgeTestContext.getAdminClientFacade(), 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic1, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic2, 1);
 
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic1, 1, message, 0, true);
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic2, 1, message, 0, true);
@@ -625,9 +625,9 @@ public class ConsumerIT extends AbstractIT {
 
         String message = "Simple message";
 
-        createTopic(topic1, bridgeTestContext.getAdminClientFacade(), 1);
-        createTopic(topic2, bridgeTestContext.getAdminClientFacade(), 1);
-        createTopic(topic3, bridgeTestContext.getAdminClientFacade(), 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic1, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic2, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic3, 1);
 
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic1, 1, message, 0, true);
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic2, 1, message, 0, true);
@@ -658,7 +658,7 @@ public class ConsumerIT extends AbstractIT {
     void receiveSimpleMessageFromPartition(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
         int partition = 1;
         String sentBody = "Simple message from partition";
@@ -694,7 +694,7 @@ public class ConsumerIT extends AbstractIT {
     void receiveSimpleMessageFromMultiplePartitions(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
         String sentBody = "value";
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
@@ -741,7 +741,7 @@ public class ConsumerIT extends AbstractIT {
     void commitOffset(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
 
@@ -788,7 +788,7 @@ public class ConsumerIT extends AbstractIT {
     void commitEmptyOffset(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
@@ -892,7 +892,7 @@ public class ConsumerIT extends AbstractIT {
     void doNotRespondTooLongMessage(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(bridgeTestContext.getTopicName(), 1);
 
@@ -917,7 +917,7 @@ public class ConsumerIT extends AbstractIT {
     void doNotReceiveMessageAfterUnsubscribe(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String message = "Simple message";
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, message, 0, true);
@@ -962,7 +962,7 @@ public class ConsumerIT extends AbstractIT {
     void formatAndAcceptMismatch(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
@@ -989,7 +989,7 @@ public class ConsumerIT extends AbstractIT {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         ObjectNode sentKey = MAPPER.createObjectNode();
         sentKey.put("f1", "v1");
@@ -1047,7 +1047,7 @@ public class ConsumerIT extends AbstractIT {
     void tryReceiveNotValidJsonMessage(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         // send a simple String which is not JSON encoded
         bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(bridgeTestContext.getTopicName(), 1);
@@ -1104,7 +1104,7 @@ public class ConsumerIT extends AbstractIT {
         httpConsumerService.assignPartitions(groupId, name, assignmentBody);
 
         // create topic
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         // send message
         String sentBody = "Simple message";
@@ -1132,7 +1132,7 @@ public class ConsumerIT extends AbstractIT {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
         // create topic
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         // send message
         String sentBody = "Simple message";

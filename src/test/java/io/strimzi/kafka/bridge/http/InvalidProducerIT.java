@@ -33,7 +33,7 @@ public class InvalidProducerIT extends AbstractIT {
     void sendSimpleMessage(BridgeTestContext bridgeTestContext) {
         HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         ObjectNode root = MAPPER.createObjectNode();
         root.putArray("records").add(MAPPER.createObjectNode().put("value", "message-value"));

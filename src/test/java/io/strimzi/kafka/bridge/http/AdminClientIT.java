@@ -27,8 +27,8 @@ public class AdminClientIT extends AbstractIT {
 
     @Test
     void testListKafkaTopics(BridgeTestContext bridgeTestContext) {
-        createTopic("my-topic", bridgeTestContext.getAdminClientFacade(), 1);
-        createTopic("my-second-topic", bridgeTestContext.getAdminClientFacade(), 1);
+        bridgeTestContext.getAdminClientFacade().createTopic("my-topic", 1);
+        bridgeTestContext.getAdminClientFacade().createTopic("my-second-topic", 1);
 
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get("/topics");
 
@@ -42,7 +42,7 @@ public class AdminClientIT extends AbstractIT {
 
     @Test
     void testGetTopic(BridgeTestContext bridgeTestContext) {
-        createTopic(bridgeTestContext, 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get("/topics/" + bridgeTestContext.getTopicName());
 
@@ -77,7 +77,7 @@ public class AdminClientIT extends AbstractIT {
 
     @Test
     void testListingPartitions(BridgeTestContext bridgeTestContext) {
-        createTopic(bridgeTestContext, 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions", bridgeTestContext.getTopicName()));
 
@@ -104,7 +104,7 @@ public class AdminClientIT extends AbstractIT {
 
     @Test
     void testGetPartition(BridgeTestContext bridgeTestContext) {
-        createTopic(bridgeTestContext, 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions/0", bridgeTestContext.getTopicName()));
 
@@ -126,7 +126,7 @@ public class AdminClientIT extends AbstractIT {
 
     @Test
     void testGetOffsetSummary(BridgeTestContext bridgeTestContext) {
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(bridgeTestContext.getTopicName(), 5);
 

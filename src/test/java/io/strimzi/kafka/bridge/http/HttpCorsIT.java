@@ -157,7 +157,7 @@ public class HttpCorsIT extends AbstractIT {
     )
     @Test
     public void testCorsOriginAllowedProducer(BridgeTestContext bridgeTestContext) {
-        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName());
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1, 1);
 
         final String origin = "https://strimzi.io";
 

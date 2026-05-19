@@ -63,7 +63,7 @@ public class MetricsIT extends AbstractIT {
 
     @Test
     void metricsAfterProducerSendRecordTest(BridgeTestContext bridgeTestContext) {
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String value = "test-message-for-metrics";
 
@@ -92,7 +92,7 @@ public class MetricsIT extends AbstractIT {
 
     @Test
     void metricsAfterConsumerReceiveRecordTest(BridgeTestContext bridgeTestContext) {
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String groupId = generateRandomConsumerGroupName();
         String name = generateRandomConsumerName();
@@ -136,7 +136,7 @@ public class MetricsIT extends AbstractIT {
 
     @Test
     void metricsExecutorTest(BridgeTestContext bridgeTestContext) {
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String value = "test-message-for-executor-metrics";
 

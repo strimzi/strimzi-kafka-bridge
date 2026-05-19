@@ -88,7 +88,7 @@ public class SeekIT extends AbstractIT {
     @Test
     void seekToBeginningAndReceive(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
@@ -126,7 +126,7 @@ public class SeekIT extends AbstractIT {
     @Test
     void seekToEndAndReceive(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
@@ -163,7 +163,7 @@ public class SeekIT extends AbstractIT {
     @SuppressWarnings("checkstyle:MethodLength")
     void seekToOffsetAndReceive(BridgeTestContext bridgeTestContext) {
         String topic = "seekToOffsetAndReceive-" + bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 2);
 
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
@@ -229,8 +229,8 @@ public class SeekIT extends AbstractIT {
 
         LOGGER.info("Creating topics {}, {}", subscribedTopic, notSubscribedTopic);
 
-        createTopic(subscribedTopic, bridgeTestContext.getAdminClientFacade(), 1);
-        createTopic(notSubscribedTopic, bridgeTestContext.getAdminClientFacade(), 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(subscribedTopic, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(notSubscribedTopic, 1);
 
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
@@ -295,8 +295,8 @@ public class SeekIT extends AbstractIT {
 
         LOGGER.info("Creating topics {}, {}", subscribedTopic, notSubscribedTopic);
 
-        createTopic(subscribedTopic, bridgeTestContext.getAdminClientFacade(), 1);
-        createTopic(notSubscribedTopic, bridgeTestContext.getAdminClientFacade(), 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(subscribedTopic, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(notSubscribedTopic, 1);
 
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
