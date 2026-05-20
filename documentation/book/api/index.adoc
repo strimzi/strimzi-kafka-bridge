@@ -12,7 +12,7 @@
 = HTTP Bridge API Reference
 
 == Introduction
-The HTTP Bridge provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. 
+The HTTP Bridge provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol.
 
 
 // markup not found, no include::{specDir}intro.adoc[opts=optional]
@@ -641,7 +641,7 @@ array[<<ConsumerRecord>>]
 
 
 | 422
-| Response exceeds the maximum number of bytes the consumer can receive
+| Response exceeds the maximum number of bytes the consumer can receive.
 |  <<Error>>
 
 |===
@@ -1250,12 +1250,12 @@ Check if the bridge is running. This does not necessarily imply that it is ready
 
 
 | 200
-| The bridge is healthy
+| The bridge is healthy.
 |  <<>>
 
 
 | 500
-| The bridge is not healthy
+| The bridge is not healthy.
 |  <<>>
 
 |===
@@ -1611,12 +1611,12 @@ Check if the bridge is ready and can accept requests.
 
 
 | 200
-| The bridge is ready
+| The bridge is ready.
 |  <<>>
 
 
 | 500
-| The bridge is not ready
+| The bridge is not ready.
 |  <<>>
 
 |===
@@ -2277,7 +2277,7 @@ Creates a topic with given name, partitions count, and replication factor.
 
 
 | 201
-| Created
+| Created.
 |  <<>>
 
 |===
@@ -2460,7 +2460,7 @@ Retrieves partition metadata for the topic partition.
 
 
 | 200
-| Partition metadata
+| Partition metadata.
 |  <<PartitionMetadata>>
 
 
@@ -2548,7 +2548,7 @@ Retrieves the metadata about a given topic.
 
 
 | 200
-| Topic metadata
+| Topic metadata.
 |  <<TopicMetadata>>
 
 
@@ -3002,7 +3002,7 @@ Information about HTTP Bridge instance.
 | 
 | 
 |   String  
-| 
+| Version of the Strimzi Kafka Bridge.
 |     
 
 |===
@@ -3031,7 +3031,7 @@ Information about HTTP Bridge instance.
 | 
 | 
 |   String  
-| The allowable message format for the consumer, which can be &#x60;binary&#x60; (default) or &#x60;json&#x60;. The messages are converted into a JSON format. 
+| The allowable message format for the consumer, which can be &#x60;binary&#x60; (default) or &#x60;json&#x60;. The messages are converted into a JSON format.
 |     
 
 | auto.offset.reset
@@ -3076,7 +3076,7 @@ Information about HTTP Bridge instance.
 [#ConsumerRecord]
 === _ConsumerRecord_ ConsumerRecord
 
-
+A record consumed from a Kafka topic.
 
 
 [.fields-ConsumerRecord]
@@ -3084,31 +3084,17 @@ Information about HTTP Bridge instance.
 |===
 | Field Name| Required| Nullable | Type| Description | Format
 
-| key
-| 
-| 
-| <<RecordKey>>    
-| 
-|     
-
-| offset
-| 
-| 
-|   Long  
-| 
-| int64    
-
-| partition
-| 
-| 
-|   Integer  
-| 
-| int32    
-
 | topic
 | 
 | 
 |   String  
+| Topic name from which the record was consumed.
+|     
+
+| key
+| 
+| 
+| <<RecordKey>>    
 | 
 |     
 
@@ -3119,19 +3105,33 @@ Information about HTTP Bridge instance.
 | 
 |     
 
-| headers
+| partition
 | 
 | 
-|   List   of <<KafkaHeader>>
+|   Integer  
+| Partition number from which the record was consumed.
+| int32    
+
+| offset
 | 
-|     
+| 
+|   Long  
+| Offset of the record in the partition.
+| int64    
 
 | timestamp
 | 
 | 
 |   Long  
-| 
+| The record timestamp, in milliseconds since the Unix epoch.
 | int64    
+
+| headers
+| 
+| 
+|   List   of <<KafkaHeader>>
+| List of Kafka record headers.
+|     
 
 |===
 
@@ -3140,7 +3140,7 @@ Information about HTTP Bridge instance.
 [#CreatedConsumer]
 === _CreatedConsumer_ CreatedConsumer
 
-
+Response containing details of a newly created consumer instance.
 
 
 [.fields-CreatedConsumer]
@@ -3169,7 +3169,7 @@ Information about HTTP Bridge instance.
 [#Error]
 === _Error_ Error
 
-
+Error response returned by the HTTP Bridge.
 
 
 [.fields-Error]
@@ -3181,21 +3181,21 @@ Information about HTTP Bridge instance.
 | 
 | 
 |   Integer  
-| 
+| HTTP status code or Kafka error code.
 | int32    
 
 | message
 | 
 | 
 |   String  
-| 
+| Detailed error message.
 |     
 
 | validation_errors
 | 
 | 
 |   List   of <<string>>
-| 
+| List of validation errors (if applicable).
 |     
 
 |===
@@ -3205,7 +3205,7 @@ Information about HTTP Bridge instance.
 [#KafkaHeader]
 === _KafkaHeader_ KafkaHeader
 
-
+A Kafka record header containing a key-value pair.
 
 
 [.fields-KafkaHeader]
@@ -3217,14 +3217,14 @@ Information about HTTP Bridge instance.
 | X
 | 
 |   String  
-| 
+| Header key name.
 |     
 
 | value
 | X
 | 
 |   byte[]  
-| The header value in binary format, base64-encoded
+| The header value in binary format, encoded as Base64.
 | byte    
 
 |===
@@ -3234,7 +3234,7 @@ Information about HTTP Bridge instance.
 [#NewTopic]
 === _NewTopic_ NewTopic
 
-
+Specification for creating a new Kafka topic.
 
 
 [.fields-NewTopic]
@@ -3253,14 +3253,14 @@ Information about HTTP Bridge instance.
 | 
 | X
 |   Integer  
-| Number of partitions for the topic.
+| The number of partitions for the topic. If not specified, the broker default is used.
 |     
 
 | replication_factor
 | 
 | X
 |   Integer  
-| Number of replicas for each partition.
+| The number of replicas for each partition. If not specified, the broker default is used.
 |     
 
 |===
@@ -3270,7 +3270,7 @@ Information about HTTP Bridge instance.
 [#OffsetCommitSeek]
 === _OffsetCommitSeek_ OffsetCommitSeek
 
-
+Offset position for committing or seeking to a specific offset in a topic partition.
 
 
 [.fields-OffsetCommitSeek]
@@ -3278,26 +3278,26 @@ Information about HTTP Bridge instance.
 |===
 | Field Name| Required| Nullable | Type| Description | Format
 
+| topic
+| X
+| 
+|   String  
+| Topic name.
+|     
+
 | partition
 | X
 | 
 |   Integer  
-| 
+| Partition number.
 | int32    
 
 | offset
 | X
 | 
 |   Long  
-| 
+| Offset position in the partition.
 | int64    
-
-| topic
-| X
-| 
-|   String  
-| 
-|     
 
 |===
 
@@ -3306,7 +3306,7 @@ Information about HTTP Bridge instance.
 [#OffsetCommitSeekList]
 === _OffsetCommitSeekList_ OffsetCommitSeekList
 
-
+List of offset positions for committing or seeking across multiple topic partitions.
 
 
 [.fields-OffsetCommitSeekList]
@@ -3318,7 +3318,7 @@ Information about HTTP Bridge instance.
 | 
 | 
 |   List   of <<OffsetCommitSeek>>
-| 
+| Array of offset positions for topic partitions.
 |     
 
 |===
@@ -3328,7 +3328,7 @@ Information about HTTP Bridge instance.
 [#OffsetRecordSent]
 === _OffsetRecordSent_ OffsetRecordSent
 
-
+Offset information for a successfully sent record.
 
 
 [.fields-OffsetRecordSent]
@@ -3340,14 +3340,14 @@ Information about HTTP Bridge instance.
 | 
 | 
 |   Integer  
-| 
+| Partition to which the record was sent.
 | int32    
 
 | offset
 | 
 | 
 |   Long  
-| 
+| Offset of the record in the partition.
 | int64    
 
 |===
@@ -3357,7 +3357,7 @@ Information about HTTP Bridge instance.
 [#OffsetRecordSentList]
 === _OffsetRecordSentList_ OffsetRecordSentList
 
-
+List of offset information for sent records, which might include errors for individual records.
 
 
 [.fields-OffsetRecordSentList]
@@ -3369,7 +3369,7 @@ Information about HTTP Bridge instance.
 | 
 | 
 |   List   of <<OffsetRecordSentList_offsets_inner>>
-| 
+| Array of offset information or errors for each record sent.
 |     
 
 |===
@@ -3391,35 +3391,35 @@ Information about HTTP Bridge instance.
 | 
 | 
 |   Integer  
-| 
+| Partition to which the record was sent.
 | int32    
 
 | offset
 | 
 | 
 |   Long  
-| 
+| Offset of the record in the partition.
 | int64    
 
 | error_code
 | 
 | 
 |   Integer  
-| 
+| HTTP status code or Kafka error code.
 | int32    
 
 | message
 | 
 | 
 |   String  
-| 
+| Detailed error message.
 |     
 
 | validation_errors
 | 
 | 
 |   List   of <<string>>
-| 
+| List of validation errors (if applicable).
 |     
 
 |===
@@ -3429,7 +3429,7 @@ Information about HTTP Bridge instance.
 [#OffsetsSummary]
 === _OffsetsSummary_ OffsetsSummary
 
-
+Summary of offset positions for a topic partition.
 
 
 [.fields-OffsetsSummary]
@@ -3441,14 +3441,14 @@ Information about HTTP Bridge instance.
 | 
 | 
 |   Long  
-| 
+| Earliest available offset in the partition.
 | int64    
 
 | end_offset
 | 
 | 
 |   Long  
-| 
+| Latest offset in the partition (offset of the next message to be appended).
 | int64    
 
 |===
@@ -3458,7 +3458,7 @@ Information about HTTP Bridge instance.
 [#Partition]
 === _Partition_ Partition
 
-
+A topic partition identifier.
 
 
 [.fields-Partition]
@@ -3466,19 +3466,19 @@ Information about HTTP Bridge instance.
 |===
 | Field Name| Required| Nullable | Type| Description | Format
 
-| partition
-| 
-| 
-|   Integer  
-| 
-| int32    
-
 | topic
 | 
 | 
 |   String  
-| 
+| Topic name
 |     
+
+| partition
+| 
+| 
+|   Integer  
+| Partition number
+| int32    
 
 |===
 
@@ -3487,7 +3487,7 @@ Information about HTTP Bridge instance.
 [#PartitionMetadata]
 === _PartitionMetadata_ PartitionMetadata
 
-
+Metadata information about a topic partition.
 
 
 [.fields-PartitionMetadata]
@@ -3499,21 +3499,21 @@ Information about HTTP Bridge instance.
 | 
 | 
 |   Integer  
-| 
+| Partition number
 | int32    
 
 | leader
 | 
 | 
 |   Integer  
-| 
+| Broker ID of the partition leader.
 | int32    
 
 | replicas
 | 
 | 
 |   List   of <<Replica>>
-| 
+| List of replica information for the partition.
 |     
 
 |===
@@ -3523,7 +3523,7 @@ Information about HTTP Bridge instance.
 [#Partitions]
 === _Partitions_ Partitions
 
-
+List of topic partitions for assignment to a consumer.
 
 
 [.fields-Partitions]
@@ -3535,7 +3535,7 @@ Information about HTTP Bridge instance.
 | 
 | 
 |   List   of <<Partition>>
-| 
+| Array of topic partition identifiers.
 |     
 
 |===
@@ -3545,27 +3545,13 @@ Information about HTTP Bridge instance.
 [#ProducerRecord]
 === _ProducerRecord_ ProducerRecord
 
-
+A record to be sent to a Kafka topic.
 
 
 [.fields-ProducerRecord]
 [cols="2,1,1,2,4,1"]
 |===
 | Field Name| Required| Nullable | Type| Description | Format
-
-| partition
-| 
-| 
-|   Integer  
-| 
-| int32    
-
-| timestamp
-| 
-| 
-|   Long  
-| 
-| int64    
 
 | value
 | X
@@ -3581,11 +3567,25 @@ Information about HTTP Bridge instance.
 | 
 |     
 
+| partition
+| 
+| 
+|   Integer  
+| The target partition for the record. If not specified, the partitioner determines the partition.
+| int32    
+
+| timestamp
+| 
+| 
+|   Long  
+| The record timestamp, in milliseconds since the Unix epoch. If not specified, the current time is used.
+| int64    
+
 | headers
 | 
 | 
 |   List   of <<KafkaHeader>>
-| 
+| List of Kafka record headers.
 |     
 
 |===
@@ -3595,7 +3595,7 @@ Information about HTTP Bridge instance.
 [#ProducerRecordList]
 === _ProducerRecordList_ ProducerRecordList
 
-
+List of records to be sent to a Kafka topic.
 
 
 [.fields-ProducerRecordList]
@@ -3607,7 +3607,7 @@ Information about HTTP Bridge instance.
 | 
 | 
 |   List   of <<ProducerRecord>>
-| 
+| Array of records to send.
 |     
 
 |===
@@ -3617,7 +3617,7 @@ Information about HTTP Bridge instance.
 [#ProducerRecordToPartition]
 === _ProducerRecordToPartition_ ProducerRecordToPartition
 
-
+A record to be sent to a specific Kafka topic partition.
 
 
 [.fields-ProducerRecordToPartition]
@@ -3643,7 +3643,7 @@ Information about HTTP Bridge instance.
 | 
 | 
 |   List   of <<KafkaHeader>>
-| 
+| List of Kafka record headers.
 |     
 
 |===
@@ -3653,7 +3653,7 @@ Information about HTTP Bridge instance.
 [#ProducerRecordToPartitionList]
 === _ProducerRecordToPartitionList_ ProducerRecordToPartitionList
 
-
+List of records to be sent to a specific Kafka topic partition.
 
 
 [.fields-ProducerRecordToPartitionList]
@@ -3665,7 +3665,7 @@ Information about HTTP Bridge instance.
 | 
 | 
 |   List   of <<ProducerRecordToPartition>>
-| 
+| Array of records to send to the partition.
 |     
 
 |===
@@ -3675,7 +3675,7 @@ Information about HTTP Bridge instance.
 [#RecordKey]
 === _RecordKey_ RecordKey
 
-Key representation for a record. It can be an array, a JSON object or a string
+Key representation for a record. It can be an array, a JSON object, or a string depending on the content type.
 
 
 [.fields-RecordKey]
@@ -3690,7 +3690,7 @@ Key representation for a record. It can be an array, a JSON object or a string
 [#RecordValue]
 === _RecordValue_ RecordValue
 
-Value representation for a record. It can be an array, a JSON object or a string
+Value representation for a record. It can be an array, a JSON object, a string, or null depending on the content type.
 
 
 [.fields-RecordValue]
@@ -3705,7 +3705,7 @@ Value representation for a record. It can be an array, a JSON object or a string
 [#Replica]
 === _Replica_ Replica
 
-
+Information about a partition replica.
 
 
 [.fields-Replica]
@@ -3717,21 +3717,21 @@ Value representation for a record. It can be an array, a JSON object or a string
 | 
 | 
 |   Integer  
-| 
+| Broker ID hosting this replica.
 | int32    
 
 | leader
 | 
 | 
 |   Boolean  
-| 
+| Indicates whether the replica is the partition leader.
 |     
 
 | in_sync
 | 
 | 
 |   Boolean  
-| 
+| Indicates whether the replica is in-sync with the leader.
 |     
 
 |===
@@ -3741,7 +3741,7 @@ Value representation for a record. It can be an array, a JSON object or a string
 [#SubscribedTopicList]
 === _SubscribedTopicList_ SubscribedTopicList
 
-
+List of topics and partitions to which a consumer is subscribed or assigned.
 
 
 [.fields-SubscribedTopicList]
@@ -3760,7 +3760,7 @@ Value representation for a record. It can be an array, a JSON object or a string
 | 
 | 
 |   List   of <<map>>
-| 
+| List of assigned topic partitions.
 | int32    
 
 |===
@@ -3770,7 +3770,7 @@ Value representation for a record. It can be an array, a JSON object or a string
 [#TopicMetadata]
 === _TopicMetadata_ TopicMetadata
 
-
+Metadata information about a Kafka topic.
 
 
 [.fields-TopicMetadata]
@@ -3782,21 +3782,21 @@ Value representation for a record. It can be an array, a JSON object or a string
 | 
 | 
 |   String  
-| Name of the topic
+| Name of the topic.
 |     
 
 | configs
 | 
 | 
 |   Map   of <<string>>
-| Per-topic configuration overrides
+| Per-topic configuration overrides.
 |     
 
 | partitions
 | 
 | 
 |   List   of <<PartitionMetadata>>
-| 
+| List of partition metadata for the topic.
 |     
 
 |===
@@ -3806,7 +3806,7 @@ Value representation for a record. It can be an array, a JSON object or a string
 [#Topics]
 === _Topics_ Topics
 
-
+Topic subscription specification using either a list of topic names or a regex pattern.
 
 
 [.fields-Topics]
@@ -3818,14 +3818,14 @@ Value representation for a record. It can be an array, a JSON object or a string
 | 
 | 
 |   List   of <<string>>
-| 
+| List of topic names to subscribe to.
 |     
 
 | topic_pattern
 | 
 | 
 |   String  
-| A regex topic pattern for matching multiple topics
+| A regex topic pattern for matching multiple topics.
 |     
 
 |===
