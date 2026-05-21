@@ -7,8 +7,6 @@ package io.strimzi.kafka.bridge.httpclient;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.Map;
-
 /**
  * Class as a base for HTTP clients - Producer and Consumer
  */
@@ -23,25 +21,6 @@ public class HttpClientBaseService {
      */
     protected HttpClientBaseService(HttpService httpService) {
         this.httpService = httpService;
-    }
-
-    /**
-     * Method used for parsing provided Map as JSON - used for the HTTP requests.
-     *
-     * @param jsonMap   Map that should be used as JSON.
-     *
-     * @return  parsed JSON from Map.
-     */
-    protected String parseJsonFromMap(Map<String, Object> jsonMap) {
-        String jsonBody;
-
-        try {
-            jsonBody = objectMapper.writeValueAsString(jsonMap);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse request body as JSON");
-        }
-
-        return jsonBody;
     }
 
     /**

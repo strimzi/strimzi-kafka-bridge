@@ -4,6 +4,8 @@
  */
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
@@ -21,7 +23,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpResponse;
-import java.util.Map;
 
 import static io.strimzi.kafka.bridge.Constants.HTTP_BRIDGE;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,13 +45,13 @@ public class ConsumerGeneratedNameIT extends AbstractIT {
     @Test
     void createConsumerNameIsNotSetAndBridgeIdNotSet(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
-        HttpResponse<String> response = httpConsumerService.createConsumerRequest(groupId, Map.of());
+        HttpResponse<String> response = httpConsumerService.createConsumerRequest(groupId, MAPPER.createObjectNode());
 
         assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(response.body());
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(response.body());
 
         LOGGER.info("Verifying that consumer name is created with 'kafka-bridge-consumer-' plus random hashcode");
-        String consumerInstanceId = responseBody.get("instance_id").toString();
+        String consumerInstanceId = responseBody.get("instance_id").asText();
         assertThat(consumerInstanceId.contains("kafka-bridge-consumer-"), is(true));
 
         httpConsumerService.deleteConsumer(groupId, consumerInstanceId);
@@ -59,17 +60,16 @@ public class ConsumerGeneratedNameIT extends AbstractIT {
     @Test
     void createConsumerNameIsSetAndBridgeIdIsNotSet(BridgeTestContext bridgeTestContext) {
         String consumerName = "consumer-1";
-        Map<String, Object> consumerConfig = Map.of(
-            "name", consumerName,
-            "format", "json"
-        );
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", consumerName)
+            .put("format", "json");
 
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         HttpResponse<String> response = httpConsumerService.createConsumerRequest(groupId, consumerConfig);
 
         assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(response.body());
-        String consumerInstanceId = responseBody.get("instance_id").toString();
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(response.body());
+        String consumerInstanceId = responseBody.get("instance_id").asText();
 
         LOGGER.info("Checking if the instance ID is really: {}", consumerName);
         assertThat(consumerInstanceId, is(consumerName));

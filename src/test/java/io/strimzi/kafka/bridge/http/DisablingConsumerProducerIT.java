@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.configuration.BridgeConfiguration;
@@ -20,8 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import java.net.http.HttpResponse;
-import java.util.List;
-import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -39,16 +38,15 @@ public class DisablingConsumerProducerIT extends AbstractIT {
     void consumerDisabledTest(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        Map<String, Object> consumerConfig = Map.of(
-            "name", "consumer-not-enabled",
-            "format", "json"
-        );
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", "consumer-not-enabled")
+            .put("format", "json");
 
         HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest("consumer-not-enabled-group", consumerConfig);
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
 
-        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(error.code(), is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
         assertThat(error.message(), is("Consumer is disabled in config. To enable consumer update http.consumer.enabled to true"));
     }
@@ -62,17 +60,14 @@ public class DisablingConsumerProducerIT extends AbstractIT {
     void producerDisabledTest(BridgeTestContext bridgeTestContext) {
         HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
 
-        Map<String, Object> records = Map.of(
-            "records", List.of(
-                Map.of("value", "message-value")
-            )
-        );
+        ObjectNode root = MAPPER.createObjectNode();
+        root.putArray("records").add(MAPPER.createObjectNode().put("value", "message-value"));
 
-        HttpResponse<String> httpResponse = httpProducerService.sendJsonRecordsRequest("topic", records, BridgeContentType.KAFKA_JSON_JSON);
+        HttpResponse<String> httpResponse = httpProducerService.sendJsonNodeRecordsRequest("topic", root, BridgeContentType.KAFKA_JSON_JSON);
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
 
-        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(error.code(), is(HttpResponseStatus.SERVICE_UNAVAILABLE.code()));
         assertThat(error.message(), is("Producer is disabled in config. To enable producer update http.producer.enabled to true"));
     }

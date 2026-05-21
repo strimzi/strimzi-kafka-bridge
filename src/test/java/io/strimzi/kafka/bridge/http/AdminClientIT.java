@@ -5,6 +5,7 @@
 package io.strimzi.kafka.bridge.http;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -12,10 +13,6 @@ import io.strimzi.kafka.bridge.extensions.BridgeSuite;
 import io.strimzi.kafka.bridge.http.base.AbstractIT;
 import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
 import io.strimzi.kafka.bridge.objects.BridgeTestContext;
-import io.strimzi.kafka.bridge.objects.Offsets;
-import io.strimzi.kafka.bridge.objects.Partition;
-import io.strimzi.kafka.bridge.objects.Replica;
-import io.strimzi.kafka.bridge.objects.Topic;
 import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpResponse;
@@ -30,8 +27,8 @@ public class AdminClientIT extends AbstractIT {
 
     @Test
     void testListKafkaTopics(BridgeTestContext bridgeTestContext) {
-        createTopic("my-topic", bridgeTestContext.getAdminClientFacade(), 1);
-        createTopic("my-second-topic", bridgeTestContext.getAdminClientFacade(), 1);
+        bridgeTestContext.getAdminClientFacade().createTopic("my-topic", 1);
+        bridgeTestContext.getAdminClientFacade().createTopic("my-second-topic", 1);
 
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get("/topics");
 
@@ -45,28 +42,29 @@ public class AdminClientIT extends AbstractIT {
 
     @Test
     void testGetTopic(BridgeTestContext bridgeTestContext) {
-        createTopic(bridgeTestContext, 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get("/topics/" + bridgeTestContext.getTopicName());
 
-        Topic topic = HttpResponseUtils.getTopicFromResponse(httpResponse.body());
+        JsonNode topic = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
-        assertThat(topic.name(), is(bridgeTestContext.getTopicName()));
-        assertThat(topic.configs().get("cleanup.policy"), is("delete"));
-        assertThat(topic.listOfPartitions().size(), is(2));
+        assertThat(topic.get("name").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(topic.get("configs").get("cleanup.policy").asText(), is("delete"));
+        assertThat(topic.get("partitions").size(), is(2));
 
         for (int i = 0; i < 2; i++) {
-            Partition partition = topic.listOfPartitions().get(i);
+            JsonNode partition = topic.get("partitions").get(i);
 
-            assertThat(partition.partition(), is(i));
-            assertThat(partition.leader(), is(0));
+            assertThat(partition.get("partition").asInt(), is(i));
+            assertThat(partition.get("leader").asInt(), is(0));
 
-            assertThat(partition.listOfReplicas().size(), is(1));
+            JsonNode replicas = partition.get("replicas");
+            assertThat(replicas.size(), is(1));
 
-            Replica replica = partition.listOfReplicas().get(0);
-            assertThat(replica.broker(), is(0));
-            assertThat(replica.leader(), is(true));
-            assertThat(replica.in_sync(), is(true));
+            JsonNode replica = replicas.get(0);
+            assertThat(replica.get("broker").asInt(), is(0));
+            assertThat(replica.get("leader").asBoolean(), is(true));
+            assertThat(replica.get("in_sync").asBoolean(), is(true));
         }
     }
 
@@ -79,68 +77,67 @@ public class AdminClientIT extends AbstractIT {
 
     @Test
     void testListingPartitions(BridgeTestContext bridgeTestContext) {
-        createTopic(bridgeTestContext, 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions", bridgeTestContext.getTopicName()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
-        List<Partition> partitions = HttpResponseUtils.getPartitionsFromResponse(httpResponse.body());
+        JsonNode partitions = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
         assertThat(partitions.size(), is(2));
 
         for (int i = 0; i < 2; i++) {
-            Partition partition = partitions.get(i);
+            JsonNode partition = partitions.get(i);
 
-            assertThat(partition.partition(), is(i));
-            assertThat(partition.leader(), is(0));
+            assertThat(partition.get("partition").asInt(), is(i));
+            assertThat(partition.get("leader").asInt(), is(0));
 
-            List<Replica> replicas = partition.listOfReplicas();
-
+            JsonNode replicas = partition.get("replicas");
             assertThat(replicas.size(), is(1));
 
-            Replica replica = replicas.get(0);
-            assertThat(replica.broker(), is(0));
-            assertThat(replica.leader(), is(true));
-            assertThat(replica.in_sync(), is(true));
+            JsonNode replica = replicas.get(0);
+            assertThat(replica.get("broker").asInt(), is(0));
+            assertThat(replica.get("leader").asBoolean(), is(true));
+            assertThat(replica.get("in_sync").asBoolean(), is(true));
         }
     }
 
     @Test
     void testGetPartition(BridgeTestContext bridgeTestContext) {
-        createTopic(bridgeTestContext, 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions/0", bridgeTestContext.getTopicName()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Partition partition = HttpResponseUtils.getPartitionFromResponse(httpResponse.body());
+        JsonNode partition = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
-        assertThat(partition.partition(), is(0));
-        assertThat(partition.leader(), is(0));
+        assertThat(partition.get("partition").asInt(), is(0));
+        assertThat(partition.get("leader").asInt(), is(0));
 
-        List<Replica> replicas = partition.listOfReplicas();
-
+        JsonNode replicas = partition.get("replicas");
         assertThat(replicas.size(), is(1));
 
-        Replica replica = replicas.get(0);
-        assertThat(replica.broker(), is(0));
-        assertThat(replica.leader(), is(true));
-        assertThat(replica.in_sync(), is(true));
+        JsonNode replica = replicas.get(0);
+        assertThat(replica.get("broker").asInt(), is(0));
+        assertThat(replica.get("leader").asBoolean(), is(true));
+        assertThat(replica.get("in_sync").asBoolean(), is(true));
     }
 
     @Test
     void testGetOffsetSummary(BridgeTestContext bridgeTestContext) {
-        createTopic(bridgeTestContext, 1);
-        sendMessages(bridgeTestContext, 5);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
+        bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(bridgeTestContext.getTopicName(), 5);
 
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions/0/offsets", bridgeTestContext.getTopicName()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Offsets offsets = HttpResponseUtils.getOffsetsFromResponse(httpResponse.body());
+        JsonNode offsets = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
-        assertThat(offsets.beginning_offset(), is(0));
-        assertThat(offsets.end_offset(), is(5));
+        assertThat(offsets.get("beginning_offset").asInt(), is(0));
+        assertThat(offsets.get("end_offset").asInt(), is(5));
     }
 
     @Test

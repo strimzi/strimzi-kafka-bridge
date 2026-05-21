@@ -16,17 +16,15 @@ import io.strimzi.kafka.bridge.httpclient.HttpConsumerService;
 import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
 import io.strimzi.kafka.bridge.httpclient.HttpSeekService;
 import io.strimzi.kafka.bridge.objects.BridgeTestContext;
-import io.strimzi.kafka.bridge.objects.ReceivedMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpResponse;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.StreamSupport;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -53,7 +51,7 @@ public class SeekIT extends AbstractIT {
         HttpResponse<String> response = httpSeekService.seekToBeginningRequest(groupId, name, emptyBody);
         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(response.body()));
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(response.body()));
         assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
         assertThat(error.message(), is("The specified consumer instance was not found."));
     }
@@ -63,7 +61,9 @@ public class SeekIT extends AbstractIT {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
 
-        Map<String, Object> consumerConfig = Map.of("name", name, "format", "json");
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json");
 
         // create consumer
         httpConsumerService.createConsumer(groupId, consumerConfig);
@@ -77,7 +77,7 @@ public class SeekIT extends AbstractIT {
         HttpResponse<String> response = httpSeekService.seekToBeginningRequest(groupId, name, partitionsBody);
         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(response.body()));
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(response.body()));
         assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
         assertThat(error.message(), is("No current assignment for partition " + notExistingTopic + "-0"));
 
@@ -88,14 +88,15 @@ public class SeekIT extends AbstractIT {
     @Test
     void seekToBeginningAndReceive(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
 
         bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(topic, 10);
 
-        Map<String, Object> consumerConfig = Map.of("name", name);
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name);
 
         // create consumer, subscribe to a topic
         httpConsumerService.createConsumer(groupId, consumerConfig);
@@ -103,8 +104,8 @@ public class SeekIT extends AbstractIT {
 
         // consume records
         HttpResponse<String> consumeResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY);
-        ReceivedMessage[] messages = HttpResponseUtils.getReceivedMessagesFromResponse(consumeResponse.body());
-        assertThat(messages.length, is(10));
+        JsonNode messages = HttpResponseUtils.getResponseAsJsonNode(consumeResponse.body());
+        assertThat(messages.size(), is(10));
 
         // seek to beginning
         ObjectNode partitionsBody = MAPPER.createObjectNode();
@@ -115,8 +116,8 @@ public class SeekIT extends AbstractIT {
 
         // consume records again after seek
         consumeResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY);
-        messages = HttpResponseUtils.getReceivedMessagesFromResponse(consumeResponse.body());
-        assertThat(messages.length, is(10));
+        messages = HttpResponseUtils.getResponseAsJsonNode(consumeResponse.body());
+        assertThat(messages.size(), is(10));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -125,12 +126,13 @@ public class SeekIT extends AbstractIT {
     @Test
     void seekToEndAndReceive(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
 
-        Map<String, Object> consumerConfig = Map.of("name", name);
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name);
 
         // create consumer, subscribe to a topic
         httpConsumerService.createConsumer(groupId, consumerConfig);
@@ -150,8 +152,8 @@ public class SeekIT extends AbstractIT {
 
         // consume records after seek - should get nothing since we seeked to end
         HttpResponse<String> consumeResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY);
-        ReceivedMessage[] messages = HttpResponseUtils.getReceivedMessagesFromResponse(consumeResponse.body());
-        assertThat(messages.length, is(0));
+        JsonNode messages = HttpResponseUtils.getResponseAsJsonNode(consumeResponse.body());
+        assertThat(messages.size(), is(0));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -161,7 +163,7 @@ public class SeekIT extends AbstractIT {
     @SuppressWarnings("checkstyle:MethodLength")
     void seekToOffsetAndReceive(BridgeTestContext bridgeTestContext) {
         String topic = "seekToOffsetAndReceive-" + bridgeTestContext.getTopicName();
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 2);
 
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
@@ -169,7 +171,9 @@ public class SeekIT extends AbstractIT {
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic, 10, "value", 0);
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic, 10, "value", 1);
 
-        Map<String, Object> consumerConfig = Map.of("name", name, "format", "json");
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json");
 
         // create consumer, subscribe to a topic
         httpConsumerService.createConsumer(groupId, consumerConfig);
@@ -188,30 +192,30 @@ public class SeekIT extends AbstractIT {
 
         // consume records
         HttpResponse<String> consumeResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
-        ReceivedMessage[] messages = HttpResponseUtils.getReceivedMessagesFromResponse(consumeResponse.body());
+        JsonNode messages = HttpResponseUtils.getResponseAsJsonNode(consumeResponse.body());
 
         // check it read from partition 0, at offset 9, just one message
-        List<ReceivedMessage> partition0Messages = Arrays.stream(messages)
-            .filter(m -> m.partition() == 0 && m.offset() == 9)
+        List<JsonNode> partition0Messages = StreamSupport.stream(messages.spliterator(), false)
+            .filter(m -> m.get("partition").asInt() == 0 && m.get("offset").asLong() == 9)
             .toList();
         assertThat(partition0Messages.isEmpty(), is(false));
         assertThat(partition0Messages.size(), is(1));
 
-        assertThat(partition0Messages.get(0).topic(), is(topic));
-        assertThat(partition0Messages.get(0).value(), is("value-9"));
-        assertThat(partition0Messages.get(0).key(), is("key-9"));
+        assertThat(partition0Messages.get(0).get("topic").asText(), is(topic));
+        assertThat(partition0Messages.get(0).get("value").asText(), is("value-9"));
+        assertThat(partition0Messages.get(0).get("key").asText(), is("key-9"));
 
         // check it read from partition 1, starting from offset 5, the last 5 messages
-        List<ReceivedMessage> partition1Messages = Arrays.stream(messages)
-            .filter(m -> m.partition() == 1)
+        List<JsonNode> partition1Messages = StreamSupport.stream(messages.spliterator(), false)
+            .filter(m -> m.get("partition").asInt() == 1)
             .toList();
         assertThat(partition1Messages.isEmpty(), is(false));
         assertThat(partition1Messages.size(), is(5));
 
         for (int i = 0; i < partition1Messages.size(); i++) {
-            assertThat(partition1Messages.get(i).topic(), is(topic));
-            assertThat(partition1Messages.get(i).value(), is("value-" + (i + partition1Messages.size())));
-            assertThat(partition1Messages.get(i).key(), is("key-" + (i + partition1Messages.size())));
+            assertThat(partition1Messages.get(i).get("topic").asText(), is(topic));
+            assertThat(partition1Messages.get(i).get("value").asText(), is("value-" + (i + partition1Messages.size())));
+            assertThat(partition1Messages.get(i).get("key").asText(), is("key-" + (i + partition1Messages.size())));
         }
 
         // consumer deletion
@@ -225,13 +229,15 @@ public class SeekIT extends AbstractIT {
 
         LOGGER.info("Creating topics {}, {}", subscribedTopic, notSubscribedTopic);
 
-        createTopic(subscribedTopic, bridgeTestContext.getAdminClientFacade(), 1);
-        createTopic(notSubscribedTopic, bridgeTestContext.getAdminClientFacade(), 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(subscribedTopic, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(notSubscribedTopic, 1);
 
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
 
-        Map<String, Object> consumerConfig = Map.of("name", name, "format", "json");
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json");
 
         // create consumer, subscribe to a topic
         httpConsumerService.createConsumer(groupId, consumerConfig);
@@ -248,7 +254,7 @@ public class SeekIT extends AbstractIT {
         HttpResponse<String> response = httpSeekService.seekToBeginningRequest(groupId, name, partitionsBody);
         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(response.body()));
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(response.body()));
         assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
         assertThat(error.message(), is("No current assignment for partition " + notSubscribedTopic + "-0"));
 
@@ -289,13 +295,15 @@ public class SeekIT extends AbstractIT {
 
         LOGGER.info("Creating topics {}, {}", subscribedTopic, notSubscribedTopic);
 
-        createTopic(subscribedTopic, bridgeTestContext.getAdminClientFacade(), 1);
-        createTopic(notSubscribedTopic, bridgeTestContext.getAdminClientFacade(), 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(subscribedTopic, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(notSubscribedTopic, 1);
 
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
 
-        Map<String, Object> consumerConfig = Map.of("name", name, "format", "json");
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json");
 
         // create consumer, subscribe to a topic
         httpConsumerService.createConsumer(groupId, consumerConfig);
@@ -313,7 +321,7 @@ public class SeekIT extends AbstractIT {
         HttpResponse<String> response = httpSeekService.seekToPositionsRequest(groupId, name, offsetsBody);
         assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(response.body()));
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(response.body()));
         assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
         assertThat(error.message(), is("No current assignment for partition " + notSubscribedTopic + "-0"));
 

@@ -5,6 +5,8 @@
 package io.strimzi.kafka.bridge.http;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
 import io.strimzi.kafka.bridge.http.base.AbstractIT;
@@ -16,9 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpResponse;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -28,22 +28,21 @@ public class ConsumerSubscriptionIT extends AbstractIT {
     private String name;
     private String groupId;
 
-    private final Map<String, Object> consumer = new HashMap<>(Map.of(
-        "name", "placeholder",
-        "format", "json"
-    ));
+    private final ObjectNode consumer = MAPPER.createObjectNode()
+        .put("name", "placeholder")
+        .put("format", "json");
 
     @Test
     void unsubscribeConsumerNotFound(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         HttpResponse<String> httpResponse = httpConsumerService.unsubscribeConsumerRequest(groupId, name, List.of(bridgeTestContext.getTopicName()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
         assertThat(error.message(), is("The specified consumer instance was not found."));
     }
@@ -55,23 +54,22 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         httpConsumerService.createConsumer(groupId, consumer);
 
         // cannot subscribe setting both topics list and topic_pattern
-        Map<String, Object> subscriptionWithBoth = Map.of(
-            "topics", List.of(bridgeTestContext.getTopicName()),
-            "topic_pattern", "my-topic-pattern"
-        );
+        ObjectNode subscriptionWithBoth = MAPPER.createObjectNode();
+        subscriptionWithBoth.putArray("topics").add(bridgeTestContext.getTopicName());
+        subscriptionWithBoth.put("topic_pattern", "my-topic-pattern");
 
         HttpResponse<String> httpResponse = httpConsumerService.subscribeConsumerRequest(groupId, name, subscriptionWithBoth);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.CONFLICT.code()));
 
-        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(error.code(), is(HttpResponseStatus.CONFLICT.code()));
         assertThat(error.message(), is("Subscriptions to topics, partitions, and patterns are mutually exclusive."));
 
         // cannot subscribe without topics or topic_pattern
-        httpResponse = httpConsumerService.subscribeConsumerRequest(groupId, name, Map.of());
+        httpResponse = httpConsumerService.subscribeConsumerRequest(groupId, name, MAPPER.createObjectNode());
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
 
-        error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(error.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
         assertThat(error.message(), is("A list (of Topics type) or a topic_pattern must be specified."));
 
@@ -82,12 +80,12 @@ public class ConsumerSubscriptionIT extends AbstractIT {
     void subscriptionConsumerDoesNotExistBecauseNotCreated(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         HttpResponse<String> httpResponse = httpConsumerService.subscribeConsumerRequest(groupId, name, List.of(bridgeTestContext.getTopicName()));
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
         assertThat(error.message(), is("The specified consumer instance was not found."));
     }
@@ -96,7 +94,7 @@ public class ConsumerSubscriptionIT extends AbstractIT {
     void subscriptionConsumerEmptyTopics(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         httpConsumerService.createConsumer(groupId, consumer);
         httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
@@ -112,7 +110,9 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         assertThat(responseBody.get("topics").size(), is(1));
 
         // subscribe with empty topics list
-        Map<String, Object> emptyTopicsSubscription = Map.of("topics", List.of());
+        ObjectNode emptyTopicsSubscription = MAPPER.createObjectNode();
+        emptyTopicsSubscription.putArray("topics");
+
         httpResponse = httpConsumerService.subscribeConsumerRequest(groupId, name, emptyTopicsSubscription);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
         assertThat(httpResponse.body(), is(""));
@@ -131,7 +131,7 @@ public class ConsumerSubscriptionIT extends AbstractIT {
     void subscriptionConsumerDoesNotExistBecauseAnotherGroup(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         httpConsumerService.createConsumer(groupId, consumer);
 
@@ -141,7 +141,7 @@ public class ConsumerSubscriptionIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
         assertThat(error.message(), is("The specified consumer instance was not found."));
 
@@ -155,8 +155,8 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         String topic = bridgeTestContext.getTopicName() + "-0";
         String topic2 = bridgeTestContext.getTopicName() + "-1";
 
-        createTopic(topic, bridgeTestContext.getAdminClientFacade(), 1);
-        createTopic(topic2, bridgeTestContext.getAdminClientFacade(), 4);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic2, 4);
 
         httpConsumerService.createConsumer(groupId, consumer);
         httpConsumerService.subscribeConsumer(groupId, name, List.of(topic, topic2));
@@ -202,7 +202,7 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
 
-        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(error.code(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
         assertThat(error.message(), is("Consumer is not subscribed to any topics or assigned any partitions"));
 
@@ -214,20 +214,20 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 4);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 4);
 
         httpConsumerService.createConsumer(groupId, consumer);
         httpConsumerService.subscribeConsumer(groupId, name, topic);
 
-        List<Map<String, Object>> partitions = List.of(
-            Map.of("topic", topic, "partition", 0),
-            Map.of("topic", topic, "partition", 1)
-        );
+        ObjectNode assignmentBody = MAPPER.createObjectNode();
+        ArrayNode partitions = assignmentBody.putArray("partitions");
+        partitions.add(MAPPER.createObjectNode().put("topic", topic).put("partition", 0));
+        partitions.add(MAPPER.createObjectNode().put("topic", topic).put("partition", 1));
 
-        HttpResponse<String> httpResponse = httpConsumerService.assignmentRequest(groupId, name, partitions);
+        HttpResponse<String> httpResponse = httpConsumerService.assignmentRequest(groupId, name, assignmentBody);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.CONFLICT.code()));
 
-        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(error.code(), is(HttpResponseStatus.CONFLICT.code()));
         assertThat(error.message(), is("Subscriptions to topics, partitions, and patterns are mutually exclusive."));
 
@@ -239,16 +239,16 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
         String topic = bridgeTestContext.getTopicName();
-        createTopic(bridgeTestContext, 4);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 4);
 
         httpConsumerService.createConsumer(groupId, consumer);
 
-        List<Map<String, Object>> partitions = List.of(
-            Map.of("topic", topic, "partition", 0),
-            Map.of("topic", topic, "partition", 1)
-        );
+        ObjectNode assignmentBody = MAPPER.createObjectNode();
+        ArrayNode partitions = assignmentBody.putArray("partitions");
+        partitions.add(MAPPER.createObjectNode().put("topic", topic).put("partition", 0));
+        partitions.add(MAPPER.createObjectNode().put("topic", topic).put("partition", 1));
 
-        HttpResponse<String> httpResponse = httpConsumerService.assignmentRequest(groupId, name, partitions);
+        HttpResponse<String> httpResponse = httpConsumerService.assignmentRequest(groupId, name, assignmentBody);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
 
         // validate subscription list has 1 topic
@@ -259,7 +259,10 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         assertThat(responseBody.get("topics").size(), is(1));
 
         // assign empty partitions
-        httpResponse = httpConsumerService.assignmentRequest(groupId, name, List.of());
+        ObjectNode emptyAssignment = MAPPER.createObjectNode();
+        emptyAssignment.putArray("partitions");
+
+        httpResponse = httpConsumerService.assignmentRequest(groupId, name, emptyAssignment);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
 
         // validate subscription list is now empty

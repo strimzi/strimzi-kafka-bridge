@@ -4,6 +4,7 @@
  */
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
@@ -16,8 +17,6 @@ import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpResponse;
-import java.util.List;
-import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -34,16 +33,13 @@ public class InvalidProducerIT extends AbstractIT {
     void sendSimpleMessage(BridgeTestContext bridgeTestContext) {
         HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
-        Map<String, Object> records = Map.of(
-            "records", List.of(
-                Map.of("value", "message-value")
-            )
-        );
+        ObjectNode root = MAPPER.createObjectNode();
+        root.putArray("records").add(MAPPER.createObjectNode().put("value", "message-value"));
 
-        HttpResponse<String> httpResponse = httpProducerService.sendJsonRecordsRequest(
-            bridgeTestContext.getTopicName(), records, BridgeContentType.KAFKA_JSON_JSON);
+        HttpResponse<String> httpResponse = httpProducerService.sendJsonNodeRecordsRequest(
+            bridgeTestContext.getTopicName(), root, BridgeContentType.KAFKA_JSON_JSON);
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
     }

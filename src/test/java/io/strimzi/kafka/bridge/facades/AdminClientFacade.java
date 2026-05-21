@@ -7,17 +7,12 @@ package io.strimzi.kafka.bridge.facades;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
-import org.apache.kafka.clients.admin.DeleteTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.common.KafkaFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Class AdminClientFacade used for encapsulate complexity and asynchronous code of AdminClient.
@@ -42,73 +37,31 @@ public class AdminClientFacade {
     }
 
     /**
-     * Method createTopic used for the race condition between in-memory kafka cluster and also encapsulate the get
+     * Creates topic based on the configuration, using blocking call.
      *
      * @param topicName         name of the topic
      * @param partitions        number of partitions
      * @param replicationFactor number of replication factor
      */
-    public KafkaFuture<Void> createTopic(String topicName, int partitions, int replicationFactor) {
+    public void createTopic(String topicName, int partitions, int replicationFactor) {
         CreateTopicsResult createTopicsResult = adminClient.createTopics(Collections.singletonList(new NewTopic(topicName, partitions, (short) replicationFactor)));
-
-        LOGGER.info("Topic with name {} partitions {} and replication factor {} is created.", topicName, partitions, replicationFactor);
-
-        return createTopicsResult.all();
-    }
-
-    /**
-     * Method createTopic used for the race condition between in-memory kafka cluster and also encapsulate the get
-     * with default values
-     * @param topicName         name of the topic
-     */
-    public KafkaFuture<Void> createTopic(String topicName) {
-        return createTopic(topicName, 1, 1);
-    }
-
-    /**
-     * Method listTopic used for the race condition between in-memory kafka cluster and also encapsulate the get
-     */
-    public Set<String> listTopic() throws InterruptedException, ExecutionException {
-        return adminClient.listTopics().names().get();
-    }
-
-    /**
-     * Method deleteTopic used for the race condition between in-memory kafka cluster and also encapsulate the get
-     *
-     * @param topicName              name of the topic
-     */
-    public void deleteTopic(String topicName) throws InterruptedException, ExecutionException {
-        DeleteTopicsResult deleteTopicsResult = adminClient.deleteTopics(Collections.singletonList(topicName));
-        deleteTopicsResult.all().get();
-        LOGGER.info("Topic with name {} is deleted.", topicName);
-    }
-
-    /**
-     * Delete collection of provided topics by their name
-     *
-     * @param topics              collection of topics
-     */
-    public void deleteTopics(Collection<String> topics) throws InterruptedException, ExecutionException {
-        DeleteTopicsResult deleteTopicsResult = adminClient.deleteTopics(topics);
-        deleteTopicsResult.all().get();
-        LOGGER.info("Topics with names {} is deleted.", topics);
-    }
-
-    /**
-     * Wait until Kafka actually reports zero topics, or until we time out.
-     */
-    public boolean hasKafkaZeroTopics() throws InterruptedException, ExecutionException {
-        final int maxAttempts = 5;
-        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            Set<String> topicSet = adminClient.listTopics().names().get();
-            if (topicSet.isEmpty()) {
-                return true;
-            }
-            LOGGER.warn("Topics still present on attempt {}: {}", attempt, topicSet);
-            Thread.sleep(1000);
+        try {
+            createTopicsResult.all().get();
+        } catch (Exception e) {
+            LOGGER.error("Failed to create KafkaTopic: {} due to: ", topicName, e);
+            throw new RuntimeException(e);
         }
-        LOGGER.error("Kafka did not report zero topics after {} attempts", maxAttempts);
-        return false;
+        LOGGER.info("Topic with name {} partitions {} and replication factor {} is created.", topicName, partitions, replicationFactor);
+    }
+
+    /**
+     * Creates topic based on the configuration, using blocking call.
+     *
+     * @param topicName         name of the topic
+     * @param partitions        number of partitions
+     */
+    public void createTopic(String topicName, int partitions) {
+        createTopic(topicName, partitions, 1);
     }
 
     public void close() {

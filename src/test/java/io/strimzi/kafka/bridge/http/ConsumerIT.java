@@ -4,6 +4,8 @@
  */
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.Constants;
@@ -14,7 +16,6 @@ import io.strimzi.kafka.bridge.httpclient.HttpConsumerService;
 import io.strimzi.kafka.bridge.httpclient.HttpProducerService;
 import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
 import io.strimzi.kafka.bridge.objects.BridgeTestContext;
-import io.strimzi.kafka.bridge.objects.ReceivedMessage;
 import io.strimzi.kafka.bridge.utils.Endpoints;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
@@ -25,21 +26,16 @@ import org.junit.jupiter.api.Test;
 import javax.xml.bind.DatatypeConverter;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -51,17 +47,9 @@ public class ConsumerIT extends AbstractIT {
     private String name = "my-kafka-consumer";
     private String groupId = "my-group";
 
-    private final Map<String, Object> consumerWithEarliestOffsetReset = new HashMap<>(Map.of(
-        "name", name,
-        "auto.offset.reset", "earliest",
-        "enable.auto.commit", true,
-        "fetch.min.bytes", 100
-    ));
+    private ObjectNode consumerWithEarliestOffsetReset;
 
-    private final Map<String, Object> consumer = new HashMap<>(Map.of(
-        "name", name,
-        "format", "json"
-    ));
+    private ObjectNode consumer;
 
     @Test
     void createConsumer(BridgeTestContext bridgeTestContext) {
@@ -71,10 +59,10 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseMap = HttpResponseUtils.getResponseAsMap(httpResponse.body());
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
-        assertThat(responseMap.get("instance_id"), is(name));
-        assertThat(responseMap.get("base_uri"), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, name))));
+        assertThat(responseBody.get("instance_id").asText(), is(name));
+        assertThat(responseBody.get("base_uri").asText(), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, name))));
 
         // delete consumer
         httpConsumerService.deleteConsumer(groupId, name);
@@ -82,17 +70,17 @@ public class ConsumerIT extends AbstractIT {
 
     @Test
     void createConsumerWrongFormat(BridgeTestContext bridgeTestContext) {
-        Map<String, Object> consumerWithWrongFormat = Map.of(
-            "name", name,
-            "format", "foo"
-        );
+        ObjectNode consumerWithWrongFormat = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "foo");
+
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
         // create consumer
         HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerWithWrongFormat);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
 
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
         assertThat(httpBridgeError.message(), is("Invalid format type."));
     }
@@ -100,14 +88,14 @@ public class ConsumerIT extends AbstractIT {
     @Test
     void createConsumerEmptyBody(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
-        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, Map.of());
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, MAPPER.createObjectNode());
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
-        String consumerInstanceId = (String) responseBody.get("instance_id");
-        String consumerBaseUri = (String) responseBody.get("base_uri");
+        String consumerInstanceId = responseBody.get("instance_id").asText();
+        String consumerBaseUri = responseBody.get("base_uri").asText();
 
         assertThat(consumerInstanceId.startsWith(Constants.DEFAULT_BRIDGE_ID), is(true));
         assertThat(consumerBaseUri, is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, consumerInstanceId))));
@@ -119,18 +107,15 @@ public class ConsumerIT extends AbstractIT {
     void createConsumerEnableAutoCommit(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        Map<String, Object> correctConsumer = Map.of(
-            "name", name,
-            "enable.auto.commit", true
-        );
-        Map<String, Object> incorrectConsumer = Map.of(
-            "name", "incorrect-consumer",
-            "enable.auto.commit", "true"
-        );
-        Map<String, Object> incorrectConsumerWithInvalidValue = Map.of(
-            "name", "incorrect-consumer-2",
-            "enable.auto.commit", "foo"
-        );
+        ObjectNode correctConsumer = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("enable.auto.commit", true);
+        ObjectNode incorrectConsumer = MAPPER.createObjectNode()
+            .put("name", "incorrect-consumer")
+            .put("enable.auto.commit", "true");
+        ObjectNode incorrectConsumerWithInvalidValue = MAPPER.createObjectNode()
+            .put("name", "incorrect-consumer-2")
+            .put("enable.auto.commit", "foo");
 
         // create correct consumer
         HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, correctConsumer);
@@ -140,7 +125,7 @@ public class ConsumerIT extends AbstractIT {
         httpResponse = httpConsumerService.createConsumerRequest(groupId, incorrectConsumer);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
 
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
         assertThat(httpBridgeError.message(), is("Validation error on: Schema validation error"));
         assertThat(httpBridgeError.validationErrors(), hasItem("Property \"enable.auto.commit\" does not match schema"));
@@ -150,7 +135,7 @@ public class ConsumerIT extends AbstractIT {
         httpResponse = httpConsumerService.createConsumerRequest(groupId, incorrectConsumerWithInvalidValue);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
 
-        httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
         assertThat(httpBridgeError.message(), is("Validation error on: Schema validation error"));
         assertThat(httpBridgeError.validationErrors(), hasItem("Property \"enable.auto.commit\" does not match schema"));
@@ -172,19 +157,15 @@ public class ConsumerIT extends AbstractIT {
     private void createConsumerIntegerParam(BridgeTestContext bridgeTestContext, String param) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        Map<String, Object> correctConsumer = Map.of(
-            "name", name,
-            param, 100
-        );
-        Map<String, Object> incorrectConsumer = Map.of(
-            "name", "incorrect-consumer",
-            param, "100"
-        );
-
-        Map<String, Object> incorrectConsumerWithInvalidValue = Map.of(
-            "name", "incorrect-consumer-2",
-            param, "foo"
-        );
+        ObjectNode correctConsumer = MAPPER.createObjectNode()
+            .put("name", name)
+            .put(param, 100);
+        ObjectNode incorrectConsumer = MAPPER.createObjectNode()
+            .put("name", "incorrect-consumer")
+            .put(param, "100");
+        ObjectNode incorrectConsumerWithInvalidValue = MAPPER.createObjectNode()
+            .put("name", "incorrect-consumer-2")
+            .put(param, "foo");
 
         // create correct consumer
         HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, correctConsumer);
@@ -194,7 +175,7 @@ public class ConsumerIT extends AbstractIT {
         httpResponse = httpConsumerService.createConsumerRequest(groupId, incorrectConsumer);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
 
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
         assertThat(httpBridgeError.message(), is("Validation error on: Schema validation error"));
         assertThat(httpBridgeError.validationErrors(), hasItem(String.format("Property \"%s\" does not match schema", param)));
@@ -204,7 +185,7 @@ public class ConsumerIT extends AbstractIT {
         httpResponse = httpConsumerService.createConsumerRequest(groupId, incorrectConsumerWithInvalidValue);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
 
-        httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
         assertThat(httpBridgeError.message(), is("Validation error on: Schema validation error"));
         assertThat(httpBridgeError.validationErrors(), hasItem(String.format("Property \"%s\" does not match schema", param)));
@@ -230,9 +211,9 @@ public class ConsumerIT extends AbstractIT {
         HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerWithEarliestOffsetReset, headers);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        assertThat(responseBody.get("instance_id"), is(name));
-        assertThat(responseBody.get("base_uri"), is(baseUri));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("instance_id").asText(), is(name));
+        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
 
         httpConsumerService.deleteConsumer(groupId, name);
     }
@@ -252,9 +233,9 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        assertThat(responseBody.get("instance_id"), is(name));
-        assertThat(responseBody.get("base_uri"), is(baseUri));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("instance_id").asText(), is(name));
+        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
 
         httpConsumerService.deleteConsumer(groupId, name);
     }
@@ -277,9 +258,9 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        assertThat(responseBody.get("instance_id"), is(name));
-        assertThat(responseBody.get("base_uri"), is(baseUri));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("instance_id").asText(), is(name));
+        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
 
         httpConsumerService.deleteConsumer(groupId, name);
     }
@@ -304,9 +285,9 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        assertThat(responseBody.get("instance_id"), is(name));
-        assertThat(responseBody.get("base_uri"), is(baseUri));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("instance_id").asText(), is(name));
+        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
 
         httpConsumerService.deleteConsumer(groupId, name);
     }
@@ -326,9 +307,9 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseBody = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        assertThat(responseBody.get("instance_id"), is(name));
-        assertThat(responseBody.get("base_uri"), is(baseUri));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("instance_id").asText(), is(name));
+        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
 
         httpConsumerService.deleteConsumer(groupId, name);
     }
@@ -345,7 +326,7 @@ public class ConsumerIT extends AbstractIT {
         HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerWithEarliestOffsetReset, headers);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
 
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
         assertThat(httpBridgeError.message(), is("mqtt is not a valid schema/proto."));
     }
@@ -396,15 +377,14 @@ public class ConsumerIT extends AbstractIT {
     private void checkCreatingConsumer(String key, String value, HttpResponseStatus status, String message, List<String> expectedValidationErrors, BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        Map<String, Object> consumerJson = Map.of(
-            "name", name,
-            key, value
-        );
+        ObjectNode consumerJson = MAPPER.createObjectNode()
+            .put("name", name)
+            .put(key, value);
 
         HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerJson);
         assertThat(httpResponse.statusCode(), is(status.code()));
 
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(status.code()));
         assertThat(httpBridgeError.message(), is(message));
         httpBridgeError.validationErrors().forEach(validationError -> assertThat(expectedValidationErrors, hasItem(validationError)));
@@ -414,7 +394,7 @@ public class ConsumerIT extends AbstractIT {
     void receiveSimpleMessage(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
         String sentBody = "Simple message";
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
 
@@ -428,13 +408,13 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage receivedMessage = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body())[0];
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.topic(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.value(), is(sentBody));
-        assertThat(receivedMessage.offset(), is(0L));
-        assertThat(receivedMessage.partition(), notNullValue());
-        assertThat(receivedMessage.key(), nullValue());
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -444,7 +424,7 @@ public class ConsumerIT extends AbstractIT {
     void receiveMessageWithTimestamp(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
         long timestamp = System.currentTimeMillis();
@@ -460,9 +440,9 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage receivedMessage = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body())[0];
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.timestamp(), is(String.valueOf(timestamp)));
+        assertThat(receivedMessage.get("timestamp").asLong(), is(timestamp));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -472,15 +452,14 @@ public class ConsumerIT extends AbstractIT {
     void receiveTextMessage(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
         bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(bridgeTestContext.getTopicName(), sentBody, 1, 0, true);
 
-        Map<String, Object> consumerJson = Map.of(
-            "name", name,
-            "format", "text"
-        );
+        ObjectNode consumerJson = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "text");
 
         // create consumer
         // subscribe to a topic
@@ -492,13 +471,13 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage receivedMessage = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body())[0];
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.topic(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.value(), is(sentBody));
-        assertThat(receivedMessage.offset(), is(0L));
-        assertThat(receivedMessage.partition(), notNullValue());
-        assertThat(receivedMessage.key(), nullValue());
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -508,7 +487,7 @@ public class ConsumerIT extends AbstractIT {
     void receiveSimpleMessageWithHeaders(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
         List<Header> headers = new ArrayList<>();
@@ -527,26 +506,27 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage receivedMessage = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body())[0];
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.topic(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.value(), is(sentBody));
-        assertThat(receivedMessage.offset(), is(0L));
-        assertThat(receivedMessage.partition(), notNullValue());
-        assertThat(receivedMessage.key(), nullValue());
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
-        assertThat(receivedMessage.headers().length, is(3));
-        assertThat(receivedMessage.headers()[0].key(), is("key1"));
+        JsonNode messageHeaders = receivedMessage.get("headers");
+        assertThat(messageHeaders.size(), is(3));
+        assertThat(messageHeaders.get(0).get("key").asText(), is("key1"));
         assertThat(new String(DatatypeConverter.parseBase64Binary(
-            receivedMessage.headers()[0].value())), is("value1"));
+            messageHeaders.get(0).get("value").asText())), is("value1"));
 
-        assertThat(receivedMessage.headers()[1].key(), is("key2"));
+        assertThat(messageHeaders.get(1).get("key").asText(), is("key2"));
         assertThat(new String(DatatypeConverter.parseBase64Binary(
-            receivedMessage.headers()[1].value())), is("value2"));
+            messageHeaders.get(1).get("value").asText())), is("value2"));
 
-        assertThat(receivedMessage.headers()[2].key(), is("key3"));
+        assertThat(messageHeaders.get(2).get("key").asText(), is("key3"));
         assertThat(new String(DatatypeConverter.parseBase64Binary(
-            receivedMessage.headers()[2].value())), is("value3"));
+            messageHeaders.get(2).get("value").asText())), is("value3"));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -557,16 +537,15 @@ public class ConsumerIT extends AbstractIT {
     void receiveBinaryMessage(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
         // TODO: make client to producer binary data..
         // bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(bridgeTestContext.getTopicName(), sentBody.getBytes(), 1, 0, true);
 
-        Map<String, Object> consumerJson = Map.of(
-            "name", name,
-            "format", "text"
-        );
+        ObjectNode consumerJson = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "text");
 
         // create consumer
         // subscribe to a topic
@@ -578,13 +557,13 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage receivedMessage = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body())[0];
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.topic(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.value(), is(sentBody));
-        assertThat(receivedMessage.offset(), is(0L));
-        assertThat(receivedMessage.partition(), notNullValue());
-        assertThat(receivedMessage.key(), nullValue());
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -599,8 +578,8 @@ public class ConsumerIT extends AbstractIT {
 
         String message = "Simple message";
 
-        createTopic(topic1, bridgeTestContext.getAdminClientFacade(), 1);
-        createTopic(topic2, bridgeTestContext.getAdminClientFacade(), 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic1, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic2, 1);
 
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic1, 1, message, 0, true);
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic2, 1, message, 0, true);
@@ -615,18 +594,18 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage[] receivedMessages = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body());
+        JsonNode receivedMessages = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
         List<String> topicNamesFromMessages = new ArrayList<>();
 
         for (int i = 0; i < 2; i++) {
-            ReceivedMessage receivedMessage = receivedMessages[i];
+            JsonNode receivedMessage = receivedMessages.get(i);
 
-            topicNamesFromMessages.add(receivedMessage.topic());
-            assertThat(receivedMessage.value(), is(message));
-            assertThat(receivedMessage.offset(), is(0L));
-            assertThat(receivedMessage.partition(), notNullValue());
-            assertThat(receivedMessage.key(), nullValue());
+            topicNamesFromMessages.add(receivedMessage.get("topic").asText());
+            assertThat(receivedMessage.get("value").asText(), is(message));
+            assertThat(receivedMessage.get("offset").asLong(), is(0L));
+            assertThat(receivedMessage.get("partition"), notNullValue());
+            assertThat(receivedMessage.get("key").isNull(), is(true));
         }
 
         assertThat(topicNamesFromMessages, hasItem(topic1));
@@ -646,9 +625,9 @@ public class ConsumerIT extends AbstractIT {
 
         String message = "Simple message";
 
-        createTopic(topic1, bridgeTestContext.getAdminClientFacade(), 1);
-        createTopic(topic2, bridgeTestContext.getAdminClientFacade(), 1);
-        createTopic(topic3, bridgeTestContext.getAdminClientFacade(), 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic1, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic2, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic3, 1);
 
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic1, 1, message, 0, true);
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic2, 1, message, 0, true);
@@ -663,12 +642,12 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage[] receivedMessages = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body());
+        JsonNode receivedMessages = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
-        assertThat(receivedMessages.length, is(2));
+        assertThat(receivedMessages.size(), is(2));
 
-        for (ReceivedMessage receivedMessage : receivedMessages) {
-            assertThat(receivedMessage.topic(), is(not(topic3)));
+        for (JsonNode receivedMessage : receivedMessages) {
+            assertThat(receivedMessage.get("topic").asText(), is(not(topic3)));
         }
 
         // consumer deletion
@@ -679,34 +658,33 @@ public class ConsumerIT extends AbstractIT {
     void receiveSimpleMessageFromPartition(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
         int partition = 1;
         String sentBody = "Simple message from partition";
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, partition, true);
 
-        Map<String, Object> assignmentConfig = Map.of(
-            "topic", bridgeTestContext.getTopicName(),
-            "partition", partition
-        );
+        ObjectNode assignmentBody = MAPPER.createObjectNode();
+        assignmentBody.putArray("partitions").add(
+            MAPPER.createObjectNode().put("topic", bridgeTestContext.getTopicName()).put("partition", partition));
 
         // create a consumer
         // subscribe to a topic
         httpConsumerService.createConsumer(groupId, consumer);
-        httpConsumerService.assignPartitions(groupId, name, List.of(assignmentConfig));
+        httpConsumerService.assignPartitions(groupId, name, assignmentBody);
 
         // consume records
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage receivedMessage = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body())[0];
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.topic(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.value(), is(sentBody));
-        assertThat(receivedMessage.offset(), is(0L));
-        assertThat(receivedMessage.partition(), is(partition));
-        assertThat(receivedMessage.key(), nullValue());
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition").asInt(), is(partition));
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -716,48 +694,40 @@ public class ConsumerIT extends AbstractIT {
     void receiveSimpleMessageFromMultiplePartitions(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 2);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
         String sentBody = "value";
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 1, true);
 
-        // create a consumer
-        // subscribe to a topic
-        List<Map<String, Object>> assignmentConfig = List.of(
-            Map.of(
-                "topic", bridgeTestContext.getTopicName(),
-                "partition", 0
-            ),
-            Map.of(
-                "topic", bridgeTestContext.getTopicName(),
-                "partition", 1
-            )
-        );
+        ObjectNode assignmentBody = MAPPER.createObjectNode();
+        assignmentBody.putArray("partitions")
+            .add(MAPPER.createObjectNode().put("topic", bridgeTestContext.getTopicName()).put("partition", 0))
+            .add(MAPPER.createObjectNode().put("topic", bridgeTestContext.getTopicName()).put("partition", 1));
 
         // create a consumer
         // subscribe to a topic
         httpConsumerService.createConsumer(groupId, consumer);
-        httpConsumerService.assignPartitions(groupId, name, assignmentConfig);
+        httpConsumerService.assignPartitions(groupId, name, assignmentBody);
 
         // consume records
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage[] receivedMessages = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body());
+        JsonNode receivedMessages = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
         List<Integer> partitionsFromMessages = new ArrayList<>();
 
         for (int i = 0; i < 2; i++) {
-            ReceivedMessage receivedMessage = receivedMessages[i];
+            JsonNode receivedMessage = receivedMessages.get(i);
 
-            assertThat(receivedMessage.topic(), is(bridgeTestContext.getTopicName()));
-            assertThat(receivedMessage.value(), is(sentBody));
-            assertThat(receivedMessage.offset(), is(0L));
-            assertThat(receivedMessage.key(), nullValue());
+            assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+            assertThat(receivedMessage.get("value").asText(), is(sentBody));
+            assertThat(receivedMessage.get("offset").asLong(), is(0L));
+            assertThat(receivedMessage.get("key").isNull(), is(true));
 
-            partitionsFromMessages.add(receivedMessage.partition());
+            partitionsFromMessages.add(receivedMessage.get("partition").asInt());
         }
 
         assertThat(partitionsFromMessages, hasItem(0));
@@ -771,21 +741,20 @@ public class ConsumerIT extends AbstractIT {
     void commitOffset(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
 
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
 
-        Map<String, Object> consumer = Map.of(
-            "name", name,
-            "format", "json",
-            "enable.auto.commit", false
-        );
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json")
+            .put("enable.auto.commit", false);
 
         // create consumer
         // subscribe to a topic
-        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.createConsumer(groupId, consumerConfig);
         httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
 
         // consume records
@@ -793,22 +762,23 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage receivedMessage = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body())[0];
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.topic(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.value(), is(sentBody));
-        assertThat(receivedMessage.offset(), is(0L));
-        assertThat(receivedMessage.partition(), notNullValue());
-        assertThat(receivedMessage.key(), nullValue());
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
         // commit offsets
-        Map<String, Object> offset = Map.of(
-            "topic", bridgeTestContext.getTopicName(),
-            "partition", 0,
-            "offset", 1
-        );
+        ObjectNode offsetsBody = MAPPER.createObjectNode();
+        offsetsBody.putArray("offsets").add(
+            MAPPER.createObjectNode()
+                .put("topic", bridgeTestContext.getTopicName())
+                .put("partition", 0)
+                .put("offset", 1));
 
-        httpConsumerService.commitOffsets(groupId, name, List.of(offset));
+        httpConsumerService.commitOffsets(groupId, name, offsetsBody);
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -818,35 +788,36 @@ public class ConsumerIT extends AbstractIT {
     void commitEmptyOffset(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
 
-        Map<String, Object> consumer = Map.of(
-            "name", name,
-            "format", "json",
-            "enable.auto.commit", false
-        );
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json")
+            .put("enable.auto.commit", false);
 
         // create consumer
         // subscribe to a topic
-        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.createConsumer(groupId, consumerConfig);
         httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
 
         // consume records
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage receivedMessage = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body())[0];
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.topic(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.value(), is(sentBody));
-        assertThat(receivedMessage.offset(), is(0L));
-        assertThat(receivedMessage.partition(), notNullValue());
-        assertThat(receivedMessage.key(), nullValue());
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
-        httpResponse = httpConsumerService.commitOffsetsRequest(groupId, name, List.of());
+        ObjectNode emptyOffsets = MAPPER.createObjectNode();
+        emptyOffsets.putArray("offsets");
+        httpResponse = httpConsumerService.commitOffsetsRequest(groupId, name, emptyOffsets);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
 
         // consumer deletion
@@ -858,28 +829,27 @@ public class ConsumerIT extends AbstractIT {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         String consumerNameWithSuffix = name + "-diff";
 
-        Map<String, Object> consumer = Map.of(
-            "name", name
-        );
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name);
 
         // create consumer
-        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.createConsumer(groupId, consumerConfig);
 
         // create the same consumer again
-        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumer);
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerConfig);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.CONFLICT.code()));
 
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.CONFLICT.code()));
         assertThat(httpBridgeError.message(), is("A consumer instance with the specified name already exists in the Kafka Bridge."));
 
         // create consumer with suffix
-        httpResponse = httpConsumerService.createConsumerRequest(groupId, Map.of("name", consumerNameWithSuffix));
+        httpResponse = httpConsumerService.createConsumerRequest(groupId, MAPPER.createObjectNode().put("name", consumerNameWithSuffix));
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseMap = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        assertThat(responseMap.get("instance_id"), is(consumerNameWithSuffix));
-        assertThat(responseMap.get("base_uri"), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, consumerNameWithSuffix))));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("instance_id").asText(), is(consumerNameWithSuffix));
+        assertThat(responseBody.get("base_uri").asText(), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, consumerNameWithSuffix))));
 
         // consumers deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -893,7 +863,7 @@ public class ConsumerIT extends AbstractIT {
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_FOUND.code()));
         assertThat(httpBridgeError.message(), is("The specified consumer instance was not found."));
     }
@@ -903,16 +873,17 @@ public class ConsumerIT extends AbstractIT {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
         // commit offsets
-        Map<String, Object> offsets = Map.of(
-            "topic", "offsetsConsumerDoesNotExist",
-            "partition", 0,
-            "offset", 10
-        );
+        ObjectNode offsetsBody = MAPPER.createObjectNode();
+        offsetsBody.putArray("offsets").add(
+            MAPPER.createObjectNode()
+                .put("topic", "offsetsConsumerDoesNotExist")
+                .put("partition", 0)
+                .put("offset", 10));
 
-        HttpResponse<String> httpResponse = httpConsumerService.commitOffsetsRequest(groupId, name, List.of(offsets));
+        HttpResponse<String> httpResponse = httpConsumerService.commitOffsetsRequest(groupId, name, offsetsBody);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_FOUND.code()));
         assertThat(httpBridgeError.message(), is("The specified consumer instance was not found."));
     }
@@ -921,7 +892,7 @@ public class ConsumerIT extends AbstractIT {
     void doNotRespondTooLongMessage(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(bridgeTestContext.getTopicName(), 1);
 
@@ -934,7 +905,7 @@ public class ConsumerIT extends AbstractIT {
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name, 1);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
 
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
         assertThat(httpBridgeError.message(), is("Response exceeds the maximum number of bytes the consumer can receive"));
 
@@ -946,7 +917,7 @@ public class ConsumerIT extends AbstractIT {
     void doNotReceiveMessageAfterUnsubscribe(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String message = "Simple message";
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, message, 0, true);
@@ -961,13 +932,13 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage receivedMessage = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body())[0];
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.topic(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.value(), is(message));
-        assertThat(receivedMessage.offset(), is(0L));
-        assertThat(receivedMessage.partition(), notNullValue());
-        assertThat(receivedMessage.key(), nullValue());
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(message));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
         // unsubscribe consumer
         httpConsumerService.unsubscribeConsumer(groupId, name, List.of(bridgeTestContext.getTopicName()));
@@ -979,7 +950,7 @@ public class ConsumerIT extends AbstractIT {
         httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
 
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
         assertThat(httpBridgeError.message(), is("Consumer is not subscribed to any topics or assigned any partitions"));
 
@@ -991,7 +962,7 @@ public class ConsumerIT extends AbstractIT {
     void formatAndAcceptMismatch(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
         bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
@@ -1005,7 +976,7 @@ public class ConsumerIT extends AbstractIT {
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
 
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
         assertThat(httpBridgeError.message(), is("Consumer format does not match the embedded format requested by the Accept header."));
 
@@ -1018,44 +989,37 @@ public class ConsumerIT extends AbstractIT {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
-        Map<String, Object> sentKey = Map.of(
-            "f1", "v1",
-            "array", List.of(1, 2)
-        );
+        ObjectNode sentKey = MAPPER.createObjectNode();
+        sentKey.put("f1", "v1");
+        sentKey.putArray("array").add(1).add(2);
 
-        Map<String, Object> sentValue = Map.of(
-            "array", List.of("v1", "v2"),
-            "foo", "bar",
-            "number", 123,
-            "nested", Map.of("f", "v")
-        );
+        ObjectNode sentValue = MAPPER.createObjectNode();
+        sentValue.putArray("array").add("v1").add("v2");
+        sentValue.put("foo", "bar");
+        sentValue.put("number", 123);
+        sentValue.set("nested", MAPPER.createObjectNode().put("f", "v"));
 
-        Map<String, Object> records = Map.of(
-            "records", List.of(
-                Map.of(
-                    "key", sentKey,
-                    "value", sentValue
-                )
-            )
-        );
+        ObjectNode records = MAPPER.createObjectNode();
+        ObjectNode record = MAPPER.createObjectNode();
+        record.set("key", sentKey);
+        record.set("value", sentValue);
+        records.putArray("records").add(record);
 
-        HttpResponse<String> httpResponse = httpProducerService.sendJsonRecordsRequest(bridgeTestContext.getTopicName(), records, BridgeContentType.KAFKA_JSON_JSON);
-        Map<String, Object> responseMap = HttpResponseUtils.getResponseAsMap(httpResponse.body());
+        HttpResponse<String> httpResponse = httpProducerService.sendJsonNodeRecordsRequest(bridgeTestContext.getTopicName(), records, BridgeContentType.KAFKA_JSON_JSON);
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
-        Object[] offsets = (Object[]) responseMap.get("offsets");
-        assertThat(offsets.length, is(1));
+        JsonNode offsets = responseBody.get("offsets");
+        assertThat(offsets.size(), is(1));
 
-        Map<String, Object> metadata = (Map<String, Object>) offsets[0];
-        assertThat(metadata.get("partition"), is(0));
-        assertThat(metadata.get("offset"), is(0));
+        assertThat(offsets.get(0).get("partition").asInt(), is(0));
+        assertThat(offsets.get(0).get("offset").asInt(), is(0));
 
-        Map<String, Object> consumerConfig = Map.of(
-            "name", name,
-            "format", "json"
-        );
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json");
 
         // create consumer
         // subscribe to a topic
@@ -1067,27 +1031,13 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage receivedMessage = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body())[0];
-        assertThat(receivedMessage.topic(), is(bridgeTestContext.getTopicName()));
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
 
-        Map<String, Object> value = (Map<String, Object>) receivedMessage.value();
-        Map<String, Object> normalizedValue = value.entrySet().stream()
-            .collect(Collectors.toMap(
-                Map.Entry::getKey,
-                e -> e.getValue() instanceof Object[] arr ? Arrays.asList(arr) : e.getValue()
-            ));
-
-        Map<String, Object> key = (Map<String, Object>) receivedMessage.key();
-        Map<String, Object> normalizedKey = key.entrySet().stream()
-            .collect(Collectors.toMap(
-                Map.Entry::getKey,
-                e -> e.getValue() instanceof Object[] arr ? Arrays.asList(arr) : e.getValue()
-            ));
-
-        assertThat(normalizedValue, is(sentValue));
-        assertThat(receivedMessage.offset(), is(0L));
-        assertThat(receivedMessage.partition(), notNullValue());
-        assertThat(normalizedKey, is(sentKey));
+        assertThat(receivedMessage.get("value"), is(sentValue));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key"), is(sentKey));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -1097,7 +1047,7 @@ public class ConsumerIT extends AbstractIT {
     void tryReceiveNotValidJsonMessage(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         // send a simple String which is not JSON encoded
         bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(bridgeTestContext.getTopicName(), 1);
@@ -1111,7 +1061,7 @@ public class ConsumerIT extends AbstractIT {
         HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
 
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
         assertThat(httpBridgeError.message(), startsWith("Failed to decode"));
 
@@ -1126,16 +1076,16 @@ public class ConsumerIT extends AbstractIT {
         HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumer);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        Map<String, Object> responseMap = HttpResponseUtils.getResponseAsMap(httpResponse.body());
-        assertThat(responseMap.get("instance_id"), is(name));
-        assertThat(responseMap.get("base_uri"), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, name))));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("instance_id").asText(), is(name));
+        assertThat(responseBody.get("base_uri").asText(), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, name))));
 
         Thread.sleep(Constants.DEFAULT_CONSUMER_TIMEOUT * 2 * 1000);
 
         httpResponse = httpConsumerService.deleteConsumer(groupId, name);
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
         assertThat(httpBridgeError.message(), is("The specified consumer instance was not found."));
     }
 
@@ -1143,19 +1093,18 @@ public class ConsumerIT extends AbstractIT {
     void receiveSimpleMessageTopicCreatedAfterAssignTest(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        Map<String, Object> assignmentConfig = Map.of(
-            "topic", bridgeTestContext.getTopicName(),
-            "partition", 0
-        );
+        ObjectNode assignmentBody = MAPPER.createObjectNode();
+        assignmentBody.putArray("partitions").add(
+            MAPPER.createObjectNode().put("topic", bridgeTestContext.getTopicName()).put("partition", 0));
 
         // create consumer
         httpConsumerService.createConsumer(groupId, consumer);
 
         // assign consumer
-        httpConsumerService.assignPartitions(groupId, name, List.of(assignmentConfig));
+        httpConsumerService.assignPartitions(groupId, name, assignmentBody);
 
         // create topic
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         // send message
         String sentBody = "Simple message";
@@ -1166,13 +1115,13 @@ public class ConsumerIT extends AbstractIT {
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        ReceivedMessage receivedMessage = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body())[0];
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.topic(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.value(), is(sentBody));
-        assertThat(receivedMessage.offset(), is(0L));
-        assertThat(receivedMessage.partition(), is(0));
-        assertThat(receivedMessage.key(), nullValue());
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition").asInt(), is(0));
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -1183,7 +1132,7 @@ public class ConsumerIT extends AbstractIT {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
         // create topic
-        createTopic(bridgeTestContext, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         // send message
         String sentBody = "Simple message";
@@ -1207,20 +1156,28 @@ public class ConsumerIT extends AbstractIT {
 
         HttpResponse<String> httpResponse = consumeFuture.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        ReceivedMessage receivedMessage = HttpResponseUtils.getReceivedMessagesFromResponse(httpResponse.body())[0];
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.topic(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.value(), is(sentBody));
-        assertThat(receivedMessage.offset(), is(0L));
-        assertThat(receivedMessage.partition(), is(0));
-        assertThat(receivedMessage.key(), nullValue());
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition").asInt(), is(0));
+        assertThat(receivedMessage.get("key").isNull(), is(true));
     }
 
     @BeforeEach
     void setUp() {
         name = generateRandomConsumerName();
-        consumerWithEarliestOffsetReset.put("name", name);
-        consumer.put("name", name);
         groupId = generateRandomConsumerGroupName();
+
+        consumerWithEarliestOffsetReset = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("auto.offset.reset", "earliest")
+            .put("enable.auto.commit", true)
+            .put("fetch.min.bytes", 100);
+
+        consumer = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json");
     }
 }

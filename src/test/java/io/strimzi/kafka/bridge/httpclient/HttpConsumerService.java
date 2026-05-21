@@ -4,6 +4,8 @@
  */
 package io.strimzi.kafka.bridge.httpclient;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
@@ -11,7 +13,6 @@ import io.strimzi.kafka.bridge.utils.Endpoints;
 
 import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -36,11 +37,11 @@ public class HttpConsumerService extends HttpClientBaseService {
      * @param groupId       name of the group where the consumer should belong.
      * @param requestBody   consumer's configuration.
      */
-    public void createConsumer(String groupId, Map<String, Object> requestBody) {
+    public void createConsumer(String groupId, JsonNode requestBody) {
         HttpResponse<String> httpResponse = createConsumerRequest(groupId, requestBody);
 
         if (httpResponse.statusCode() != HttpResponseStatus.OK.code()) {
-            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
             throw new RuntimeException("Failed to create consumer due to: " + httpBridgeError.message());
         }
     }
@@ -54,7 +55,7 @@ public class HttpConsumerService extends HttpClientBaseService {
      *
      * @return  result of the request in the {@link HttpResponse}.
      */
-    public HttpResponse<String> createConsumerRequest(String groupId, Map<String, Object> requestBody) {
+    public HttpResponse<String> createConsumerRequest(String groupId, JsonNode requestBody) {
         return createConsumerRequest(groupId, requestBody, null);
     }
 
@@ -69,8 +70,8 @@ public class HttpConsumerService extends HttpClientBaseService {
      *
      * @return  result of the request in the {@link HttpResponse}.
      */
-    public HttpResponse<String> createConsumerRequest(String groupId, Map<String, Object> requestBody, List<String> headers) {
-        return httpService.post(Endpoints.consumers(groupId), parseJsonFromMap(requestBody), headers, BridgeContentType.KAFKA_JSON);
+    public HttpResponse<String> createConsumerRequest(String groupId, JsonNode requestBody, List<String> headers) {
+        return httpService.post(Endpoints.consumers(groupId), toJsonString(requestBody), headers, BridgeContentType.KAFKA_JSON);
     }
 
     /**
@@ -96,7 +97,7 @@ public class HttpConsumerService extends HttpClientBaseService {
         HttpResponse<String> httpResponse = subscribeConsumerRequest(groupId, consumerName, topics);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
-            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
             throw new RuntimeException("Failed to subscribe consumer due to: " + httpBridgeError.message());
         }
     }
@@ -112,8 +113,9 @@ public class HttpConsumerService extends HttpClientBaseService {
      * @return  result of the request in the {@link HttpResponse}.
      */
     public HttpResponse<String> subscribeConsumerRequest(String groupId, String consumerName, List<String> topics) {
-        Map<String, Object> topicMap = Map.of("topics", topics);
-        return subscribeConsumerRequest(groupId, consumerName, topicMap);
+        ObjectNode topicNode = objectMapper.createObjectNode();
+        topicNode.putArray("topics").addAll(topics.stream().map(objectMapper.getNodeFactory()::textNode).toList());
+        return subscribeConsumerRequest(groupId, consumerName, topicNode);
     }
 
     /**
@@ -124,28 +126,28 @@ public class HttpConsumerService extends HttpClientBaseService {
      * @param topicsPattern     topics pattern to which the consumer should be subscribed to.
      */
     public void subscribeConsumerRequestWithTopicPattern(String groupId, String consumerName, String topicsPattern) {
-        Map<String, Object> topicMap = Map.of("topic_pattern", topicsPattern);
+        ObjectNode topicNode = objectMapper.createObjectNode().put("topic_pattern", topicsPattern);
 
-        HttpResponse<String> httpResponse = subscribeConsumerRequest(groupId, consumerName, topicMap);
+        HttpResponse<String> httpResponse = subscribeConsumerRequest(groupId, consumerName, topicNode);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
-            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
             throw new RuntimeException("Failed to subscribe consumer due to: " + httpBridgeError.message());
         }
     }
 
     /**
-     * Method that subscribes the consumer using subscription config in Map.
+     * Method that subscribes the consumer using subscription config in JsonNode.
      * It then returns result of the request in {@link HttpResponse}.
      *
      * @param groupId               group ID to which consumer belongs to.
      * @param consumerName          name of the consumer.
-     * @param subscriptionConfig    subscription configuration as a Map (e.g., containing "topics", "topic_pattern", or both).
+     * @param subscriptionConfig    subscription configuration as a JsonNode.
      *
      * @return  result of the request in {@link HttpResponse}.
      */
-    public HttpResponse<String> subscribeConsumerRequest(String groupId, String consumerName, Map<String, Object> subscriptionConfig) {
-        return subscribeConsumerRequest(groupId, consumerName, parseJsonFromMap(subscriptionConfig));
+    public HttpResponse<String> subscribeConsumerRequest(String groupId, String consumerName, JsonNode subscriptionConfig) {
+        return subscribeConsumerRequest(groupId, consumerName, toJsonString(subscriptionConfig));
     }
 
     /**
@@ -223,13 +225,13 @@ public class HttpConsumerService extends HttpClientBaseService {
      *
      * @param groupId       group ID to which consumer belongs to.
      * @param consumerName  name of the consumer.
-     * @param partitions    partitions (with topics) to which the consumer should be assigned.
+     * @param assignmentBody    JSON containing partitions assignment configuration.
      */
-    public void assignPartitions(String groupId, String consumerName, List<Map<String, Object>> partitions) {
-        HttpResponse<String> httpResponse = assignmentRequest(groupId, consumerName, partitions);
+    public void assignPartitions(String groupId, String consumerName, JsonNode assignmentBody) {
+        HttpResponse<String> httpResponse = assignmentRequest(groupId, consumerName, assignmentBody);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
-            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
             throw new RuntimeException("Failed to assign partitions to consumer due to: " + httpBridgeError.message());
         }
     }
@@ -240,13 +242,12 @@ public class HttpConsumerService extends HttpClientBaseService {
      *
      * @param groupId       group ID to which consumer belongs to.
      * @param consumerName  name of the consumer.
-     * @param partitions    partitions (with topics) to which the consumer should be assigned.
+     * @param assignmentBody    JSON containing partitions assignment configuration.
      *
-     * @return  the response (with the messages) in {@link HttpResponse}.
+     * @return  the response in {@link HttpResponse}.
      */
-    public HttpResponse<String> assignmentRequest(String groupId, String consumerName, List<Map<String, Object>> partitions) {
-        Map<String, Object> partitionsMap = Map.of("partitions", partitions);
-        return httpService.post(Endpoints.consumerAssignments(groupId, consumerName), parseJsonFromMap(partitionsMap), null, BridgeContentType.KAFKA_JSON);
+    public HttpResponse<String> assignmentRequest(String groupId, String consumerName, JsonNode assignmentBody) {
+        return httpService.post(Endpoints.consumerAssignments(groupId, consumerName), toJsonString(assignmentBody), null, BridgeContentType.KAFKA_JSON);
     }
 
     /**
@@ -255,13 +256,13 @@ public class HttpConsumerService extends HttpClientBaseService {
      *
      * @param groupId           group ID to which consumer belongs to.
      * @param consumerName      name of the consumer.
-     * @param partitionOffsets  list of partition offsets which should be committed.
+     * @param offsetsBody       JSON containing offsets to commit.
      */
-    public void commitOffsets(String groupId, String consumerName, List<Map<String, Object>> partitionOffsets) {
-        HttpResponse<String> httpResponse = commitOffsetsRequest(groupId, consumerName, partitionOffsets);
+    public void commitOffsets(String groupId, String consumerName, JsonNode offsetsBody) {
+        HttpResponse<String> httpResponse = commitOffsetsRequest(groupId, consumerName, offsetsBody);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
-            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
             throw new RuntimeException("Failed to commit offsets due to: " + httpBridgeError.message());
         }
     }
@@ -272,15 +273,12 @@ public class HttpConsumerService extends HttpClientBaseService {
      *
      * @param groupId           group ID to which consumer belongs to.
      * @param consumerName      name of the consumer.
-     * @param partitionOffsets  list of partition offsets which should be committed.
+     * @param offsetsBody       JSON containing offsets to commit.
      *
-     * @return  the response (with the messages) in {@link HttpResponse}.
+     * @return  the response in {@link HttpResponse}.
      */
-    public HttpResponse<String> commitOffsetsRequest(String groupId, String consumerName, List<Map<String, Object>> partitionOffsets) {
-        Map<String, Object> offsets = Map.of(
-            "offsets", partitionOffsets
-        );
-        return httpService.post(Endpoints.consumerOffsets(groupId, consumerName), parseJsonFromMap(offsets), null, BridgeContentType.KAFKA_JSON);
+    public HttpResponse<String> commitOffsetsRequest(String groupId, String consumerName, JsonNode offsetsBody) {
+        return httpService.post(Endpoints.consumerOffsets(groupId, consumerName), toJsonString(offsetsBody), null, BridgeContentType.KAFKA_JSON);
     }
 
     /**
@@ -308,7 +306,7 @@ public class HttpConsumerService extends HttpClientBaseService {
         HttpResponse<String> httpResponse = unsubscribeConsumerRequest(groupId, consumerName, topics);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
-            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
             throw new RuntimeException("Failed to unsubscribe consumer due to: " + httpBridgeError.message());
         }
     }
@@ -321,12 +319,13 @@ public class HttpConsumerService extends HttpClientBaseService {
      * @param consumerName  name of the consumer.
      * @param topics        list of topics from which the consumer should be unsubscribed.
      *
-     * @return  the response (with the messages) in {@link HttpResponse}.
+     * @return  the response in {@link HttpResponse}.
      */
     public HttpResponse<String> unsubscribeConsumerRequest(String groupId, String consumerName, List<String> topics) {
-        Map<String, Object> topicsMap = Map.of("topics", topics);
+        ObjectNode topicsNode = objectMapper.createObjectNode();
+        topicsNode.putArray("topics").addAll(topics.stream().map(objectMapper.getNodeFactory()::textNode).toList());
 
-        return httpService.delete(Endpoints.consumerSubscribe(groupId, consumerName), parseJsonFromMap(topicsMap));
+        return httpService.delete(Endpoints.consumerSubscribe(groupId, consumerName), toJsonString(topicsNode));
     }
 
     /**
@@ -336,7 +335,7 @@ public class HttpConsumerService extends HttpClientBaseService {
      * @param groupId       group ID to which consumer belongs to.
      * @param consumerName  name of the consumer.
      *
-     * @return  the response (with the messages) in {@link HttpResponse}.
+     * @return  the response in {@link HttpResponse}.
      */
     public HttpResponse<String> deleteConsumer(String groupId, String consumerName) {
         return httpService.delete(Endpoints.consumerInstance(groupId, consumerName));

@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.strimzi.kafka.bridge.utils.Endpoints;
 
 import java.net.http.HttpResponse;
-import java.util.Map;
 
 /**
  * Class containing methods for HTTP producer - for sending the messages to the HTTP Bridge.
@@ -21,19 +20,6 @@ public class HttpProducerService extends HttpClientBaseService {
      */
     public HttpProducerService(HttpService httpService) {
         super(httpService);
-    }
-
-    /**
-     * Method for sending the HTTP request with JSON (stored in Map).
-     *
-     * @param topicName     Name of the topic where the request should be sent.
-     * @param json          JSON in Map containing the message.
-     * @param contentType   Content type of the request.
-     *
-     * @return  {@link HttpResponse} containing information about the result of send.
-     */
-    public HttpResponse<String> sendJsonRecordsRequest(String topicName, Map<String, Object> json, String contentType) {
-        return sendRecordsRequest(topicName, parseJsonFromMap(json), contentType);
     }
 
     /**

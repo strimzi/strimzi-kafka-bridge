@@ -37,7 +37,7 @@ public class HttpSeekService extends HttpClientBaseService {
         HttpResponse<String> httpResponse = seekToPositionsRequest(groupId, consumerName, body);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
-            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
             throw new RuntimeException("Failed to seek to positions due to: " + httpBridgeError.message());
         }
     }
@@ -67,7 +67,7 @@ public class HttpSeekService extends HttpClientBaseService {
         HttpResponse<String> httpResponse = seekToBeginningRequest(groupId, consumerName, body);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
-            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
             throw new RuntimeException("Failed to seek to beginning due to: " + httpBridgeError.message());
         }
     }
@@ -97,7 +97,7 @@ public class HttpSeekService extends HttpClientBaseService {
         HttpResponse<String> httpResponse = seekToEndRequest(groupId, consumerName, body);
 
         if (httpResponse.statusCode() != HttpResponseStatus.NO_CONTENT.code()) {
-            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsMap(httpResponse.body()));
+            HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
             throw new RuntimeException("Failed to seek to end due to: " + httpBridgeError.message());
         }
     }

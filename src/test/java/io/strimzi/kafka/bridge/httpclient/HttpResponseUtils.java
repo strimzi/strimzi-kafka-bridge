@@ -5,26 +5,16 @@
 package io.strimzi.kafka.bridge.httpclient;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.strimzi.kafka.bridge.objects.Offsets;
-import io.strimzi.kafka.bridge.objects.Partition;
-import io.strimzi.kafka.bridge.objects.ReceivedMessage;
-import io.strimzi.kafka.bridge.objects.Topic;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.Map;
 
 public class HttpResponseUtils {
     private static final Logger LOGGER = LogManager.getLogger(HttpResponseUtils.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-    static {
-        OBJECT_MAPPER.configure(DeserializationFeature.USE_JAVA_ARRAY_FOR_JSON_ARRAY, true);
-    }
 
     public static JsonNode getResponseAsJsonNode(String response) {
         try {
@@ -35,44 +25,11 @@ public class HttpResponseUtils {
         }
     }
 
-    public static Map<String, Object> getResponseAsMap(String response) {
-        return parseFromResponse(response, Map.class);
-    }
-
     public static List<String> getListOfStringsFromResponse(String response) {
         try {
             return OBJECT_MAPPER.readValue(response, new TypeReference<>() { });
         } catch (Exception e) {
             LOGGER.error("Unable to map the response {} to List<String> due to: ", response, e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static Topic getTopicFromResponse(String response) {
-        return parseFromResponse(response, Topic.class);
-    }
-
-    public static List<Partition> getPartitionsFromResponse(String response) {
-        return List.of(parseFromResponse(response, Partition[].class));
-    }
-
-    public static Partition getPartitionFromResponse(String response) {
-        return parseFromResponse(response, Partition.class);
-    }
-
-    public static Offsets getOffsetsFromResponse(String response) {
-        return parseFromResponse(response, Offsets.class);
-    }
-
-    public static ReceivedMessage[] getReceivedMessagesFromResponse(String response) {
-        return parseFromResponse(response, ReceivedMessage[].class);
-    }
-
-    private static <T> T parseFromResponse(String response, Class<T> clazz) {
-        try {
-            return OBJECT_MAPPER.readValue(response, clazz);
-        } catch (Exception e) {
-            LOGGER.error("Unable to map the response: {} to: {} due to: ", response, clazz.getName(), e);
             throw new RuntimeException(e);
         }
     }
