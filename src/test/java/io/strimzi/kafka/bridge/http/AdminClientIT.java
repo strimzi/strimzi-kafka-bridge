@@ -4,290 +4,178 @@
  */
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.HttpResponse;
-import io.vertx.ext.web.codec.BodyCodec;
-import io.vertx.junit5.VertxTestContext;
-import org.apache.kafka.common.KafkaFuture;
+import io.strimzi.kafka.bridge.extensions.BridgeSuite;
+import io.strimzi.kafka.bridge.http.base.AbstractIT;
+import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
+import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import org.junit.jupiter.api.Test;
 
+import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
-import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
-import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
-public class AdminClientIT extends HttpBridgeITAbstract {
+@BridgeSuite
+public class AdminClientIT extends AbstractIT {
+    public static ObjectMapper objectMapper = new ObjectMapper();
+
     @Test
-    void listTopicsTest(VertxTestContext context) throws Exception {
-        setupTopic(context, topic, 1);
+    void testListKafkaTopics(BridgeTestContext bridgeTestContext) {
+        bridgeTestContext.getAdminClientFacade().createTopic("my-topic", 1);
+        bridgeTestContext.getAdminClientFacade().createTopic("my-second-topic", 1);
 
-        baseService()
-                .getRequest("/topics")
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        List<String> bridgeResponse = response.body().getList();
-                        assertThat(bridgeResponse, hasItem(topic));
-                    });
-                    context.completeNow();
-                });
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get("/topics");
+
+        List<String> topics = HttpResponseUtils.getListOfStringsFromResponse(httpResponse.body());
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        assertThat(topics.contains("my-topic"), is(true));
+        assertThat(topics.contains("my-second-topic"), is(true));
     }
 
     @Test
-    void getTopicTest(VertxTestContext context) throws Exception {
-        final String topic = "testGetTopic";
-        setupTopic(context, topic, 2);
+    void testGetTopic(BridgeTestContext bridgeTestContext) {
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
-        baseService()
-                .getRequest("/topics/" + topic)
-                .as(BodyCodec.jsonObject())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        assertThat(bridgeResponse.getString("name"), is(topic));
-                        JsonObject configs = bridgeResponse.getJsonObject("configs");
-                        assertThat(configs, notNullValue());
-                        assertThat(configs.getString("cleanup.policy"), is("delete"));
-                        JsonArray partitions = bridgeResponse.getJsonArray("partitions");
-                        assertThat(partitions.size(), is(2));
-                        for (int i = 0; i < 2; i++) {
-                            JsonObject partition = partitions.getJsonObject(i);
-                            assertThat(partition.getInteger("partition"), is(i));
-                            assertThat(partition.getInteger("leader"), is(0));
-                            JsonArray replicas = partition.getJsonArray("replicas");
-                            assertThat(replicas.size(), is(1));
-                            JsonObject replica0 = replicas.getJsonObject(0);
-                            assertThat(replica0.getInteger("broker"), is(0));
-                            assertThat(replica0.getBoolean("leader"), is(true));
-                            assertThat(replica0.getBoolean("in_sync"), is(true));
-                        }
-                    });
-                    context.completeNow();
-                });
-    }
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get("/topics/" + bridgeTestContext.getTopicName());
 
-    @Test
-    void getTopicNotFoundTest(VertxTestContext context) {
-        baseService()
-                .getRequest("/topics/" + topic)
-                .as(BodyCodec.jsonObject())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                    });
-                    context.completeNow();
-                });
-    }
+        JsonNode topic = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
-    @Test
-    void listPartitionsTest(VertxTestContext context) throws Exception {
-        setupTopic(context, topic, 2);
+        assertThat(topic.get("name").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(topic.get("configs").get("cleanup.policy").asText(), is("delete"));
+        assertThat(topic.get("partitions").size(), is(2));
 
-        baseService()
-                .getRequest("/topics/" + topic + "/partitions")
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonArray bridgeResponse = response.body();
-                        assertThat(bridgeResponse.size(), is(2));
-                        for (int i = 0; i < 2; i++) {
-                            JsonObject partition = bridgeResponse.getJsonObject(i);
-                            assertThat(partition.getInteger("partition"), is(i));
-                            assertThat(partition.getInteger("leader"), is(0));
-                            JsonArray replicas = partition.getJsonArray("replicas");
-                            assertThat(replicas.size(), is(1));
-                            JsonObject replica0 = replicas.getJsonObject(0);
-                            assertThat(replica0.getInteger("broker"), is(0));
-                            assertThat(replica0.getBoolean("leader"), is(true));
-                            assertThat(replica0.getBoolean("in_sync"), is(true));
-                        }
-                    });
-                    context.completeNow();
-                });
-    }
+        for (int i = 0; i < 2; i++) {
+            JsonNode partition = topic.get("partitions").get(i);
 
-    @Test
-    void getPartitionTest(VertxTestContext context) throws Exception {
-        setupTopic(context, topic, 2);
+            assertThat(partition.get("partition").asInt(), is(i));
+            assertThat(partition.get("leader").asInt(), is(0));
 
-        baseService()
-                .getRequest("/topics/" + topic + "/partitions/0")
-                .as(BodyCodec.jsonObject())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        assertThat(bridgeResponse.getInteger("partition"), is(0));
-                        assertThat(bridgeResponse.getInteger("leader"), is(0));
-                        JsonArray replicas = bridgeResponse.getJsonArray("replicas");
-                        assertThat(replicas.size(), is(1));
-                        JsonObject replica0 = replicas.getJsonObject(0);
-                        assertThat(replica0.getInteger("broker"), is(0));
-                        assertThat(replica0.getBoolean("leader"), is(true));
-                        assertThat(replica0.getBoolean("in_sync"), is(true));
-                    });
-                    context.completeNow();
-                });
-    }
+            JsonNode replicas = partition.get("replicas");
+            assertThat(replicas.size(), is(1));
 
-    @Test
-    void getOffsetsSummaryTest(VertxTestContext context) throws Exception {
-        setupTopic(context, topic, 1, 5);
-        baseService()
-                .getRequest("/topics/" + topic + "/partitions/0/offsets")
-                .as(BodyCodec.jsonObject())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        assertThat(bridgeResponse.getLong("beginning_offset"), is(0L));
-                        assertThat(bridgeResponse.getLong("end_offset"), is(5L));
-                    });
-                    context.completeNow();
-                });
-    }
-
-    @Test
-    void getOffsetsSummaryNotFoundTest(VertxTestContext context) {
-        baseService()
-                .getRequest("/topics/" + topic + "/partitions/0/offsets")
-                .as(BodyCodec.jsonObject())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                    });
-                    context.completeNow();
-                });
-    }
-
-    void setupTopic(VertxTestContext context, String topic, int partitions) throws Exception {
-        setupTopic(context, topic, partitions, 1);
-    }
-
-    void setupTopic(VertxTestContext context, String topic, int partitions, int count) throws Exception {
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, partitions, 1);
-
-        JsonArray records = new JsonArray();
-        for (int i = 0; i < count; i++) {
-            JsonObject json = new JsonObject();
-            json.put("value", "hello");
-            records.add(json);
+            JsonNode replica = replicas.get(0);
+            assertThat(replica.get("broker").asInt(), is(0));
+            assertThat(replica.get("leader").asBoolean(), is(true));
+            assertThat(replica.get("in_sync").asBoolean(), is(true));
         }
-
-        JsonObject root = new JsonObject();
-        root.put("records", records);
-        future.get();
-
-        // send a message and wait its delivery to make sure the topic has been made visible to the brokers
-        CompletableFuture<Boolean> producer = new CompletableFuture<>();
-        producerService()
-                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root)
-                .onComplete(ar1 -> {
-                    context.verify(() -> {
-                        assertThat(ar1.succeeded(), is(true));
-                        producer.complete(true);
-                    });
-                });
-        producer.get(TEST_TIMEOUT, TimeUnit.SECONDS);
     }
 
     @Test
-    void createTopicBlankBodyTest(VertxTestContext context) {
-        JsonObject jsonObject = new JsonObject();
+    void testTopicNotFound(BridgeTestContext bridgeTestContext) {
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get("/topics/non-existing-topic");
 
-        // create topic test without name, partitions and replication factor
-        baseService()
-                .postRequest("/admin/topics")
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(jsonObject)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                    });
-                    context.completeNow();
-                });
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
     }
 
     @Test
-    void createTopicTest(VertxTestContext context) {
-        JsonObject jsonObject = new JsonObject();
+    void testListingPartitions(BridgeTestContext bridgeTestContext) {
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
-        // create topic test without partitions and replication factor
-        jsonObject.put("topic_name", topic);
-        baseService()
-                .postRequest("/admin/topics")
-                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(jsonObject.toBuffer().length()))
-                .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(jsonObject)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.CREATED.code()));
-                    });
-                    context.completeNow();
-                });
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions", bridgeTestContext.getTopicName()));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+        JsonNode partitions = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+
+        assertThat(partitions.size(), is(2));
+
+        for (int i = 0; i < 2; i++) {
+            JsonNode partition = partitions.get(i);
+
+            assertThat(partition.get("partition").asInt(), is(i));
+            assertThat(partition.get("leader").asInt(), is(0));
+
+            JsonNode replicas = partition.get("replicas");
+            assertThat(replicas.size(), is(1));
+
+            JsonNode replica = replicas.get(0);
+            assertThat(replica.get("broker").asInt(), is(0));
+            assertThat(replica.get("leader").asBoolean(), is(true));
+            assertThat(replica.get("in_sync").asBoolean(), is(true));
+        }
     }
 
     @Test
-    void createTopicAllParametersTest(VertxTestContext context) {
-        JsonObject jsonObject = new JsonObject();
+    void testGetPartition(BridgeTestContext bridgeTestContext) {
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
-        // create topic test with 1 partition and 1 replication factor
-        jsonObject.put("topic_name", topic);
-        jsonObject.put("partitions_count", 1);
-        jsonObject.put("replication_factor", 1);
-        baseService()
-                .postRequest("/admin/topics")
-                .putHeader(CONTENT_LENGTH.toString(), String.valueOf(jsonObject.toBuffer().length()))
-                .putHeader(CONTENT_TYPE.toString(), BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(jsonObject)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.CREATED.code()));
-                    });
-                    context.completeNow();
-                });
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions/0", bridgeTestContext.getTopicName()));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        JsonNode partition = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+
+        assertThat(partition.get("partition").asInt(), is(0));
+        assertThat(partition.get("leader").asInt(), is(0));
+
+        JsonNode replicas = partition.get("replicas");
+        assertThat(replicas.size(), is(1));
+
+        JsonNode replica = replicas.get(0);
+        assertThat(replica.get("broker").asInt(), is(0));
+        assertThat(replica.get("leader").asBoolean(), is(true));
+        assertThat(replica.get("in_sync").asBoolean(), is(true));
+    }
+
+    @Test
+    void testGetOffsetSummary(BridgeTestContext bridgeTestContext) {
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
+        bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(bridgeTestContext.getTopicName(), 5);
+
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions/0/offsets", bridgeTestContext.getTopicName()));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        JsonNode offsets = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+
+        assertThat(offsets.get("beginning_offset").asInt(), is(0));
+        assertThat(offsets.get("end_offset").asInt(), is(5));
+    }
+
+    @Test
+    void testGetOffsetSummaryNotFound(BridgeTestContext bridgeTestContext) {
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions/0/offsets", bridgeTestContext.getTopicName()));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+    }
+
+    @Test
+    void testCreateEmptyTopic(BridgeTestContext bridgeTestContext) throws JsonProcessingException {
+        ObjectNode jsonNode = objectMapper.createObjectNode();
+
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+        assertThat(httpResponse.body().contains("Instance does not have required property \\\"topic_name\\\""), is(true));
+    }
+
+    @Test
+    void testCreateTopic(BridgeTestContext bridgeTestContext) throws JsonProcessingException {
+        ObjectNode jsonNode = objectMapper.createObjectNode();
+        jsonNode.put("topic_name", bridgeTestContext.getTopicName());
+
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.CREATED.code()));
+    }
+
+    @Test
+    void testCreateTopicWithAllParameters(BridgeTestContext bridgeTestContext) throws JsonProcessingException {
+        ObjectNode jsonNode = objectMapper.createObjectNode();
+        jsonNode.put("topic_name", bridgeTestContext.getTopicName());
+        jsonNode.put("partitions_count", 1);
+        jsonNode.put("replication_factor", 1);
+
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.CREATED.code()));
     }
 }

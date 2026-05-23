@@ -4,23 +4,20 @@
  */
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.HttpResponse;
-import io.vertx.ext.web.codec.BodyCodec;
-import io.vertx.junit5.VertxTestContext;
-import org.apache.kafka.common.KafkaFuture;
-import org.hamcrest.CoreMatchers;
+import io.strimzi.kafka.bridge.extensions.BridgeSuite;
+import io.strimzi.kafka.bridge.http.base.AbstractIT;
+import io.strimzi.kafka.bridge.httpclient.HttpConsumerService;
+import io.strimzi.kafka.bridge.httpclient.HttpProducerService;
+import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
+import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import org.junit.jupiter.api.Test;
 
+import java.net.http.HttpResponse;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,227 +29,151 @@ import static org.hamcrest.Matchers.notNullValue;
 /**
  * Integration tests for the /metrics endpoint functionality
  */
-public class MetricsIT extends HttpBridgeITAbstract {
+@BridgeSuite
+public class MetricsIT extends AbstractIT {
 
     @Test
-    void metricsTest(VertxTestContext context) {
-        internalBaseService()
-                .getRequest("/metrics")
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.OK.code()));
-                        assertThat(ar.result().getHeader("Content-Type"), is("text/plain; version=0.0.4; charset=utf-8"));
-                        context.completeNow();
-                    });
-                });
+    void metricsTest(BridgeTestContext bridgeTestContext) {
+        HttpResponse<String> response = bridgeTestContext.getManagementHttpService().get("/metrics");
+
+        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+        assertThat(response.headers().firstValue("Content-Type").orElse(""), is("text/plain; version=0.0.4; charset=utf-8"));
     }
 
     @Test
-    void metricsContentTest(VertxTestContext context) {
-        internalBaseService()
-                .getRequest("/metrics")
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.OK.code()));
-                        assertThat(ar.result().getHeader("Content-Type"), is("text/plain; version=0.0.4; charset=utf-8"));
+    void metricsContentTest(BridgeTestContext bridgeTestContext) {
+        HttpResponse<String> response = bridgeTestContext.getManagementHttpService().get("/metrics");
 
-                        String metricsBody = ar.result().bodyAsString();
-                        assertThat(metricsBody, is(notNullValue()));
-                        assertThat(!metricsBody.isEmpty(), is(true));
+        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+        assertThat(response.headers().firstValue("Content-Type").orElse(""), is("text/plain; version=0.0.4; charset=utf-8"));
 
-                        // verify Prometheus format containing HELP and TYPE comments
-                        assertThat(metricsBody.contains("# HELP"), is(true));
-                        assertThat(metricsBody.contains("# TYPE"), is(true));
+        String metricsBody = response.body();
+        assertThat(metricsBody, is(notNullValue()));
+        assertThat(!metricsBody.isEmpty(), is(true));
 
-                        // verify JVM and Strimzi bridge specific metrics are present
-                        assertThat(metricsBody.contains("strimzi_bridge_"), is(true));
-                        assertThat(metricsBody.contains("strimzi_bridge_http_"), is(true));
-                        assertThat(metricsBody.contains("jvm_"), is(true));
+        // verify Prometheus format containing HELP and TYPE comments
+        assertThat(metricsBody.contains("# HELP"), is(true));
+        assertThat(metricsBody.contains("# TYPE"), is(true));
 
-                        context.completeNow();
-                    });
-                });
+        // verify JVM and Strimzi bridge specific metrics are present
+        assertThat(metricsBody.contains("strimzi_bridge_"), is(true));
+        assertThat(metricsBody.contains("strimzi_bridge_http_"), is(true));
+        assertThat(metricsBody.contains("jvm_"), is(true));
     }
 
     @Test
-    void metricsAfterProducerSendRecordTest(VertxTestContext context) throws InterruptedException, ExecutionException {
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+    void metricsAfterProducerSendRecordTest(BridgeTestContext bridgeTestContext) {
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String value = "test-message-for-metrics";
 
-        JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("value", value);
-        records.add(json);
+        ObjectNode records = MAPPER.createObjectNode();
+        records.putArray("records").add(MAPPER.createObjectNode().put("value", value));
 
-        JsonObject root = new JsonObject();
-        root.put("records", records);
+        HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
+        httpProducerService.sendJsonNodeRecordsRequest(bridgeTestContext.getTopicName(), records, BridgeContentType.KAFKA_JSON_JSON);
 
-        future.get();
-        
-        producerService()
-                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root)
-                .onComplete(sendResult -> {
-                    context.verify(() -> assertThat(sendResult.succeeded(), is(true)));
-                    
-                    // Check metrics after producer activity
-                    internalBaseService()
-                            .getRequest("/metrics")
-                            .send()
-                            .onComplete(metricsResult -> {
-                                context.verify(() -> {
-                                    assertThat(metricsResult.succeeded(), is(true));
-                                    String metricsBody = metricsResult.result().bodyAsString();
-                                    
-                                    // verify HTTP request metrics
-                                    assertThat(metricsBody.contains("strimzi_bridge_http_client_requests_total"), is(true));
+        // Check metrics after producer activity
+        HttpResponse<String> metricsResponse = bridgeTestContext.getManagementHttpService().get("/metrics");
+        assertThat(metricsResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                                    Optional<Double> requestsTotal = parseMetricValue(metricsBody, "strimzi_bridge_http_client_requests_total");
-                                    assertThat(requestsTotal.isPresent(), is(true));
-                                    assertThat(requestsTotal.get(), greaterThan(0.0));
-                                    
-                                    // verify Kafka producer metrics are present
-                                    assertThat(metricsBody.contains("kafka_producer_"), is(true));
+        String metricsBody = metricsResponse.body();
 
-                                    Optional<Double> recordSend = parseMetricValue(metricsBody, "kafka_producer_producer_metrics_record_send");
-                                    assertThat(recordSend.isPresent(), is(true));
-                                    assertThat(recordSend.get(), greaterThan(0.0));
-                                    
-                                    context.completeNow();
-                                });
-                            });
-                });
+        // verify HTTP server request metrics
+        assertThat(metricsBody.contains("strimzi_bridge_http_server_requests"), is(true));
+
+        // verify Kafka producer metrics are present
+        assertThat(metricsBody.contains("kafka_producer_"), is(true));
+
+        Optional<Double> recordSend = parseMetricValue(metricsBody, "kafka_producer_producer_metrics_record_send");
+        assertThat(recordSend.isPresent(), is(true));
+        assertThat(recordSend.get(), greaterThan(0.0));
     }
 
     @Test
-    void metricsAfterConsumerReceiveRecordTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+    void metricsAfterConsumerReceiveRecordTest(BridgeTestContext bridgeTestContext) {
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
         String groupId = generateRandomConsumerGroupName();
-        String name = "my-kafka-consumer";
-        
-        future.get();
+        String name = generateRandomConsumerName();
         String sentBody = "Simple message for consumer metrics";
-        
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
 
-        JsonObject consumerJson = new JsonObject()
-                .put("name", name)
-                .put("format", "json");
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
 
-        // consumer creation
-        consumerService()
-                .createConsumer(context, groupId, consumerJson)
-                .subscribeConsumer(context, groupId, name, topic);
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
-        
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json");
+
+        // consumer creation + subscription
+        httpConsumerService.createConsumer(groupId, consumerConfig);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
+
         // consume records
-        consumerService()
-                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.OK.code()));
+        HttpResponse<String> consumeResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
+        assertThat(consumeResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                        JsonObject jsonResponse = response.body().getJsonObject(0);
-                        assertThat(jsonResponse.getString("value"), is(sentBody));
-                    });
-                    consume.complete(true);
-                });
-
-        consume.get(timeout, TimeUnit.SECONDS);
+        JsonNode receivedMessages = HttpResponseUtils.getResponseAsJsonNode(consumeResponse.body());
+        assertThat(receivedMessages.size(), greaterThan(0));
+        assertThat(receivedMessages.get(0).get("value").asText(), is(sentBody));
 
         // check metrics after consumer activity
-        internalBaseService()
-                .getRequest("/metrics")
-                .send()
-                .onComplete(metricsResult -> {
-                    context.verify(() -> {
-                        assertThat(metricsResult.succeeded(), is(true));
-                        String metricsBody = metricsResult.result().bodyAsString();
+        HttpResponse<String> metricsResponse = bridgeTestContext.getManagementHttpService().get("/metrics");
+        assertThat(metricsResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                        // verify HTTP client request metrics
-                        assertThat(metricsBody.contains("strimzi_bridge_http_client_requests_total"), is(true));
+        String metricsBody = metricsResponse.body();
 
-                        // verify Kafka consumer metrics are present
-                        assertThat(metricsBody.contains("kafka_consumer_"), is(true));
+        // verify HTTP server request metrics
+        assertThat(metricsBody.contains("strimzi_bridge_http_server_requests"), is(true));
 
-                        context.completeNow();
-                    });
-                });
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        // verify Kafka consumer metrics are present
+        assertThat(metricsBody.contains("kafka_consumer_"), is(true));
 
         // consumer deletion
-        consumerService().deleteConsumer(context, groupId, name);
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void metricsExecutorTest(VertxTestContext context) throws InterruptedException, ExecutionException {
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+    void metricsExecutorTest(BridgeTestContext bridgeTestContext) {
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String value = "test-message-for-executor-metrics";
 
-        JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("value", value);
-        records.add(json);
+        ObjectNode records = MAPPER.createObjectNode();
+        records.putArray("records").add(MAPPER.createObjectNode().put("value", value));
 
-        JsonObject root = new JsonObject();
-        root.put("records", records);
+        HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
+        httpProducerService.sendJsonNodeRecordsRequest(bridgeTestContext.getTopicName(), records, BridgeContentType.KAFKA_JSON_JSON);
 
-        future.get();
+        // check metrics after producer activity to verify executor metrics
+        HttpResponse<String> metricsResponse = bridgeTestContext.getManagementHttpService().get("/metrics");
+        assertThat(metricsResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        producerService()
-                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root)
-                .onComplete(sendResult -> {
-                    context.verify(() -> assertThat(sendResult.succeeded(), is(true)));
+        String metricsBody = metricsResponse.body();
 
-                    // check metrics after producer activity to verify executor metrics
-                    internalBaseService()
-                            .getRequest("/metrics")
-                            .send()
-                            .onComplete(metricsResult -> {
-                                context.verify(() -> {
-                                    assertThat(metricsResult.succeeded(), is(true));
-                                    String metricsBody = metricsResult.result().bodyAsString();
+        // verify executor metrics are present with correct tags
+        assertThat(metricsBody.contains("executor_active_threads"), is(true));
+        assertThat(metricsBody.contains("executor_queued_tasks"), is(true));
+        assertThat(metricsBody.contains("executor_queue_remaining_tasks"), is(true));
+        assertThat(metricsBody.contains("executor_pool_size_threads"), is(true));
+        assertThat(metricsBody.contains("executor_completed_tasks_total"), is(true));
 
-                                    // verify executor metrics are present with correct tags
-                                    assertThat(metricsBody.contains("executor_active_threads"), is(true));
-                                    assertThat(metricsBody.contains("executor_queued_tasks"), is(true));
-                                    assertThat(metricsBody.contains("executor_queue_remaining_tasks"), is(true));
-                                    assertThat(metricsBody.contains("executor_pool_size_threads"), is(true));
-                                    assertThat(metricsBody.contains("executor_completed_tasks_total"), is(true));
+        // verify executor metrics have the expected tags
+        assertThat(metricsBody.contains("name=\"kafka-bridge\""), is(true));
 
-                                    // verify executor metrics have the expected tags
-                                    assertThat(metricsBody.contains("name=\"kafka-bridge\""), is(true));
+        // verify executor completed tasks counter is > 0 (at least one task completed)
+        Optional<Double> completedTotal = parseMetricValue(metricsBody, "executor_completed_tasks_total");
+        assertThat(completedTotal.isPresent(), is(true));
+        assertThat(completedTotal.get(), greaterThan(0.0));
 
-                                    // verify executor completed tasks counter is > 0 (at least one task completed)
-                                    Optional<Double> completedTotal = parseMetricValue(metricsBody, "executor_completed_tasks_total");
-                                    assertThat(completedTotal.isPresent(), is(true));
-                                    assertThat(completedTotal.get(), greaterThan(0.0));
-
-                                    // verify pool size gauge has a reasonable value
-                                    Optional<Double> poolSize = parseMetricValue(metricsBody, "executor_pool_size_threads");
-                                    assertThat(poolSize.isPresent(), is(true));
-                                    assertThat(poolSize.get(), greaterThan(0.0));
-
-                                    context.completeNow();
-                                });
-                            });
-                });
+        // verify pool size gauge has a reasonable value
+        Optional<Double> poolSize = parseMetricValue(metricsBody, "executor_pool_size_threads");
+        assertThat(poolSize.isPresent(), is(true));
+        assertThat(poolSize.get(), greaterThan(0.0));
     }
 
     private Optional<Double> parseMetricValue(String metricsBody, String metricName) {
-        // Look for the metric line that starts with the metric name, optionally has tags in {}, and contains a numeric value
         Pattern pattern = Pattern.compile("^" + Pattern.quote(metricName) + "(?:\\{[^}]*})?\\s+(\\d+(?:\\.\\d+)?)\\s*$", Pattern.MULTILINE);
         Matcher matcher = pattern.matcher(metricsBody);
         return matcher.find() ? Optional.of(Double.parseDouble(matcher.group(1))) : Optional.empty();

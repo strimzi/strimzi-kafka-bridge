@@ -4,577 +4,328 @@
  */
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
+import io.strimzi.kafka.bridge.extensions.BridgeSuite;
+import io.strimzi.kafka.bridge.http.base.AbstractIT;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
-import io.strimzi.kafka.bridge.http.services.ConsumerService;
-import io.strimzi.kafka.bridge.utils.Urls;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.HttpResponse;
-import io.vertx.ext.web.codec.BodyCodec;
-import io.vertx.junit5.VertxTestContext;
-import org.apache.kafka.common.KafkaFuture;
+import io.strimzi.kafka.bridge.httpclient.HttpConsumerService;
+import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
+import io.strimzi.kafka.bridge.httpclient.HttpSeekService;
+import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
-import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class SeekIT extends HttpBridgeITAbstract {
+@BridgeSuite
+public class SeekIT extends AbstractIT {
     private static final Logger LOGGER = LogManager.getLogger(SeekIT.class);
 
-    private final String name = "my-kafka-consumer";
-    private final String groupId = "my-group";
-    private final JsonObject jsonConsumer = new JsonObject()
-        .put("name", name)
-        .put("format", "json");
+    private String name;
+    private String groupId;
 
-    @Test
-    void seekToNotExistingConsumer(VertxTestContext context) throws InterruptedException {
-        JsonObject root = new JsonObject();
-
-        seekService()
-                .positionsBeginningRequest(groupId, name, root)
-                .sendJsonObject(root)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.message(), is("The specified consumer instance was not found."));
-                        context.completeNow();
-                    });
-                });
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
-    }
-
-    @Disabled // This test was disabled because of known issue described in https://github.com/strimzi/strimzi-kafka-bridge/issues/320
-    @Test
-    void seekToNotExistingPartitionInSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        adminClientFacade.createTopic(topic);
-
-        // create consumer
-        consumerService()
-                .createConsumer(context, groupId, jsonConsumer)
-                .subscribeTopic(context, groupId, name, new JsonObject().put("topic", topic).put("partition", 0));
-
-        int notExistingPartition = 2;
-        JsonArray notExistingPartitionJSON = new JsonArray();
-        notExistingPartitionJSON.add(new JsonObject().put("topic", topic).put("partition", notExistingPartition));
-
-        JsonObject partitionsJSON = new JsonObject();
-        partitionsJSON.put("partitions", notExistingPartitionJSON);
-
-        seekService()
-                .positionsBeginningRequest(groupId, name, partitionsJSON)
-                .sendJsonObject(partitionsJSON)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.message(), is("No current assignment for partition " + topic + "-" + notExistingPartition));
-                        context.completeNow();
-                    });
-                });
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
-
-        // consumer deletion
-        consumerService()
-                .deleteConsumer(context, groupId, name);
+    @BeforeEach
+    void setUp() {
+        name = generateRandomConsumerName();
+        groupId = generateRandomConsumerGroupName();
     }
 
     @Test
-    void seekToNotExistingTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        // create consumer
-        consumerService()
-                .createConsumer(context, groupId, jsonConsumer);
+    void seekToNotExistingConsumer(BridgeTestContext bridgeTestContext) {
+        HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
 
-        // Specified consumer instance did not have one of the specified topics.
-        CompletableFuture<Boolean> consumerInstanceDontHaveTopic = new CompletableFuture<>();
+        JsonNode emptyBody = MAPPER.createObjectNode();
+
+        HttpResponse<String> response = httpSeekService.seekToBeginningRequest(groupId, name, emptyBody);
+        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(response.body()));
+        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+        assertThat(error.message(), is("The specified consumer instance was not found."));
+    }
+
+    @Test
+    void seekToNotExistingTopic(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+        HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
+
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json");
+
+        // create consumer
+        httpConsumerService.createConsumer(groupId, consumerConfig);
 
         String notExistingTopic = "notExistingTopic";
-        JsonArray notExistingTopicJSON = new JsonArray();
-        notExistingTopicJSON.add(new JsonObject().put("topic", notExistingTopic).put("partition", 0));
 
-        JsonObject partitionsWithWrongTopic = new JsonObject();
-        partitionsWithWrongTopic.put("partitions", notExistingTopicJSON);
+        ObjectNode partitionsBody = MAPPER.createObjectNode();
+        partitionsBody.putArray("partitions")
+            .add(MAPPER.createObjectNode().put("topic", notExistingTopic).put("partition", 0));
 
-        seekService()
-                .positionsBeginningRequest(groupId, name, partitionsWithWrongTopic)
-                .sendJsonObject(partitionsWithWrongTopic)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.message(), is("No current assignment for partition " + notExistingTopic + "-" + 0));
-                        context.completeNow();
-                    });
-                    consumerInstanceDontHaveTopic.complete(true);
-                });
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        HttpResponse<String> response = httpSeekService.seekToBeginningRequest(groupId, name, partitionsBody);
+        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(response.body()));
+        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+        assertThat(error.message(), is("No current assignment for partition " + notExistingTopic + "-0"));
 
         // consumer deletion
-        consumerService()
-                .deleteConsumer(context, groupId, name);
-
-        consumerInstanceDontHaveTopic.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void seekToBeginningAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
-        future.get();
+    void seekToBeginningAndReceive(BridgeTestContext bridgeTestContext) {
+        String topic = bridgeTestContext.getTopicName();
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
-        basicKafkaClient.sendStringMessagesPlain(topic, 10);
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+        HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
 
-        JsonObject jsonConsumer = new JsonObject();
-        jsonConsumer.put("name", name);
+        bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(topic, 10);
 
-        JsonObject topics = new JsonObject();
-        topics.put("topics", new JsonArray().add(topic));
-        //create consumer
-        // subscribe to a topic
-        consumerService()
-                .createConsumer(context, groupId, jsonConsumer)
-                .subscribeConsumer(context, groupId, name, topics);
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name);
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+        // create consumer, subscribe to a topic
+        httpConsumerService.createConsumer(groupId, consumerConfig);
+        httpConsumerService.subscribeConsumer(groupId, name, topic);
+
         // consume records
-        consumerService()
-                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        JsonArray body = ar.result().body();
-                        assertThat(body.size(), is(10));
-                    });
-                    consume.complete(true);
-                });
+        HttpResponse<String> consumeResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY);
+        JsonNode messages = HttpResponseUtils.getResponseAsJsonNode(consumeResponse.body());
+        assertThat(messages.size(), is(10));
 
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        // seek to beginning
+        ObjectNode partitionsBody = MAPPER.createObjectNode();
+        partitionsBody.putArray("partitions")
+            .add(MAPPER.createObjectNode().put("topic", topic).put("partition", 0));
 
-        // seek
-        JsonArray partitions = new JsonArray();
-        partitions.add(new JsonObject().put("topic", topic).put("partition", 0));
+        httpSeekService.seekToBeginning(groupId, name, partitionsBody);
 
-        JsonObject root = new JsonObject();
-        root.put("partitions", partitions);
-
-
-        CompletableFuture<Boolean> seek = new CompletableFuture<>();
-        seekService()
-                .positionsBeginningRequest(groupId, name, root)
-                .sendJsonObject(root)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
-                    });
-                    seek.complete(true);
-                });
-
-        seek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
-        // consume records
-        baseService()
-                .getRequest(Urls.consumerInstanceRecords(groupId, name))
-                .putHeader(ACCEPT.toString(), BridgeContentType.KAFKA_JSON_BINARY)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        JsonArray body = ar.result().body();
-                        assertThat(body.size(), is(10));
-                    });
-                    consumeSeek.complete(true);
-                });
-
-        consumeSeek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        // consume records again after seek
+        consumeResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY);
+        messages = HttpResponseUtils.getResponseAsJsonNode(consumeResponse.body());
+        assertThat(messages.size(), is(10));
 
         // consumer deletion
-        consumerService()
-                .deleteConsumer(context, groupId, name);
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void seekToEndAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+    void seekToEndAndReceive(BridgeTestContext bridgeTestContext) {
+        String topic = bridgeTestContext.getTopicName();
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
-        JsonObject topics = new JsonObject();
-        topics.put("topics", new JsonArray().add(topic));
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+        HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
 
-        JsonObject jsonConsumer = new JsonObject();
-        jsonConsumer.put("name", name);
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name);
 
-        future.get();
+        // create consumer, subscribe to a topic
+        httpConsumerService.createConsumer(groupId, consumerConfig);
+        httpConsumerService.subscribeConsumer(groupId, name, topic);
 
-        // create consumer
-        // subscribe to a topic
-        consumerService()
-                .createConsumer(context, groupId, jsonConsumer)
-                .subscribeConsumer(context, groupId, name, topic);
-
-        CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
-        consumerService()
-                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> assertThat(ar.succeeded(), is(true)));
-                    dummy.complete(true);
-                });
+        httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY);
 
-        dummy.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(topic, 10);
 
-        basicKafkaClient.sendStringMessagesPlain(topic, 10);
+        // seek to end
+        ObjectNode partitionsBody = MAPPER.createObjectNode();
+        partitionsBody.putArray("partitions")
+            .add(MAPPER.createObjectNode().put("topic", topic).put("partition", 0));
 
-        // seek
-        JsonArray partitions = new JsonArray();
-        partitions.add(new JsonObject().put("topic", topic).put("partition", 0));
+        httpSeekService.seekToEnd(groupId, name, partitionsBody);
 
-        JsonObject root = new JsonObject();
-        root.put("partitions", partitions);
-
-        CompletableFuture<Boolean> seek = new CompletableFuture<>();
-        seekService()
-                .positionsBeginningEnd(groupId, name, root)
-                .sendJsonObject(root)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
-                    });
-                    seek.complete(true);
-                });
-
-        seek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        CompletableFuture<Boolean> consumeSeek = new CompletableFuture<>();
-        // consume records
-        baseService()
-                .getRequest(Urls.consumerInstanceRecords(groupId, name))
-                .putHeader(ACCEPT.toString(), BridgeContentType.KAFKA_JSON_BINARY)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> assertThat(ar.succeeded(), is(true)));
-
-                    JsonArray body = ar.result().body();
-                    assertThat(body.size(), is(0));
-                    consumeSeek.complete(true);
-                });
-
-        consumeSeek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        // consume records after seek - should get nothing since we seeked to end
+        HttpResponse<String> consumeResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY);
+        JsonNode messages = HttpResponseUtils.getResponseAsJsonNode(consumeResponse.body());
+        assertThat(messages.size(), is(0));
 
         // consumer deletion
-        consumerService()
-                .deleteConsumer(context, groupId, name);
-
-        context.completeNow();
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
     @SuppressWarnings("checkstyle:MethodLength")
-    void seekToOffsetAndReceive(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void seekToOffsetAndReceive(BridgeTestContext bridgeTestContext) {
+        String topic = "seekToOffsetAndReceive-" + bridgeTestContext.getTopicName();
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 2);
 
-        String name = "my-kafka-consumer-SeekOffset";
-        JsonObject jsonConsumer = new JsonObject()
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+        HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
+
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic, 10, "value", 0);
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic, 10, "value", 1);
+
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
             .put("name", name)
             .put("format", "json");
 
-        final String topic = "seekToOffsetAndReceive";
+        // create consumer, subscribe to a topic
+        httpConsumerService.createConsumer(groupId, consumerConfig);
+        httpConsumerService.subscribeConsumer(groupId, name, topic);
 
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
-        future.get();
-
-        basicKafkaClient.sendJsonMessagesPlain(topic, 10, "value", 0);
-        basicKafkaClient.sendJsonMessagesPlain(topic, 10, "value", 1);
-
-        JsonObject topics = new JsonObject();
-        topics.put("topics", new JsonArray().add(topic));
-        // create consumer
-        // subscribe to a topic
-        consumerService()
-                .createConsumer(context, groupId, jsonConsumer)
-                .subscribeConsumer(context, groupId, name, topics);
-
-        CompletableFuture<Boolean> dummy = new CompletableFuture<>();
         // dummy poll for having re-balancing starting
-        consumerService()
-                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    assertThat(ar.succeeded(), is(true));
-                    dummy.complete(true);
-                });
-        dummy.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        httpConsumerService.consumeRecordsRequest(groupId, name);
 
-        CompletableFuture<Boolean> seek = new CompletableFuture<>();
-        // seek
-        JsonArray offsets = new JsonArray();
-        offsets.add(new JsonObject().put("topic", topic).put("partition", 0).put("offset", 9));
-        offsets.add(new JsonObject().put("topic", topic).put("partition", 1).put("offset", 5));
+        // seek to specific offsets
+        ObjectNode offsetsBody = MAPPER.createObjectNode();
+        ArrayNode offsets = offsetsBody.putArray("offsets");
+        offsets.add(MAPPER.createObjectNode().put("topic", topic).put("partition", 0).put("offset", 9));
+        offsets.add(MAPPER.createObjectNode().put("topic", topic).put("partition", 1).put("offset", 5));
 
-        JsonObject root = new JsonObject();
-        root.put("offsets", offsets);
+        httpSeekService.seekToPositions(groupId, name, offsetsBody);
 
-        seekService()
-                .positionsRequest(groupId, name, root)
-                .sendJsonObject(root)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        assertThat(ar.result().statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
-                    });
-                    seek.complete(true);
-                });
-        seek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumerService()
-                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        JsonArray body = ar.result().body();
+        HttpResponse<String> consumeResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
+        JsonNode messages = HttpResponseUtils.getResponseAsJsonNode(consumeResponse.body());
 
-                        // check it read from partition 0, at offset 9, just one message
-                        List<JsonObject> metadata = body.stream()
-                                .map(JsonObject.class::cast)
-                                .filter(jo -> jo.getInteger("partition") == 0 && jo.getLong("offset") == 9)
-                                .collect(Collectors.toList());
-                        assertThat(metadata.isEmpty(), is(false));
-                        assertThat(metadata.size(), is(1));
+        // check it read from partition 0, at offset 9, just one message
+        List<JsonNode> partition0Messages = StreamSupport.stream(messages.spliterator(), false)
+            .filter(m -> m.get("partition").asInt() == 0 && m.get("offset").asLong() == 9)
+            .toList();
+        assertThat(partition0Messages.isEmpty(), is(false));
+        assertThat(partition0Messages.size(), is(1));
 
-                        assertThat(metadata.get(0).getString("topic"), is(topic));
-                        assertThat(metadata.get(0).getString("value"), is("value-9"));
-                        assertThat(metadata.get(0).getString("key"), is("key-9"));
+        assertThat(partition0Messages.get(0).get("topic").asText(), is(topic));
+        assertThat(partition0Messages.get(0).get("value").asText(), is("value-9"));
+        assertThat(partition0Messages.get(0).get("key").asText(), is("key-9"));
 
-                        // check it read from partition 1, starting from offset 5, the last 5 messages
-                        metadata = body.stream()
-                                .map(JsonObject.class::cast)
-                                .filter(jo -> jo.getInteger("partition") == 1)
-                                .toList();
-                        assertThat(metadata.isEmpty(), is(false));
-                        assertThat(metadata.size(), is(5));
+        // check it read from partition 1, starting from offset 5, the last 5 messages
+        List<JsonNode> partition1Messages = StreamSupport.stream(messages.spliterator(), false)
+            .filter(m -> m.get("partition").asInt() == 1)
+            .toList();
+        assertThat(partition1Messages.isEmpty(), is(false));
+        assertThat(partition1Messages.size(), is(5));
 
-                        for (int i = 0; i < metadata.size(); i++) {
-                            assertThat(metadata.get(i).getString("topic"), is(topic));
-                            assertThat(metadata.get(i).getString("value"), is("value-" + (i + metadata.size())));
-                            assertThat(metadata.get(i).getString("key"), is("key-" + (i + metadata.size())));
-                        }
-                    });
-                    consume.complete(true);
-                });
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        for (int i = 0; i < partition1Messages.size(); i++) {
+            assertThat(partition1Messages.get(i).get("topic").asText(), is(topic));
+            assertThat(partition1Messages.get(i).get("value").asText(), is("value-" + (i + partition1Messages.size())));
+            assertThat(partition1Messages.get(i).get("key").asText(), is("key-" + (i + partition1Messages.size())));
+        }
 
         // consumer deletion
-        consumerService()
-                .deleteConsumer(context, groupId, name);
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void seekToBeginningMultipleTopicsWithNotSubscribedTopic(VertxTestContext context) throws Exception {
-        String subscribedTopic = "seekToBeginningSubscribedTopic";
-        String notSubscribedTopic = "seekToBeginningNotSubscribedTopic";
+    void seekToBeginningMultipleTopicsWithNotSubscribedTopic(BridgeTestContext bridgeTestContext) throws Exception {
+        String subscribedTopic = "seekToBeginningSubscribedTopic-" + bridgeTestContext.getTopicName();
+        String notSubscribedTopic = "seekToBeginningNotSubscribedTopic-" + bridgeTestContext.getTopicName();
 
         LOGGER.info("Creating topics {}, {}", subscribedTopic, notSubscribedTopic);
 
-        KafkaFuture<Void> future1 = adminClientFacade.createTopic(subscribedTopic);
-        KafkaFuture<Void> future2 = adminClientFacade.createTopic(notSubscribedTopic);
+        bridgeTestContext.getAdminClientFacade().createTopic(subscribedTopic, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(notSubscribedTopic, 1);
 
-        JsonObject jsonConsumer = new JsonObject()
-                                    .put("name", name)
-                                    .put("format", "json");
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+        HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
 
-        JsonObject topics = new JsonObject()
-                                    .put("topics", new JsonArray().add(subscribedTopic));
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json");
 
-        future1.get();
-        future2.get();
+        // create consumer, subscribe to a topic
+        httpConsumerService.createConsumer(groupId, consumerConfig);
+        httpConsumerService.subscribeConsumer(groupId, name, subscribedTopic);
 
-        // create consumer
-        // subscribe to a topic
-        consumerService()
-                .createConsumer(context, groupId, jsonConsumer)
-                .subscribeConsumer(context, groupId, name, topics);
+        waitUntilPartitionAssigned(httpConsumerService, groupId, name, 10, 2000);
 
-        waitUntilPartitionAssigned(consumerService(), groupId, name, 10, 2000);
+        // seek with subscribed and not-subscribed topic
+        ObjectNode partitionsBody = MAPPER.createObjectNode();
+        ArrayNode partitions = partitionsBody.putArray("partitions");
+        partitions.add(MAPPER.createObjectNode().put("topic", subscribedTopic).put("partition", 0));
+        partitions.add(MAPPER.createObjectNode().put("topic", notSubscribedTopic).put("partition", 0));
 
-        // seek
-        JsonArray partitions = new JsonArray();
-        partitions.add(new JsonObject().put("topic", subscribedTopic).put("partition", 0));
-        partitions.add(new JsonObject().put("topic", notSubscribedTopic).put("partition", 0));
+        HttpResponse<String> response = httpSeekService.seekToBeginningRequest(groupId, name, partitionsBody);
+        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        JsonObject root = new JsonObject();
-        root.put("partitions", partitions);
-
-        CompletableFuture<Boolean> seek = new CompletableFuture<>();
-        seekService()
-                .positionsBeginningRequest(groupId, name, root)
-                .sendJsonObject(root)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.message(), is("No current assignment for partition " + notSubscribedTopic + "-0"));
-                    });
-                    seek.complete(true);
-                });
-        seek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(response.body()));
+        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+        assertThat(error.message(), is("No current assignment for partition " + notSubscribedTopic + "-0"));
 
         // consumer deletion
-        consumerService()
-                .deleteConsumer(context, groupId, name);
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     /**
      * Waits until the Kafka consumer with the given name in the specified group has received
-     * a partition assignment. This method performs repeated polling using
-     * {@link ConsumerService#consumeRecordsRequest} to ensure that group coordination and
-     * partition assignment have completed before the test proceeds.
+     * a partition assignment by performing repeated polling.
      *
-     * @param consumerService   the {@link ConsumerService} instance used to interact with the consumer
-     * @param groupId           the Kafka consumer group ID
-     * @param name              the name of the consumer (within the group)
-     * @param maxRetries        maximum number of poll attempts before giving up
-     * @param delayMs           delay in milliseconds between retries
-     * @throws Exception        if partition assignment doesn't complete in time
+     * @param httpConsumerService   the {@link HttpConsumerService} instance used to interact with the consumer
+     * @param groupId               the Kafka consumer group ID
+     * @param name                  the name of the consumer (within the group)
+     * @param maxRetries            maximum number of poll attempts before giving up
+     * @param delayMs               delay in milliseconds between retries
+     * @throws Exception            if partition assignment doesn't complete in time
      */
-    void waitUntilPartitionAssigned(final ConsumerService consumerService,
+    void waitUntilPartitionAssigned(final HttpConsumerService httpConsumerService,
                                     final String groupId,
                                     final String name,
                                     final int maxRetries,
                                     final int delayMs) throws Exception {
-        int retries = 0;
-        while (retries < maxRetries) {
-            CompletableFuture<Boolean> pollComplete = new CompletableFuture<>();
-            consumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonObject())
-                .send()
-                .onComplete(ar -> {
-                    // if here poll succeeded, then it means assignment is done
-                    pollComplete.complete(true);
-                });
-            boolean result = pollComplete.get(10, TimeUnit.SECONDS);
-            if (result) {
+        for (int retries = 0; retries < maxRetries; retries++) {
+            HttpResponse<String> response = httpConsumerService.consumeRecordsRequest(groupId, name);
+            if (response.statusCode() == HttpResponseStatus.OK.code()) {
                 return;
-            } else {
-                Thread.sleep(delayMs);
-                retries++;
             }
+            Thread.sleep(delayMs);
         }
         throw new TimeoutException("Timed out waiting for partition assignment for consumer " + groupId + "/" + name);
     }
 
     @Test
-    void seekToOffsetMultipleTopicsWithNotSubscribedTopic(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String subscribedTopic = "seekToOffsetSubscribedTopic";
-        String notSubscribedTopic = "seekToOffsetNotSubscribedTopic";
+    void seekToOffsetMultipleTopicsWithNotSubscribedTopic(BridgeTestContext bridgeTestContext) {
+        String subscribedTopic = "seekToOffsetSubscribedTopic-" + bridgeTestContext.getTopicName();
+        String notSubscribedTopic = "seekToOffsetNotSubscribedTopic-" + bridgeTestContext.getTopicName();
 
         LOGGER.info("Creating topics {}, {}", subscribedTopic, notSubscribedTopic);
 
-        KafkaFuture<Void> future1 = adminClientFacade.createTopic(subscribedTopic);
-        KafkaFuture<Void> future2 = adminClientFacade.createTopic(notSubscribedTopic);
+        bridgeTestContext.getAdminClientFacade().createTopic(subscribedTopic, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(notSubscribedTopic, 1);
 
-        JsonObject jsonConsumer = new JsonObject()
-                                    .put("name", name)
-                                    .put("format", "json");
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+        HttpSeekService httpSeekService = new HttpSeekService(bridgeTestContext.getHttpService());
 
-        JsonObject topics = new JsonObject()
-                                    .put("topics", new JsonArray().add(subscribedTopic));
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json");
 
-        future1.get();
-        future2.get();
-
-        // create consumer
-        // subscribe to a topic
-        consumerService()
-                .createConsumer(context, groupId, jsonConsumer)
-                .subscribeConsumer(context, groupId, name, topics);
-
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+        // create consumer, subscribe to a topic
+        httpConsumerService.createConsumer(groupId, consumerConfig);
+        httpConsumerService.subscribeConsumer(groupId, name, subscribedTopic);
 
         // poll to subscribe
-        consumerService()
-                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonObject())
-                .send()
-                .onComplete(ar -> consume.complete(true));
+        httpConsumerService.consumeRecordsRequest(groupId, name);
 
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        // seek with subscribed and not-subscribed topic
+        ObjectNode offsetsBody = MAPPER.createObjectNode();
+        ArrayNode offsets = offsetsBody.putArray("offsets");
+        offsets.add(MAPPER.createObjectNode().put("topic", subscribedTopic).put("partition", 0).put("offset", 0));
+        offsets.add(MAPPER.createObjectNode().put("topic", notSubscribedTopic).put("partition", 0).put("offset", 0));
 
-        CompletableFuture<Boolean> seek = new CompletableFuture<>();
-        // seek
-        JsonArray offsets = new JsonArray();
-        offsets.add(new JsonObject().put("topic", subscribedTopic).put("partition", 0).put("offset", 0));
-        offsets.add(new JsonObject().put("topic", notSubscribedTopic).put("partition", 0).put("offset", 0));
+        HttpResponse<String> response = httpSeekService.seekToPositionsRequest(groupId, name, offsetsBody);
+        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        JsonObject root = new JsonObject();
-        root.put("offsets", offsets);
-
-        seekService()
-                .positionsRequest(groupId, name, root)
-                .sendJsonObject(root)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.message(), is("No current assignment for partition " + notSubscribedTopic + "-0"));
-                    });
-                    seek.complete(true);
-                });
-        seek.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(response.body()));
+        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+        assertThat(error.message(), is("No current assignment for partition " + notSubscribedTopic + "-0"));
 
         // consumer deletion
-        consumerService()
-                .deleteConsumer(context, groupId, name);
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 }

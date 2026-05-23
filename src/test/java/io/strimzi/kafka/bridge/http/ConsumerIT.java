@@ -4,2025 +4,1147 @@
  */
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.config.BridgeConfig;
-import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
+import io.strimzi.kafka.bridge.Constants;
+import io.strimzi.kafka.bridge.extensions.BridgeSuite;
+import io.strimzi.kafka.bridge.http.base.AbstractIT;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
-import io.strimzi.kafka.bridge.utils.Urls;
-import io.vertx.core.MultiMap;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.HttpResponse;
-import io.vertx.ext.web.codec.BodyCodec;
-import io.vertx.junit5.VertxTestContext;
-import io.vertx.kafka.client.producer.KafkaHeader;
-import io.vertx.kafka.client.producer.impl.KafkaHeaderImpl;
-import org.apache.kafka.common.KafkaFuture;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.Matchers;
+import io.strimzi.kafka.bridge.httpclient.HttpConsumerService;
+import io.strimzi.kafka.bridge.httpclient.HttpProducerService;
+import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
+import io.strimzi.kafka.bridge.objects.BridgeTestContext;
+import io.strimzi.kafka.bridge.utils.Endpoints;
+import org.apache.kafka.common.header.Header;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import javax.xml.bind.DatatypeConverter;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ConsumerIT extends HttpBridgeITAbstract {
-    private static final Logger LOGGER = LogManager.getLogger(ConsumerIT.class);
+@BridgeSuite
+public class ConsumerIT extends AbstractIT {
     private static final String FORWARDED = "Forwarded";
     private static final String X_FORWARDED_HOST = "X-Forwarded-Host";
     private static final String X_FORWARDED_PROTO = "X-Forwarded-Proto";
     private String name = "my-kafka-consumer";
     private String groupId = "my-group";
 
-    private final JsonObject consumerWithEarliestResetJson = new JsonObject()
-        .put("name", name)
-        .put("auto.offset.reset", "earliest")
-        .put("enable.auto.commit", true)
-        .put("fetch.min.bytes", 100);
+    private ObjectNode consumerWithEarliestOffsetReset;
 
-    JsonObject consumerJson = new JsonObject()
-        .put("name", name)
-        .put("format", "json");
+    private ObjectNode consumer;
 
     @Test
-    void createConsumer(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumer(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
         // create consumer
-        consumerService().createConsumer(context, groupId, consumerWithEarliestResetJson);
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerWithEarliestOffsetReset);
 
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
-        consumerService()
-            .deleteConsumer(context, groupId, name);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+
+        assertThat(responseBody.get("instance_id").asText(), is(name));
+        assertThat(responseBody.get("base_uri").asText(), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, name))));
+
+        // delete consumer
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void createConsumerWrongFormat(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-
-        JsonObject consumerJson = new JsonObject()
+    void createConsumerWrongFormat(BridgeTestContext bridgeTestContext) {
+        ObjectNode consumerWithWrongFormat = MAPPER.createObjectNode()
             .put("name", name)
             .put("format", "foo");
 
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
         // create consumer
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerJson)
-                .sendJsonObject(consumerJson)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(error.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-                        assertThat(error.message(), is("Invalid format type."));
-                    });
-                    create.complete(true);
-                });
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerWithWrongFormat);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
 
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+        assertThat(httpBridgeError.message(), is("Invalid format type."));
     }
 
     @Test
-    void createConsumerEmptyBody(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        AtomicReference<String> name = new AtomicReference<>();
-        // create consumer
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, null)
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        name.set(consumerInstanceId);
-                        String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertThat(consumerInstanceId.startsWith(config.get(BridgeConfig.BRIDGE_ID).toString()), is(true));
-                        assertThat(consumerBaseUri, is(Urls.consumerInstance(groupId, consumerInstanceId)));
-                    });
-                    create.complete(true);
-                });
+    void createConsumerEmptyBody(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, MAPPER.createObjectNode());
 
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService()
-            .deleteConsumer(context, groupId, name.get());
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+
+        String consumerInstanceId = responseBody.get("instance_id").asText();
+        String consumerBaseUri = responseBody.get("base_uri").asText();
+
+        assertThat(consumerInstanceId.startsWith(Constants.DEFAULT_BRIDGE_ID), is(true));
+        assertThat(consumerBaseUri, is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, consumerInstanceId))));
+
+        httpConsumerService.deleteConsumer(groupId, consumerInstanceId);
     }
 
     @Test
-    void createConsumerEnableAutoCommit(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        JsonObject consumerJson = new JsonObject()
+    void createConsumerEnableAutoCommit(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        ObjectNode correctConsumer = MAPPER.createObjectNode()
             .put("name", name)
             .put("enable.auto.commit", true);
-
-        // create consumer
-        consumerService().createConsumer(context, groupId, consumerJson);
-
-        consumerJson
-            .put("name", name + "-1")
+        ObjectNode incorrectConsumer = MAPPER.createObjectNode()
+            .put("name", "incorrect-consumer")
             .put("enable.auto.commit", "true");
-
-        // create consumer
-        CompletableFuture<Boolean> createBooleanAsString = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerJson)
-                .sendJsonObject(consumerJson)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.message(), is("Validation error on: Schema validation error"));
-                        assertThat(error.validationErrors(), hasItem("Property \"enable.auto.commit\" does not match schema"));
-                        assertThat(error.validationErrors(), hasItem("Instance type string is invalid. Expected boolean"));
-                    });
-                    createBooleanAsString.complete(true);
-                });
-
-        createBooleanAsString.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        consumerJson
-            .put("name", name + "-2")
+        ObjectNode incorrectConsumerWithInvalidValue = MAPPER.createObjectNode()
+            .put("name", "incorrect-consumer-2")
             .put("enable.auto.commit", "foo");
 
-        // create consumer
-        CompletableFuture<Boolean> createGenericString = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerJson)
-                .sendJsonObject(consumerJson)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.message(), is("Validation error on: Schema validation error"));
-                        assertThat(error.validationErrors(), hasItem("Property \"enable.auto.commit\" does not match schema"));
-                        assertThat(error.validationErrors(), hasItem("Instance type string is invalid. Expected boolean"));
-                    });
-                    createGenericString.complete(true);
-                });
+        // create correct consumer
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, correctConsumer);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        createGenericString.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        // create incorrect consumer - with enable.auto.commit being in String
+        httpResponse = httpConsumerService.createConsumerRequest(groupId, incorrectConsumer);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
+        assertThat(httpBridgeError.message(), is("Validation error on: Schema validation error"));
+        assertThat(httpBridgeError.validationErrors(), hasItem("Property \"enable.auto.commit\" does not match schema"));
+        assertThat(httpBridgeError.validationErrors(), hasItem("Instance type string is invalid. Expected boolean"));
+
+        // create incorrect consumer - with enable.auto.commit containing completely random String
+        httpResponse = httpConsumerService.createConsumerRequest(groupId, incorrectConsumerWithInvalidValue);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+
+        httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
+        assertThat(httpBridgeError.message(), is("Validation error on: Schema validation error"));
+        assertThat(httpBridgeError.validationErrors(), hasItem("Property \"enable.auto.commit\" does not match schema"));
+        assertThat(httpBridgeError.validationErrors(), hasItem("Instance type string is invalid. Expected boolean"));
+
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void createConsumerFetchMinBytes(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        this.createConsumerIntegerParam(context, "fetch.min.bytes");
+    void createConsumerFetchMinBytes(BridgeTestContext bridgeTestContext) {
+        this.createConsumerIntegerParam(bridgeTestContext, "fetch.min.bytes");
     }
 
     @Test
-    void createConsumerRequestTimeoutMs(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        this.createConsumerIntegerParam(context, "consumer.request.timeout.ms");
+    void createConsumerRequestTimeoutMs(BridgeTestContext bridgeTestContext) {
+        this.createConsumerIntegerParam(bridgeTestContext, "consumer.request.timeout.ms");
     }
 
-    private void createConsumerIntegerParam(VertxTestContext context, String param) throws InterruptedException, TimeoutException, ExecutionException {
-        JsonObject consumerJson = new JsonObject()
+    private void createConsumerIntegerParam(BridgeTestContext bridgeTestContext, String param) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        ObjectNode correctConsumer = MAPPER.createObjectNode()
             .put("name", name)
             .put(param, 100);
-
-        // create consumer
-        consumerService().createConsumer(context, groupId, consumerJson);
-
-        consumerJson
-            .put("name", name + "-1")
+        ObjectNode incorrectConsumer = MAPPER.createObjectNode()
+            .put("name", "incorrect-consumer")
             .put(param, "100");
-
-        // create consumer
-        CompletableFuture<Boolean> createIntegerAsString = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerJson)
-                .sendJsonObject(consumerJson)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.message(), is("Validation error on: Schema validation error"));
-                        assertThat(error.validationErrors(), hasItem("Property \"" + param + "\" does not match schema"));
-                        assertThat(error.validationErrors(), hasItem("Instance type string is invalid. Expected integer"));
-                    });
-                    createIntegerAsString.complete(true);
-                });
-
-        createIntegerAsString.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        consumerJson
-            .put("name", name + "-2")
+        ObjectNode incorrectConsumerWithInvalidValue = MAPPER.createObjectNode()
+            .put("name", "incorrect-consumer-2")
             .put(param, "foo");
 
-        // create consumer
-        CompletableFuture<Boolean> createGenericString = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerJson)
-                .sendJsonObject(consumerJson)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(error.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
-                        assertThat(error.message(), is("Validation error on: Schema validation error"));
-                        assertThat(error.validationErrors(), hasItem("Property \"" + param + "\" does not match schema"));
-                        assertThat(error.validationErrors(), hasItem("Instance type string is invalid. Expected integer"));
-                    });
-                    createGenericString.complete(true);
-                });
+        // create correct consumer
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, correctConsumer);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        createGenericString.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        // create incorrect consumer - with param being in String
+        httpResponse = httpConsumerService.createConsumerRequest(groupId, incorrectConsumer);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
+        assertThat(httpBridgeError.message(), is("Validation error on: Schema validation error"));
+        assertThat(httpBridgeError.validationErrors(), hasItem(String.format("Property \"%s\" does not match schema", param)));
+        assertThat(httpBridgeError.validationErrors(), hasItem("Instance type string is invalid. Expected integer"));
+
+        // create incorrect consumer - with param containing completely random String
+        httpResponse = httpConsumerService.createConsumerRequest(groupId, incorrectConsumerWithInvalidValue);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+
+        httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.BAD_REQUEST.code()));
+        assertThat(httpBridgeError.message(), is("Validation error on: Schema validation error"));
+        assertThat(httpBridgeError.validationErrors(), hasItem(String.format("Property \"%s\" does not match schema", param)));
+        assertThat(httpBridgeError.validationErrors(), hasItem("Instance type string is invalid. Expected integer"));
+
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void createConsumerWithForwardedHeaders(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithForwardedHeaders(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
         // this test emulates a create consumer request coming from an API gateway/proxy
         String xForwardedHost = "my-api-gateway-host:443";
         String xForwardedProto = "https";
+        List<String> headers = List.of(
+            X_FORWARDED_HOST, xForwardedHost,
+            X_FORWARDED_PROTO, xForwardedProto
+        );
 
         String baseUri = xForwardedProto + "://" + xForwardedHost + "/consumers/" + groupId + "/instances/" + name;
 
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
-                .putHeader(X_FORWARDED_HOST, xForwardedHost)
-                .putHeader(X_FORWARDED_PROTO, xForwardedProto)
-                .sendJsonObject(consumerWithEarliestResetJson)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertThat(consumerInstanceId, is(name));
-                        assertThat(consumerBaseUri, is(baseUri));
-                    });
-                    create.complete(true);
-                });
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerWithEarliestOffsetReset, headers);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("instance_id").asText(), is(name));
+        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
+
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void createConsumerWithForwardedHeader(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithForwardedHeader(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host:443;proto=https";
 
         String baseUri = "https://my-api-gateway-host:443/consumers/" + groupId + "/instances/" + name;
 
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
-                .putHeader(FORWARDED, forwarded)
-                .sendJsonObject(consumerWithEarliestResetJson)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertThat(consumerInstanceId, is(name));
-                        assertThat(consumerBaseUri, is(baseUri));
-                    });
-                    create.complete(true);
-                });
+        List<String> headers = List.of(FORWARDED, forwarded);
 
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerWithEarliestOffsetReset, headers);
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("instance_id").asText(), is(name));
+        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
+
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void createConsumerWithMultipleForwardedHeaders(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithMultipleForwardedHeaders(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
         String forwarded = "host=my-api-gateway-host:443;proto=https";
         String forwarded2 = "host=my-api-another-gateway-host:886;proto=http";
 
         String baseUri = "https://my-api-gateway-host:443/consumers/" + groupId + "/instances/" + name;
 
-        // we have to use MultiMap because of https://github.com/vert-x3/vertx-web/issues/1383
-        MultiMap headers = MultiMap.caseInsensitiveMultiMap();
-        headers.add(FORWARDED, forwarded);
-        headers.add(FORWARDED, forwarded2);
+        List<String> headers = List.of(
+            FORWARDED, forwarded,
+            FORWARDED, forwarded2
+        );
 
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
-                .putHeaders(headers)
-                .sendJsonObject(consumerWithEarliestResetJson)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertThat(consumerInstanceId, is(name));
-                        assertThat(consumerBaseUri, is(baseUri));
-                    });
-                    create.complete(true);
-                });
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerWithEarliestOffsetReset, headers);
 
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("instance_id").asText(), is(name));
+        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
+
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
 
     @Test
-    void createConsumerWithForwardedPathHeader(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithForwardedPathHeader(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host:443;proto=https";
         String xForwardedPath = "/my-bridge/consumers/" + groupId;
 
         String baseUri = "https://my-api-gateway-host:443/my-bridge/consumers/" + groupId + "/instances/" + name;
 
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
-                .putHeader(FORWARDED, forwarded)
-                .putHeader("X-Forwarded-Path", xForwardedPath)
-                .sendJsonObject(consumerWithEarliestResetJson)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertThat(consumerInstanceId, is(name));
-                        assertThat(consumerBaseUri, is(baseUri));
-                    });
-                    create.complete(true);
-                });
+        List<String> headers = List.of(
+            FORWARDED, forwarded,
+            "X-Forwarded-Path", xForwardedPath
+        );
 
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerWithEarliestOffsetReset, headers);
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("instance_id").asText(), is(name));
+        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
+
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void createConsumerWithForwardedHeaderDefaultPort(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithForwardedHeaderDefaultPort(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=http";
 
         String baseUri = "http://my-api-gateway-host:80/consumers/" + groupId + "/instances/" + name;
 
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
-                .putHeader(FORWARDED, forwarded)
-                .sendJsonObject(consumerWithEarliestResetJson)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertThat(consumerInstanceId, is(name));
-                        assertThat(consumerBaseUri, is(baseUri));
-                    });
-                    create.complete(true);
-                });
+        List<String> headers = List.of(FORWARDED, forwarded);
 
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerWithEarliestOffsetReset, headers);
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("instance_id").asText(), is(name));
+        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
+
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void createConsumerWithForwardedHeaderWrongProto(VertxTestContext context) throws InterruptedException {
+    void createConsumerWithForwardedHeaderWrongProto(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
         // this test emulates a create consumer request coming from an API gateway/proxy
         String forwarded = "host=my-api-gateway-host;proto=mqtt";
 
-        consumerService().createConsumerRequest(groupId, consumerWithEarliestResetJson)
-                .putHeader(FORWARDED, forwarded)
-                .sendJsonObject(consumerWithEarliestResetJson)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(response.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
-                        assertThat(error.code(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
-                        assertThat(error.message(), is("mqtt is not a valid schema/proto."));
-                    });
-                    context.completeNow();
-                });
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        List<String> headers = List.of(FORWARDED, forwarded);
+
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerWithEarliestOffsetReset, headers);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
+
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
+        assertThat(httpBridgeError.message(), is("mqtt is not a valid schema/proto."));
     }
 
     @Test
-    void createConsumerWithWrongIsolationLevel(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithWrongIsolationLevel(BridgeTestContext bridgeTestContext) {
         List<String> expectedValidationErrors = List.of();
         checkCreatingConsumer("isolation.level", "foo", HttpResponseStatus.UNPROCESSABLE_ENTITY,
-                "Invalid value foo for configuration isolation.level: String must be one of: read_committed, read_uncommitted", expectedValidationErrors, context);
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+                "Invalid value foo for configuration isolation.level: String must be one of: read_committed, read_uncommitted", expectedValidationErrors, bridgeTestContext);
     }
 
     @Test
-    void createConsumerWithWrongAutoOffsetReset(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithWrongAutoOffsetReset(BridgeTestContext bridgeTestContext) {
         List<String> expectedValidationErrors = List.of();
         checkCreatingConsumer("auto.offset.reset", "foo", HttpResponseStatus.UNPROCESSABLE_ENTITY,
-                "Invalid value foo for configuration auto.offset.reset: Invalid value `foo` for configuration auto.offset.reset. The value must be either 'earliest', 'latest', 'none' or of the format 'by_duration:<PnDTnHnMn.nS.>'.", expectedValidationErrors, context);
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+                "Invalid value foo for configuration auto.offset.reset: Invalid value `foo` for configuration auto.offset.reset. The value must be either 'earliest', 'latest', 'none' or of the format 'by_duration:<PnDTnHnMn.nS.>'.", expectedValidationErrors, bridgeTestContext);
     }
 
     @Test
-    void createConsumerWithWrongEnableAutoCommit(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithWrongEnableAutoCommit(BridgeTestContext bridgeTestContext) {
         List<String> expectedValidationErrors = List.of(
                 "Property \"enable.auto.commit\" does not match schema",
                 "Instance type string is invalid. Expected boolean",
                 "Property \"enable.auto.commit\" does not match additional properties schema"
         );
         checkCreatingConsumer("enable.auto.commit", "foo", HttpResponseStatus.BAD_REQUEST,
-                "Validation error on: Schema validation error", expectedValidationErrors, context);
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+                "Validation error on: Schema validation error", expectedValidationErrors, bridgeTestContext);
     }
 
     @Test
-    void createConsumerWithWrongFetchMinBytes(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithWrongFetchMinBytes(BridgeTestContext bridgeTestContext) {
         List<String> expectedValidationErrors = List.of(
                 "Property \"fetch.min.bytes\" does not match schema",
                 "Instance type string is invalid. Expected integer",
                 "Property \"fetch.min.bytes\" does not match additional properties schema"
         );
         checkCreatingConsumer("fetch.min.bytes", "foo", HttpResponseStatus.BAD_REQUEST,
-                "Validation error on: Schema validation error", expectedValidationErrors, context);
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+                "Validation error on: Schema validation error", expectedValidationErrors, bridgeTestContext);
     }
 
     @Test
-    void createConsumerWithNotExistingParameter(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
+    void createConsumerWithNotExistingParameter(BridgeTestContext bridgeTestContext) {
         List<String> expectedValidationErrors = List.of("Property \"foo\" does not match additional properties schema");
         checkCreatingConsumer("foo", "bar", HttpResponseStatus.BAD_REQUEST,
-                "Validation error on: Schema validation error", expectedValidationErrors, context);
+                "Validation error on: Schema validation error", expectedValidationErrors, bridgeTestContext);
+    }
 
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+    private void checkCreatingConsumer(String key, String value, HttpResponseStatus status, String message, List<String> expectedValidationErrors, BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        ObjectNode consumerJson = MAPPER.createObjectNode()
+            .put("name", name)
+            .put(key, value);
+
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerJson);
+        assertThat(httpResponse.statusCode(), is(status.code()));
+
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(status.code()));
+        assertThat(httpBridgeError.message(), is(message));
+        httpBridgeError.validationErrors().forEach(validationError -> assertThat(expectedValidationErrors, hasItem(validationError)));
     }
 
     @Test
-    void receiveSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+    void receiveSimpleMessage(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        future.get();
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
         String sentBody = "Simple message";
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
 
         // create consumer
         // subscribe to a topic
-        consumerService()
-                .createConsumer(context, groupId, consumerJson)
-                .subscribeConsumer(context, groupId, name, topic);
+        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-            .as(BodyCodec.jsonArray())
-            .send()
-            .onComplete(ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonArray> response = ar.result();
-                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                    JsonObject jsonResponse = response.body().getJsonObject(0);
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
 
-                    String kafkaTopic = jsonResponse.getString("topic");
-                    int kafkaPartition = jsonResponse.getInteger("partition");
-                    String key = jsonResponse.getString("key");
-                    String value = jsonResponse.getString("value");
-                    long offset = jsonResponse.getLong("offset");
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                    assertThat(kafkaTopic, is(topic));
-                    assertThat(value, is(sentBody));
-                    assertThat(offset, is(0L));
-                    assertThat(kafkaPartition, notNullValue());
-                    assertThat(key, nullValue());
-                });
-                consume.complete(true);
-            });
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
         // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void receiveMessageWithTimestamp(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+    void receiveMessageWithTimestamp(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        future.get();
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
         String sentBody = "Simple message";
         long timestamp = System.currentTimeMillis();
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, timestamp);
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, timestamp);
 
         // create consumer
         // subscribe to a topic
-        consumerService()
-                .createConsumer(context, groupId, consumerJson)
-                .subscribeConsumer(context, groupId, name, topic);
+        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-            .as(BodyCodec.jsonArray())
-            .send()
-            .onComplete(ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonArray> response = ar.result();
-                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                    JsonObject jsonResponse = response.body().getJsonObject(0);
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
 
-                    long recordTimestamp = jsonResponse.getLong("timestamp");
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                    assertThat(recordTimestamp, is(timestamp));
-                });
-                consume.complete(true);
-            });
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        assertThat(receivedMessage.get("timestamp").asLong(), is(timestamp));
 
         // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
-
+        httpConsumerService.deleteConsumer(groupId, name);
     }
+
     @Test
-    void receiveTextMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+    void receiveTextMessage(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        future.get();
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
         String sentBody = "Simple message";
-        basicKafkaClient.sendStringMessagesPlain(topic, sentBody, 1, 0, true);
+        bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(bridgeTestContext.getTopicName(), sentBody, 1, 0, true);
 
-        JsonObject json = new JsonObject();
-        json.put("name", name);
-        json.put("format", "text");
+        ObjectNode consumerJson = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "text");
 
         // create consumer
         // subscribe to a topic
-        consumerService()
-                .createConsumer(context, groupId, json)
-                .subscribeConsumer(context, groupId, name, topic);
+        httpConsumerService.createConsumer(groupId, consumerJson);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_TEXT)
-            .as(BodyCodec.jsonArray())
-            .send()
-            .onComplete(ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonArray> response = ar.result();
-                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                    JsonObject jsonResponse = response.body().getJsonObject(0);
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_TEXT);
 
-                    String kafkaTopic = jsonResponse.getString("topic");
-                    int kafkaPartition = jsonResponse.getInteger("partition");
-                    String key = jsonResponse.getString("key");
-                    String value = jsonResponse.getString("value");
-                    long offset = jsonResponse.getLong("offset");
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                    assertThat(kafkaTopic, is(topic));
-                    assertThat(value, is(sentBody));
-                    assertThat(offset, is(0L));
-                    assertThat(kafkaPartition, notNullValue());
-                    assertThat(key, nullValue());
-                });
-                consume.complete(true);
-            });
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
         // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void receiveSimpleMessageWithHeaders(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
+    void receiveSimpleMessageWithHeaders(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
-        List<KafkaHeader> headers = new ArrayList<>();
-        headers.add(new KafkaHeaderImpl("key1", "value1"));
-        headers.add(new KafkaHeaderImpl("key1", "value1"));
-        headers.add(new KafkaHeaderImpl("key2", "value2"));
+        List<Header> headers = new ArrayList<>();
+        headers.add(new RecordHeader("key1", "value1".getBytes()));
+        headers.add(new RecordHeader("key2", "value2".getBytes()));
+        headers.add(new RecordHeader("key3", "value3".getBytes()));
 
-        future.get();
-
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, headers, sentBody, true);
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, headers, sentBody, true);
 
         // create consumer
         // subscribe to a topic
-        consumerService()
-            .createConsumer(context, groupId, consumerJson)
-            .subscribeConsumer(context, groupId, name, topic);
+        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
-        // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-            .as(BodyCodec.jsonArray())
-            .send()
-            .onComplete(ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonArray> response = ar.result();
-                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                    assertThat(response.body().size(), is(1));
-                    JsonObject jsonResponse = response.body().getJsonObject(0);
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
 
-                    String kafkaTopic = jsonResponse.getString("topic");
-                    int kafkaPartition = jsonResponse.getInteger("partition");
-                    String key = jsonResponse.getString("key");
-                    String value = jsonResponse.getString("value");
-                    long offset = jsonResponse.getLong("offset");
-                    JsonArray kafkaHeaders = jsonResponse.getJsonArray("headers");
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                    assertThat(kafkaTopic, is(topic));
-                    assertThat(value, is(sentBody));
-                    assertThat(offset, is(0L));
-                    assertThat(kafkaPartition, notNullValue());
-                    assertThat(key, nullValue());
-                    assertThat(kafkaHeaders.size(), is(3));
-                    assertThat(kafkaHeaders.getJsonObject(0).getString("key"), is("key1"));
-                    assertThat(new String(DatatypeConverter.parseBase64Binary(
-                        kafkaHeaders.getJsonObject(0).getString("value"))), is("value1"));
-                    assertThat(kafkaHeaders.getJsonObject(1).getString("key"), is("key1"));
-                    assertThat(new String(DatatypeConverter.parseBase64Binary(
-                        kafkaHeaders.getJsonObject(1).getString("value"))), is("value1"));
-                    assertThat(kafkaHeaders.getJsonObject(2).getString("key"), is("key2"));
-                    assertThat(new String(DatatypeConverter.parseBase64Binary(
-                        kafkaHeaders.getJsonObject(2).getString("value"))), is("value2"));
-                });
-                consume.complete(true);
-            });
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key").isNull(), is(true));
+
+        JsonNode messageHeaders = receivedMessage.get("headers");
+        assertThat(messageHeaders.size(), is(3));
+        assertThat(messageHeaders.get(0).get("key").asText(), is("key1"));
+        assertThat(new String(DatatypeConverter.parseBase64Binary(
+            messageHeaders.get(0).get("value").asText())), is("value1"));
+
+        assertThat(messageHeaders.get(1).get("key").asText(), is("key2"));
+        assertThat(new String(DatatypeConverter.parseBase64Binary(
+            messageHeaders.get(1).get("value").asText())), is("value2"));
+
+        assertThat(messageHeaders.get(2).get("key").asText(), is("key3"));
+        assertThat(new String(DatatypeConverter.parseBase64Binary(
+            messageHeaders.get(2).get("value").asText())), is("value3"));
 
         // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
-    @Disabled("Implement in the next PR")
+    @Disabled("Implement it at some point in the future :)")
     @Test
-    void receiveBinaryMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "receiveBinaryMessage";
-        adminClientFacade.createTopic(topic);
+    void receiveBinaryMessage(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
-//        kafkaCluster.produce(topic, sentBody.getBytes(), 1, 0);
         // TODO: make client to producer binary data..
+        // bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(bridgeTestContext.getTopicName(), sentBody.getBytes(), 1, 0, true);
 
-        JsonObject json = new JsonObject();
-        json.put("name", name);
-        json.put("format", "binary");
-
-        // create consumer
-        // subscribe to a topic
-        consumerService()
-            .createConsumer(context, groupId, json)
-            .subscribeConsumer(context, groupId, name, topic);
-
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
-        // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject jsonResponse = response.body().getJsonObject(0);
-
-                        String kafkaTopic = jsonResponse.getString("topic");
-                        int kafkaPartition = jsonResponse.getInteger("partition");
-                        String key = jsonResponse.getString("key");
-                        String value = new String(DatatypeConverter.parseBase64Binary(jsonResponse.getString("value")));
-                        long offset = jsonResponse.getLong("offset");
-
-                        assertThat(kafkaTopic, is(topic));
-                        assertThat(value, is(sentBody + "-0"));
-                        assertThat(offset, is(0L));
-                        assertThat(kafkaPartition, notNullValue());
-                        assertThat(key, nullValue());
-                    });
-                    consume.complete(true);
-                });
-
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-
-        // topics deletion
-        adminClientFacade.deleteTopic(topic);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
-    }
-
-    @Test
-    void receiveFromMultipleTopics(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic1 = "receiveSimpleMessage-1";
-        String topic2 = "receiveSimpleMessage-2";
-
-        KafkaFuture<Void> future1 = adminClientFacade.createTopic(topic1);
-        KafkaFuture<Void> future2 = adminClientFacade.createTopic(topic2);
-
-        future1.get();
-        future2.get();
-
-        basicKafkaClient.sendJsonMessagesPlain(topic1, 1, "Simple message", 0, true);
-        basicKafkaClient.sendJsonMessagesPlain(topic2, 1, "Simple message", 0, true);
+        ObjectNode consumerJson = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "text");
 
         // create consumer
         // subscribe to a topic
-        consumerService()
-            .createConsumer(context, groupId, consumerJson)
-            .subscribeConsumer(context, groupId, name, topic1, topic2);
+        httpConsumerService.createConsumer(groupId, consumerJson);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.body().size(), is(2));
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY);
 
-                        for (int i = 0; i < 2; i++) {
-                            JsonObject jsonResponse = response.body().getJsonObject(i);
-                            assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                            String kafkaTopic = jsonResponse.getString("topic");
-                            int kafkaPartition = jsonResponse.getInteger("partition");
-                            String key = jsonResponse.getString("key");
-                            String value = jsonResponse.getString("value");
-                            long offset = jsonResponse.getLong("offset");
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-                            assertThat(kafkaTopic, is("receiveSimpleMessage-" + (i + 1)));
-                            assertThat(value, is("Simple message"));
-                            assertThat(offset, is(0L));
-                            assertThat(kafkaPartition, notNullValue());
-                            assertThat(key, nullValue());
-                        }
-                    });
-                    consume.complete(true);
-                });
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
         // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-
-        // topics deletion
-        adminClientFacade.deleteTopic(topic1);
-        adminClientFacade.deleteTopic(topic2);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void receiveFromTopicsWithPattern(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        String topic1 = "receiveWithPattern-1";
-        String topic2 = "receiveWithPattern-2";
+    void receiveFromMultipleTopics(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        KafkaFuture<Void> future1 = adminClientFacade.createTopic(topic1);
-        KafkaFuture<Void> future2 = adminClientFacade.createTopic(topic2);
-
-        future1.get();
-        future2.get();
+        String topic1 = bridgeTestContext.getTopicName() + "-0";
+        String topic2 = bridgeTestContext.getTopicName() + "-1";
 
         String message = "Simple message";
 
-        basicKafkaClient.sendJsonMessagesPlain(topic1, 1, message, 0, true);
-        basicKafkaClient.sendJsonMessagesPlain(topic2, 1, message, 0, true);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic1, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic2, 1);
 
-        JsonObject topicPattern = new JsonObject();
-        topicPattern.put("topic_pattern", "receiveWithPattern-\\d");
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic1, 1, message, 0, true);
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic2, 1, message, 0, true);
+
         // create consumer
         // subscribe to a topic
-        consumerService()
-            .createConsumer(context, groupId, consumerJson)
-            .subscribeConsumer(context, groupId, name, topicPattern);
+        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.subscribeConsumer(groupId, name, List.of(topic1, topic2));
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        assertThat(response.body().size(), is(2));
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
 
-                        for (int i = 0; i < 2; i++) {
-                            JsonObject jsonResponse = response.body().getJsonObject(i);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                            String kafkaTopic = jsonResponse.getString("topic");
-                            int kafkaPartition = jsonResponse.getInteger("partition");
-                            String key = jsonResponse.getString("key");
-                            String value = jsonResponse.getString("value");
-                            long offset = jsonResponse.getLong("offset");
+        JsonNode receivedMessages = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
-                            assertThat(kafkaTopic, is("receiveWithPattern-" + (i + 1)));
-                            assertThat(value, is(message));
-                            assertThat(offset, is(0L));
-                            assertThat(kafkaPartition, notNullValue());
-                            assertThat(key, nullValue());
-                        }
-                        consume.complete(true);
-                    });
-                });
+        List<String> topicNamesFromMessages = new ArrayList<>();
 
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        for (int i = 0; i < 2; i++) {
+            JsonNode receivedMessage = receivedMessages.get(i);
+
+            topicNamesFromMessages.add(receivedMessage.get("topic").asText());
+            assertThat(receivedMessage.get("value").asText(), is(message));
+            assertThat(receivedMessage.get("offset").asLong(), is(0L));
+            assertThat(receivedMessage.get("partition"), notNullValue());
+            assertThat(receivedMessage.get("key").isNull(), is(true));
+        }
+
+        assertThat(topicNamesFromMessages, hasItem(topic1));
+        assertThat(topicNamesFromMessages, hasItem(topic2));
 
         // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-
-        // topics deletion
-        adminClientFacade.deleteTopic(topic1);
-        adminClientFacade.deleteTopic(topic2);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void receiveSimpleMessageFromPartition(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
+    void receiveFromTopicsWithPattern(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        String topic1 = bridgeTestContext.getTopicName() + "-0";
+        String topic2 = bridgeTestContext.getTopicName() + "-1";
+        String topic3 = "different-topic-without-pattern";
+
+        String message = "Simple message";
+
+        bridgeTestContext.getAdminClientFacade().createTopic(topic1, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic2, 1);
+        bridgeTestContext.getAdminClientFacade().createTopic(topic3, 1);
+
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic1, 1, message, 0, true);
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic2, 1, message, 0, true);
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(topic3, 1, message, 0, true);
+
+        // create consumer
+        // subscribe to a topic
+        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.subscribeConsumerRequestWithTopicPattern(groupId, name, bridgeTestContext.getTopicName() + "-\\d");
+
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        JsonNode receivedMessages = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+
+        assertThat(receivedMessages.size(), is(2));
+
+        for (JsonNode receivedMessage : receivedMessages) {
+            assertThat(receivedMessage.get("topic").asText(), is(not(topic3)));
+        }
+
+        // consumer deletion
+        httpConsumerService.deleteConsumer(groupId, name);
+    }
+
+    @Test
+    void receiveSimpleMessageFromPartition(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
+
         int partition = 1;
-
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
-        future.get();
-
         String sentBody = "Simple message from partition";
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, partition, true);
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, partition, true);
+
+        ObjectNode assignmentBody = MAPPER.createObjectNode();
+        assignmentBody.putArray("partitions").add(
+            MAPPER.createObjectNode().put("topic", bridgeTestContext.getTopicName()).put("partition", partition));
 
         // create a consumer
         // subscribe to a topic
-        consumerService()
-            .createConsumer(context, groupId, consumerJson)
-            .subscribeTopic(context, groupId, name, new JsonObject().put("topic", topic).put("partition", partition));
+        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.assignPartitions(groupId, name, assignmentBody);
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject jsonResponse = response.body().getJsonObject(0);
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
 
-                        String kafkaTopic = jsonResponse.getString("topic");
-                        int kafkaPartition = jsonResponse.getInteger("partition");
-                        String key = jsonResponse.getString("key");
-                        String value = jsonResponse.getString("value");
-                        long offset = jsonResponse.getLong("offset");
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                        assertThat(kafkaTopic, is(topic));
-                        assertThat(value, is(sentBody));
-                        assertThat(kafkaPartition, is(partition));
-                        assertThat(offset, is(0L));
-                        assertThat(key, nullValue());
-                    });
-                    consume.complete(true);
-                });
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition").asInt(), is(partition));
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
         // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void receiveSimpleMessageFromMultiplePartitions(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "receiveSimpleMessageFromMultiplePartitions";
+    void receiveSimpleMessageFromMultiplePartitions(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 2, 1);
-        future.get();
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
         String sentBody = "value";
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 1, true);
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 1, true);
+
+        ObjectNode assignmentBody = MAPPER.createObjectNode();
+        assignmentBody.putArray("partitions")
+            .add(MAPPER.createObjectNode().put("topic", bridgeTestContext.getTopicName()).put("partition", 0))
+            .add(MAPPER.createObjectNode().put("topic", bridgeTestContext.getTopicName()).put("partition", 1));
 
         // create a consumer
         // subscribe to a topic
-        consumerService()
-            .createConsumer(context, groupId, consumerJson)
-            .subscribeTopic(context, groupId, name, new JsonObject().put("topic", topic).put("partition", 0),
-                new JsonObject().put("topic", topic).put("partition", 1));
+        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.assignPartitions(groupId, name, assignmentBody);
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        assertThat(response.body().size(), is(2));
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
 
-                        for (int i = 0; i < 2; i++) {
-                            JsonObject jsonResponse = response.body().getJsonObject(i);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                            String kafkaTopic = jsonResponse.getString("topic");
-                            int kafkaPartition = jsonResponse.getInteger("partition");
-                            String key = jsonResponse.getString("key");
-                            String value = jsonResponse.getString("value");
-                            long offset = jsonResponse.getLong("offset");
+        JsonNode receivedMessages = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
-                            assertThat(kafkaTopic, is("receiveSimpleMessageFromMultiplePartitions"));
-                            assertThat(value, is(sentBody));
-                            assertThat(offset, is(0L));
-                            assertThat(i, is(kafkaPartition));
-                            assertThat(key, nullValue());
-                        }
-                    });
-                    consume.complete(true);
-                });
+        List<Integer> partitionsFromMessages = new ArrayList<>();
 
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        for (int i = 0; i < 2; i++) {
+            JsonNode receivedMessage = receivedMessages.get(i);
+
+            assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+            assertThat(receivedMessage.get("value").asText(), is(sentBody));
+            assertThat(receivedMessage.get("offset").asLong(), is(0L));
+            assertThat(receivedMessage.get("key").isNull(), is(true));
+
+            partitionsFromMessages.add(receivedMessage.get("partition").asInt());
+        }
+
+        assertThat(partitionsFromMessages, hasItem(0));
+        assertThat(partitionsFromMessages, hasItem(1));
 
         // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void commitOffset(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "commitOffset";
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
-        future.get();
+    void commitOffset(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
 
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
 
-        JsonObject json = consumerJson
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json")
             .put("enable.auto.commit", false);
 
         // create consumer
         // subscribe to a topic
-        consumerService()
-            .createConsumer(context, groupId, json)
-            .subscribeConsumer(context, groupId, name, topic);
+        httpConsumerService.createConsumer(groupId, consumerConfig);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject jsonResponse = response.body().getJsonObject(0);
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
 
-                        String kafkaTopic = jsonResponse.getString("topic");
-                        int kafkaPartition = jsonResponse.getInteger("partition");
-                        String key = jsonResponse.getString("key");
-                        String value = jsonResponse.getString("value");
-                        long offset = jsonResponse.getLong("offset");
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                        assertThat(kafkaTopic, is(topic));
-                        assertThat(value, is(sentBody));
-                        assertThat(offset, is(0L));
-                        assertThat(kafkaPartition, notNullValue());
-                        assertThat(key, nullValue());
-                    });
-                    consume.complete(true);
-                });
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
-        JsonArray offsets = new JsonArray();
-        json = new JsonObject();
-        json.put("topic", "commitOffset");
-        json.put("partition", 0);
-        json.put("offset", 1);
-        offsets.add(json);
-
-        JsonObject root = new JsonObject();
-        root.put("offsets", offsets);
-
-        CompletableFuture<Boolean> commit = new CompletableFuture<>();
-        consumerService()
-            .offsetsRequest(groupId, name, root)
-                .sendJsonObject(root)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-
-                        int code = response.statusCode();
-                        assertThat(code, is(HttpResponseStatus.NO_CONTENT.code()));
-                    });
-                    commit.complete(true);
-                });
-
-        commit.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-
-        // topics deletion
-        LOGGER.info("Deleting async topics {} via Admin client", topic);
-        adminClientFacade.deleteTopic(topic);
-
-        LOGGER.info("Verifying that all topics are deleted and the size is 0");
-        assertThat(adminClientFacade.hasKafkaZeroTopics(), is(true));
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
-    }
-
-    @Test
-    void commitEmptyOffset(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "commitEmptyOffset";
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
-        future.get();
-
-        String sentBody = "Simple message";
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
-
-        JsonObject json = consumerJson
-            .put("enable.auto.commit", false);
-
-        // create consumer
-        // subscribe to a topic
-        consumerService()
-            .createConsumer(context, groupId, json)
-            .subscribeConsumer(context, groupId, name, topic);
-
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
-        // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject jsonResponse = response.body().getJsonObject(0);
-
-                        String kafkaTopic = jsonResponse.getString("topic");
-                        int kafkaPartition = jsonResponse.getInteger("partition");
-                        String key = jsonResponse.getString("key");
-                        String value = jsonResponse.getString("value");
-                        long offset = jsonResponse.getLong("offset");
-
-                        assertThat(kafkaTopic, is(topic));
-                        assertThat(value, is(sentBody));
-                        assertThat(offset, is(0L));
-                        assertThat(kafkaPartition, notNullValue());
-                        assertThat(key, nullValue());
-                    });
-                    consume.complete(true);
-                });
-
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        CompletableFuture<Boolean> commit = new CompletableFuture<>();
-
-        consumerService()
-            .offsetsRequest(groupId, name)
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-
-                        int code = response.statusCode();
-                        assertThat(code, is(HttpResponseStatus.NO_CONTENT.code()));
-                    });
-                    commit.complete(true);
-                });
-
-        commit.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
-    }
-
-    @Test
-    void consumerAlreadyExistsTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "consumerAlreadyExistsTest";
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
-
-        String name = "my-kafka-consumer4";
-        JsonObject json = new JsonObject();
-        json.put("name", name);
-
-        future.get();
-
-        // create consumer
-        consumerService()
-                .createConsumer(context, groupId, json);
-
-        CompletableFuture<Boolean> create2Again = new CompletableFuture<>();
-        // create the same consumer again
-        consumerService()
-            .createConsumerRequest(groupId, json)
-                .sendJsonObject(json)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(response.statusCode(), is(HttpResponseStatus.CONFLICT.code()));
-                        assertThat(error.code(), is(HttpResponseStatus.CONFLICT.code()));
-                        assertThat(error.message(), is("A consumer instance with the specified name already exists in the Kafka Bridge."));
-                        context.completeNow();
-                    });
-                    create2Again.complete(true);
-                });
-
-        create2Again.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        CompletableFuture<Boolean> create3Again = new CompletableFuture<>();
-        // create another consumer
-        json.put("name", name + "diff");
-        consumerService()
-            .createConsumerRequest(groupId, json)
-                .sendJsonObject(json)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertThat(consumerInstanceId, is(name + "diff"));
-                        assertThat(consumerBaseUri, is(Urls.consumerInstance(groupId, name) + "diff"));
-                    });
-                    create3Again.complete(true);
-                });
-
-        create3Again.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        consumerService()
-            .deleteConsumer(context, groupId, name + "diff");
-        context.completeNow();
-    }
-
-    @Test
-    void recordsConsumerDoesNotExist(VertxTestContext context) {
-        // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-            .as(BodyCodec.jsonObject())
-            .send()
-            .onComplete(ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonObject> response = ar.result();
-                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                    assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
-                    assertThat(error.message(), is("The specified consumer instance was not found."));
-                });
-                context.completeNow();
-            });
-    }
-
-    @Test
-    void offsetsConsumerDoesNotExist(VertxTestContext context) {
         // commit offsets
-        JsonArray offsets = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("topic", "offsetsConsumerDoesNotExist");
-        json.put("partition", 0);
-        json.put("offset", 10);
-        offsets.add(json);
+        ObjectNode offsetsBody = MAPPER.createObjectNode();
+        offsetsBody.putArray("offsets").add(
+            MAPPER.createObjectNode()
+                .put("topic", bridgeTestContext.getTopicName())
+                .put("partition", 0)
+                .put("offset", 1));
 
-        JsonObject root = new JsonObject();
-        root.put("offsets", offsets);
+        httpConsumerService.commitOffsets(groupId, name, offsetsBody);
 
-        consumerService()
-            .offsetsRequest(groupId, name, root)
-                .sendJsonObject(root)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.code(), is(HttpResponseStatus.NOT_FOUND.code()));
-                        assertThat(error.message(), is("The specified consumer instance was not found."));
-                    });
-                    context.completeNow();
-                });
+        // consumer deletion
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void doNotRespondTooLongMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "doNotRespondTooLongMessage";
+    void commitEmptyOffset(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
-        future.get();
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
-        basicKafkaClient.sendStringMessagesPlain(topic, 1);
+        String sentBody = "Simple message";
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
 
-        JsonObject json = new JsonObject();
-        json.put("name", name);
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json")
+            .put("enable.auto.commit", false);
 
         // create consumer
         // subscribe to a topic
-        consumerService()
-            .createConsumer(context, groupId, json)
-            .subscribeConsumer(context, groupId, name, topic);
-
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
+        httpConsumerService.createConsumer(groupId, consumerConfig);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
 
         // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, null, 1, BridgeContentType.KAFKA_JSON_BINARY)
-                .as(BodyCodec.jsonObject())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-                        assertThat(error.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-                        assertThat(error.message(), is("Response exceeds the maximum number of bytes the consumer can receive"));
-                    });
-                    consume.complete(true);
-                });
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
+
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key").isNull(), is(true));
+
+        ObjectNode emptyOffsets = MAPPER.createObjectNode();
+        emptyOffsets.putArray("offsets");
+        httpResponse = httpConsumerService.commitOffsetsRequest(groupId, name, emptyOffsets);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
 
         // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
+    @Test
+    void consumerAlreadyExistsTest(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+        String consumerNameWithSuffix = name + "-diff";
+
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name);
+
+        // create consumer
+        httpConsumerService.createConsumer(groupId, consumerConfig);
+
+        // create the same consumer again
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumerConfig);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.CONFLICT.code()));
+
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.CONFLICT.code()));
+        assertThat(httpBridgeError.message(), is("A consumer instance with the specified name already exists in the Kafka Bridge."));
+
+        // create consumer with suffix
+        httpResponse = httpConsumerService.createConsumerRequest(groupId, MAPPER.createObjectNode().put("name", consumerNameWithSuffix));
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("instance_id").asText(), is(consumerNameWithSuffix));
+        assertThat(responseBody.get("base_uri").asText(), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, consumerNameWithSuffix))));
+
+        // consumers deletion
+        httpConsumerService.deleteConsumer(groupId, name);
+        httpConsumerService.deleteConsumer(groupId, consumerNameWithSuffix);
+    }
 
     @Test
-    void doNotReceiveMessageAfterUnsubscribe(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "doNotReceiveMessageAfterUnsubscribe";
+    void recordsConsumerDoesNotExist(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+        // consume records
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
 
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
-        future.get();
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+        assertThat(httpBridgeError.message(), is("The specified consumer instance was not found."));
+    }
+
+    @Test
+    void offsetsConsumerDoesNotExist(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        // commit offsets
+        ObjectNode offsetsBody = MAPPER.createObjectNode();
+        offsetsBody.putArray("offsets").add(
+            MAPPER.createObjectNode()
+                .put("topic", "offsetsConsumerDoesNotExist")
+                .put("partition", 0)
+                .put("offset", 10));
+
+        HttpResponse<String> httpResponse = httpConsumerService.commitOffsetsRequest(groupId, name, offsetsBody);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_FOUND.code()));
+        assertThat(httpBridgeError.message(), is("The specified consumer instance was not found."));
+    }
+
+    @Test
+    void doNotRespondTooLongMessage(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
+        bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(bridgeTestContext.getTopicName(), 1);
+
+        // create consumer
+        // subscribe to a topic
+        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
+
+        // consume records
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name, 1);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+        assertThat(httpBridgeError.message(), is("Response exceeds the maximum number of bytes the consumer can receive"));
+
+        // consumer deletion
+        httpConsumerService.deleteConsumer(groupId, name);
+    }
+
+    @Test
+    void doNotReceiveMessageAfterUnsubscribe(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String message = "Simple message";
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, message, 0, true);
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, message, 0, true);
 
         // create consumer
         // subscribe to a topic
-        consumerService()
-            .createConsumer(context, groupId, consumerJson)
-            .subscribeConsumer(context, groupId, name, topic);
+        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject jsonResponse = response.body().getJsonObject(0);
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
 
-                        String kafkaTopic = jsonResponse.getString("topic");
-                        int kafkaPartition = jsonResponse.getInteger("partition");
-                        String key = jsonResponse.getString("key");
-                        String value = jsonResponse.getString("value");
-                        long offset = jsonResponse.getLong("offset");
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
-                        assertThat(kafkaTopic, is(topic));
-                        assertThat(value, is(message));
-                        assertThat(offset, is(0L));
-                        assertThat(kafkaPartition, notNullValue());
-                        assertThat(key, nullValue());
-                    });
-                    consume.complete(true);
-                });
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(message));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key").isNull(), is(true));
 
         // unsubscribe consumer
-        consumerService().unsubscribeConsumer(context, groupId, name, topic);
+        httpConsumerService.unsubscribeConsumer(groupId, name, List.of(bridgeTestContext.getTopicName()));
 
         // Send new record
-        basicKafkaClient.sendStringMessagesPlain(topic, 1);
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, message, 0, true);
 
         // Try to consume after unsubscription
-        CompletableFuture<Boolean> consume2 = new CompletableFuture<>();
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonObject())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(response.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
-                        assertThat(error.code(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
-                        assertThat(error.message(), is("Consumer is not subscribed to any topics or assigned any partitions"));
-                    });
-                    consume2.complete(true);
-                });
+        httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
 
-        consume2.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
+        assertThat(httpBridgeError.message(), is("Consumer is not subscribed to any topics or assigned any partitions"));
 
         // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void formatAndAcceptMismatch(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "formatAndAcceptMismatch";
+    void formatAndAcceptMismatch(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
-        future.get();
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         String sentBody = "Simple message";
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0);
-        // create consumer
-        // subscribe to a topic
-        consumerService()
-            .createConsumer(context, groupId, consumerJson)
-            .subscribeConsumer(context, groupId, name, topic);
-
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
-        // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY)
-                .as(BodyCodec.jsonObject())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
-                        assertThat(error.code(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
-                        assertThat(error.message(), is("Consumer format does not match the embedded format requested by the Accept header."));
-                    });
-                    consume.complete(true);
-                });
-
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
-    }
-
-    @Test
-    void sendReceiveJsonMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "sendReceiveJsonMessage";
-
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
-
-        JsonObject sentKey = new JsonObject()
-                .put("f1", "v1")
-                .put("array", new JsonArray().add(1).add(2));
-
-        JsonObject sentValue = new JsonObject()
-                .put("array", new JsonArray().add("v1").add("v2"))
-                .put("foo", "bar").put("number", 123)
-                .put("nested", new JsonObject().put("f", "v"));
-
-        JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("key", sentKey);
-        json.put("value", sentValue);
-        records.add(json);
-
-        JsonObject root = new JsonObject();
-        root.put("records", records);
-
-        future.get();
-
-        CompletableFuture<Boolean> produce = new CompletableFuture<>();
-        producerService()
-            .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-
-                        JsonArray offsets = bridgeResponse.getJsonArray("offsets");
-                        assertThat(offsets.size(), is(1));
-                        JsonObject metadata = offsets.getJsonObject(0);
-                        assertThat(metadata.getInteger("partition"), is(0));
-                        assertThat(metadata.getLong("offset"), is(0L));
-                    });
-                    produce.complete(true);
-                });
-
-        produce.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        JsonObject consumerConfig = new JsonObject();
-        consumerConfig.put("name", name);
-        consumerConfig.put("format", "json");
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
 
         // create consumer
         // subscribe to a topic
-        consumerService()
-            .createConsumer(context, groupId, consumerConfig)
-            .subscribeConsumer(context, groupId, name, topic);
+        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
 
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
         // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject jsonResponse = response.body().getJsonObject(0);
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_BINARY);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
 
-                        String kafkaTopic = jsonResponse.getString("topic");
-                        int kafkaPartition = jsonResponse.getInteger("partition");
-                        JsonObject key = jsonResponse.getJsonObject("key");
-                        JsonObject value = jsonResponse.getJsonObject("value");
-                        long offset = jsonResponse.getLong("offset");
-
-                        assertThat(kafkaTopic, is(topic));
-                        assertThat(value, is(sentValue));
-                        assertThat(offset, is(0L));
-                        assertThat(kafkaPartition, notNullValue());
-                        assertThat(key, is(sentKey));
-                    });
-                    consume.complete(true);
-                });
-
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
+        assertThat(httpBridgeError.message(), is("Consumer format does not match the embedded format requested by the Accept header."));
 
         // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        httpConsumerService.deleteConsumer(groupId, name);
     }
 
     @Test
-    void tryReceiveNotValidJsonMessage(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "tryReceiveNotValidJsonMessage";
+    void sendReceiveJsonMessage(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+        HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
 
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
-        future.get();
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
+        ObjectNode sentKey = MAPPER.createObjectNode();
+        sentKey.put("f1", "v1");
+        sentKey.putArray("array").add(1).add(2);
+
+        ObjectNode sentValue = MAPPER.createObjectNode();
+        sentValue.putArray("array").add("v1").add("v2");
+        sentValue.put("foo", "bar");
+        sentValue.put("number", 123);
+        sentValue.set("nested", MAPPER.createObjectNode().put("f", "v"));
+
+        ObjectNode records = MAPPER.createObjectNode();
+        ObjectNode record = MAPPER.createObjectNode();
+        record.set("key", sentKey);
+        record.set("value", sentValue);
+        records.putArray("records").add(record);
+
+        HttpResponse<String> httpResponse = httpProducerService.sendJsonNodeRecordsRequest(bridgeTestContext.getTopicName(), records, BridgeContentType.KAFKA_JSON_JSON);
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+        JsonNode offsets = responseBody.get("offsets");
+        assertThat(offsets.size(), is(1));
+
+        assertThat(offsets.get(0).get("partition").asInt(), is(0));
+        assertThat(offsets.get(0).get("offset").asInt(), is(0));
+
+        ObjectNode consumerConfig = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json");
+
+        // create consumer
+        // subscribe to a topic
+        httpConsumerService.createConsumer(groupId, consumerConfig);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
+
+        // consume records
+        httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+
+        assertThat(receivedMessage.get("value"), is(sentValue));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition"), notNullValue());
+        assertThat(receivedMessage.get("key"), is(sentKey));
+
+        // consumer deletion
+        httpConsumerService.deleteConsumer(groupId, name);
+    }
+
+    @Test
+    void tryReceiveNotValidJsonMessage(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
         // send a simple String which is not JSON encoded
-        basicKafkaClient.sendStringMessagesPlain(topic, 1);
-
-        JsonArray topics = new JsonArray();
-        topics.add(topic);
-
-        JsonObject topicsRoot = new JsonObject();
-        topicsRoot.put("topics", topics);
-
-        // create topic
-        // subscribe to a topic
-        consumerService()
-            .createConsumer(context, groupId, consumerJson)
-            .subscribeConsumer(context, groupId, name, topicsRoot);
-
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
-        // consume records
-        consumerService()
-            .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonObject())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat(response.statusCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
-                        assertThat(error.code(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
-                        assertThat(error.message().startsWith("Failed to decode"), is(true));
-                    });
-                    consume.complete(true);
-                });
-
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        // consumer deletion
-        consumerService()
-            .deleteConsumer(context, groupId, name);
-
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
-    }
-
-    @Test
-    void createConsumerWithGeneratedName(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        JsonObject json = new JsonObject();
-        AtomicReference<String> name = new AtomicReference<>();
-
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService()
-            .createConsumerRequest(groupId, json)
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(json)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        name.set(consumerInstanceId);
-                        assertThat(consumerInstanceId.startsWith(config.get(BridgeConfig.BRIDGE_ID).toString()), is(true));
-                        create.complete(true);
-                    });
-                });
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService()
-            .deleteConsumer(context, groupId, name.get());
-        context.completeNow();
-    }
-
-    @Test
-    void createConsumerBridgeIdAndNameSpecified(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        JsonObject json = new JsonObject()
-                .put("name", "consumer-1")
-                .put("format", "json");
-
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService()
-                .createConsumerRequest(groupId, json)
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(json)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        assertThat(consumerInstanceId, is("consumer-1"));
-                    });
-                    create.complete(true);
-                });
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService()
-            .deleteConsumer(context, groupId, "consumer-1");
-        context.completeNow();
-    }
-
-    @DisabledIfEnvironmentVariable(named = "EXTERNAL_BRIDGE", matches = "((?i)TRUE(?-i))")
-    @Test
-    void consumerDeletedAfterInactivity(VertxTestContext context) {
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-
-        consumerService()
-            .createConsumerRequest(groupId, consumerJson)
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(consumerJson)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject bridgeResponse = response.body();
-                        String consumerInstanceId = bridgeResponse.getString("instance_id");
-                        String consumerBaseUri = bridgeResponse.getString("base_uri");
-                        assertThat(consumerInstanceId, is(name));
-                        assertThat(consumerBaseUri, is(Urls.consumerInstance(groupId, name)));
-
-                        vertx.setTimer(timeout * 2 * 1000L, ignore -> {
-                            CompletableFuture<Boolean> delete = new CompletableFuture<>();
-                            // consumer deletion
-                            consumerService()
-                                .deleteConsumerRequest(groupId, name)
-                                    .send()
-                                    .onComplete(consumerDeletedResponse -> {
-                                        context.verify(() -> assertThat(ar.succeeded(), is(true)));
-
-                                        HttpResponse<JsonObject> deletionResponse = consumerDeletedResponse.result();
-                                        assertThat(deletionResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
-                                        assertThat(deletionResponse.body().getString("message"), is("The specified consumer instance was not found."));
-
-                                        delete.complete(true);
-                                        context.completeNow();
-                                    });
-                        });
-                    });
-                    create.complete(true);
-                });
-    }
-
-    private void checkCreatingConsumer(String key, String value, HttpResponseStatus status, String message, List<String> expectedValidationErrors, VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        JsonObject json = new JsonObject();
-        json.put("name", name);
-        json.put(key, value);
-
-        CompletableFuture<Boolean> consumer = new CompletableFuture<>();
-        consumerService().createConsumerRequest(groupId, json)
-            .sendJsonObject(json)
-            .onComplete(ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonObject> response = ar.result();
-                    assertThat(response.statusCode(), is(status.code()));
-                    HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                    assertThat(error.code(), is(status.code()));
-                    assertThat(error.message(), is(message));
-                    for (String validationError : error.validationErrors()) {
-                        assertThat(expectedValidationErrors, hasItem(validationError));
-                    }
-                });
-                consumer.complete(true);
-            });
-        consumer.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-    }
-
-    @Test
-    void createConsumerWithInvalidFormat(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-
-        JsonObject requestHeader = new JsonObject();
-        requestHeader.put("name", name);
-
-        LOGGER.info("Adding invalid value 'biary' to 'format' property configuration to invoke |422| status code");
-
-        requestHeader.put("format", "biary");
-
-        consumerService()
-                .createConsumerRequest(groupId, requestHeader)
-                .as(BodyCodec.jsonObject())
-                .sendJsonObject(requestHeader)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat("Response status code is not '422'", response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
-                        HttpBridgeError error = HttpBridgeError.fromJson(response.body());
-                        assertThat("Response status code is not '422'", HttpResponseStatus.UNPROCESSABLE_ENTITY.code(), is(error.code()));
-                        LOGGER.info("This is message -> {}", error.message());
-                        assertThat("Body message doesn't contain 'Invalid format type.'", error.message(), equalTo("Invalid format type."));
-                    });
-                    create.complete(true);
-                });
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        context.completeNow();
-    }
-
-    @Test
-    void createConsumerNameIsNotSetAndBridgeIdIsSet(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        JsonObject json = new JsonObject();
-        String[] consumerInstanceId = {""};
-
-        CompletableFuture<Boolean> create = new CompletableFuture<>();
-        consumerService()
-            .createConsumerRequest(groupId, json)
-            .as(BodyCodec.jsonObject())
-            .sendJsonObject(json)
-            .onComplete(ar -> {
-                context.verify(() -> {
-                    assertThat(ar.succeeded(), is(true));
-                    HttpResponse<JsonObject> response = ar.result();
-                    assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                    JsonObject bridgeResponse = response.body();
-                    consumerInstanceId[0] = bridgeResponse.getString("instance_id");
-                    assertThat(consumerInstanceId[0], startsWith("my-bridge-"));
-                });
-                create.complete(true);
-            });
-
-        create.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        consumerService()
-            .deleteConsumer(context, groupId, consumerInstanceId[0]);
-        context.completeNow();
-    }
-
-    @Test
-    void receiveSimpleMessageOnAssignTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "assign-topic";
-
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
-        future.get();
-
-        String sentBody = "Simple message";
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
-
-        String name = "my-kafka-consumer-assign";
-
-        JsonObject json = new JsonObject();
-        json.put("name", name);
-        json.put("format", "json");
-
-        JsonObject partitionsRoot = new JsonObject();
-        JsonArray partitions = new JsonArray();
-        JsonObject part0 = new JsonObject();
-        part0.put("topic", topic);
-        part0.put("partition", 0);
-        partitions.add(part0);
-        partitionsRoot.put("partitions", partitions);
-
-        consumerService()
-                .createConsumer(context, groupId, json);
-
-        CompletableFuture<Boolean> assign = new CompletableFuture<>();
-        consumerService()
-                .assignRequest(groupId, name, partitionsRoot)
-                .sendJsonObject(partitionsRoot)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), Matchers.is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), Matchers.is(HttpResponseStatus.NO_CONTENT.code()));
-                    });
-                    assign.complete(true);
-                });
-
-        assign.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
-        // consume records
-        consumerService()
-                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), CoreMatchers.is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.OK.code()));
-                        JsonObject jsonResponse = response.body().getJsonObject(0);
-
-                        String kafkaTopic = jsonResponse.getString("topic");
-                        int kafkaPartition = jsonResponse.getInteger("partition");
-                        String key = jsonResponse.getString("key");
-                        String value = jsonResponse.getString("value");
-                        long offset = jsonResponse.getLong("offset");
-
-                        assertThat(kafkaTopic, CoreMatchers.is(topic));
-                        assertThat(value, CoreMatchers.is(sentBody));
-                        assertThat(offset, CoreMatchers.is(0L));
-                        assertThat(kafkaPartition, CoreMatchers.is(0));
-                        assertThat(key, nullValue());
-                    });
-                    consume.complete(true);
-                });
-
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        consumerService()
-                .deleteConsumer(context, groupId, name);
-        context.completeNow();
-    }
-
-    @Test
-    void receiveSimpleMessageTopicCreatedAfterAssignTest(VertxTestContext context) throws InterruptedException, ExecutionException, TimeoutException {
-        String topic = "assign-topic";
-
-        String name = "my-kafka-consumer-assign";
-
-        JsonObject json = new JsonObject();
-        json.put("name", name);
-        json.put("format", "json");
-
-        JsonObject partitionsRoot = new JsonObject();
-        JsonArray partitions = new JsonArray();
-        JsonObject part0 = new JsonObject();
-        part0.put("topic", topic);
-        part0.put("partition", 0);
-        partitions.add(part0);
-        partitionsRoot.put("partitions", partitions);
-
-        consumerService()
-                .createConsumer(context, groupId, json);
-
-        CompletableFuture<Boolean> assign = new CompletableFuture<>();
-        consumerService()
-                .assignRequest(groupId, name, partitionsRoot)
-                .sendJsonObject(partitionsRoot)
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), Matchers.is(true));
-                        HttpResponse<JsonObject> response = ar.result();
-                        assertThat(response.statusCode(), Matchers.is(HttpResponseStatus.NO_CONTENT.code()));
-                    });
-                    assign.complete(true);
-                });
-
-        assign.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic, 1, 1);
-        future.get();
-
-        String sentBody = "Simple message";
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
-
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
-        // consume records
-        consumerService()
-                .consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), CoreMatchers.is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), CoreMatchers.is(HttpResponseStatus.OK.code()));
-                        JsonObject jsonResponse = response.body().getJsonObject(0);
-
-                        String kafkaTopic = jsonResponse.getString("topic");
-                        int kafkaPartition = jsonResponse.getInteger("partition");
-                        String key = jsonResponse.getString("key");
-                        String value = jsonResponse.getString("value");
-                        long offset = jsonResponse.getLong("offset");
-
-                        assertThat(kafkaTopic, CoreMatchers.is(topic));
-                        assertThat(value, CoreMatchers.is(sentBody));
-                        assertThat(offset, CoreMatchers.is(0L));
-                        assertThat(kafkaPartition, CoreMatchers.is(0));
-                        assertThat(key, nullValue());
-                    });
-                    consume.complete(true);
-                });
-
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-
-        consumerService()
-                .deleteConsumer(context, groupId, name);
-        context.completeNow();
-    }
-
-    @BeforeEach
-    void setUp() {
-        name = generateRandomConsumerName();
-        consumerWithEarliestResetJson.put("name", name);
-        consumerJson.put("name", name);
-        groupId = generateRandomConsumerGroupName();
-    }
-
-    private String generateRandomConsumerName() {
-        int salt = new Random().nextInt(Integer.MAX_VALUE);
-        return "my-kafka-consumer-" + salt;
-    }
-
-    @Test
-    void concurrentPollAndDeleteConsumer(VertxTestContext context) throws InterruptedException, TimeoutException, ExecutionException {
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
-
-        future.get();
-        String sentBody = "Simple message";
-        basicKafkaClient.sendJsonMessagesPlain(topic, 1, sentBody, 0, true);
+        bridgeTestContext.getBasicKafkaClient().sendStringMessagesPlain(bridgeTestContext.getTopicName(), 1);
 
         // create consumer
         // subscribe to a topic
-        consumerService()
-                .createConsumer(context, groupId, consumerJson)
-                .subscribeConsumer(context, groupId, name, topic);
+        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
+
+        // consume records
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name, BridgeContentType.KAFKA_JSON_JSON);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
+
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.code(), is(HttpResponseStatus.NOT_ACCEPTABLE.code()));
+        assertThat(httpBridgeError.message(), startsWith("Failed to decode"));
+
+        // consumer deletion
+        httpConsumerService.deleteConsumer(groupId, name);
+    }
+
+    @Test
+    void consumerDeletedAfterInactivity(BridgeTestContext bridgeTestContext) throws InterruptedException {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        HttpResponse<String> httpResponse = httpConsumerService.createConsumerRequest(groupId, consumer);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(responseBody.get("instance_id").asText(), is(name));
+        assertThat(responseBody.get("base_uri").asText(), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, name))));
+
+        Thread.sleep(Constants.DEFAULT_CONSUMER_TIMEOUT * 2 * 1000);
+
+        httpResponse = httpConsumerService.deleteConsumer(groupId, name);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.message(), is("The specified consumer instance was not found."));
+    }
+
+    @Test
+    void receiveSimpleMessageTopicCreatedAfterAssignTest(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        ObjectNode assignmentBody = MAPPER.createObjectNode();
+        assignmentBody.putArray("partitions").add(
+            MAPPER.createObjectNode().put("topic", bridgeTestContext.getTopicName()).put("partition", 0));
+
+        // create consumer
+        httpConsumerService.createConsumer(groupId, consumer);
+
+        // assign consumer
+        httpConsumerService.assignPartitions(groupId, name, assignmentBody);
+
+        // create topic
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
+        // send message
+        String sentBody = "Simple message";
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
+
+        // consume records
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
+
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition").asInt(), is(0));
+        assertThat(receivedMessage.get("key").isNull(), is(true));
+
+        // consumer deletion
+        httpConsumerService.deleteConsumer(groupId, name);
+    }
+
+    @Test
+    void concurrentPollAndDeleteConsumer(BridgeTestContext bridgeTestContext) throws InterruptedException, ExecutionException, TimeoutException {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        // create topic
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
+        // send message
+        String sentBody = "Simple message";
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, sentBody, 0, true);
+
+        // create consumer
+        // subscribe to a topic
+        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
 
         // start a poll operation with a long timeout (10 seconds) to simulate a long-running poll
-        CompletableFuture<Boolean> consume = new CompletableFuture<>();
-        consumerService()
-                .consumeRecordsRequest(groupId, name, 10000, null, BridgeContentType.KAFKA_JSON_JSON)
-                .as(BodyCodec.jsonArray())
-                .send()
-                .onComplete(ar -> {
-                    context.verify(() -> {
-                        assertThat(ar.succeeded(), is(true));
-                        HttpResponse<JsonArray> response = ar.result();
-                        assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
-                        JsonObject jsonResponse = response.body().getJsonObject(0);
-                        String value = jsonResponse.getString("value");
-                        assertThat(value, is(sentBody));
-                    });
-                    consume.complete(true);
-                });
+        CompletableFuture<HttpResponse<String>> consumeFuture = httpConsumerService.consumeRecordsRequestAsync(groupId, name, 10000);
 
         // wait a short time to ensure poll request has started
         Thread.sleep(100);
@@ -2030,13 +1152,32 @@ public class ConsumerIT extends HttpBridgeITAbstract {
         // try to delete the consumer while the poll is active
         // this should trigger the ConcurrentModificationException if the synchronization on KafkaConsumer doesn't work
         // otherwise if deletion is locked while polling is still running, the test will pass
-        consumerService()
-                .deleteConsumer(context, groupId, name);
+        httpConsumerService.deleteConsumer(groupId, name);
 
-        consume.get(TEST_TIMEOUT, TimeUnit.SECONDS);
+        HttpResponse<String> httpResponse = consumeFuture.get(TEST_TIMEOUT, TimeUnit.SECONDS);
 
-        context.completeNow();
-        assertThat(context.awaitCompletion(TEST_TIMEOUT, TimeUnit.SECONDS), is(true));
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
+
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("offset").asLong(), is(0L));
+        assertThat(receivedMessage.get("partition").asInt(), is(0));
+        assertThat(receivedMessage.get("key").isNull(), is(true));
     }
 
+    @BeforeEach
+    void setUp() {
+        name = generateRandomConsumerName();
+        groupId = generateRandomConsumerGroupName();
+
+        consumerWithEarliestOffsetReset = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("auto.offset.reset", "earliest")
+            .put("enable.auto.commit", true)
+            .put("fetch.min.bytes", 100);
+
+        consumer = MAPPER.createObjectNode()
+            .put("name", name)
+            .put("format", "json");
+    }
 }

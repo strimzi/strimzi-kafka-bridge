@@ -4,53 +4,43 @@
  */
 package io.strimzi.kafka.bridge.http;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
-import io.strimzi.kafka.bridge.http.base.HttpBridgeITAbstract;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.junit5.VertxTestContext;
-import org.apache.kafka.common.KafkaFuture;
+import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
+import io.strimzi.kafka.bridge.configuration.BridgeConfiguration;
+import io.strimzi.kafka.bridge.configuration.ConfigEntry;
+import io.strimzi.kafka.bridge.extensions.BridgeSuite;
+import io.strimzi.kafka.bridge.http.base.AbstractIT;
+import io.strimzi.kafka.bridge.httpclient.HttpProducerService;
+import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
+import java.net.http.HttpResponse;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class InvalidProducerIT extends HttpBridgeITAbstract {
-
-    @Override
-    protected Map<String, Object> overrideConfig() {
-        Map<String, Object> cfg = new HashMap<>();
-        cfg.put("kafka.producer.acks", "5"); // invalid config
-        return cfg;
+@BridgeSuite
+@BridgeConfiguration(
+    additionalProperties = {
+        @ConfigEntry(key = KafkaProducerConfig.KAFKA_PRODUCER_CONFIG_PREFIX + "acks", value = "5")
     }
+)
+public class InvalidProducerIT extends AbstractIT {
 
     @Test
-    void sendSimpleMessage(VertxTestContext context) throws InterruptedException, ExecutionException {
-        KafkaFuture<Void> future = adminClientFacade.createTopic(topic);
+    void sendSimpleMessage(BridgeTestContext bridgeTestContext) {
+        HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
 
-        String value = "message-value";
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
-        JsonArray records = new JsonArray();
-        JsonObject json = new JsonObject();
-        json.put("value", value);
-        records.add(json);
+        ObjectNode root = MAPPER.createObjectNode();
+        root.putArray("records").add(MAPPER.createObjectNode().put("value", "message-value"));
 
-        JsonObject root = new JsonObject();
-        root.put("records", records);
+        HttpResponse<String> httpResponse = httpProducerService.sendJsonNodeRecordsRequest(
+            bridgeTestContext.getTopicName(), root, BridgeContentType.KAFKA_JSON_JSON);
 
-        future.get();
-
-        producerService()
-                .sendRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_JSON)
-                .sendJsonObject(root)
-                .onComplete(ar -> {
-                    assertThat(ar.succeeded(), is(true));
-                    assertThat(ar.result().statusCode(), is(500));
-                    context.completeNow();
-                });
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()));
     }
 }
