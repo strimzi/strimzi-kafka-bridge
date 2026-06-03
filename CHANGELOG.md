@@ -2,7 +2,7 @@
 
 ## 1.1.0
 
-* Dependency updates (Kafka 4.3.0, Vert.x 5.1.0, Netty 4.2.14.Final)
+* Dependency updates (Kafka 4.3.0, Vert.x 5.1.1, Netty 4.2.15.Final)
 
 ## 1.0.0
 
