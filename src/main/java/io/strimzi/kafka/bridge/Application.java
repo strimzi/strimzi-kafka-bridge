@@ -126,9 +126,9 @@ public class Application {
             .setPrometheusOptions(new VertxPrometheusOptions().setEnabled(true))
             // define the labels on the HTTP server related metrics
             .setLabels(EnumSet.of(Label.HTTP_PATH, Label.HTTP_METHOD, Label.HTTP_CODE))
-            // disable metrics about pool and verticles
+            // disable metrics about Vert.x pools
             .setDisabledMetricsCategories(
-                Set.of(MetricsDomain.NAMED_POOLS.name(), MetricsDomain.VERTICLES.name())
+                Set.of(MetricsDomain.NAMED_POOLS.toCategory())
             ).setJvmMetricsEnabled(true)
             .setEnabled(true);
     }
