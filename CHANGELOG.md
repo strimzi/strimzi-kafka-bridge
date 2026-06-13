@@ -2,7 +2,7 @@
 
 ## 1.1.0
 
-* Dependency updates (Kafka 4.3.0, Vert.x 5.1.1, Netty 4.2.15.Final, JMX Prometheus collector 1.6.0)
+* Dependency updates (Kafka 4.3.0, Vert.x 5.1.2, Netty 4.2.15.Final, JMX Prometheus collector 1.6.0)
 
 ## 1.0.0
 
