@@ -20,7 +20,10 @@ import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation;
 import io.opentelemetry.instrumentation.kafkaclients.v2_6.TracingProducerInterceptor;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.HttpAttributes;
+import io.opentelemetry.semconv.ServerAttributes;
+import io.opentelemetry.semconv.UrlAttributes;
+import io.opentelemetry.semconv.incubating.MessagingIncubatingAttributes;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -47,11 +50,11 @@ class OpenTelemetryHandle implements TracingHandle {
     private Tracer tracer;
 
     static void setCommonAttributes(SpanBuilder builder, RoutingContext routingContext) {
-        builder.setAttribute(SemanticAttributes.PEER_SERVICE, KAFKA_SERVICE);
-        builder.setAttribute(SemanticAttributes.HTTP_REQUEST_METHOD, routingContext.request().method().name());
-        builder.setAttribute(SemanticAttributes.URL_SCHEME, routingContext.request().scheme());
-        builder.setAttribute(SemanticAttributes.URL_PATH, routingContext.request().path());
-        builder.setAttribute(SemanticAttributes.URL_QUERY, routingContext.request().query());
+        builder.setAttribute(ServerAttributes.SERVER_ADDRESS, KAFKA_SERVICE);
+        builder.setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, routingContext.request().method().name());
+        builder.setAttribute(UrlAttributes.URL_SCHEME, routingContext.request().scheme());
+        builder.setAttribute(UrlAttributes.URL_PATH, routingContext.request().path());
+        builder.setAttribute(UrlAttributes.URL_QUERY, routingContext.request().query());
     }
 
     @Override
@@ -96,8 +99,8 @@ class OpenTelemetryHandle implements TracingHandle {
     public <K, V> void handleRecordSpan(ConsumerRecord<K, V> record) {
         String operationName = record.topic() + " " + MessageOperation.RECEIVE.name().toLowerCase(Locale.ROOT);
         SpanBuilder spanBuilder = get().spanBuilder(operationName);
-        spanBuilder.setAttribute(SemanticAttributes.MESSAGING_DESTINATION_NAME, record.topic());
-        spanBuilder.setAttribute(SemanticAttributes.MESSAGING_SYSTEM, "kafka");
+        spanBuilder.setAttribute(MessagingIncubatingAttributes.MESSAGING_DESTINATION_NAME, record.topic());
+        spanBuilder.setAttribute(MessagingIncubatingAttributes.MESSAGING_SYSTEM, "kafka");
         Context parentContext = propagator().extract(Context.current(), TracingUtil.toHeaders(record), MG);
         if (parentContext != null) {
             Span parentSpan = Span.fromContext(parentContext);
@@ -182,7 +185,7 @@ class OpenTelemetryHandle implements TracingHandle {
         @Override
         public void finish(int code) {
             try {
-                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_STATUS_CODE, code);
+                span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, code);
                 // OK status is fine for all 2xx HTTP status codes
                 span.setStatus(code >= 200 && code < 300 ? StatusCode.OK : StatusCode.ERROR);
                 scope.close();
@@ -194,7 +197,7 @@ class OpenTelemetryHandle implements TracingHandle {
         @Override
         public void finish(int code, Throwable cause) {
             try {
-                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_STATUS_CODE, code);
+                span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, code);
                 span.setStatus(code == HttpResponseStatus.OK.code() ? StatusCode.OK : StatusCode.ERROR);
                 span.recordException(cause);
                 scope.close();
