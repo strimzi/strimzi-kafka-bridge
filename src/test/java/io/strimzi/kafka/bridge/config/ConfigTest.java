@@ -145,6 +145,7 @@ public class ConfigTest {
     }
 
     @Test
+    @SuppressWarnings("checkstyle:NoFullyQualifiedClassNames") // False positive, fully qualified class name used in a string
     public void testStrimziReporterMetricsType() {
         // using HashMap because with metrics configuration additional properties will be added on load
         // NOTE: Map.of() is immutable so can't be used directly in this case
@@ -164,6 +165,7 @@ public class ConfigTest {
     }
 
     @Test
+    @SuppressWarnings("checkstyle:NoFullyQualifiedClassNames") // False positive, fully qualified class name used in a string
     public void testStrimziReporterWithCustomConfig() {
         // using HashMap because with metrics configuration additional properties will be added on load
         // NOTE: Map.of() is immutable so can't be used directly in this case
