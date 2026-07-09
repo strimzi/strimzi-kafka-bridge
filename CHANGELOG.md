@@ -2,7 +2,7 @@
 
 ## 1.1.0
 
-* Dependency updates (Kafka 4.3.1, Vert.x 5.1.3, Netty 4.2.15.Final, JMX Prometheus collector 1.6.0, Micrometer 1.16.6 [CVE-2026-40984](https://nvd.nist.gov/vuln/detail/CVE-2026-40984), OpenTelemetry 1.63.0 [CVE-2026-45292](https://nvd.nist.gov/vuln/detail/CVE-2026-45292), OpenTelemetry Semconv 1.28.0-alpha)
+* Dependency updates (Kafka 4.3.1, Vert.x 5.1.4, Netty 4.2.16.Final, JMX Prometheus collector 1.6.0, Micrometer 1.16.6 [CVE-2026-40984](https://nvd.nist.gov/vuln/detail/CVE-2026-40984), OpenTelemetry 1.63.0 [CVE-2026-45292](https://nvd.nist.gov/vuln/detail/CVE-2026-45292), OpenTelemetry Semconv 1.28.0-alpha)
 
 ## 1.0.0
 
