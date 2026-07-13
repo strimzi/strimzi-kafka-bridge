@@ -61,7 +61,7 @@
 
 		<!-- Runtime dependencies -->
 		<log4j.version>2.25.4</log4j.version>
-		<vertx.version>5.1.4</vertx.version>
+		<vertx.version>5.1.5</vertx.version>
 		<netty.version>4.2.16.Final</netty.version>
 		<kafka.version>4.3.1</kafka.version>
 		<kafka-kubernetes-config-provider.version>1.2.2</kafka-kubernetes-config-provider.version>
