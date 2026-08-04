@@ -19,10 +19,8 @@ export KAFKA_BRIDGE_LOG4J_OPTS="-Dlog4j2.configurationFile=file:$STRIMZI_HOME/cu
 # Configure Memory
 . "${MYPATH}"/dynamic_resources.sh
 
-MAX_HEAP=$(get_heap_size)
-if [ -n "$MAX_HEAP" ]; then
-  echo "Configuring Java heap: -Xms${MAX_HEAP}m -Xmx${MAX_HEAP}m"
-  export JAVA_OPTS="-Xms${MAX_HEAP}m -Xmx${MAX_HEAP}m $JAVA_OPTS"
+if [ -n "$KAFKA_HEAP_OPTS" ]; then
+  export JAVA_OPTS="${KAFKA_HEAP_OPTS} ${JAVA_OPTS}"
 fi
 
 export MALLOC_ARENA_MAX=2
