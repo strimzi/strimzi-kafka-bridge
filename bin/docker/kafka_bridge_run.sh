@@ -8,15 +8,6 @@ rm -rfv /tmp/* || true
 
 MYPATH="$(dirname "$0")"
 
-# Generate temporary keystore password
-export CERTS_STORE_PASSWORD=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c32)
-
-# Create dir where keystores and truststores will be stored
-mkdir -p /tmp/strimzi
-
-# Import certificates into keystore and truststore
-"${MYPATH}"/kafka_bridge_tls_prepare_certificates.sh
-
 # Generate and print the bridge config file
 echo "Kafka Bridge configuration:"
 tee /tmp/kafka-bridge.properties < "$STRIMZI_HOME/custom-config/application.properties" | sed -e 's/sasl.jaas.config=.*/sasl.jaas.config=[hidden]/g' -e 's/password=.*/password=[hidden]/g'
