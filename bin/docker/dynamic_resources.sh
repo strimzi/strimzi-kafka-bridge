@@ -4,21 +4,30 @@ set -e
 MYPATH="$(dirname "$0")"
 
 function get_heap_size {
+  PERCENTAGE=$1
+  MAX=$2
   # Get the max heap used by a jvm which used all the ram available to the container
-  CONTAINER_MEMORY_IN_BYTES=$(java -XshowSettings:vm -version \
-    |& awk '/Max\. Heap Size \(Estimated\): [0-9KMG]+/{ print $5}' \
+  POSSIBLE_HEAP=$(java -XX:MaxRAMPercentage="$PERCENTAGE" -XshowSettings:vm -version \
+    |& awk '/Max\. Heap Size \(Estimated\): [0-9KMGT]+/{ print $5}' \
     | gawk -f "${MYPATH}"/to_bytes.gawk)
 
-  # use max of 31G memory, java performs much better with Compressed Ordinary Object Pointers
-  DEFAULT_MEMORY_CEILING=$((31 * 2**30))
-  if [ "${CONTAINER_MEMORY_IN_BYTES}" -lt "${DEFAULT_MEMORY_CEILING}" ]; then
-    if [ -z $CONTAINER_HEAP_PERCENT ]; then
-      CONTAINER_HEAP_PERCENT=0.50
+  if [ "${MAX}" ]; then
+    MAX=$(echo "${MAX}" | gawk -f "${MYPATH}"/to_bytes.gawk)
+    if [ "${MAX}" -lt "${POSSIBLE_HEAP}" ]; then
+      POSSIBLE_HEAP=$MAX
     fi
-
-    CONTAINER_MEMORY_IN_MB=$((${CONTAINER_MEMORY_IN_BYTES}/1024**2))
-    CONTAINER_HEAP_MAX=$(echo "${CONTAINER_MEMORY_IN_MB} ${CONTAINER_HEAP_PERCENT}" | awk '{ printf "%d", $1 * $2 }')
-
-    echo "${CONTAINER_HEAP_MAX}"
   fi
+
+  echo "$POSSIBLE_HEAP"
 }
+
+if [ -z "$KAFKA_HEAP_OPTS" ] && [ -n "${STRIMZI_DYNAMIC_HEAP_PERCENTAGE}" ]; then
+    # Calculate a max heap size based some STRIMZI_DYNAMIC_HEAP_PERCENTAGE of the heap
+    # available to a jvm using 100% of the CGroup-aware memory
+    # up to some optional STRIMZI_DYNAMIC_HEAP_MAX
+    CALC_MAX_HEAP=$(get_heap_size "${STRIMZI_DYNAMIC_HEAP_PERCENTAGE}" "${STRIMZI_DYNAMIC_HEAP_MAX}")
+    if [ -n "$CALC_MAX_HEAP" ]; then
+      export KAFKA_HEAP_OPTS="-Xms${CALC_MAX_HEAP} -Xmx${CALC_MAX_HEAP}"
+      echo "Configuring Java heap: $KAFKA_HEAP_OPTS"
+    fi
+fi
