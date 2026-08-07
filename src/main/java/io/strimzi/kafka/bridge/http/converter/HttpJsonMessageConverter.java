@@ -17,8 +17,8 @@ import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 
-import javax.xml.bind.DatatypeConverter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -51,7 +51,7 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
             if (json.has("headers")) {
                 ArrayNode jsonArray = (ArrayNode) json.get("headers");
                 for (JsonNode jsonObject : jsonArray) {
-                    headers.add(new RecordHeader(jsonObject.get("key").asText(), DatatypeConverter.parseBase64Binary(jsonObject.get("value").asText())));
+                    headers.add(new RecordHeader(jsonObject.get("key").asText(), Base64.getDecoder().decode(jsonObject.get("value").asText())));
                 }
             }
             if (json.has("partition")) {
@@ -110,7 +110,7 @@ public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[]
                 ObjectNode header = JsonUtils.createObjectNode();
 
                 header.put("key", kafkaHeader.key());
-                header.put("value", DatatypeConverter.printBase64Binary(kafkaHeader.value()));
+                header.put("value", Base64.getEncoder().encodeToString(kafkaHeader.value()));
 
                 headers.add(header);
             }
