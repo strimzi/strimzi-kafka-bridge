@@ -207,7 +207,7 @@ public class HttpBridge extends AbstractVerticle {
                         deleteSinkEndpoint.close();
                         this.httpBridgeContext.getHttpSinkEndpoints().remove(item.getKey());
                         LOGGER.warn("Consumer {} deleted after inactivity timeout ({}s).", item.getKey(), timeout);
-                        timestampMap.remove(item.getKey());
+                        it.remove();
                     }
                 }
             }
