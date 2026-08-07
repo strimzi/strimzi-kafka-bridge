@@ -17,8 +17,8 @@ import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 
-import javax.xml.bind.DatatypeConverter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -40,10 +40,10 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
 
         if (!json.isEmpty()) {
             if (json.has("key")) {
-                key = DatatypeConverter.parseBase64Binary(json.get("key").asText());
+                key = Base64.getDecoder().decode(json.get("key").asText());
             }
             if (json.has("value")) {
-                value = DatatypeConverter.parseBase64Binary(json.get("value").asText());
+                value = Base64.getDecoder().decode(json.get("value").asText());
             }
             if (json.has("timestamp")) {
                 timestamp = json.get("timestamp").asLong();
@@ -51,7 +51,7 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
             if (json.has("headers")) {
                 ArrayNode jsonArray = (ArrayNode) json.get("headers");
                 for (JsonNode jsonObject: jsonArray) {
-                    headers.add(new RecordHeader(jsonObject.get("key").asText(), DatatypeConverter.parseBase64Binary(jsonObject.get("value").asText())));
+                    headers.add(new RecordHeader(jsonObject.get("key").asText(), Base64.getDecoder().decode(jsonObject.get("value").asText())));
                 }
             }
             if (json.has("partition")) {
@@ -98,9 +98,9 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
 
             jsonObject.put("topic", record.topic());
             jsonObject.put("key", record.key() != null ?
-                    DatatypeConverter.printBase64Binary(record.key()) : null);
+                    Base64.getEncoder().encodeToString(record.key()) : null);
             jsonObject.put("value", record.value() != null ?
-                    DatatypeConverter.printBase64Binary(record.value()) : null);
+                    Base64.getEncoder().encodeToString(record.value()) : null);
             jsonObject.put("partition", record.partition());
             jsonObject.put("offset", record.offset());
             jsonObject.put("timestamp", record.timestamp());
@@ -111,7 +111,7 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
                 ObjectNode header = JsonUtils.createObjectNode();
 
                 header.put("key", kafkaHeader.key());
-                header.put("value", DatatypeConverter.printBase64Binary(kafkaHeader.value()));
+                header.put("value", Base64.getEncoder().encodeToString(kafkaHeader.value()));
 
                 headers.add(header);
             }

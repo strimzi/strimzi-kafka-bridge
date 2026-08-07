@@ -23,9 +23,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import javax.xml.bind.DatatypeConverter;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -517,15 +517,15 @@ public class ConsumerIT extends AbstractIT {
         JsonNode messageHeaders = receivedMessage.get("headers");
         assertThat(messageHeaders.size(), is(3));
         assertThat(messageHeaders.get(0).get("key").asText(), is("key1"));
-        assertThat(new String(DatatypeConverter.parseBase64Binary(
+        assertThat(new String(Base64.getDecoder().decode(
             messageHeaders.get(0).get("value").asText())), is("value1"));
 
         assertThat(messageHeaders.get(1).get("key").asText(), is("key2"));
-        assertThat(new String(DatatypeConverter.parseBase64Binary(
+        assertThat(new String(Base64.getDecoder().decode(
             messageHeaders.get(1).get("value").asText())), is("value2"));
 
         assertThat(messageHeaders.get(2).get("key").asText(), is("key3"));
-        assertThat(new String(DatatypeConverter.parseBase64Binary(
+        assertThat(new String(Base64.getDecoder().decode(
             messageHeaders.get(2).get("value").asText())), is("value3"));
 
         // consumer deletion
