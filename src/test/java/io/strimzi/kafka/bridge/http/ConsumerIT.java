@@ -1090,6 +1090,41 @@ public class ConsumerIT extends AbstractIT {
     }
 
     @Test
+    void multipleConsumersDeletedAfterInactivity(BridgeTestContext bridgeTestContext) throws InterruptedException {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        String consumer1Name = generateRandomConsumerName();
+        String consumer2Name = generateRandomConsumerName();
+        String consumer3Name = generateRandomConsumerName();
+
+        ObjectNode consumer1Config = MAPPER.createObjectNode().put("name", consumer1Name).put("format", "json");
+        ObjectNode consumer2Config = MAPPER.createObjectNode().put("name", consumer2Name).put("format", "json");
+        ObjectNode consumer3Config = MAPPER.createObjectNode().put("name", consumer3Name).put("format", "json");
+
+        assertThat(httpConsumerService.createConsumerRequest(groupId, consumer1Config).statusCode(), is(HttpResponseStatus.OK.code()));
+        assertThat(httpConsumerService.createConsumerRequest(groupId, consumer2Config).statusCode(), is(HttpResponseStatus.OK.code()));
+        assertThat(httpConsumerService.createConsumerRequest(groupId, consumer3Config).statusCode(), is(HttpResponseStatus.OK.code()));
+
+        Thread.sleep(Constants.DEFAULT_CONSUMER_TIMEOUT * 2 * 1000);
+
+        // All 3 consumers should be gone, trying to delete them should return 404.
+        HttpResponse<String> httpResponse = httpConsumerService.deleteConsumer(groupId, consumer1Name);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+        HttpBridgeError httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.message(), is("The specified consumer instance was not found."));
+
+        httpResponse = httpConsumerService.deleteConsumer(groupId, consumer2Name);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+        httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.message(), is("The specified consumer instance was not found."));
+
+        httpResponse = httpConsumerService.deleteConsumer(groupId, consumer3Name);
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+        httpBridgeError = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()));
+        assertThat(httpBridgeError.message(), is("The specified consumer instance was not found."));
+    }
+
+    @Test
     void receiveSimpleMessageTopicCreatedAfterAssignTest(BridgeTestContext bridgeTestContext) {
         HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
 
