@@ -101,7 +101,7 @@ jobs:
 
       - uses: strimzi/github-actions/.github/actions/dependencies/install-syft@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
-          version: "1.20.0"
+          version: "1.50.0"
 
       - id: push-containers
         uses: strimzi/github-actions/.github/actions/build/push-containers@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
@@ -154,7 +154,7 @@ jobs:
 
       - uses: strimzi/github-actions/.github/actions/dependencies/install-syft@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
-          version: "1.20.0"
+          version: "1.50.0"
 
       - id: push-containers
         uses: strimzi/github-actions/.github/actions/build/push-containers@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3

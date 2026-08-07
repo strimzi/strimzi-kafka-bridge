@@ -82,10 +82,10 @@ docker_sbom:
 	test -d $(SBOM_DIR) || mkdir -p $(SBOM_DIR)
 	# Generate the text format
 	MANIFEST_DIGEST=$(shell $(DOCKER_CMD) buildx imagetools inspect $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG)$(DOCKER_PLATFORM_TAG_SUFFIX) --format '{{ json . }}' | jq -r .manifest.digest); \
-	syft packages $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)@$$MANIFEST_DIGEST --output syft-table --file $(SBOM_DIR)/$(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)/$(DOCKER_TAG)/$$MANIFEST_DIGEST.txt
+	syft scan $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)@$$MANIFEST_DIGEST --output syft-table=$(SBOM_DIR)/$(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)/$(DOCKER_TAG)/$$MANIFEST_DIGEST.txt
 	# Generate the SPDX JSON format for machine processing
 	MANIFEST_DIGEST=$(shell $(DOCKER_CMD) buildx imagetools inspect $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG)$(DOCKER_PLATFORM_TAG_SUFFIX) --format '{{ json . }}' | jq -r .manifest.digest); \
-	syft packages $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)@$$MANIFEST_DIGEST --output spdx-json --file $(SBOM_DIR)/$(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)/$(DOCKER_TAG)/$$MANIFEST_DIGEST.json
+	syft scan $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)@$$MANIFEST_DIGEST --output spdx-json=$(SBOM_DIR)/$(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)/$(DOCKER_TAG)/$$MANIFEST_DIGEST.json
 	# Sign the TXT and SPDX-JSON SBOM
 	@echo $$COSIGN_PRIVATE_KEY | base64 -d > cosign.key
 	MANIFEST_DIGEST=$(shell $(DOCKER_CMD) buildx imagetools inspect $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG)$(DOCKER_PLATFORM_TAG_SUFFIX) --format '{{ json . }}' | jq -r .manifest.digest); \
@@ -119,10 +119,10 @@ docker_gha_sbom:
 	test -d $(SBOM_DIR) || mkdir -p $(SBOM_DIR)
 	# Generate the text format
 	MANIFEST_DIGEST=$(shell docker buildx imagetools inspect $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG)$(DOCKER_PLATFORM_TAG_SUFFIX) --format '{{ json . }}' | jq -r .manifest.digest); \
-	syft packages $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)@$$MANIFEST_DIGEST --output syft-table --file $(SBOM_DIR)/$(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)/$(DOCKER_TAG)/$$MANIFEST_DIGEST.txt
+	syft scan $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)@$$MANIFEST_DIGEST --output syft-table=$(SBOM_DIR)/$(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)/$(DOCKER_TAG)/$$MANIFEST_DIGEST.txt
 	# Generate the SPDX JSON format for machine processing
 	MANIFEST_DIGEST=$(shell docker buildx imagetools inspect $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG)$(DOCKER_PLATFORM_TAG_SUFFIX) --format '{{ json . }}' | jq -r .manifest.digest); \
-	syft packages $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)@$$MANIFEST_DIGEST --output spdx-json --file $(SBOM_DIR)/$(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)/$(DOCKER_TAG)/$$MANIFEST_DIGEST.json
+	syft scan $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)@$$MANIFEST_DIGEST --output spdx-json=$(SBOM_DIR)/$(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)/$(DOCKER_TAG)/$$MANIFEST_DIGEST.json
 	# Sign the TXT and SPDX-JSON SBOM with keyless signing
 	MANIFEST_DIGEST=$(shell docker buildx imagetools inspect $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(DOCKER_TAG)$(DOCKER_PLATFORM_TAG_SUFFIX) --format '{{ json . }}' | jq -r .manifest.digest); \
 	cosign sign-blob --yes --bundle $(SBOM_DIR)/$(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)/$(DOCKER_TAG)/$$MANIFEST_DIGEST.txt.bundle $(SBOM_DIR)/$(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME)/$(DOCKER_TAG)/$$MANIFEST_DIGEST.txt
