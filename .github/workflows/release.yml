@@ -32,18 +32,18 @@ jobs:
     if: ${{ startsWith(github.ref, 'refs/heads/release-') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: strimzi/github-actions/.github/actions/dependencies/setup-java@v1
+      - uses: strimzi/github-actions/.github/actions/dependencies/setup-java@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
           javaVersion: "21"
 
-      - uses: strimzi/github-actions/.github/actions/build/release-artifacts@v1
+      - uses: strimzi/github-actions/.github/actions/build/release-artifacts@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
           releaseVersion: ${{ inputs.releaseVersion }}
           artifactSuffix: "kafka-bridge"
 
-      - uses: strimzi/github-actions/.github/actions/build/deploy-java@v1
+      - uses: strimzi/github-actions/.github/actions/build/deploy-java@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
           gpgPassphrase: ${{ secrets.GPG_PASSPHRASE }}
           gpgSigningKey: ${{ secrets.GPG_SIGNING_KEY }}
@@ -59,13 +59,13 @@ jobs:
     permissions:
       packages: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup ORAS
-        uses: oras-project/setup-oras@v1
+        uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
 
       - name: Download bridge binaries from source build
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: binaries-kafka-bridge.tar
           run-id: ${{ inputs.sourceBuildRunId }}
@@ -92,13 +92,15 @@ jobs:
       packages: write
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@v1
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
 
-      - uses: strimzi/github-actions/.github/actions/dependencies/install-syft@v1
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-syft@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+        with:
+          version: "1.20.0"
 
-      - uses: strimzi/github-actions/.github/actions/build/push-containers@v1
+      - uses: strimzi/github-actions/.github/actions/build/push-containers@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
           architectures: "amd64,arm64,ppc64le,s390x"
           containerRegistry: "quay.io"
@@ -126,13 +128,15 @@ jobs:
       packages: write
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@v1
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
 
-      - uses: strimzi/github-actions/.github/actions/dependencies/install-syft@v1
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-syft@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+        with:
+          version: "1.20.0"
 
-      - uses: strimzi/github-actions/.github/actions/build/push-containers@v1
+      - uses: strimzi/github-actions/.github/actions/build/push-containers@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
           architectures: "amd64,arm64,ppc64le,s390x"
           containerRegistry: "quay.io"
