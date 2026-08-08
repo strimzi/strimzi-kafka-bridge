@@ -27,6 +27,11 @@ import java.util.List;
 @SuppressWarnings("checkstyle:NPathComplexity")
 public class HttpJsonMessageConverter implements MessageConverter<byte[], byte[], byte[], byte[]> {
 
+    /**
+     * Constructor
+     */
+    public HttpJsonMessageConverter() { }
+
     @Override
     public ProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, byte[] message) {
 

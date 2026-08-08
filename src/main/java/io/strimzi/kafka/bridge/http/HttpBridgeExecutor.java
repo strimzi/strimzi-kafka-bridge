@@ -26,6 +26,8 @@ public class HttpBridgeExecutor {
 
     private static Counter rejectedTasksCounter;
 
+    private HttpBridgeExecutor() { }
+
     /**
      * Custom ThreadFactory for Kafka-related asynchronous operations.
      * Creates named, non-daemon threads with uncaught exception handling.

@@ -16,4 +16,7 @@
 
     <!-- Skip Javadoc checks for tests-->
     <suppress checks="JavadocMethod|JavaDocType|JavadocVariable|MissingJavadocType|MissingJavadocMethod" files="src[/\\]test[/\\]java[/\\].*"/>
+
+    <!-- Do not require constructors in test classes -->
+    <suppress checks="MissingCtor|HideUtilityClassConstructor" files="src[/\\]test[/\\]java[/\\].*"/>
 </suppressions>

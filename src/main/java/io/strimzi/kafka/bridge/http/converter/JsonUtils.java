@@ -23,6 +23,8 @@ public class JsonUtils {
      */
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    private JsonUtils() { }
+
     /**
      * Get the JSON representation of the provided bytes array
      *

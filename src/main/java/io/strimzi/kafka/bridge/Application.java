@@ -37,6 +37,8 @@ import java.util.Set;
 public class Application {
     private static final Logger LOGGER = LogManager.getLogger(Application.class);
 
+    private Application() { }
+
     /**
      * Bridge entrypoint
      *
