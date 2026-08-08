@@ -25,6 +25,9 @@ public abstract class MetricsCollector {
     }
 
     private static class MetricsNamingConvention extends PrometheusNamingConvention {
+
+        MetricsNamingConvention() { }
+
         @Override
         public String name(String name, Meter.Type type, String baseUnit) {
             String metricName = name.startsWith("vertx.") ? name.replace("vertx.", "strimzi.bridge.") : name;

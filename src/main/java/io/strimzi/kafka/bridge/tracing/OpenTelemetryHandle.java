@@ -47,6 +47,8 @@ import static io.strimzi.kafka.bridge.tracing.TracingConstants.OPENTELEMETRY_SER
  */
 class OpenTelemetryHandle implements TracingHandle {
 
+    OpenTelemetryHandle() { }
+
     private Tracer tracer;
 
     static void setCommonAttributes(SpanBuilder builder, RoutingContext routingContext) {

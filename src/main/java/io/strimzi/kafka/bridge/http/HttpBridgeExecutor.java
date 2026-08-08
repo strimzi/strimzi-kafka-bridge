@@ -35,6 +35,8 @@ public class HttpBridgeExecutor {
     private static class HttpBridgeThreadFactory implements ThreadFactory {
         private final AtomicInteger counter = new AtomicInteger(0);
 
+        HttpBridgeThreadFactory() { }
+
         @Override
         public Thread newThread(Runnable r) {
             Thread t = new Thread(r);
