@@ -24,4 +24,6 @@ public class BridgeContentType {
 
     /** JSON encoding */
     public static final String JSON = "application/json";
+
+    private BridgeContentType() { }
 }

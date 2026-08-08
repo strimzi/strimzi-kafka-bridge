@@ -18,6 +18,8 @@ import org.apache.logging.log4j.Logger;
 public class HttpUtils {
     private static final Logger LOGGER = LogManager.getLogger(HttpUtils.class);
 
+    private HttpUtils() { }
+
     /**
      * Send an HTTP response
      *

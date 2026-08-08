@@ -13,6 +13,9 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import java.util.Properties;
 
 final class NoopTracingHandle implements TracingHandle {
+
+    NoopTracingHandle() { }
+
     @Override
     public String envServiceName() {
         return null;
@@ -41,6 +44,9 @@ final class NoopTracingHandle implements TracingHandle {
     }
 
     private static final class NoopSpanHandle<K, V> implements SpanHandle<K, V> {
+
+        NoopSpanHandle() { }
+
         @Override
         public void inject(ProducerRecord<K, V> record) {
         }

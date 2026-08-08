@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
  */
 public class ConfigRetriever {
 
+    private ConfigRetriever() { }
+
     /**
      * Retrieve the bridge configuration from the properties file provided as parameter
      * and adding environment variables

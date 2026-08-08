@@ -22,4 +22,6 @@ public final class TracingConstants {
     public static final String OPENTELEMETRY_SERVICE_NAME_ENV_KEY = "OTEL_SERVICE_NAME";
     /** OpenTelemetry service name system property */
     public static final String OPENTELEMETRY_SERVICE_NAME_PROPERTY_KEY = "otel.service.name";
+
+    private TracingConstants() { }
 }

@@ -27,6 +27,12 @@ import java.util.List;
  */
 @SuppressWarnings("checkstyle:NPathComplexity")
 public class HttpTextMessageConverter implements MessageConverter<byte[], byte[], byte[], byte[]> {
+
+    /**
+     * Constructor
+     */
+    public HttpTextMessageConverter() { }
+
     @Override
     public ProducerRecord<byte[], byte[]> toKafkaRecord(String kafkaTopic, Integer partition, byte[] message) {
         Integer partitionFromBody = null;

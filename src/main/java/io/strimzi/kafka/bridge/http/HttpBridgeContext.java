@@ -26,6 +26,11 @@ public class HttpBridgeContext<K, V> {
     private HttpOpenApiOperations openApiOperation;
 
     /**
+     * Constructor
+     */
+    public HttpBridgeContext() { }
+
+    /**
      * Get the map of the HTTP sink endpoints.
      *
      * @return map of the HTTP sink endpoints

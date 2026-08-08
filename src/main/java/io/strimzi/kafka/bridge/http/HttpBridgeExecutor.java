@@ -26,12 +26,16 @@ public class HttpBridgeExecutor {
 
     private static Counter rejectedTasksCounter;
 
+    private HttpBridgeExecutor() { }
+
     /**
      * Custom ThreadFactory for Kafka-related asynchronous operations.
      * Creates named, non-daemon threads with uncaught exception handling.
      */
     private static class HttpBridgeThreadFactory implements ThreadFactory {
         private final AtomicInteger counter = new AtomicInteger(0);
+
+        HttpBridgeThreadFactory() { }
 
         @Override
         public Thread newThread(Runnable r) {

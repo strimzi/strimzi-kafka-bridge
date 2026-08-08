@@ -19,6 +19,11 @@ import java.util.Collection;
 public class LoggingPartitionsRebalance implements ConsumerRebalanceListener {
     private static final Logger LOGGER = LogManager.getLogger(LoggingPartitionsRebalance.class);
 
+    /**
+     * Constructor
+     */
+    public LoggingPartitionsRebalance() { }
+
     @Override
     public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
         LOGGER.debug("Partitions revoked {}", partitions.size());

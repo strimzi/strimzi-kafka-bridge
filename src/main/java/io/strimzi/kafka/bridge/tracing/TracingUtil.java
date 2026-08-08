@@ -27,6 +27,8 @@ public class TracingUtil {
     private static final Logger LOGGER = LogManager.getLogger(TracingUtil.class);
     private static TracingHandle tracing = new NoopTracingHandle();
 
+    private TracingUtil() { }
+
     /**
      * Get the current tracing instance.
      *
