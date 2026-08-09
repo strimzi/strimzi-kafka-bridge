@@ -5,7 +5,6 @@
 
 package io.strimzi.kafka.bridge.converter;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
@@ -40,15 +39,6 @@ public interface MessageConverter<K, V, M, C> {
      * @return Kafka records
      */
     List<ProducerRecord<K, V>> toKafkaRecords(String kafkaTopic, Integer partition, C messages);
-
-    /**
-     * Converts a Kafka record to a message
-     *
-     * @param address address for sending message
-     * @param record Kafka record to convert
-     * @return message
-     */
-    M toMessage(String address, ConsumerRecord<K, V> record);
 
     /**
      * Converts Kafka records to a collection of messages

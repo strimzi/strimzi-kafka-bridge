@@ -88,11 +88,6 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
     }
 
     @Override
-    public byte[] toMessage(String address, ConsumerRecord<byte[], byte[]> record) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public byte[] toMessages(ConsumerRecords<byte[], byte[]> records) {
 
         ArrayNode jsonArray = JsonUtils.createArrayNode();

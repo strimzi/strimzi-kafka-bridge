@@ -189,12 +189,7 @@ public class HttpConfig extends AbstractConfig {
      * @return set of SSL enabled protocols
      */
     public Set<String> getHttpServerSslEnabledProtocols() {
-        String protocols = (String) this.config.getOrDefault(HTTP_SERVER_SSL_ENABLED_PROTOCOLS, DEFAULT_SSL_ENABLED_PROTOCOLS);
-        if (protocols != null) {
-            return Arrays.stream(protocols.split(",")).collect(Collectors.toSet());
-        } else {
-            return null;
-        }
+        return Arrays.stream(((String) this.config.getOrDefault(HTTP_SERVER_SSL_ENABLED_PROTOCOLS, DEFAULT_SSL_ENABLED_PROTOCOLS)).split(",")).collect(Collectors.toSet());
     }
 
     /**

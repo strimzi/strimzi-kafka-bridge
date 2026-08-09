@@ -336,7 +336,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
             Throwable e = null;
             if (t != null && t.getCause() instanceof UnknownTopicOrPartitionException) {
                 e = t;
-            } else if (topicDescriptions.get(topicName).partitions().size() <= partitionId) {
+            } else if (t == null && topicDescriptions.get(topicName).partitions().size() <= partitionId) {
                 e = new UnknownTopicOrPartitionException("Topic '" + topicName + "' does not have partition with id " + partitionId);
             }
             if (e != null) {
