@@ -34,11 +34,11 @@ public class ConsumerInstanceId {
             return false;
         }
 
-        if (groupId != null && !groupId.equals(other.groupId)) {
+        if (groupId != null ? !groupId.equals(other.groupId) : other.groupId != null) {
             return false;
         }
 
-        if (instanceId != null && !instanceId.equals(other.instanceId)) {
+        if (instanceId != null ? !instanceId.equals(other.instanceId) : other.instanceId != null) {
             return false;
         }
 
