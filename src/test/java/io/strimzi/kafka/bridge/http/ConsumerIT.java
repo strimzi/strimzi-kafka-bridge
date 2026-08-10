@@ -532,6 +532,54 @@ public class ConsumerIT extends AbstractIT {
         httpConsumerService.deleteConsumer(groupId, name);
     }
 
+    @Test
+    void receiveSimpleMessageWithNullValueHeader(BridgeTestContext bridgeTestContext) {
+        HttpConsumerService httpConsumerService = new HttpConsumerService(bridgeTestContext.getHttpService());
+
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
+        String sentBody = "Simple message";
+        List<Header> headers = new ArrayList<>();
+        headers.add(new RecordHeader("key1", "value1".getBytes()));
+        headers.add(new RecordHeader("key-with-null-value", null));
+        headers.add(new RecordHeader("key3", "value3".getBytes()));
+
+        bridgeTestContext.getBasicKafkaClient().sendJsonMessagesPlain(bridgeTestContext.getTopicName(), 1, headers, sentBody, true);
+
+        // create consumer
+        // subscribe to a topic
+        httpConsumerService.createConsumer(groupId, consumer);
+        httpConsumerService.subscribeConsumer(groupId, name, bridgeTestContext.getTopicName());
+
+        HttpResponse<String> httpResponse = httpConsumerService.consumeRecordsRequest(groupId, name);
+
+        // The bridge should handle null header values gracefully.
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+        JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
+
+        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("key").isNull(), is(true));
+
+        JsonNode messageHeaders = receivedMessage.get("headers");
+        assertThat(messageHeaders.size(), is(3));
+
+        assertThat(messageHeaders.get(0).get("key").asText(), is("key1"));
+        assertThat(new String(Base64.getDecoder().decode(
+            messageHeaders.get(0).get("value").asText())), is("value1"));
+
+        assertThat(messageHeaders.get(1).get("key").asText(), is("key-with-null-value"));
+        assertThat(messageHeaders.get(1).get("value").isNull(), is(true));
+
+        assertThat(messageHeaders.get(2).get("key").asText(), is("key3"));
+        assertThat(new String(Base64.getDecoder().decode(
+            messageHeaders.get(2).get("value").asText())), is("value3"));
+
+        // consumer deletion
+        httpConsumerService.deleteConsumer(groupId, name);
+    }
+
     @Disabled("Implement it at some point in the future :)")
     @Test
     void receiveBinaryMessage(BridgeTestContext bridgeTestContext) {

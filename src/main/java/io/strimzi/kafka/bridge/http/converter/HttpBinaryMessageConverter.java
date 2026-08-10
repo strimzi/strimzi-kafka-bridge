@@ -111,7 +111,7 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
                 ObjectNode header = JsonUtils.createObjectNode();
 
                 header.put("key", kafkaHeader.key());
-                header.put("value", Base64.getEncoder().encodeToString(kafkaHeader.value()));
+                header.put("value", kafkaHeader.value() != null ? Base64.getEncoder().encodeToString(kafkaHeader.value()) : null);
 
                 headers.add(header);
             }
