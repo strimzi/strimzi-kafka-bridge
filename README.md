@@ -23,6 +23,7 @@ Thanks to the bridge, all clients which can speak HTTP 1.1 protocol can connect 
 ## Community Testing for Linux on IBM Z s390x architecture
 
 [![Jenkins](https://ibmz-ci.osuosl.org/buildStatus/icon?job=Strimzi_Kafka_Bridge_IBMZ_CI&subject=s390x%20build)](https://ibmz-ci.osuosl.org/job/Strimzi_Kafka_Bridge_IBMZ_CI/)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fstrimzi%2Fstrimzi-kafka-bridge.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fstrimzi%2Fstrimzi-kafka-bridge?ref=badge_shield)
 
 _Note: This badge represents a community-led initiative and is not officially endorsed by the Strimzi project maintainers._
 
@@ -86,6 +87,9 @@ Learn more on how you can contribute on our [Join Us](https://strimzi.io/join-us
 ## License
 
 Strimzi Kafka Bridge is licensed under the [Apache License](./LICENSE), Version 2.0
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fstrimzi%2Fstrimzi-kafka-bridge.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fstrimzi%2Fstrimzi-kafka-bridge?ref=badge_large)
 
 ## Container signatures
 
