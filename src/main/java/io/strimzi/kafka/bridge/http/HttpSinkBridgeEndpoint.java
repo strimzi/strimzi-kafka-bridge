@@ -388,13 +388,11 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         // check that the accepted body by the client is the same as the format on creation
         if (accept != null && this.checkAcceptedBody(accept)) {
 
-            if (routingContext.request().getParam("timeout") != null) {
-                this.pollTimeOut = Long.parseLong(routingContext.request().getParam("timeout"));
-            }
+            this.pollTimeOut = routingContext.request().getParam("timeout") != null
+                    ? Long.parseLong(routingContext.request().getParam("timeout")) : 100;
 
-            if (routingContext.request().getParam("max_bytes") != null) {
-                this.maxBytes = Long.parseLong(routingContext.request().getParam("max_bytes"));
-            }
+            this.maxBytes = routingContext.request().getParam("max_bytes") != null
+                    ? Long.parseLong(routingContext.request().getParam("max_bytes")) : Long.MAX_VALUE;
 
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
             CompletableFuture.supplyAsync(() -> {
