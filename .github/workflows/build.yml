@@ -29,15 +29,15 @@ jobs:
             mainBuild: true
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Java and Maven
-        uses: strimzi/github-actions/.github/actions/dependencies/setup-java@v1
+        uses: strimzi/github-actions/.github/actions/dependencies/setup-java@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
           javaVersion: ${{ matrix.java.version }}
 
       - name: Build binaries using build-binaries action
-        uses: strimzi/github-actions/.github/actions/build/build-binaries@v1
+        uses: strimzi/github-actions/.github/actions/build/build-binaries@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
           mainJavaBuild: ${{ matrix.java.mainBuild }}
           artifactSuffix: "kafka-bridge"
@@ -48,7 +48,7 @@ jobs:
       - build-kafka-bridge
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/build/build-docs
         with:
           artifactName: "documentation.tar"
@@ -67,18 +67,18 @@ jobs:
           - ppc64le
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@v1
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
 
-      - uses: strimzi/github-actions/.github/actions/build/build-containers@v1
+      - uses: strimzi/github-actions/.github/actions/build/build-containers@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
           architecture: ${{ matrix.architecture }}
           artifactSuffix: "kafka-bridge"
           containerRegistry: "quay.io"
           containerOrg: "strimzi"
           containerTag: "latest"
-          imagesDir: "kafka-bridge-${{ matrix.architecture }}.tar.gz"
+          imagesLocation: "kafka-bridge-${{ matrix.architecture }}.tar.gz"
 
   push-containers:
     name: Push Containers
@@ -91,13 +91,15 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@v1
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
 
-      - uses: strimzi/github-actions/.github/actions/dependencies/install-syft@v1
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-syft@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+        with:
+          version: "1.20.0"
 
-      - uses: strimzi/github-actions/.github/actions/build/push-containers@v1
+      - uses: strimzi/github-actions/.github/actions/build/push-containers@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
           architectures: "amd64,arm64,ppc64le,s390x"
           containerRegistry: "quay.io"
@@ -116,7 +118,7 @@ jobs:
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/build/publish-docs
         with:
           artifactName: "documentation.tar"
@@ -130,13 +132,13 @@ jobs:
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: strimzi/github-actions/.github/actions/dependencies/setup-java@v1
+      - uses: strimzi/github-actions/.github/actions/dependencies/setup-java@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
           javaVersion: "21"
 
-      - uses: strimzi/github-actions/.github/actions/build/deploy-java@v1
+      - uses: strimzi/github-actions/.github/actions/build/deploy-java@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
           gpgPassphrase: ${{ secrets.GPG_PASSPHRASE }}
           gpgSigningKey: ${{ secrets.GPG_SIGNING_KEY }}

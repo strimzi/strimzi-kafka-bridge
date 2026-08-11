@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   test-github-actions-integration:
-    uses: strimzi/github-actions/.github/workflows/reusable-test-integrations.yml@v1
+    uses: strimzi/github-actions/.github/workflows/reusable-test-integrations.yml@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
     with:
       repo: ${{ github.repository }}
       ref: ${{ github.sha }}
@@ -36,6 +36,6 @@ jobs:
       javaVersion: "21"
       helmChartName: "none"
       releaseVersion: "6.6.6"
-      imagesDir: "kafka-bridge-amd64.tar.gz"
-      githubActionsRef: "v1"
+      imagesLocation: "kafka-bridge-amd64.tar.gz"
+      githubActionsRef: "v2.3"
     secrets: inherit
