@@ -1,0 +1,98 @@
+name: Snyk Scanning
+
+on:
+  # Run after build workflow finishes in non-blocking way
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
+    branches:
+      - main
+  # Allow to run it also as reusable workflow from releases
+  workflow_call:
+    inputs:
+      releaseVersion:
+        description: 'Release version for Snyk monitoring target reference'
+        required: false
+        type: string
+        default: 'latest'
+      sourceBuildRunId:
+        description: 'Build workflow run ID for artifact download'
+        required: true
+        type: string
+    secrets:
+      SNYK_TOKEN:
+        required: true
+
+# Declare default permissions as read only
+permissions:
+  contents: read
+
+# Cancel previous scans on the same branch
+concurrency:
+  group: snyk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  snyk-maven-scan:
+    name: Snyk Maven Scan
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Java and Maven
+        uses: strimzi/github-actions/.github/actions/dependencies/setup-java@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+        with:
+          javaVersion: "21"
+
+      - name: Build Java code
+        run: mvn -B -DskipTests -Dmaven.javadoc.skip=true clean install
+
+      - name: Run Snyk Maven scan
+        uses: strimzi/github-actions/.github/actions/security/snyk-maven-scan@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+        with:
+          scanName: kafka-bridge
+          snykMonitor: "true"
+          uploadToCodeScanning: "true"
+
+  snyk-container-scan:
+    name: Snyk Container Scan
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    steps:
+      - name: Download container archive
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: containers-kafka-bridge-amd64.tar
+          run-id: ${{ inputs.sourceBuildRunId || github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Untar container archive
+        run: tar -xvf containers-kafka-bridge-amd64.tar
+
+      - name: Install Docker
+        uses: strimzi/github-actions/.github/actions/dependencies/install-docker@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+
+      - name: Run Snyk container scan
+        uses: strimzi/github-actions/.github/actions/security/snyk-container-scan@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+        with:
+          imageFile: kafka-bridge-amd64.tar.gz
+          image: kafka-bridge
+          snykMonitor: "true"
+          uploadToCodeScanning: "true"
+          snykMonitorTargetReference: ${{ inputs.releaseVersion }}
