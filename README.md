@@ -3,6 +3,8 @@
 [![Maven Central](https://img.shields.io/maven-central/v/io.strimzi/kafka-bridge)](https://search.maven.org/artifact/io.strimzi/kafka-bridge)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Twitter Follow](https://img.shields.io/twitter/follow/strimziio?style=social)](https://twitter.com/strimziio)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fstrimzi%2Fstrimzi-kafka-bridge.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fstrimzi%2Fstrimzi-kafka-bridge?ref=badge_shield)
+[![Known Vulnerabilities](https://snyk.io/test/github/strimzi/strimzi-kafka-bridge/badge.svg)](https://snyk.io/test/github/strimzi/strimzi-kafka-bridge)
 
 # HTTP bridge for Apache Kafka®
 
