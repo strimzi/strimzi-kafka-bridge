@@ -87,6 +87,9 @@ jobs:
       - prepare-release-artifacts
     if: ${{ startsWith(github.ref, 'refs/heads/release-') && inputs.useSuffix == true }}
     runs-on: ubuntu-latest
+    outputs:
+      images: ${{ steps.push-containers.outputs.images }}
+      sbomsArtifact: ${{ steps.push-containers.outputs.sbomsArtifact }}
     permissions:
       contents: read
       packages: write
@@ -100,7 +103,8 @@ jobs:
         with:
           version: "1.20.0"
 
-      - uses: strimzi/github-actions/.github/actions/build/push-containers@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+      - id: push-containers
+        uses: strimzi/github-actions/.github/actions/build/push-containers@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
           architectures: "amd64,arm64,ppc64le,s390x"
           containerRegistry: "quay.io"
@@ -110,6 +114,19 @@ jobs:
           registryPassword: ${{ secrets.QUAY_PASS }}
           artifactSuffix: "kafka-bridge"
           buildRunId: ${{ inputs.sourceBuildRunId }}
+
+  attest-with-suffix:
+    name: Attestation (with suffix)
+    needs:
+      - push-containers-with-suffix
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    uses: strimzi/github-actions/.github/workflows/reusable-attest.yml@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+    with:
+      containerImages: ${{ needs.push-containers-with-suffix.outputs.images }}
+      sbomsArtifact: ${{ needs.push-containers-with-suffix.outputs.sbomsArtifact }}
 
   push-containers:
     name: Push Containers without suffix (${{ inputs.releaseVersion }})
@@ -123,6 +140,9 @@ jobs:
         needs.push-containers-with-suffix.result == 'skipped')
       }}
     runs-on: ubuntu-latest
+    outputs:
+      images: ${{ steps.push-containers.outputs.images }}
+      sbomsArtifact: ${{ steps.push-containers.outputs.sbomsArtifact }}
     permissions:
       contents: read
       packages: write
@@ -136,7 +156,8 @@ jobs:
         with:
           version: "1.20.0"
 
-      - uses: strimzi/github-actions/.github/actions/build/push-containers@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+      - id: push-containers
+        uses: strimzi/github-actions/.github/actions/build/push-containers@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
         with:
           architectures: "amd64,arm64,ppc64le,s390x"
           containerRegistry: "quay.io"
@@ -146,3 +167,23 @@ jobs:
           registryPassword: ${{ secrets.QUAY_PASS }}
           artifactSuffix: "kafka-bridge"
           buildRunId: ${{ inputs.sourceBuildRunId }}
+
+  attest:
+    name: Attestation
+    needs:
+      - push-containers
+      - prepare-release-artifacts
+    if: |-
+      ${{ always() && startsWith(github.ref, 'refs/heads/release-') &&
+        needs.push-containers.result == 'success'
+      }}
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    uses: strimzi/github-actions/.github/workflows/reusable-attest.yml@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+    with:
+      containerImages: ${{ needs.push-containers.outputs.images }}
+      sbomsArtifact: ${{ needs.push-containers.outputs.sbomsArtifact }}
+      artifactSuffix: "kafka-bridge"
+      releaseVersion: ${{ inputs.releaseVersion }}
