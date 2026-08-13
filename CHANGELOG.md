@@ -2,7 +2,7 @@
 
 ## 1.1.0
 
-* Dependency updates (Kafka 4.3.1, Vert.x 5.1.6, Netty 4.2.17.Final, JMX Prometheus collector 1.6.0, Micrometer 1.16.6 [CVE-2026-40984](https://nvd.nist.gov/vuln/detail/CVE-2026-40984), OpenTelemetry 1.63.0 [CVE-2026-45292](https://nvd.nist.gov/vuln/detail/CVE-2026-45292), OpenTelemetry Semconv 1.28.0-alpha, Log4j2 [CVE-2026-49844](https://nvd.nist.gov/vuln/detail/CVE-2026-49844), Metrics Reporter 0.4.0)
+* Dependency updates (Kafka 4.3.1, Vert.x 5.1.6, Netty 4.2.17.Final, JMX Prometheus collector 1.6.0, Micrometer 1.16.6 [CVE-2026-40984](https://nvd.nist.gov/vuln/detail/CVE-2026-40984), OpenTelemetry 1.63.0 [CVE-2026-45292](https://nvd.nist.gov/vuln/detail/CVE-2026-45292), OpenTelemetry Semconv 1.28.0-alpha, Log4j2 [CVE-2026-49844](https://nvd.nist.gov/vuln/detail/CVE-2026-49844), Metrics Reporter 0.4.0, Strimzi Kafka OAuth 0.18.0)
 * Fixed bug on deleting more than one inactive consumers.
 * Fixed bug on message header with null value.
 * Fixed poll timeout and max_bytes query parameters not resetting to defaults when omitted on subsequent consumer poll requests.
