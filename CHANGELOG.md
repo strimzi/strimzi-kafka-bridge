@@ -3,6 +3,7 @@
 ## 1.2.0
 
 * Fixed bug on negative partition id not being rejected (get partition, send to partition and get offsets operations), by adding a `minimum` constraint to the `partitionid` parameter in the OpenAPI spec.
+* Separated HTTP server and SSL/TLS configuration to use the Vert.x `ServerSSLOptions` API, enabling future support for configuring TLS key exchange groups (e.g., for post-quantum cryptography).
 
 ## 1.1.0
 
