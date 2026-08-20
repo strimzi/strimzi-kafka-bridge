@@ -145,6 +145,22 @@ public class ProducerIT extends AbstractIT {
     }
 
     @Test
+    void sendSimpleMessageToNegativePartition(BridgeTestContext bridgeTestContext) {
+        String topic = bridgeTestContext.getTopicName();
+        bridgeTestContext.getAdminClientFacade().createTopic(topic, 1);
+
+        ObjectNode root = MAPPER.createObjectNode();
+        root.putArray("records").add(MAPPER.createObjectNode().put("value", "message-value"));
+
+        // A negative partition id is rejected by request validation
+        HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
+        HttpResponse<String> response = httpProducerService.sendJsonNodeRecordsToPartitionRequest(
+            topic, -1, root, BridgeContentType.KAFKA_JSON_JSON);
+
+        assertThat(response.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+    }
+
+    @Test
     void sendSimpleMessageWithTimestamp(BridgeTestContext bridgeTestContext) {
         String topic = bridgeTestContext.getTopicName();
         bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
