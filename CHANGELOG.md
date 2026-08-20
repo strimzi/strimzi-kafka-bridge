@@ -2,7 +2,7 @@
 
 ## 1.2.0
 
-* Fixed bug on negative partition id hanging the HTTP connection (get and send operations), by adding a `minimum` constraint to the `partitionid` parameter in the OpenAPI spec.
+* Fixed bug on negative partition id hanging the HTTP connection (get partition, send to partition and get offsets operations), by adding a `minimum` constraint to the `partitionid` parameter in the OpenAPI spec.
 
 ## 1.1.0
 

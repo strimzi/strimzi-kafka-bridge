@@ -159,6 +159,17 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
+    void testGetOffsetSummaryNegativePartition(BridgeTestContext bridgeTestContext) {
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
+        // A negative partition id is rejected by request validation
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService()
+                .get(String.format("/topics/%s/partitions/-1/offsets", bridgeTestContext.getTopicName()));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+    }
+
+    @Test
     void testCreateEmptyTopic(BridgeTestContext bridgeTestContext) throws JsonProcessingException {
         ObjectNode jsonNode = objectMapper.createObjectNode();
 
