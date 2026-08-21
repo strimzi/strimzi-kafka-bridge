@@ -60,11 +60,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
@@ -96,7 +96,7 @@ public class HttpBridge extends AbstractVerticle {
 
     private Router managementRouter;
 
-    private final Map<ConsumerInstanceId, Long> timestampMap = new HashMap<>();
+    private final Map<ConsumerInstanceId, Long> timestampMap = new ConcurrentHashMap<>();
 
     private MetricsCollector metricsCollector = null;
 
@@ -203,7 +203,7 @@ public class HttpBridge extends AbstractVerticle {
             List<ConsumerInstanceId> staleConsumers = timestampMap.entrySet().stream()
                 .filter(entry -> entry.getValue() + timeoutInMs < currentTime)
                 .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
+                .toList();
             // Close inactive consumers after collection
             staleConsumers.forEach(consumerId -> {
                 HttpSinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(consumerId);

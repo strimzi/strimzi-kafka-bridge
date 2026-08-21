@@ -10,6 +10,7 @@ import io.vertx.core.http.HttpConnection;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Context class which is used for storing endpoints.
@@ -20,7 +21,7 @@ import java.util.Map;
  */
 public class HttpBridgeContext<K, V> {
 
-    private final Map<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> httpSinkEndpoints = new HashMap<>();
+    private final Map<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> httpSinkEndpoints = new ConcurrentHashMap<>();
     private final Map<HttpConnection, HttpSourceBridgeEndpoint<K, V>> httpSourceEndpoints = new HashMap<>();
     private HttpAdminBridgeEndpoint httpAdminBridgeEndpoint;
     private HttpOpenApiOperations openApiOperation;
