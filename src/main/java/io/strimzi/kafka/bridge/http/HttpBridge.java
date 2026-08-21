@@ -59,7 +59,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -713,28 +712,37 @@ public class HttpBridge extends AbstractVerticle {
         if (routingContext.statusCode() == HttpResponseStatus.BAD_REQUEST.code()) {
             message = HttpResponseStatus.BAD_REQUEST.reasonPhrase();
             // in case of validation exception, building a meaningful error message
-            if (routingContext.failure() != null) {
+            Throwable failure = routingContext.failure();
+            if (failure != null) {
                 StringBuilder sb = new StringBuilder();
-                if (routingContext.failure().getCause() instanceof ValidationException validationException) {
-                    if (validationException.inputScope() != null) {
-                        sb.append("Validation error on: ").append(validationException.inputScope()).append(" - ");
+                switch (failure) {
+                    case Throwable t when t.getCause() instanceof ValidationException validationException -> {
+                        if (validationException.inputScope() != null) {
+                            sb.append("Validation error on: ").append(validationException.inputScope()).append(" - ");
+                        }
+                        sb.append(validationException.getMessage());
                     }
-                    sb.append(validationException.getMessage());
-                } else if (routingContext.failure() instanceof ParameterProcessorException parameterException) {
-                    if (parameterException.getParameterName() != null) {
-                        sb.append("Parameter error on: ").append(parameterException.getParameterName()).append(" - ");
+                    case ParameterProcessorException parameterException -> {
+                        if (parameterException.getParameterName() != null) {
+                            sb.append("Parameter error on: ").append(parameterException.getParameterName()).append(" - ");
+                        }
+                        sb.append(parameterException.getMessage());
                     }
-                    sb.append(parameterException.getMessage());
-                } else if (routingContext.failure() instanceof BodyProcessorException bodyProcessorException) {
-                    sb.append(bodyProcessorException.getMessage());
-                } else if (routingContext.failure().getCause() instanceof SchemaValidationException schemaValidationException) {
-                    sb.append("Validation error on: ").append("Schema validation error");
-                    validationErrors = new ArrayList<>(schemaValidationException.getOutputUnit().getErrors().size());
-                    for (OutputUnit outputUnit : schemaValidationException.getOutputUnit().getErrors()) {
-                        validationErrors.add(outputUnit.getError());
+                    case BodyProcessorException bodyProcessorException -> {
+                        sb.append(bodyProcessorException.getMessage());
                     }
-                } else if (routingContext.failure().getCause() instanceof ValidatorException validatorException) {
-                    sb.append("Validation error on: ").append(validatorException.getMessage());
+                    case Throwable t when t.getCause() instanceof SchemaValidationException schemaValidationException -> {
+                        sb.append("Validation error on: ").append("Schema validation error");
+                        validationErrors = schemaValidationException.getOutputUnit().getErrors().stream()
+                                .map(OutputUnit::getError)
+                                .toList();
+                    }
+                    case Throwable t when t.getCause() instanceof ValidatorException validatorException -> {
+                        sb.append("Validation error on: ").append(validatorException.getMessage());
+                    }
+                    default -> {
+                        // other failures keep the bare Bad Request reason phrase semantics: message stays empty
+                    }
                 }
                 message = sb.toString();
             }
