@@ -1198,7 +1198,8 @@
                     "description": "ID of the partition to send records to or retrieve metadata from.",
                     "required": true,
                     "schema": {
-                        "type": "integer"
+                        "type": "integer",
+                        "minimum": 0
                     }
                 }
             ]
@@ -1257,7 +1258,8 @@
                     "description": "ID of the partition.",
                     "required": true,
                     "schema": {
-                        "type": "integer"
+                        "type": "integer",
+                        "minimum": 0
                     }
                 }
             ]

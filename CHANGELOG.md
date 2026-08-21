@@ -2,7 +2,7 @@
 
 ## 1.2.0
 
-* _Nothing here yet, but we will surely develop something new pretty soon_
+* Fixed bug on negative partition id not being rejected (get partition, send to partition and get offsets operations), by adding a `minimum` constraint to the `partitionid` parameter in the OpenAPI spec.
 
 ## 1.1.0
 

@@ -125,6 +125,17 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
+    void testGetNegativePartition(BridgeTestContext bridgeTestContext) {
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
+        // A negative partition id is rejected by request validation
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService()
+                .get(String.format("/topics/%s/partitions/-1", bridgeTestContext.getTopicName()));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
+    }
+
+    @Test
     void testGetOffsetSummary(BridgeTestContext bridgeTestContext) {
         bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
 
@@ -145,6 +156,17 @@ public class AdminClientIT extends AbstractIT {
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions/0/offsets", bridgeTestContext.getTopicName()));
 
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+    }
+
+    @Test
+    void testGetOffsetSummaryNegativePartition(BridgeTestContext bridgeTestContext) {
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
+        // A negative partition id is rejected by request validation
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService()
+                .get(String.format("/topics/%s/partitions/-1/offsets", bridgeTestContext.getTopicName()));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.BAD_REQUEST.code()));
     }
 
     @Test
