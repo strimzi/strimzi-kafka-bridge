@@ -60,12 +60,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
@@ -97,7 +96,7 @@ public class HttpBridge extends AbstractVerticle {
 
     private Router managementRouter;
 
-    private final Map<ConsumerInstanceId, Long> timestampMap = new HashMap<>();
+    private final Map<ConsumerInstanceId, Long> timestampMap = new ConcurrentHashMap<>();
 
     private MetricsCollector metricsCollector = null;
 
@@ -199,19 +198,20 @@ public class HttpBridge extends AbstractVerticle {
         long timeoutInMs = timeout * 1000L;
         vertx.setPeriodic(timeoutInMs / 2, ignore -> {
             LOGGER.debug("Looking for stale consumers in {} entries", timestampMap.size());
-            Iterator<Map.Entry<ConsumerInstanceId, Long>> it = timestampMap.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry<ConsumerInstanceId, Long> item = it.next();
-                if (item.getValue() + timeoutInMs < System.currentTimeMillis()) {
-                    HttpSinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(item.getKey());
-                    if (deleteSinkEndpoint != null) {
-                        deleteSinkEndpoint.close();
-                        this.httpBridgeContext.getHttpSinkEndpoints().remove(item.getKey());
-                        LOGGER.warn("Consumer {} deleted after inactivity timeout ({}s).", item.getKey(), timeout);
-                        it.remove();
-                    }
+            long currentTime = System.currentTimeMillis();
+            // Collect inactive consumers first
+            List<ConsumerInstanceId> staleConsumers = timestampMap.entrySet().stream()
+                .filter(entry -> entry.getValue() + timeoutInMs < currentTime)
+                .map(Map.Entry::getKey)
+                .toList();
+            // Close inactive consumers after collection
+            staleConsumers.forEach(consumerId -> {
+                HttpSinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(consumerId);
+                if (deleteSinkEndpoint != null) {
+                    LOGGER.warn("Deleting consumer {} after inactivity timeout ({}s).", consumerId, timeout);
+                    deleteSinkEndpoint.close();
                 }
-            }
+            });
         });
     }
 
@@ -434,6 +434,7 @@ public class HttpBridge extends AbstractVerticle {
                 @SuppressWarnings("unchecked")
                 HttpSinkBridgeEndpoint<byte[], byte[]> httpEndpoint = (HttpSinkBridgeEndpoint<byte[], byte[]>) endpoint;
                 httpBridgeContext.getHttpSinkEndpoints().remove(httpEndpoint.consumerInstanceId());
+                timestampMap.remove(httpEndpoint.consumerInstanceId());
             });        
             sink.open();
 
@@ -470,9 +471,6 @@ public class HttpBridge extends AbstractVerticle {
 
         if (deleteSinkEndpoint != null) {
             deleteSinkEndpoint.handle(routingContext);
-
-            this.httpBridgeContext.getHttpSinkEndpoints().remove(kafkaConsumerInstanceId);
-            timestampMap.remove(kafkaConsumerInstanceId);
         } else {
             HttpBridgeError error = new HttpBridgeError(
                     HttpResponseStatus.NOT_FOUND.code(),
