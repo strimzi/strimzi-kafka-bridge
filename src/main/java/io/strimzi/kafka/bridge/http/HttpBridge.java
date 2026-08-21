@@ -29,9 +29,10 @@ import io.vertx.core.file.FileSystem;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerConfig;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.CorsHandler;
@@ -156,12 +157,13 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void bindHttpServers(Promise<Void> startPromise) {
-        HttpServerOptions managementServerOptions = new HttpServerOptions();
-        managementServerOptions.setHost(this.bridgeConfig.getHttpConfig().getHost());
-        managementServerOptions.setPort(this.bridgeConfig.getHttpConfig().getManagementPort());
+        HttpServerConfig managementServerConfig = new HttpServerConfig();
+        managementServerConfig.setHost(this.bridgeConfig.getHttpConfig().getHost());
+        managementServerConfig.setPort(this.bridgeConfig.getHttpConfig().getManagementPort());
 
-        HttpServerOptions httpServerOptions = httpServerOptions();
-        this.vertx.createHttpServer(httpServerOptions)
+        HttpServerConfig httpServerConfig = httpServerConfig();
+        ServerSSLOptions serverSSLOptions = this.bridgeConfig.getHttpConfig().isSslEnabled() ? serverSSLOptions() : null;
+        this.vertx.createHttpServer(httpServerConfig, serverSSLOptions)
                 .connectionHandler(this::processConnection)
                 .requestHandler(this.router)
                 .listen()
@@ -178,7 +180,7 @@ public class HttpBridge extends AbstractVerticle {
 
                     this.isReady = true;
                     this.apiServer = apiServer;
-                    return this.vertx.createHttpServer(managementServerOptions)
+                    return this.vertx.createHttpServer(managementServerConfig)
                             .connectionHandler(this::processConnection)
                             .requestHandler(this.managementRouter)
                             .listen()
@@ -355,38 +357,40 @@ public class HttpBridge extends AbstractVerticle {
                 });
     }
 
-    private HttpServerOptions httpServerOptions() {
-        HttpServerOptions httpServerOptions = new HttpServerOptions();
-        httpServerOptions.setHost(this.bridgeConfig.getHttpConfig().getHost());
-        httpServerOptions.setPort(this.bridgeConfig.getHttpConfig().getPort());
+    private HttpServerConfig httpServerConfig() {
+        HttpServerConfig httpServerConfig = new HttpServerConfig();
+        httpServerConfig.setHost(this.bridgeConfig.getHttpConfig().getHost());
+        httpServerConfig.setPort(this.bridgeConfig.getHttpConfig().getPort());
+        return httpServerConfig;
+    }
 
-        if (this.bridgeConfig.getHttpConfig().isSslEnabled()) {
-            httpServerOptions.setSsl(true);
+    private ServerSSLOptions serverSSLOptions() {
+        ServerSSLOptions serverSSLOptions = new ServerSSLOptions();
 
-            if (bridgeConfig.getHttpConfig().getHttpServerSslCertificateLocation() != null && this.bridgeConfig.getHttpConfig().getHttpServerSslKeyLocation() != null) {
-                httpServerOptions.setKeyCertOptions(new PemKeyCertOptions()
-                        .setKeyPath(this.bridgeConfig.getHttpConfig().getHttpServerSslKeyLocation())
-                        .setCertPath(this.bridgeConfig.getHttpConfig().getHttpServerSslCertificateLocation()));
-            } else if (bridgeConfig.getHttpConfig().getHttpServerSslCertificate() != null && this.bridgeConfig.getHttpConfig().getHttpServerSslKey() != null) {
-                httpServerOptions.setKeyCertOptions(new PemKeyCertOptions()
-                        .addKeyValue(Buffer.buffer(this.bridgeConfig.getHttpConfig().getHttpServerSslKey()))
-                        .addCertValue(Buffer.buffer(this.bridgeConfig.getHttpConfig().getHttpServerSslCertificate())));
-            } else {
-                LOGGER.error("Required SSL configurations are missing! Either both of http.ssl.certificate.location and http.ssl.key.location " +
-                        "or both of http.ssl.certificate and http.ssl.key should be configured");
-            }
-
-            Set<String> sslEnabledProtocols = this.bridgeConfig.getHttpConfig().getHttpServerSslEnabledProtocols();
-            if (sslEnabledProtocols != null) {
-                httpServerOptions.setEnabledSecureTransportProtocols(sslEnabledProtocols);
-            }
-
-            Set<String> sslCipherSuites = this.bridgeConfig.getHttpConfig().getHttpServerSslCipherSuites();
-            if (sslCipherSuites != null) {
-                sslCipherSuites.forEach(httpServerOptions::addEnabledCipherSuite);
-            }
+        if (bridgeConfig.getHttpConfig().getHttpServerSslCertificateLocation() != null && this.bridgeConfig.getHttpConfig().getHttpServerSslKeyLocation() != null) {
+            serverSSLOptions.setKeyCertOptions(new PemKeyCertOptions()
+                    .setKeyPath(this.bridgeConfig.getHttpConfig().getHttpServerSslKeyLocation())
+                    .setCertPath(this.bridgeConfig.getHttpConfig().getHttpServerSslCertificateLocation()));
+        } else if (bridgeConfig.getHttpConfig().getHttpServerSslCertificate() != null && this.bridgeConfig.getHttpConfig().getHttpServerSslKey() != null) {
+            serverSSLOptions.setKeyCertOptions(new PemKeyCertOptions()
+                    .addKeyValue(Buffer.buffer(this.bridgeConfig.getHttpConfig().getHttpServerSslKey()))
+                    .addCertValue(Buffer.buffer(this.bridgeConfig.getHttpConfig().getHttpServerSslCertificate())));
+        } else {
+            LOGGER.error("Required SSL configurations are missing! Either both of http.ssl.certificate.location and http.ssl.key.location " +
+                    "or both of http.ssl.certificate and http.ssl.key should be configured");
         }
-        return httpServerOptions;
+
+        Set<String> sslEnabledProtocols = this.bridgeConfig.getHttpConfig().getHttpServerSslEnabledProtocols();
+        if (sslEnabledProtocols != null) {
+            serverSSLOptions.setEnabledSecureTransportProtocols(sslEnabledProtocols);
+        }
+
+        Set<String> sslCipherSuites = this.bridgeConfig.getHttpConfig().getHttpServerSslCipherSuites();
+        if (sslCipherSuites != null) {
+            sslCipherSuites.forEach(serverSSLOptions::addEnabledCipherSuite);
+        }
+
+        return serverSSLOptions;
     }
 
     private void send(RoutingContext routingContext) {
