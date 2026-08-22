@@ -23,6 +23,7 @@ public class HttpBridgeContext<K, V> {
 
     private final Map<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> httpSinkEndpoints = new ConcurrentHashMap<>();
     private final Map<HttpConnection, HttpSourceBridgeEndpoint<K, V>> httpSourceEndpoints = new HashMap<>();
+    private final Map<ConsumerInstanceId, Long> consumerTimestamps = new ConcurrentHashMap<>();
     private HttpAdminBridgeEndpoint httpAdminBridgeEndpoint;
     private HttpOpenApiOperations openApiOperation;
 
@@ -47,6 +48,15 @@ public class HttpBridgeContext<K, V> {
      */
     public Map<HttpConnection, HttpSourceBridgeEndpoint<K, V>> getHttpSourceEndpoints() {
         return this.httpSourceEndpoints;
+    }
+
+    /**
+     * Get the map with the consumer IDs and the corresponding last activity time
+     *
+     * @return map of the consumer IDs and the corresponding last activity time
+     */
+    public Map<ConsumerInstanceId, Long> getConsumerTimestamps() {
+        return this.consumerTimestamps;
     }
 
     /**
