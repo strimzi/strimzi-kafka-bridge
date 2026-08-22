@@ -64,7 +64,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
@@ -95,8 +94,6 @@ public class HttpBridge extends AbstractVerticle {
     private Router router;
 
     private Router managementRouter;
-
-    private final Map<ConsumerInstanceId, Long> timestampMap = new ConcurrentHashMap<>();
 
     private MetricsCollector metricsCollector = null;
 
@@ -197,10 +194,10 @@ public class HttpBridge extends AbstractVerticle {
     private void startInactiveConsumerDeletionTimer(long timeout) {
         long timeoutInMs = timeout * 1000L;
         vertx.setPeriodic(timeoutInMs / 2, ignore -> {
-            LOGGER.debug("Looking for stale consumers in {} entries", timestampMap.size());
+            LOGGER.debug("Looking for stale consumers in {} entries", this.httpBridgeContext.getConsumerTimestamps().size());
             long currentTime = System.currentTimeMillis();
             // Collect inactive consumers first
-            List<ConsumerInstanceId> staleConsumers = timestampMap.entrySet().stream()
+            List<ConsumerInstanceId> staleConsumers = this.httpBridgeContext.getConsumerTimestamps().entrySet().stream()
                 .filter(entry -> entry.getValue() + timeoutInMs < currentTime)
                 .map(Map.Entry::getKey)
                 .toList();
@@ -434,7 +431,7 @@ public class HttpBridge extends AbstractVerticle {
                 @SuppressWarnings("unchecked")
                 HttpSinkBridgeEndpoint<byte[], byte[]> httpEndpoint = (HttpSinkBridgeEndpoint<byte[], byte[]>) endpoint;
                 httpBridgeContext.getHttpSinkEndpoints().remove(httpEndpoint.consumerInstanceId());
-                timestampMap.remove(httpEndpoint.consumerInstanceId());
+                httpBridgeContext.getConsumerTimestamps().remove(httpEndpoint.consumerInstanceId());
             });        
             sink.open();
 
@@ -442,7 +439,7 @@ public class HttpBridge extends AbstractVerticle {
                 @SuppressWarnings("unchecked")
                 HttpSinkBridgeEndpoint<byte[], byte[]> httpEndpoint = (HttpSinkBridgeEndpoint<byte[], byte[]>) endpoint;
                 httpBridgeContext.getHttpSinkEndpoints().put(httpEndpoint.consumerInstanceId(), httpEndpoint);
-                timestampMap.put(httpEndpoint.consumerInstanceId(), System.currentTimeMillis());
+                httpBridgeContext.getConsumerTimestamps().put(httpEndpoint.consumerInstanceId(), System.currentTimeMillis());
             });
         } catch (Exception ex) {
             if (sink != null) {
@@ -569,7 +566,7 @@ public class HttpBridge extends AbstractVerticle {
         HttpSinkBridgeEndpoint<byte[], byte[]> sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(kafkaConsumerInstanceId);
 
         if (sinkEndpoint != null) {
-            timestampMap.replace(kafkaConsumerInstanceId, System.currentTimeMillis());
+            this.httpBridgeContext.getConsumerTimestamps().replace(kafkaConsumerInstanceId, System.currentTimeMillis());
             sinkEndpoint.handle(routingContext);
         } else {
             HttpBridgeError error = new HttpBridgeError(
