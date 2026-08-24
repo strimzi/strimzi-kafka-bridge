@@ -15,6 +15,7 @@ import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import org.junit.jupiter.api.Test;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
@@ -34,7 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
     additionalProperties = {
         @ConfigEntry(key = HttpConfig.HTTP_SERVER_SSL_ENABLE, value = "true"),
         @ConfigEntry(key = HttpConfig.HTTP_SERVER_SSL_CERTIFICATE, value = TlsIT.SSL_CERT),
-        @ConfigEntry(key = HttpConfig.HTTP_SERVER_SSL_KEY, value = TlsIT.SSL_KEY)
+        @ConfigEntry(key = HttpConfig.HTTP_SERVER_SSL_KEY, value = TlsIT.SSL_KEY),
+        @ConfigEntry(key = HttpConfig.HTTP_SERVER_SSL_NAMED_GROUPS, value = "x25519,secp256r1,secp384r1")
     }
 )
 public class TlsIT extends AbstractIT {
@@ -120,6 +122,27 @@ public class TlsIT extends AbstractIT {
     @Test
     void testManagementEndpointWhenSslEnabled(BridgeTestContext bridgeTestContext) {
         HttpResponse<String> httpResponse = bridgeTestContext.getManagementHttpService().get("/healthy");
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+    }
+
+    @Test
+    void testConnectionSucceedsWithConfiguredNamedGroup(BridgeTestContext bridgeTestContext) throws Exception {
+        SSLContext sslContext = createSslContext();
+        SSLParameters sslParameters = sslContext.getDefaultSSLParameters();
+        sslParameters.setNamedGroups(new String[] {"x25519"});
+
+        HttpClient sslClient = HttpClient.newBuilder()
+                .sslContext(sslContext)
+                .sslParameters(sslParameters)
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        HttpRequest httpRequest = HttpRequest.newBuilder()
+                .uri(new URI("https://" + bridgeTestContext.getBridgeHost() + ":" + bridgeTestContext.getBridgePort() + "/"))
+                .GET()
+                .build();
+
+        HttpResponse<String> httpResponse = sslClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
     }
 

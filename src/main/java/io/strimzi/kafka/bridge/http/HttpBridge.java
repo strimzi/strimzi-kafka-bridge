@@ -386,7 +386,9 @@ public class HttpBridge extends AbstractVerticle {
         if (sslCipherSuites != null) {
             sslCipherSuites.forEach(serverSSLOptions::addEnabledCipherSuite);
         }
+        serverSSLOptions.setKeyExchangeGroups(this.bridgeConfig.getHttpConfig().getHttpServerSslNamedGroups());
 
+        LOGGER.debug("Server SSL options = {}", serverSSLOptions.toJson());
         return serverSSLOptions;
     }
 

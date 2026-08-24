@@ -150,6 +150,9 @@ PEM is the only format supported for private key.
 |http.ssl.enabled.cipher.suites
 |Comma-separated list of cipher suites. The default of the underlying JVM version is used.
 
+|http.ssl.named.groups
+|Comma-separated list of named groups. The default of the underlying JVM version is used.
+
 |http.cors.enabled
 |Enable CORS. The default is `false`.
 

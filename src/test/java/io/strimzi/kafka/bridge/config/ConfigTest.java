@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -98,7 +99,8 @@ public class ConfigTest {
                 "http.ssl.key.location", "key.key",
                 "http.ssl.certificate.location", "cert.crt",
                 "http.ssl.enabled.protocols", "TLSv1.3",
-                "http.ssl.enabled.cipher.suites", "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+                "http.ssl.enabled.cipher.suites", "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+                "http.ssl.named.groups", "x25519mlkem768,x25519,secp256r1,secp384r1"
         );
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
@@ -106,7 +108,7 @@ public class ConfigTest {
         assertThat(bridgeConfig.getHttpConfig().getHttpServerSslCertificateLocation(), is("cert.crt"));
         assertThat(bridgeConfig.getHttpConfig().getHttpServerSslEnabledProtocols(), is(Set.of("TLSv1.3")));
         assertThat(bridgeConfig.getHttpConfig().getHttpServerSslCipherSuites(), is(Set.of("TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384")));
-
+        assertThat(bridgeConfig.getHttpConfig().getHttpServerSslNamedGroups(), is(List.of("x25519mlkem768", "x25519", "secp256r1", "secp384r1")));
     }
 
     @Test

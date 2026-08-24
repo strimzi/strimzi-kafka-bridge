@@ -8,6 +8,7 @@ package io.strimzi.kafka.bridge.http;
 import io.strimzi.kafka.bridge.config.AbstractConfig;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -56,6 +57,9 @@ public class HttpConfig extends AbstractConfig {
     public static final String HTTP_SERVER_SSL_CERTIFICATE = HTTP_CONFIG_PREFIX + "ssl.certificate";
     /** HTTP Bridge server private key */
     public static final String HTTP_SERVER_SSL_KEY = HTTP_CONFIG_PREFIX + "ssl.key";
+
+    /** Comma separated list of named groups enabled for SSL connections */
+    public static final String HTTP_SERVER_SSL_NAMED_GROUPS = HTTP_CONFIG_PREFIX + "ssl.named.groups";
 
     /** HTTP consumer timeouts */
     public static final String HTTP_CONSUMER_TIMEOUT = HTTP_CONFIG_PREFIX + "timeoutSeconds";
@@ -242,6 +246,19 @@ public class HttpConfig extends AbstractConfig {
         return (String) this.config.getOrDefault(HTTP_SERVER_SSL_KEY, null);
     }
 
+    /**
+     * Get the list of SSL named groups.
+     *
+     * @return list of SSL named groups
+     */
+    public List<String> getHttpServerSslNamedGroups() {
+        String namedGroups = (String) this.config.getOrDefault(HTTP_SERVER_SSL_NAMED_GROUPS, null);
+        if (namedGroups != null) {
+            return Arrays.stream(namedGroups.split(",")).toList();
+        } else {
+            return null;
+        }
+    }
 
     /**
      * Loads HTTP related configuration parameters from a related map
