@@ -84,6 +84,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
     private final ExecutorService asyncExecutor;
 
+    private long lastActivityTimestamp = System.currentTimeMillis();
+
     /**
      * Constructor
      *
@@ -113,6 +115,15 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
      */
     public ConsumerInstanceId consumerInstanceId() {
         return this.consumerInstanceId;
+    }
+
+    /**
+     * Get the last activity timestamp
+     *
+     * @return the last activity timestamp
+     */
+    public long lastActivityTimestamp() {
+        return this.lastActivityTimestamp;
     }
 
     @Override
@@ -590,6 +601,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     @Override
     @SuppressWarnings("checkstyle:CyclomaticComplexity")
     public void handle(RoutingContext routingContext, Consumer<HttpBridgeEndpoint> handler) {
+        this.lastActivityTimestamp = System.currentTimeMillis();
         JsonNode bodyAsJson = EMPTY_JSON;
         try {
             ValidatedRequest validatedRequest =

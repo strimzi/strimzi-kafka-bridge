@@ -62,7 +62,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
@@ -171,7 +170,8 @@ public class HttpBridge extends AbstractVerticle {
                     );
 
                     if (this.bridgeConfig.getHttpConfig().getConsumerTimeout() > -1) {
-                        startInactiveConsumerDeletionTimer(this.bridgeConfig.getHttpConfig().getConsumerTimeout());
+                        long timeoutInMs = this.bridgeConfig.getHttpConfig().getConsumerTimeout() * 1000L;
+                        vertx.setPeriodic(timeoutInMs / 2, ignore -> inactiveConsumerCheck(timeoutInMs));
                     }
 
                     this.isReady = true;
@@ -191,25 +191,15 @@ public class HttpBridge extends AbstractVerticle {
                 });
     }
 
-    private void startInactiveConsumerDeletionTimer(long timeout) {
-        long timeoutInMs = timeout * 1000L;
-        vertx.setPeriodic(timeoutInMs / 2, ignore -> {
-            LOGGER.debug("Looking for stale consumers in {} entries", this.httpBridgeContext.getConsumerTimestamps().size());
-            long currentTime = System.currentTimeMillis();
-            // Collect inactive consumers first
-            List<ConsumerInstanceId> staleConsumers = this.httpBridgeContext.getConsumerTimestamps().entrySet().stream()
-                .filter(entry -> entry.getValue() + timeoutInMs < currentTime)
-                .map(Map.Entry::getKey)
-                .toList();
-            // Close inactive consumers after collection
-            staleConsumers.forEach(consumerId -> {
-                HttpSinkBridgeEndpoint<byte[], byte[]> deleteSinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(consumerId);
-                if (deleteSinkEndpoint != null) {
-                    LOGGER.warn("Deleting consumer {} after inactivity timeout ({}s).", consumerId, timeout);
+    private void inactiveConsumerCheck(long timeoutInMs) {
+        LOGGER.debug("Looking for stale consumers in {} entries", this.httpBridgeContext.getHttpSinkEndpoints().size());
+        this.httpBridgeContext.getHttpSinkEndpoints().values().stream()
+                .filter(httpSinkBridgeEndpoint -> httpSinkBridgeEndpoint.lastActivityTimestamp() + timeoutInMs < System.currentTimeMillis())
+                .toList()
+                .forEach(deleteSinkEndpoint -> {
+                    LOGGER.warn("Deleting consumer {} after inactivity timeout ({}s).", deleteSinkEndpoint.consumerInstanceId(), this.bridgeConfig.getHttpConfig().getConsumerTimeout());
                     deleteSinkEndpoint.close();
-                }
-            });
-        });
+                });
     }
 
     @Override
@@ -433,7 +423,6 @@ public class HttpBridge extends AbstractVerticle {
                 @SuppressWarnings("unchecked")
                 HttpSinkBridgeEndpoint<byte[], byte[]> httpEndpoint = (HttpSinkBridgeEndpoint<byte[], byte[]>) endpoint;
                 httpBridgeContext.getHttpSinkEndpoints().remove(httpEndpoint.consumerInstanceId());
-                httpBridgeContext.getConsumerTimestamps().remove(httpEndpoint.consumerInstanceId());
             });        
             sink.open();
 
@@ -441,7 +430,6 @@ public class HttpBridge extends AbstractVerticle {
                 @SuppressWarnings("unchecked")
                 HttpSinkBridgeEndpoint<byte[], byte[]> httpEndpoint = (HttpSinkBridgeEndpoint<byte[], byte[]>) endpoint;
                 httpBridgeContext.getHttpSinkEndpoints().put(httpEndpoint.consumerInstanceId(), httpEndpoint);
-                httpBridgeContext.getConsumerTimestamps().put(httpEndpoint.consumerInstanceId(), System.currentTimeMillis());
             });
         } catch (Exception ex) {
             if (sink != null) {
@@ -568,7 +556,6 @@ public class HttpBridge extends AbstractVerticle {
         HttpSinkBridgeEndpoint<byte[], byte[]> sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(kafkaConsumerInstanceId);
 
         if (sinkEndpoint != null) {
-            this.httpBridgeContext.getConsumerTimestamps().replace(kafkaConsumerInstanceId, System.currentTimeMillis());
             sinkEndpoint.handle(routingContext);
         } else {
             HttpBridgeError error = new HttpBridgeError(
