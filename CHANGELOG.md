@@ -2,6 +2,7 @@
 
 ## 1.2.0
 
+* Dependency updates (Micrometer 1.17.1 [CVE-2026-59295](https://nvd.nist.gov/vuln/detail/cve-2026-59295) [CVE-2026-59296](https://nvd.nist.gov/vuln/detail/cve-2026-59296))
 * Fixed bug on negative partition id not being rejected (get partition, send to partition and get offsets operations), by adding a `minimum` constraint to the `partitionid` parameter in the OpenAPI spec.
 * Separated HTTP server and SSL/TLS configuration to use the Vert.x `ServerSSLOptions` API, enabling future support for configuring TLS key exchange groups (e.g., for post-quantum cryptography).
 * Added `http.ssl.named.groups` configuration parameter to specify the SSL/TLS named groups to be used on the HTTP server side of the bridge. If not set, the JVM defaults are used.
