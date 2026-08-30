@@ -85,7 +85,7 @@ public class MetricsIT extends AbstractIT {
         // verify Kafka producer metrics are present
         assertThat(metricsBody.contains("kafka_producer_"), is(true));
 
-        Optional<Double> recordSend = parseMetricValue(metricsBody, "kafka_producer_producer_metrics_record_send");
+        Optional<Double> recordSend = parseMetricValue(metricsBody, "kafka_producer_producer_metrics_record_send_total");
         assertThat(recordSend.isPresent(), is(true));
         assertThat(recordSend.get(), greaterThan(0.0));
     }

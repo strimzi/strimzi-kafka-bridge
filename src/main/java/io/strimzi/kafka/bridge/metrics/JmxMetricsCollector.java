@@ -29,7 +29,7 @@ public class JmxMetricsCollector extends MetricsCollector {
      */
     public JmxMetricsCollector(String yamlConfig) throws MalformedObjectNameException {
         // Prometheus default registry is a singleton, so it is shared with JmxCollector
-        this(new JmxCollector(yamlConfig), PrometheusRegistry.defaultRegistry, new PrometheusTextFormatWriter(true));
+        this(new JmxCollector(yamlConfig), PrometheusRegistry.defaultRegistry, PrometheusTextFormatWriter.builder().setIncludeCreatedTimestamps(true).build());
     }
 
     /**

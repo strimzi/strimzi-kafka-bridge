@@ -24,7 +24,7 @@ public class StrimziMetricsCollector extends MetricsCollector {
      */
     public StrimziMetricsCollector() {
         // Prometheus default registry is a singleton, so it is shared with Strimzi Metrics Reporter
-        this(PrometheusRegistry.defaultRegistry, new PrometheusTextFormatWriter(true));
+        this(PrometheusRegistry.defaultRegistry, PrometheusTextFormatWriter.builder().setIncludeCreatedTimestamps(true).build());
     }
 
     /**
