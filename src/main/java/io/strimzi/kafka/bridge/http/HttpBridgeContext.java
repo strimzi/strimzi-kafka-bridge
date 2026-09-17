@@ -8,7 +8,6 @@ package io.strimzi.kafka.bridge.http;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.vertx.core.http.HttpConnection;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class HttpBridgeContext<K, V> {
 
     private final Map<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> httpSinkEndpoints = new ConcurrentHashMap<>();
-    private final Map<HttpConnection, HttpSourceBridgeEndpoint<K, V>> httpSourceEndpoints = new HashMap<>();
+    private final Map<HttpConnection, HttpSourceBridgeEndpoint<K, V>> httpSourceEndpoints = new ConcurrentHashMap<>();
     private HttpAdminBridgeEndpoint httpAdminBridgeEndpoint;
     private HttpOpenApiOperations openApiOperation;
 
