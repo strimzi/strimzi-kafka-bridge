@@ -91,14 +91,15 @@ public class Application {
                     // Register shutdown hook for graceful shutdown
                     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                         LOGGER.info("Shutdown hook triggered, starting graceful shutdown...");
-                        vertx.close()
-                                .onComplete(ar -> {
-                                    if (ar.succeeded()) {
-                                        LOGGER.info("Vertx instance closed successfully");
-                                    } else {
-                                        LOGGER.error("Error closing Vertx instance", ar.cause());
-                                    }
-                                });
+                        // The JVM waits for the shutdown hook threads and then halts, so returning while
+                        // vertx.close() is still in flight abandons the graceful shutdown. The wait has no
+                        // timeout: the environment bounds it, for example the Kubernetes grace period.
+                        try {
+                            vertx.close().await();
+                            LOGGER.info("Vertx instance closed successfully");
+                        } catch (RuntimeException e) {
+                            LOGGER.error("Error closing Vertx instance", e);
+                        }
                     }));
                     httpPromise.complete(httpBridge);
                 })
