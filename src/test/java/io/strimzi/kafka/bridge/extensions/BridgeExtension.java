@@ -245,9 +245,9 @@ public class BridgeExtension implements
             .setPrometheusOptions(new VertxPrometheusOptions().setEnabled(true))
             // define the labels on the HTTP server related metrics
             .setLabels(EnumSet.of(Label.HTTP_PATH, Label.HTTP_METHOD, Label.HTTP_CODE))
-            // disable metrics about pool and verticles
+            // disable metrics about pool
             .setDisabledMetricsCategories(
-                Set.of(MetricsDomain.NAMED_POOLS.name(), MetricsDomain.VERTICLES.name())
+                Set.of(MetricsDomain.NAMED_POOLS.name())
             ).setJvmMetricsEnabled(true)
             .setEnabled(true);
     }
