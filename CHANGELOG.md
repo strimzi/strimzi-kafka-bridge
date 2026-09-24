@@ -7,6 +7,7 @@
 * Separated HTTP server and SSL/TLS configuration to use the Vert.x `ServerSSLOptions` API, enabling future support for configuring TLS key exchange groups (e.g., for post-quantum cryptography).
 * Added `http.ssl.named.groups` configuration parameter to specify the SSL/TLS named groups to be used on the HTTP server side of the bridge. If not set, the JVM defaults are used.
 * Fixed graceful shutdown on SIGTERM not completing, causing in-flight requests to be dropped.
+* Set the default logging level for the `/metrics` endpoint to WARN to avoid high verbosity on Prometheus scraping.
 
 ## 1.1.0
 
