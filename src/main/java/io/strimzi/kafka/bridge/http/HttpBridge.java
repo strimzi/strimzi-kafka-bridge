@@ -80,6 +80,12 @@ import static io.netty.handler.codec.http.HttpHeaderNames.ORIGIN;
 public class HttpBridge extends AbstractVerticle {
     private static final Logger LOGGER = LogManager.getLogger(HttpBridge.class);
 
+    private static final Set<String> EXCLUDED_METRICS_PATHS = Set.of(
+            "/" + HttpOpenApiOperations.METRICS,
+            "/" + HttpOpenApiOperations.HEALTHY,
+            "/" + HttpOpenApiOperations.READY
+    );
+
     private final BridgeConfig bridgeConfig;
 
     private HttpServer apiServer;
@@ -250,9 +256,12 @@ public class HttpBridge extends AbstractVerticle {
                     this.managementRouter.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
 
                     if (this.metricsCollector != null && this.metricsCollector.getVertxRegistry() != null) {
-                        // exclude to report the HTTP server metrics for the /metrics endpoint itself
+                        // exclude HTTP server metrics for management-only endpoints
                         this.metricsCollector.getVertxRegistry().config().meterFilter(
-                                MeterFilter.deny(meter -> "/metrics".equals(meter.getTag(Label.HTTP_PATH.toString())))
+                                MeterFilter.deny(meter -> {
+                                    String path = meter.getTag(Label.HTTP_PATH.toString());
+                                    return path != null && EXCLUDED_METRICS_PATHS.contains(path);
+                                })
                         );
                     }
 
