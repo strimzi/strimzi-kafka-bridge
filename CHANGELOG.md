@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.3.0
+
+* _Nothing here yet, but we will surely develop something new pretty soon_
+
 ## 1.2.0
 
 * Dependency updates (Vert.x 5.2.0, Netty 4.2.18.Final, Micrometer 1.17.1 [CVE-2026-59295](https://nvd.nist.gov/vuln/detail/cve-2026-59295) [CVE-2026-59296](https://nvd.nist.gov/vuln/detail/cve-2026-59296))
