@@ -2,7 +2,7 @@
 
 ## 1.3.0
 
-* _Nothing here yet, but we will surely develop something new pretty soon_
+* Dependency updates (Vert.x 5.2.1, Netty 4.2.19.Final, JMX Prometheus collector 1.7.0)
 
 ## 1.2.0
 
