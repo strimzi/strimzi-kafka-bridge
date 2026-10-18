@@ -3,7 +3,7 @@
 ## 1.3.0
 
 * Moved to UBI9 micro as the base container image
-* Dependency updates (Vert.x 5.2.1, Netty 4.2.19.Final, JMX Prometheus collector 1.7.0)
+* Dependency updates (Kafka 4.4.0, Vert.x 5.2.1, Netty 4.2.19.Final, JMX Prometheus collector 1.7.0)
 
 ## 1.2.0
 
