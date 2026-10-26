@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.2.1
+
+* Dependency updates (Kafka 4.3.2, Vert.x 5.2.2, Netty 4.2.19.Final, JMX Prometheus collector 1.7.0, Strimzi Kafka OAuth 0.18.1)
+
 ## 1.2.0
 
 * Dependency updates (Vert.x 5.2.0, Netty 4.2.18.Final, Micrometer 1.17.1 [CVE-2026-59295](https://nvd.nist.gov/vuln/detail/cve-2026-59295) [CVE-2026-59296](https://nvd.nist.gov/vuln/detail/cve-2026-59296))
