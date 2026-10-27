@@ -9,6 +9,7 @@ import io.strimzi.kafka.bridge.extensions.BridgeExtension;
 import io.strimzi.kafka.bridge.extensions.KafkaExtension;
 import io.strimzi.kafka.bridge.facades.AdminClientFacade;
 import io.strimzi.kafka.bridge.httpclient.HttpService;
+import io.strimzi.test.container.StrimziKafkaCluster;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.util.Random;
@@ -36,8 +37,9 @@ public class BridgeTestContext {
         topicName = "my-topic-" + RNG.nextInt(Integer.MAX_VALUE);
         httpService = BridgeExtension.getHttpService(extensionContext);
         managementHttpService = BridgeExtension.getManagementHttpService(extensionContext);
-        adminClientFacade = AdminClientFacade.create(KafkaExtension.getKafkaCluster(extensionContext).getBootstrapServers());
-        basicKafkaClient = new BasicKafkaClient(KafkaExtension.getKafkaCluster(extensionContext).getBootstrapServers());
+        StrimziKafkaCluster kafkaCluster = KafkaExtension.getKafkaCluster(extensionContext);
+        adminClientFacade = AdminClientFacade.create(kafkaCluster.getBootstrapServers(), KafkaExtension.getTlsProperties(extensionContext));
+        basicKafkaClient = new BasicKafkaClient(kafkaCluster.getBootstrapServers());
         bridgeHost = BridgeExtension.getBridgeHost(extensionContext);
         bridgePort = BridgeExtension.getBridgePort(extensionContext);
     }
