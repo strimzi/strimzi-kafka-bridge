@@ -103,6 +103,16 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
+    void testListingPartitionsTopicNotFound(BridgeTestContext bridgeTestContext) {
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions", bridgeTestContext.getTopicName()));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+
+        JsonNode error = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(error.get("error_code").asInt(), is(HttpResponseStatus.NOT_FOUND.code()));
+    }
+
+    @Test
     void testGetPartition(BridgeTestContext bridgeTestContext) {
         bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 2);
 
@@ -122,6 +132,16 @@ public class AdminClientIT extends AbstractIT {
         assertThat(replica.get("broker").asInt(), is(0));
         assertThat(replica.get("leader").asBoolean(), is(true));
         assertThat(replica.get("in_sync").asBoolean(), is(true));
+    }
+
+    @Test
+    void testGetPartitionTopicNotFound(BridgeTestContext bridgeTestContext) {
+        HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().get(String.format("/topics/%s/partitions/0", bridgeTestContext.getTopicName()));
+
+        assertThat(httpResponse.statusCode(), is(HttpResponseStatus.NOT_FOUND.code()));
+
+        JsonNode error = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
+        assertThat(error.get("error_code").asInt(), is(HttpResponseStatus.NOT_FOUND.code()));
     }
 
     @Test
