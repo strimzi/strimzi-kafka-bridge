@@ -163,20 +163,8 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                         }
                         root.set("partitions", partitionsArray);
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
-                    } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
-                        HttpBridgeError error = new HttpBridgeError(
-                                HttpResponseStatus.NOT_FOUND.code(),
-                                ex.getMessage()
-                        );
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
                     } else {
-                        HttpBridgeError error = new HttpBridgeError(
-                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                ex.getMessage()
-                        );
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+                        handleAdminError(routingContext, ex);
                     }
                 });
     }
@@ -241,20 +229,8 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                             description.partitions().forEach(partitionInfo -> root.add(createPartitionMetadata(partitionInfo)));
                         }
                         HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
-                    } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
-                        HttpBridgeError error = new HttpBridgeError(
-                                HttpResponseStatus.NOT_FOUND.code(),
-                                ex.getMessage()
-                        );
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
                     } else {
-                        HttpBridgeError error = new HttpBridgeError(
-                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                ex.getMessage()
-                        );
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+                        handleAdminError(routingContext, ex);
                     }
                 });
     }
@@ -293,20 +269,8 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                             HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
                                     BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
                         }
-                    } else if (ex.getCause() instanceof UnknownTopicOrPartitionException) {
-                        HttpBridgeError error = new HttpBridgeError(
-                                HttpResponseStatus.NOT_FOUND.code(),
-                                ex.getMessage()
-                        );
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.NOT_FOUND.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
                     } else {
-                        HttpBridgeError error = new HttpBridgeError(
-                                HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                ex.getMessage()
-                        );
-                        HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
-                                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+                        handleAdminError(routingContext, ex);
                     }
                 });
     }
@@ -374,6 +338,22 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                         });
             }
         });
+    }
+
+    /**
+     * Sends an error response for a failed admin operation: 404 Not Found when the topic
+     * or partition does not exist, 500 Internal Server Error for any other failure.
+     *
+     * @param routingContext the routing context
+     * @param ex the exception raised by the admin operation
+     */
+    private static void handleAdminError(RoutingContext routingContext, Throwable ex) {
+        HttpResponseStatus status = ex.getCause() instanceof UnknownTopicOrPartitionException
+                ? HttpResponseStatus.NOT_FOUND
+                : HttpResponseStatus.INTERNAL_SERVER_ERROR;
+        HttpBridgeError error = new HttpBridgeError(status.code(), ex.getMessage());
+        HttpUtils.sendResponse(routingContext, status.code(),
+                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
     }
 
     private static ObjectNode createPartitionMetadata(TopicPartitionInfo partitionInfo) {
