@@ -124,11 +124,6 @@ class OpenTelemetryHandle implements TracingHandle {
 
     private static final TextMapGetter<RoutingContext> ROUTING_CONTEXT_GETTER = new TextMapGetter<>() {
         @Override
-        public Iterable<String> keys(RoutingContext rc) {
-            return rc.request().headers().names();
-        }
-
-        @Override
         public String get(RoutingContext rc, String key) {
             if (rc == null) {
                 return null;
@@ -138,11 +133,6 @@ class OpenTelemetryHandle implements TracingHandle {
     };
 
     private static final TextMapGetter<Map<String, String>> MG = new TextMapGetter<>() {
-        @Override
-        public Iterable<String> keys(Map<String, String> map) {
-            return map.keySet();
-        }
-
         @Override
         public String get(Map<String, String> map, String key) {
             return map != null ? map.get(key) : null;
