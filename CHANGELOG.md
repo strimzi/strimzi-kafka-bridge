@@ -4,6 +4,7 @@
 
 * Moved to UBI9 micro as the base container image
 * Dependency updates (Kafka 4.4.0, Vert.x 5.2.2, Netty 4.2.19.Final, JMX Prometheus collector 1.7.0, Strimzi Kafka OAuth 0.18.1, Kubernetes Config Provider 1.3.0)
+* Documented that the send operations always return `200` with per-record errors in the `offsets` array, and removed the `404` response from the OpenAPI spec for the send and send to partition operations.
 
 ## 1.2.1
 

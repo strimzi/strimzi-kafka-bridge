@@ -674,7 +674,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Records sent successfully.",
+                        "description": "Records sent. The response is returned with this status code even if some records failed to be delivered. Check each entry in the offsets array: a delivered record has partition and offset properties, and a record that failed to be delivered has error_code and message properties.",
                         "content": {
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
@@ -697,24 +697,6 @@
                                                     "offset": 2
                                                 }
                                             ]
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "The specified topic was not found.",
-                        "content": {
-                            "application/vnd.kafka.v2+json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "error_code": 404,
-                                            "message": "The specified topic was not found."
                                         }
                                     }
                                 }
@@ -1115,7 +1097,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Records sent successfully.",
+                        "description": "Records sent. The response is returned with this status code even if some records failed to be delivered. Check each entry in the offsets array: a delivered record has partition and offset properties, and a record that failed to be delivered has error_code and message properties.",
                         "content": {
                             "application/vnd.kafka.v2+json": {
                                 "schema": {
@@ -1138,24 +1120,6 @@
                                                     "offset": 2
                                                 }
                                             ]
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "The specified topic partition was not found.",
-                        "content": {
-                            "application/vnd.kafka.v2+json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                },
-                                "examples": {
-                                    "response": {
-                                        "value": {
-                                            "error_code": 404,
-                                            "message": "The specified topic partition was not found."
                                         }
                                     }
                                 }
