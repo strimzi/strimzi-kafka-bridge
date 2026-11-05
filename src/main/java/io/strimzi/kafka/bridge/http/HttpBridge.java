@@ -763,6 +763,15 @@ public class HttpBridge extends AbstractVerticle {
         HttpSinkBridgeEndpoint<byte[], byte[]> sinkEndpoint = this.httpBridgeContext.getHttpSinkEndpoints().get(kafkaConsumerInstanceId);
 
         if (sinkEndpoint != null) {
+            // unlike the consumer creation, the Authorization header is optional on the
+            // subsequent operations of a consumer instance (the consumer keeps its pinned
+            // credentials); when provided, the credentials are extracted (and validated,
+            // a 401 response is sent on failure) for the consumer credentials refresh
+            if (this.bridgeConfig.getAuthenticationConfig().isPassthrough()
+                    && routingContext.request().getHeader("Authorization") != null
+                    && this.extractAuthCredentials(routingContext) == null) {
+                return;
+            }
             sinkEndpoint.handle(routingContext);
         } else {
             HttpBridgeError error = new HttpBridgeError(

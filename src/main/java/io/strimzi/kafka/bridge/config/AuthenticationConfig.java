@@ -138,6 +138,9 @@ public class AuthenticationConfig extends AbstractConfig {
     /** Timeout (seconds) of the HTTP connections to the OIDC provider endpoints (JWKS, introspection, discovery) */
     public static final String AUTHENTICATION_HTTP_TIMEOUT_SECONDS = AUTHENTICATION_CONFIG_PREFIX + "http.timeout.seconds";
 
+    /** Refresh the pinned credentials of the passthrough consumers on subsequent requests (boolean) */
+    public static final String AUTHENTICATION_CONSUMER_CREDENTIALS_REFRESH = AUTHENTICATION_CONFIG_PREFIX + "consumer.credentials.refresh";
+
     /** Default JWT claim for mapping the token to the Kafka principal if not specified */
     public static final String DEFAULT_USERNAME_CLAIM = "sub";
 
@@ -530,6 +533,21 @@ public class AuthenticationConfig extends AbstractConfig {
      */
     public boolean isDpop() {
         return Boolean.parseBoolean((String) this.config.get(AUTHENTICATION_DPOP));
+    }
+
+    /**
+     * Get if the credentials pinned by the passthrough consumers are refreshed on subsequent
+     * requests: when the token provided at consumer creation is expired and a subsequent
+     * request on the same consumer instance presents a valid token of the same principal,
+     * the underlying Kafka consumer is recreated with the new credentials (preserving the
+     * subscription or assignment state). It requires the token validation to be enabled,
+     * so that the bridge can establish the principal and the expiry of the tokens; with
+     * the token validation disabled, the consumers keep their creation-time credentials.
+     *
+     * @return if the consumer credentials refresh is enabled
+     */
+    public boolean isConsumerCredentialsRefresh() {
+        return Boolean.parseBoolean((String) this.config.get(AUTHENTICATION_CONSUMER_CREDENTIALS_REFRESH));
     }
 
     /**

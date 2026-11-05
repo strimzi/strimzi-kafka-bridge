@@ -15,6 +15,7 @@ import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.KafkaBridgeConsumer;
 import io.strimzi.kafka.bridge.auth.AuthCredentials;
+import io.strimzi.kafka.bridge.auth.OidcAccessTokenCredentials;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
@@ -77,6 +78,17 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     private ConsumerInstanceId consumerInstanceId;
     private boolean subscribed;
     private boolean assigned;
+
+    // the authentication credentials pinned at consumer creation (passthrough mode)
+    private AuthCredentials authCredentials;
+    // the group id and the request-provided consumer configuration, for recreating
+    // the underlying Kafka consumer when the pinned credentials are refreshed
+    private String groupId;
+    private Properties consumerProps;
+    // the subscription/assignment state, for restoring it when the consumer is recreated
+    private List<String> subscribedTopics;
+    private Pattern subscribedPattern;
+    private Set<TopicPartition> assignedPartitions;
     
     // Lock for consumer operations to prevent concurrent access to KafkaConsumer
     private final Object consumerLock = new Object();
@@ -191,8 +203,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
         // create the consumer passing the authentication credentials (when the passthrough authentication
         // is enabled), the consumer keeps them for its lifetime
-        this.kafkaBridgeConsumer.create(config, groupId,
-                (AuthCredentials) routingContext.data().get(HttpBridgeContext.AUTH_CREDENTIALS));
+        this.authCredentials = (AuthCredentials) routingContext.data().get(HttpBridgeContext.AUTH_CREDENTIALS);
+        this.groupId = groupId;
+        this.consumerProps = config;
+        this.kafkaBridgeConsumer.create(config, groupId, this.authCredentials);
 
         if (handler != null) {
             handler.accept(this);
@@ -444,6 +458,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             LOGGER.trace("Assign handler thread {}", Thread.currentThread());
             if (ex == null) {
                 this.assigned = true;
+                this.assignedPartitions = topicPartitions;
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
                 HttpBridgeError error = new HttpBridgeError(
@@ -489,9 +504,13 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                             .map(TextNode::asText)
                             .toList();
                     this.kafkaBridgeConsumer.subscribe(topicSubscriptions);
+                    this.subscribedTopics = topicSubscriptions;
+                    this.subscribedPattern = null;
                 } else if (bodyAsJson.has("topic_pattern")) {
                     Pattern pattern = Pattern.compile(JsonUtils.getString(bodyAsJson, "topic_pattern"));
                     this.kafkaBridgeConsumer.subscribe(pattern);
+                    this.subscribedPattern = pattern;
+                    this.subscribedTopics = null;
                 }
             }
         }, asyncExecutor).whenComplete((v, ex) -> {
@@ -566,6 +585,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             if (ex == null) {
                 this.subscribed = false;
                 this.assigned = false;
+                this.subscribedTopics = null;
+                this.subscribedPattern = null;
+                this.assignedPartitions = null;
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.NO_CONTENT.code(), null, null);
             } else {
                 HttpBridgeError error = new HttpBridgeError(
@@ -611,6 +633,12 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         }
 
         LOGGER.trace("HttpSinkBridgeEndpoint handle thread {}", Thread.currentThread());
+        // refresh the pinned credentials of the consumer when needed (before the operation
+        // is dispatched); not on the create/delete operations themselves
+        if (!beforeConsumerOperation(routingContext)) {
+            // the credentials refresh failed: the error response was already sent
+            return;
+        }
         try {
             switch (this.httpBridgeContext.getOpenApiOperation()) {
 
@@ -667,6 +695,142 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
                     BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
         }
+    }
+
+    /**
+     * Refresh the credentials pinned by the consumer, when the credentials refresh is enabled
+     * and the pinned token is expired: a subsequent request on the same consumer instance
+     * presenting a valid token of the same principal (already validated by the bridge, when
+     * the token validation is configured) triggers the recreation of the underlying Kafka
+     * consumer with the new credentials, preserving the subscription or assignment state.
+     * The create and delete operations are not preceded by the refresh (the consumer is
+     * created with the request credentials, or closed anyway).
+     *
+     * @param routingContext the routing context, bringing the authentication credentials
+     *                       of the request
+     * @return if the request can proceed on the (possibly refreshed) consumer
+     */
+    private boolean beforeConsumerOperation(RoutingContext routingContext) {
+        HttpOpenApiOperations operation = this.httpBridgeContext.getOpenApiOperation();
+        if (operation == HttpOpenApiOperations.CREATE_CONSUMER || operation == HttpOpenApiOperations.DELETE_CONSUMER) {
+            return true;
+        }
+        OidcAccessTokenCredentials incoming = refreshCandidate(routingContext);
+        if (incoming == null) {
+            return true;
+        }
+        return refreshConsumerCredentials(incoming, routingContext);
+    }
+
+    /**
+     * Get the credentials of the current request when they trigger the refresh of the ones
+     * pinned by the consumer: the credentials refresh has to be enabled, the pinned token
+     * has to be expired and the request token has to carry the same principal claim.
+     *
+     * @param routingContext the routing context, bringing the authentication credentials
+     *                       of the request
+     * @return the credentials to refresh the consumer with, null when no refresh is needed
+     * or applicable
+     */
+    private OidcAccessTokenCredentials refreshCandidate(RoutingContext routingContext) {
+        var authConfig = this.bridgeConfig.getAuthenticationConfig();
+        // the refresh requires the token validation, so that the principal and the expiry
+        // of the tokens can be established on claims the bridge verified
+        if (!authConfig.isOauth() || !authConfig.isConsumerCredentialsRefresh() || !authConfig.isTokenValidation()) {
+            return null;
+        }
+        if (!(routingContext.data().get(HttpBridgeContext.AUTH_CREDENTIALS) instanceof OidcAccessTokenCredentials incoming)) {
+            return null;
+        }
+        if (!(this.authCredentials instanceof OidcAccessTokenCredentials pinned) || incoming.equals(pinned)) {
+            return null;
+        }
+        if (!credentialsRefreshNeeded(pinned, incoming,
+                authConfig.getUsernameClaim(), authConfig.getClockSkewSeconds() * 1000L, System.currentTimeMillis())) {
+            return null;
+        }
+        return incoming;
+    }
+
+    /**
+     * Recreate the underlying Kafka consumer with the provided credentials, preserving the
+     * subscription or assignment state of the recreated consumer.
+     *
+     * @param incoming       the credentials to recreate the consumer with
+     * @param routingContext the routing context, for sending the error response on failure
+     * @return if the consumer was refreshed successfully
+     */
+    private boolean refreshConsumerCredentials(OidcAccessTokenCredentials incoming, RoutingContext routingContext) {
+        LOGGER.info("Refreshing the credentials of the consumer {} in group {} (the pinned token expired, "
+                + "same principal on the new token)", this.name, this.groupId);
+        try {
+            // the recreation (closing the old consumer and creating the new one) is done in the
+            // executor under the consumer lock, like every other consumer operation; the close is
+            // bounded, because the credentials of the old consumer are expired (the graceful leave
+            // or auto-commit cannot succeed)
+            CompletableFuture.runAsync(() -> {
+                synchronized (consumerLock) {
+                    this.kafkaBridgeConsumer.recreate(this.consumerProps, this.groupId, incoming);
+                    // restore the subscription or assignment state of the recreated consumer
+                    if (this.subscribedTopics != null) {
+                        this.kafkaBridgeConsumer.subscribe(this.subscribedTopics);
+                    } else if (this.subscribedPattern != null) {
+                        this.kafkaBridgeConsumer.subscribe(this.subscribedPattern);
+                    } else if (this.assignedPartitions != null) {
+                        this.kafkaBridgeConsumer.assign(this.assignedPartitions);
+                    }
+                    this.authCredentials = incoming;
+                }
+            }, asyncExecutor).join();
+            return true;
+        } catch (RuntimeException e) {
+            // the executor rejections and the failures of the recreation itself (wrapped in
+            // a CompletionException) prevent the operation from proceeding on the consumer
+            LOGGER.error("Error refreshing the credentials of the consumer {} in group {}",
+                    this.name, this.groupId, e);
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    e.getCause() != null ? e.getCause().getMessage() : e.getMessage()
+            );
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+            return false;
+        }
+    }
+
+    /**
+     * Check if the pinned credentials of a consumer have to be refreshed with the credentials
+     * of the current request: the pinned token has to be expired (including the tolerated
+     * clock skew) and the request token has to carry the same principal claim, so that a
+     * refreshed token of the same identity takes over the consumer session. The claims are
+     * read without signature validation: both tokens were validated by the bridge already
+     * (at consumer creation and on the current request).
+     *
+     * @param pinned        the credentials pinned at consumer creation
+     * @param incoming      the credentials of the current request
+     * @param usernameClaim the JWT claim mapping the token to the principal
+     * @param clockSkewMs   the clock skew (milliseconds) tolerated on the expiry
+     * @param now           the current epoch time in milliseconds
+     * @return if the consumer credentials have to be refreshed
+     */
+    static boolean credentialsRefreshNeeded(OidcAccessTokenCredentials pinned, OidcAccessTokenCredentials incoming,
+                                            String usernameClaim, long clockSkewMs, long now) {
+        Long pinnedExpiry = pinned.expiryMillis();
+        Long incomingExpiry = incoming.expiryMillis();
+        if (pinnedExpiry == null || incomingExpiry == null) {
+            return false;
+        }
+        if (pinnedExpiry + clockSkewMs > now) {
+            // the pinned token is not expired yet: keep it (avoids a recreation on every
+            // token rotation while it is still valid)
+            return false;
+        }
+        String pinnedPrincipal = pinned.stringClaim(usernameClaim);
+        String incomingPrincipal = incoming.stringClaim(usernameClaim);
+        if (pinnedPrincipal == null || incomingPrincipal == null) {
+            return false;
+        }
+        return pinnedPrincipal.equals(incomingPrincipal);
     }
 
     @SuppressWarnings("unchecked")

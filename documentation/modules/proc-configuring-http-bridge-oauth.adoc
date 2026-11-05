@@ -29,7 +29,9 @@ long-lived, the token semantics are the following:
 connection. If a subsequent request on the same connection provides a different token, the internal producer
 is recreated with the new token.
 * *Consumer* requests: the consumer authenticates with the token provided in the request that created it
-(`POST /consumers/{groupid}`). The consumer keeps this token until it is deleted.
+(`POST /consumers/{groupid}`). The consumer keeps this token until it is deleted. Optionally, with
+`authentication.consumer.credentials.refresh` enabled and the token validation configured, an expired
+pinned token is replaced by a valid token of the same principal presented on a subsequent request.
 * *Admin* requests: an admin client is created and cached per access token.
 
 * *Client credentials*: the bridge obtains and refreshes the access tokens by itself using the client
@@ -292,6 +294,9 @@ authentication.client.secret=my-secret
 
 |authentication.clock.skew.seconds
 |Clock skew (seconds) tolerated on the `exp` and `nbf` claims of the access tokens. The default is 30.
+
+|authentication.consumer.credentials.refresh
+|Refresh the credentials pinned by the consumers on subsequent requests: when the token provided at consumer creation is expired and a subsequent request on the same consumer instance presents a valid token of the same principal, the underlying Kafka consumer is recreated with the new credentials (preserving the subscription or assignment state). Requires `authentication.token.validation` to be set to `jwks` or `introspection`, so that the bridge can establish the principal and the expiry of the tokens. The default is `false`.
 
 |authentication.http.timeout.seconds
 |Timeout (seconds) of the HTTP connections to the OIDC provider endpoints (JWKS, introspection, discovery). The default is 10.

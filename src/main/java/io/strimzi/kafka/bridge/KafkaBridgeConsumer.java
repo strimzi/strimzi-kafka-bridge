@@ -10,6 +10,7 @@ import io.strimzi.kafka.bridge.auth.SaslAuth;
 import io.strimzi.kafka.bridge.config.AuthenticationConfig;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
+import org.apache.kafka.clients.consumer.CloseOptions;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
@@ -62,9 +63,43 @@ public class KafkaBridgeConsumer<K, V> {
      * Close the Kafka Consumer client instance
      */
     public void close() {
+        close(null);
+    }
+
+    /**
+     * Close the Kafka Consumer client instance, with an optional timeout bounding
+     * the close operation (e.g. when the credentials of the consumer are expired and
+     * the graceful close cannot commit or leave the group successfully)
+     *
+     * @param timeout the maximum time to block waiting for the close to complete,
+     *                null for the default (unbounded) close
+     */
+    public void close(Duration timeout) {
         if (this.consumer != null) {
-            this.consumer.close();
+            if (timeout != null) {
+                this.consumer.close(CloseOptions.timeout(timeout));
+            } else {
+                this.consumer.close();
+            }
         }
+    }
+
+    /** Close timeout bounding the recreation when the current consumer credentials are expired */
+    private static final Duration RECREATE_CLOSE_TIMEOUT = Duration.ofSeconds(1);
+
+    /**
+     * Recreate the internal Kafka Consumer client instance with new authentication
+     * credentials: the current consumer is closed (with a bounded close, because its
+     * credentials are expired and the graceful leave or auto-commit cannot succeed)
+     * and a new one is created with the same configuration.
+     *
+     * @param config            consumer configuration coming from the original HTTP request (JSON body)
+     * @param groupId           consumer group coming as query parameter from the HTTP request
+     * @param authCredentials   the new authentication credentials for the recreated consumer
+     */
+    public void recreate(Properties config, String groupId, AuthCredentials authCredentials) {
+        close(RECREATE_CLOSE_TIMEOUT);
+        create(config, groupId, authCredentials);
     }
 
     /**

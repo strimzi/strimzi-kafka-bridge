@@ -43,7 +43,8 @@ public class ConfigTest {
                 Map.entry("authentication.token.validation", "jwks"),
                 Map.entry("authentication.jwks.endpoint.uri", "http://localhost:8080/realms/test/protocol/openid-connect/certs"),
                 Map.entry("authentication.dpop", "true"),
-                Map.entry("authentication.clock.skew.seconds", "30")
+                Map.entry("authentication.clock.skew.seconds", "30"),
+                Map.entry("authentication.consumer.credentials.refresh", "true")
         );
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
@@ -72,6 +73,7 @@ public class ConfigTest {
         assertThat(bridgeConfig.getAuthenticationConfig().getJwksEndpointUri(), is("http://localhost:8080/realms/test/protocol/openid-connect/certs"));
         assertThat(bridgeConfig.getAuthenticationConfig().isDpop(), is(true));
         assertThat(bridgeConfig.getAuthenticationConfig().getClockSkewSeconds(), is(30));
+        assertThat(bridgeConfig.getAuthenticationConfig().isConsumerCredentialsRefresh(), is(true));
     }
 
     @Test

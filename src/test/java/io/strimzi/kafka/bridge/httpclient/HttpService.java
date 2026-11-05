@@ -132,16 +132,22 @@ public class HttpService implements AutoCloseable {
     }
 
     public HttpResponse<String> delete(String endpoint) {
+        return delete(endpoint, (List<String>) null);
+    }
+
+    public HttpResponse<String> delete(String endpoint, List<String> headers) {
         String uri = getUri(endpoint);
 
         try {
-            HttpRequest httpRequest = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(new URI(uri))
-                .version(HttpClient.Version.HTTP_1_1)
-                .DELETE()
-                .build();
+                .version(HttpClient.Version.HTTP_1_1);
 
-            return client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            if (headers != null && !headers.isEmpty()) {
+                requestBuilder.headers(headers.toArray(new String[0]));
+            }
+
+            return client.send(requestBuilder.DELETE().build(), HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
             LOGGER.error("Unable to fulfill the DELETE request to: {} due to: ", uri, e);
             throw new RuntimeException(e);

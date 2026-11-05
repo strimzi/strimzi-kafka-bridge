@@ -197,6 +197,76 @@ public class OidcPassthroughIT extends AbstractIT {
         assertThat(deleteResponse.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
     }
 
+    @Test
+    void consumerPinsCreationTokenAfterExpiry(BridgeTestContext bridgeTestContext) throws Exception {
+        HttpService oidcProvider = bridgeTestContext.getOidcProviderHttpService();
+        String topic = bridgeTestContext.getTopicName();
+        String groupId = generateRandomConsumerGroupName();
+        String name = generateRandomConsumerName();
+
+        HttpResponse<String> createTopicResponse = createTopic(bridgeTestContext, topic, "Bearer " + fetchAccessToken(oidcProvider));
+        assertThat(createTopicResponse.statusCode(), is(HttpResponseStatus.CREATED.code()));
+
+        // shorten the access token lifespan: the token of the consumer creation expires quickly
+        setAccessTokenLifespan(oidcProvider, 1);
+        try {
+            String creationAuthorization = "Bearer " + fetchAccessToken(oidcProvider);
+
+            // the consumer pins the creation-time token, reading from the earliest offset
+            ObjectNode consumerBody = MAPPER.createObjectNode()
+                .put("name", name)
+                .put("format", "json")
+                .put("auto.offset.reset", "earliest");
+            HttpResponse<String> createConsumerResponse = bridgeTestContext.getHttpService().post("/consumers/" + groupId,
+                MAPPER.writeValueAsString(consumerBody), List.of("Authorization", creationAuthorization), BridgeContentType.KAFKA_JSON);
+            assertThat(createConsumerResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+            // manual assignment (no group membership, no rebalance on the poll below)
+            ObjectNode assignmentBody = MAPPER.createObjectNode();
+            assignmentBody.putArray("partitions").add(MAPPER.createObjectNode()
+                .put("topic", topic)
+                .put("partition", 0));
+            HttpResponse<String> assignResponse = bridgeTestContext.getHttpService().post(
+                "/consumers/" + groupId + "/instances/" + name + "/assignments",
+                MAPPER.writeValueAsString(assignmentBody), List.of("Authorization", creationAuthorization), BridgeContentType.KAFKA_JSON);
+            assertThat(assignResponse.statusCode(), is(HttpResponseStatus.NO_CONTENT.code()));
+
+            // a first poll moves the position to the end of the (empty) partition, while the
+            // pinned token is still valid
+            HttpResponse<String> pollResponse = bridgeTestContext.getHttpService().get(
+                "/consumers/" + groupId + "/instances/" + name + "/records", BridgeContentType.KAFKA_JSON_JSON,
+                List.of("Authorization", creationAuthorization));
+            assertThat(pollResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+
+            Thread.sleep(3000);
+
+            // without the consumer credentials refresh, the consumer keeps the expired
+            // creation-time token: new records are never delivered to it - the poll either
+            // returns empty records (the still authenticated connection cannot be replaced:
+            // a new connection would have to authenticate with the expired pinned token) or
+            // fails once the connection dies
+            HttpResponse<String> sendResponse = sendRecord(bridgeTestContext, topic, "Bearer " + fetchAccessToken(oidcProvider));
+            assertThat(sendResponse.statusCode(), is(HttpResponseStatus.OK.code()));
+            verifyRecordDelivered(sendResponse);
+
+            for (int i = 0; i < 6; i++) {
+                Thread.sleep(1000);
+                HttpResponse<String> response = bridgeTestContext.getHttpService().get(
+                    "/consumers/" + groupId + "/instances/" + name + "/records", BridgeContentType.KAFKA_JSON_JSON,
+                    List.of("Authorization", "Bearer " + fetchAccessToken(oidcProvider)));
+                JsonNode records = response.statusCode() == HttpResponseStatus.OK.code()
+                    ? HttpResponseUtils.getResponseAsJsonNode(response.body())
+                    : MAPPER.createArrayNode();
+                assertThat("The record must not be delivered to the consumer with the expired pinned token",
+                    records == null || records.isEmpty(), is(true));
+            }
+        } finally {
+            setAccessTokenLifespan(oidcProvider, TOKEN_LIFESPAN_SECONDS);
+            // cleanup (best effort: the consumer deletion is not part of the behavior under test)
+            bridgeTestContext.getHttpService().delete("/consumers/" + groupId + "/instances/" + name);
+        }
+    }
+
     /**
      * Fetches an access token from the Keycloak OIDC provider, via the client credentials
      * grant of the confidential "kafka-broker" client (imported with a service account)
