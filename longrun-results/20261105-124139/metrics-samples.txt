@@ -1,0 +1,34 @@
+=== 2026-11-05T12:41:39+01:00
+=== 2026-11-05T12:41:39+01:00
+jvm_memory_used_bytes{area="heap"} 1.74160464E8
+jvm_memory_used_bytes{area="nonheap"} 8.9603576E7
+executor_active_threads{name="kafka-bridge"} 0.0
+executor_queue_remaining_tasks{name="kafka-bridge"} 1000.0
+executor_queued_tasks{name="kafka-bridge"} 0.0
+jvm_gc_pause_seconds_count{action="end of minor GC",cause="G1 Evacuation Pause",gc="G1 Young Generation"} 82
+jvm_gc_pause_seconds_count{action="end of minor GC",cause="Metadata GC Threshold",gc="G1 Young Generation"} 4
+jvm_memory_used_bytes{area="heap",id="G1 Eden Space"} 1.34217728E8
+jvm_memory_used_bytes{area="heap",id="G1 Old Gen"} 4.356264E7
+jvm_memory_used_bytes{area="heap",id="G1 Survivor Space"} 574400.0
+jvm_memory_used_bytes{area="nonheap",id="CodeHeap 'non-nmethods'"} 1808640.0
+jvm_memory_used_bytes{area="nonheap",id="CodeHeap 'non-profiled nmethods'"} 1.0841088E7
+jvm_memory_used_bytes{area="nonheap",id="CodeHeap 'profiled nmethods'"} 2.147136E7
+jvm_memory_used_bytes{area="nonheap",id="Compressed Class Space"} 5369376.0
+jvm_memory_used_bytes{area="nonheap",id="Metaspace"} 5.0376352E7
+strimzi_bridge_auth_cache_entries{cache="admin"} 0.0
+jvm_memory_used_bytes{area="heap"} 1.78354768E8
+jvm_memory_used_bytes{area="nonheap"} 8.9964064E7
+executor_active_threads{name="kafka-bridge"} 0.0
+executor_queue_remaining_tasks{name="kafka-bridge"} 1000.0
+executor_queued_tasks{name="kafka-bridge"} 0.0
+jvm_gc_pause_seconds_count{action="end of minor GC",cause="G1 Evacuation Pause",gc="G1 Young Generation"} 82
+jvm_gc_pause_seconds_count{action="end of minor GC",cause="Metadata GC Threshold",gc="G1 Young Generation"} 4
+jvm_memory_used_bytes{area="heap",id="G1 Eden Space"} 1.38412032E8
+jvm_memory_used_bytes{area="heap",id="G1 Old Gen"} 4.356264E7
+jvm_memory_used_bytes{area="heap",id="G1 Survivor Space"} 574400.0
+jvm_memory_used_bytes{area="nonheap",id="CodeHeap 'non-nmethods'"} 1808640.0
+jvm_memory_used_bytes{area="nonheap",id="CodeHeap 'non-profiled nmethods'"} 1.0884224E7
+jvm_memory_used_bytes{area="nonheap",id="CodeHeap 'profiled nmethods'"} 2.1662848E7
+jvm_memory_used_bytes{area="nonheap",id="Compressed Class Space"} 5369880.0
+jvm_memory_used_bytes{area="nonheap",id="Metaspace"} 5.0416488E7
+strimzi_bridge_auth_cache_entries{cache="admin"} 0.0

@@ -1,0 +1,5 @@
+=== 2026-11-05T12:41:39+01:00
+3412212:
+ garbage-first heap   total 294912K, used 121301K [0x0000000613800000, 0x0000000800000000)
+  region size 4096K, 20 young (81920K), 2 survivors (8192K)
+ Metaspace       used 49399K, committed 49984K, reserved 1114112K
