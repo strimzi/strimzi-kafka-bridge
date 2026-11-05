@@ -415,6 +415,11 @@ and delete):
   keeps the pinned credentials; use a new consumer instance for a different identity);
 * the claims of both tokens are decodable (expiry and principal claim present).
 
+The refresh is observable by the operators via the
+`strimzi_bridge_auth_consumer_credentials_refreshes_total` counter (Micrometer
+`strimzi.bridge.auth.consumer.credentials.refreshes`), as the recreation itself
+appears on the cluster only as a consumer group rebalance.
+
 The Authorization header remains optional on the subsequent operations of a consumer instance
 (the consumer keeps its pinned credentials when it is absent); when provided, the credentials are
 validated by the bridge (a 401 response is sent on failure) and considered for the refresh.
@@ -747,6 +752,12 @@ integration tests, measured together with JaCoCo:
   consumer credentials refresh end-to-end (short-lived realm tokens, the consumer keeps consuming
   after the pinned one expired) and `OidcPassthroughIT` pins the default behavior with the refresh
   disabled (records sent after the pinned token expired are never delivered to the consumer)
+
+Known coverage limits of the integration tests: the consumer credentials refresh is exercised with
+the `jwks` validation mode only (the `introspection` mode shares the same decision path, which is
+unit-tested on the refresh conditions), and the combination of the refresh with the DPoP
+sender-constrained tokens is not exercised end-to-end (the DPoP credentials follow the same
+`OidcAccessTokenCredentials` extraction and comparison path as the Bearer ones).
 
 **Measurement**: JaCoCo 0.8.12 in offline-agent mode (`org.jacoco:org.jacoco.agent:0.8.12`, the
 `-runtime` classifier jar from the local Maven repository), writing one shared execution data file.

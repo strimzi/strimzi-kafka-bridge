@@ -5,6 +5,7 @@
 
 package io.strimzi.kafka.bridge.http;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.vertx.core.http.HttpConnection;
 
@@ -14,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Context class which is used for storing endpoints.
  * Using context in lower-level classes for better state determination.
- * 
+ *
  * @param <K>   type of Kafka message key for the stored endpoints
  * @param <V>   type of Kafka message payload for the stored endpoints
  */
@@ -27,11 +28,30 @@ public class HttpBridgeContext<K, V> {
     private final Map<HttpConnection, HttpSourceBridgeEndpoint<K, V>> httpSourceEndpoints = new ConcurrentHashMap<>();
     private HttpAdminBridgeEndpoint httpAdminBridgeEndpoint;
     private HttpOpenApiOperations openApiOperation;
+    private MeterRegistry metricsRegistry;
 
     /**
      * Constructor
      */
     public HttpBridgeContext() { }
+
+    /**
+     * Get the Micrometer registry of the bridge metrics, null when the metrics are disabled
+     *
+     * @return the Micrometer registry, null when the metrics are disabled
+     */
+    public MeterRegistry metricsRegistry() {
+        return this.metricsRegistry;
+    }
+
+    /**
+     * Set the Micrometer registry of the bridge metrics
+     *
+     * @param metricsRegistry the Micrometer registry, null when the metrics are disabled
+     */
+    public void setMetricsRegistry(MeterRegistry metricsRegistry) {
+        this.metricsRegistry = metricsRegistry;
+    }
 
     /**
      * Get the map of the HTTP sink endpoints.

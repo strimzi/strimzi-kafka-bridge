@@ -330,6 +330,7 @@ public class HttpBridge extends AbstractVerticle {
                     this.asyncExecutor = HttpBridgeExecutor.create(bridgeConfig.getExecutorPoolSize(), bridgeConfig.getExecutorQueueSize());
 
                     this.httpBridgeContext = new HttpBridgeContext<>();
+                    this.httpBridgeContext.setMetricsRegistry(metricsRegistry());
                     HttpAdminBridgeEndpoint adminClientEndpoint = new HttpAdminBridgeEndpoint(this.bridgeConfig, this.httpBridgeContext,
                             metricsRegistry());
                     this.httpBridgeContext.setHttpAdminEndpoint(adminClientEndpoint);

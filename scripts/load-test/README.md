@@ -1,5 +1,12 @@
 # Load test kit for the HTTP bridge
 
+> **Scope**: this kit is development tooling used to validate and measure the
+> authentication feature of the bridge against a local environment (see
+> [development-docs/LOAD-TESTING.md](../../development-docs/LOAD-TESTING.md) for
+> the results and recommendations). It is not part of the shipped bridge and not
+> wired into CI; if it outgrows this repository, it can be split out into its own
+> repository without affecting the bridge code.
+
 Docker Compose environment (single-node Kafka + Keycloak OIDC provider), bridge
 configuration profiles and k6 scenarios for load testing the bridge and finding
 bottlenecks.

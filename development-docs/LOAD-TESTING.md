@@ -433,6 +433,7 @@ and correlate with the k6 latency percentiles. The interesting series:
 | `strimzi_bridge_auth_jwks_keys` | keys served by the JWKS chain (0 = empty/degenerate key set) |
 | `strimzi_bridge_auth_jwks_unknown-kid_total` | tokens with a `kid` matching no cached key: key rotation ahead of refresh, or forged tokens |
 | `strimzi_bridge_auth_dpop_total{result}` | DPoP validation outcomes with the granular reasons; `result="replayed"` is the replay-attack indicator |
+| `strimzi_bridge_auth_consumer_credentials_refreshes_total` | consumer credential refreshes (the pinned token of a consumer replaced by a same-principal token; each refresh appears on the cluster as a group rebalance) |
 | `strimzi_bridge_auth_cache_entries{cache}` / `strimzi_bridge_auth_cache_evictions_total{cache}` | the bounded per-token caches (introspection, dpop-replay, admin) at their working size; a rising eviction rate = bound too tight |
 | Kafka producer/consumer metrics (via `strimziMetricsReporter`) | `record-queue-time`, `batch-size`, compression ratio, fetch lag: the Kafka-side story of the same load |
 | JVM (`jvm_gc_*`, `jvm_memory_*`) | GC pressure and heap stabilization |

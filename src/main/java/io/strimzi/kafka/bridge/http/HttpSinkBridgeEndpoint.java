@@ -79,16 +79,15 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     private boolean subscribed;
     private boolean assigned;
 
-    // the authentication credentials pinned at consumer creation (passthrough mode)
-    private AuthCredentials authCredentials;
-    // the group id and the request-provided consumer configuration, for recreating
-    // the underlying Kafka consumer when the pinned credentials are refreshed
-    private String groupId;
-    private Properties consumerProps;
-    // the subscription/assignment state, for restoring it when the consumer is recreated
-    private List<String> subscribedTopics;
-    private Pattern subscribedPattern;
-    private Set<TopicPartition> assignedPartitions;
+    // the authentication credentials pinned at consumer creation (passthrough mode),
+    // and the state needed to recreate the consumer on a credentials refresh; written
+    // in the executor under the consumer lock, read on the event loop (volatile)
+    private volatile AuthCredentials authCredentials;
+    private volatile String groupId;
+    private volatile Properties consumerProps;
+    private volatile List<String> subscribedTopics;
+    private volatile Pattern subscribedPattern;
+    private volatile Set<TopicPartition> assignedPartitions;
     
     // Lock for consumer operations to prevent concurrent access to KafkaConsumer
     private final Object consumerLock = new Object();
@@ -767,7 +766,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             // the recreation (closing the old consumer and creating the new one) is done in the
             // executor under the consumer lock, like every other consumer operation; the close is
             // bounded, because the credentials of the old consumer are expired (the graceful leave
-            // or auto-commit cannot succeed)
+            // or auto-commit cannot succeed). The join blocks the event loop for at most the close
+            // timeout plus the consumer creation, consistently with the synchronous consumer
+            // creation path
             CompletableFuture.runAsync(() -> {
                 synchronized (consumerLock) {
                     this.kafkaBridgeConsumer.recreate(this.consumerProps, this.groupId, incoming);
@@ -782,10 +783,19 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                     this.authCredentials = incoming;
                 }
             }, asyncExecutor).join();
+            // the refresh is observable by the operators (it appears as a consumer group
+            // rebalance on the cluster)
+            if (this.httpBridgeContext.metricsRegistry() != null) {
+                this.httpBridgeContext.metricsRegistry()
+                        .counter("strimzi.bridge.auth.consumer.credentials.refreshes").increment();
+            }
             return true;
         } catch (RuntimeException e) {
             // the executor rejections and the failures of the recreation itself (wrapped in
-            // a CompletionException) prevent the operation from proceeding on the consumer
+            // a CompletionException) prevent the operation from proceeding on the consumer;
+            // when the recreation fails mid-way (after the close), the underlying consumer is
+            // gone and the subsequent operations fail until the consumer instance is deleted
+            // and re-created
             LOGGER.error("Error refreshing the credentials of the consumer {} in group {}",
                     this.name, this.groupId, e);
             HttpBridgeError error = new HttpBridgeError(
