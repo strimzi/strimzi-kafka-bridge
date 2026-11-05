@@ -40,3 +40,6 @@ documentation/book/build/**
 .claude/
 .mcp.json
 .bob/
+
+# load-test generated PKI material
+scripts/load-test/certs/generated/
