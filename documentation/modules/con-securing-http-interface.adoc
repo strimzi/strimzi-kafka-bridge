@@ -12,7 +12,7 @@ If the HTTP Bridge is configured with TLS encryption, client requests should con
 You can enable TLS encryption for all HTTP Bridge endpoints except management endpoints such as `/ready`, `/healthy` and `/metrics`.
 These endpoints are typically used only by internal clients and requests to them must use HTTP.
 
-Authentication between HTTP clients and the HTTP Bridge is not supported directly by the HTTP Bridge.
+Authentication between HTTP clients and the HTTP Bridge is not supported directly by the HTTP Bridge, apart from TLS client certificate authentication (see xref:proc-configuring-http-bridge-client-cert-{context}[Configuring TLS client certificate authentication]).
 You can combine the HTTP Bridge with the following tools to secure it further:
 
 * Network policies and firewalls that define which pods can access the HTTP Bridge

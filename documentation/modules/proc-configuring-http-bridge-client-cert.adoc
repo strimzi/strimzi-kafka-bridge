@@ -1,0 +1,94 @@
+// Module included in the following assemblies:
+//
+// assembly-http-bridge-config.adoc
+
+[id='proc-configuring-http-bridge-client-cert-{context}']
+= Configuring TLS client certificate authentication
+
+[role="_abstract"]
+This procedure describes how to configure the HTTP Bridge for TLS client certificate authentication, so that
+HTTP clients authenticate by presenting a client certificate during the TLS handshake with the bridge
+HTTPS listener.
+
+The certificate is validated by the bridge against the configured trusted certificates (certification authorities).
+Additionally, the subject of the accepted certificates can be restricted by a list of regular expression patterns
+matched against the subject distinguished name (for example, `CN=my-user,O=my-org`).
+
+The TLS client certificate authenticates the client to the bridge only: the internal Kafka clients connect
+to the Kafka cluster using the bridge own certificate. Configure the Kafka-related properties for the connection
+to a Kafka cluster listener using `SSL` or `SASL_SSL`, with the bridge own keystore and truststore.
+
+.Prerequisites
+
+* xref:proc-downloading-http-bridge-{context}[The HTTP Bridge installation archive is downloaded]
+* The bridge is configured with a xref:proc-configuring-http-bridge-{context}[TLS-encrypted HTTPS listener]
+* The client certificates are issued by a certification authority trusted by the bridge
+* The Kafka cluster listener used by the bridge trusts the bridge certificate
+
+.Procedure
+
+. Edit the `application.properties` file provided with the HTTP Bridge installation archive.
+
+.. Enable client certificate authentication on the HTTPS listener.
++
+For example:
++
+--
+[source,properties]
+----
+http.ssl.enable=true
+http.ssl.certificate.location=/path/to/bridge.crt
+http.ssl.key.location=/path/to/bridge.key
+http.ssl.client-auth=required
+http.ssl.trusted.certificates.location=/path/to/ca.crt
+
+authentication.type=client-cert
+authentication.allowed.subjects=CN=my-user.*,O=my-org
+----
+* `http.ssl.client-auth` sets the TLS client authentication mode: `none` (default), `request` or `required`.
+  With `required`, connections without a client certificate are rejected during the TLS handshake.
+* `http.ssl.trusted.certificates.location` (or the inline `http.ssl.trusted.certificates`) provides the
+  trusted certificates used to validate the client certificates.
+* `authentication.type` enables the TLS client certificate authentication when set to `client-cert`.
+* `authentication.allowed.subjects` optionally defines a comma separated list of regular expression patterns
+  for the subject of the accepted client certificates (matched against the subject distinguished name).
+  If not set, any certificate issued by a trusted certification authority is accepted.
+--
+
+.. Configure the Kafka-related properties for the connection to the Kafka cluster using the bridge own certificate.
++
+For example, with an SSL listener:
++
+--
+[source,properties]
+----
+kafka.bootstrap.servers=my-cluster-kafka-bootstrap:9093
+kafka.security.protocol=SSL
+kafka.ssl.truststore.location=/path/to/bridge.truststore.p12
+kafka.ssl.truststore.password=<password>
+kafka.ssl.keystore.location=/path/to/bridge.keystore.p12
+kafka.ssl.keystore.password=<password>
+----
+--
+
+. Save the configuration file.
+
+.Notes on the authentication semantics
+
+* The client certificate is validated once per TLS connection, before any request is processed.
+  Requests over a connection with a rejected certificate (not trusted or subject not allowed) fail
+  with a `401 Unauthorized` response.
+* Because the Kafka connections use the bridge own certificate, all HTTP clients share the same
+  Kafka principal. Access control at the Kafka cluster level is based on the bridge principal,
+  not on the individual HTTP clients.
+
+.Authentication related configurations
+|====
+|Name |Descriptions
+
+|authentication.type
+|Authentication type. Set to `client-cert` to enable the TLS client certificate authentication. Not enabled by default.
+
+|authentication.allowed.subjects
+|Comma separated list of regular expression patterns for the subject of the accepted client certificates. If not set, any certificate issued by a trusted certification authority is accepted.
+|====

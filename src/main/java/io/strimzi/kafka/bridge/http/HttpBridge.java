@@ -7,6 +7,7 @@ package io.strimzi.kafka.bridge.http;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.Application;
@@ -14,7 +15,14 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.IllegalEmbeddedFormatException;
+import io.strimzi.kafka.bridge.auth.AuthCredentials;
+import io.strimzi.kafka.bridge.auth.BasicAuthCredentials;
+import io.strimzi.kafka.bridge.auth.DpopProofValidator;
+import io.strimzi.kafka.bridge.auth.OidcAccessTokenCredentials;
+import io.strimzi.kafka.bridge.auth.OidcTokenValidator;
+import io.strimzi.kafka.bridge.config.AuthenticationConfig;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
+import io.strimzi.kafka.bridge.http.auth.ClientCertAuth;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.metrics.JmxMetricsCollector;
@@ -26,12 +34,14 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystem;
+import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerConfig;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.PemTrustOptions;
 import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -54,16 +64,21 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.management.MalformedObjectNameException;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.security.cert.X509Certificate;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
@@ -86,9 +101,25 @@ public class HttpBridge extends AbstractVerticle {
             "/" + HttpOpenApiOperations.READY
     );
 
+    /** Authorization header scheme prefixes, matched against and stripped from the header value */
+    private static final String BASIC_AUTHORIZATION_SCHEME = "Basic ";
+    private static final String BEARER_AUTHORIZATION_SCHEME = "Bearer ";
+    private static final String DPOP_AUTHORIZATION_SCHEME = "DPoP ";
+
+    /** Name of the DPoP proof header provided by the HTTP clients (RFC 9449) */
+    private static final String DPOP_PROOF_HEADER = "DPoP";
+
+    /** Rejection reasons of the rejected authentications metric */
+    private static final String INVALID_TOKEN_REASON = "invalid-token";
+    private static final String INVALID_AUTHORIZATION_HEADER_REASON = "invalid-authorization-header";
+    private static final String INVALID_DPOP_PROOF_REASON = "invalid-dpop-proof";
+
     private final BridgeConfig bridgeConfig;
 
     private HttpServer apiServer;
+    private volatile OidcTokenValidator oidcTokenValidator;
+    private volatile DpopProofValidator dpopProofValidator;
+    private volatile List<Pattern> allowedSubjectPatterns;
     private HttpServer managementServer;
 
     private HttpBridgeContext<byte[], byte[]> httpBridgeContext;
@@ -210,6 +241,28 @@ public class HttpBridge extends AbstractVerticle {
 
     @Override
     public void start(Promise<Void> startPromise) {
+        // fail fast on a misconfigured token validation (endpoint URI missing or an unknown
+        // value), instead of silently disabling the validation
+        try {
+            this.bridgeConfig.getAuthenticationConfig().validateTokenValidation();
+        } catch (IllegalArgumentException e) {
+            LOGGER.error("Failed to start the HTTP bridge: {}", e.getMessage());
+            startPromise.fail(e);
+            return;
+        }
+        // create the OIDC token validator (prefetching the JWKS keys or the introspection
+        // endpoint in the background) when the token validation is configured, so that the
+        // first request does not block the event loop on the provider fetch; a misconfigured
+        // TLS context or proxy for the provider connections fails the startup
+        if (this.bridgeConfig.getAuthenticationConfig().isTokenValidation()) {
+            try {
+                this.oidcTokenValidator();
+            } catch (RuntimeException e) {
+                LOGGER.error("Failed to start the HTTP bridge: {}", e.getMessage());
+                startPromise.fail(e);
+                return;
+            }
+        }
         OpenAPIContract.from(vertx, "openapi.json")
                 .onSuccess(contract -> {
                     RouterBuilder routerBuilder = RouterBuilder.create(vertx, contract);
@@ -237,6 +290,12 @@ public class HttpBridge extends AbstractVerticle {
                     routerBuilder.getRoute(this.INFO.getOperationId().toString()).addHandler(this.INFO);
                     if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
                         routerBuilder.rootHandler(getCorsHandler());
+                    }
+
+                    // TLS client certificate authentication: check the subject of the certificate
+                    // presented by the HTTP client before processing any request
+                    if (this.bridgeConfig.getAuthenticationConfig().isClientCert()) {
+                        routerBuilder.rootHandler(this::checkClientCert);
                     }
 
                     this.router = routerBuilder.createRouter();
@@ -271,7 +330,8 @@ public class HttpBridge extends AbstractVerticle {
                     this.asyncExecutor = HttpBridgeExecutor.create(bridgeConfig.getExecutorPoolSize(), bridgeConfig.getExecutorQueueSize());
 
                     this.httpBridgeContext = new HttpBridgeContext<>();
-                    HttpAdminBridgeEndpoint adminClientEndpoint = new HttpAdminBridgeEndpoint(this.bridgeConfig, this.httpBridgeContext);
+                    HttpAdminBridgeEndpoint adminClientEndpoint = new HttpAdminBridgeEndpoint(this.bridgeConfig, this.httpBridgeContext,
+                            metricsRegistry());
                     this.httpBridgeContext.setHttpAdminEndpoint(adminClientEndpoint);
                     adminClientEndpoint.open();
                     this.bindHttpServers(startPromise);
@@ -280,6 +340,124 @@ public class HttpBridge extends AbstractVerticle {
                     LOGGER.error("Failed to create OpenAPI router factory");
                     startPromise.fail(t);
                 });
+    }
+
+    /**
+     * Check the subject of the TLS client certificate presented by the HTTP client
+     * (when the TLS client certificate authentication is enabled): the request is processed
+     * only if a valid certificate is presented and its subject matches the allowed subjects
+     * patterns; otherwise a 401 response is sent.
+     *
+     * @param routingContext RoutingContext instance
+     */
+    private void checkClientCert(RoutingContext routingContext) {
+        X509Certificate certificate = null;
+        SSLSession sslSession = routingContext.request().sslSession();
+        if (sslSession != null) {
+            try {
+                if (sslSession.getPeerCertificates() != null && sslSession.getPeerCertificates().length > 0
+                        && sslSession.getPeerCertificates()[0] instanceof X509Certificate x509Certificate) {
+                    certificate = x509Certificate;
+                }
+            } catch (SSLPeerUnverifiedException e) {
+                // no client certificate was presented during the TLS handshake
+            }
+        }
+        if (certificate == null) {
+            LOGGER.warn("No client certificate provided for TLS client certificate authentication");
+            incrementRejectedAuthCounter("missing-client-certificate");
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.UNAUTHORIZED.code(),
+                    "Client certificate not provided");
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNAUTHORIZED.code(),
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+            return;
+        }
+        String subject = certificate.getSubjectX500Principal().getName();
+        if (!isSubjectAllowed(subject)) {
+            LOGGER.warn("Client certificate with subject {} is not allowed", subject);
+            incrementRejectedAuthCounter("subject-not-allowed");
+            HttpBridgeError error = new HttpBridgeError(
+                    HttpResponseStatus.UNAUTHORIZED.code(),
+                    "Client certificate subject not allowed");
+            HttpUtils.sendResponse(routingContext, HttpResponseStatus.UNAUTHORIZED.code(),
+                    BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+            return;
+        }
+        LOGGER.info("Authenticated client certificate with subject {}", subject);
+        routingContext.next();
+    }
+
+    /**
+     * Check if the provided certificate subject is accepted against the allowed subjects patterns:
+     * the patterns are compiled once (lazily) instead of per request, bounding the regular
+     * expression input (subject length) at the same time. When patterns are configured but none
+     * of them compiles (invalid configuration), the subject check fails closed.
+     *
+     * @param subject the subject distinguished name of the client certificate
+     * @return if the subject is allowed
+     */
+    private boolean isSubjectAllowed(String subject) {
+        List<String> configuredPatterns = this.bridgeConfig.getAuthenticationConfig().getAllowedSubjects();
+        List<Pattern> compiledPatterns = allowedSubjectPatterns(configuredPatterns);
+        if (!configuredPatterns.isEmpty() && compiledPatterns.isEmpty()) {
+            // patterns configured but none of them compiles: fail closed
+            LOGGER.error("No valid allowed subject pattern configured for the TLS client certificate authentication");
+            return false;
+        }
+        return ClientCertAuth.isSubjectAllowed(subject, compiledPatterns);
+    }
+
+    /**
+     * Get the compiled allowed subject patterns, compiling them once (lazily)
+     *
+     * @param configuredPatterns the configured allowed subject patterns
+     * @return the compiled patterns
+     */
+    private List<Pattern> allowedSubjectPatterns(List<String> configuredPatterns) {
+        if (this.allowedSubjectPatterns == null) {
+            synchronized (this) {
+                if (this.allowedSubjectPatterns == null) {
+                    this.allowedSubjectPatterns = ClientCertAuth.compilePatterns(configuredPatterns);
+                }
+            }
+        }
+        return this.allowedSubjectPatterns;
+    }
+
+    /**
+     * Get the SSL client authentication mode for the bridge HTTPS listener from the configuration
+     *
+     * @return the SSL client authentication mode, null if not configured (or set to "none")
+     */
+    private ClientAuth clientAuth() {
+        String clientAuth = this.bridgeConfig.getHttpConfig().getHttpServerSslClientAuth();
+        if (clientAuth != null && !clientAuth.isEmpty() && !HttpConfig.DEFAULT_CLIENT_AUTH_NONE.equals(clientAuth)) {
+            return ClientAuth.valueOf(clientAuth.toUpperCase(Locale.ROOT));
+        }
+        return null;
+    }
+
+    /**
+     * Get the trust options (trusted certificates for validating the TLS client certificates)
+     * for the bridge HTTPS listener from the configuration
+     *
+     * @return the trust options, null if not configured
+     */
+    private PemTrustOptions trustOptions() {
+        String trustedCertificates = this.bridgeConfig.getHttpConfig().getHttpServerSslTrustedCertificates();
+        String trustedCertificatesLocation = this.bridgeConfig.getHttpConfig().getHttpServerSslTrustedCertificatesLocation();
+        if (trustedCertificates == null && trustedCertificatesLocation == null) {
+            return null;
+        }
+        PemTrustOptions trustOptions = new PemTrustOptions();
+        if (trustedCertificates != null) {
+            trustOptions.addCertValue(Buffer.buffer(trustedCertificates));
+        }
+        if (trustedCertificatesLocation != null) {
+            trustOptions.addCertPath(trustedCertificatesLocation);
+        }
+        return trustOptions;
     }
 
     private CorsHandler getCorsHandler() {
@@ -328,6 +506,11 @@ public class HttpBridge extends AbstractVerticle {
 
         // admin client cleanup
         this.httpBridgeContext.closeHttpAdminClientEndpoint();
+
+        // token validator cleanup (background scheduler, HTTP client, JWKS retrieval chain)
+        if (this.oidcTokenValidator != null) {
+            this.oidcTokenValidator.close();
+        }
 
         // shutdown the async executor
         HttpBridgeExecutor.shutdown(this.asyncExecutor);
@@ -381,6 +564,16 @@ public class HttpBridge extends AbstractVerticle {
             serverSSLOptions.setEnabledSecureTransportProtocols(sslEnabledProtocols);
         }
 
+        ClientAuth clientAuth = clientAuth();
+        if (clientAuth != null) {
+            serverSSLOptions.setClientAuth(clientAuth);
+        }
+
+        PemTrustOptions trustOptions = trustOptions();
+        if (trustOptions != null) {
+            serverSSLOptions.setTrustOptions(trustOptions);
+        }
+
         Set<String> sslCipherSuites = this.bridgeConfig.getHttpConfig().getHttpServerSslCipherSuites();
         if (sslCipherSuites != null) {
             sslCipherSuites.forEach(serverSSLOptions::addEnabledCipherSuite);
@@ -409,6 +602,11 @@ public class HttpBridge extends AbstractVerticle {
             );
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.SERVICE_UNAVAILABLE.code(),
                     BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+            return;
+        }
+
+        if (this.bridgeConfig.getAuthenticationConfig().isPassthrough()
+                && this.extractAuthCredentials(routingContext) == null) {
             return;
         }
 
@@ -591,13 +789,24 @@ public class HttpBridge extends AbstractVerticle {
                     BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
             return;
         }
+        boolean authPassthrough = this.bridgeConfig.getAuthenticationConfig().isPassthrough();
+        AuthCredentials authCredentials = this.extractAuthCredentials(routingContext);
+        if (authPassthrough && authCredentials == null) {
+            return;
+        }
         HttpServerRequest httpServerRequest = routingContext.request();
         HttpSourceBridgeEndpoint<byte[], byte[]> source = this.httpBridgeContext.getHttpSourceEndpoints().get(httpServerRequest.connection());
 
         try {
+            if (source != null && authCredentials != null && !authCredentials.equals(source.authCredentials())) {
+                // the authentication credentials changed: close and recreate the producer endpoint with the new credentials
+                source.close();
+                this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection());
+                source = null;
+            }
             if (source == null) {
                 source = new HttpSourceBridgeEndpoint<>(this.bridgeConfig, new ByteArraySerializer(), new ByteArraySerializer(),
-                                                        this.asyncExecutor);
+                                                        this.asyncExecutor, authCredentials);
 
                 source.closeHandler(s -> this.httpBridgeContext.getHttpSourceEndpoints().remove(httpServerRequest.connection()));
                 source.open();
@@ -619,6 +828,10 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     private void processAdminClient(RoutingContext routingContext) {
+        if (this.bridgeConfig.getAuthenticationConfig().isPassthrough()
+                && this.extractAuthCredentials(routingContext) == null) {
+            return;
+        }
         HttpAdminBridgeEndpoint adminClientEndpoint = this.httpBridgeContext.getHttpAdminEndpoint();
         if (adminClientEndpoint != null) {
             adminClientEndpoint.handle(routingContext);
@@ -630,6 +843,264 @@ public class HttpBridge extends AbstractVerticle {
             HttpUtils.sendResponse(routingContext, HttpResponseStatus.INTERNAL_SERVER_ERROR.code(),
                     BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
         }
+    }
+
+    /**
+     * Extract the authentication credentials from the Authorization header of the HTTP request
+     * when the passthrough authentication is enabled (OIDC access token via the Bearer or
+     * DPoP scheme, username and password via the Basic scheme).
+     * The credentials are stored in the routing context data (for the endpoint processing to consume them)
+     * and returned.
+     * If the header is missing or invalid, a 401 response is sent and null is returned.
+     *
+     * @param routingContext RoutingContext instance
+     * @return the authentication credentials, null if the passthrough authentication is not enabled
+     * or the Authorization header is missing or invalid
+     */
+    private AuthCredentials extractAuthCredentials(RoutingContext routingContext) {
+        AuthenticationConfig authenticationConfig = this.bridgeConfig.getAuthenticationConfig();
+        if (!authenticationConfig.isPassthrough()) {
+            return null;
+        }
+        String authorizationHeader = routingContext.request().getHeader("Authorization");
+        AuthCredentials authCredentials = schemeAuthCredentials(routingContext, authenticationConfig, authorizationHeader);
+        if (authCredentials == null) {
+            // a 401 response was already sent for the invalid token or DPoP proof
+            // (when the validation was performed), or for the missing/invalid header itself
+            return null;
+        }
+        routingContext.put(HttpBridgeContext.AUTH_CREDENTIALS, authCredentials);
+        return authCredentials;
+    }
+
+    /**
+     * Extract the authentication credentials from the Authorization header value, for the
+     * scheme matching the configured authentication type (Basic, DPoP or Bearer).
+     * If the credentials cannot be extracted or validated, a 401 response is sent
+     * and null is returned.
+     *
+     * @param routingContext       RoutingContext instance
+     * @param authenticationConfig authentication related configuration
+     * @param authorizationHeader  the Authorization header value (null when missing)
+     * @return the authentication credentials, null if the Authorization header value does not
+     * match the configured authentication type or the credentials are invalid
+     */
+    private AuthCredentials schemeAuthCredentials(RoutingContext routingContext,
+                                                  AuthenticationConfig authenticationConfig,
+                                                  String authorizationHeader) {
+        if (authenticationConfig.isBasic()) {
+            if (authorizationHeader != null && authorizationHeader.startsWith(BASIC_AUTHORIZATION_SCHEME)) {
+                AuthCredentials authCredentials = BasicAuthCredentials.fromBase64(
+                        authorizationHeader.substring(BASIC_AUTHORIZATION_SCHEME.length()).trim());
+                if (authCredentials != null) {
+                    return authCredentials;
+                }
+                // invalid Base64 encoding or credentials format: fall through to the 401 response
+            }
+        } else if (authenticationConfig.isDpop() && authorizationHeader != null
+                && authorizationHeader.startsWith(DPOP_AUTHORIZATION_SCHEME)) {
+            // DPoP (RFC 9449) sender-constrained token: the DPoP proof in the DPoP header
+            // is validated and bound to the access token before forwarding it
+            return dpopAccessTokenCredentials(routingContext, authenticationConfig,
+                    authorizationHeader.substring(DPOP_AUTHORIZATION_SCHEME.length()).trim());
+        } else if (authorizationHeader != null && authorizationHeader.startsWith(BEARER_AUTHORIZATION_SCHEME)) {
+            String token = authorizationHeader.substring(BEARER_AUTHORIZATION_SCHEME.length()).trim();
+            if (isTokenValid(routingContext, authenticationConfig, token)) {
+                return new OidcAccessTokenCredentials(token);
+            }
+            // a sender-constrained token (cnf.jkt) without a valid DPoP proof is rejected
+            // by the token validation as well: the 401 response was already sent
+            return null;
+        }
+        sendUnauthorizedResponse(routingContext, invalidAuthorizationHeaderMessage(authenticationConfig));
+        LOGGER.warn(invalidAuthorizationHeaderMessage(authenticationConfig));
+        incrementRejectedAuthCounter(INVALID_AUTHORIZATION_HEADER_REASON);
+        return null;
+    }
+
+    /**
+     * Get the error message for the missing or invalid Authorization header, for the
+     * configured authentication type
+     *
+     * @param authenticationConfig authentication related configuration
+     * @return the error message
+     */
+    private static String invalidAuthorizationHeaderMessage(AuthenticationConfig authenticationConfig) {
+        return authenticationConfig.isBasic()
+                ? "Missing or invalid Authorization header (Basic scheme) for HTTP Basic authentication"
+                : "Missing or invalid Authorization header (Bearer scheme) for OIDC token passthrough";
+    }
+
+    /**
+     * Extract the OIDC access token from the provided Authorization header value (DPoP scheme)
+     * and validate the DPoP proof provided by the HTTP client in the DPoP header, binding it
+     * to the access token (RFC 9449 sender-constrained tokens).
+     * If the DPoP proof is missing or invalid, or the access token itself is invalid
+     * (including a sender-constrained token not bound to the proof public key),
+     * a 401 response is sent and null is returned.
+     *
+     * @param routingContext       RoutingContext instance
+     * @param authenticationConfig authentication related configuration
+     * @param token                the OIDC access token (JWT compact serialization)
+     * @return the authentication credentials with the access token, null if the DPoP proof
+     * or the access token are invalid
+     */
+    private AuthCredentials dpopAccessTokenCredentials(RoutingContext routingContext,
+                                                       AuthenticationConfig authenticationConfig,
+                                                       String token) {
+        String proof = routingContext.request().getHeader(DPOP_PROOF_HEADER);
+        if (proof == null) {
+            LOGGER.warn("Missing DPoP proof header for the DPoP sender-constrained token");
+            incrementRejectedAuthCounter(INVALID_DPOP_PROOF_REASON);
+            sendUnauthorizedResponse(routingContext,
+                    "Missing DPoP proof for the DPoP sender-constrained token");
+            return null;
+        }
+        String dpopJkt = dpopProofValidator().validate(proof,
+                routingContext.request().method().name(), htu(routingContext));
+        if (dpopJkt == null) {
+            LOGGER.warn("Invalid DPoP proof for the DPoP sender-constrained token");
+            incrementRejectedAuthCounter(INVALID_DPOP_PROOF_REASON);
+            sendUnauthorizedResponse(routingContext,
+                    "Invalid DPoP proof for the DPoP sender-constrained token");
+            return null;
+        }
+        if (isTokenValid(routingContext, authenticationConfig, token, dpopJkt)) {
+            return new OidcAccessTokenCredentials(token);
+        }
+        // the 401 response was already sent by the token validation
+        return null;
+    }
+
+    /**
+     * Validate the provided OIDC access token (when the token validation is configured):
+     * the JWT signature is verified against the JWKS endpoint of the OIDC provider and the
+     * standard claims are checked, before the token is forwarded to the Kafka cluster.
+     * If the token is invalid, a 401 response is sent and false is returned.
+     *
+     * @param routingContext       RoutingContext instance
+     * @param authenticationConfig authentication related configuration
+     * @param token                the OIDC access token (JWT compact serialization)
+     * @return if the token is valid (or the token validation is not configured)
+     */
+    private boolean isTokenValid(RoutingContext routingContext, AuthenticationConfig authenticationConfig, String token) {
+        return isTokenValid(routingContext, authenticationConfig, token, null);
+    }
+
+    /**
+     * Validate the provided OIDC access token (when the token validation is configured),
+     * with the optional DPoP (RFC 9449) binding: when the token carries the confirmation
+     * claim (cnf.jkt), the JWK thumbprint of the DPoP proof public key must match it
+     * (sender-constrained token).
+     * If the token is invalid, a 401 response is sent and false is returned.
+     *
+     * @param routingContext       RoutingContext instance
+     * @param authenticationConfig authentication related configuration
+     * @param token                the OIDC access token (JWT compact serialization)
+     * @param dpopJkt              the JWK thumbprint (RFC 7638) of the DPoP proof public key,
+     *                             null when no DPoP proof was provided
+     * @return if the token is valid (or the token validation is not configured)
+     */
+    private boolean isTokenValid(RoutingContext routingContext, AuthenticationConfig authenticationConfig,
+                                 String token, String dpopJkt) {
+        if (!authenticationConfig.isTokenValidation()) {
+            return true;
+        }
+        if (oidcTokenValidator().isValid(token, dpopJkt)) {
+            return true;
+        }
+        LOGGER.warn("Invalid OIDC access token (token validation failed)");
+        incrementRejectedAuthCounter(INVALID_TOKEN_REASON);
+        sendUnauthorizedResponse(routingContext,
+                "Invalid OIDC access token for OIDC token passthrough");
+        return false;
+    }
+
+    /**
+     * Send a 401 (Unauthorized) response with the provided error message
+     *
+     * @param routingContext RoutingContext instance
+     * @param errorMessage   the error message for the response body
+     */
+    private static void sendUnauthorizedResponse(RoutingContext routingContext, String errorMessage) {
+        HttpBridgeError error = new HttpBridgeError(
+                HttpResponseStatus.UNAUTHORIZED.code(),
+                errorMessage
+        );
+        HttpUtils.sendResponse(routingContext, error.code(),
+                BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
+    }
+
+    /**
+     * Get the HTTP target URI (htu) of the request for the DPoP proof binding:
+     * the absolute URI of the request without query and fragment
+     *
+     * @param routingContext RoutingContext instance
+     * @return the HTTP target URI of the request
+     */
+    private static String htu(RoutingContext routingContext) {
+        String absoluteUri = routingContext.request().absoluteURI();
+        int queryIndex = absoluteUri.indexOf('?');
+        return queryIndex < 0 ? absoluteUri : absoluteUri.substring(0, queryIndex);
+    }
+
+    /**
+     * Get the Micrometer registry of the bridge metrics, null when the metrics are disabled
+     *
+     * @return the Micrometer registry, null when the metrics are disabled
+     */
+    private MeterRegistry metricsRegistry() {
+        return this.metricsCollector == null ? null : this.metricsCollector.getVertxRegistry();
+    }
+
+    /**
+     * Increment the rejected authentication counter with the provided reason
+     * (when the metrics are enabled)
+     *
+     * @param reason the rejection reason
+     */
+    private void incrementRejectedAuthCounter(String reason) {
+        MeterRegistry registry = metricsRegistry();
+        if (registry != null) {
+            registry.counter("strimzi.bridge.auth.rejected", "reason", reason).increment();
+        }
+    }
+
+    /**
+     * Get the OIDC access token validator, creating it lazily
+     * (when the token validation is configured)
+     *
+     * @return the OIDC access token validator
+     */
+    private OidcTokenValidator oidcTokenValidator() {
+        if (this.oidcTokenValidator == null) {
+            synchronized (this) {
+                if (this.oidcTokenValidator == null) {
+                    this.oidcTokenValidator = new OidcTokenValidator(this.bridgeConfig.getAuthenticationConfig(),
+                        this.metricsCollector == null ? null : this.metricsCollector.getVertxRegistry());
+                }
+            }
+        }
+        return this.oidcTokenValidator;
+    }
+
+    /**
+     * Get the DPoP proof validator, creating it lazily
+     * (when the DPoP sender-constrained tokens are configured)
+     *
+     * @return the DPoP proof validator
+     */
+    private DpopProofValidator dpopProofValidator() {
+        if (this.dpopProofValidator == null) {
+            synchronized (this) {
+                if (this.dpopProofValidator == null) {
+                    this.dpopProofValidator = new DpopProofValidator(
+                            this.bridgeConfig.getAuthenticationConfig().getClockSkewSeconds(),
+                            metricsRegistry());
+                }
+            }
+        }
+        return this.dpopProofValidator;
     }
 
     private void healthy(RoutingContext routingContext) {

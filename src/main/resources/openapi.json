@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
       "title": "HTTP Bridge API Reference",
-      "description": "The HTTP Bridge provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol.",
+      "description": "The HTTP Bridge provides a REST API for integrating HTTP based client applications with a Kafka cluster. You can use the API to create and manage consumers and send and receive records over HTTP rather than the native Kafka protocol. When the passthrough authentication is enabled, requests must include an Authorization header with either a Bearer token (OIDC access token) or Basic credentials (username and password), which are passed through to the Kafka cluster for authenticating the internal Kafka clients.",
         "version": "0.1.0"
     },
     "paths": {

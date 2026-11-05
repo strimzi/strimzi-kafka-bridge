@@ -1,0 +1,325 @@
+// Module included in the following assemblies:
+//
+// assembly-http-bridge-config.adoc
+
+[id='proc-configuring-http-bridge-oauth-{context}']
+= Configuring OIDC access token authentication
+
+[role="_abstract"]
+This procedure describes how to configure the HTTP Bridge for OIDC access token authentication, so that
+OIDC access tokens are used for authenticating the internal Kafka clients against the Kafka cluster.
+
+Two modes are supported for obtaining the access tokens:
+
+* *Passthrough* (default): access tokens provided by HTTP clients in the `Authorization` header of their
+requests are passed through and used for authenticating the internal Kafka clients against the Kafka cluster.
+By default, the tokens are *not* validated by the bridge: the Kafka cluster (which must be configured with
+an OAUTHBEARER listener) is responsible for validating them. Optionally, the bridge can validate the tokens
+against the JSON Web Key Set (JWKS) endpoint of the OIDC provider before forwarding them to the Kafka cluster.
+
+[source,http]
+----
+Authorization: Bearer <access_token>
+----
+
+NOTE: By default, the HTTP Bridge does not validate the token signature or expiration. Because Kafka clients are
+long-lived, the token semantics are the following:
+
+* *Producer* requests: the producer authenticates with the token provided in the first request of the
+connection. If a subsequent request on the same connection provides a different token, the internal producer
+is recreated with the new token.
+* *Consumer* requests: the consumer authenticates with the token provided in the request that created it
+(`POST /consumers/{groupid}`). The consumer keeps this token until it is deleted.
+* *Admin* requests: an admin client is created and cached per access token.
+
+* *Client credentials*: the bridge obtains and refreshes the access tokens by itself using the client
+credentials grant. HTTP clients do not need to provide any token. The bridge performs the token requests
+against the token endpoint of your OIDC provider using the configured client ID and client secret.
+
+.Prerequisites
+
+* xref:proc-downloading-http-bridge-{context}[The HTTP Bridge installation archive is downloaded]
+* The Kafka cluster is configured with an OAUTHBEARER listener for validating access tokens issued by your OIDC provider
+
+.Procedure
+
+. Edit the `application.properties` file provided with the HTTP Bridge installation archive.
+
+.. Configure the Kafka-related properties for the OAUTHBEARER-based connection to the Kafka cluster.
++
+For example:
++
+--
+[source,properties]
+----
+kafka.bootstrap.servers=my-cluster-kafka-bootstrap:9093
+kafka.security.protocol=SASL_SSL
+kafka.sasl.mechanism=OAUTHBEARER
+kafka.sasl.jaas.config=org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required;
+----
+--
++
+NOTE: The bridge automatically injects the callback handler used for the OIDC access token authentication.
+You only need to configure the connection protocol (`security.protocol`) and the SASL mechanism
+(`sasl.mechanism`).
+
+.. Enable the OIDC access token authentication with the passthrough mode.
++
+For example:
++
+--
+[source,properties]
+----
+authentication.type=oauth
+# the passthrough mode is the default, so the following line is optional
+authentication.mode=passthrough
+# JWT claim used to map the token to the Kafka principal (optional, "sub" by default)
+authentication.username.claim=sub
+----
+* `authentication.type` enables the OIDC access token authentication when set to `oauth`.
+* `authentication.mode` defines how the bridge obtains the access tokens. The default is `passthrough`.
+* `authentication.username.claim` defines the JWT claim used to map the token to the Kafka principal. The default is `sub`.
+--
+
+.. Optionally, enable the validation of the access tokens by the bridge (with the passthrough mode).
++
+For example:
++
+--
+[source,properties]
+----
+# validate the access tokens against the JWKS endpoint of the OIDC provider before
+# forwarding them to the Kafka cluster ("none" by default)
+authentication.token.validation=jwks
+authentication.jwks.endpoint.uri=https://my-sso/protocol/openid-connect/certs
+# alternatively, resolve the JWKS and introspection endpoints automatically from the
+# discovery document of the OIDC provider (instead of the endpoint URIs)
+#authentication.discovery.uri=https://my-sso/realms/my-realm/.well-known/openid-configuration
+# optionally, refresh period of the JWKS keys cache (seconds, 300 by default)
+#authentication.jwks.refresh.seconds=300
+# optionally, DPoP (RFC 9449) sender-constrained tokens: the DPoP proof provided by the
+# clients in the DPoP header is validated and bound to the access token (requires the
+# token validation to be enabled)
+#authentication.dpop=true
+# optionally, expected issuer and audience of the access tokens
+#authentication.valid.issuer.uri=https://my-sso/realms/my-realm
+#authentication.expected.audience=my-kafka
+# optionally, clock skew tolerated on the exp/nbf claims (seconds, 30 by default)
+#authentication.clock.skew.seconds=30
+# optionally, timeout of the HTTP connections to the OIDC provider (seconds, 10 by default)
+#authentication.http.timeout.seconds=10
+# optionally, trusted certificates (PEM) for validating the TLS connection to the OIDC provider
+# (inline or from a file location)
+#authentication.jwks.trusted.certificates=
+#authentication.jwks.trusted.certificates.location=/etc/strimzi/oidc-provider-ca.crt
+# optionally, client certificate and private key (PEM, PKCS#8) presented by the bridge to the
+# OIDC provider endpoints with a mutual TLS connection (inline or from file locations)
+#authentication.jwks.client.certificate=
+#authentication.jwks.client.certificate.location=/etc/strimzi/oidc-provider-client.crt
+#authentication.jwks.client.key=
+#authentication.jwks.client.key.location=/etc/strimzi/oidc-provider-client.key
+# optionally, proxy for the HTTP connections to the OIDC provider endpoints
+#authentication.proxy.host=my-proxy
+#authentication.proxy.port=3128
+#authentication.proxy.username=proxy-user
+#authentication.proxy.password=proxy-password
+----
+* `authentication.token.validation` enables the validation of the access tokens by the bridge when set
+to `jwks` (validation against the JWKS endpoint) or `introspection` (validation against the
+introspection endpoint). With the default `none`, the tokens are not validated by the bridge.
+* `authentication.jwks.endpoint.uri` defines the JSON Web Key Set (JWKS) endpoint of the OIDC provider,
+providing the public keys used to verify the token signatures. Required when the validation is set
+to `jwks`, unless `authentication.discovery.uri` is configured.
+* `authentication.discovery.uri` defines the OIDC discovery document URI, from which the JWKS endpoint
+(from the `jwks_uri` field) and the introspection endpoint (from the `introspection_endpoint` field)
+are resolved automatically. An alternative to `authentication.jwks.endpoint.uri` and
+`authentication.introspection.endpoint.uri`.
+* `authentication.jwks.refresh.seconds` defines the refresh period of the JWKS keys cache. The default is 300.
+* `authentication.dpop` enables the DPoP (RFC 9449) sender-constrained tokens. Requires the token
+validation to be enabled (the bridge fails to start otherwise). See <<dpop-sender-constrained-tokens>>.
+* `authentication.valid.issuer.uri` optionally defines the expected issuer (`iss` claim) of the access tokens.
+* `authentication.expected.audience` optionally defines the expected audience (`aud` claim) of the access tokens.
+* `authentication.clock.skew.seconds` optionally defines the clock skew (seconds) tolerated on the
+`exp` and `nbf` claims of the access tokens, to account for a clock drift between the bridge and the
+OIDC provider. The default is 30.
+* `authentication.http.timeout.seconds` optionally defines the timeout (seconds) of the HTTP
+connections to the OIDC provider endpoints (JWKS, introspection, discovery). The default is 10.
+* `authentication.jwks.trusted.certificates` / `authentication.jwks.trusted.certificates.location`
+optionally define the trusted certificates (PEM, inline or from a file) used to validate the TLS
+connection to the OIDC provider endpoints. When not set, the default trust store of the JVM is used.
+* `authentication.jwks.client.certificate` / `authentication.jwks.client.certificate.location` and
+`authentication.jwks.client.key` / `authentication.jwks.client.key.location` optionally define a
+client certificate and private key (PEM, PKCS#8, inline or from files) presented by the bridge to
+the OIDC provider endpoints over a mutual TLS (mTLS) connection.
++
+NOTE: When the trusted certificates, the client certificate or the client key are configured from
+file locations, the bridge reloads the TLS context of the connections to the OIDC provider endpoints
+when the files change (certificate rotation), without a restart. When a reload fails (for example
+due to a misconfigured or unreadable file), the previous TLS context is kept and the reload is
+retried on the next request.
+* `authentication.proxy.host` and `authentication.proxy.port` optionally define a proxy for the HTTP
+connections to the OIDC provider endpoints, with `authentication.proxy.username` and
+`authentication.proxy.password` for the proxy authentication.
++
+The supported token signature algorithms are `RS256`/`RS384`/`RS512`, `PS256`/`PS384`/`PS512` and
+`ES256`/`ES384`/`ES512`. Only the JWKS keys used for signatures (with a `sig` use and a `verify`
+key operation, when present) and matching the token algorithm (when the key declares one) are
+used for the signature verification.
++
+NOTE: When the metrics are enabled, the bridge exposes the authentication metrics on the `/metrics`
+endpoint: the rejected authentications (`strimzi_bridge_auth_rejected_total`, tagged by `reason` —
+for example `invalid-token`, `invalid-dpop-proof` or `missing-client-certificate`), the JWKS refresh and discovery
+counters (`strimzi_bridge_auth_jwks_refresh_total` and `strimzi_bridge_auth_discovery_total`,
+tagged by `result`), and the introspection counter and duration
+(`strimzi_bridge_auth_introspection_total`, tagged by `result`, and
+`strimzi_bridge_auth_introspection_duration_seconds`).
++
+NOTE: When the validation is enabled, access tokens with an invalid signature, expired, not yet valid
+(`nbf` claim), or not matching the expected issuer or audience are rejected by the bridge with a `401`
+response, without being forwarded to the Kafka cluster. The Kafka cluster remains responsible for
+validating the tokens. The bridge fails to start when the validation is set to `jwks` or `introspection`
+but the matching endpoint URI is not configured, instead of silently disabling the validation.
+--
+
+.. Optionally, enable the DPoP (RFC 9449) sender-constrained tokens.
++
+[[dpop-sender-constrained-tokens]]
+When `authentication.dpop=true`, the HTTP clients authenticate with the DPoP scheme
+(`Authorization: DPoP <access-token>`) and provide a DPoP proof in the `DPoP` header. The proof
+is a JWT signed with a private key owned by the client (the public key is embedded in the proof
+header), bound to the single HTTP request (HTTP method and target URI), with a limited lifetime
+(issuance time) and a unique identifier. The bridge validates the proof and rejects the request
+with a `401` response when the proof is missing, invalid, expired or replayed (the
+`invalid-dpop-proof` rejected authentications metric is incremented).
++
+When the access token carries the confirmation claim (`cnf.jkt`), binding the token to the public
+key of the client, the bridge only accepts the token when the JWK thumbprint (RFC 7638) of the
+proof public key matches the claim (sender-constrained token). Access tokens without the
+confirmation claim are accepted when provided with a valid proof.
++
+The DPoP enforcement requires the token validation to be enabled
+(`authentication.token.validation` set to `jwks` or `introspection`): the bridge fails to start
+otherwise. The clock skew tolerated on the issuance time (`iat` claim) of the proofs is the one
+configured with `authentication.clock.skew.seconds` (30 seconds by default).
++
+IMPORTANT: The DPoP proof is validated by the bridge only. The Kafka broker cannot verify DPoP
+proofs (SASL/OAUTHBEARER has no DPoP support), so an access token presented directly to the
+Kafka cluster is still accepted there. The sender-constraining is enforced at the bridge API
+surface only, where all the HTTP traffic enters.
+--
+
+.. Alternatively, enable the OIDC access token authentication with the client credentials mode.
++
+For example:
++
+--
+[source,properties]
+----
+authentication.type=oauth
+authentication.mode=client-credentials
+authentication.token.endpoint.uri=https://my-sso/oauth2/token
+authentication.client.id=my-client
+authentication.client.secret=my-secret
+# alternatively, provide the client secret from a file
+#authentication.client.secret.location=/etc/secrets/client-secret
+# optionally, request a scope or an audience on the access tokens
+#authentication.scope=my-scope
+#authentication.audience=my-audience
+# optionally, set the JWT claim used to map the token to the Kafka principal ("sub" by default)
+#authentication.username.claim=sub
+----
+* `authentication.mode=client-credentials` makes the bridge obtain and refresh the access tokens by itself.
+* `authentication.token.endpoint.uri` defines the token endpoint of the OIDC provider used by the bridge to request the access tokens.
+* `authentication.client.id` and `authentication.client.secret` define the OIDC client credentials used by the bridge.
+* `authentication.client.secret.location` is an alternative to `authentication.client.secret`, reading the client secret from a file (for example, mounted from a Secret).
+* `authentication.scope` and `authentication.audience` optionally define the scope and audience requested on the access tokens.
+* `authentication.username.claim` defines the JWT claim used to map the token to the Kafka principal. The default is `sub`.
+--
+
+. Save the configuration file.
+
+.Authentication related configurations
+|====
+|Name |Descriptions
+
+|authentication.type
+|Authentication type. Set to `oauth` to enable the OIDC access token authentication. Not enabled by default.
+
+|authentication.mode
+|Mode for obtaining the access tokens: `passthrough` (tokens provided by HTTP clients in the `Authorization` header are passed through to the Kafka cluster) or `client-credentials` (the bridge obtains and refreshes the tokens itself using the configured client credentials). The default is `passthrough`.
+
+|authentication.username.claim
+|JWT claim for mapping the OIDC access token to the Kafka principal. The default is `sub`.
+
+|authentication.token.endpoint.uri
+|Token endpoint URI of the OIDC provider used to request the access tokens. Required with `client-credentials` mode.
+
+|authentication.client.id
+|Client ID used for requesting the access tokens. Required with `client-credentials` mode.
+
+|authentication.client.secret
+|Client secret used for requesting the access tokens. Either `authentication.client.secret` or `authentication.client.secret.location` is required with `client-credentials` mode.
+
+|authentication.client.secret.location
+|Location of the file containing the client secret used for requesting the access tokens. Either `authentication.client.secret` or `authentication.client.secret.location` is required with `client-credentials` mode.
+
+|authentication.scope
+|Scope requested on the access tokens. Optional, used with `client-credentials` mode.
+
+|authentication.audience
+|Audience requested on the access tokens. Optional, used with `client-credentials` mode.
+
+|authentication.token.validation
+|Validation of the access tokens performed by the bridge before forwarding them to the Kafka cluster: `none` (default), `jwks` (validation against the JWKS endpoint of the OIDC provider) or `introspection` (validation against the introspection endpoint of the OIDC provider). Used with `passthrough` mode.
+
+|authentication.jwks.endpoint.uri
+|JWKS endpoint URI of the OIDC provider, providing the public keys used to verify the token signatures. Required when `authentication.token.validation` is set to `jwks`, unless `authentication.discovery.uri` is configured.
+
+|authentication.introspection.endpoint.uri
+|Introspection endpoint URI (RFC 7662) of the OIDC provider, used to validate the token liveness. The endpoint is authenticated with `authentication.client.id` and `authentication.client.secret`. Required when `authentication.token.validation` is set to `introspection`, unless `authentication.discovery.uri` is configured.
+
+|authentication.discovery.uri
+|OIDC discovery document URI of the OIDC provider, from which the JWKS endpoint (from the `jwks_uri` field) and the introspection endpoint (from the `introspection_endpoint` field) are resolved automatically. Alternative to `authentication.jwks.endpoint.uri` and `authentication.introspection.endpoint.uri`.
+
+|authentication.jwks.refresh.seconds
+|Refresh period (seconds) of the JWKS keys cache. The default is 300.
+
+|authentication.dpop
+|Enable the DPoP (RFC 9449) sender-constrained tokens: the DPoP proof provided by the HTTP clients in the `DPoP` header is validated and bound to the access token. Requires `authentication.token.validation` to be set to `jwks` or `introspection`. The default is `false`.
+
+|authentication.introspection.cache.seconds
+|Cache period (seconds) of the introspection results. The default is 30.
+
+|authentication.clock.skew.seconds
+|Clock skew (seconds) tolerated on the `exp` and `nbf` claims of the access tokens. The default is 30.
+
+|authentication.http.timeout.seconds
+|Timeout (seconds) of the HTTP connections to the OIDC provider endpoints (JWKS, introspection, discovery). The default is 10.
+
+|authentication.jwks.trusted.certificates(.location)
+|Trusted certificates (PEM, inline or from a file) used to validate the TLS connection to the OIDC provider endpoints. Optional. When not set, the default trust store of the JVM is used.
+
+|authentication.jwks.client.certificate(.location)
+|Client certificate (PEM, inline or from a file) presented by the bridge to the OIDC provider endpoints over a mutual TLS (mTLS) connection. Optional.
+
+|authentication.jwks.client.key(.location)
+|Client private key (PEM, PKCS#8, inline or from a file) for the mutual TLS (mTLS) connection to the OIDC provider endpoints. Required with `authentication.jwks.client.certificate(.location)`.
+
+|authentication.proxy.host
+|Host of the proxy for the HTTP connections to the OIDC provider endpoints. Optional.
+
+|authentication.proxy.port
+|Port of the proxy for the HTTP connections to the OIDC provider endpoints.
+
+|authentication.proxy.username
+|Username for the proxy authentication. Optional.
+
+|authentication.proxy.password
+|Password for the proxy authentication. Optional.
+
+|authentication.valid.issuer.uri
+|Expected issuer (`iss` claim) of the access tokens. Optional, used with the token validation.
+
+|authentication.expected.audience
+|Expected audience (`aud` claim) of the access tokens. Optional, used with the token validation.
+|====

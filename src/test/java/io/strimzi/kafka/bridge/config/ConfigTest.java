@@ -29,14 +29,21 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class ConfigTest {
     @Test
     public void testConfig() {
-        Map<String, Object> map = Map.of(
-                "bridge.id", "my-bridge",
-                "kafka.bootstrap.servers", "localhost:9092",
-                "kafka.producer.acks", "1",
-                "kafka.consumer.auto.offset.reset", "earliest",
-                "http.host", "0.0.0.0",
-                "http.port", "8080",
-                "management.port", "8081"
+        Map<String, Object> map = Map.ofEntries(
+                Map.entry("bridge.id", "my-bridge"),
+                Map.entry("kafka.bootstrap.servers", "localhost:9092"),
+                Map.entry("kafka.producer.acks", "1"),
+                Map.entry("kafka.consumer.auto.offset.reset", "earliest"),
+                Map.entry("http.host", "0.0.0.0"),
+                Map.entry("http.port", "8080"),
+                Map.entry("management.port", "8081"),
+                Map.entry("authentication.type", "oauth"),
+                Map.entry("authentication.mode", "passthrough"),
+                Map.entry("authentication.username.claim", "preferred_username"),
+                Map.entry("authentication.token.validation", "jwks"),
+                Map.entry("authentication.jwks.endpoint.uri", "http://localhost:8080/realms/test/protocol/openid-connect/certs"),
+                Map.entry("authentication.dpop", "true"),
+                Map.entry("authentication.clock.skew.seconds", "30")
         );
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(map);
@@ -57,6 +64,14 @@ public class ConfigTest {
         assertThat(bridgeConfig.getHttpConfig().getHost(), is("0.0.0.0"));
         assertThat(bridgeConfig.getHttpConfig().getPort(), is(8080));
         assertThat(bridgeConfig.getHttpConfig().getManagementPort(), is(8081));
+
+        assertThat(bridgeConfig.getAuthenticationConfig().getType(), is("oauth"));
+        assertThat(bridgeConfig.getAuthenticationConfig().getMode(), is("passthrough"));
+        assertThat(bridgeConfig.getAuthenticationConfig().getUsernameClaim(), is("preferred_username"));
+        assertThat(bridgeConfig.getAuthenticationConfig().getTokenValidation(), is("jwks"));
+        assertThat(bridgeConfig.getAuthenticationConfig().getJwksEndpointUri(), is("http://localhost:8080/realms/test/protocol/openid-connect/certs"));
+        assertThat(bridgeConfig.getAuthenticationConfig().isDpop(), is(true));
+        assertThat(bridgeConfig.getAuthenticationConfig().getClockSkewSeconds(), is(30));
     }
 
     @Test

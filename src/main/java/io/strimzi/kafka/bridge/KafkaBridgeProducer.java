@@ -5,6 +5,10 @@
 
 package io.strimzi.kafka.bridge;
 
+import io.strimzi.kafka.bridge.auth.AuthCredentials;
+import io.strimzi.kafka.bridge.auth.SaslAuth;
+import io.strimzi.kafka.bridge.config.AuthenticationConfig;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import io.strimzi.kafka.bridge.tracing.TracingHandle;
 import io.strimzi.kafka.bridge.tracing.TracingUtil;
@@ -30,6 +34,7 @@ public class KafkaBridgeProducer<K, V> {
     private static final Logger LOGGER = LogManager.getLogger(KafkaBridgeProducer.class);
 
     private final KafkaConfig kafkaConfig;
+    private final AuthenticationConfig authenticationConfig;
     private final Serializer<K> keySerializer;
     private final Serializer<V> valueSerializer;
     private Producer<K, V> producer;
@@ -37,12 +42,13 @@ public class KafkaBridgeProducer<K, V> {
     /**
      * Constructor
      *
-     * @param kafkaConfig Kafka configuration
+     * @param bridgeConfig bridge configuration
      * @param keySerializer Kafka serializer for the message key
      * @param valueSerializer Kafka serializer for the message value
      */
-    public KafkaBridgeProducer(KafkaConfig kafkaConfig, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
-        this.kafkaConfig = kafkaConfig;
+    public KafkaBridgeProducer(BridgeConfig bridgeConfig, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+        this.kafkaConfig = bridgeConfig.getKafkaConfig();
+        this.authenticationConfig = bridgeConfig.getAuthenticationConfig();
         this.keySerializer = keySerializer;
         this.valueSerializer = valueSerializer;
     }
@@ -87,9 +93,22 @@ public class KafkaBridgeProducer<K, V> {
      * Create the internal Kafka Producer client instance with the Kafka producer related configuration.
      */
     public void create() {
+        create(null);
+    }
+
+    /**
+     * Create the internal Kafka Producer client instance with the Kafka producer related configuration.
+     * When authentication credentials are provided, the authentication related properties
+     * for authenticating the producer against the Kafka cluster are added to the Kafka client configuration.
+     *
+     * @param authCredentials authentication credentials coming from the HTTP request for passthrough (null if not enabled)
+     */
+    public void create(AuthCredentials authCredentials) {
         Properties props = new Properties();
         props.putAll(this.kafkaConfig.getConfig());
         props.putAll(this.kafkaConfig.getProducerConfig().getConfig());
+
+        SaslAuth.addSaslProperties(props, this.authenticationConfig, authCredentials);
 
         TracingHandle tracing = TracingUtil.getTracing();
         tracing.addTracingPropsToProducerConfig(props);

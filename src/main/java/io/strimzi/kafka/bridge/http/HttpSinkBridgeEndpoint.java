@@ -14,6 +14,7 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
 import io.strimzi.kafka.bridge.EmbeddedFormat;
 import io.strimzi.kafka.bridge.KafkaBridgeConsumer;
+import io.strimzi.kafka.bridge.auth.AuthCredentials;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
@@ -38,7 +39,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -49,7 +49,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -101,7 +100,7 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                                   ExecutorService asyncExecutor) {
         super(bridgeConfig);
         this.httpBridgeContext = context;
-        this.kafkaBridgeConsumer = new KafkaBridgeConsumer<>(bridgeConfig.getKafkaConfig(), keyDeserializer, valueDeserializer);
+        this.kafkaBridgeConsumer = new KafkaBridgeConsumer<>(bridgeConfig, keyDeserializer, valueDeserializer);
         this.format = format;
         this.asyncExecutor = asyncExecutor;
         this.subscribed = false;
@@ -190,8 +189,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         addConfigParameter(ConsumerConfig.ISOLATION_LEVEL_CONFIG,
                 JsonUtils.getString(bodyAsJson, ConsumerConfig.ISOLATION_LEVEL_CONFIG), config);
 
-        // create the consumer
-        this.kafkaBridgeConsumer.create(config, groupId);
+        // create the consumer passing the authentication credentials (when the passthrough authentication
+        // is enabled), the consumer keeps them for its lifetime
+        this.kafkaBridgeConsumer.create(config, groupId,
+                (AuthCredentials) routingContext.data().get(HttpBridgeContext.AUTH_CREDENTIALS));
 
         if (handler != null) {
             handler.accept(this);
@@ -263,14 +264,10 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
         if (!bodyAsJson.isEmpty()) {
             ArrayNode offsetsList = (ArrayNode) bodyAsJson.get("offsets");
-            Map<TopicPartition, OffsetAndMetadata> offsetData = new HashMap<>();
-
-            for (int i = 0; i < offsetsList.size(); i++) {
-                JsonNode json = offsetsList.get(i);
-                TopicPartition topicPartition = new TopicPartition(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition"));
-                OffsetAndMetadata offsetAndMetadata = new OffsetAndMetadata(JsonUtils.getLong(json, "offset"), JsonUtils.getString(json, "metadata"));
-                offsetData.put(topicPartition, offsetAndMetadata);
-            }
+            Map<TopicPartition, OffsetAndMetadata> offsetData = StreamSupport.stream(offsetsList.spliterator(), false)
+                    .collect(Collectors.toMap(
+                        json -> new TopicPartition(JsonUtils.getString(json, "topic"), JsonUtils.getInt(json, "partition")),
+                        json -> new OffsetAndMetadata(JsonUtils.getLong(json, "offset"), JsonUtils.getString(json, "metadata"))));
             // fulfilling the request in a separate thread to free the Vert.x event loop still in place
             CompletableFuture.supplyAsync(() -> {
                 synchronized (consumerLock) {
@@ -523,27 +520,23 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
             LOGGER.trace("ListSubscriptions handler thread {}", Thread.currentThread());
             if (ex == null) {
                 ObjectNode root = JsonUtils.createObjectNode();
-                List<String> topics = new ArrayList<>();
-                ArrayNode partitionsArray = JsonUtils.createArrayNode();
 
-                HashMap<String, ArrayNode> partitions = new HashMap<>();
-                for (TopicPartition topicPartition: subscriptions) {
-                    if (!topics.contains(topicPartition.topic())) {
-                        topics.add(topicPartition.topic());
-                    }
-                    if (!partitions.containsKey(topicPartition.topic())) {
-                        partitions.put(topicPartition.topic(), JsonUtils.createArrayNode());
-                    }
-                    partitions.put(topicPartition.topic(), partitions.get(topicPartition.topic()).add(topicPartition.partition()));
-                }
-                for (Map.Entry<String, ArrayNode> part: partitions.entrySet()) {
+                Map<String, List<Integer>> partitions = subscriptions.stream()
+                        .collect(Collectors.groupingBy(TopicPartition::topic,
+                                Collectors.mapping(TopicPartition::partition, Collectors.toList())));
+                ArrayNode topicsArray = JsonUtils.createArrayNode(new ArrayList<>(partitions.keySet()));
+                ObjectNode partitionsRoot = JsonUtils.createObjectNode();
+                for (Map.Entry<String, List<Integer>> part: partitions.entrySet()) {
                     ObjectNode topic = JsonUtils.createObjectNode();
-                    topic.set(part.getKey(), part.getValue());
-                    partitionsArray.add(topic);
+                    ArrayNode partitionsArray = JsonUtils.createArrayNode();
+                    for (int partition: part.getValue()) {
+                        partitionsArray.add(partition);
+                    }
+                    topic.set(part.getKey(), partitionsArray);
+                    partitionsRoot.set(part.getKey(), topic);
                 }
-                ArrayNode topicsArray = JsonUtils.createArrayNode(topics);
                 root.set("topics", topicsArray);
-                root.set("partitions", partitionsArray);
+                root.set("partitions", partitionsRoot);
 
                 HttpUtils.sendResponse(routingContext, HttpResponseStatus.OK.code(), BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(root));
             } else {
@@ -719,8 +712,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
         // if a gateway/proxy has set "Forwarded" related headers to use to get scheme/proto and host
         String forwarded = routingContext.request().getHeader("forwarded");
         if (forwarded != null && !forwarded.isEmpty()) {
-            Matcher hostMatcher = forwardedHostPattern.matcher(forwarded);
-            Matcher protoMatcher = forwardedProtoPattern.matcher(forwarded);
+            var hostMatcher = forwardedHostPattern.matcher(forwarded);
+            var protoMatcher = forwardedProtoPattern.matcher(forwarded);
             if (hostMatcher.find() && protoMatcher.find()) {
                 LOGGER.debug("Getting base URI from HTTP header: Forwarded '{}'", forwarded);
                 scheme = protoMatcher.group(1);

@@ -69,17 +69,23 @@ public class HttpService implements AutoCloseable {
     }
 
     public HttpResponse<String> get(String endpoint, String acceptType) {
+        return get(endpoint, acceptType, null);
+    }
+
+    public HttpResponse<String> get(String endpoint, String acceptType, List<String> headers) {
         String uri = getUri(endpoint);
 
         try {
-            HttpRequest httpRequest = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(new URI(uri))
-                .setHeader(HttpHeaderNames.ACCEPT.toString(), acceptType)
                 .version(HttpClient.Version.HTTP_1_1)
-                .GET()
-                .build();
+                .setHeader(HttpHeaderNames.ACCEPT.toString(), acceptType);
 
-            return client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            if (headers != null && !headers.isEmpty()) {
+                requestBuilder.headers(headers.toArray(new String[0]));
+            }
+
+            return client.send(requestBuilder.GET().build(), HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
             LOGGER.error("Unable to fulfill the GET request to: {} due to: ", uri, e);
             throw new RuntimeException(e);
@@ -100,6 +106,27 @@ public class HttpService implements AutoCloseable {
             return client.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
             LOGGER.error("Unable to create URI: {}, due to: ", uri, e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public HttpResponse<String> put(String endpoint, String request, List<String> headers) {
+        String uri = getUri(endpoint);
+
+        try {
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                .uri(new URI(uri))
+                .version(HttpClient.Version.HTTP_1_1)
+                .setHeader(HttpHeaderNames.CONTENT_TYPE.toString(), "application/json");
+
+            if (headers != null && !headers.isEmpty()) {
+                requestBuilder.headers(headers.toArray(new String[0]));
+            }
+
+            return client.send(requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(request)).build(),
+                HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            LOGGER.error("Unable to fulfill the PUT request to: {} due to: ", uri, e);
             throw new RuntimeException(e);
         }
     }

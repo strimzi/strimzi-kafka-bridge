@@ -61,6 +61,18 @@ public class HttpConfig extends AbstractConfig {
     /** Comma separated list of named groups enabled for SSL connections */
     public static final String HTTP_SERVER_SSL_NAMED_GROUPS = HTTP_CONFIG_PREFIX + "ssl.named.groups";
 
+    /** SSL client authentication mode: none (default), request or required */
+    public static final String HTTP_SERVER_SSL_CLIENT_AUTH = HTTP_CONFIG_PREFIX + "ssl.client-auth";
+
+    /** Default SSL client authentication mode */
+    public static final String DEFAULT_CLIENT_AUTH_NONE = "none";
+
+    /** Trusted certificates (PEM) for validating the TLS client certificates */
+    public static final String HTTP_SERVER_SSL_TRUSTED_CERTIFICATES = HTTP_CONFIG_PREFIX + "ssl.trusted.certificates";
+
+    /** Path to the file with the trusted certificates (PEM) for validating the TLS client certificates */
+    public static final String HTTP_SERVER_SSL_TRUSTED_CERTIFICATES_LOCATION = HTTP_CONFIG_PREFIX + "ssl.trusted.certificates.location";
+
     /** HTTP consumer timeouts */
     public static final String HTTP_CONSUMER_TIMEOUT = HTTP_CONFIG_PREFIX + "timeoutSeconds";
     /** Enable consumer part of the bridge */
@@ -185,6 +197,33 @@ public class HttpConfig extends AbstractConfig {
      */
     public boolean isSslEnabled() {
         return Boolean.parseBoolean(this.config.getOrDefault(HTTP_SERVER_SSL_ENABLE, "false").toString());
+    }
+
+    /**
+     * Get the SSL client authentication mode.
+     *
+     * @return SSL client authentication mode, null if not configured
+     */
+    public String getHttpServerSslClientAuth() {
+        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_CLIENT_AUTH, null);
+    }
+
+    /**
+     * Get the trusted certificates (PEM) for validating the TLS client certificates.
+     *
+     * @return trusted certificates (PEM), null if not configured
+     */
+    public String getHttpServerSslTrustedCertificates() {
+        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_TRUSTED_CERTIFICATES, null);
+    }
+
+    /**
+     * Get the path to the file with the trusted certificates (PEM) for validating the TLS client certificates.
+     *
+     * @return path to the trusted certificates, null if not configured
+     */
+    public String getHttpServerSslTrustedCertificatesLocation() {
+        return (String) this.config.getOrDefault(HTTP_SERVER_SSL_TRUSTED_CERTIFICATES_LOCATION, null);
     }
 
     /**

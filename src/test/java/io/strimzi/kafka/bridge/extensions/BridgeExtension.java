@@ -65,6 +65,9 @@ public class BridgeExtension implements
     private static final String HTTP_SERVICE_KEY = "httpService";
     private static final String BRIDGE_HOST_KEY = "bridgeHost";
     private static final String BRIDGE_PORT_KEY = "bridgePort";
+
+    /** Placeholder for the mapped port of the OIDC provider (Keycloak) container, resolved from the property values */
+    private static final String OIDC_PROVIDER_PORT_PLACEHOLDER = "${oidc.provider.port}";
     private static final String MANAGEMENT_HTTP_SERVICE_KEY = "managementHttpService";
 
     private static final BridgeRunMode BRIDGE_RUN_MODE_ENV = BridgeRunMode.fromString(System.getenv().getOrDefault("BRIDGE_RUN_MODE", BridgeRunMode.IN_MEMORY.name()));
@@ -149,13 +152,16 @@ public class BridgeExtension implements
     }
 
     /**
-     * Return properties in the Map from the {@link BridgeConfiguration} annotation.
+     * Return properties in the Map from the {@link BridgeConfiguration} annotation,
+     * resolving the {@code ${oidc.provider.port}} placeholder in the property values
+     * (replaced with the mapped port of the OIDC provider container, when started).
      *
+     * @param context               context of the test.
      * @param bridgeConfiguration   annotation containing the array of {@link ConfigEntry} used for configuring the Bridge cluster.
      *
      * @return  properties in the Map from the {@link BridgeConfiguration} annotation.
      */
-    private Map<String, Object> returnPropertiesFromConfigEntries(BridgeConfiguration bridgeConfiguration) {
+    private Map<String, Object> returnPropertiesFromConfigEntries(ExtensionContext context, BridgeConfiguration bridgeConfiguration) {
         ConfigEntry[] configEntries = bridgeConfiguration.properties();
         ConfigEntry[] additionalEntries = bridgeConfiguration.additionalProperties();
 
@@ -163,7 +169,7 @@ public class BridgeExtension implements
 
         // These are the "defaults"
         for (ConfigEntry configEntry : configEntries) {
-            properties.put(configEntry.key(), configEntry.value());
+            properties.put(configEntry.key(), resolvePlaceholders(context, configEntry.value()));
         }
 
         // These are additional properties - to either add to existing defaults without need to configure everything
@@ -172,11 +178,31 @@ public class BridgeExtension implements
             if (ConfigEntry.REMOVE.equals(additionalConfig.value())) {
                 properties.remove(additionalConfig.key());
             } else {
-                properties.put(additionalConfig.key(), additionalConfig.value());
+                properties.put(additionalConfig.key(), resolvePlaceholders(context, additionalConfig.value()));
             }
         }
 
         return properties;
+    }
+
+    /**
+     * Resolve the placeholders in the provided property value: the {@code ${oidc.provider.port}}
+     * placeholder is replaced with the mapped port of the OIDC provider (Keycloak) container,
+     * when started; otherwise the value is returned unchanged.
+     *
+     * @param context   context of the test.
+     * @param value     property value from the annotation.
+     *
+     * @return  the property value with the placeholders resolved.
+     */
+    private String resolvePlaceholders(ExtensionContext context, String value) {
+        if (value != null && value.contains(OIDC_PROVIDER_PORT_PLACEHOLDER)) {
+            Integer port = KafkaExtension.getOidcProviderPort(context);
+            if (port != null) {
+                return value.replace(OIDC_PROVIDER_PORT_PLACEHOLDER, String.valueOf(port));
+            }
+        }
+        return value;
     }
 
     /**
@@ -201,7 +227,7 @@ public class BridgeExtension implements
         }
 
         if (config != null) {
-            return returnPropertiesFromConfigEntries(config);
+            return returnPropertiesFromConfigEntries(context, config);
         }
 
         // Otherwise get it from @BridgeTest meta-annotation
@@ -211,7 +237,7 @@ public class BridgeExtension implements
             config = BridgeSuite.class.getAnnotation(BridgeConfiguration.class);
 
             if (config != null) {
-                return returnPropertiesFromConfigEntries(config);
+                return returnPropertiesFromConfigEntries(context, config);
             }
         }
 

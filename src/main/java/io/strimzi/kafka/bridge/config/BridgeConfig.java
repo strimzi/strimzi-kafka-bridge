@@ -54,6 +54,7 @@ public class BridgeConfig extends AbstractConfig {
 
     private final KafkaConfig kafkaConfig;
     private final HttpConfig httpConfig;
+    private final AuthenticationConfig authenticationConfig;
 
     /**
      * Constructor
@@ -61,11 +62,14 @@ public class BridgeConfig extends AbstractConfig {
      * @param config bridge common configuration parameters map
      * @param kafkaConfig Kafka related configuration
      * @param httpConfig HTTP endpoint related configuration
+     * @param authenticationConfig authentication related configuration
      */
-    private BridgeConfig(Map<String, Object> config, KafkaConfig kafkaConfig, HttpConfig httpConfig) {
+    private BridgeConfig(Map<String, Object> config, KafkaConfig kafkaConfig, HttpConfig httpConfig,
+                         AuthenticationConfig authenticationConfig) {
         super(config);
         this.kafkaConfig = kafkaConfig;
         this.httpConfig = httpConfig;
+        this.authenticationConfig = authenticationConfig;
     }
 
     /**
@@ -87,6 +91,15 @@ public class BridgeConfig extends AbstractConfig {
     }
 
     /**
+     * Get the authentication related configuration.
+     *
+     * @return the authentication related configuration
+     */
+    public AuthenticationConfig getAuthenticationConfig() {
+        return this.authenticationConfig;
+    }
+
+    /**
      * Loads the entire bridge configuration parameters from a related map.
      * Some validation and default values are also applied.
      *
@@ -97,10 +110,11 @@ public class BridgeConfig extends AbstractConfig {
         validateAndApplyDefaults(map);
         KafkaConfig kafkaConfig = KafkaConfig.fromMap(map);
         HttpConfig httpConfig = HttpConfig.fromMap(map);
+        AuthenticationConfig authenticationConfig = AuthenticationConfig.fromMap(map);
         return new BridgeConfig(map.entrySet().stream()
                 .filter(e -> e.getKey().startsWith(BridgeConfig.BRIDGE_CONFIG_PREFIX))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
-                kafkaConfig, httpConfig);
+                kafkaConfig, httpConfig, authenticationConfig);
     }
 
     private static void validateAndApplyDefaults(Map<String, Object> map) {
@@ -123,6 +137,7 @@ public class BridgeConfig extends AbstractConfig {
                 "config=" + this.config +
                 ",kafkaConfig=" + this.kafkaConfig +
                 ",httpConfig=" + this.httpConfig +
+                ",authenticationConfig=" + this.authenticationConfig +
                 ")";
     }
 

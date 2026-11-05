@@ -22,6 +22,7 @@ public class BridgeTestContext {
     private String topicName;
     private HttpService httpService;
     private HttpService managementHttpService;
+    private HttpService oidcProviderHttpService;
     private AdminClientFacade adminClientFacade;
     private BasicKafkaClient basicKafkaClient;
     private String bridgeHost;
@@ -36,6 +37,7 @@ public class BridgeTestContext {
         topicName = "my-topic-" + RNG.nextInt(Integer.MAX_VALUE);
         httpService = BridgeExtension.getHttpService(extensionContext);
         managementHttpService = BridgeExtension.getManagementHttpService(extensionContext);
+        oidcProviderHttpService = KafkaExtension.getOidcProviderHttpService(extensionContext);
         adminClientFacade = AdminClientFacade.create(KafkaExtension.getKafkaCluster(extensionContext).getBootstrapServers());
         basicKafkaClient = new BasicKafkaClient(KafkaExtension.getKafkaCluster(extensionContext).getBootstrapServers());
         bridgeHost = BridgeExtension.getBridgeHost(extensionContext);
@@ -64,6 +66,15 @@ public class BridgeTestContext {
      */
     public HttpService getManagementHttpService() {
         return managementHttpService;
+    }
+
+    /**
+     * Returns the {@link HttpService} for the OIDC provider (Keycloak),
+     * or null if the OIDC provider is not enabled for the running tests.
+     * @return {@link HttpService} for the OIDC provider, null if not enabled.
+     */
+    public HttpService getOidcProviderHttpService() {
+        return oidcProviderHttpService;
     }
 
     /**

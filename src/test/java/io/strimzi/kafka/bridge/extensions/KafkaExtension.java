@@ -4,6 +4,11 @@
  */
 package io.strimzi.kafka.bridge.extensions;
 
+import io.strimzi.kafka.bridge.configuration.BrokerFile;
+import io.strimzi.kafka.bridge.configuration.ConfigEntry;
+import io.strimzi.kafka.bridge.configuration.KafkaConfiguration;
+import io.strimzi.kafka.bridge.httpclient.HttpService;
+import io.strimzi.test.container.AuthenticationType;
 import io.strimzi.test.container.StrimziKafkaCluster;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,6 +16,11 @@ import org.junit.jupiter.api.extension.AfterClassTemplateInvocationCallback;
 import org.junit.jupiter.api.extension.BeforeClassTemplateInvocationCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterInfo;
+import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.utility.MountableFile;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,6 +40,18 @@ public class KafkaExtension implements
     private static final Boolean RUN_WITH_ALL_KAFKA_VERSIONS_ENV = Boolean.valueOf(System.getenv().getOrDefault("RUN_WITH_ALL_KAFKA_VERSIONS", "true"));
 
     private static final String KAFKA_CLUSTER_KEY = "kafkaCluster";
+
+    // OIDC provider (Keycloak) for the OAUTHBEARER-based authentication testing
+    private static final String OIDC_PROVIDER_CONTAINER_KEY = "oidcProviderContainer";
+    private static final String OIDC_PROVIDER_HOST = "keycloak";
+    private static final int OIDC_PROVIDER_PORT = 8080;
+    private static final String OIDC_PROVIDER_URI = "http://" + OIDC_PROVIDER_HOST + ":" + OIDC_PROVIDER_PORT;
+    private static final String OIDC_REALM = "test";
+    private static final String OIDC_CLIENT_ID = "kafka-broker";
+    private static final String OIDC_CLIENT_SECRET = "kafka-broker-secret";
+    private static final String OIDC_USERNAME_CLAIM = "preferred_username";
+    private static final String OIDC_ADMIN_USERNAME = "admin";
+    private static final String OIDC_ADMIN_PASSWORD = "admin";
 
     /**
      * Method returning list of Kafka versions for which we will run all the tests - because of the {@link org.junit.jupiter.params.ParameterizedClass}.
@@ -116,6 +138,12 @@ public class KafkaExtension implements
         if (kafka != null) {
             kafka.stop();
         }
+
+        GenericContainer<?> oidcProvider = getStore(extensionContext)
+            .get(OIDC_PROVIDER_CONTAINER_KEY, GenericContainer.class);
+        if (oidcProvider != null) {
+            oidcProvider.stop();
+        }
     }
 
     /**
@@ -138,10 +166,119 @@ public class KafkaExtension implements
             LOGGER.info("Using latest Kafka version from test container");
         }
 
+        applyKafkaConfiguration(extensionContext, kafkaBuilder);
+
         StrimziKafkaCluster kafkaCluster = kafkaBuilder.build();
+
+        // podman's API socket may close idle keep-alive connections while the OIDC provider
+        // (Keycloak) is starting: issue an idempotent request so that a stale connection from
+        // the client pool is evicted before creating the Kafka container
+        // (the container creation request is a POST, which is not retried by the HTTP client)
+        DockerClientFactory.lazyClient().infoCmd().exec();
+
         kafkaCluster.start();
 
         getStore(extensionContext).put(KAFKA_CLUSTER_KEY, kafkaCluster);
+    }
+
+    /**
+     * Applies the Kafka configuration from the {@link KafkaConfiguration} annotation (if present on the test class):
+     * additional Kafka broker properties and, when requested, the OIDC provider (Keycloak)
+     * (which must be started before the Kafka cluster, since the broker fetches the access tokens
+     * for the inter-broker connections from it during startup).
+     *
+     * @param extensionContext  context of the test.
+     * @param kafkaBuilder      builder of the Kafka cluster to which applying the configuration.
+     */
+    private void applyKafkaConfiguration(ExtensionContext extensionContext, StrimziKafkaCluster.StrimziKafkaClusterBuilder kafkaBuilder) {
+        KafkaConfiguration kafkaConfiguration = extensionContext.getRequiredTestClass().getAnnotation(KafkaConfiguration.class);
+        if (kafkaConfiguration == null) {
+            return;
+        }
+
+        Map<String, String> additionalKafkaConfiguration = new HashMap<>();
+        for (ConfigEntry configEntry : kafkaConfiguration.additionalProperties()) {
+            additionalKafkaConfiguration.put(configEntry.key(), configEntry.value());
+        }
+        if (!additionalKafkaConfiguration.isEmpty()) {
+            kafkaBuilder.withAdditionalKafkaConfiguration(additionalKafkaConfiguration);
+        }
+
+        BrokerFile[] files = kafkaConfiguration.files();
+        if (files.length > 0) {
+            kafkaBuilder.withContainerCustomizer(container -> {
+                for (BrokerFile file : files) {
+                    container.withCopyFileToContainer(
+                        MountableFile.forClasspathResource(file.resource(), 0644), file.path());
+                }
+            });
+        }
+
+        if (kafkaConfiguration.withOidcProvider()) {
+            startOidcProvider(extensionContext);
+            kafkaBuilder.withOAuthConfig(OIDC_REALM, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_PROVIDER_URI, OIDC_USERNAME_CLAIM)
+                .withAuthenticationType(AuthenticationType.OAUTH_BEARER);
+        }
+    }
+
+    /**
+     * Starts the Keycloak container as OIDC provider for the OAUTHBEARER-based authentication.
+     * The realm (and the client used by the broker for the inter-broker connections) is imported
+     * from the realm file in the test resources. The hostname is fixed to the in-network address,
+     * so that the access tokens have a consistent issuer regardless of how the clients
+     * (the broker via the shared network, the tests via the mapped port) reach the provider.
+     * The container is stored in the extension context for being stopped after the tests.
+     *
+     * @param extensionContext  context of the test.
+     */
+    private void startOidcProvider(ExtensionContext extensionContext) {
+        LOGGER.info("Starting Keycloak OIDC provider");
+
+        GenericContainer<?> keycloak = new GenericContainer<>("quay.io/keycloak/keycloak:26.3")
+            .withNetwork(Network.SHARED)
+            .withNetworkAliases(OIDC_PROVIDER_HOST)
+            .withExposedPorts(OIDC_PROVIDER_PORT)
+            .withEnv("KC_BOOTSTRAP_ADMIN_USERNAME", OIDC_ADMIN_USERNAME)
+            .withEnv("KC_BOOTSTRAP_ADMIN_PASSWORD", OIDC_ADMIN_PASSWORD)
+            .withCommand("start-dev", "--import-realm", "--hostname=" + OIDC_PROVIDER_URI)
+            .withCopyFileToContainer(
+                MountableFile.forClasspathResource("oidc/keycloak-realm.json", 0644),
+                "/opt/keycloak/data/import/realm-test.json"
+            )
+            .waitingFor(Wait.forHttp("/realms/" + OIDC_REALM));
+
+        keycloak.start();
+
+        getStore(extensionContext).put(OIDC_PROVIDER_CONTAINER_KEY, keycloak);
+    }
+
+    /**
+     * Returns an {@link HttpService} for the OIDC provider, or null if the provider
+     * is not enabled for the currently running tests.
+     *
+     * @param extensionContext  context of the test.
+     *
+     * @return  {@link HttpService} for the OIDC provider, null if not enabled.
+     */
+    public static HttpService getOidcProviderHttpService(ExtensionContext extensionContext) {
+        GenericContainer<?> keycloak = extensionContext.getStore(ExtensionContext.Namespace.GLOBAL)
+            .get(OIDC_PROVIDER_CONTAINER_KEY, GenericContainer.class);
+        return keycloak == null ? null : new HttpService("localhost", keycloak.getMappedPort(OIDC_PROVIDER_PORT));
+    }
+
+    /**
+     * Returns the mapped port of the OIDC provider (Keycloak), or null if the provider
+     * is not enabled for the currently running tests. Used for resolving the
+     * {@code ${oidc.provider.port}} placeholder in the bridge configuration properties.
+     *
+     * @param extensionContext  context of the test.
+     *
+     * @return mapped port of the OIDC provider, null if not enabled.
+     */
+    public static Integer getOidcProviderPort(ExtensionContext extensionContext) {
+        GenericContainer<?> keycloak = extensionContext.getStore(ExtensionContext.Namespace.GLOBAL)
+            .get(OIDC_PROVIDER_CONTAINER_KEY, GenericContainer.class);
+        return keycloak == null ? null : keycloak.getMappedPort(OIDC_PROVIDER_PORT);
     }
 
     /**

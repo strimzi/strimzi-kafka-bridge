@@ -69,6 +69,8 @@
 		<fasterxml.jackson-core.version>2.22.4</fasterxml.jackson-core.version>
 		<fasterxml.jackson-databind.version>2.22.4</fasterxml.jackson-databind.version>
 		<strimzi-oauth.version>0.18.1</strimzi-oauth.version>
+		<nimbus-jose-jwt.version>10.0.2</nimbus-jose-jwt.version>
+		<oauth2-oidc-sdk.version>11.26</oauth2-oidc-sdk.version>
 		<strimzi-metrics-reporter.version>0.4.0</strimzi-metrics-reporter.version>
 		<opentelemetry.version>1.67.0</opentelemetry.version>
 		<opentelemetry.instrumentation.version>1.32.0-alpha</opentelemetry.instrumentation.version>
@@ -87,6 +89,7 @@
 		<mockito.version>5.21.0</mockito.version>
 		<strimzi-test-container.version>0.118.0</strimzi-test-container.version>
         <test-container.version>2.0.2</test-container.version>
+                <docker-java-api.version>3.7.0</docker-java-api.version>
 		<!-- property to skip surefire tests during failsafe execution -->
 		<!--suppress UnresolvedMavenProperty -->
 		<skip.surefire.tests>${skipTests}</skip.surefire.tests>
@@ -168,6 +171,16 @@
 			<groupId>io.strimzi</groupId>
 			<artifactId>kafka-oauth-client</artifactId>
 			<version>${strimzi-oauth.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.nimbusds</groupId>
+			<artifactId>nimbus-jose-jwt</artifactId>
+			<version>${nimbus-jose-jwt.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.nimbusds</groupId>
+			<artifactId>oauth2-oidc-sdk</artifactId>
+			<version>${oauth2-oidc-sdk.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.opentelemetry</groupId>
@@ -366,12 +379,12 @@
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.hamcrest</groupId>
 			<artifactId>hamcrest</artifactId>
@@ -394,6 +407,12 @@
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
 			<version>${test-container.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.github.docker-java</groupId>
+			<artifactId>docker-java-api</artifactId>
+			<version>${docker-java-api.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

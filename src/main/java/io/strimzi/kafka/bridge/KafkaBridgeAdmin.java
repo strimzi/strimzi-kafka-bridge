@@ -5,6 +5,10 @@
 
 package io.strimzi.kafka.bridge;
 
+import io.strimzi.kafka.bridge.auth.AuthCredentials;
+import io.strimzi.kafka.bridge.auth.SaslAuth;
+import io.strimzi.kafka.bridge.config.AuthenticationConfig;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.Config;
@@ -33,25 +37,40 @@ public class KafkaBridgeAdmin {
     private static final Logger LOGGER = LogManager.getLogger(KafkaBridgeAdmin.class);
 
     private final KafkaConfig kafkaConfig;
+    private final AuthenticationConfig authenticationConfig;
     private Admin adminClient;
 
     /**
      * Constructor
      *
-     * @param kafkaConfig Kafka configuration
+     * @param bridgeConfig bridge configuration
      */
-    public KafkaBridgeAdmin(KafkaConfig kafkaConfig) {
-        this.kafkaConfig = kafkaConfig;
+    public KafkaBridgeAdmin(BridgeConfig bridgeConfig) {
+        this.kafkaConfig = bridgeConfig.getKafkaConfig();
+        this.authenticationConfig = bridgeConfig.getAuthenticationConfig();
     }
 
     /**
      * Create the internal Kafka Admin client instance with the Kafka admin related configuration
      */
     public void create() {
+        create(null);
+    }
+
+    /**
+     * Create the internal Kafka Admin client instance with the Kafka admin related configuration.
+     * When authentication credentials are provided, the authentication related properties
+     * for authenticating the admin client against the Kafka cluster are added to the Kafka client configuration.
+     *
+     * @param authCredentials authentication credentials coming from the HTTP request for passthrough (null if not enabled)
+     */
+    public void create(AuthCredentials authCredentials) {
         // create an admin client
         Properties props = new Properties();
         props.putAll(this.kafkaConfig.getConfig());
         props.putAll(this.kafkaConfig.getAdminConfig().getConfig());
+
+        SaslAuth.addSaslProperties(props, this.authenticationConfig, authCredentials);
 
         this.adminClient = Admin.create(props);
     }

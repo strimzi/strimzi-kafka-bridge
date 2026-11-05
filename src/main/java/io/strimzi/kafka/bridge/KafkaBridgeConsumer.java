@@ -5,6 +5,10 @@
 
 package io.strimzi.kafka.bridge;
 
+import io.strimzi.kafka.bridge.auth.AuthCredentials;
+import io.strimzi.kafka.bridge.auth.SaslAuth;
+import io.strimzi.kafka.bridge.config.AuthenticationConfig;
+import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConfig;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -33,6 +37,7 @@ public class KafkaBridgeConsumer<K, V> {
     private static final Logger LOGGER = LogManager.getLogger(KafkaBridgeConsumer.class);
 
     private final KafkaConfig kafkaConfig;
+    private final AuthenticationConfig authenticationConfig;
     private final Deserializer<K> keyDeserializer;
     private final Deserializer<V> valueDeserializer;
     private Consumer<K, V> consumer;
@@ -42,12 +47,13 @@ public class KafkaBridgeConsumer<K, V> {
     /**
      * Constructor
      *
-     * @param kafkaConfig Kafka configuration
+     * @param bridgeConfig bridge configuration
      * @param keyDeserializer Kafka deserializer for the message key
      * @param valueDeserializer Kafka deserializer for the message value
      */
-    public KafkaBridgeConsumer(KafkaConfig kafkaConfig, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
-        this.kafkaConfig = kafkaConfig;
+    public KafkaBridgeConsumer(BridgeConfig bridgeConfig, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
+        this.kafkaConfig = bridgeConfig.getKafkaConfig();
+        this.authenticationConfig = bridgeConfig.getAuthenticationConfig();
         this.keyDeserializer = keyDeserializer;
         this.valueDeserializer = valueDeserializer;
     }
@@ -69,6 +75,20 @@ public class KafkaBridgeConsumer<K, V> {
      * @param groupId consumer group coming as query parameter from the HTTP request
      */
     public void create(Properties config, String groupId) {
+        create(config, groupId, null);
+    }
+
+    /**
+     * Create the internal Kafka Consumer client instance with the Kafka consumer related configuration.
+     * It should be the first call for preparing the Kafka consumer.
+     * When authentication credentials are provided, the authentication related properties
+     * for authenticating the consumer against the Kafka cluster are added to the Kafka client configuration.
+     *
+     * @param config consumer configuration coming from the HTTP request (JSON body)
+     * @param groupId consumer group coming as query parameter from the HTTP request
+     * @param authCredentials authentication credentials coming from the HTTP request for passthrough (null if not enabled)
+     */
+    public void create(Properties config, String groupId, AuthCredentials authCredentials) {
         // create a consumer
         Properties props = new Properties();
         props.putAll(this.kafkaConfig.getConfig());
@@ -77,6 +97,8 @@ public class KafkaBridgeConsumer<K, V> {
 
         if (config != null)
             props.putAll(config);
+
+        SaslAuth.addSaslProperties(props, this.authenticationConfig, authCredentials);
 
         this.consumer = new KafkaConsumer<>(props, keyDeserializer, valueDeserializer);
     }

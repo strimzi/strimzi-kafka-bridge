@@ -8,9 +8,15 @@ package io.strimzi.kafka.bridge.http;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalNotification;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.KafkaBridgeAdmin;
+import io.strimzi.kafka.bridge.auth.AuthCredentials;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.http.converter.JsonUtils;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
@@ -30,6 +36,7 @@ import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -46,59 +53,120 @@ import java.util.function.Consumer;
 public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
     private static final Logger LOGGER = LogManager.getLogger(HttpAdminBridgeEndpoint.class);
 
+    /** Maximum number of admin clients cached per authentication credentials in passthrough mode */
+    private static final int MAX_CACHED_ADMINS = 100;
+
+    /** Period without requests after which a cached admin client is closed and evicted */
+    private static final Duration CACHED_ADMINS_EXPIRE_AFTER_ACCESS = Duration.ofMinutes(10);
+
     private final HttpBridgeContext<?, ?> httpBridgeContext;
-    private final KafkaBridgeAdmin kafkaBridgeAdmin;
+    private KafkaBridgeAdmin kafkaBridgeAdmin;
+    /** the Micrometer registry for the admin client cache metrics (null when disabled) */
+    private final MeterRegistry registry;
+    // Kafka admin clients cached per authentication credentials when the passthrough authentication
+    // is enabled: bounded and with idle eviction, because every distinct access token coming from
+    // the HTTP requests would otherwise accumulate a new admin client (with its connections) for
+    // the whole bridge lifetime. The evicted admin clients are closed (see the removal listener);
+    // a request still holding an evicted (closed) admin client fails and can be retried
+    private final Cache<AuthCredentials, KafkaBridgeAdmin> kafkaBridgeAdmins;
+
+    /** Name of the cache entries gauge (shared convention, see OidcTokenValidator) */
+    private static final String CACHE_ENTRIES_METRIC = "strimzi.bridge.auth.cache.entries";
+
+    /** Name of the cache evictions counter (shared convention, see OidcTokenValidator) */
+    private static final String CACHE_EVICTIONS_METRIC = "strimzi.bridge.auth.cache.evictions";
 
     /**
      * Constructor
      *
      * @param bridgeConfig the bridge configuration
      * @param context the HTTP bridge context
+     * @param registry the Micrometer registry for the admin client cache metrics
+     *                 (null when the metrics are disabled)
      */
-    public HttpAdminBridgeEndpoint(BridgeConfig bridgeConfig, HttpBridgeContext<?, ?> context) {
+    public HttpAdminBridgeEndpoint(BridgeConfig bridgeConfig, HttpBridgeContext<?, ?> context,
+                                   MeterRegistry registry) {
         super(bridgeConfig);
         this.name = "kafka-bridge-admin";
         this.httpBridgeContext = context;
-        this.kafkaBridgeAdmin = new KafkaBridgeAdmin(bridgeConfig.getKafkaConfig());
+        this.kafkaBridgeAdmins = CacheBuilder.newBuilder()
+                .maximumSize(MAX_CACHED_ADMINS)
+                .expireAfterAccess(CACHED_ADMINS_EXPIRE_AFTER_ACCESS)
+                .removalListener(this::onAdminEvicted)
+                .build();
+        if (registry != null) {
+            registry.gauge(CACHE_ENTRIES_METRIC, Tags.of("cache", "admin"),
+                    this.kafkaBridgeAdmins, cache -> cache.size());
+        }
+        this.registry = registry;
     }
 
     @Override
     public void open() {
-        this.kafkaBridgeAdmin.create();
+        // when the passthrough authentication is enabled, the admin clients are created lazily,
+        // one per authentication credentials, because the credentials are only known when a request comes in
+        if (!this.bridgeConfig.getAuthenticationConfig().isPassthrough()) {
+            this.kafkaBridgeAdmin = new KafkaBridgeAdmin(this.bridgeConfig);
+            this.kafkaBridgeAdmin.create();
+        }
     }
 
     @Override
     public void close() {
-        this.kafkaBridgeAdmin.close();
+        if (this.kafkaBridgeAdmin != null) {
+            this.kafkaBridgeAdmin.close();
+        }
+        // the removal listener closes the cached admin clients
+        this.kafkaBridgeAdmins.invalidateAll();
         super.close();
+    }
+
+    /**
+     * Close the admin client of an evicted cache entry (size limit reached or idle
+     * expiration) and count the eviction (explicit removals at shutdown are not
+     * counted as evictions)
+     *
+     * @param notification the removal notification with the evicted admin client
+     */
+    private void onAdminEvicted(RemovalNotification<AuthCredentials, KafkaBridgeAdmin> notification) {
+        String cause = notification.getCause().name();
+        if (this.registry != null && (cause.equals("EXPIRED") || cause.equals("SIZE"))) {
+            this.registry.counter(CACHE_EVICTIONS_METRIC, "cache", "admin").increment();
+        }
+        KafkaBridgeAdmin admin = notification.getValue();
+        if (admin != null) {
+            LOGGER.trace("Closing the cached admin client of evicted credentials");
+            admin.close();
+        }
     }
 
     @Override
     public void handle(RoutingContext routingContext, Consumer<HttpBridgeEndpoint> handler) {
         LOGGER.trace("HttpAdminClientEndpoint handle thread {}", Thread.currentThread());
+        KafkaBridgeAdmin kafkaBridgeAdmin = admin(routingContext);
         switch (this.httpBridgeContext.getOpenApiOperation()) {
             case LIST_TOPICS:
-                doListTopics(routingContext);
+                doListTopics(kafkaBridgeAdmin, routingContext);
                 break;
 
             case GET_TOPIC:
-                doGetTopic(routingContext);
+                doGetTopic(kafkaBridgeAdmin, routingContext);
                 break;
 
             case CREATE_TOPIC:
-                doCreateTopic(routingContext);
+                doCreateTopic(kafkaBridgeAdmin, routingContext);
                 break;
 
             case LIST_PARTITIONS:
-                doListPartitions(routingContext);
+                doListPartitions(kafkaBridgeAdmin, routingContext);
                 break;
 
             case GET_PARTITION:
-                doGetPartition(routingContext);
+                doGetPartition(kafkaBridgeAdmin, routingContext);
                 break;
 
             case GET_OFFSETS:
-                doGetOffsets(routingContext);
+                doGetOffsets(kafkaBridgeAdmin, routingContext);
                 break;
 
             default:
@@ -108,12 +176,34 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
     }
 
     /**
-     * List all the topics
+     * Get the Kafka admin client to use for handling the request.
+     * When the passthrough authentication is enabled, an admin client is created lazily
+     * (and cached) per authentication credentials coming from the HTTP request.
      *
      * @param routingContext the routing context
+     * @return the Kafka admin client
      */
-    public void doListTopics(RoutingContext routingContext) {
-        this.kafkaBridgeAdmin.listTopics()
+    private KafkaBridgeAdmin admin(RoutingContext routingContext) {
+        if (this.bridgeConfig.getAuthenticationConfig().isPassthrough()) {
+            AuthCredentials authCredentials =
+                    (AuthCredentials) routingContext.data().get(HttpBridgeContext.AUTH_CREDENTIALS);
+            return this.kafkaBridgeAdmins.asMap().computeIfAbsent(authCredentials, credentials -> {
+                KafkaBridgeAdmin admin = new KafkaBridgeAdmin(this.bridgeConfig);
+                admin.create(credentials);
+                return admin;
+            });
+        }
+        return this.kafkaBridgeAdmin;
+    }
+
+    /**
+     * List all the topics
+     *
+     * @param kafkaBridgeAdmin the Kafka admin client
+     * @param routingContext the routing context
+     */
+    public void doListTopics(KafkaBridgeAdmin kafkaBridgeAdmin, RoutingContext routingContext) {
+        kafkaBridgeAdmin.listTopics()
                 .whenComplete((topics, ex) -> {
                     LOGGER.trace("List topics handler thread {}", Thread.currentThread());
                     if (ex == null) {
@@ -134,13 +224,14 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
     /**
      * Get information about the topic in the HTTP request
      *
+     * @param kafkaBridgeAdmin the Kafka admin client
      * @param routingContext the routing context
      */
-    public void doGetTopic(RoutingContext routingContext) {
+    public void doGetTopic(KafkaBridgeAdmin kafkaBridgeAdmin, RoutingContext routingContext) {
         String topicName = routingContext.pathParam("topicname");
 
-        CompletionStage<Map<String, TopicDescription>> describeTopicsPromise = this.kafkaBridgeAdmin.describeTopics(List.of(topicName));
-        CompletionStage<Map<ConfigResource, Config>> describeConfigsPromise = this.kafkaBridgeAdmin.describeConfigs(List.of(new ConfigResource(ConfigResource.Type.TOPIC, topicName)));
+        CompletionStage<Map<String, TopicDescription>> describeTopicsPromise = kafkaBridgeAdmin.describeTopics(List.of(topicName));
+        CompletionStage<Map<ConfigResource, Config>> describeConfigsPromise = kafkaBridgeAdmin.describeConfigs(List.of(new ConfigResource(ConfigResource.Type.TOPIC, topicName)));
 
         CompletableFuture.allOf(describeTopicsPromise.toCompletableFuture(), describeConfigsPromise.toCompletableFuture())
                 .whenComplete((v, ex) -> {
@@ -172,9 +263,10 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
     /**
      * Create a topic with described name, partitions count, and replication factor in the body of the HTTP request
      *
+     * @param kafkaBridgeAdmin the Kafka admin client
      * @param routingContext the routing context
      */
-    public void doCreateTopic(RoutingContext routingContext) {
+    public void doCreateTopic(KafkaBridgeAdmin kafkaBridgeAdmin, RoutingContext routingContext) {
         ValidatedRequest validatedRequest =
                 routingContext.get(RouterBuilder.KEY_META_DATA_VALIDATED_REQUEST);
         JsonObject jsonBody = validatedRequest.getBody().getJsonObject();
@@ -194,7 +286,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
         Optional<Short> replicationFactor = Optional.ofNullable(jsonBody.getInteger("replication_factor"))
                 .map(Integer::shortValue);
 
-        this.kafkaBridgeAdmin.createTopic(topicName, partitionsCount, replicationFactor)
+        kafkaBridgeAdmin.createTopic(topicName, partitionsCount, replicationFactor)
                 .whenComplete(((topic, exception) -> {
                     LOGGER.trace("Create topic handler thread {}", Thread.currentThread());
                     if (exception == null) {
@@ -215,11 +307,12 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
     /**
      * Get partitions information related to the topic in the HTTP request
      *
+     * @param kafkaBridgeAdmin the Kafka admin client
      * @param routingContext the routing context
      */
-    public void doListPartitions(RoutingContext routingContext) {
+    public void doListPartitions(KafkaBridgeAdmin kafkaBridgeAdmin, RoutingContext routingContext) {
         String topicName = routingContext.pathParam("topicname");
-        this.kafkaBridgeAdmin.describeTopics(List.of(topicName))
+        kafkaBridgeAdmin.describeTopics(List.of(topicName))
                 .whenComplete((topicDescriptions, ex) -> {
                     LOGGER.trace("List partitions handler thread {}", Thread.currentThread());
                     if (ex == null) {
@@ -238,9 +331,10 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
     /**
      * Get information about a specific topic partition in the HTTP request
      *
+     * @param kafkaBridgeAdmin the Kafka admin client
      * @param routingContext the routing context
      */
-    public void doGetPartition(RoutingContext routingContext) {
+    public void doGetPartition(KafkaBridgeAdmin kafkaBridgeAdmin, RoutingContext routingContext) {
         String topicName = routingContext.pathParam("topicname");
         final int partitionId;
         try {
@@ -253,7 +347,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                     BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
             return;
         }
-        this.kafkaBridgeAdmin.describeTopics(List.of(topicName))
+        kafkaBridgeAdmin.describeTopics(List.of(topicName))
                 .whenComplete((topicDescriptions, ex) -> {
                     LOGGER.trace("Get partition handler thread {}", Thread.currentThread());
                     if (ex == null) {
@@ -278,9 +372,10 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
     /**
      * Get offsets information about a specific topic partition in the HTTP request
      *
+     * @param kafkaBridgeAdmin the Kafka admin client
      * @param routingContext the routing context
      */
-    public void doGetOffsets(RoutingContext routingContext) {
+    public void doGetOffsets(KafkaBridgeAdmin kafkaBridgeAdmin, RoutingContext routingContext) {
         String topicName = routingContext.pathParam("topicname");
         final int partitionId;
         try {
@@ -295,7 +390,7 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
         }
         TopicPartition topicPartition = new TopicPartition(topicName, partitionId);
 
-        CompletionStage<Map<String, TopicDescription>> topicExistenceCheckPromise = this.kafkaBridgeAdmin.describeTopics(List.of(topicName));
+        CompletionStage<Map<String, TopicDescription>> topicExistenceCheckPromise = kafkaBridgeAdmin.describeTopics(List.of(topicName));
         topicExistenceCheckPromise.whenComplete((topicDescriptions, t) -> {
             Throwable e = null;
             if (t != null && t.getCause() instanceof UnknownTopicOrPartitionException) {
@@ -309,9 +404,9 @@ public class HttpAdminBridgeEndpoint extends HttpBridgeEndpoint {
                         BridgeContentType.KAFKA_JSON, JsonUtils.jsonToBytes(error.toJson()));
             } else {
                 Map<TopicPartition, OffsetSpec> topicPartitionBeginOffsets = Map.of(topicPartition, OffsetSpec.earliest());
-                CompletionStage<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> getBeginningOffsetsPromise = this.kafkaBridgeAdmin.listOffsets(topicPartitionBeginOffsets);
+                CompletionStage<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> getBeginningOffsetsPromise = kafkaBridgeAdmin.listOffsets(topicPartitionBeginOffsets);
                 Map<TopicPartition, OffsetSpec> topicPartitionEndOffsets = Map.of(topicPartition, OffsetSpec.latest());
-                CompletionStage<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> getEndOffsetsPromise = this.kafkaBridgeAdmin.listOffsets(topicPartitionEndOffsets);
+                CompletionStage<Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo>> getEndOffsetsPromise = kafkaBridgeAdmin.listOffsets(topicPartitionEndOffsets);
 
                 CompletableFuture.allOf(getBeginningOffsetsPromise.toCompletableFuture(), getEndOffsetsPromise.toCompletableFuture())
                         .whenComplete((v, ex) -> {

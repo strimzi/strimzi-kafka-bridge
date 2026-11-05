@@ -1,0 +1,83 @@
+// Module included in the following assemblies:
+//
+// assembly-http-bridge-config.adoc
+
+[id='proc-configuring-http-bridge-basic-auth-{context}']
+= Configuring HTTP Basic authentication
+
+[role="_abstract"]
+This procedure describes how to configure the HTTP Bridge for HTTP Basic authentication, so that
+the username and password provided by HTTP clients in the `Authorization` header (Basic scheme) of their
+requests are used for authenticating the internal Kafka clients against the Kafka cluster.
+
+The credentials are *not* validated by the bridge: the Kafka cluster (which must be configured with a
+SASL PLAIN or SCRAM listener) is responsible for validating them.
+
+[source,http]
+----
+Authorization: Basic <base64-encoded username:password>
+----
+
+Because Kafka clients are long-lived, the credentials semantics are the following:
+
+* *Producer* requests: the producer authenticates with the credentials provided in the first request of the
+connection. If a subsequent request on the same connection provides different credentials, the internal
+producer is recreated with the new credentials.
+* *Consumer* requests: the consumer authenticates with the credentials provided in the request that created
+it (`POST /consumers/{groupid}`). The consumer keeps these credentials until it is deleted.
+* *Admin* requests: an admin client is created and cached per set of credentials.
+
+.Prerequisites
+
+* xref:proc-downloading-http-bridge-{context}[The HTTP Bridge installation archive is downloaded]
+* The Kafka cluster is configured with a SASL PLAIN or SCRAM listener for validating the credentials
+
+.Procedure
+
+. Edit the `application.properties` file provided with the HTTP Bridge installation archive.
+
+.. Configure the Kafka-related properties for the SASL-based connection to the Kafka cluster.
++
+For example, with a SASL SSL listener using the SCRAM-SHA-512 mechanism:
++
+--
+[source,properties]
+----
+kafka.bootstrap.servers=my-cluster-kafka-bootstrap:9093
+kafka.security.protocol=SASL_SSL
+kafka.sasl.mechanism=SCRAM-SHA-512
+----
+--
+
++
+NOTE: The bridge automatically injects the SASL JAAS configuration with the username and password coming
+from the HTTP requests. You only need to configure the connection protocol (`security.protocol`) and the
+SASL mechanism (`sasl.mechanism`), which must match the Kafka cluster listener.
+
+.. Enable the HTTP Basic authentication.
++
+For example:
++
+--
+[source,properties]
+----
+authentication.type=basic
+----
+* `authentication.type` enables the HTTP Basic authentication when set to `basic`.
+* `authentication.sasl.mechanism` optionally defines the SASL mechanism used for authenticating the
+internal Kafka clients (PLAIN, SCRAM-SHA-256 or SCRAM-SHA-512). If not set, the `kafka.sasl.mechanism`
+provided in the Kafka-related configuration is used, defaulting to `PLAIN`.
+--
+
+. Save the configuration file.
+
+.Authentication related configurations
+|====
+|Name |Descriptions
+
+|authentication.type
+|Authentication type. Set to `basic` to enable the HTTP Basic authentication. Not enabled by default.
+
+|authentication.sasl.mechanism
+|SASL mechanism used for authenticating the internal Kafka clients with the provided credentials: PLAIN, SCRAM-SHA-256 or SCRAM-SHA-512. If not set, the `kafka.sasl.mechanism` in the Kafka-related configuration is used, defaulting to `PLAIN`.
+|====

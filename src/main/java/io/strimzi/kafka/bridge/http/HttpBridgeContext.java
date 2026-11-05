@@ -20,6 +20,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class HttpBridgeContext<K, V> {
 
+    /** Key in the routing context data for the authentication credentials passed through from the HTTP request */
+    public static final String AUTH_CREDENTIALS = "auth.credentials";
+
     private final Map<ConsumerInstanceId, HttpSinkBridgeEndpoint<K, V>> httpSinkEndpoints = new ConcurrentHashMap<>();
     private final Map<HttpConnection, HttpSourceBridgeEndpoint<K, V>> httpSourceEndpoints = new ConcurrentHashMap<>();
     private HttpAdminBridgeEndpoint httpAdminBridgeEndpoint;

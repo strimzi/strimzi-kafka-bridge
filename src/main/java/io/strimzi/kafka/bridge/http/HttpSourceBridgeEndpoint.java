@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.KafkaBridgeProducer;
+import io.strimzi.kafka.bridge.auth.AuthCredentials;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import io.strimzi.kafka.bridge.http.converter.HttpBinaryMessageConverter;
@@ -53,21 +54,33 @@ public class HttpSourceBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
     private MessageConverter<K, V, byte[], byte[]> messageConverter;
     private boolean closing;
     private final KafkaBridgeProducer<K, V> kafkaBridgeProducer;
+    private final AuthCredentials authCredentials;
     private String contentType;
     private final ExecutorService asyncExecutor;
 
     HttpSourceBridgeEndpoint(BridgeConfig bridgeConfig, Serializer<K> keySerializer, Serializer<V> valueSerializer,
-                             ExecutorService asyncExecutor) {
+                             ExecutorService asyncExecutor, AuthCredentials authCredentials) {
         super(bridgeConfig);
-        this.kafkaBridgeProducer = new KafkaBridgeProducer<>(bridgeConfig.getKafkaConfig(), keySerializer, valueSerializer);
+        this.kafkaBridgeProducer = new KafkaBridgeProducer<>(bridgeConfig, keySerializer, valueSerializer);
         this.asyncExecutor = asyncExecutor;
+        this.authCredentials = authCredentials;
+    }
+
+    /**
+     * Get the authentication credentials passed through from the HTTP request
+     * for authenticating the internal Kafka producer against the Kafka cluster.
+     *
+     * @return the authentication credentials (null if the passthrough authentication is not enabled)
+     */
+    public AuthCredentials authCredentials() {
+        return this.authCredentials;
     }
 
     @Override
     public void open() {
         this.name = this.bridgeConfig.getBridgeID() == null ? "kafka-bridge-producer-" + UUID.randomUUID() : this.bridgeConfig.getBridgeID() + "-" + UUID.randomUUID();
         this.closing = false;
-        this.kafkaBridgeProducer.create();
+        this.kafkaBridgeProducer.create(this.authCredentials);
     }
 
     @Override
