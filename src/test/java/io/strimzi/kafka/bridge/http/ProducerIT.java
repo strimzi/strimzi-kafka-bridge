@@ -4,9 +4,6 @@
  */
 package io.strimzi.kafka.bridge.http;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
@@ -27,6 +24,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.net.http.HttpResponse;
 import java.util.Base64;

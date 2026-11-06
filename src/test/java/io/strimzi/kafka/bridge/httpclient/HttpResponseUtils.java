@@ -4,17 +4,17 @@
  */
 package io.strimzi.kafka.bridge.httpclient;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 
 public class HttpResponseUtils {
     private static final Logger LOGGER = LogManager.getLogger(HttpResponseUtils.class);
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final JsonMapper OBJECT_MAPPER = new JsonMapper();
 
     public static JsonNode getResponseAsJsonNode(String response) {
         try {

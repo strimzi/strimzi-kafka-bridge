@@ -4,8 +4,6 @@
  */
 package io.strimzi.kafka.bridge.http;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
@@ -15,6 +13,8 @@ import io.strimzi.kafka.bridge.httpclient.HttpProducerService;
 import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
 import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.net.http.HttpResponse;
 import java.util.Optional;
@@ -116,7 +116,7 @@ public class MetricsIT extends AbstractIT {
 
         JsonNode receivedMessages = HttpResponseUtils.getResponseAsJsonNode(consumeResponse.body());
         assertThat(receivedMessages.size(), greaterThan(0));
-        assertThat(receivedMessages.get(0).get("value").asText(), is(sentBody));
+        assertThat(receivedMessages.get(0).get("value").asString(), is(sentBody));
 
         // check metrics after consumer activity
         HttpResponse<String> metricsResponse = bridgeTestContext.getManagementHttpService().get("/metrics");

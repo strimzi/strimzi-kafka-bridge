@@ -5,8 +5,8 @@
 
 package io.strimzi.kafka.bridge.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.common.serialization.Serializer;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Map;
 
@@ -23,7 +23,7 @@ public class KafkaJsonSerializer<T> implements Serializer<T> {
             return null;
         }
 
-        ObjectMapper objectMapper = new ObjectMapper();
+        JsonMapper objectMapper = new JsonMapper();
         try {
             return objectMapper.writeValueAsBytes(data);
         } catch (Exception e) {

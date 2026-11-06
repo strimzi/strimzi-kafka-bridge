@@ -4,15 +4,15 @@
  */
 package io.strimzi.kafka.bridge.httpclient;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Class as a base for HTTP clients - Producer and Consumer
  */
 public class HttpClientBaseService {
     protected final HttpService httpService;
-    protected final ObjectMapper objectMapper = new ObjectMapper();
+    protected final JsonMapper objectMapper = new JsonMapper();
 
     /**
      * Default constructor for the {@link HttpClientBaseService}.

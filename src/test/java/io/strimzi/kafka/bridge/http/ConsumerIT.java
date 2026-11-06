@@ -4,8 +4,6 @@
  */
 package io.strimzi.kafka.bridge.http;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.Constants;
@@ -22,6 +20,8 @@ import org.apache.kafka.common.header.internals.RecordHeader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
@@ -61,8 +61,8 @@ public class ConsumerIT extends AbstractIT {
 
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
-        assertThat(responseBody.get("instance_id").asText(), is(name));
-        assertThat(responseBody.get("base_uri").asText(), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, name))));
+        assertThat(responseBody.get("instance_id").asString(), is(name));
+        assertThat(responseBody.get("base_uri").asString(), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, name))));
 
         // delete consumer
         httpConsumerService.deleteConsumer(groupId, name);
@@ -94,8 +94,8 @@ public class ConsumerIT extends AbstractIT {
 
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
-        String consumerInstanceId = responseBody.get("instance_id").asText();
-        String consumerBaseUri = responseBody.get("base_uri").asText();
+        String consumerInstanceId = responseBody.get("instance_id").asString();
+        String consumerBaseUri = responseBody.get("base_uri").asString();
 
         assertThat(consumerInstanceId.startsWith(Constants.DEFAULT_BRIDGE_ID), is(true));
         assertThat(consumerBaseUri, is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, consumerInstanceId))));
@@ -212,8 +212,8 @@ public class ConsumerIT extends AbstractIT {
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
-        assertThat(responseBody.get("instance_id").asText(), is(name));
-        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
+        assertThat(responseBody.get("instance_id").asString(), is(name));
+        assertThat(responseBody.get("base_uri").asString(), is(baseUri));
 
         httpConsumerService.deleteConsumer(groupId, name);
     }
@@ -234,8 +234,8 @@ public class ConsumerIT extends AbstractIT {
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
-        assertThat(responseBody.get("instance_id").asText(), is(name));
-        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
+        assertThat(responseBody.get("instance_id").asString(), is(name));
+        assertThat(responseBody.get("base_uri").asString(), is(baseUri));
 
         httpConsumerService.deleteConsumer(groupId, name);
     }
@@ -259,8 +259,8 @@ public class ConsumerIT extends AbstractIT {
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
-        assertThat(responseBody.get("instance_id").asText(), is(name));
-        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
+        assertThat(responseBody.get("instance_id").asString(), is(name));
+        assertThat(responseBody.get("base_uri").asString(), is(baseUri));
 
         httpConsumerService.deleteConsumer(groupId, name);
     }
@@ -286,8 +286,8 @@ public class ConsumerIT extends AbstractIT {
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
-        assertThat(responseBody.get("instance_id").asText(), is(name));
-        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
+        assertThat(responseBody.get("instance_id").asString(), is(name));
+        assertThat(responseBody.get("base_uri").asString(), is(baseUri));
 
         httpConsumerService.deleteConsumer(groupId, name);
     }
@@ -308,8 +308,8 @@ public class ConsumerIT extends AbstractIT {
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
-        assertThat(responseBody.get("instance_id").asText(), is(name));
-        assertThat(responseBody.get("base_uri").asText(), is(baseUri));
+        assertThat(responseBody.get("instance_id").asString(), is(name));
+        assertThat(responseBody.get("base_uri").asString(), is(baseUri));
 
         httpConsumerService.deleteConsumer(groupId, name);
     }
@@ -410,8 +410,8 @@ public class ConsumerIT extends AbstractIT {
 
         JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("topic").asString(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asString(), is(sentBody));
         assertThat(receivedMessage.get("offset").asLong(), is(0L));
         assertThat(receivedMessage.get("partition"), notNullValue());
         assertThat(receivedMessage.get("key").isNull(), is(true));
@@ -473,8 +473,8 @@ public class ConsumerIT extends AbstractIT {
 
         JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("topic").asString(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asString(), is(sentBody));
         assertThat(receivedMessage.get("offset").asLong(), is(0L));
         assertThat(receivedMessage.get("partition"), notNullValue());
         assertThat(receivedMessage.get("key").isNull(), is(true));
@@ -508,25 +508,25 @@ public class ConsumerIT extends AbstractIT {
 
         JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("topic").asString(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asString(), is(sentBody));
         assertThat(receivedMessage.get("offset").asLong(), is(0L));
         assertThat(receivedMessage.get("partition"), notNullValue());
         assertThat(receivedMessage.get("key").isNull(), is(true));
 
         JsonNode messageHeaders = receivedMessage.get("headers");
         assertThat(messageHeaders.size(), is(3));
-        assertThat(messageHeaders.get(0).get("key").asText(), is("key1"));
+        assertThat(messageHeaders.get(0).get("key").asString(), is("key1"));
         assertThat(new String(Base64.getDecoder().decode(
-            messageHeaders.get(0).get("value").asText())), is("value1"));
+            messageHeaders.get(0).get("value").asString())), is("value1"));
 
-        assertThat(messageHeaders.get(1).get("key").asText(), is("key2"));
+        assertThat(messageHeaders.get(1).get("key").asString(), is("key2"));
         assertThat(new String(Base64.getDecoder().decode(
-            messageHeaders.get(1).get("value").asText())), is("value2"));
+            messageHeaders.get(1).get("value").asString())), is("value2"));
 
-        assertThat(messageHeaders.get(2).get("key").asText(), is("key3"));
+        assertThat(messageHeaders.get(2).get("key").asString(), is("key3"));
         assertThat(new String(Base64.getDecoder().decode(
-            messageHeaders.get(2).get("value").asText())), is("value3"));
+            messageHeaders.get(2).get("value").asString())), is("value3"));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -558,23 +558,23 @@ public class ConsumerIT extends AbstractIT {
 
         JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("topic").asString(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asString(), is(sentBody));
         assertThat(receivedMessage.get("key").isNull(), is(true));
 
         JsonNode messageHeaders = receivedMessage.get("headers");
         assertThat(messageHeaders.size(), is(3));
 
-        assertThat(messageHeaders.get(0).get("key").asText(), is("key1"));
+        assertThat(messageHeaders.get(0).get("key").asString(), is("key1"));
         assertThat(new String(Base64.getDecoder().decode(
-            messageHeaders.get(0).get("value").asText())), is("value1"));
+            messageHeaders.get(0).get("value").asString())), is("value1"));
 
-        assertThat(messageHeaders.get(1).get("key").asText(), is("key-with-null-value"));
+        assertThat(messageHeaders.get(1).get("key").asString(), is("key-with-null-value"));
         assertThat(messageHeaders.get(1).get("value").isNull(), is(true));
 
-        assertThat(messageHeaders.get(2).get("key").asText(), is("key3"));
+        assertThat(messageHeaders.get(2).get("key").asString(), is("key3"));
         assertThat(new String(Base64.getDecoder().decode(
-            messageHeaders.get(2).get("value").asText())), is("value3"));
+            messageHeaders.get(2).get("value").asString())), is("value3"));
 
         // consumer deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -607,8 +607,8 @@ public class ConsumerIT extends AbstractIT {
 
         JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("topic").asString(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asString(), is(sentBody));
         assertThat(receivedMessage.get("offset").asLong(), is(0L));
         assertThat(receivedMessage.get("partition"), notNullValue());
         assertThat(receivedMessage.get("key").isNull(), is(true));
@@ -649,8 +649,8 @@ public class ConsumerIT extends AbstractIT {
         for (int i = 0; i < 2; i++) {
             JsonNode receivedMessage = receivedMessages.get(i);
 
-            topicNamesFromMessages.add(receivedMessage.get("topic").asText());
-            assertThat(receivedMessage.get("value").asText(), is(message));
+            topicNamesFromMessages.add(receivedMessage.get("topic").asString());
+            assertThat(receivedMessage.get("value").asString(), is(message));
             assertThat(receivedMessage.get("offset").asLong(), is(0L));
             assertThat(receivedMessage.get("partition"), notNullValue());
             assertThat(receivedMessage.get("key").isNull(), is(true));
@@ -695,7 +695,7 @@ public class ConsumerIT extends AbstractIT {
         assertThat(receivedMessages.size(), is(2));
 
         for (JsonNode receivedMessage : receivedMessages) {
-            assertThat(receivedMessage.get("topic").asText(), is(not(topic3)));
+            assertThat(receivedMessage.get("topic").asString(), is(not(topic3)));
         }
 
         // consumer deletion
@@ -728,8 +728,8 @@ public class ConsumerIT extends AbstractIT {
 
         JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("topic").asString(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asString(), is(sentBody));
         assertThat(receivedMessage.get("offset").asLong(), is(0L));
         assertThat(receivedMessage.get("partition").asInt(), is(partition));
         assertThat(receivedMessage.get("key").isNull(), is(true));
@@ -770,8 +770,8 @@ public class ConsumerIT extends AbstractIT {
         for (int i = 0; i < 2; i++) {
             JsonNode receivedMessage = receivedMessages.get(i);
 
-            assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
-            assertThat(receivedMessage.get("value").asText(), is(sentBody));
+            assertThat(receivedMessage.get("topic").asString(), is(bridgeTestContext.getTopicName()));
+            assertThat(receivedMessage.get("value").asString(), is(sentBody));
             assertThat(receivedMessage.get("offset").asLong(), is(0L));
             assertThat(receivedMessage.get("key").isNull(), is(true));
 
@@ -812,8 +812,8 @@ public class ConsumerIT extends AbstractIT {
 
         JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("topic").asString(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asString(), is(sentBody));
         assertThat(receivedMessage.get("offset").asLong(), is(0L));
         assertThat(receivedMessage.get("partition"), notNullValue());
         assertThat(receivedMessage.get("key").isNull(), is(true));
@@ -857,8 +857,8 @@ public class ConsumerIT extends AbstractIT {
 
         JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("topic").asString(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asString(), is(sentBody));
         assertThat(receivedMessage.get("offset").asLong(), is(0L));
         assertThat(receivedMessage.get("partition"), notNullValue());
         assertThat(receivedMessage.get("key").isNull(), is(true));
@@ -896,8 +896,8 @@ public class ConsumerIT extends AbstractIT {
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
-        assertThat(responseBody.get("instance_id").asText(), is(consumerNameWithSuffix));
-        assertThat(responseBody.get("base_uri").asText(), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, consumerNameWithSuffix))));
+        assertThat(responseBody.get("instance_id").asString(), is(consumerNameWithSuffix));
+        assertThat(responseBody.get("base_uri").asString(), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, consumerNameWithSuffix))));
 
         // consumers deletion
         httpConsumerService.deleteConsumer(groupId, name);
@@ -982,8 +982,8 @@ public class ConsumerIT extends AbstractIT {
 
         JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.get("value").asText(), is(message));
+        assertThat(receivedMessage.get("topic").asString(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asString(), is(message));
         assertThat(receivedMessage.get("offset").asLong(), is(0L));
         assertThat(receivedMessage.get("partition"), notNullValue());
         assertThat(receivedMessage.get("key").isNull(), is(true));
@@ -1080,7 +1080,7 @@ public class ConsumerIT extends AbstractIT {
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
         JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
-        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("topic").asString(), is(bridgeTestContext.getTopicName()));
 
         assertThat(receivedMessage.get("value"), is(sentValue));
         assertThat(receivedMessage.get("offset").asLong(), is(0L));
@@ -1125,8 +1125,8 @@ public class ConsumerIT extends AbstractIT {
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
-        assertThat(responseBody.get("instance_id").asText(), is(name));
-        assertThat(responseBody.get("base_uri").asText(), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, name))));
+        assertThat(responseBody.get("instance_id").asString(), is(name));
+        assertThat(responseBody.get("base_uri").asString(), is(bridgeTestContext.getHttpService().getUri(Endpoints.consumerInstance(groupId, name))));
 
         Thread.sleep(Constants.DEFAULT_CONSUMER_TIMEOUT * 2 * 1000);
 
@@ -1200,8 +1200,8 @@ public class ConsumerIT extends AbstractIT {
 
         JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("topic").asString(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asString(), is(sentBody));
         assertThat(receivedMessage.get("offset").asLong(), is(0L));
         assertThat(receivedMessage.get("partition").asInt(), is(0));
         assertThat(receivedMessage.get("key").isNull(), is(true));
@@ -1241,8 +1241,8 @@ public class ConsumerIT extends AbstractIT {
 
         JsonNode receivedMessage = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body()).get(0);
 
-        assertThat(receivedMessage.get("topic").asText(), is(bridgeTestContext.getTopicName()));
-        assertThat(receivedMessage.get("value").asText(), is(sentBody));
+        assertThat(receivedMessage.get("topic").asString(), is(bridgeTestContext.getTopicName()));
+        assertThat(receivedMessage.get("value").asString(), is(sentBody));
         assertThat(receivedMessage.get("offset").asLong(), is(0L));
         assertThat(receivedMessage.get("partition").asInt(), is(0));
         assertThat(receivedMessage.get("key").isNull(), is(true));

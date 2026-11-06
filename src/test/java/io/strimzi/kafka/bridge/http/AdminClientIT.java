@@ -4,16 +4,16 @@
  */
 package io.strimzi.kafka.bridge.http;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
 import io.strimzi.kafka.bridge.http.base.AbstractIT;
 import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
 import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.net.http.HttpResponse;
 import java.util.List;
@@ -23,7 +23,7 @@ import static org.hamcrest.Matchers.is;
 
 @BridgeSuite
 public class AdminClientIT extends AbstractIT {
-    public static ObjectMapper objectMapper = new ObjectMapper();
+    public static JsonMapper objectMapper = new JsonMapper();
 
     @Test
     void testListKafkaTopics(BridgeTestContext bridgeTestContext) {
@@ -48,8 +48,8 @@ public class AdminClientIT extends AbstractIT {
 
         JsonNode topic = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
-        assertThat(topic.get("name").asText(), is(bridgeTestContext.getTopicName()));
-        assertThat(topic.get("configs").get("cleanup.policy").asText(), is("delete"));
+        assertThat(topic.get("name").asString(), is(bridgeTestContext.getTopicName()));
+        assertThat(topic.get("configs").get("cleanup.policy").asString(), is("delete"));
         assertThat(topic.get("partitions").size(), is(2));
 
         for (int i = 0; i < 2; i++) {
@@ -190,7 +190,7 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
-    void testCreateEmptyTopic(BridgeTestContext bridgeTestContext) throws JsonProcessingException {
+    void testCreateEmptyTopic(BridgeTestContext bridgeTestContext) throws JacksonException {
         ObjectNode jsonNode = objectMapper.createObjectNode();
 
         HttpResponse<String> httpResponse = bridgeTestContext.getHttpService().post("/admin/topics", objectMapper.writeValueAsString(jsonNode));
@@ -200,7 +200,7 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
-    void testCreateTopic(BridgeTestContext bridgeTestContext) throws JsonProcessingException {
+    void testCreateTopic(BridgeTestContext bridgeTestContext) throws JacksonException {
         ObjectNode jsonNode = objectMapper.createObjectNode();
         jsonNode.put("topic_name", bridgeTestContext.getTopicName());
 
@@ -210,7 +210,7 @@ public class AdminClientIT extends AbstractIT {
     }
 
     @Test
-    void testCreateTopicWithAllParameters(BridgeTestContext bridgeTestContext) throws JsonProcessingException {
+    void testCreateTopicWithAllParameters(BridgeTestContext bridgeTestContext) throws JacksonException {
         ObjectNode jsonNode = objectMapper.createObjectNode();
         jsonNode.put("topic_name", bridgeTestContext.getTopicName());
         jsonNode.put("partitions_count", 1);

@@ -4,7 +4,6 @@
  */
 package io.strimzi.kafka.bridge.http;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.config.KafkaProducerConfig;
@@ -15,6 +14,7 @@ import io.strimzi.kafka.bridge.http.base.AbstractIT;
 import io.strimzi.kafka.bridge.httpclient.HttpProducerService;
 import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.net.http.HttpResponse;
 

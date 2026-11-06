@@ -4,9 +4,6 @@
  */
 package io.strimzi.kafka.bridge.http;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
 import io.strimzi.kafka.bridge.http.base.AbstractIT;
@@ -16,6 +13,9 @@ import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
 import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.net.http.HttpResponse;
 import java.util.List;
@@ -171,7 +171,7 @@ public class ConsumerSubscriptionIT extends AbstractIT {
         JsonNode topicsNode = responseBody.get("topics");
         assertThat(topicsNode.size(), is(2));
 
-        List<String> topicsList = List.of(topicsNode.get(0).asText(), topicsNode.get(1).asText());
+        List<String> topicsList = List.of(topicsNode.get(0).asString(), topicsNode.get(1).asString());
         assertThat(topicsList.contains(topic), is(true));
         assertThat(topicsList.contains(topic2), is(true));
 

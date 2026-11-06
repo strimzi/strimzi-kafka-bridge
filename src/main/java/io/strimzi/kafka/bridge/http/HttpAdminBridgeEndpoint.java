@@ -5,9 +5,6 @@
 
 package io.strimzi.kafka.bridge.http;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.KafkaBridgeAdmin;
@@ -29,6 +26,9 @@ import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.Collection;
 import java.util.HashSet;
