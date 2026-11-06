@@ -510,6 +510,88 @@ public class ProducerIT extends AbstractIT {
     }
 
     @Test
+    void sendBinaryMessageWithNonStringKey(BridgeTestContext bridgeTestContext) {
+        String topic = bridgeTestContext.getTopicName();
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
+        ObjectNode keyObj = MAPPER.createObjectNode().put("my-key", "This is a json key");
+
+        ObjectNode root = MAPPER.createObjectNode();
+        ArrayNode records = root.putArray("records");
+        ObjectNode recordNode = MAPPER.createObjectNode();
+        recordNode.set("key", keyObj);
+        recordNode.put("value", "SGVsbG8=");
+        records.add(recordNode);
+
+        HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
+        HttpResponse<String> response = httpProducerService.sendJsonNodeRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_BINARY);
+        assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(response.body()));
+        assertThat(error.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+        assertThat(error.message(), is("Because the embedded format is 'binary', the key must be a valid base64 encoded string"));
+    }
+
+    @Test
+    void sendBinaryMessageWithNonStringValue(BridgeTestContext bridgeTestContext) {
+        String topic = bridgeTestContext.getTopicName();
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
+        ObjectNode valueObj = MAPPER.createObjectNode().put("message", "Hi, This is kafka bridge");
+
+        ObjectNode root = MAPPER.createObjectNode();
+        ArrayNode records = root.putArray("records");
+        records.add(MAPPER.createObjectNode().set("value", valueObj));
+
+        HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
+        HttpResponse<String> response = httpProducerService.sendJsonNodeRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_BINARY);
+        assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(response.body()));
+        assertThat(error.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+        assertThat(error.message(), is("Because the embedded format is 'binary', the value must be a valid base64 encoded string"));
+    }
+
+    @Test
+    void sendBinaryMessageWithInvalidBase64Key(BridgeTestContext bridgeTestContext) {
+        String topic = bridgeTestContext.getTopicName();
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
+        ObjectNode root = MAPPER.createObjectNode();
+        ArrayNode records = root.putArray("records");
+        ObjectNode recordNode = MAPPER.createObjectNode();
+        recordNode.put("key", "not-valid-base64!!!");
+        recordNode.put("value", "SGVsbG8=");
+        records.add(recordNode);
+
+        HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
+        HttpResponse<String> response = httpProducerService.sendJsonNodeRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_BINARY);
+        assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(response.body()));
+        assertThat(error.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+        assertThat(error.message(), is("Because the embedded format is 'binary', the key must be a valid base64 encoded string"));
+    }
+
+    @Test
+    void sendBinaryMessageWithInvalidBase64Value(BridgeTestContext bridgeTestContext) {
+        String topic = bridgeTestContext.getTopicName();
+        bridgeTestContext.getAdminClientFacade().createTopic(bridgeTestContext.getTopicName(), 1);
+
+        ObjectNode root = MAPPER.createObjectNode();
+        ArrayNode records = root.putArray("records");
+        records.add(MAPPER.createObjectNode().put("value", "not-valid-base64!!!"));
+
+        HttpProducerService httpProducerService = new HttpProducerService(bridgeTestContext.getHttpService());
+        HttpResponse<String> response = httpProducerService.sendJsonNodeRecordsRequest(topic, root, BridgeContentType.KAFKA_JSON_BINARY);
+        assertThat(response.statusCode(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+
+        HttpBridgeError error = HttpBridgeError.fromJson(HttpResponseUtils.getResponseAsJsonNode(response.body()));
+        assertThat(error.code(), is(HttpResponseStatus.UNPROCESSABLE_ENTITY.code()));
+        assertThat(error.message(), is("Because the embedded format is 'binary', the value must be a valid base64 encoded string"));
+    }
+
+    @Test
     void sendMessageWithNullValueTest(BridgeTestContext bridgeTestContext) {
         String topic = "sendMessageWithNullValueTest";
         bridgeTestContext.getAdminClientFacade().createTopic(topic, 1);

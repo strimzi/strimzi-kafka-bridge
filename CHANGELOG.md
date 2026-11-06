@@ -5,6 +5,7 @@
 * Moved to UBI9 micro as the base container image.
 * Dependency updates (Kafka 4.4.0, Vert.x 5.2.3, Netty 4.2.20.Final, JMX Prometheus collector 1.7.0, Strimzi Kafka OAuth 0.18.1, Kubernetes Config Provider 1.3.0).
 * Use Java 25 as the runtime in the Bridge container (leaving the language level at Java 21) for supporting Post-Quantum Hybrid Key Exchange.
+* Fixed binary producer records with a non-string or invalid base64 key/value being silently accepted or rejected with an unclear error, now returning a clear validation error.
 
 ## 1.2.1
 
