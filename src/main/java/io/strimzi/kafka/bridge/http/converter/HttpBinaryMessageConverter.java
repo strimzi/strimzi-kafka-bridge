@@ -45,10 +45,10 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
 
         if (!json.isEmpty()) {
             if (json.has("key")) {
-                key = Base64.getDecoder().decode(json.get("key").asText());
+                key = decodeBase64(json.get("key"), "key");
             }
             if (json.has("value")) {
-                value = Base64.getDecoder().decode(json.get("value").asText());
+                value = decodeBase64(json.get("value"), "value");
             }
             if (json.has("timestamp")) {
                 timestamp = json.get("timestamp").asLong();
@@ -70,6 +70,17 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
             }
         }
         return new ProducerRecord<>(kafkaTopic, partitionFromBody, timestamp, key, value, headers);
+    }
+
+    private byte[] decodeBase64(JsonNode node, String field) {
+        if (!node.isTextual()) {
+            throw new IllegalStateException("Because the embedded format is 'binary', the " + field + " must be a valid base64 encoded string");
+        }
+        try {
+            return Base64.getDecoder().decode(node.asText());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Because the embedded format is 'binary', the " + field + " must be a valid base64 encoded string");
+        }
     }
 
     @Override
