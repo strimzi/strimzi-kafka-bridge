@@ -5,9 +5,6 @@
 
 package io.strimzi.kafka.bridge.http.converter;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -16,6 +13,9 @@ import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.ArrayList;
 import java.util.Base64;
@@ -45,22 +45,22 @@ public class HttpBinaryMessageConverter implements MessageConverter<byte[], byte
 
         if (!json.isEmpty()) {
             if (json.has("key")) {
-                key = Base64.getDecoder().decode(json.get("key").asText());
+                key = Base64.getDecoder().decode(json.get("key").asString());
             }
             if (json.has("value")) {
-                value = Base64.getDecoder().decode(json.get("value").asText());
+                value = Base64.getDecoder().decode(json.get("value").asString());
             }
             if (json.has("timestamp")) {
-                timestamp = json.get("timestamp").asLong();
+                timestamp = json.get("timestamp").asLong(0L);
             }
             if (json.has("headers")) {
                 ArrayNode jsonArray = (ArrayNode) json.get("headers");
                 for (JsonNode jsonObject: jsonArray) {
-                    headers.add(new RecordHeader(jsonObject.get("key").asText(), Base64.getDecoder().decode(jsonObject.get("value").asText())));
+                    headers.add(new RecordHeader(jsonObject.get("key").asString(), Base64.getDecoder().decode(jsonObject.get("value").asString())));
                 }
             }
             if (json.has("partition")) {
-                partitionFromBody = json.get("partition").asInt();
+                partitionFromBody = json.get("partition").asInt(0);
             }
             if (partition != null && partitionFromBody != null) {
                 throw new IllegalStateException("Partition specified in body and in request path");

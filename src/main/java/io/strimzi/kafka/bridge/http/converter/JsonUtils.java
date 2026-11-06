@@ -5,12 +5,12 @@
 
 package io.strimzi.kafka.bridge.http.converter;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
-import java.io.IOException;
 import java.util.Collection;
 
 /**
@@ -21,7 +21,7 @@ public class JsonUtils {
     /**
      * ObjectMapper instance used for JSON encoding/decoding
      */
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final JsonMapper MAPPER = new JsonMapper();
 
     private JsonUtils() { }
 
@@ -34,7 +34,7 @@ public class JsonUtils {
     public static JsonNode bytesToJson(byte[] bytes) {
         try {
             return MAPPER.readTree(bytes);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new JsonDecodeException("Failed to decode:" + e.getMessage(), e);
         }
     }
@@ -91,7 +91,7 @@ public class JsonUtils {
      * @return String value of the child node or null if it doesn't exist
      */
     public static String getString(JsonNode json, String field) {
-        return json.path(field).isMissingNode() ? null : json.get(field).asText();
+        return json.path(field).isMissingNode() ? null : json.get(field).asString();
     }
 
     /**
@@ -104,7 +104,7 @@ public class JsonUtils {
      * @return String value of the child node or the default value if it doesn't exist
      */
     public static String getString(JsonNode json, String field, String def) {
-        return json.path(field).isMissingNode() ? def : json.get(field).asText();
+        return json.path(field).isMissingNode() ? def : json.get(field).asString();
     }
 
     /**
@@ -116,7 +116,7 @@ public class JsonUtils {
      * @return int value of the child node or null if it doesn't exist
      */
     public static Integer getInt(JsonNode json, String field) {
-        return json.path(field).isMissingNode() ? null : json.get(field).asInt();
+        return json.path(field).isMissingNode() ? null : json.get(field).asInt(0);
     }
 
     /**
@@ -128,6 +128,6 @@ public class JsonUtils {
      * @return long value of the child node or null if it doesn't exist
      */
     public static Long getLong(JsonNode json, String field) {
-        return json.path(field).isMissingNode() ? null : json.get(field).asLong();
+        return json.path(field).isMissingNode() ? null : json.get(field).asLong(0L);
     }
 }

@@ -4,9 +4,6 @@
  */
 package io.strimzi.kafka.bridge.http;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
@@ -20,6 +17,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.net.http.HttpResponse;
 import java.util.List;
@@ -201,9 +201,9 @@ public class SeekIT extends AbstractIT {
         assertThat(partition0Messages.isEmpty(), is(false));
         assertThat(partition0Messages.size(), is(1));
 
-        assertThat(partition0Messages.get(0).get("topic").asText(), is(topic));
-        assertThat(partition0Messages.get(0).get("value").asText(), is("value-9"));
-        assertThat(partition0Messages.get(0).get("key").asText(), is("key-9"));
+        assertThat(partition0Messages.get(0).get("topic").asString(), is(topic));
+        assertThat(partition0Messages.get(0).get("value").asString(), is("value-9"));
+        assertThat(partition0Messages.get(0).get("key").asString(), is("key-9"));
 
         // check it read from partition 1, starting from offset 5, the last 5 messages
         List<JsonNode> partition1Messages = StreamSupport.stream(messages.spliterator(), false)
@@ -213,9 +213,9 @@ public class SeekIT extends AbstractIT {
         assertThat(partition1Messages.size(), is(5));
 
         for (int i = 0; i < partition1Messages.size(); i++) {
-            assertThat(partition1Messages.get(i).get("topic").asText(), is(topic));
-            assertThat(partition1Messages.get(i).get("value").asText(), is("value-" + (i + partition1Messages.size())));
-            assertThat(partition1Messages.get(i).get("key").asText(), is("key-" + (i + partition1Messages.size())));
+            assertThat(partition1Messages.get(i).get("topic").asString(), is(topic));
+            assertThat(partition1Messages.get(i).get("value").asString(), is("value-" + (i + partition1Messages.size())));
+            assertThat(partition1Messages.get(i).get("key").asString(), is("key-" + (i + partition1Messages.size())));
         }
 
         // consumer deletion
