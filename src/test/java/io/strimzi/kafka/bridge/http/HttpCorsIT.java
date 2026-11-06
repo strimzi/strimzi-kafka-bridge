@@ -5,9 +5,6 @@
 
 package io.strimzi.kafka.bridge.http;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.configuration.BridgeConfiguration;
@@ -20,6 +17,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.net.URI;
@@ -35,7 +35,7 @@ import static org.hamcrest.Matchers.is;
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class HttpCorsIT extends AbstractIT {
     private static final Logger LOGGER = LogManager.getLogger(HttpCorsIT.class);
-    public static ObjectMapper objectMapper = new ObjectMapper();
+    public static JsonMapper objectMapper = new JsonMapper();
 
     @BridgeConfiguration(
         properties = {

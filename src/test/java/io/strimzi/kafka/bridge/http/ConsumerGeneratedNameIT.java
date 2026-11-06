@@ -4,8 +4,6 @@
  */
 package io.strimzi.kafka.bridge.http;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.config.BridgeConfig;
 import io.strimzi.kafka.bridge.config.KafkaConsumerConfig;
@@ -21,6 +19,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.net.http.HttpResponse;
 
@@ -51,7 +51,7 @@ public class ConsumerGeneratedNameIT extends AbstractIT {
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(response.body());
 
         LOGGER.info("Verifying that consumer name is created with 'kafka-bridge-consumer-' plus random hashcode");
-        String consumerInstanceId = responseBody.get("instance_id").asText();
+        String consumerInstanceId = responseBody.get("instance_id").asString();
         assertThat(consumerInstanceId.contains("kafka-bridge-consumer-"), is(true));
 
         httpConsumerService.deleteConsumer(groupId, consumerInstanceId);
@@ -69,7 +69,7 @@ public class ConsumerGeneratedNameIT extends AbstractIT {
 
         assertThat(response.statusCode(), is(HttpResponseStatus.OK.code()));
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(response.body());
-        String consumerInstanceId = responseBody.get("instance_id").asText();
+        String consumerInstanceId = responseBody.get("instance_id").asString();
 
         LOGGER.info("Checking if the instance ID is really: {}", consumerName);
         assertThat(consumerInstanceId, is(consumerName));

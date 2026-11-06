@@ -25,6 +25,11 @@
         </module>
         <module name="RedundantImport"/>
         <module name="IllegalImport" />
+        <module name="IllegalImport">
+            <property name="id" value="jackson2Import"/>
+            <property name="illegalPkgs" value="com.fasterxml.jackson.core, com.fasterxml.jackson.databind, com.fasterxml.jackson.dataformat, com.fasterxml.jackson.datatype, com.fasterxml.jackson.module"/>
+            <message key="import.illegal" value="Use tools.jackson (Jackson 3) instead of com.fasterxml.jackson (Jackson 2)."/>
+        </module>
         <module name="EqualsHashCode"/>
         <module name="SimplifyBooleanExpression"/>
         <module name="OneStatementPerLine"/>

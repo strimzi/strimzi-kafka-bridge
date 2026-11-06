@@ -5,10 +5,6 @@
 
 package io.strimzi.kafka.bridge.http;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.ConsumerInstanceId;
@@ -36,6 +32,10 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.StringNode;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -490,8 +490,8 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
                 if (bodyAsJson.has("topics")) {
                     ArrayNode topicsList = (ArrayNode) bodyAsJson.get("topics");
                     List<String> topicSubscriptions = StreamSupport.stream(topicsList.spliterator(), false)
-                            .map(TextNode.class::cast)
-                            .map(TextNode::asText)
+                            .map(StringNode.class::cast)
+                            .map(StringNode::asString)
                             .toList();
                     this.kafkaBridgeConsumer.subscribe(topicSubscriptions);
                 } else if (bodyAsJson.has("topic_pattern")) {

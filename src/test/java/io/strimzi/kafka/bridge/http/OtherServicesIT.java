@@ -4,7 +4,6 @@
  */
 package io.strimzi.kafka.bridge.http;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.extensions.BridgeSuite;
 import io.strimzi.kafka.bridge.http.base.AbstractIT;
@@ -12,6 +11,7 @@ import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.httpclient.HttpResponseUtils;
 import io.strimzi.kafka.bridge.objects.BridgeTestContext;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -51,7 +51,7 @@ public class OtherServicesIT extends AbstractIT {
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
-        assertThat(responseBody.get("openapi").asText(), is("3.1.0"));
+        assertThat(responseBody.get("openapi").asString(), is("3.1.0"));
     }
 
     @Test
@@ -61,7 +61,7 @@ public class OtherServicesIT extends AbstractIT {
 
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
 
-        assertThat(responseBody.get("openapi").asText(), is("3.1.0"));
+        assertThat(responseBody.get("openapi").asString(), is("3.1.0"));
 
         JsonNode paths = responseBody.get("paths");
         // subscribe, list subscriptions and unsubscribe are using the same endpoint but different methods (-2)
@@ -164,7 +164,7 @@ public class OtherServicesIT extends AbstractIT {
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
-        assertThat(responseBody.get("basePath").asText(), is(forwardedPath));
+        assertThat(responseBody.get("basePath").asString(), is(forwardedPath));
     }
 
     @Test
@@ -184,7 +184,7 @@ public class OtherServicesIT extends AbstractIT {
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
-        assertThat(responseBody.get("basePath").asText(), is(forwardedPrefix));
+        assertThat(responseBody.get("basePath").asString(), is(forwardedPrefix));
     }
 
     @Test
@@ -206,10 +206,10 @@ public class OtherServicesIT extends AbstractIT {
         assertThat(httpResponse.statusCode(), is(HttpResponseStatus.OK.code()));
 
         JsonNode responseBody = HttpResponseUtils.getResponseAsJsonNode(httpResponse.body());
-        assertThat(responseBody.get("basePath").asText(), is(forwardedPath));
+        assertThat(responseBody.get("basePath").asString(), is(forwardedPath));
     }
 
     private String getOperationId(JsonNode paths, String path, String method) {
-        return paths.get(path).get(method).get("operationId").asText();
+        return paths.get(path).get(method).get("operationId").asString();
     }
 }
