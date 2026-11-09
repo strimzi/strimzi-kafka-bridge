@@ -84,7 +84,9 @@ public class HttpSinkBridgeEndpoint<K, V> extends HttpBridgeEndpoint {
 
     private final ExecutorService asyncExecutor;
 
-    private long lastActivityTimestamp = System.currentTimeMillis();
+    // volatile guarantees atomic 64-bit read/write and visibility across threads, since the
+    // write happens on the event loop while request processing can run on a worker thread pool
+    private volatile long lastActivityTimestamp = System.currentTimeMillis();
 
     /**
      * Constructor

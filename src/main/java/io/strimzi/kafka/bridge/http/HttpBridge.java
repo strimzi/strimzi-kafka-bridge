@@ -109,6 +109,7 @@ public class HttpBridge extends AbstractVerticle {
      *
      * @param bridgeConfig bridge configuration
      */
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "Metrics collector creation in the constructor can throw; to be refactored out, see https://github.com/strimzi/strimzi-kafka-bridge/issues/1218")
     public HttpBridge(BridgeConfig bridgeConfig) {
         this.bridgeConfig = bridgeConfig;
         if (bridgeConfig.getMetricsType() != null) {
@@ -693,7 +694,6 @@ public class HttpBridge extends AbstractVerticle {
                 BridgeContentType.JSON, JsonUtils.jsonToBytes(versionJson));
     }
 
-    @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
     private void errorHandler(RoutingContext routingContext) {
         int requestId = System.identityHashCode(routingContext.request());
         routingContext.put("request-id", requestId);

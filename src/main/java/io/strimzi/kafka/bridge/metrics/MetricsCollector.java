@@ -64,5 +64,5 @@ public abstract class MetricsCollector {
      *
      * @return Raw metrics in Prometheus format.
      */
-    abstract String doScrape();
+    public abstract String doScrape();
 }
