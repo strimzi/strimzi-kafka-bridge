@@ -45,18 +45,10 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
 
         if (!json.isEmpty()) {
             if (json.has("key")) {
-                JsonNode keyNode = json.get("key");
-                if (!keyNode.isTextual()) {
-                    throw new IllegalStateException("Because the embedded format is 'text', the key must be a string");
-                }
-                key = keyNode.asText().getBytes(StandardCharsets.UTF_8);
+                key = decodeText(json.get("key"), "key");
             }
             if (json.has("value")) {
-                JsonNode valueNode = json.get("value");
-                if (!valueNode.isTextual()) {
-                    throw new IllegalStateException("Because the embedded format is 'text', the value must be a string");
-                }
-                value = valueNode.asText().getBytes(StandardCharsets.UTF_8);
+                value = decodeText(json.get("value"), "value");
             }
             if (json.has("timestamp")) {
                 timestamp = json.get("timestamp").asLong();
@@ -78,6 +70,13 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
             }
         }
         return new ProducerRecord<>(kafkaTopic, partitionFromBody, timestamp, key, value, headers);
+    }
+
+    private byte[] decodeText(JsonNode node, String field) {
+        if (!node.isTextual()) {
+            throw new IllegalStateException("Because the embedded format is 'text', the " + field + " must be a string");
+        }
+        return node.asText().getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
