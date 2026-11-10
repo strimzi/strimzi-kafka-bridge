@@ -57,6 +57,9 @@ public class KafkaBridgeProducer<K, V> {
      * @return a CompletionStage bringing the metadata
      */
     public CompletionStage<RecordMetadata> send(ProducerRecord<K, V> record) {
+        if (this.producer == null) {
+            throw new IllegalStateException("Kafka producer not created, call create() before sending records");
+        }
         CompletableFuture<RecordMetadata> promise = new CompletableFuture<>();
         LOGGER.trace("Send thread {}", Thread.currentThread());
         LOGGER.debug("Sending record {}", record);
@@ -78,6 +81,9 @@ public class KafkaBridgeProducer<K, V> {
      * @param record Kafka record to send
      */
     public void sendIgnoreResult(ProducerRecord<K, V> record) {
+        if (this.producer == null) {
+            throw new IllegalStateException("Kafka producer not created, call create() before sending records");
+        }
         LOGGER.trace("Send ignore result thread {}", Thread.currentThread());
         LOGGER.debug("Sending record {}", record);
         this.producer.send(record);
