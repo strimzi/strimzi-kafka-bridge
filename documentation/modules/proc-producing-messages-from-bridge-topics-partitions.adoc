@@ -66,7 +66,7 @@ curl -X POST \
 * `sales-lead-0002` is sent directly to partition 2.
 * `sales-lead-0003` is sent to a partition in the `bridge-quickstart-topic` topic using a round-robin method.
 
-. If the request is successful, the HTTP Bridge returns an `offsets` array, along with a `200` code and a `content-type` header of `application/vnd.kafka.v2+json`. For each message, the `offsets` array describes:
+. If the request is successful, the HTTP Bridge returns an `offsets` array, along with a `200` code and a `content-type` header of `application/vnd.kafka.v2+json`. The `offsets` array contains one entry for each message, in the same order as the messages in the request. For each message, the entry describes:
 +
 * The partition that the message was sent to
 * The current message offset of the partition
@@ -93,6 +93,39 @@ curl -X POST \
   ]
 }
 ----
+
+. Check the `offsets` array for messages that failed to be delivered.
++
+The messages in a request are sent to Kafka independently, so some messages can be delivered while others fail.
+For this reason, the HTTP Bridge returns a `200` code whenever the request is valid and the messages are sent, even if some or all of the messages failed to be delivered.
+Delivery errors are reported for each message in the `offsets` array, so a `200` code alone does not mean that every message was delivered.
++
+In the `offsets` array, an entry for a delivered message contains `partition` and `offset` properties.
+An entry for a message that failed to be delivered contains `error_code` and `message` properties instead.
++
+.Example response with a failed message
+[source,json,subs=attributes+]
+----
+#...
+{
+  "offsets":[
+    {
+      "partition":0,
+      "offset":2
+    },
+    {
+      "error_code":500,
+      "message":"The request included a message larger than the max message size the server will accept."
+    }
+  ]
+}
+----
++
+In this example, the first message was delivered, but the second message was rejected because it exceeded the maximum message size.
+Client applications must check each entry in the `offsets` array to find out which messages were delivered, and handle or resend the messages that failed.
++
+NOTE: If the request itself cannot be processed, for example because the request body is not valid or the HTTP Bridge is overloaded, the HTTP Bridge returns an error code such as `422` or `503` instead of `200`, and no messages are sent.
+If you set the `async` query parameter to `true`, the HTTP Bridge returns a `204` code without an `offsets` array, so delivery errors are not reported to the client.
 
 .Additional topic requests
 

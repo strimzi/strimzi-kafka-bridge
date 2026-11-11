@@ -1729,13 +1729,8 @@ Sends one or more records to a given topic, optionally specifying a partition, k
 
 
 | 200
-| Records sent successfully.
+| Records sent. The response is returned with this status code even if some records failed to be delivered. Check each entry in the offsets array: a delivered record has partition and offset properties, and a record that failed to be delivered has error_code and message properties.
 |  <<OffsetRecordSentList>>
-
-
-| 404
-| The specified topic was not found.
-|  <<Error>>
 
 
 | 422
@@ -1854,13 +1849,8 @@ Sends one or more records to a given topic partition, optionally specifying a ke
 
 
 | 200
-| Records sent successfully.
+| Records sent. The response is returned with this status code even if some records failed to be delivered. Check each entry in the offsets array: a delivered record has partition and offset properties, and a record that failed to be delivered has error_code and message properties.
 |  <<OffsetRecordSentList>>
-
-
-| 404
-| The specified topic partition was not found.
-|  <<Error>>
 
 
 | 422
@@ -2821,13 +2811,8 @@ Sends one or more records to a given topic, optionally specifying a partition, k
 
 
 | 200
-| Records sent successfully.
+| Records sent. The response is returned with this status code even if some records failed to be delivered. Check each entry in the offsets array: a delivered record has partition and offset properties, and a record that failed to be delivered has error_code and message properties.
 |  <<OffsetRecordSentList>>
-
-
-| 404
-| The specified topic was not found.
-|  <<Error>>
 
 
 | 422
@@ -2946,13 +2931,8 @@ Sends one or more records to a given topic partition, optionally specifying a ke
 
 
 | 200
-| Records sent successfully.
+| Records sent. The response is returned with this status code even if some records failed to be delivered. Check each entry in the offsets array: a delivered record has partition and offset properties, and a record that failed to be delivered has error_code and message properties.
 |  <<OffsetRecordSentList>>
-
-
-| 404
-| The specified topic partition was not found.
-|  <<Error>>
 
 
 | 422
