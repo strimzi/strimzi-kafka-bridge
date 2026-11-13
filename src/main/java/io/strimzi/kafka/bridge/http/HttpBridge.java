@@ -6,7 +6,6 @@ package io.strimzi.kafka.bridge.http;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.Application;
@@ -109,19 +108,8 @@ public class HttpBridge extends AbstractVerticle {
      *
      * @param bridgeConfig bridge configuration
      */
-    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "Metrics collector creation in the constructor can throw; to be refactored out, see https://github.com/strimzi/strimzi-kafka-bridge/issues/1218")
     public HttpBridge(BridgeConfig bridgeConfig) {
         this.bridgeConfig = bridgeConfig;
-        if (bridgeConfig.getMetricsType() != null) {
-            if (bridgeConfig.getMetricsType() == MetricsType.JMX_EXPORTER) {
-                this.metricsCollector = createJmxMetricsCollector(bridgeConfig);
-            } else if (bridgeConfig.getMetricsType() == MetricsType.STRIMZI_REPORTER) {
-                this.metricsCollector = new StrimziMetricsCollector();
-            }
-        }
-        if (metricsCollector != null) {
-            LOGGER.info("Metrics of type '{}' enabled and exposed on /metrics endpoint", bridgeConfig.getMetricsType());
-        }
     }
 
     /**
@@ -209,8 +197,27 @@ public class HttpBridge extends AbstractVerticle {
                 });
     }
 
+    private void initMetrics() {
+        if (this.bridgeConfig.getMetricsType() != null) {
+            if (this.bridgeConfig.getMetricsType() == MetricsType.JMX_EXPORTER) {
+                this.metricsCollector = createJmxMetricsCollector(bridgeConfig);
+            } else if (bridgeConfig.getMetricsType() == MetricsType.STRIMZI_REPORTER) {
+                this.metricsCollector = new StrimziMetricsCollector();
+            }
+        }
+        if (metricsCollector != null) {
+            LOGGER.info("Metrics of type '{}' enabled and exposed on /metrics endpoint", this.bridgeConfig.getMetricsType());
+        }
+    }
+
     @Override
     public void start(Promise<Void> startPromise) {
+        try {
+            initMetrics();
+        } catch (RuntimeException e) {
+            startPromise.fail(e);
+            return;
+        }
         OpenAPIContract.from(vertx, "openapi.json")
                 .onSuccess(contract -> {
                     RouterBuilder routerBuilder = RouterBuilder.create(vertx, contract);
