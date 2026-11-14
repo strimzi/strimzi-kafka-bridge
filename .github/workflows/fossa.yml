@@ -48,7 +48,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Java and Maven
-        uses: strimzi/github-actions/.github/actions/dependencies/setup-java@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+        uses: strimzi/github-actions/.github/actions/dependencies/setup-java@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
         with:
           javaVersion: "21"
 
@@ -56,7 +56,7 @@ jobs:
         run: mvn -B -DskipTests -Dmaven.javadoc.skip=true clean install
 
       - name: Run FOSSA Maven scan
-        uses: strimzi/github-actions/.github/actions/security/fossa-maven-scan@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+        uses: strimzi/github-actions/.github/actions/security/fossa-maven-scan@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
         with:
           scanName: kafka-bridge
           fossaTest: "true"
@@ -84,10 +84,10 @@ jobs:
         run: tar -xvf containers-kafka-bridge-amd64.tar
 
       - name: Install Docker
-        uses: strimzi/github-actions/.github/actions/dependencies/install-docker@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+        uses: strimzi/github-actions/.github/actions/dependencies/install-docker@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
 
       - name: Run FOSSA container scan
-        uses: strimzi/github-actions/.github/actions/security/fossa-container-scan@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+        uses: strimzi/github-actions/.github/actions/security/fossa-container-scan@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
         with:
           imageFile: kafka-bridge-amd64.tar.gz
           image: kafka-bridge

@@ -34,12 +34,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Java and Maven
-        uses: strimzi/github-actions/.github/actions/dependencies/setup-java@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+        uses: strimzi/github-actions/.github/actions/dependencies/setup-java@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
         with:
           javaVersion: ${{ matrix.java.version }}
 
       - name: Build binaries using build-binaries action
-        uses: strimzi/github-actions/.github/actions/build/build-binaries@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+        uses: strimzi/github-actions/.github/actions/build/build-binaries@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
         with:
           mainJavaBuild: ${{ matrix.java.mainBuild }}
           artifactSuffix: "kafka-bridge"
@@ -71,9 +71,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
 
-      - uses: strimzi/github-actions/.github/actions/build/build-containers@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+      - uses: strimzi/github-actions/.github/actions/build/build-containers@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
         with:
           architecture: ${{ matrix.architecture }}
           artifactSuffix: "kafka-bridge"
@@ -98,14 +98,14 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-docker@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
 
-      - uses: strimzi/github-actions/.github/actions/dependencies/install-syft@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+      - uses: strimzi/github-actions/.github/actions/dependencies/install-syft@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
         with:
           version: "1.50.0"
 
       - id: push-containers
-        uses: strimzi/github-actions/.github/actions/build/push-containers@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+        uses: strimzi/github-actions/.github/actions/build/push-containers@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
         with:
           architectures: "amd64,arm64,ppc64le,s390x"
           containerRegistry: "quay.io"
@@ -123,7 +123,7 @@ jobs:
       contents: read
       id-token: write
       attestations: write
-    uses: strimzi/github-actions/.github/workflows/reusable-attest.yml@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+    uses: strimzi/github-actions/.github/workflows/reusable-attest.yml@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
     with:
       containerImages: ${{ needs.push-containers.outputs.images }}
       sbomsArtifact: ${{ needs.push-containers.outputs.sbomsArtifact }}
@@ -153,11 +153,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: strimzi/github-actions/.github/actions/dependencies/setup-java@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+      - uses: strimzi/github-actions/.github/actions/dependencies/setup-java@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
         with:
           javaVersion: "21"
 
-      - uses: strimzi/github-actions/.github/actions/build/deploy-java@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+      - uses: strimzi/github-actions/.github/actions/build/deploy-java@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
         with:
           gpgPassphrase: ${{ secrets.GPG_PASSPHRASE }}
           gpgSigningKey: ${{ secrets.GPG_SIGNING_KEY }}
