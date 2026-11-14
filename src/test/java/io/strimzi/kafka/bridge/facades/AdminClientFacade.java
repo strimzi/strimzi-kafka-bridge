@@ -12,6 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -25,11 +26,25 @@ public class AdminClientFacade {
     private AdminClientFacade() {}
 
     public static synchronized AdminClientFacade create(String bootstrapServer) {
+        return create(bootstrapServer, Map.of());
+    }
+
+    /**
+     * Creates the facade with additional client properties, for example the TLS properties
+     * needed when the Kafka cluster is deployed with TLS enabled.
+     *
+     * @param bootstrapServer       bootstrap server of the Kafka cluster
+     * @param additionalProperties  additional Admin client properties
+     *
+     * @return  the {@link AdminClientFacade} instance
+     */
+    public static synchronized AdminClientFacade create(String bootstrapServer, Map<String, Object> additionalProperties) {
 
         if (adminClientFacade == null) {
 
             Properties properties = new Properties();
             properties.setProperty(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
+            properties.putAll(additionalProperties);
             adminClient = Admin.create(properties);
             adminClientFacade = new AdminClientFacade();
         }
