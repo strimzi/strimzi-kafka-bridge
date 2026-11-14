@@ -4,10 +4,6 @@
  */
 package io.strimzi.kafka.bridge.http.converter;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import io.strimzi.kafka.bridge.converter.MessageConverter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -16,6 +12,10 @@ import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.StringNode;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -51,16 +51,16 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
                 value = decodeText(json.get("value"), "value");
             }
             if (json.has("timestamp")) {
-                timestamp = json.get("timestamp").asLong();
+                timestamp = json.get("timestamp").asLong(0L);
             }
             if (json.has("headers")) {
                 ArrayNode jsonArray = (ArrayNode) json.get("headers");
                 for (JsonNode jsonObject : jsonArray) {
-                    headers.add(new RecordHeader(jsonObject.get("key").asText(), Base64.getDecoder().decode(jsonObject.get("value").asText())));
+                    headers.add(new RecordHeader(jsonObject.get("key").asString(), Base64.getDecoder().decode(jsonObject.get("value").asString())));
                 }
             }
             if (json.has("partition")) {
-                partitionFromBody = json.get("partition").asInt();
+                partitionFromBody = json.get("partition").asInt(0);
             }
             if (partition != null && partitionFromBody != null) {
                 throw new IllegalStateException("Partition specified in body and in request path");
@@ -73,10 +73,10 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
     }
 
     private byte[] decodeText(JsonNode node, String field) {
-        if (!node.isTextual()) {
+        if (!node.isString()) {
             throw new IllegalStateException("Because the embedded format is 'text', the " + field + " must be a string");
         }
-        return node.asText().getBytes(StandardCharsets.UTF_8);
+        return node.asString().getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
@@ -100,9 +100,9 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
         for (ConsumerRecord<byte[], byte[]> record : records) {
             ObjectNode jsonObject = JsonUtils.createObjectNode();
 
-            jsonObject.set("topic", new TextNode(record.topic()));
-            jsonObject.set("key", record.key() != null ? new TextNode(new String(record.key(), StandardCharsets.UTF_8)) : null);
-            jsonObject.set("value", record.value() != null ? new TextNode(new String(record.value(), StandardCharsets.UTF_8)) : null);
+            jsonObject.set("topic", new StringNode(record.topic()));
+            jsonObject.set("key", record.key() != null ? new StringNode(new String(record.key(), StandardCharsets.UTF_8)) : null);
+            jsonObject.set("value", record.value() != null ? new StringNode(new String(record.value(), StandardCharsets.UTF_8)) : null);
             jsonObject.put("partition", record.partition());
             jsonObject.put("offset", record.offset());
             jsonObject.put("timestamp", record.timestamp());
@@ -112,7 +112,7 @@ public class HttpTextMessageConverter implements MessageConverter<byte[], byte[]
             for (Header kafkaHeader : record.headers()) {
                 ObjectNode header = JsonUtils.createObjectNode();
 
-                header.set("key", new TextNode(kafkaHeader.key()));
+                header.set("key", new StringNode(kafkaHeader.key()));
                 header.put("value", kafkaHeader.value() != null ? Base64.getEncoder().encodeToString(kafkaHeader.value()) : null);
                 headers.add(header);
             }

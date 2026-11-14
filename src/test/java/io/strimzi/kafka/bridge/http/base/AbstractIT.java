@@ -4,14 +4,14 @@
  */
 package io.strimzi.kafka.bridge.http.base;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.params.Parameter;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Random;
 
 public abstract class AbstractIT {
     protected static final int TEST_TIMEOUT = 60;
-    protected static final ObjectMapper MAPPER = new ObjectMapper();
+    protected static final JsonMapper MAPPER = new JsonMapper();
 
     /**
      * The {@link Parameter} kafkaVersion here is needed because of the

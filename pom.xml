@@ -68,6 +68,7 @@
 		<kafka-env-var-config-provider.version>1.1.0</kafka-env-var-config-provider.version>
 		<fasterxml.jackson-core.version>2.22.4</fasterxml.jackson-core.version>
 		<fasterxml.jackson-databind.version>2.22.4</fasterxml.jackson-databind.version>
+		<jackson3-core.version>3.2.4</jackson3-core.version>
 		<strimzi-oauth.version>0.18.1</strimzi-oauth.version>
 		<strimzi-metrics-reporter.version>0.4.0</strimzi-metrics-reporter.version>
 		<opentelemetry.version>1.67.0</opentelemetry.version>
@@ -323,16 +324,26 @@
 			<artifactId>snakeyaml</artifactId>
 			<version>${snakeyaml.version}</version>
 		</dependency>
+		<!-- Jackson 3 is used by the bridge code and by the Fabric8 Kubernetes Client -->
+		<dependency>
+			<groupId>tools.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>${jackson3-core.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>tools.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>${jackson3-core.version}</version>
+		</dependency>
 		<!--
-			Added direct dependency because of the old version 2.16.x brought by Vert.x 4.5.x which
-			can't work together with the most updated jackson-databind throwing NoSuchMethodException
+			Jackson 2 version pins. The bridge code no longer uses Jackson 2, but Vert.x and OAuth
+			still pull it transitively; these direct dependencies force CVE-free versions onto the classpath.
 		-->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-core</artifactId>
 			<version>${fasterxml.jackson-core.version}</version>
 		</dependency>
-		<!-- Used only for test in the bridge, but needs to be here because OAuth brings it but a potential Maven bug remove it as runtime if only for test -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
@@ -531,9 +542,6 @@
 								<ignoredNonTestScopedDependencies>
 									<!-- OpenTelemetry - The SDK is using this at runtime to load the Vert.x “context storage provider”. To ignore because it is detected as used for test only. -->
 									<ignoredNonTestScopedDependency>io.vertx:vertx-opentelemetry</ignoredNonTestScopedDependency>
-									<!-- Used only for test in the bridge but needed by OAuth. If left "test" scoped, a potential Maven bug remove it from the runtime -->
-									<ignoredNonTestScopedDependencies>com.fasterxml.jackson.core:jackson-databind</ignoredNonTestScopedDependencies>
-									<ignoredUnusedDeclaredDependency>com.fasterxml.jackson.core:jackson-core</ignoredUnusedDeclaredDependency>
 								</ignoredNonTestScopedDependencies>
 								<ignoredUnusedDeclaredDependencies>
 									<ignoredUnusedDeclaredDependency>io.strimzi:kafka-env-var-config-provider</ignoredUnusedDeclaredDependency>
@@ -557,8 +565,9 @@
 									<ignoredUnusedDeclaredDependency>io.strimzi:client-metrics-reporter</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>io.prometheus:prometheus-metrics-instrumentation-jvm</ignoredUnusedDeclaredDependency>
 									<ignoredUnusedDeclaredDependency>io.prometheus:prometheus-metrics-exporter-httpserver</ignoredUnusedDeclaredDependency>
-									<!-- Added direct dependency because of the old version 2.16.x brought by Vert.x 4.5.x -->
+									<!-- Jackson 2 kept only as CVE-free version pins for Vert.x and OAuth transitive usage; not used by bridge code -->
 									<ignoredUnusedDeclaredDependency>com.fasterxml.jackson.core:jackson-core</ignoredUnusedDeclaredDependency>
+									<ignoredUnusedDeclaredDependency>com.fasterxml.jackson.core:jackson-databind</ignoredUnusedDeclaredDependency>
                                     <!-- Needed by junit 6 -->
                                     <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter-engine</ignoredUnusedDeclaredDependency>
 								</ignoredUnusedDeclaredDependencies>

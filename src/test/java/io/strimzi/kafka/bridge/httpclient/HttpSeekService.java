@@ -4,11 +4,11 @@
  */
 package io.strimzi.kafka.bridge.httpclient;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.BridgeContentType;
 import io.strimzi.kafka.bridge.http.model.HttpBridgeError;
 import io.strimzi.kafka.bridge.utils.Endpoints;
+import tools.jackson.databind.JsonNode;
 
 import java.net.http.HttpResponse;
 
