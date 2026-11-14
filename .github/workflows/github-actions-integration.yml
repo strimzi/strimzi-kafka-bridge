@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   test-github-actions-integration:
-    uses: strimzi/github-actions/.github/workflows/reusable-test-integrations.yml@52b17c19f3687e37b47c9c64696b96f28f53625b # v2.3
+    uses: strimzi/github-actions/.github/workflows/reusable-test-integrations.yml@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
     with:
       repo: ${{ github.repository }}
       ref: ${{ github.sha }}
