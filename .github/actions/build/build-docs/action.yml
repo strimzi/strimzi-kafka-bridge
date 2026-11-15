@@ -15,12 +15,12 @@ runs:
   using: "composite"
   steps:
     - name: Install yq
-      uses: strimzi/github-actions/.github/actions/dependencies/install-yq@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
+      uses: strimzi/github-actions/.github/actions/dependencies/install-yq@bb4758d4afacd9c0ff8f426395bbbece41fd142a # v4.0
       with:
         architecture: ${{ inputs.runnerArch }}
 
     - name: Set up Ruby
-      uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+      uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
       with:
         ruby-version: '3.2'
         
@@ -39,7 +39,7 @@ runs:
       run: tar -cvpf documentation.tar ./documentation/html ./documentation/htmlnoheader
       
     - name: Upload documentation artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: ${{ inputs.artifactName }}
         path: documentation.tar
