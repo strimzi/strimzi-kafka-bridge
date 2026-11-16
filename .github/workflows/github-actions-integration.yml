@@ -3,6 +3,7 @@ name: GitHub Actions Integration
 on:
   pull_request:
     paths:
+      - '.github/**'
       - 'pom.xml'
       - 'Dockerfile'
       - 'Makefile'
@@ -10,9 +11,20 @@ on:
       - 'Makefile.docker'
       - 'Makefile.maven'
       - 'Makefile.os'
-      - '.github/workflows/github-actions-integration.yml'
     branches:
       - "*"
+  push:
+    branches:
+      - "main"
+    paths:
+      - '.github/**'
+      - 'pom.xml'
+      - 'Dockerfile'
+      - 'Makefile'
+      - 'Makefile.common'
+      - 'Makefile.docker'
+      - 'Makefile.maven'
+      - 'Makefile.os'
 
 permissions:
   contents: read
@@ -25,7 +37,7 @@ concurrency:
 
 jobs:
   test-github-actions-integration:
-    uses: strimzi/github-actions/.github/workflows/reusable-test-integrations.yml@8a88edc07beb03fbd99d6d72f59c86d7d7aadda4 # v3.0
+    uses: strimzi/github-actions/.github/workflows/reusable-test-integrations.yml@bb4758d4afacd9c0ff8f426395bbbece41fd142a # v4.0
     with:
       repo: ${{ github.repository }}
       ref: ${{ github.sha }}
@@ -38,5 +50,4 @@ jobs:
       helmChartName: "none"
       releaseVersion: "6.6.6"
       imagesLocation: "kafka-bridge-amd64.tar.gz"
-      githubActionsRef: "v3.0"
     secrets: inherit

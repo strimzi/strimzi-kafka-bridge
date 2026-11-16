@@ -56,6 +56,9 @@ After the release workflow is finished, the release has to be created:
 Once this is done, go to the Sonatype portal and publish the artifacts.
 * Update the documentation on the website using the HTML files from the build pipeline artifacts
 * On GitHub, create the release and attach the ZIP / TAR.GZ artifacts from the build workflow artifacts (download from the Actions run)
+  * Also attach the attestation bundle `release-<version>.intoto.jsonl` and the `sbom.tar.gz` archive from the `release-kafka-bridge-<version>.tar` artifact of the release workflow.
+    The `attest` job adds these files to that artifact. Attach them **without changing the file names**:
+    the `.intoto.jsonl` name is what the OpenSSF Scorecard `Signed-Releases` check looks for, and the README tells users to verify the release archives with `gh attestation verify <archive> --bundle release-<version>.intoto.jsonl`.
 
 ### Announcements
 
