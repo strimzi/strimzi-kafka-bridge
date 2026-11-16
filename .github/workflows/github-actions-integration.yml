@@ -3,6 +3,7 @@ name: GitHub Actions Integration
 on:
   pull_request:
     paths:
+      - '.github/**'
       - 'pom.xml'
       - 'Dockerfile'
       - 'Makefile'
@@ -10,9 +11,20 @@ on:
       - 'Makefile.docker'
       - 'Makefile.maven'
       - 'Makefile.os'
-      - '.github/workflows/github-actions-integration.yml'
     branches:
       - "*"
+  push:
+    branches:
+      - "main"
+    paths:
+      - '.github/**'
+      - 'pom.xml'
+      - 'Dockerfile'
+      - 'Makefile'
+      - 'Makefile.common'
+      - 'Makefile.docker'
+      - 'Makefile.maven'
+      - 'Makefile.os'
 
 permissions:
   contents: read
