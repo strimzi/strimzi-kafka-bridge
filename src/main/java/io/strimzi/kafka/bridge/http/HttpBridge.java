@@ -107,9 +107,32 @@ public class HttpBridge extends AbstractVerticle {
      * Constructor
      *
      * @param bridgeConfig bridge configuration
+     * @param metricsCollector metrics collector
      */
-    public HttpBridge(BridgeConfig bridgeConfig) {
+    private HttpBridge(BridgeConfig bridgeConfig, MetricsCollector metricsCollector) {
         this.bridgeConfig = bridgeConfig;
+        this.metricsCollector = metricsCollector;
+    }
+
+    /**
+     * Creates an HttpBridge instance, creating a MetricsCollector for the HttpBridge first.
+     * 
+     * @param bridgeConfig bridge configuration
+     * @return HttpBridge instance
+     */
+    public static HttpBridge create(BridgeConfig bridgeConfig) {
+        MetricsCollector metricsCollector = null;
+        if (bridgeConfig.getMetricsType() != null) {
+            if (bridgeConfig.getMetricsType() == MetricsType.JMX_EXPORTER) {
+                metricsCollector = createJmxMetricsCollector(bridgeConfig);
+            } else if (bridgeConfig.getMetricsType() == MetricsType.STRIMZI_REPORTER) {
+                metricsCollector = new StrimziMetricsCollector();
+            }
+        }
+        if (metricsCollector != null) {
+            LOGGER.info("Metrics of type '{}' enabled and exposed on /metrics endpoint", bridgeConfig.getMetricsType());
+        }
+        return new HttpBridge(bridgeConfig, metricsCollector);
     }
 
     /**
@@ -197,23 +220,9 @@ public class HttpBridge extends AbstractVerticle {
                 });
     }
 
-    private void initMetrics() {
-        if (this.bridgeConfig.getMetricsType() != null) {
-            if (this.bridgeConfig.getMetricsType() == MetricsType.JMX_EXPORTER) {
-                this.metricsCollector = createJmxMetricsCollector(bridgeConfig);
-            } else if (bridgeConfig.getMetricsType() == MetricsType.STRIMZI_REPORTER) {
-                this.metricsCollector = new StrimziMetricsCollector();
-            }
-        }
-        if (metricsCollector != null) {
-            LOGGER.info("Metrics of type '{}' enabled and exposed on /metrics endpoint", this.bridgeConfig.getMetricsType());
-        }
-    }
-
     @Override
     public void start(Promise<Void> startPromise) {
         try {
-            initMetrics();
             OpenAPIContract.from(vertx, "openapi.json")
                 .onSuccess(contract -> {
                     RouterBuilder routerBuilder = RouterBuilder.create(vertx, contract);

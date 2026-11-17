@@ -82,12 +82,13 @@ public class Application {
         Promise<HttpBridge> httpPromise = Promise.promise();
 
         Vertx vertx = createVertxInstance(bridgeConfig);
-        HttpBridge httpBridge = new HttpBridge(bridgeConfig);
 
-        vertx.deployVerticle(httpBridge)
-                .onSuccess(deploymentId -> {
-                    LOGGER.info("HTTP verticle instance [{}] deployed", deploymentId);
-
+        vertx.executeBlocking(() -> HttpBridge.create(bridgeConfig))
+                .compose(httpBridge -> vertx.deployVerticle(httpBridge)
+                    .onSuccess(deploymentId -> 
+                        LOGGER.info("HTTP verticle instance [{}] deployed", deploymentId))
+                    .map(httpBridge))
+                .onSuccess(httpBridge -> {
                     // Register shutdown hook for graceful shutdown
                     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                         LOGGER.info("Shutdown hook triggered, starting graceful shutdown...");
