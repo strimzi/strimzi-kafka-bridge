@@ -223,75 +223,75 @@ public class HttpBridge extends AbstractVerticle {
     @Override
     public void start(Promise<Void> startPromise) {
         OpenAPIContract.from(vertx, "openapi.json")
-            .onSuccess(contract -> {
-                RouterBuilder routerBuilder = RouterBuilder.create(vertx, contract);
-                routerBuilder.getRoute(this.SEND.getOperationId().toString()).addHandler(this.SEND);
-                routerBuilder.getRoute(this.SEND_TO_PARTITION.getOperationId().toString()).addHandler(this.SEND_TO_PARTITION);
-                routerBuilder.getRoute(this.CREATE_CONSUMER.getOperationId().toString()).addHandler(this.CREATE_CONSUMER);
-                routerBuilder.getRoute(this.DELETE_CONSUMER.getOperationId().toString()).addHandler(this.DELETE_CONSUMER);
-                routerBuilder.getRoute(this.SUBSCRIBE.getOperationId().toString()).addHandler(this.SUBSCRIBE);
-                routerBuilder.getRoute(this.UNSUBSCRIBE.getOperationId().toString()).addHandler(this.UNSUBSCRIBE);
-                routerBuilder.getRoute(this.LIST_SUBSCRIPTIONS.getOperationId().toString()).addHandler(this.LIST_SUBSCRIPTIONS);
-                routerBuilder.getRoute(this.ASSIGN.getOperationId().toString()).addHandler(this.ASSIGN);
-                routerBuilder.getRoute(this.POLL.getOperationId().toString()).addHandler(this.POLL);
-                routerBuilder.getRoute(this.COMMIT.getOperationId().toString()).addHandler(this.COMMIT);
-                routerBuilder.getRoute(this.SEEK.getOperationId().toString()).addHandler(this.SEEK);
-                routerBuilder.getRoute(this.SEEK_TO_BEGINNING.getOperationId().toString()).addHandler(this.SEEK_TO_BEGINNING);
-                routerBuilder.getRoute(this.SEEK_TO_END.getOperationId().toString()).addHandler(this.SEEK_TO_END);
-                routerBuilder.getRoute(this.LIST_TOPICS.getOperationId().toString()).addHandler(this.LIST_TOPICS);
-                routerBuilder.getRoute(this.GET_TOPIC.getOperationId().toString()).addHandler(this.GET_TOPIC);
-                routerBuilder.getRoute(this.CREATE_TOPIC.getOperationId().toString()).addHandler(this.CREATE_TOPIC);
-                routerBuilder.getRoute(this.LIST_PARTITIONS.getOperationId().toString()).addHandler(this.LIST_PARTITIONS);
-                routerBuilder.getRoute(this.GET_PARTITION.getOperationId().toString()).addHandler(this.GET_PARTITION);
-                routerBuilder.getRoute(this.GET_OFFSETS.getOperationId().toString()).addHandler(this.GET_OFFSETS);
-                routerBuilder.getRoute(this.OPENAPI.getOperationId().toString()).addHandler(this.OPENAPI);
-                routerBuilder.getRoute(this.OPENAPI_V3.getOperationId().toString()).addHandler(this.OPENAPI_V3);
-                routerBuilder.getRoute(this.INFO.getOperationId().toString()).addHandler(this.INFO);
-                if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
-                    routerBuilder.rootHandler(getCorsHandler());
-                }
+                .onSuccess(contract -> {
+                    RouterBuilder routerBuilder = RouterBuilder.create(vertx, contract);
+                    routerBuilder.getRoute(this.SEND.getOperationId().toString()).addHandler(this.SEND);
+                    routerBuilder.getRoute(this.SEND_TO_PARTITION.getOperationId().toString()).addHandler(this.SEND_TO_PARTITION);
+                    routerBuilder.getRoute(this.CREATE_CONSUMER.getOperationId().toString()).addHandler(this.CREATE_CONSUMER);
+                    routerBuilder.getRoute(this.DELETE_CONSUMER.getOperationId().toString()).addHandler(this.DELETE_CONSUMER);
+                    routerBuilder.getRoute(this.SUBSCRIBE.getOperationId().toString()).addHandler(this.SUBSCRIBE);
+                    routerBuilder.getRoute(this.UNSUBSCRIBE.getOperationId().toString()).addHandler(this.UNSUBSCRIBE);
+                    routerBuilder.getRoute(this.LIST_SUBSCRIPTIONS.getOperationId().toString()).addHandler(this.LIST_SUBSCRIPTIONS);
+                    routerBuilder.getRoute(this.ASSIGN.getOperationId().toString()).addHandler(this.ASSIGN);
+                    routerBuilder.getRoute(this.POLL.getOperationId().toString()).addHandler(this.POLL);
+                    routerBuilder.getRoute(this.COMMIT.getOperationId().toString()).addHandler(this.COMMIT);
+                    routerBuilder.getRoute(this.SEEK.getOperationId().toString()).addHandler(this.SEEK);
+                    routerBuilder.getRoute(this.SEEK_TO_BEGINNING.getOperationId().toString()).addHandler(this.SEEK_TO_BEGINNING);
+                    routerBuilder.getRoute(this.SEEK_TO_END.getOperationId().toString()).addHandler(this.SEEK_TO_END);
+                    routerBuilder.getRoute(this.LIST_TOPICS.getOperationId().toString()).addHandler(this.LIST_TOPICS);
+                    routerBuilder.getRoute(this.GET_TOPIC.getOperationId().toString()).addHandler(this.GET_TOPIC);
+                    routerBuilder.getRoute(this.CREATE_TOPIC.getOperationId().toString()).addHandler(this.CREATE_TOPIC);
+                    routerBuilder.getRoute(this.LIST_PARTITIONS.getOperationId().toString()).addHandler(this.LIST_PARTITIONS);
+                    routerBuilder.getRoute(this.GET_PARTITION.getOperationId().toString()).addHandler(this.GET_PARTITION);
+                    routerBuilder.getRoute(this.GET_OFFSETS.getOperationId().toString()).addHandler(this.GET_OFFSETS);
+                    routerBuilder.getRoute(this.OPENAPI.getOperationId().toString()).addHandler(this.OPENAPI);
+                    routerBuilder.getRoute(this.OPENAPI_V3.getOperationId().toString()).addHandler(this.OPENAPI_V3);
+                    routerBuilder.getRoute(this.INFO.getOperationId().toString()).addHandler(this.INFO);
+                    if (this.bridgeConfig.getHttpConfig().isCorsEnabled()) {
+                        routerBuilder.rootHandler(getCorsHandler());
+                    }
 
-                this.router = routerBuilder.createRouter();
+                    this.router = routerBuilder.createRouter();
 
-                // handling validation errors and not existing endpoints
-                this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
-                this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
+                    // handling validation errors and not existing endpoints
+                    this.router.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
+                    this.router.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
 
-                RouterBuilder managementRouterBuilder = RouterBuilder.create(vertx, contract);
-                managementRouterBuilder.getRoute(this.HEALTHY.getOperationId().toString()).addHandler(this.HEALTHY);
-                managementRouterBuilder.getRoute(this.READY.getOperationId().toString()).addHandler(this.READY);
-                managementRouterBuilder.getRoute(this.METRICS.getOperationId().toString()).addHandler(this.METRICS);
-                this.managementRouter = managementRouterBuilder.createRouter();
+                    RouterBuilder managementRouterBuilder = RouterBuilder.create(vertx, contract);
+                    managementRouterBuilder.getRoute(this.HEALTHY.getOperationId().toString()).addHandler(this.HEALTHY);
+                    managementRouterBuilder.getRoute(this.READY.getOperationId().toString()).addHandler(this.READY);
+                    managementRouterBuilder.getRoute(this.METRICS.getOperationId().toString()).addHandler(this.METRICS);
+                    this.managementRouter = managementRouterBuilder.createRouter();
 
-                // handling validation errors and not existing endpoints
-                this.managementRouter.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
-                this.managementRouter.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
+                    // handling validation errors and not existing endpoints
+                    this.managementRouter.errorHandler(HttpResponseStatus.BAD_REQUEST.code(), this::errorHandler);
+                    this.managementRouter.errorHandler(HttpResponseStatus.NOT_FOUND.code(), this::errorHandler);
 
-                if (this.metricsCollector != null && this.metricsCollector.getVertxRegistry() != null) {
-                    // exclude HTTP server metrics for management-only endpoints
-                    this.metricsCollector.getVertxRegistry().config().meterFilter(
-                            MeterFilter.deny(meter -> {
-                                String path = meter.getTag(Label.HTTP_PATH.toString());
-                                return path != null && EXCLUDED_METRICS_PATHS.contains(path);
-                            })
-                    );
-                }
+                    if (this.metricsCollector != null && this.metricsCollector.getVertxRegistry() != null) {
+                        // exclude HTTP server metrics for management-only endpoints
+                        this.metricsCollector.getVertxRegistry().config().meterFilter(
+                                MeterFilter.deny(meter -> {
+                                    String path = meter.getTag(Label.HTTP_PATH.toString());
+                                    return path != null && EXCLUDED_METRICS_PATHS.contains(path);
+                                })
+                        );
+                    }
 
-                LOGGER.info("Starting HTTP bridge verticle...");
+                    LOGGER.info("Starting HTTP bridge verticle...");
 
-                // create dedicated executor for the Kafka-related asynchronous operations
-                this.asyncExecutor = HttpBridgeExecutor.create(bridgeConfig.getExecutorPoolSize(), bridgeConfig.getExecutorQueueSize());
+                    // create dedicated executor for the Kafka-related asynchronous operations
+                    this.asyncExecutor = HttpBridgeExecutor.create(bridgeConfig.getExecutorPoolSize(), bridgeConfig.getExecutorQueueSize());
 
-                this.httpBridgeContext = new HttpBridgeContext<>();
-                HttpAdminBridgeEndpoint adminClientEndpoint = new HttpAdminBridgeEndpoint(this.bridgeConfig, this.httpBridgeContext);
-                this.httpBridgeContext.setHttpAdminEndpoint(adminClientEndpoint);
-                adminClientEndpoint.open();
-                this.bindHttpServers(startPromise);
-            })
-            .onFailure(t -> {
-                LOGGER.error("Failed to create OpenAPI router factory");
-                startPromise.fail(t);
-            });
+                    this.httpBridgeContext = new HttpBridgeContext<>();
+                    HttpAdminBridgeEndpoint adminClientEndpoint = new HttpAdminBridgeEndpoint(this.bridgeConfig, this.httpBridgeContext);
+                    this.httpBridgeContext.setHttpAdminEndpoint(adminClientEndpoint);
+                    adminClientEndpoint.open();
+                    this.bindHttpServers(startPromise);
+                })
+                .onFailure(t -> {
+                    LOGGER.error("Failed to create OpenAPI router factory");
+                    startPromise.fail(t);
+                });
     }
 
     private CorsHandler getCorsHandler() {
