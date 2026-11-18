@@ -268,7 +268,7 @@ public class BridgeExtension implements
         Vertx vertx = Vertx.vertx(vertxOptions);
 
         BridgeConfig bridgeConfig = BridgeConfig.fromMap(configuration);
-        HttpBridge httpBridge = new HttpBridge(bridgeConfig);
+        HttpBridge httpBridge = HttpBridge.create(bridgeConfig);
 
         vertx.deployVerticle(httpBridge)
             .onComplete(ar -> {
