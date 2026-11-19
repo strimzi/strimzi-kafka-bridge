@@ -82,7 +82,7 @@ public class Application {
         Promise<HttpBridge> httpPromise = Promise.promise();
 
         Vertx vertx = createVertxInstance(bridgeConfig);
-        HttpBridge httpBridge = new HttpBridge(bridgeConfig);
+        HttpBridge httpBridge = HttpBridge.create(bridgeConfig);
 
         vertx.deployVerticle(httpBridge)
                 .onSuccess(deploymentId -> {

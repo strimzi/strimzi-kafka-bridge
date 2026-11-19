@@ -4,7 +4,6 @@
  */
 package io.strimzi.kafka.bridge.http;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.strimzi.kafka.bridge.Application;
@@ -108,20 +107,32 @@ public class HttpBridge extends AbstractVerticle {
      * Constructor
      *
      * @param bridgeConfig bridge configuration
+     * @param metricsCollector metrics collector
      */
-    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "Metrics collector creation in the constructor can throw; to be refactored out, see https://github.com/strimzi/strimzi-kafka-bridge/issues/1218")
-    public HttpBridge(BridgeConfig bridgeConfig) {
+    private HttpBridge(BridgeConfig bridgeConfig, MetricsCollector metricsCollector) {
         this.bridgeConfig = bridgeConfig;
+        this.metricsCollector = metricsCollector;
+    }
+
+    /**
+     * Creates an HttpBridge instance, creating a MetricsCollector for the HttpBridge first.
+     * 
+     * @param bridgeConfig bridge configuration
+     * @return HttpBridge instance
+     */
+    public static HttpBridge create(BridgeConfig bridgeConfig) {
+        MetricsCollector metricsCollector = null;
         if (bridgeConfig.getMetricsType() != null) {
             if (bridgeConfig.getMetricsType() == MetricsType.JMX_EXPORTER) {
-                this.metricsCollector = createJmxMetricsCollector(bridgeConfig);
+                metricsCollector = createJmxMetricsCollector(bridgeConfig);
             } else if (bridgeConfig.getMetricsType() == MetricsType.STRIMZI_REPORTER) {
-                this.metricsCollector = new StrimziMetricsCollector();
+                metricsCollector = new StrimziMetricsCollector();
             }
         }
         if (metricsCollector != null) {
             LOGGER.info("Metrics of type '{}' enabled and exposed on /metrics endpoint", bridgeConfig.getMetricsType());
         }
+        return new HttpBridge(bridgeConfig, metricsCollector);
     }
 
     /**
