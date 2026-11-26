@@ -10,6 +10,7 @@ import io.strimzi.kafka.bridge.BridgeContentType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.net.ssl.SSLContext;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -30,6 +31,18 @@ public class HttpService implements AutoCloseable {
     ) {
         client = HttpClient.newHttpClient();
         baseUri = String.format("http://%s:%s", hostname, port);
+    }
+
+    public HttpService(
+        String hostname,
+        Integer port,
+        SSLContext sslContext
+    ) {
+        client = HttpClient.newBuilder()
+            .sslContext(sslContext)
+            .version(HttpClient.Version.HTTP_1_1)
+            .build();
+        baseUri = String.format("https://%s:%s", hostname, port);
     }
 
     public HttpResponse<String> post(String endpoint, String request) {
